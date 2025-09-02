@@ -197,7 +197,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get the object path from the upload URL
         const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
-        // Process document in background
+        // Process document in background with better error handling and resource cleanup
         documentProcessor.processDocument(tempPath, mimetype, documentId, {
           filename: originalname,
           fileSize: size,
@@ -206,6 +206,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Document processing completed for ${documentId}:`, result);
         }).catch((error) => {
           console.error(`Document processing failed for ${documentId}:`, error);
+          // Clean up temp file on processing error
+          try {
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          } catch (cleanupError) {
+            console.error('Error cleaning up temp file:', cleanupError);
+          }
         });
 
         // Clean up temp file
@@ -383,9 +391,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const html = await response.text();
       // Simple text extraction (in a real app, you'd use a proper HTML parser)
-      const textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      let textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
       
       const documentId = `url_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Process the extracted text with size limits
+      if (textContent.length > 500000) { // Limit to 500KB
+        textContent = textContent.substring(0, 500000);
+        console.warn(`URL content truncated to 500KB for ${documentId}`);
+      }
       
       // Create temporary file with extracted content
       const tempFilePath = `/tmp/${documentId}.txt`;
@@ -399,11 +413,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).then((result) => {
         console.log(`URL processing completed for ${documentId}:`, result);
         // Clean up temp file
-        require('fs').unlinkSync(tempFilePath);
+        try {
+          require('fs').unlinkSync(tempFilePath);
+        } catch (cleanupError) {
+          console.error('Error cleaning up temp file:', cleanupError);
+        }
       }).catch((error) => {
         console.error(`URL processing failed for ${documentId}:`, error);
         // Clean up temp file on error too
-        try { require('fs').unlinkSync(tempFilePath); } catch {}
+        try { 
+          require('fs').unlinkSync(tempFilePath); 
+        } catch (cleanupError) {
+          console.error('Error cleaning up temp file:', cleanupError);
+        }
       });
 
       res.json({
@@ -435,9 +457,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const documentId = `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
+      // Limit text size to prevent memory issues
+      let limitedText = text;
+      if (text.length > 500000) { // Limit to 500KB
+        limitedText = text.substring(0, 500000);
+        console.warn(`Text content truncated to 500KB for ${documentId}`);
+      }
+      
       // Create temporary file with text content
       const tempFilePath = `/tmp/${documentId}.txt`;
-      require('fs').writeFileSync(tempFilePath, text);
+      require('fs').writeFileSync(tempFilePath, limitedText);
 
       // Process the text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {

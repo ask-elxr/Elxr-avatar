@@ -97,38 +97,59 @@ class DocumentProcessor {
       const text = await this.extractTextFromFile(filePath, fileType);
       console.log(`Extracted ${text.length} characters from document`);
 
+      // Limit text size to prevent memory issues (max 1MB of text)
+      const maxTextSize = 1024 * 1024; // 1MB
+      const limitedText = text.length > maxTextSize ? text.substring(0, maxTextSize) : text;
+      if (text.length > maxTextSize) {
+        console.warn(`Document ${documentId} truncated from ${text.length} to ${maxTextSize} characters`);
+      }
+
       // Split into chunks
-      const chunks = this.chunkText(text);
+      const chunks = this.chunkText(limitedText);
       console.log(`Created ${chunks.length} chunks`);
+
+      // Limit number of chunks to prevent memory overflow (max 100 chunks)
+      const maxChunks = 100;
+      const limitedChunks = chunks.slice(0, maxChunks);
+      if (chunks.length > maxChunks) {
+        console.warn(`Document ${documentId} limited to ${maxChunks} chunks (was ${chunks.length})`);
+      }
 
       let processedChunks = 0;
 
-      // Process each chunk
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        const chunkId = `${documentId}_chunk_${i}`;
+      // Process chunks in smaller batches to avoid memory buildup
+      const batchSize = 5;
+      for (let batchStart = 0; batchStart < limitedChunks.length; batchStart += batchSize) {
+        const batch = limitedChunks.slice(batchStart, Math.min(batchStart + batchSize, limitedChunks.length));
         
-        try {
-          // Generate embedding for chunk
-          const embedding = await this.generateEmbedding(chunk);
+        // Process batch in parallel but with limited concurrency
+        await Promise.allSettled(batch.map(async (chunk, batchIndex) => {
+          const i = batchStart + batchIndex;
+          const chunkId = `${documentId}_chunk_${i}`;
           
-          // Store in Pinecone
-          await pineconeService.storeConversation(chunkId, chunk, embedding, {
-            documentId,
-            chunkIndex: i,
-            type: 'document_chunk',
-            fileType,
-            ...metadata
-          });
+          try {
+            // Generate embedding for chunk
+            const embedding = await this.generateEmbedding(chunk);
+            
+            // Store in Pinecone
+            await pineconeService.storeConversation(chunkId, chunk, embedding, {
+              documentId,
+              chunkIndex: i,
+              type: 'document_chunk',
+              fileType,
+              ...metadata
+            });
 
-          processedChunks++;
-          console.log(`Processed chunk ${i + 1}/${chunks.length} for ${documentId}`);
-          
-          // Small delay to avoid rate limiting
-          await new Promise(resolve => setTimeout(resolve, 100));
-        } catch (error) {
-          console.error(`Error processing chunk ${i} for ${documentId}:`, error);
-          continue; // Continue with next chunk
+            processedChunks++;
+            console.log(`Processed chunk ${i + 1}/${limitedChunks.length} for ${documentId}`);
+          } catch (error) {
+            console.error(`Error processing chunk ${i} for ${documentId}:`, error);
+          }
+        }));
+        
+        // Small delay between batches to prevent overwhelming the system
+        if (batchStart + batchSize < limitedChunks.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
@@ -136,7 +157,7 @@ class DocumentProcessor {
       return {
         documentId,
         chunksProcessed: processedChunks,
-        totalChunks: chunks.length
+        totalChunks: limitedChunks.length
       };
     } catch (error) {
       console.error('Error processing document:', error);

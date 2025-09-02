@@ -16,6 +16,11 @@ class LatencyCache {
   private readonly SEARCH_TTL = 10 * 60 * 1000;
   // Cache context for 5 minutes
   private readonly CONTEXT_TTL = 5 * 60 * 1000;
+  
+  // Maximum cache sizes to prevent memory overflow
+  private readonly MAX_EMBEDDINGS = 1000;
+  private readonly MAX_SEARCH_RESULTS = 500;
+  private readonly MAX_CONTEXT_CACHE = 200;
 
   private isExpired<T>(entry: CacheEntry<T>): boolean {
     return Date.now() - entry.timestamp > entry.ttl;
@@ -24,6 +29,12 @@ class LatencyCache {
   // Embedding cache
   setEmbedding(text: string, embedding: number[]): void {
     const key = this.hashText(text);
+    
+    // Check if we need to clean up to prevent memory overflow
+    if (this.embeddings.size >= this.MAX_EMBEDDINGS) {
+      this.cleanupOldest(this.embeddings, Math.floor(this.MAX_EMBEDDINGS / 2));
+    }
+    
     this.embeddings.set(key, {
       data: embedding,
       timestamp: Date.now(),
@@ -46,6 +57,12 @@ class LatencyCache {
   // Search results cache
   setSearchResults(query: string, results: any[]): void {
     const key = this.hashText(query);
+    
+    // Check if we need to clean up to prevent memory overflow
+    if (this.searchResults.size >= this.MAX_SEARCH_RESULTS) {
+      this.cleanupOldest(this.searchResults, Math.floor(this.MAX_SEARCH_RESULTS / 2));
+    }
+    
     this.searchResults.set(key, {
       data: results,
       timestamp: Date.now(),
@@ -68,6 +85,12 @@ class LatencyCache {
   // Context cache
   setContext(query: string, context: string): void {
     const key = this.hashText(query);
+    
+    // Check if we need to clean up to prevent memory overflow
+    if (this.contextCache.size >= this.MAX_CONTEXT_CACHE) {
+      this.cleanupOldest(this.contextCache, Math.floor(this.MAX_CONTEXT_CACHE / 2));
+    }
+    
     this.contextCache.set(key, {
       data: context,
       timestamp: Date.now(),
@@ -119,13 +142,28 @@ class LatencyCache {
     });
   }
 
+  // Clean up oldest entries from a cache when it gets too large
+  private cleanupOldest<T>(cache: Map<string, CacheEntry<T>>, keepCount: number): void {
+    const entries = Array.from(cache.entries()).sort(([, a], [, b]) => a.timestamp - b.timestamp);
+    const toRemove = entries.slice(0, entries.length - keepCount);
+    
+    for (const [key] of toRemove) {
+      cache.delete(key);
+    }
+  }
+
   // Get cache stats
   getStats() {
     return {
       embeddings: this.embeddings.size,
       searchResults: this.searchResults.size,
       contextCache: this.contextCache.size,
-      totalEntries: this.embeddings.size + this.searchResults.size + this.contextCache.size
+      totalEntries: this.embeddings.size + this.searchResults.size + this.contextCache.size,
+      limits: {
+        maxEmbeddings: this.MAX_EMBEDDINGS,
+        maxSearchResults: this.MAX_SEARCH_RESULTS,
+        maxContextCache: this.MAX_CONTEXT_CACHE
+      }
     };
   }
 }
