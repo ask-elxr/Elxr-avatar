@@ -12,6 +12,23 @@ export function AvatarChat() {
     // Here you would initialize the HeyGen avatar
   };
 
+  if (isActive) {
+    // Full screen avatar when active
+    return (
+      <div className="w-full h-screen">
+        <iframe
+          ref={iframeRef}
+          src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1"
+          className="w-full h-full border-0"
+          allow="microphone; camera"
+          title="HeyGen Interactive Avatar"
+          data-testid="heygen-avatar-iframe"
+        />
+      </div>
+    );
+  }
+
+  // Initial state with gradient background and chat button
   return (
     <div className="w-full h-screen flex flex-col">
       {/* Top Section with Gradient */}
@@ -35,30 +52,19 @@ export function AvatarChat() {
       {/* Avatar Section */}
       <div className="flex-shrink-0 bg-gray-200 relative">
         <div className="w-full aspect-[3/4] flex items-center justify-center">
-          {!isActive ? (
-            <div className="w-full h-full flex items-center justify-center">
-              {/* Placeholder Avatar Preview */}
-              <div className="w-80 h-96 bg-gray-300 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-600 text-sm">Avatar Preview</p>
+          <div className="w-full h-full flex items-center justify-center">
+            {/* Placeholder Avatar Preview */}
+            <div className="w-80 h-96 bg-gray-300 rounded-lg flex items-center justify-center">
+              <div className="text-center">
+                <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
                 </div>
+                <p className="text-gray-600 text-sm">Avatar Preview</p>
               </div>
             </div>
-          ) : (
-            <iframe
-              ref={iframeRef}
-              src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1"
-              className="w-full h-full border-0"
-              allow="microphone; camera"
-              title="HeyGen Interactive Avatar"
-              data-testid="heygen-avatar-iframe"
-            />
-          )}
+          </div>
         </div>
       </div>
 
@@ -80,15 +86,13 @@ export function AvatarChat() {
           </Select>
 
           {/* Chat Button */}
-          {!isActive && (
-            <Button 
-              onClick={handleChatNow}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-base font-medium"
-              data-testid="button-chat-now"
-            >
-              Chat now
-            </Button>
-          )}
+          <Button 
+            onClick={handleChatNow}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg text-base font-medium"
+            data-testid="button-chat-now"
+          >
+            Chat now
+          </Button>
         </div>
       </div>
     </div>
