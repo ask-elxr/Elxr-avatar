@@ -24,9 +24,10 @@ Preferred communication style: Simple, everyday language.
 
 ## Data Storage
 - **Primary Database**: PostgreSQL via Neon Database service for production data persistence
+- **Vector Database**: Pinecone for storing conversation embeddings (1536 dimensions for OpenAI compatibility)
 - **ORM**: Drizzle ORM for type-safe database operations and schema management
 - **Session Storage**: PostgreSQL-based session storage using connect-pg-simple
-- **Schema Design**: User management with UUID primary keys and unique constraints
+- **Schema Design**: User management with UUID primary keys, conversations table with embedding support
 
 ## Authentication & Authorization
 - **Session-based Authentication**: Server-side sessions stored in PostgreSQL
@@ -36,8 +37,9 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Core Services
-- **HeyGen Streaming Avatar API**: Primary AI avatar service for real-time video streaming and conversation
+- **HeyGen Streaming Avatar API**: Primary AI avatar service for real-time video streaming and conversation (iframe embed approach)
 - **Neon Database**: Managed PostgreSQL hosting for production data storage
+- **Pinecone Vector Database**: Vector storage for conversation embeddings and AI context memory
 
 ### Frontend Libraries
 - **UI Framework**: React 18 with TypeScript support
