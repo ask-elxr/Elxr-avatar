@@ -17,9 +17,16 @@ export class GoogleSearchService {
   private searchEngineId: string;
 
   constructor() {
-    // Set the Google API key and Search Engine ID
-    this.apiKey = 'AIzaSyBORVWZbxxGlpm7mBeKOgYaJaeJhkKmWYQ';
-    this.searchEngineId = '053d1c876414ab21699623f25bc7b30d5f6ccf88';
+    // Get Google API credentials from environment variables
+    this.apiKey = process.env.GOOGLE_SEARCH_API_KEY || '';
+    this.searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID || '';
+    
+    if (!this.apiKey) {
+      console.warn('GOOGLE_SEARCH_API_KEY not found - Google Search features will be disabled');
+    }
+    if (!this.searchEngineId) {
+      console.warn('GOOGLE_SEARCH_ENGINE_ID not found - Google Search features will be disabled');
+    }
   }
 
   // Check if Google Search is available
