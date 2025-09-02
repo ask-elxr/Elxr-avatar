@@ -8,6 +8,8 @@ import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";
 import { timeoutMiddleware, performanceMiddleware, rateLimitMiddleware } from "./performance.js";
+import { claudeService } from "./claudeService.js";
+import { googleSearchService } from "./googleSearchService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
@@ -522,6 +524,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(500).json({ 
         error: "Failed to process audio recording" 
+      });
+    }
+  });
+
+  // Enhanced AI chat endpoint with Claude Sonnet and Google Search
+  app.post("/api/chat/enhanced", rateLimitMiddleware(30, 60000), async (req, res) => {
+    try {
+      const { 
+        message, 
+        conversationHistory = [], 
+        useWebSearch = false,
+        maxTokens = 2000 
+      } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ 
+          error: "Message is required" 
+        });
+      }
+
+      // Get conversation context from knowledge base
+      const context = await documentProcessor.getConversationContext(message, maxTokens);
+      
+      let webSearchResults = '';
+      
+      // Use Google Search for current information if requested or if query seems time-sensitive
+      if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
+        if (googleSearchService.isAvailable()) {
+          webSearchResults = await googleSearchService.search(message, 4);
+        } else {
+          console.warn('Google Search requested but not available');
+        }
+      }
+
+      let aiResponse: string;
+      
+      // Use Claude Sonnet if available, otherwise fallback to basic context response
+      if (claudeService.isAvailable()) {
+        if (webSearchResults) {
+          aiResponse = await claudeService.generateEnhancedResponse(
+            message, 
+            context, 
+            webSearchResults, 
+            conversationHistory
+          );
+        } else {
+          aiResponse = await claudeService.generateResponse(
+            message, 
+            context, 
+            conversationHistory
+          );
+        }
+      } else {
+        // Fallback response when Claude is not available
+        const contextInfo = context ? `Based on the knowledge base: ${context.substring(0, 500)}...` : '';
+        const webInfo = webSearchResults ? `\n\nCurrent information: ${webSearchResults.substring(0, 300)}...` : '';
+        aiResponse = `${contextInfo}${webInfo}\n\nI can provide information from the knowledge base${webSearchResults ? ' and current web results' : ''}, but for advanced AI conversation capabilities, Claude Sonnet integration is needed.`;
+      }
+
+      // Store conversation in Pinecone if it has good context
+      try {
+        if (context) {
+          const embedding = await documentProcessor.generateEmbedding(message);
+          const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          await pineconeService.storeConversation(
+            conversationId,
+            `Q: ${message}\nA: ${aiResponse}`,
+            embedding,
+            {
+              type: 'chat_enhanced',
+              hasWebSearch: !!webSearchResults,
+              timestamp: new Date().toISOString()
+            }
+          );
+        }
+      } catch (storeError) {
+        console.error('Error storing conversation:', storeError);
+        // Don't fail the request if storage fails
+      }
+
+      res.json({
+        success: true,
+        message: aiResponse,
+        metadata: {
+          hasContext: !!context,
+          hasWebSearch: !!webSearchResults,
+          claudeAvailable: claudeService.isAvailable(),
+          googleSearchAvailable: googleSearchService.isAvailable(),
+          contextLength: context.length,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.error('Enhanced chat error:', error);
+      res.status(500).json({ 
+        error: "Failed to process enhanced chat request" 
       });
     }
   });
