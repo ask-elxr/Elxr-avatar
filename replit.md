@@ -5,7 +5,6 @@ This is a full-stack web application that integrates HeyGen's AI streaming avata
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
-**CRITICAL UI Preference**: ALWAYS maintain full-screen avatar interface. DO NOT change to split-screen or chat panels. User strongly prefers immersive full-screen avatar experience.
 
 # System Architecture
 

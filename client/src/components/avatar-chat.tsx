@@ -1,157 +1,68 @@
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Send, Loader2 } from "lucide-react";
-import { useAvatarSession } from "@/hooks/use-avatar-session";
-import { useMutation } from "@tanstack/react-query";
-
-interface ChatResponse {
-  success: boolean;
-  message: string;
-  metadata: {
-    hasContext: boolean;
-    hasWebSearch: boolean;
-    claudeAvailable: boolean;
-    googleSearchAvailable: boolean;
-    contextLength: number;
-    timestamp: string;
-  };
-}
+import { Maximize, Minimize, X } from "lucide-react";
 
 export function AvatarChat() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [inputMessage, setInputMessage] = useState("");
-  const [conversationHistory, setConversationHistory] = useState<any[]>([]);
-  
-  const {
-    isLoading,
-    isConnected,
-    isSpeaking,
-    sessionActive,
-    messages,
-    error,
-    startSession,
-    endSession,
-    sendMessage: sendToAvatar
-  } = useAvatarSession(videoRef);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Enhanced chat mutation that processes through Claude backend first
-  const chatMutation = useMutation({
-    mutationFn: async ({ message }: { message: string }): Promise<ChatResponse> => {
-      const response = await fetch('/api/chat/enhanced', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message,
-          useWebSearch: true,
-          conversationHistory: conversationHistory.slice(-10),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to send message: ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    onSuccess: async (data, variables) => {
-      setConversationHistory(prev => [
-        ...prev,
-        { message: variables.message, isUser: true },
-        { message: data.message, isUser: false }
-      ]);
-      
-      if (sessionActive && sendToAvatar) {
-        await sendToAvatar(data.message);
-      }
-      
-      setInputMessage("");
-    },
-  });
-
-  const handleSendMessage = () => {
-    if (!inputMessage.trim() || chatMutation.isPending) return;
+  useEffect(() => {
+    // Check if device is mobile
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
     
-    // Auto-start session if not active
-    if (!sessionActive && !isLoading) {
-      startSession();
-    }
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
     
-    chatMutation.mutate({
-      message: inputMessage.trim(),
-    });
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const endCall = () => {
+    // Reset the iframe to end the call
+    setRefreshKey(prev => prev + 1);
   };
-
-  // Auto-start session when component mounts
-  useState(() => {
-    if (!sessionActive && !isLoading && !error) {
-      setTimeout(() => startSession(), 1000);
-    }
-  });
 
   return (
-    <div className="h-screen w-full relative bg-black">
-      {/* Full Screen Avatar Video */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={false}
-        className="w-full h-full object-cover"
-        data-testid="heygen-avatar-video"
-      />
-
-      {/* Bottom Input Bar - Exactly like the screenshots */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-        <div className="flex space-x-2 max-w-4xl mx-auto">
-          <Input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
-            className="flex-1 bg-white/95 border-0 rounded-full h-12 px-4 text-black"
-            disabled={chatMutation.isPending}
-            data-testid="input-chat-message"
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!inputMessage.trim() || chatMutation.isPending}
-            className="bg-red-500 hover:bg-red-600 text-white rounded-full w-12 h-12 p-0"
-            data-testid="button-send-message"
-          >
-            {chatMutation.isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </Button>
-        </div>
-
-        {/* Error message */}
-        {(chatMutation.error || error) && (
-          <div className="mt-2 text-center">
-            <div className="inline-block bg-red-500/90 text-white px-4 py-2 rounded-full text-sm">
-              {chatMutation.error?.message || error}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Session status indicator */}
-      {!sessionActive && !isLoading && (
-        <div className="absolute top-4 left-4 bg-yellow-500/80 text-white px-3 py-1 rounded-full text-sm">
-          Starting session...
-        </div>
+    <div className="w-full h-screen relative overflow-hidden">
+      {/* Fullscreen Button - Mobile Only */}
+      {isMobile && (
+        <Button
+          onClick={toggleFullscreen}
+          className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-fullscreen-toggle"
+        >
+          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+        </Button>
       )}
+
+      {/* End Call Button - Top Right */}
+      <Button
+        onClick={endCall}
+        className="absolute top-4 right-4 z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3 backdrop-blur-sm"
+        data-testid="button-end-call"
+      >
+        <X className="w-5 h-5" />
+      </Button>
+
+      {/* Avatar Iframe */}
+      <div className={`w-full h-full ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+        <iframe
+          key={refreshKey}
+          ref={iframeRef}
+          src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1"
+          className="w-full h-full border-0"
+          allow="microphone; camera"
+          title="HeyGen Interactive Avatar"
+          data-testid="heygen-avatar-iframe"
+        />
+      </div>
     </div>
   );
 }
