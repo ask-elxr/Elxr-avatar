@@ -19,13 +19,13 @@ export class GoogleSearchService {
   constructor() {
     // Get Google API credentials from environment variables
     this.apiKey = process.env.GOOGLE_SEARCH_API_KEY || '';
-    this.searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID || '';
+    this.searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID || process.env.GOOGLE_SEARCH_CX || '';
     
     if (!this.apiKey) {
       console.warn('GOOGLE_SEARCH_API_KEY not found - Google Search features will be disabled');
     }
     if (!this.searchEngineId) {
-      console.warn('GOOGLE_SEARCH_ENGINE_ID not found - Google Search features will be disabled');
+      console.warn('GOOGLE_SEARCH_ENGINE_ID or GOOGLE_SEARCH_CX not found - Google Search features will be disabled');
     }
   }
 

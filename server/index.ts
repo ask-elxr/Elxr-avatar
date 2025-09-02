@@ -3,8 +3,37 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+
+// Add memory monitoring and limits
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Don't exit immediately, try to gracefully handle it
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // Don't exit immediately, try to gracefully handle it
+});
+
+// Monitor memory usage
+const monitorMemory = () => {
+  const memUsage = process.memoryUsage();
+  const heapUsed = Math.round(memUsage.heapUsed / 1024 / 1024);
+  const heapTotal = Math.round(memUsage.heapTotal / 1024 / 1024);
+  
+  if (heapUsed > 1000) { // Alert if heap usage exceeds 1GB
+    console.warn(`High memory usage detected: ${heapUsed}MB / ${heapTotal}MB`);
+    if (global.gc) {
+      global.gc();
+    }
+  }
+};
+
+// Check memory every 30 seconds
+setInterval(monitorMemory, 30000);
+
+app.use(express.json({ limit: '10mb' })); // Limit request size
+app.use(express.urlencoded({ extended: false, limit: '10mb' }));
 
 app.use((req, res, next) => {
   const start = Date.now();

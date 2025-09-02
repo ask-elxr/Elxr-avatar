@@ -17,10 +17,10 @@ class LatencyCache {
   // Cache context for 5 minutes
   private readonly CONTEXT_TTL = 5 * 60 * 1000;
   
-  // Maximum cache sizes to prevent memory overflow
-  private readonly MAX_EMBEDDINGS = 1000;
-  private readonly MAX_SEARCH_RESULTS = 500;
-  private readonly MAX_CONTEXT_CACHE = 200;
+  // Maximum cache sizes to prevent memory overflow (reduced for stability)
+  private readonly MAX_EMBEDDINGS = 100;
+  private readonly MAX_SEARCH_RESULTS = 50;
+  private readonly MAX_CONTEXT_CACHE = 25;
 
   private isExpired<T>(entry: CacheEntry<T>): boolean {
     return Date.now() - entry.timestamp > entry.ttl;
@@ -170,7 +170,15 @@ class LatencyCache {
 
 export const latencyCache = new LatencyCache();
 
-// Cleanup expired entries every 5 minutes
+// Cleanup expired entries every 2 minutes and force garbage collection
 setInterval(() => {
-  latencyCache.cleanup();
-}, 5 * 60 * 1000);
+  try {
+    latencyCache.cleanup();
+    // Force garbage collection if available
+    if (global.gc) {
+      global.gc();
+    }
+  } catch (error) {
+    console.error('Error during cache cleanup:', error);
+  }
+}, 2 * 60 * 1000);

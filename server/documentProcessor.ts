@@ -97,8 +97,8 @@ class DocumentProcessor {
       const text = await this.extractTextFromFile(filePath, fileType);
       console.log(`Extracted ${text.length} characters from document`);
 
-      // Limit text size to prevent memory issues (max 1MB of text)
-      const maxTextSize = 1024 * 1024; // 1MB
+      // Limit text size to prevent memory issues (max 500KB of text)
+      const maxTextSize = 512 * 1024; // 500KB
       const limitedText = text.length > maxTextSize ? text.substring(0, maxTextSize) : text;
       if (text.length > maxTextSize) {
         console.warn(`Document ${documentId} truncated from ${text.length} to ${maxTextSize} characters`);
@@ -108,8 +108,8 @@ class DocumentProcessor {
       const chunks = this.chunkText(limitedText);
       console.log(`Created ${chunks.length} chunks`);
 
-      // Limit number of chunks to prevent memory overflow (max 100 chunks)
-      const maxChunks = 100;
+      // Limit number of chunks to prevent memory overflow (max 25 chunks)
+      const maxChunks = 25;
       const limitedChunks = chunks.slice(0, maxChunks);
       if (chunks.length > maxChunks) {
         console.warn(`Document ${documentId} limited to ${maxChunks} chunks (was ${chunks.length})`);
@@ -118,7 +118,7 @@ class DocumentProcessor {
       let processedChunks = 0;
 
       // Process chunks in smaller batches to avoid memory buildup
-      const batchSize = 5;
+      const batchSize = 2;
       for (let batchStart = 0; batchStart < limitedChunks.length; batchStart += batchSize) {
         const batch = limitedChunks.slice(batchStart, Math.min(batchStart + batchSize, limitedChunks.length));
         
@@ -147,9 +147,13 @@ class DocumentProcessor {
           }
         }));
         
+        // Force garbage collection between batches if available
+        if (global.gc) {
+          global.gc();
+        }
         // Small delay between batches to prevent overwhelming the system
         if (batchStart + batchSize < limitedChunks.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
       }
 
