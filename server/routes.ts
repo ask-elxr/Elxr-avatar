@@ -7,8 +7,14 @@ import { insertConversationSchema, insertDocumentSchema } from "../shared/schema
 import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";
+import { timeoutMiddleware, performanceMiddleware, rateLimitMiddleware } from "./performance.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add performance monitoring middleware
+  app.use(performanceMiddleware());
+  
+  // Add timeout middleware for all routes (10 second timeout)
+  app.use(timeoutMiddleware(10000));
   // HeyGen API token endpoint
   app.post("/api/heygen/token", async (req, res) => {
     try {
@@ -265,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get conversation context for RAG
-  app.post("/api/chat/context", async (req, res) => {
+  app.post("/api/chat/context", rateLimitMiddleware(20, 60000), async (req, res) => {
     try {
       const { query, maxTokens = 2000 } = req.body;
       

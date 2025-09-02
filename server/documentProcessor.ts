@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { pineconeService } from './pinecone.js';
+import { latencyCache } from './cache.js';
 import * as fs from 'fs';
 import * as path from 'path';
 // Note: pdf-parse has import issues, implementing basic text extraction for now
@@ -57,15 +58,26 @@ class DocumentProcessor {
     }
   }
 
-  // Generate embeddings for text using OpenAI
+  // Generate embeddings for text using OpenAI with caching
   async generateEmbedding(text: string): Promise<number[]> {
     try {
+      // Check cache first for faster response
+      const cached = latencyCache.getEmbedding(text);
+      if (cached) {
+        return cached;
+      }
+
       const response = await this.openai.embeddings.create({
         model: 'text-embedding-3-small',
         input: text,
       });
 
-      return response.data[0].embedding;
+      const embedding = response.data[0].embedding;
+      
+      // Cache the result for future use
+      latencyCache.setEmbedding(text, embedding);
+      
+      return embedding;
     } catch (error) {
       console.error('Error generating embedding:', error);
       throw error;
@@ -132,14 +144,31 @@ class DocumentProcessor {
     }
   }
 
-  // Search for relevant document chunks based on query
-  async searchDocuments(query: string, topK: number = 5): Promise<any[]> {
+  // Search for relevant document chunks based on query with caching
+  async searchDocuments(query: string, topK: number = 3): Promise<any[]> {
     try {
-      // Generate embedding for the query
+      // Check search cache first
+      const cachedResults = latencyCache.getSearchResults(query);
+      if (cachedResults) {
+        return cachedResults.filter(result => 
+          result.metadata?.type === 'document_chunk'
+        ).map(result => ({
+          text: result.metadata?.text,
+          score: result.score,
+          documentId: result.metadata?.documentId,
+          chunkIndex: result.metadata?.chunkIndex,
+          metadata: result.metadata
+        }));
+      }
+
+      // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       
       // Search Pinecone for similar chunks
       const results = await pineconeService.searchSimilarConversations(queryEmbedding, topK);
+      
+      // Cache the raw results
+      latencyCache.setSearchResults(query, results);
       
       // Filter for document chunks only
       return results.filter(result => 
@@ -157,15 +186,25 @@ class DocumentProcessor {
     }
   }
 
-  // Get conversation context by combining query results
-  async getConversationContext(query: string, maxTokens: number = 2000): Promise<string> {
+  // Get conversation context by combining query results with caching
+  async getConversationContext(query: string, maxTokens: number = 1500): Promise<string> {
     try {
-      const searchResults = await this.searchDocuments(query, 10);
+      // Check cache first for instant response
+      const cached = latencyCache.getContext(query);
+      if (cached) {
+        return cached;
+      }
+
+      // Optimized search with fewer results for speed
+      const searchResults = await this.searchDocuments(query, 3); // Reduced from 10 to 3
       
       let context = '';
       let tokenCount = 0;
       
-      for (const result of searchResults) {
+      // Only use high-quality matches
+      const filteredResults = searchResults.filter(result => result.score > 0.75);
+      
+      for (const result of filteredResults) {
         const chunkText = result.text;
         const estimatedTokens = Math.ceil(chunkText.length / 4); // Rough token estimation
         
@@ -177,7 +216,12 @@ class DocumentProcessor {
         }
       }
       
-      return context.trim();
+      const finalContext = context.trim();
+      
+      // Cache the result
+      latencyCache.setContext(query, finalContext);
+      
+      return finalContext;
     } catch (error) {
       console.error('Error getting conversation context:', error);
       return '';
