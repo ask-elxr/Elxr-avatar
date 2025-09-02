@@ -37,7 +37,7 @@ export class GoogleSearchService {
   // Search Google and return formatted results
   async search(query: string, maxResults: number = 5): Promise<string> {
     if (!this.isAvailable()) {
-      console.warn('Google Search not available - missing Search Engine ID');
+      console.warn('Google Search not available - missing API credentials');
       return '';
     }
 
@@ -48,8 +48,10 @@ export class GoogleSearchService {
       searchUrl.searchParams.set('q', query);
       searchUrl.searchParams.set('num', Math.min(maxResults, 10).toString());
 
+      console.log(`Attempting Google search for: "${query}"`);
+
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       
       const response = await fetch(searchUrl.toString(), {
         signal: controller.signal
@@ -58,14 +60,24 @@ export class GoogleSearchService {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        const errorText = await response.text();
         console.error('Google Search API error:', response.status, response.statusText);
-        return '';
+        console.error('Error details:', errorText);
+        
+        // Check if it's a quota/billing issue
+        if (response.status === 403) {
+          return `[Search temporarily unavailable - API quota exceeded. Please check your Google Cloud billing and quota settings.]`;
+        } else if (response.status === 400) {
+          return `[Search configuration error - Please verify your Google Custom Search Engine ID is correct.]`;
+        }
+        
+        return `[Web search temporarily unavailable due to API error]`;
       }
 
       const data: GoogleSearchResponse = await response.json();
       
       if (!data.items || data.items.length === 0) {
-        return `No recent web results found for: ${query}`;
+        return `[No recent web results found for: "${query}"]`;
       }
 
       // Format results for context
@@ -77,10 +89,15 @@ export class GoogleSearchService {
         formattedResults += `   Source: ${item.link}\n\n`;
       });
 
+      console.log(`Google search successful: Found ${data.items.length} results`);
       return formattedResults;
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Google Search timeout');
+        return `[Web search timed out - please try again]`;
+      }
       console.error('Google Search error:', error);
-      return '';
+      return `[Web search temporarily unavailable]`;
     }
   }
 
