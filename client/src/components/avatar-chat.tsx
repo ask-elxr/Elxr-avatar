@@ -52,7 +52,7 @@ export function AvatarChat() {
       </Button>
 
       {/* Avatar Iframe */}
-      <div className={`w-full h-full ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+      <div className={`w-full ${isFullscreen && isMobile ? 'transform scale-[4] origin-center h-full' : 'h-full pb-20'}`}>
         <iframe
           key={refreshKey}
           ref={iframeRef}
