@@ -358,6 +358,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // URL content processing endpoint
+  app.post("/api/documents/url", async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url) {
+        return res.status(400).json({ error: "URL is required" });
+      }
+
+      // Fetch and process URL content
+      const response = await fetch(url);
+      if (!response.ok) {
+        return res.status(400).json({ error: "Failed to fetch URL content" });
+      }
+
+      const html = await response.text();
+      // Simple text extraction (in a real app, you'd use a proper HTML parser)
+      const textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      
+      const documentId = `url_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create temporary file with extracted content
+      const tempFilePath = `/tmp/${documentId}.txt`;
+      require('fs').writeFileSync(tempFilePath, textContent);
+      
+      // Process the extracted text
+      documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
+        url,
+        type: 'url_content',
+        extractedAt: new Date().toISOString()
+      }).then((result) => {
+        console.log(`URL processing completed for ${documentId}:`, result);
+        // Clean up temp file
+        require('fs').unlinkSync(tempFilePath);
+      }).catch((error) => {
+        console.error(`URL processing failed for ${documentId}:`, error);
+        // Clean up temp file on error too
+        try { require('fs').unlinkSync(tempFilePath); } catch {}
+      });
+
+      res.json({
+        success: true,
+        documentId,
+        filename: new URL(url).hostname,
+        fileType: 'text/html',
+        fileSize: textContent.length,
+        status: "processing",
+        message: "URL content extracted and processing started"
+      });
+
+    } catch (error) {
+      console.error('URL processing error:', error);
+      res.status(500).json({ 
+        error: "Failed to process URL" 
+      });
+    }
+  });
+
+  // Text content processing endpoint
+  app.post("/api/documents/text", async (req, res) => {
+    try {
+      const { text, title = 'Custom Text Input' } = req.body;
+      
+      if (!text) {
+        return res.status(400).json({ error: "Text content is required" });
+      }
+
+      const documentId = `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Create temporary file with text content
+      const tempFilePath = `/tmp/${documentId}.txt`;
+      require('fs').writeFileSync(tempFilePath, text);
+
+      // Process the text
+      documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
+        title,
+        type: 'text_input',
+        createdAt: new Date().toISOString()
+      }).then((result) => {
+        console.log(`Text processing completed for ${documentId}:`, result);
+        // Clean up temp file
+        require('fs').unlinkSync(tempFilePath);
+      }).catch((error) => {
+        console.error(`Text processing failed for ${documentId}:`, error);
+        // Clean up temp file on error too
+        try { require('fs').unlinkSync(tempFilePath); } catch {}
+      });
+
+      res.json({
+        success: true,
+        documentId,
+        filename: title,
+        fileType: 'text/plain',
+        fileSize: text.length,
+        status: "processing",
+        message: "Text content processing started"
+      });
+
+    } catch (error) {
+      console.error('Text processing error:', error);
+      res.status(500).json({ 
+        error: "Failed to process text content" 
+      });
+    }
+  });
+
+  // Audio transcription and processing endpoint
+  app.post("/api/documents/dictation", upload.single('audio'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Audio file is required" });
+      }
+
+      const documentId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // For now, create placeholder transcription
+      // TODO: Implement actual speech-to-text using OpenAI Whisper or similar
+      const transcribedText = `[Audio Recording - ${new Date().toLocaleString()}]\n\nThis is a placeholder for transcribed audio content. In a production environment, this would contain the actual transcription of the uploaded audio file using services like OpenAI Whisper, Google Speech-to-Text, or similar speech recognition APIs.`;
+      
+      // Create temporary file with transcribed content
+      const tempFilePath = `/tmp/${documentId}.txt`;
+      require('fs').writeFileSync(tempFilePath, transcribedText);
+
+      // Process the transcribed text
+      documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
+        originalFilename: req.file.originalname,
+        type: 'audio_transcription',
+        audioFileSize: req.file.size,
+        transcribedAt: new Date().toISOString()
+      }).then((result) => {
+        console.log(`Audio transcription processing completed for ${documentId}:`, result);
+        // Clean up temp files
+        require('fs').unlinkSync(tempFilePath);
+        require('fs').unlinkSync(req.file!.path);
+      }).catch((error) => {
+        console.error(`Audio transcription processing failed for ${documentId}:`, error);
+        // Clean up temp files on error too
+        try { require('fs').unlinkSync(tempFilePath); } catch {}
+        try { require('fs').unlinkSync(req.file!.path); } catch {}
+      });
+
+      res.json({
+        success: true,
+        documentId,
+        filename: `Audio Recording - ${new Date().toLocaleString()}`,
+        fileType: 'audio/wav',
+        fileSize: req.file.size,
+        status: "processing",
+        message: "Audio transcription and processing started"
+      });
+
+    } catch (error) {
+      console.error('Audio processing error:', error);
+      if (req.file?.path) {
+        try { require('fs').unlinkSync(req.file.path); } catch {}
+      }
+      res.status(500).json({ 
+        error: "Failed to process audio recording" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
