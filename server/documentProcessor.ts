@@ -21,8 +21,13 @@ class DocumentProcessor {
     });
   }
 
-  // Split text into chunks for processing
+  // Split text into chunks for processing - optimized for small files
   private chunkText(text: string, chunkSize: number = 1000, overlap: number = 200): string[] {
+    // For very small texts, don't chunk at all
+    if (text.length <= 800) {
+      return [text.trim()];
+    }
+
     const chunks: string[] = [];
     let start = 0;
 
@@ -117,8 +122,8 @@ class DocumentProcessor {
 
       let processedChunks = 0;
 
-      // Process chunks in smaller batches to avoid memory buildup
-      const batchSize = 2;
+      // Process chunks in parallel for speed (but limit to prevent overload)
+      const batchSize = 3;
       for (let batchStart = 0; batchStart < limitedChunks.length; batchStart += batchSize) {
         const batch = limitedChunks.slice(batchStart, Math.min(batchStart + batchSize, limitedChunks.length));
         
@@ -151,9 +156,10 @@ class DocumentProcessor {
         if (global.gc) {
           global.gc();
         }
-        // Small delay between batches to prevent overwhelming the system
+        // Skip delay for small documents, minimal delay for larger ones
         if (batchStart + batchSize < limitedChunks.length) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          const delay = limitedChunks.length <= 5 ? 50 : 200;
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
 

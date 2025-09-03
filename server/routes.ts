@@ -403,7 +403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create temporary file with extracted content
       const tempFilePath = `/tmp/${documentId}.txt`;
-      require('fs').writeFileSync(tempFilePath, textContent);
+      fs.writeFileSync(tempFilePath, textContent);
       
       // Process the extracted text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
@@ -414,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`URL processing completed for ${documentId}:`, result);
         // Clean up temp file
         try {
-          require('fs').unlinkSync(tempFilePath);
+          fs.unlinkSync(tempFilePath);
         } catch (cleanupError) {
           console.error('Error cleaning up temp file:', cleanupError);
         }
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.error(`URL processing failed for ${documentId}:`, error);
         // Clean up temp file on error too
         try { 
-          require('fs').unlinkSync(tempFilePath); 
+          fs.unlinkSync(tempFilePath); 
         } catch (cleanupError) {
           console.error('Error cleaning up temp file:', cleanupError);
         }
@@ -466,7 +466,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create temporary file with text content
       const tempFilePath = `/tmp/${documentId}.txt`;
-      require('fs').writeFileSync(tempFilePath, limitedText);
+      fs.writeFileSync(tempFilePath, limitedText);
 
       // Process the text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
@@ -476,11 +476,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).then((result) => {
         console.log(`Text processing completed for ${documentId}:`, result);
         // Clean up temp file
-        require('fs').unlinkSync(tempFilePath);
+        fs.unlinkSync(tempFilePath);
       }).catch((error) => {
         console.error(`Text processing failed for ${documentId}:`, error);
         // Clean up temp file on error too
-        try { require('fs').unlinkSync(tempFilePath); } catch {}
+        try { fs.unlinkSync(tempFilePath); } catch {}
       });
 
       res.json({
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create temporary file with transcribed content
       const tempFilePath = `/tmp/${documentId}.txt`;
-      require('fs').writeFileSync(tempFilePath, transcribedText);
+      fs.writeFileSync(tempFilePath, transcribedText);
 
       // Process the transcribed text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
@@ -527,13 +527,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).then((result) => {
         console.log(`Audio transcription processing completed for ${documentId}:`, result);
         // Clean up temp files
-        require('fs').unlinkSync(tempFilePath);
-        require('fs').unlinkSync(req.file!.path);
+        fs.unlinkSync(tempFilePath);
+        fs.unlinkSync(req.file!.path);
       }).catch((error) => {
         console.error(`Audio transcription processing failed for ${documentId}:`, error);
         // Clean up temp files on error too
-        try { require('fs').unlinkSync(tempFilePath); } catch {}
-        try { require('fs').unlinkSync(req.file!.path); } catch {}
+        try { fs.unlinkSync(tempFilePath); } catch {}
+        try { fs.unlinkSync(req.file!.path); } catch {}
       });
 
       res.json({
@@ -549,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Audio processing error:', error);
       if (req.file?.path) {
-        try { require('fs').unlinkSync(req.file.path); } catch {}
+        try { fs.unlinkSync(req.file.path); } catch {}
       }
       res.status(500).json({ 
         error: "Failed to process audio recording" 
