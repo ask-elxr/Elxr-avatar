@@ -44,11 +44,25 @@ class PineconeService {
     }
   }
 
-  async storeConversation(id: string, text: string, embedding: number[], metadata: any = {}) {
+  // Helper function to normalize category names for use as namespaces
+  private normalizeNamespace(category: string | null): string {
+    if (!category) return 'default';
+    
+    // Convert to lowercase and replace special characters and spaces with hyphens
+    return category.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  async storeConversation(id: string, text: string, embedding: number[], metadata: any = {}, namespace?: string) {
     try {
       const index = await this.initializeIndex();
       
-      await index.upsert([
+      // Use category as namespace if provided in metadata
+      const targetNamespace = namespace || this.normalizeNamespace(metadata.category);
+      
+      await index.namespace(targetNamespace).upsert([
         {
           id,
           values: embedding,
@@ -60,37 +74,59 @@ class PineconeService {
         }
       ]);
 
-      console.log(`Stored conversation in Pinecone with ID: ${id}`);
+      console.log(`Stored conversation in Pinecone namespace "${targetNamespace}" with ID: ${id}`);
     } catch (error) {
       console.error('Error storing conversation in Pinecone:', error);
       throw error;
     }
   }
 
-  async searchSimilarConversations(embedding: number[], topK: number = 5) {
+  async searchSimilarConversations(embedding: number[], topK: number = 5, namespace?: string | string[]) {
     try {
       const index = await this.initializeIndex();
       
-      const queryResponse = await index.query({
-        vector: embedding,
-        topK,
-        includeMetadata: true,
-        includeValues: false
-      });
+      // If specific namespace(s) provided, search those; otherwise search default namespace
+      const namespaces = Array.isArray(namespace) ? namespace : (namespace ? [namespace] : ['default']);
+      
+      // Search across all specified namespaces and combine results
+      const allResults: any[] = [];
+      
+      for (const ns of namespaces) {
+        try {
+          const queryResponse = await index.namespace(ns).query({
+            vector: embedding,
+            topK,
+            includeMetadata: true,
+            includeValues: false
+          });
+          
+          if (queryResponse.matches) {
+            allResults.push(...queryResponse.matches);
+          }
+        } catch (error) {
+          console.warn(`Error searching namespace "${ns}":`, error);
+          // Continue with other namespaces even if one fails
+        }
+      }
+      
+      // Sort all results by score and return top K
+      return allResults
+        .sort((a, b) => (b.score || 0) - (a.score || 0))
+        .slice(0, topK);
 
-      return queryResponse.matches || [];
     } catch (error) {
       console.error('Error searching similar conversations:', error);
       throw error;
     }
   }
 
-  async deleteConversation(id: string) {
+  async deleteConversation(id: string, namespace?: string) {
     try {
       const index = await this.initializeIndex();
+      const targetNamespace = namespace || 'default';
       
-      await index.deleteOne(id);
-      console.log(`Deleted conversation from Pinecone with ID: ${id}`);
+      await index.namespace(targetNamespace).deleteOne(id);
+      console.log(`Deleted conversation from Pinecone namespace "${targetNamespace}" with ID: ${id}`);
     } catch (error) {
       console.error('Error deleting conversation from Pinecone:', error);
       throw error;

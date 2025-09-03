@@ -177,7 +177,7 @@ class DocumentProcessor {
     try {
       // Check search cache first
       const cachedResults = latencyCache.getSearchResults(query);
-      if (false) { // Disable cache temporarily
+      if (cachedResults) {
         return cachedResults.filter(result => 
           (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input') &&
           (result.score || 0) > 0.1  // Lower threshold for more results
@@ -193,8 +193,18 @@ class DocumentProcessor {
       // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       
-      // Search Pinecone for similar chunks with lower threshold
-      const results = await pineconeService.searchSimilarConversations(queryEmbedding, topK * 2);
+      // Search across all category namespaces for now - in future could be more targeted
+      const categoryNamespaces = [
+        'default', 'mind', 'body', 'sexuality', 'transitions', 'spirituality', 'science', 
+        'psychedelics', 'nutrition', 'life', 'longevity', 'grief', 'midlife', 
+        'movement', 'work', 'sleep', 'addiction', 'menopause', 'creativity---expression',
+        'relationships---connection', 'purpose---meaning', 'resilience---stress',
+        'identity---self-discovery', 'habits---behavior-change', 'technology---digital-wellness',
+        'nature---environment', 'aging-with-joy', 'other'
+      ];
+      
+      // Search Pinecone for similar chunks across all category namespaces
+      const results = await pineconeService.searchSimilarConversations(queryEmbedding, topK * 2, categoryNamespaces);
       
       // Cache the raw results
       latencyCache.setSearchResults(query, results);
