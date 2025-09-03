@@ -177,10 +177,10 @@ class DocumentProcessor {
     try {
       // Check search cache first
       const cachedResults = latencyCache.getSearchResults(query);
-      if (cachedResults) {
+      if (false) { // Disable cache temporarily
         return cachedResults.filter(result => 
           (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input') &&
-          (result.score || 0) > 0.2
+          (result.score || 0) > 0.1  // Lower threshold for more results
         ).map(result => ({
           text: result.metadata?.text,
           score: result.score,
@@ -207,7 +207,7 @@ class DocumentProcessor {
       
       return results.filter(result => 
         (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input') &&
-        (result.score || 0) > 0.2
+        (result.score || 0) > 0.1  // Lower threshold for more results
       ).map(result => ({
         text: result.metadata?.text,
         score: result.score,
