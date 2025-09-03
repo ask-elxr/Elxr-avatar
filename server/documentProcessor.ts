@@ -3,9 +3,8 @@ import { pineconeService } from './pinecone.js';
 import { latencyCache } from './cache.js';
 import * as fs from 'fs';
 import * as path from 'path';
-// Note: pdf-parse has import issues, implementing basic text extraction for now
-// import pdfParse from 'pdf-parse';
-// import mammoth from 'mammoth';
+import * as pdfParse from 'pdf-parse';
+import * as mammoth from 'mammoth';
 
 class DocumentProcessor {
   private openai: OpenAI;
@@ -47,13 +46,12 @@ class DocumentProcessor {
       if (fileType === 'text/plain') {
         return fs.readFileSync(filePath, 'utf-8');
       } else if (fileType === 'application/pdf') {
-        // For now, return a placeholder for PDF files
-        // TODO: Implement proper PDF parsing when pdf-parse is fixed
-        return `[PDF Document uploaded: ${path.basename(filePath)}]\n\nThis document has been uploaded but text extraction for PDFs is temporarily disabled due to technical issues. Please upload the content as a text file for now.`;
+        const dataBuffer = fs.readFileSync(filePath);
+        const data = await pdfParse.default(dataBuffer);
+        return data.text || '[PDF file - no text content found]';
       } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // For now, return a placeholder for DOCX files
-        // TODO: Implement proper DOCX parsing when mammoth is available
-        return `[DOCX Document uploaded: ${path.basename(filePath)}]\n\nThis document has been uploaded but text extraction for DOCX files is temporarily disabled. Please upload the content as a text file for now.`;
+        const result = await mammoth.extractRawText({path: filePath});
+        return result.value || '[DOCX file - no text content found]';
       } else {
         throw new Error(`Unsupported file type: ${fileType}`);
       }
