@@ -28,6 +28,7 @@ export function DocumentUpload() {
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const categories = [
@@ -40,7 +41,7 @@ export function DocumentUpload() {
   ];
   const { toast } = useToast();
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -75,11 +76,17 @@ export function DocumentUpload() {
       return;
     }
 
+    setSelectedFile(file);
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+
     setIsUploading(true);
 
     try {
       const formData = new FormData();
-      formData.append('document', file);
+      formData.append('document', selectedFile);
       if (selectedCategory) {
         formData.append('category', selectedCategory);
       }
@@ -93,9 +100,12 @@ export function DocumentUpload() {
 
       if (result.success) {
         setUploadResults(prev => [result, ...prev]);
+        setSelectedFile(null); // Clear selected file after upload
+        const fileInput = document.getElementById('document') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
         toast({
           title: "Upload successful",
-          description: `${file.name} has been uploaded and is being processed.`,
+          description: `${selectedFile.name} has been uploaded and is being processed.`,
         });
       } else {
         toast({
@@ -113,10 +123,6 @@ export function DocumentUpload() {
       });
     } finally {
       setIsUploading(false);
-      // Reset the input
-      if (event.target) {
-        event.target.value = '';
-      }
     }
   };
 
@@ -371,8 +377,8 @@ export function DocumentUpload() {
                   <Input
                     id="document"
                     type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={handleFileUpload}
+                    accept=".pdf,.docx,.txt,.mp3,.wav,.m4a,.webm,.mp4"
+                    onChange={handleFileSelect}
                     disabled={isUploading}
                     className="mt-1"
                     data-testid="input-document-upload"
@@ -394,6 +400,54 @@ export function DocumentUpload() {
                     </SelectContent>
                   </Select>
                 </div>
+                
+                {selectedFile && (
+                  <div className="p-3 bg-gray-50 rounded-lg border">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-gray-500" />
+                        <span className="text-sm font-medium">{selectedFile.name}</span>
+                        <span className="text-xs text-gray-500">
+                          ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          const fileInput = document.getElementById('document') as HTMLInputElement;
+                          if (fileInput) fileInput.value = '';
+                        }}
+                        disabled={isUploading}
+                        data-testid="button-clear-file"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {selectedFile && (
+                  <Button
+                    onClick={handleFileUpload}
+                    disabled={isUploading || !selectedFile}
+                    className="w-full"
+                    data-testid="button-upload-document"
+                  >
+                    {isUploading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Save & Upload Document
+                      </>
+                    )}
+                  </Button>
+                )}
                 
                 {isUploading && (
                   <div className="flex items-center gap-2 text-sm text-blue-600">
