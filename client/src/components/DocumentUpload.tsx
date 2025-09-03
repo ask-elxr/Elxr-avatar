@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Link, Type, Mic, MicOff, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -26,7 +27,17 @@ export function DocumentUpload() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const categories = [
+    'Mind', 'Body', 'Sexuality', 'Transitions', 'Spirituality', 'Science', 
+    'Psychedelics', 'Nutrition', 'Life', 'Longevity', 'Grief', 'Midlife', 
+    'Movement', 'Work', 'Sleep', 'Addiction', 'Menopause', 'Creativity & Expression',
+    'Relationships & Connection', 'Purpose & Meaning', 'Resilience & Stress',
+    'Identity & Self-Discovery', 'Habits & Behavior Change', 'Technology & Digital Wellness',
+    'Nature & Environment', 'Aging with Joy', 'Other'
+  ];
   const { toast } = useToast();
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -59,6 +70,9 @@ export function DocumentUpload() {
     try {
       const formData = new FormData();
       formData.append('document', file);
+      if (selectedCategory) {
+        formData.append('category', selectedCategory);
+      }
 
       const response = await fetch('/api/documents/upload', {
         method: 'POST',
@@ -112,7 +126,7 @@ export function DocumentUpload() {
       const response = await fetch('/api/documents/url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlInput }),
+        body: JSON.stringify({ url: urlInput, category: selectedCategory }),
       });
 
       const result = await response.json();
@@ -158,7 +172,7 @@ export function DocumentUpload() {
       const response = await fetch('/api/documents/text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textInput, title: 'Custom Text Input' }),
+        body: JSON.stringify({ text: textInput, title: 'Custom Text Input', category: selectedCategory }),
       });
 
       const result = await response.json();
@@ -245,6 +259,9 @@ export function DocumentUpload() {
     try {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.wav');
+      if (selectedCategory) {
+        formData.append('category', selectedCategory);
+      }
 
       const response = await fetch('/api/documents/dictation', {
         method: 'POST',
@@ -352,6 +369,22 @@ export function DocumentUpload() {
                   />
                 </div>
                 
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading}>
+                    <SelectTrigger className="mt-1" data-testid="select-category">
+                      <SelectValue placeholder="Select a category (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 {isUploading && (
                   <div className="flex items-center gap-2 text-sm text-blue-600">
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -388,6 +421,22 @@ export function DocumentUpload() {
                     className="mt-1"
                     data-testid="input-url"
                   />
+                </div>
+                
+                <div>
+                  <Label htmlFor="url-category">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading}>
+                    <SelectTrigger className="mt-1" data-testid="select-url-category">
+                      <SelectValue placeholder="Select a category (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 
                 <Button 
@@ -439,6 +488,22 @@ export function DocumentUpload() {
                   />
                 </div>
                 
+                <div>
+                  <Label htmlFor="text-category">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading}>
+                    <SelectTrigger className="mt-1" data-testid="select-text-category">
+                      <SelectValue placeholder="Select a category (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <Button 
                   onClick={handleTextUpload} 
                   disabled={!textInput.trim() || isUploading}
@@ -475,6 +540,22 @@ export function DocumentUpload() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                <div>
+                  <Label htmlFor="voice-category">Category</Label>
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading || isRecording}>
+                    <SelectTrigger className="mt-1" data-testid="select-voice-category">
+                      <SelectValue placeholder="Select a category (optional)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
                 <div className="text-center space-y-4">
                   {isRecording && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-4">

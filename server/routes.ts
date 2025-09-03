@@ -197,10 +197,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get the object path from the upload URL
         const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
+        // Get category from form data
+        const category = req.body.category || null;
+        
         // Process document in background with better error handling and resource cleanup
         documentProcessor.processDocument(tempPath, mimetype, documentId, {
           filename: originalname,
           fileSize: size,
+          category,
           uploadedAt: new Date().toISOString()
         }).then((result) => {
           console.log(`Document processing completed for ${documentId}:`, result);
@@ -377,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // URL content processing endpoint
   app.post("/api/documents/url", async (req, res) => {
     try {
-      const { url } = req.body;
+      const { url, category = null } = req.body;
       
       if (!url) {
         return res.status(400).json({ error: "URL is required" });
@@ -408,6 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the extracted text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
         url,
+        category,
         type: 'url_content',
         extractedAt: new Date().toISOString()
       }).then((result) => {
@@ -449,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Text content processing endpoint
   app.post("/api/documents/text", async (req, res) => {
     try {
-      const { text, title = 'Custom Text Input' } = req.body;
+      const { text, title = 'Custom Text Input', category = null } = req.body;
       
       if (!text) {
         return res.status(400).json({ error: "Text content is required" });
@@ -471,6 +476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
         title,
+        category,
         type: 'document_chunk',
         createdAt: new Date().toISOString()
       }).then((result) => {
@@ -509,6 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const documentId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const category = req.body.category || null;
       
       // For now, create placeholder transcription
       // TODO: Implement actual speech-to-text using OpenAI Whisper or similar
@@ -521,6 +528,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the transcribed text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
         originalFilename: req.file.originalname,
+        category,
         type: 'audio_transcription',
         audioFileSize: req.file.size,
         transcribedAt: new Date().toISOString()
