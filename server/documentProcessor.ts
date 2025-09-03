@@ -3,8 +3,8 @@ import { pineconeService } from './pinecone.js';
 import { latencyCache } from './cache.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as pdfParse from 'pdf-parse';
-import * as mammoth from 'mammoth';
+// import * as pdfParse from 'pdf-parse';
+// import * as mammoth from 'mammoth';
 
 class DocumentProcessor {
   private openai: OpenAI;
@@ -46,12 +46,11 @@ class DocumentProcessor {
       if (fileType === 'text/plain') {
         return fs.readFileSync(filePath, 'utf-8');
       } else if (fileType === 'application/pdf') {
-        const dataBuffer = fs.readFileSync(filePath);
-        const data = await pdfParse.default(dataBuffer);
-        return data.text || '[PDF file - no text content found]';
+        // PDF extraction temporarily disabled
+        return `[PDF Document uploaded: ${path.basename(filePath)}]\n\nText extraction disabled - please upload as text file.`;
       } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        const result = await mammoth.extractRawText({path: filePath});
-        return result.value || '[DOCX file - no text content found]';
+        // DOCX extraction temporarily disabled
+        return `[DOCX Document uploaded: ${path.basename(filePath)}]\n\nText extraction disabled - please upload as text file.`;
       } else {
         throw new Error(`Unsupported file type: ${fileType}`);
       }
@@ -180,7 +179,8 @@ class DocumentProcessor {
       const cachedResults = latencyCache.getSearchResults(query);
       if (cachedResults) {
         return cachedResults.filter(result => 
-          (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input')
+          (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input') &&
+          (result.score || 0) > 0.2
         ).map(result => ({
           text: result.metadata?.text,
           score: result.score,
@@ -206,7 +206,8 @@ class DocumentProcessor {
       });
       
       return results.filter(result => 
-        (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input')
+        (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input') &&
+        (result.score || 0) > 0.2
       ).map(result => ({
         text: result.metadata?.text,
         score: result.score,
