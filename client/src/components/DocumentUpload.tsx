@@ -44,12 +44,22 @@ export function DocumentUpload() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    // Validate file type - allow documents and audio files
+    const allowedTypes = [
+      'application/pdf', 
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+      'text/plain',
+      'audio/mp3',
+      'audio/mpeg', 
+      'audio/wav',
+      'audio/m4a',
+      'audio/webm',
+      'audio/mp4'
+    ];
     if (!allowedTypes.includes(file.type)) {
       toast({
         title: "Invalid file type",
-        description: "Please upload PDF, DOCX, or TXT files only.",
+        description: "Please upload PDF, DOCX, TXT, or audio files (MP3, WAV, M4A, WebM).",
         variant: "destructive",
       });
       return;
@@ -351,7 +361,7 @@ export function DocumentUpload() {
                 Upload Documents
               </CardTitle>
               <CardDescription>
-                Upload PDF, DOCX, or TXT files to add knowledge to your AI avatar.
+                Upload PDF, DOCX, TXT, or audio files (MP3, WAV, M4A, WebM) to add knowledge to your AI avatar.
               </CardDescription>
             </CardHeader>
             <CardContent>

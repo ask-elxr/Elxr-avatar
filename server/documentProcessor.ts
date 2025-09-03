@@ -3,8 +3,8 @@ import { pineconeService } from './pinecone.js';
 import { latencyCache } from './cache.js';
 import * as fs from 'fs';
 import * as path from 'path';
-// import * as pdfParse from 'pdf-parse';
-// import * as mammoth from 'mammoth';
+// PDF parsing will be loaded dynamically to avoid import issues
+import * as mammoth from 'mammoth';
 
 class DocumentProcessor {
   private openai: OpenAI;
@@ -46,16 +46,47 @@ class DocumentProcessor {
       if (fileType === 'text/plain') {
         return fs.readFileSync(filePath, 'utf-8');
       } else if (fileType === 'application/pdf') {
-        // PDF extraction temporarily disabled
-        return `[PDF Document uploaded: ${path.basename(filePath)}]\n\nText extraction disabled - please upload as text file.`;
+        // PDF extraction using pdf-parse (loaded dynamically)
+        try {
+          const pdfParse = await import('pdf-parse').then(m => m.default);
+          const pdfBuffer = fs.readFileSync(filePath);
+          const pdfData = await pdfParse(pdfBuffer);
+          return pdfData.text || `[PDF Document: ${path.basename(filePath)}]\n\nText could not be extracted from this PDF file.`;
+        } catch (error) {
+          console.warn('PDF parsing failed:', error);
+          return `[PDF Document: ${path.basename(filePath)}]\n\nText extraction failed - PDF may be image-based or corrupted.`;
+        }
       } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-        // DOCX extraction temporarily disabled
-        return `[DOCX Document uploaded: ${path.basename(filePath)}]\n\nText extraction disabled - please upload as text file.`;
+        // DOCX extraction using mammoth
+        const docxBuffer = fs.readFileSync(filePath);
+        const result = await mammoth.extractRawText({ buffer: docxBuffer });
+        return result.value;
+      } else if (fileType.startsWith('audio/')) {
+        // Audio transcription using OpenAI Whisper
+        return await this.transcribeAudio(filePath);
       } else {
         throw new Error(`Unsupported file type: ${fileType}`);
       }
     } catch (error) {
       console.error('Error extracting text from file:', error);
+      throw error;
+    }
+  }
+
+  // Transcribe audio using OpenAI Whisper
+  async transcribeAudio(audioFilePath: string): Promise<string> {
+    try {
+      const audioFile = fs.createReadStream(audioFilePath);
+      const response = await this.openai.audio.transcriptions.create({
+        file: audioFile,
+        model: 'whisper-1',
+        response_format: 'text',
+        language: 'en', // Can be made configurable
+      });
+      
+      return response.toString();
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
       throw error;
     }
   }
@@ -133,14 +164,26 @@ class DocumentProcessor {
             // Generate embedding for chunk
             const embedding = await this.generateEmbedding(chunk);
             
-            // Store in Pinecone
-            await pineconeService.storeConversation(chunkId, chunk, embedding, {
+            // Clean metadata to avoid null values that Pinecone rejects
+            const cleanMetadata = {
               documentId,
               chunkIndex: i,
               type: 'document_chunk',
               fileType,
+              text: chunk,
+              timestamp: new Date().toISOString(),
               ...metadata
+            };
+            
+            // Remove any null values from metadata
+            Object.keys(cleanMetadata).forEach(key => {
+              if (cleanMetadata[key] === null || cleanMetadata[key] === undefined) {
+                delete cleanMetadata[key];
+              }
             });
+            
+            // Store in Pinecone
+            await pineconeService.storeConversation(chunkId, chunk, embedding, cleanMetadata);
 
             processedChunks++;
             console.log(`Processed chunk ${i + 1}/${limitedChunks.length} for ${documentId}`);

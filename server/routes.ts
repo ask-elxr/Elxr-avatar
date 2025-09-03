@@ -165,13 +165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allowedTypes = [
         'application/pdf',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain'
+        'text/plain',
+        'audio/mp3',
+        'audio/mpeg',
+        'audio/wav',
+        'audio/m4a',
+        'audio/webm',
+        'audio/mp4'
       ];
 
       if (!allowedTypes.includes(mimetype)) {
         fs.unlinkSync(tempPath); // Clean up temp file
         return res.status(400).json({ 
-          error: "Unsupported file type. Supported types: PDF, DOCX, TXT" 
+          error: "Unsupported file type. Supported types: PDF, DOCX, TXT, MP3, WAV, M4A, WebM" 
         });
       }
 
@@ -517,9 +523,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const category = req.body.category || null;
       
-      // For now, create placeholder transcription
-      // TODO: Implement actual speech-to-text using OpenAI Whisper or similar
-      const transcribedText = `[Audio Recording - ${new Date().toLocaleString()}]\n\nThis is a placeholder for transcribed audio content. In a production environment, this would contain the actual transcription of the uploaded audio file using services like OpenAI Whisper, Google Speech-to-Text, or similar speech recognition APIs.`;
+      // Transcribe audio using OpenAI Whisper
+      const transcribedText = await documentProcessor.extractTextFromFile(req.file.path, req.file.mimetype);
       
       // Create temporary file with transcribed content
       const tempFilePath = `/tmp/${documentId}.txt`;
