@@ -471,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Process the text
       documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
         title,
-        type: 'text_input',
+        type: 'document_chunk',
         createdAt: new Date().toISOString()
       }).then((result) => {
         console.log(`Text processing completed for ${documentId}:`, result);

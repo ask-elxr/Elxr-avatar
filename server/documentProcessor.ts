@@ -182,7 +182,7 @@ class DocumentProcessor {
       const cachedResults = latencyCache.getSearchResults(query);
       if (cachedResults) {
         return cachedResults.filter(result => 
-          result.metadata?.type === 'document_chunk'
+          (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input')
         ).map(result => ({
           text: result.metadata?.text,
           score: result.score,
@@ -195,15 +195,20 @@ class DocumentProcessor {
       // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       
-      // Search Pinecone for similar chunks
-      const results = await pineconeService.searchSimilarConversations(queryEmbedding, topK);
+      // Search Pinecone for similar chunks with lower threshold
+      const results = await pineconeService.searchSimilarConversations(queryEmbedding, topK * 2);
       
       // Cache the raw results
       latencyCache.setSearchResults(query, results);
       
-      // Filter for document chunks only
+      // Filter for document chunks only - debug scoring
+      console.log(`Search found ${results.length} total results for query: "${query}"`);
+      results.forEach((result, i) => {
+        console.log(`Result ${i}: score=${result.score}, type=${result.metadata?.type}`);
+      });
+      
       return results.filter(result => 
-        result.metadata?.type === 'document_chunk'
+        (result.metadata?.type === 'document_chunk' || result.metadata?.type === 'text_input')
       ).map(result => ({
         text: result.metadata?.text,
         score: result.score,
