@@ -52,7 +52,7 @@ export function AvatarChat() {
       </Button>
 
       {/* Avatar Iframe */}
-      <div className={`w-full h-full ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
         <iframe
           key={refreshKey}
           ref={iframeRef}
@@ -62,6 +62,8 @@ export function AvatarChat() {
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
         />
+        {/* Overlay to hide HeyGen branding */}
+        <div className="absolute bottom-3 right-3 w-44 h-10 bg-transparent pointer-events-none z-50" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)'}}></div>
       </div>
     </div>
   );

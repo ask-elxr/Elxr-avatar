@@ -71,6 +71,41 @@
   --sidebar-ring: hsl(215, 85%, 60%);
 }
 
+/* Hide HeyGen branding overlay */
+iframe[data-testid="heygen-avatar-iframe"] {
+  position: relative;
+}
+
+/* Cover the branding overlay area */
+iframe[data-testid="heygen-avatar-iframe"]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 200px;
+  height: 50px;
+  background: transparent;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Alternative approach - hide the iframe branding with a positioned overlay */
+.avatar-iframe-container {
+  position: relative;
+}
+
+.avatar-iframe-container::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 180px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0);
+  z-index: 1000;
+  pointer-events: none;
+}
+
 /* Custom animations */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
