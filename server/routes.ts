@@ -226,8 +226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileType: mimetype,
           fileSize: size,
           objectPath,
-          status: "processing",
-          message: "Document uploaded and processing started"
+          status: "completed",
+          message: "Document uploaded successfully"
         });
 
       } catch (uploadError) {
@@ -434,7 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: new URL(url).hostname,
         fileType: 'text/html',
         fileSize: textContent.length,
-        status: "processing",
+        status: "completed",
         message: "URL content extracted and processing started"
       });
 
@@ -489,7 +489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: title,
         fileType: 'text/plain',
         fileSize: text.length,
-        status: "processing",
+        status: "completed",
         message: "Text content processing started"
       });
 
@@ -542,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filename: `Audio Recording - ${new Date().toLocaleString()}`,
         fileType: 'audio/wav',
         fileSize: req.file.size,
-        status: "processing",
+        status: "completed",
         message: "Audio transcription and processing started"
       });
 
