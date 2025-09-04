@@ -10,13 +10,29 @@ import * as path from "path";
 import { timeoutMiddleware, performanceMiddleware, rateLimitMiddleware } from "./performance.js";
 import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
+import { setupAuth, isAuthenticated } from "./replitAuth.js";
+import { storage } from "./storage.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Auth middleware
+  await setupAuth(app);
   // Add performance monitoring middleware
   app.use(performanceMiddleware());
   
   // Add timeout middleware for all routes (10 second timeout)
   app.use(timeoutMiddleware(10000));
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
   // HeyGen API token endpoint
   app.post("/api/heygen/token", async (req, res) => {
     try {
@@ -151,8 +167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const upload = multer({ dest: 'uploads/' });
   const objectStorageService = new ObjectStorageService();
 
-  // Document upload and processing endpoints
-  app.post("/api/documents/upload", upload.single('document'), async (req, res) => {
+  // Document upload and processing endpoints (protected)
+  app.post("/api/documents/upload", isAuthenticated, upload.single('document'), async (req: any, res) => {
+    const userId = req.user.claims.sub;
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -211,7 +228,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           filename: originalname,
           fileSize: size,
           category,
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
+          userId
         }).then((result) => {
           console.log(`Document processing completed for ${documentId}:`, result);
         }).catch((error) => {
@@ -237,7 +255,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileSize: size,
           objectPath,
           status: "completed",
-          message: "Document uploaded successfully"
+          message: "Document uploaded successfully",
+          userId
         });
 
       } catch (uploadError) {
@@ -255,6 +274,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.status(500).json({ 
         error: "Failed to upload document" 
+      });
+    }
+  });
+
+  // Get user's documents
+  app.get("/api/documents/user", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      // For now, return upload history from Pinecone stats
+      // In a full implementation, you'd query a documents table
+      const stats = await pineconeService.getStats();
+      res.json({
+        success: true,
+        userId,
+        stats: stats.stats,
+        message: "User documents retrieved successfully"
+      });
+    } catch (error) {
+      console.error('Error fetching user documents:', error);
+      res.status(500).json({ 
+        error: "Failed to fetch user documents" 
       });
     }
   });

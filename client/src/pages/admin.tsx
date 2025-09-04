@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Search, Database, Activity, FileText, Home } from "lucide-react";
+import { Shield, Search, Database, Activity, FileText, Home, User } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function Admin() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,11 +17,28 @@ export default function Admin() {
   const [pineconeStats, setPineconeStats] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
   const { toast } = useToast();
+  const { user, isLoading, isAuthenticated } = useAuth();
 
   // Fetch Pinecone stats on component mount
   useEffect(() => {
-    fetchPineconeStats();
-  }, []);
+    if (isAuthenticated) {
+      fetchPineconeStats();
+    }
+  }, [isAuthenticated]);
+
+  // Handle authentication redirects
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Please sign in",
+        description: "You need to be signed in to access the admin panel. Redirecting...",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 1000);
+    }
+  }, [isAuthenticated, isLoading, toast]);
 
   const fetchPineconeStats = async () => {
     try {
@@ -67,6 +86,17 @@ export default function Admin() {
       }
     } catch (error) {
       console.error('Search error:', error);
+      if (isUnauthorizedError(error as Error)) {
+        toast({
+          title: "Session expired",
+          description: "Your session has expired. Please sign in again.",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 1000);
+        return;
+      }
       toast({
         title: "Search failed",
         description: "An error occurred while searching.",
@@ -77,6 +107,36 @@ export default function Admin() {
     }
   };
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" data-testid="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  // Show sign-in prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" data-testid="signin-prompt">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Admin Access Required</CardTitle>
+            <CardDescription>
+              Please sign in to access the admin dashboard and document upload features.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center">
+            <Button asChild data-testid="button-signin">
+              <a href="/api/login">Sign In</a>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6">
@@ -86,17 +146,32 @@ export default function Admin() {
               <Shield className="w-6 h-6 text-blue-600" />
               <h1 className="text-3xl font-bold">Admin Dashboard</h1>
             </div>
-            <Link href="/">
-              <Button variant="outline" data-testid="button-home">
-                <Home className="w-4 h-4 mr-2" />
-                Back to Avatar
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/account">
+                <Button variant="outline" data-testid="button-account">
+                  <User className="w-4 h-4 mr-2" />
+                  My Account
+                </Button>
+              </Link>
+              <Link href="/">
+                <Button variant="outline" data-testid="button-home">
+                  <Home className="w-4 h-4 mr-2" />
+                  Back to Avatar
+                </Button>
+              </Link>
+              <div className="ml-4">
+                <Button asChild variant="outline" data-testid="button-signout">
+                  <a href="/api/logout">Sign Out</a>
+                </Button>
+              </div>
+            </div>
           </div>
           <p className="text-muted-foreground">
-            Manage the AI avatar's knowledge base and monitor system performance.
+            Secure document management and AI knowledge base administration
           </p>
         </div>
+        
+        {/* Main Admin Content */}
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Knowledge Base Management */}
