@@ -54,29 +54,7 @@ export function AvatarChat() {
                   Knowledge Base
                 </Button>
               </Link>
-              {isAuthenticated && (
-                <>
-                  <span className="text-white/70 text-sm">{user?.email}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-white hover:bg-white/20"
-                    onClick={() => window.location.href = "/api/logout"}
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </>
-              )}
-              {!isAuthenticated && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white hover:bg-white/20"
-                  onClick={() => window.location.href = "/api/login"}
-                >
-                  Sign In
-                </Button>
-              )}
+              <span className="text-white/70 text-sm">Test User</span>
             </div>
           </div>
         </div>

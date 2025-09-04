@@ -39,20 +39,20 @@ export default function KnowledgeBase() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      toast({
-        title: "Unauthorized",
-        description: "You are logged out. Logging in again...",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 500);
-      return;
-    }
-  }, [isAuthenticated, authLoading, toast]);
+  // Authentication check disabled for now
+  // useEffect(() => {
+  //   if (!authLoading && !isAuthenticated) {
+  //     toast({
+  //       title: "Unauthorized",
+  //       description: "You are logged out. Logging in again...",
+  //       variant: "destructive",
+  //     });
+  //     setTimeout(() => {
+  //       window.location.href = "/api/login";
+  //     }, 500);
+  //     return;
+  //   }
+  // }, [isAuthenticated, authLoading, toast]);
 
   // Fetch documents
   const { data: documents = [], isLoading: documentsLoading } = useQuery<Document[]>({
@@ -146,7 +146,7 @@ export default function KnowledgeBase() {
     return '📄';
   };
 
-  if (authLoading || !isAuthenticated) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -174,17 +174,9 @@ export default function KnowledgeBase() {
             </div>
             <div className="flex items-center space-x-2">
               <Avatar className="h-8 w-8">
-                {user?.profileImageUrl ? (
-                  <AvatarImage src={user.profileImageUrl} alt={user.email || "User"} />
-                ) : null}
-                <AvatarFallback>
-                  {user?.firstName?.[0] || user?.email?.[0]?.toUpperCase() || 'U'}
-                </AvatarFallback>
+                <AvatarFallback>T</AvatarFallback>
               </Avatar>
-              <span className="text-sm text-muted-foreground">{user?.email}</span>
-              <Button variant="outline" size="sm" onClick={() => window.location.href = "/api/logout"}>
-                Logout
-              </Button>
+              <span className="text-sm text-muted-foreground">test@example.com</span>
             </div>
           </div>
         </div>

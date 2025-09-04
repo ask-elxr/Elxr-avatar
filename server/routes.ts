@@ -22,16 +22,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (10 second timeout)
   app.use(timeoutMiddleware(10000));
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+  // Auth routes (disabled for now)
+  app.get('/api/auth/user', async (req: any, res) => {
+    // Return mock user for testing without authentication
+    res.json({
+      id: "test-user",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+      profileImageUrl: null
+    });
   });
   // HeyGen API token endpoint
   app.post("/api/heygen/token", async (req, res) => {
@@ -279,9 +279,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get user's documents
-  app.get("/api/documents/user", isAuthenticated, async (req: any, res) => {
+  app.get("/api/documents/user", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = "test-user";
       // For now, return upload history from Pinecone stats
       // In a full implementation, you'd query a documents table
       const stats = await pineconeService.getStats();
@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all documents for knowledge base management
-  app.get("/api/documents", isAuthenticated, async (req: any, res) => {
+  app.get("/api/documents", async (req: any, res) => {
     try {
       const documents = await storage.getAllDocuments();
       res.json(documents);
@@ -313,10 +313,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete a document
-  app.delete("/api/documents/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/documents/:id", async (req: any, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.claims.sub;
+      const userId = "test-user";
       
       // Get the document to check ownership
       const document = await storage.getDocument(id);
@@ -340,7 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all users for admin purposes
-  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/users", async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);

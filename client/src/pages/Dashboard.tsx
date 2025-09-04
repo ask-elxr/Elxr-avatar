@@ -8,14 +8,14 @@ import { Link } from "wouter";
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      window.location.href = "/api/login";
-    }
-  }, [isAuthenticated, isLoading]);
+  // Authentication check disabled for now
+  // useEffect(() => {
+  //   if (!isLoading && !isAuthenticated) {
+  //     window.location.href = "/api/login";
+  //   }
+  // }, [isAuthenticated, isLoading]);
 
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -34,10 +34,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">Welcome, {user?.email}</span>
-              <Button variant="outline" size="sm" onClick={() => window.location.href = "/api/logout"}>
-                Logout
-              </Button>
+              <span className="text-sm text-muted-foreground">Welcome, Test User</span>
             </div>
           </div>
         </div>
