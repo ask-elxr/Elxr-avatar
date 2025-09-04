@@ -288,13 +288,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         userId,
-        stats: stats.stats,
+        stats: stats,
         message: "User documents retrieved successfully"
       });
     } catch (error) {
       console.error('Error fetching user documents:', error);
       res.status(500).json({ 
         error: "Failed to fetch user documents" 
+      });
+    }
+  });
+
+  // Get all documents for knowledge base management
+  app.get("/api/documents", isAuthenticated, async (req: any, res) => {
+    try {
+      const documents = await storage.getAllDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+      res.status(500).json({ 
+        error: "Failed to fetch documents" 
+      });
+    }
+  });
+
+  // Delete a document
+  app.delete("/api/documents/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      // Get the document to check ownership
+      const document = await storage.getDocument(id);
+      if (!document) {
+        return res.status(404).json({ error: "Document not found" });
+      }
+      
+      // Check if user owns the document (in a production system you'd implement proper access control)
+      if (document.userId !== userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      await storage.deleteDocument(id);
+      res.json({ success: true, message: "Document deleted successfully" });
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      res.status(500).json({ 
+        error: "Failed to delete document" 
+      });
+    }
+  });
+
+  // Get all users for admin purposes
+  app.get("/api/admin/users", isAuthenticated, async (req: any, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      res.status(500).json({ 
+        error: "Failed to fetch users" 
       });
     }
   });

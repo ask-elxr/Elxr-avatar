@@ -1,7 +1,9 @@
 import {
   users,
+  documents,
   type User,
   type UpsertUser,
+  type Document,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -11,7 +13,12 @@ export interface IStorage {
   // User operations for Replit Auth
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
-  // Other operations
+  getAllUsers(): Promise<User[]>;
+  
+  // Document operations
+  getAllDocuments(): Promise<Document[]>;
+  getDocument(id: string): Promise<Document | undefined>;
+  deleteDocument(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -37,7 +44,25 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Other operations
+  async getAllUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users);
+    return allUsers;
+  }
+
+  // Document operations
+  async getAllDocuments(): Promise<Document[]> {
+    const allDocuments = await db.select().from(documents);
+    return allDocuments;
+  }
+
+  async getDocument(id: string): Promise<Document | undefined> {
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document;
+  }
+
+  async deleteDocument(id: string): Promise<void> {
+    await db.delete(documents).where(eq(documents.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();

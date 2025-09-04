@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { DocumentUpload } from "@/components/DocumentUpload";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { Search, FileText, Globe, Type, Filter, MoreHorizontal, Download, Trash2 } from "lucide-react";
@@ -134,9 +133,9 @@ export default function KnowledgeBase() {
   };
 
   // Get user info for document
-  const getUserInfo = (userId: string) => {
+  const getUserInfo = (userId: string): User => {
     const docUser = users.find(u => u.id === userId);
-    return docUser || { email: 'Unknown User', firstName: '', lastName: '', profileImageUrl: null };
+    return docUser || { id: userId, email: 'Unknown User', firstName: '', lastName: '', profileImageUrl: undefined };
   };
 
   // Get file icon based on type
@@ -199,7 +198,10 @@ export default function KnowledgeBase() {
             <span>Add URL</span>
           </Button>
           
-          <DocumentUpload />
+          <Button variant="outline" size="sm" className="flex items-center space-x-2">
+            <FileText className="w-4 h-4" />
+            <span>Add Files</span>
+          </Button>
           
           <Button variant="outline" size="sm" className="flex items-center space-x-2">
             <Type className="w-4 h-4" />
