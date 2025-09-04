@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X } from "lucide-react";
+import { Maximize, Minimize, X, FolderOpen, LayoutDashboard, LogOut } from "lucide-react";
+import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const { user, isAuthenticated } = useAuth();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -31,6 +34,53 @@ export function AvatarChat() {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
+      {/* Top Navigation Bar */}
+      {!isFullscreen && (
+        <div className="absolute top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm border-b border-white/10">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-white font-semibold">AI Avatar Chat</h1>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                  <LayoutDashboard className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+              <Link href="/knowledge-base">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                  <FolderOpen className="w-4 h-4 mr-2" />
+                  Knowledge Base
+                </Button>
+              </Link>
+              {isAuthenticated && (
+                <>
+                  <span className="text-white/70 text-sm">{user?.email}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/20"
+                    onClick={() => window.location.href = "/api/logout"}
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+              {!isAuthenticated && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-white hover:bg-white/20"
+                  onClick={() => window.location.href = "/api/login"}
+                >
+                  Sign In
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       {/* Fullscreen Button - Mobile Only */}
       {isMobile && (
         <Button
@@ -52,7 +102,7 @@ export function AvatarChat() {
       </Button>
 
       {/* Avatar Iframe */}
-      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''} ${!isFullscreen ? 'pt-16' : ''}`}>
         <iframe
           key={refreshKey}
           ref={iframeRef}
