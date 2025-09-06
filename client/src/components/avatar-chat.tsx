@@ -38,18 +38,6 @@ export function AvatarChat() {
       {!isFullscreen && (
         <div className="absolute top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm border-b border-white/10">
           <div className="flex items-center justify-between p-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-white font-semibold">AI Avatar Chat</h1>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                  <LayoutDashboard className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
-              <span className="text-white/70 text-sm">Test User</span>
-            </div>
           </div>
         </div>
       )}
