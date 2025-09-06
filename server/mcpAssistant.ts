@@ -1,79 +1,109 @@
+import { Pinecone } from '@pinecone-database/pinecone';
+
 class PineconeAssistantAPI {
-  private apiKey: string;
-  private assistantHost: string;
+  private pinecone?: Pinecone;
   private assistantName: string;
+  private apiKey: string;
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
-    this.assistantHost = 'https://prod-1-data.ke.pinecone.io';
     this.assistantName = 'knowledge-base-assistant';
     
     if (!this.apiKey) {
       console.warn('PINECONE_API_KEY not found - Assistant API will not be available');
+    } else {
+      this.pinecone = new Pinecone({
+        apiKey: this.apiKey
+      });
     }
   }
 
   async retrieveContext(query: string, maxResults: number = 5): Promise<any[]> {
-    if (!this.apiKey) {
+    if (!this.apiKey || !this.pinecone) {
       throw new Error('Pinecone API key not configured');
     }
 
     try {
-      // Try different API endpoints that might work with your assistant
-      const endpoints = [
-        `/mcp/assistants/${this.assistantName}/query`,
-        `/mcp/assistants/${this.assistantName}/retrieve`,
-        `/assistants/${this.assistantName}/query`,
-        `/assistants/${this.assistantName}/retrieve-context`,
-        `/v1/assistants/${this.assistantName}/query`,
-        `/v1/assistants/${this.assistantName}/chat/completions`,
-        `/api/v1/assistants/${this.assistantName}/query`,
-        `/api/assistants/${this.assistantName}/retrieve`
-      ];
+      console.log(`🔍 Querying Pinecone Assistant: ${this.assistantName}`);
 
-      for (const endpoint of endpoints) {
+      // Try different methods to access the assistant
+      try {
+        // Method 1: Try assistants.query if it exists
+        const response = await (this.pinecone as any).assistants.query({
+          assistant: this.assistantName,
+          query: query
+        });
+        
+        console.log('✅ Successfully connected to Pinecone Assistant via assistants.query');
+        return this.formatResponse(response);
+      } catch (error1) {
+        console.log('Method 1 failed, trying inference API...');
+        
         try {
-          const response = await fetch(`${this.assistantHost}${endpoint}`, {
+          // Method 2: Try inference API with assistant model
+          const response = await (this.pinecone as any).inference.chat({
+            model: this.assistantName,
+            messages: [{ role: 'user', content: query }]
+          });
+          
+          console.log('✅ Successfully connected to Pinecone Assistant via inference');
+          return this.formatResponse(response);
+        } catch (error2) {
+          console.log('Method 2 failed, trying direct HTTP call...');
+          
+          // Method 3: Direct HTTP call to assistant endpoint
+          const response = await fetch(`https://api.pinecone.io/assistant/chat/completions`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${this.apiKey}`,
               'Content-Type': 'application/json',
-              'Accept': 'application/json'
             },
             body: JSON.stringify({
-              query: query,
-              topK: maxResults,
-              includeMetadata: true
+              model: this.assistantName,
+              messages: [{ role: 'user', content: query }]
             })
           });
 
           if (response.ok) {
             const data = await response.json();
-            console.log(`Successfully connected to ${endpoint}`);
-            
-            // Transform the response to match expected format
-            if (data.matches || data.results) {
-              return (data.matches || data.results).map((match: any) => ({
-                text: match.metadata?.text || match.text || '',
-                score: match.score || 0,
-                metadata: match.metadata || {}
-              }));
-            }
-            
-            return [];
+            console.log('✅ Successfully connected to Pinecone Assistant via HTTP');
+            return this.formatResponse(data);
           }
-        } catch (error) {
-          console.log(`Endpoint ${endpoint} failed:`, error);
-          continue; // Try next endpoint
+          
+          throw new Error('All connection methods failed');
         }
       }
-
-      throw new Error('All assistant API endpoints failed');
       
     } catch (error) {
       console.error('Error retrieving context from Pinecone Assistant:', error);
       throw error;
     }
+  }
+
+  private formatResponse(response: any): any[] {
+    // Handle different response formats
+    if (response.choices && response.choices.length > 0) {
+      const assistantResponse = response.choices[0].message?.content || '';
+      return [{
+        text: assistantResponse,
+        score: 1.0,
+        metadata: { source: 'knowledge-base-assistant' }
+      }];
+    }
+    
+    if (response.results && Array.isArray(response.results)) {
+      return response.results.map((result: any) => ({
+        text: result.content || result.text || '',
+        score: result.score || 1.0,
+        metadata: result.metadata || { source: 'knowledge-base-assistant' }
+      }));
+    }
+    
+    return [{
+      text: JSON.stringify(response),
+      score: 1.0,
+      metadata: { source: 'knowledge-base-assistant' }
+    }];
   }
 
   async testConnection(): Promise<boolean> {
