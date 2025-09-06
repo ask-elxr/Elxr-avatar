@@ -15,14 +15,14 @@ export function useKnowledgeBase() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const getAvatarResponse = async (message: string, conversationHistory: any[] = []): Promise<string> => {
+  const getAvatarResponse = async (message: string, conversationHistory: any[] = [], avatarPersonality?: string): Promise<string> => {
     setIsLoading(true);
     setError(null);
     
     try {
       const response = await fetch('/api/avatar/response', {
         method: 'POST',
-        body: JSON.stringify({ message, conversationHistory }),
+        body: JSON.stringify({ message, conversationHistory, avatarPersonality }),
         headers: {
           'Content-Type': 'application/json',
         },

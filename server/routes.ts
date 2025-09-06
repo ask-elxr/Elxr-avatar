@@ -180,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get avatar response with knowledge base integration
   app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { message, conversationHistory = [] } = req.body;
+      const { message, conversationHistory = [], avatarPersonality } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
@@ -195,22 +195,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Default avatar personality if none provided
+      const defaultPersonality = `You are a helpful, friendly AI assistant with access to a comprehensive knowledge base. 
+      You speak in a warm, conversational tone and provide accurate, helpful information. 
+      You're knowledgeable but not condescending, and you adapt your communication style to be appropriate for the user.`;
+
+      // Create enhanced query with personality context
+      const personalityPrompt = avatarPersonality || defaultPersonality;
+      const enhancedQuery = `System: ${personalityPrompt}
+
+User Question: ${message}
+
+Please provide a response that incorporates relevant knowledge while maintaining the specified personality and tone.`;
+
       // Query knowledge base for context
-      const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
-      const knowledgeResponse = knowledgeResults.length > 0 ? knowledgeResults[0].text : null;
+      const knowledgeResults = await pineconeAssistant.retrieveContext(enhancedQuery, 3);
+      const knowledgeResponse = knowledgeResults.length > 0 ? knowledgeResults[0].text : "I'm here to help, but I don't have specific information about that topic right now.";
       
       res.json({ 
         success: true, 
         message,
         knowledgeResponse,
+        personalityUsed: personalityPrompt,
         usage: knowledgeResults[0]?.metadata?.usage || {}
       });
     } catch (error) {
       console.error('Error getting avatar response:', error);
-      res.status(500).json({ 
-        error: "Failed to get avatar response",
-        details: error.message 
-      });
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          error: "Failed to get avatar response",
+          details: error.message 
+        });
+      }
     }
   });
 

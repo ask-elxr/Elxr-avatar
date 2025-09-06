@@ -36,7 +36,9 @@ export function AvatarChat() {
 
   const testKnowledgeBase = async () => {
     try {
-      const response = await getAvatarResponse("What are the main topics you can help with?");
+      // Test with a custom personality
+      const customPersonality = "You are an enthusiastic and energetic AI assistant who loves to help! You use friendly language and emojis when appropriate.";
+      const response = await getAvatarResponse("What are the main topics you can help with?", [], customPersonality);
       alert(`Knowledge Base Response: ${response}`);
     } catch (err) {
       alert(`Error: ${err instanceof Error ? err.message : 'Failed to query knowledge base'}`);
