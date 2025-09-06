@@ -2,7 +2,7 @@ import { Pinecone } from '@pinecone-database/pinecone';
 
 class PineconeService {
   private client: Pinecone;
-  private indexName: string = 'knowledge-base-assistant';
+  private indexName: string = 'avatar-chat-knowledge';
 
   constructor() {
     const apiKey = process.env.PINECONE_API_KEY;
