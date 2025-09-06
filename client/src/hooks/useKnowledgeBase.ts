@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { apiRequest } from '@/lib/queryClient';
 
 interface KnowledgeResponse {
   success: boolean;
@@ -21,13 +20,17 @@ export function useKnowledgeBase() {
     setError(null);
     
     try {
-      const response = await apiRequest('/api/avatar/response', {
+      const response = await fetch('/api/avatar/response', {
         method: 'POST',
         body: JSON.stringify({ message, conversationHistory }),
         headers: {
           'Content-Type': 'application/json',
         },
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data: KnowledgeResponse = await response.json();
       
