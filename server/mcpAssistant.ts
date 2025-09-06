@@ -22,8 +22,13 @@ class PineconeAssistantAPI {
       // Try different API endpoints that might work with your assistant
       const endpoints = [
         `/mcp/assistants/${this.assistantName}/query`,
+        `/mcp/assistants/${this.assistantName}/retrieve`,
         `/assistants/${this.assistantName}/query`,
-        `/v1/assistants/${this.assistantName}/query`
+        `/assistants/${this.assistantName}/retrieve-context`,
+        `/v1/assistants/${this.assistantName}/query`,
+        `/v1/assistants/${this.assistantName}/chat/completions`,
+        `/api/v1/assistants/${this.assistantName}/query`,
+        `/api/assistants/${this.assistantName}/retrieve`
       ];
 
       for (const endpoint of endpoints) {
