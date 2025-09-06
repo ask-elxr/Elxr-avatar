@@ -45,13 +45,6 @@ export function AvatarChat() {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* Top Navigation Bar */}
-      {!isFullscreen && (
-        <div className="absolute top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-sm">
-          <div className="flex items-center justify-between p-4">
-          </div>
-        </div>
-      )}
       {/* Fullscreen Button - Mobile Only */}
       {isMobile && (
         <Button
@@ -86,7 +79,7 @@ export function AvatarChat() {
       </div>
 
       {/* Avatar Iframe */}
-      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''} ${!isFullscreen ? 'pt-16' : ''}`}>
+      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
         <iframe
           key={refreshKey}
           ref={iframeRef}
