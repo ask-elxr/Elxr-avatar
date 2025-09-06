@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X, FolderOpen, LayoutDashboard, LogOut } from "lucide-react";
+import { Maximize, Minimize, X, LayoutDashboard } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -46,12 +46,6 @@ export function AvatarChat() {
                 <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                   <LayoutDashboard className="w-4 h-4 mr-2" />
                   Dashboard
-                </Button>
-              </Link>
-              <Link href="/knowledge-base">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                  <FolderOpen className="w-4 h-4 mr-2" />
-                  Knowledge Base
                 </Button>
               </Link>
               <span className="text-white/70 text-sm">Test User</span>
