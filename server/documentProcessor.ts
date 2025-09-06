@@ -1,5 +1,6 @@
 import OpenAI from 'openai';
 import { pineconeService } from './pinecone.js';
+import { pineconeAssistant } from './mcpAssistant.js';
 import { latencyCache } from './cache.js';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -233,6 +234,24 @@ class DocumentProcessor {
         }));
       }
 
+      // Try to use Pinecone Assistant first (your MCP assistant)
+      if (pineconeAssistant.isAvailable()) {
+        try {
+          console.log(`Trying Pinecone Assistant for query: "${query}"`);
+          const assistantResults = await pineconeAssistant.retrieveContext(query, topK);
+          
+          if (assistantResults && assistantResults.length > 0) {
+            console.log(`Pinecone Assistant found ${assistantResults.length} results`);
+            // Cache the results
+            latencyCache.setSearchResults(query, assistantResults);
+            return assistantResults;
+          }
+        } catch (error) {
+          console.log('Pinecone Assistant failed, falling back to vector search:', error);
+        }
+      }
+
+      // Fallback to direct vector search if assistant is not available
       // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       
@@ -253,7 +272,7 @@ class DocumentProcessor {
       latencyCache.setSearchResults(query, results);
       
       // Filter for document chunks only - debug scoring
-      console.log(`Search found ${results.length} total results for query: "${query}"`);
+      console.log(`Vector search found ${results.length} total results for query: "${query}"`);
       results.forEach((result, i) => {
         console.log(`Result ${i}: score=${result.score}, type=${result.metadata?.type}`);
       });

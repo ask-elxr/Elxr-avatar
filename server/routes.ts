@@ -177,6 +177,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Pinecone Assistant connection
+  app.post("/api/assistant/test", async (req, res) => {
+    try {
+      const { query = "test query" } = req.body;
+      
+      // Import here to avoid circular dependency issues
+      const { pineconeAssistant } = await import('./mcpAssistant.js');
+      
+      if (!pineconeAssistant.isAvailable()) {
+        return res.status(400).json({ 
+          error: "Pinecone Assistant not available - check API key configuration" 
+        });
+      }
+
+      const results = await pineconeAssistant.retrieveContext(query, 3);
+      
+      res.json({ 
+        success: true, 
+        query,
+        results,
+        message: "Pinecone Assistant connection successful"
+      });
+    } catch (error) {
+      console.error('Error testing assistant connection:', error);
+      res.status(500).json({ 
+        error: "Failed to connect to Pinecone Assistant",
+        details: error.message 
+      });
+    }
+  });
+
   // Configure multer for file uploads
   const upload = multer({ dest: 'uploads/' });
   const objectStorageService = new ObjectStorageService();
