@@ -163,6 +163,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to list available indexes
+  app.get("/api/pinecone/indexes", async (req, res) => {
+    try {
+      const indexes = await pineconeService.listIndexes();
+      res.json({ success: true, indexes });
+    } catch (error) {
+      console.error('Error listing Pinecone indexes:', error);
+      res.status(500).json({ 
+        error: "Failed to list Pinecone indexes",
+        details: error.message 
+      });
+    }
+  });
+
   // Configure multer for file uploads
   const upload = multer({ dest: 'uploads/' });
   const objectStorageService = new ObjectStorageService();

@@ -143,6 +143,16 @@ class PineconeService {
       throw error;
     }
   }
+
+  async listIndexes() {
+    try {
+      const response = await this.client.listIndexes();
+      return response.indexes || [];
+    } catch (error) {
+      console.error('Error listing Pinecone indexes:', error);
+      throw error;
+    }
+  }
 }
 
 export const pineconeService = new PineconeService();
