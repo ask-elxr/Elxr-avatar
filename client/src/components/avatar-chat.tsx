@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X, LayoutDashboard } from "lucide-react";
-import { Link } from "wouter";
+import { Maximize, Minimize, X, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [showKnowledgeTest, setShowKnowledgeTest] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const { getAvatarResponse, isLoading, error } = useKnowledgeBase();
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -32,6 +34,15 @@ export function AvatarChat() {
     setRefreshKey(prev => prev + 1);
   };
 
+  const testKnowledgeBase = async () => {
+    try {
+      const response = await getAvatarResponse("What are the main topics you can help with?");
+      alert(`Knowledge Base Response: ${response}`);
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to query knowledge base'}`);
+    }
+  };
+
   return (
     <div className="w-full h-screen relative overflow-hidden">
       {/* Top Navigation Bar */}
@@ -52,14 +63,27 @@ export function AvatarChat() {
         </Button>
       )}
 
-      {/* End Call Button - Top Right */}
-      <Button
-        onClick={endCall}
-        className="absolute top-4 right-4 z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3 backdrop-blur-sm"
-        data-testid="button-end-call"
-      >
-        <X className="w-5 h-5" />
-      </Button>
+      {/* Control Buttons - Top Right */}
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
+        {/* Knowledge Base Test Button */}
+        <Button
+          onClick={testKnowledgeBase}
+          disabled={isLoading}
+          className="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-test-knowledge"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </Button>
+        
+        {/* End Call Button */}
+        <Button
+          onClick={endCall}
+          className="bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-end-call"
+        >
+          <X className="w-5 h-5" />
+        </Button>
+      </div>
 
       {/* Avatar Iframe */}
       <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''} ${!isFullscreen ? 'pt-16' : ''}`}>

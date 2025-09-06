@@ -177,6 +177,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get avatar response with knowledge base integration
+  app.post("/api/avatar/response", async (req, res) => {
+    try {
+      const { message, conversationHistory = [] } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Import here to avoid circular dependency issues
+      const { pineconeAssistant } = await import('./mcpAssistant.js');
+      
+      if (!pineconeAssistant.isAvailable()) {
+        return res.status(400).json({ 
+          error: "Knowledge base not available - check API key configuration" 
+        });
+      }
+
+      // Query knowledge base for context
+      const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
+      const knowledgeResponse = knowledgeResults.length > 0 ? knowledgeResults[0].text : null;
+      
+      res.json({ 
+        success: true, 
+        message,
+        knowledgeResponse,
+        usage: knowledgeResults[0]?.metadata?.usage || {}
+      });
+    } catch (error) {
+      console.error('Error getting avatar response:', error);
+      res.status(500).json({ 
+        error: "Failed to get avatar response",
+        details: error.message 
+      });
+    }
+  });
+
   // Test Pinecone Assistant connection
   app.post("/api/assistant/test", async (req, res) => {
     try {
