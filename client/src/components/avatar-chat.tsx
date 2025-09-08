@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X, MessageSquare, Mic, MicOff } from "lucide-react";
+import { Maximize, Minimize, X, MessageSquare, Mic, MicOff, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
@@ -62,6 +62,12 @@ export function AvatarChat() {
     }
   };
 
+  const openDirectLink = () => {
+    const heygenUrl = "https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9";
+    window.open(heygenUrl, '_blank');
+    alert('🔗 Opened HeyGen avatar in new tab. Test if audio works there!\n\nIf it works in the new tab, the issue is with iframe embedding.\nIf it doesn\'t work there either, the HeyGen link may be expired.');
+  };
+
   return (
     <div className="w-full h-screen relative overflow-hidden">
       {/* Fullscreen Button - Mobile Only */}
@@ -77,6 +83,16 @@ export function AvatarChat() {
 
       {/* Control Buttons - Top Right */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
+        {/* Direct Link Test Button */}
+        <Button
+          onClick={openDirectLink}
+          className="bg-purple-600/80 hover:bg-purple-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-direct-link"
+          title="Open HeyGen avatar in new tab to test audio"
+        >
+          <ExternalLink className="w-5 h-5" />
+        </Button>
+
         {/* Microphone Permission Button */}
         <Button
           onClick={requestMicrophonePermission}
@@ -124,10 +140,10 @@ export function AvatarChat() {
         <iframe
           key={refreshKey}
           ref={iframeRef}
-          src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1"
+          src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9"
           className="w-full h-full border-0"
-          allow="microphone *; camera *; autoplay *; encrypted-media *; fullscreen *"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation allow-pointer-lock"
+          allow="microphone; camera; autoplay; encrypted-media; fullscreen; display-capture; geolocation; gyroscope; magnetometer; clipboard-read; clipboard-write"
+          referrerPolicy="no-referrer-when-downgrade"
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
         />
