@@ -35,6 +35,22 @@ export function AvatarChat() {
     setRefreshKey(prev => prev + 1);
   };
 
+  const forceRefreshAvatar = () => {
+    // Force refresh with cache busting
+    const timestamp = new Date().getTime();
+    setRefreshKey(timestamp);
+    
+    // Also try to clear any cached iframe content
+    if (iframeRef.current) {
+      iframeRef.current.src = 'about:blank';
+      setTimeout(() => {
+        setRefreshKey(timestamp + 1);
+      }, 100);
+    }
+    
+    alert('🔄 Avatar refreshed with cache clearing. Try talking now!');
+  };
+
   const testKnowledgeBase = async () => {
     try {
       // Test Mark Kohl personality with default system
@@ -125,11 +141,12 @@ export function AvatarChat() {
           <MessageSquare className="w-5 h-5" />
         </Button>
         
-        {/* End Call Button */}
+        {/* Force Refresh Button */}
         <Button
-          onClick={endCall}
-          className="bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3 backdrop-blur-sm"
-          data-testid="button-end-call"
+          onClick={forceRefreshAvatar}
+          className="bg-gray-600/80 hover:bg-gray-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-force-refresh"
+          title="Force refresh avatar with cache clearing"
         >
           <X className="w-5 h-5" />
         </Button>
@@ -140,7 +157,7 @@ export function AvatarChat() {
         <iframe
           key={refreshKey}
           ref={iframeRef}
-          src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1"
+          src={`https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1&t=${refreshKey}`}
           className="w-full h-full border-0"
           allow="microphone; camera"
           title="HeyGen Interactive Avatar"
