@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X, MessageSquare } from "lucide-react";
+import { Maximize, Minimize, X, MessageSquare, Mic, MicOff } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
@@ -9,6 +9,7 @@ export function AvatarChat() {
   const [isMobile, setIsMobile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [showKnowledgeTest, setShowKnowledgeTest] = useState(false);
+  const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const { user, isAuthenticated } = useAuth();
   const { getAvatarResponse, isLoading, error } = useKnowledgeBase();
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -44,6 +45,23 @@ export function AvatarChat() {
     }
   };
 
+  const requestMicrophonePermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicPermission('granted');
+      // Stop the stream immediately, we just needed permission
+      stream.getTracks().forEach(track => track.stop());
+      
+      // Refresh iframe to reinitialize with permissions
+      setRefreshKey(prev => prev + 1);
+      
+      alert('✅ Microphone permission granted! The avatar should now be able to hear you.');
+    } catch (err) {
+      setMicPermission('denied');
+      alert('❌ Microphone access denied. Please:\n\n1. Click the 🔒 lock icon in your browser address bar\n2. Allow microphone access\n3. Refresh the page\n\nOr check your browser settings to allow microphone for this site.');
+    }
+  };
+
   return (
     <div className="w-full h-screen relative overflow-hidden">
       {/* Fullscreen Button - Mobile Only */}
@@ -59,6 +77,28 @@ export function AvatarChat() {
 
       {/* Control Buttons - Top Right */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
+        {/* Microphone Permission Button */}
+        <Button
+          onClick={requestMicrophonePermission}
+          className={`${
+            micPermission === 'granted' 
+              ? 'bg-green-600/80 hover:bg-green-700' 
+              : micPermission === 'denied'
+              ? 'bg-yellow-600/80 hover:bg-yellow-700'
+              : 'bg-orange-600/80 hover:bg-orange-700'
+          } text-white rounded-full p-3 backdrop-blur-sm`}
+          data-testid="button-microphone-permission"
+          title={
+            micPermission === 'granted' 
+              ? 'Microphone access granted' 
+              : micPermission === 'denied'
+              ? 'Microphone access denied - click to retry'
+              : 'Click to enable microphone access'
+          }
+        >
+          {micPermission === 'granted' ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        </Button>
+
         {/* Knowledge Base Test Button */}
         <Button
           onClick={testKnowledgeBase}
@@ -86,7 +126,8 @@ export function AvatarChat() {
           ref={iframeRef}
           src="https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1"
           className="w-full h-full border-0"
-          allow="microphone; camera"
+          allow="microphone *; camera *; autoplay *; encrypted-media *; fullscreen *"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-presentation allow-pointer-lock"
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
         />
