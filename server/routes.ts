@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
-  app.post("/api/avatar/response", async (req, res) => {
+  app.post("/api/avatar/response", timeoutMiddleware(30000), async (req, res) => {
     try {
       const { message, conversationHistory = [], avatarPersonality, useWebSearch = true } = req.body;
       
@@ -232,12 +232,17 @@ SIGNATURE LINES:
         knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
       }
 
-      // ALWAYS get web search results for current information (default behavior)
+      // Get web search results if available and enabled
       let webSearchResults = '';
       if (useWebSearch && googleSearchService.isAvailable()) {
-        console.log('🌐 Performing Google search for:', message);
-        webSearchResults = await googleSearchService.search(message, 3);
-        console.log('🌐 Web search results:', webSearchResults ? 'Found results' : 'No results');
+        try {
+          console.log('🌐 Performing Google search for:', message);
+          webSearchResults = await googleSearchService.search(message, 3);
+          console.log('🌐 Web search completed:', webSearchResults ? 'Found results' : 'No results');
+        } catch (error) {
+          console.error('🌐 Web search failed:', error);
+          // Continue without web search if it fails
+        }
       }
 
       // Generate response using Claude Sonnet 4 with all context
