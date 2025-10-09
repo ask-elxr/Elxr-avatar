@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize } from "lucide-react";
+import { Maximize, Minimize, X } from "lucide-react";
 import loadingVideo from "@assets/elxr_Transparent-DarkBg_1760049264390.mov";
 
 export function AvatarChat() {
@@ -22,10 +22,10 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Hide loading video after avatar iframe has time to initialize
+    // Show loading video for 5 seconds to give avatar time to initialize
     const timer = setTimeout(() => {
       setIsLoading(false);
-    }, 3000); // Show loading for 3 seconds
+    }, 5000); // Show loading for 5 seconds
 
     return () => clearTimeout(timer);
   }, [refreshKey]);
@@ -34,34 +34,67 @@ export function AvatarChat() {
     setIsFullscreen(!isFullscreen);
   };
 
+  const endChat = () => {
+    // Reset the iframe to end the call
+    setRefreshKey(prev => prev + 1);
+    setIsLoading(true); // Show loading again when restarting
+  };
+
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* Fullscreen Button - Mobile Only */}
+      {/* Mobile Controls */}
       {isMobile && (
+        <>
+          {/* Fullscreen Button - Top Left */}
+          <Button
+            onClick={toggleFullscreen}
+            className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
+            data-testid="button-fullscreen-toggle"
+          >
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          </Button>
+          
+          {/* End Chat Button - Top Right */}
+          <Button
+            onClick={endChat}
+            className="absolute top-4 right-4 z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3 backdrop-blur-sm"
+            data-testid="button-end-chat"
+            title="End chat and restart"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </>
+      )}
+
+      {/* End Chat Button - Desktop (Top Right) */}
+      {!isMobile && (
         <Button
-          onClick={toggleFullscreen}
-          className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
-          data-testid="button-fullscreen-toggle"
+          onClick={endChat}
+          className="absolute top-6 right-6 z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full px-4 py-2 backdrop-blur-sm flex items-center gap-2"
+          data-testid="button-end-chat-desktop"
+          title="End chat and restart"
         >
-          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          <X className="w-4 h-4" />
+          <span className="text-sm font-medium">End Chat</span>
         </Button>
       )}
 
       {/* Loading Video Overlay */}
       {isLoading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black animate-in fade-in duration-300">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="w-auto h-auto max-w-full max-h-full object-contain"
+            className="max-w-[80%] max-h-[80%] object-contain"
             data-testid="loading-video"
+            onError={(e) => console.error('Video loading error:', e)}
+            onLoadedData={() => console.log('Video loaded successfully')}
           >
-            <source src={loadingVideo} type="video/mp4" />
             <source src={loadingVideo} type="video/quicktime" />
-            Your browser does not support the video tag.
+            <source src={loadingVideo} type="video/mp4" />
           </video>
         </div>
       )}
