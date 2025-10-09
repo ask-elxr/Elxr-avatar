@@ -9,11 +9,13 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (January 2025)
+- **Dual Pinecone Assistant Access** - Now queries both `sk-elxr` and `knowledge-base-assistant` simultaneously
 - **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
 - **Integrated Google Web Search** - Avatar now accesses real-time web information automatically
-- **Enhanced Avatar Intelligence** - Combines Pinecone knowledge base + Google Search + Claude Sonnet 4
+- **Enhanced Avatar Intelligence** - Combines 2 Pinecone assistants + Google Search + Claude Sonnet 4
 - **Mark Kohl Personality** - Full integration with custom personality system prompts
-- **Improved Response Quality** - Multi-source intelligence (knowledge base, web, AI reasoning)
+- **Removed HeyGen Branding** - Clean interface without "powered by" overlays
+- **Improved Response Quality** - Multi-source intelligence (2 knowledge bases, web, AI reasoning)
 
 ## Previous Updates
 - Connected to knowledge-base-assistant using Pinecone SDK (26k+ tokens processed)

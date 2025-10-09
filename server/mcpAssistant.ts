@@ -2,12 +2,13 @@ import { Pinecone } from '@pinecone-database/pinecone';
 
 class PineconeAssistantAPI {
   private client?: Pinecone;
-  private assistantName: string;
+  private assistantNames: string[];
   private apiKey: string;
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
-    this.assistantName = 'knowledge-base-assistant';
+    // Query both assistants: sk-elxr and knowledge-base-assistant
+    this.assistantNames = ['sk-elxr', 'knowledge-base-assistant'];
     
     if (!this.apiKey) {
       console.warn('PINECONE_API_KEY not found - Assistant API will not be available');
@@ -24,35 +25,75 @@ class PineconeAssistantAPI {
     }
 
     try {
-      console.log(`🔍 Querying Pinecone Assistant: ${this.assistantName}`);
+      const allResults: any[] = [];
 
-      // Use the exact pattern from your working project
-      const assistant = this.client.Assistant(this.assistantName);
-      
-      const response = await assistant.chat({
-        messages: [
-          {
-            role: 'user',
-            content: query
-          }
-        ]
+      // Query both assistants in parallel for faster responses
+      const assistantPromises = this.assistantNames.map(async (assistantName) => {
+        try {
+          console.log(`🔍 Querying Pinecone Assistant: ${assistantName}`);
+          
+          const assistant = this.client!.Assistant(assistantName);
+          
+          const response = await assistant.chat({
+            messages: [
+              {
+                role: 'user',
+                content: query
+              }
+            ]
+          });
+
+          console.log(`✅ Successfully connected to ${assistantName}`);
+          
+          return {
+            text: response.message?.content || 'No response content',
+            score: 1.0,
+            metadata: { 
+              source: assistantName,
+              citations: response.citations || [],
+              usage: response.usage || {}
+            }
+          };
+        } catch (error) {
+          console.error(`Error querying ${assistantName}:`, error);
+          return null; // Don't fail if one assistant has issues
+        }
       });
 
-      console.log('✅ Successfully connected to Pinecone Assistant');
+      // Wait for all assistant queries to complete
+      const results = await Promise.all(assistantPromises);
       
-      // Format the response to match the expected format
-      return [{
-        text: response.message?.content || 'No response content',
-        score: 1.0,
-        metadata: { 
-          source: 'knowledge-base-assistant',
-          citations: response.citations || [],
-          usage: response.usage || {}
-        }
-      }];
+      // Combine results from both assistants
+      const validResults = results.filter(r => r !== null);
+      
+      if (validResults.length === 0) {
+        throw new Error('No results from any Pinecone Assistant');
+      }
+
+      // If we have multiple results, combine them intelligently
+      if (validResults.length > 1) {
+        const combinedText = validResults
+          .map((r, i) => `[From ${r!.metadata.source}]\n${r!.text}`)
+          .join('\n\n---\n\n');
+        
+        return [{
+          text: combinedText,
+          score: 1.0,
+          metadata: {
+            sources: validResults.map(r => r!.metadata.source),
+            allCitations: validResults.flatMap(r => r!.metadata.citations),
+            combinedUsage: validResults.reduce((acc, r) => ({
+              ...acc,
+              ...r!.metadata.usage
+            }), {})
+          }
+        }];
+      }
+
+      return validResults as any[];
       
     } catch (error) {
-      console.error('Error retrieving context from Pinecone Assistant:', error);
+      console.error('Error retrieving context from Pinecone Assistants:', error);
       throw error;
     }
   }

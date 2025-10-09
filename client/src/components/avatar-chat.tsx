@@ -163,8 +163,10 @@ export function AvatarChat() {
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
         />
-        {/* Overlay to hide HeyGen branding */}
-        <div className="absolute bottom-3 right-3 w-44 h-10 bg-transparent pointer-events-none z-50" style={{background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)'}}></div>
+        {/* Overlay to hide HeyGen branding - covers bottom right area */}
+        <div className="absolute bottom-0 right-0 w-64 h-16 bg-black pointer-events-none z-50"></div>
+        {/* Additional overlay for "powered by" text that might appear elsewhere */}
+        <div className="absolute top-2 right-2 w-48 h-12 bg-black pointer-events-none z-50"></div>
       </div>
     </div>
   );
