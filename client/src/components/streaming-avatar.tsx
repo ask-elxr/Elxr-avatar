@@ -159,16 +159,14 @@ export function StreamingAvatarComponent() {
       });
       console.log("✅ createStartAvatar completed:", sessionInfo);
 
-      // Start voice chat mode for real-time interaction
-      console.log("5️⃣ Starting voice chat...");
-      await avatar.startVoiceChat({
-        isInputAudioMuted: false,
-      });
-      console.log("✅ Voice chat started");
+      // Don't start voice chat - we want to use text mode with our custom backend
+      // Voice chat mode uses HeyGen's built-in AI, but we want our custom pipeline:
+      // Dual Pinecone (ask-elxr + knowledge-base-assistant) + Google Search + Claude Sonnet 4
+      console.log("5️⃣ Staying in text mode for custom backend integration");
 
       // avatarStarted is already set to true above
       setMicPermission('granted');
-      console.log("✅ Avatar session fully initialized");
+      console.log("✅ Avatar session fully initialized (text mode)");
       
     } catch (error) {
       console.error("❌ Error starting avatar session:", error);
