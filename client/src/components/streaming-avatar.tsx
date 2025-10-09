@@ -15,7 +15,6 @@ export function StreamingAvatarComponent() {
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [chatMessage, setChatMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
-  const [chatStarted, setChatStarted] = useState(false);
   
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -146,6 +145,35 @@ export function StreamingAvatarComponent() {
         setIsUserTalking(false);
       });
 
+      // Capture user's spoken message when they finish talking
+      avatar.on(StreamingEvents.USER_END_MESSAGE, async (event: any) => {
+        const userSpeech = event.detail.message;
+        console.log("🎤 User said:", userSpeech);
+        
+        // Send to custom backend with dual Pinecone + Google Search + Claude Sonnet 4
+        try {
+          const response = await fetch("/api/chat/enhanced", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              message: userSpeech,
+              useWebSearch: true
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const aiResponse = data.message;
+            console.log("🤖 AI Response:", aiResponse);
+            
+            // Make avatar speak the custom backend response
+            await avatar.speak({ text: aiResponse });
+          }
+        } catch (error) {
+          console.error("Error processing user speech:", error);
+        }
+      });
+
       // Start avatar session
       console.log("4️⃣ Calling createStartAvatar...");
       const sessionInfo = await avatar.createStartAvatar({
@@ -159,14 +187,17 @@ export function StreamingAvatarComponent() {
       });
       console.log("✅ createStartAvatar completed:", sessionInfo);
 
-      // Don't start voice chat - we want to use text mode with our custom backend
-      // Voice chat mode uses HeyGen's built-in AI, but we want our custom pipeline:
-      // Dual Pinecone (ask-elxr + knowledge-base-assistant) + Google Search + Claude Sonnet 4
-      console.log("5️⃣ Staying in text mode for custom backend integration");
+      // Start voice chat to enable speech transcription
+      // USER_END_MESSAGE event will capture speech and route to custom backend
+      console.log("5️⃣ Starting voice chat for speech capture...");
+      await avatar.startVoiceChat({
+        isInputAudioMuted: false, // Enable microphone input
+      });
+      console.log("✅ Voice chat started - listening for user speech");
 
       // avatarStarted is already set to true above
       setMicPermission('granted');
-      console.log("✅ Avatar session fully initialized (text mode)");
+      console.log("✅ Avatar session fully initialized with voice capture");
       
     } catch (error) {
       console.error("❌ Error starting avatar session:", error);
@@ -249,18 +280,6 @@ export function StreamingAvatarComponent() {
     }
   };
 
-  const startChat = async () => {
-    setChatStarted(true);
-    // Send a welcome message to get the avatar to introduce himself
-    setIsSending(true);
-    try {
-      await handleSpeak("Hello! Please introduce yourself and tell me how you can help.");
-    } catch (error) {
-      console.error("Error starting chat:", error);
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   const testKnowledgeBase = async () => {
     try {
@@ -389,27 +408,19 @@ export function StreamingAvatarComponent() {
         )}
       </div>
 
-      {/* Chat Controls - Bottom */}
+      {/* Chat Input - Bottom (Optional text input, voice is primary) */}
       {avatarStarted && !isLoadingSession && (
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          {!chatStarted ? (
-            <div className="max-w-4xl mx-auto flex justify-center">
-              <Button
-                onClick={startChat}
-                disabled={isSending}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-12 py-6 text-xl font-semibold rounded-full shadow-2xl transform transition-all hover:scale-105"
-                data-testid="button-start-chat"
-              >
-                {isSending ? "Starting..." : "Start Chat"}
-              </Button>
-            </div>
-          ) : (
-            <div className="max-w-4xl mx-auto flex gap-2">
+          <div className="max-w-4xl mx-auto">
+            <p className="text-center text-sm text-gray-400 mb-2">
+              🎤 Speak to the avatar or type below
+            </p>
+            <div className="flex gap-2">
               <Input
                 value={chatMessage}
                 onChange={(e) => setChatMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="Type your message and press Enter..."
+                placeholder="Or type your message here..."
                 disabled={isSending || !avatarStarted}
                 className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
                 data-testid="input-chat-message"
@@ -423,7 +434,7 @@ export function StreamingAvatarComponent() {
                 {isSending ? "Sending..." : <Send className="w-5 h-5" />}
               </Button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>
