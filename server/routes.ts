@@ -123,6 +123,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Audio transcription endpoint using Deepgram
+  const uploadAudio = multer({ storage: multer.memoryStorage() });
+  app.post("/api/transcribe", uploadAudio.single('audio'), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No audio file provided" });
+      }
+
+      const { transcribeAudio } = await import("./deepgramService.js");
+      const transcript = await transcribeAudio(req.file.buffer);
+      
+      res.json({ 
+        success: true, 
+        transcript 
+      });
+    } catch (error) {
+      console.error('Transcription error:', error);
+      res.status(500).json({ 
+        error: "Failed to transcribe audio",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   app.post("/api/conversations/search", async (req, res) => {
     try {
       const { embedding, topK = 5 } = req.body;

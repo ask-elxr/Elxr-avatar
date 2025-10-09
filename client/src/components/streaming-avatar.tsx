@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Maximize, Minimize, MessageSquare, Mic, MicOff, X, Send } from "lucide-react";
 import StreamingAvatar, { AvatarQuality, StreamingEvents } from "@heygen/streaming-avatar";
 import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 
 export function StreamingAvatarComponent() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -20,6 +21,7 @@ export function StreamingAvatarComponent() {
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const { getAvatarResponse, isLoading } = useKnowledgeBase();
+  const { isRecording, startRecording, stopRecording, error: audioError } = useAudioRecorder();
 
   useEffect(() => {
     const checkMobile = () => {
@@ -158,52 +160,6 @@ export function StreamingAvatarComponent() {
         setIsUserTalking(false);
       });
 
-      // Listen for partial transcripts during speech
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event: any) => {
-        console.log("🎤 USER_TALKING_MESSAGE:", event);
-      });
-
-      // Capture user's complete spoken message
-      avatar.on(StreamingEvents.USER_END_MESSAGE, async (event: any) => {
-        console.log("🎤 USER_END_MESSAGE full event:", JSON.stringify(event, null, 2));
-        
-        // Try multiple ways to extract the message
-        const userSpeech = event?.detail?.message || event?.message || event?.text || event;
-        console.log("🎤 Extracted speech:", userSpeech);
-        
-        if (!userSpeech || typeof userSpeech !== 'string' || userSpeech.trim() === '') {
-          console.warn("⚠️ No valid speech detected");
-          return;
-        }
-        
-        console.log("✅ Processing user speech:", userSpeech);
-        
-        // Send to custom backend with dual Pinecone + Google Search + Claude Sonnet 4
-        try {
-          const response = await fetch("/api/chat/enhanced", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              message: userSpeech,
-              useWebSearch: true
-            }),
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            const aiResponse = data.message;
-            console.log("🤖 AI Response:", aiResponse);
-            
-            // Make avatar speak the custom backend response
-            await avatar.speak({ text: aiResponse });
-          } else {
-            console.error("Backend error:", await response.text());
-          }
-        } catch (error) {
-          console.error("Error processing user speech:", error);
-        }
-      });
-
       // Start avatar session
       console.log("4️⃣ Calling createStartAvatar...");
       const sessionInfo = await avatar.createStartAvatar({
@@ -217,17 +173,12 @@ export function StreamingAvatarComponent() {
       });
       console.log("✅ createStartAvatar completed:", sessionInfo);
 
-      // Start voice chat to enable speech transcription
-      // USER_END_MESSAGE event will capture speech and route to custom backend
-      console.log("5️⃣ Starting voice chat for speech capture...");
-      await avatar.startVoiceChat({
-        isInputAudioMuted: false, // Enable microphone input
-      });
-      console.log("✅ Voice chat started - listening for user speech");
+      // Don't use HeyGen's built-in voice chat - we have our own speech-to-text
+      console.log("5️⃣ Avatar ready for custom voice interaction");
 
       // avatarStarted is already set to true above
       setMicPermission('granted');
-      console.log("✅ Avatar session fully initialized with voice capture");
+      console.log("✅ Avatar session fully initialized");
       
     } catch (error) {
       console.error("❌ Error starting avatar session:", error);
@@ -307,6 +258,47 @@ export function StreamingAvatarComponent() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      // Stop recording and process
+      const audioBlob = await stopRecording();
+      if (!audioBlob) {
+        console.error("No audio recorded");
+        return;
+      }
+
+      setIsSending(true);
+      try {
+        // Transcribe audio
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+        
+        const transcribeResponse = await fetch('/api/transcribe', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!transcribeResponse.ok) {
+          throw new Error('Transcription failed');
+        }
+
+        const { transcript } = await transcribeResponse.json();
+        console.log("📝 Transcript:", transcript);
+
+        // Send to custom AI backend
+        await handleSpeak(transcript);
+      } catch (error) {
+        console.error("Voice input error:", error);
+        alert(`Error: ${error instanceof Error ? error.message : 'Voice input failed'}`);
+      } finally {
+        setIsSending(false);
+      }
+    } else {
+      // Start recording
+      await startRecording();
     }
   };
 
@@ -416,15 +408,36 @@ export function StreamingAvatarComponent() {
           <track kind="captions" />
         </video>
         
-        {/* Chat Now Button - Center of Avatar */}
-        {avatarStarted && !isLoadingSession && !chatButtonClicked && (
+        {/* Voice Chat Button - Center of Avatar */}
+        {avatarStarted && !isLoadingSession && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Button
-              onClick={() => setChatButtonClicked(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg pointer-events-auto"
-              data-testid="button-chat-now"
+              onMouseDown={async () => {
+                setChatButtonClicked(true);
+                await handleVoiceInput();
+              }}
+              onMouseUp={handleVoiceInput}
+              onTouchStart={async () => {
+                setChatButtonClicked(true);
+                await handleVoiceInput();
+              }}
+              onTouchEnd={handleVoiceInput}
+              disabled={isSending}
+              className={`${
+                isRecording 
+                  ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
+                  : 'bg-purple-600 hover:bg-purple-700'
+              } text-white px-8 py-4 rounded-full pointer-events-auto transition-all transform ${
+                isRecording ? 'scale-110' : 'scale-100'
+              }`}
+              data-testid="button-voice-chat"
             >
-              Chat now
+              <div className="flex items-center gap-2">
+                <Mic className="w-5 h-5" />
+                <span>
+                  {isSending ? "Processing..." : isRecording ? "Release to Send" : "Hold to Talk"}
+                </span>
+              </div>
             </Button>
           </div>
         )}
