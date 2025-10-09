@@ -51,7 +51,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         headers: {
           'x-api-key': apiKey,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          test: false // Set to false for API Pro plan
+        })
       });
 
       if (!response.ok) {
