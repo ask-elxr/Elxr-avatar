@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize, X } from "lucide-react";
-import loadingVideo from "@assets/elxr_Transparent-DarkBg_1760049264390.mov";
+import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -90,11 +90,9 @@ export function AvatarChat() {
             playsInline
             className="max-w-[80%] max-h-[80%] object-contain"
             data-testid="loading-video"
-            onError={(e) => console.error('Video loading error:', e)}
-            onLoadedData={() => console.log('Video loaded successfully')}
           >
-            <source src={loadingVideo} type="video/quicktime" />
             <source src={loadingVideo} type="video/mp4" />
+            Your browser does not support the video tag.
           </video>
         </div>
       )}
