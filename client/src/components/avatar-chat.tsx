@@ -7,7 +7,7 @@ export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     // Check if device is mobile
@@ -22,13 +22,34 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Show loading video for 5 seconds to give avatar time to initialize
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 5000); // Show loading for 5 seconds
+    // Listen for HeyGen iframe messages to detect when chat starts
+    const handleMessage = (event: MessageEvent) => {
+      // Verify message is from HeyGen
+      if (!event.origin.includes('heygen.com')) return;
+      
+      const data = event.data;
+      
+      // Show loading video when "Chat now" is clicked
+      if (data.type === 'streaming-embed' && data.action === 'show') {
+        setIsLoading(true);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, [refreshKey]);
+    window.addEventListener('message', handleMessage);
+    
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  useEffect(() => {
+    // Auto-hide loading video after 5 seconds to show the avatar
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isLoading]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
