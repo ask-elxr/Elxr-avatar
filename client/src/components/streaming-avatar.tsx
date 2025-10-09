@@ -53,8 +53,20 @@ export function StreamingAvatarComponent() {
     }
   }, [stream]);
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+      // Fallback to CSS fullscreen
+      setIsFullscreen(!isFullscreen);
+    }
   };
 
   async function fetchAccessToken(): Promise<string> {
@@ -145,16 +157,25 @@ export function StreamingAvatarComponent() {
         setIsUserTalking(false);
       });
 
-      // Capture user's spoken message when they finish talking
+      // Listen for partial transcripts during speech
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, (event: any) => {
+        console.log("🎤 USER_TALKING_MESSAGE:", event);
+      });
+
+      // Capture user's complete spoken message
       avatar.on(StreamingEvents.USER_END_MESSAGE, async (event: any) => {
-        console.log("🎤 Raw event:", event);
-        const userSpeech = event?.detail?.message || event?.message || event;
-        console.log("🎤 User said:", userSpeech);
+        console.log("🎤 USER_END_MESSAGE full event:", JSON.stringify(event, null, 2));
         
-        if (!userSpeech || userSpeech === null) {
-          console.warn("⚠️ No speech detected");
+        // Try multiple ways to extract the message
+        const userSpeech = event?.detail?.message || event?.message || event?.text || event;
+        console.log("🎤 Extracted speech:", userSpeech);
+        
+        if (!userSpeech || typeof userSpeech !== 'string' || userSpeech.trim() === '') {
+          console.warn("⚠️ No valid speech detected");
           return;
         }
+        
+        console.log("✅ Processing user speech:", userSpeech);
         
         // Send to custom backend with dual Pinecone + Google Search + Claude Sonnet 4
         try {
@@ -174,6 +195,8 @@ export function StreamingAvatarComponent() {
             
             // Make avatar speak the custom backend response
             await avatar.speak({ text: aiResponse });
+          } else {
+            console.error("Backend error:", await response.text());
           }
         } catch (error) {
           console.error("Error processing user speech:", error);
@@ -414,35 +437,6 @@ export function StreamingAvatarComponent() {
         )}
       </div>
 
-      {/* Chat Input - Bottom (Optional text input, voice is primary) */}
-      {avatarStarted && !isLoadingSession && (
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          <div className="max-w-4xl mx-auto">
-            <p className="text-center text-sm text-gray-400 mb-2">
-              🎤 Speak to the avatar or type below
-            </p>
-            <div className="flex gap-2">
-              <Input
-                value={chatMessage}
-                onChange={(e) => setChatMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Or type your message here..."
-                disabled={isSending || !avatarStarted}
-                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
-                data-testid="input-chat-message"
-              />
-              <Button
-                onClick={sendMessage}
-                disabled={isSending || !chatMessage.trim() || !avatarStarted}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6"
-                data-testid="button-send-message"
-              >
-                {isSending ? "Sending..." : <Send className="w-5 h-5" />}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
