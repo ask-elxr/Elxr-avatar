@@ -144,16 +144,24 @@ export function StreamingAvatarComponent() {
 
       // Start avatar session
       console.log("4️⃣ Calling createStartAvatar...");
-      await avatar.createStartAvatar({
+      const sessionInfo = await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
         voice: {
+          voiceId: "en-US-JennyMultilingualNeural",
           rate: 1.0
         },
         language: "en",
         disableIdleTimeout: false
       });
-      console.log("✅ createStartAvatar completed");
+      console.log("✅ createStartAvatar completed:", sessionInfo);
+
+      // Start voice chat mode for real-time interaction
+      console.log("5️⃣ Starting voice chat...");
+      await avatar.startVoiceChat({
+        isInputAudioMuted: false,
+      });
+      console.log("✅ Voice chat started");
 
       // avatarStarted is already set to true above
       setMicPermission('granted');
