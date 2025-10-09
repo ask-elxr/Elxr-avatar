@@ -57,16 +57,11 @@ export function AvatarChat() {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* Warning Banner */}
-      <div className="absolute top-0 left-0 right-0 z-40 bg-yellow-600 text-white px-4 py-2 text-center text-sm">
-        ⚠️ <strong>VIDEO AVATAR:</strong> Uses HeyGen's knowledge base (may have outdated info). Click <strong>blue button</strong> to test backend with current 2025 data.
-      </div>
-
       {/* Fullscreen Button - Mobile Only */}
       {isMobile && (
         <Button
           onClick={toggleFullscreen}
-          className="absolute top-16 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
+          className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
           data-testid="button-fullscreen-toggle"
         >
           {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
@@ -74,7 +69,7 @@ export function AvatarChat() {
       )}
 
       {/* Control Buttons - Top Right */}
-      <div className="absolute top-16 right-4 z-50 flex gap-2">
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
         {/* Test Backend API Button - SHOWS CURRENT DATA */}
         <Button
           onClick={testCurrentInfo}
@@ -120,7 +115,7 @@ export function AvatarChat() {
       </div>
 
       {/* Video Avatar Iframe */}
-      <div className={`w-full h-full avatar-iframe-container pt-10 ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
         <iframe
           key={refreshKey}
           ref={iframeRef}
@@ -130,17 +125,6 @@ export function AvatarChat() {
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
         />
-      </div>
-
-      {/* Instructions Overlay */}
-      <div className="absolute bottom-4 left-4 right-4 z-50 bg-black/70 backdrop-blur-sm text-white p-4 rounded-lg text-sm">
-        <p className="font-bold mb-2">🎥 VIDEO AVATAR STATUS:</p>
-        <ul className="space-y-1 text-xs">
-          <li>✅ <strong>Video Avatar:</strong> Working (visible above)</li>
-          <li>⚠️ <strong>Knowledge:</strong> Uses HeyGen's database (may be outdated)</li>
-          <li>💡 <strong>Click blue button:</strong> Tests backend with CURRENT 2025 data (Pinecone + Google + Claude)</li>
-          <li>🔧 <strong>To connect avatar to backend:</strong> Need valid HeyGen API key from app.heygen.com → Settings → API</li>
-        </ul>
       </div>
     </div>
   );
