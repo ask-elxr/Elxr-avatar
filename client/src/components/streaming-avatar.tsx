@@ -316,8 +316,20 @@ export function StreamingAvatarComponent() {
 
       {/* Avatar Video or Loading State */}
       <div className={`w-full h-full ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
-        {!avatarStarted || isLoadingSession ? (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+        {/* Always render video element so it exists when stream is ready */}
+        <video
+          ref={mediaStreamRef}
+          autoPlay
+          playsInline
+          className={`w-full h-full object-cover bg-black ${(!avatarStarted || isLoadingSession) ? 'hidden' : ''}`}
+          data-testid="heygen-avatar-video"
+        >
+          <track kind="captions" />
+        </video>
+        
+        {/* Show loading overlay when not ready */}
+        {(!avatarStarted || isLoadingSession) && (
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
             <div className="text-center">
               <h1 className="text-3xl font-bold text-white mb-4">
                 {isLoadingSession ? "Starting Avatar..." : "Loading Avatar"}
@@ -334,16 +346,6 @@ export function StreamingAvatarComponent() {
               )}
             </div>
           </div>
-        ) : (
-          <video
-            ref={mediaStreamRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover bg-black"
-            data-testid="heygen-avatar-video"
-          >
-            <track kind="captions" />
-          </video>
         )}
       </div>
     </div>
