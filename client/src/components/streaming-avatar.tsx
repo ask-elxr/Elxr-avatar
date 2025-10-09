@@ -74,28 +74,45 @@ export function StreamingAvatarComponent() {
   }
 
   async function startSession() {
+    console.log("🚀 Starting avatar session...");
     setIsLoadingSession(true);
 
     try {
+      console.log("1️⃣ Fetching access token...");
       const newToken = await fetchAccessToken();
+      console.log("✅ Token received:", newToken.substring(0, 20) + "...");
       
+      console.log("2️⃣ Creating StreamingAvatar instance...");
       const avatar = new StreamingAvatar({ token: newToken });
       avatarRef.current = avatar;
       
       // Set avatarStarted immediately so the video element exists when STREAM_READY fires
+      console.log("3️⃣ Setting avatarStarted to true...");
       setAvatarStarted(true);
 
       avatar.on(StreamingEvents.STREAM_READY, (event) => {
         console.log("✅ Stream ready:", event.detail);
         console.log("📹 Avatar mediaStream:", avatar.mediaStream);
         console.log("📹 MediaStream tracks:", avatar.mediaStream?.getTracks());
-        console.log("📹 Video ref exists:", !!mediaStreamRef.current);
-        console.log("📹 Avatar started:", avatarStarted);
         
         // MediaStream is available via avatar.mediaStream property, NOT event.detail
         if (avatar.mediaStream) {
           console.log("🎬 Setting stream state...");
           setStream(avatar.mediaStream);
+          
+          // Also directly attach if video element exists
+          // Use setTimeout to ensure React has rendered the video element
+          setTimeout(() => {
+            if (mediaStreamRef.current) {
+              console.log("🎥 Directly attaching to video element");
+              mediaStreamRef.current.srcObject = avatar.mediaStream;
+              mediaStreamRef.current.play().catch(err => {
+                console.error("❌ Play error:", err);
+              });
+            } else {
+              console.warn("⚠️ Video ref still not available after timeout");
+            }
+          }, 100);
         } else {
           console.error("❌ No mediaStream available on avatar object");
         }
@@ -126,6 +143,7 @@ export function StreamingAvatarComponent() {
       });
 
       // Start avatar session
+      console.log("4️⃣ Calling createStartAvatar...");
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
@@ -135,14 +153,18 @@ export function StreamingAvatarComponent() {
         language: "en",
         disableIdleTimeout: false
       });
+      console.log("✅ createStartAvatar completed");
 
       // avatarStarted is already set to true above
       setMicPermission('granted');
+      console.log("✅ Avatar session fully initialized");
       
     } catch (error) {
-      console.error("Error starting avatar session:", error);
+      console.error("❌ Error starting avatar session:", error);
+      setAvatarStarted(false); // Reset on error
       alert(`❌ Error starting avatar: ${error instanceof Error ? error.message : 'Unknown error'}\n\nPlease make sure your HeyGen API key is correctly configured.`);
     } finally {
+      console.log("🏁 Setting isLoadingSession to false");
       setIsLoadingSession(false);
     }
   }
@@ -220,12 +242,12 @@ export function StreamingAvatarComponent() {
     alert('🔄 Avatar session ended. Click to restart!');
   };
 
-  // Auto-start avatar on load
-  useEffect(() => {
-    if (!avatarStarted && !isLoadingSession) {
-      startSession();
-    }
-  }, []);
+  // Disable auto-start - user must click "Start Avatar Session" button
+  // useEffect(() => {
+  //   if (!avatarStarted && !isLoadingSession) {
+  //     startSession();
+  //   }
+  // }, []);
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
@@ -293,7 +315,16 @@ export function StreamingAvatarComponent() {
               <h1 className="text-3xl font-bold text-white mb-4">
                 {isLoadingSession ? "Starting Avatar..." : "Loading Avatar"}
               </h1>
-              <p className="text-gray-300">SDK-based • No Branding • 4-Source Intelligence</p>
+              <p className="text-gray-300 mb-6">SDK-based • No Branding • 4-Source Intelligence</p>
+              {!isLoadingSession && !avatarStarted && (
+                <Button
+                  onClick={startSession}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg"
+                  data-testid="button-start-session"
+                >
+                  Start Avatar Session
+                </Button>
+              )}
             </div>
           </div>
         ) : (
