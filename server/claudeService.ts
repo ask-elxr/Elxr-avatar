@@ -33,8 +33,8 @@ export class ClaudeService {
     return !!this.anthropic;
   }
 
-  // Generate conversational response with context
-  async generateResponse(query: string, context: string, conversationHistory: any[] = []): Promise<string> {
+  // Generate conversational response with context and optional custom system prompt
+  async generateResponse(query: string, context: string, conversationHistory: any[] = [], customSystemPrompt?: string): Promise<string> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
     }
@@ -63,19 +63,21 @@ export class ClaudeService {
         content: currentMessage
       });
 
-      const response = await this.anthropic.messages.create({
-        // "claude-sonnet-4-20250514"
-        model: DEFAULT_MODEL_STR,
-        max_tokens: 1000,
-        messages: messages,
-        system: `You are an intelligent AI assistant with access to a comprehensive knowledge base. 
+      const systemPrompt = customSystemPrompt || `You are an intelligent AI assistant with access to a comprehensive knowledge base. 
         
         Guidelines:
         - Use the provided context to give accurate, helpful responses
         - If information isn't in the context, say so clearly
         - Be conversational and engaging
         - Maintain context from the conversation history
-        - Provide specific, actionable answers when possible`
+        - Provide specific, actionable answers when possible`;
+
+      const response = await this.anthropic.messages.create({
+        // "claude-sonnet-4-20250514"
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 1000,
+        messages: messages,
+        system: systemPrompt
       });
 
       const content = response.content[0];
@@ -89,12 +91,13 @@ export class ClaudeService {
     }
   }
 
-  // Enhanced response with web search integration
+  // Enhanced response with web search integration and optional custom system prompt
   async generateEnhancedResponse(
     query: string, 
     context: string, 
     webSearchResults: string = '', 
-    conversationHistory: any[] = []
+    conversationHistory: any[] = [],
+    customSystemPrompt?: string
   ): Promise<string> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
@@ -131,12 +134,7 @@ export class ClaudeService {
         content: enhancedMessage
       });
 
-      const response = await this.anthropic.messages.create({
-        // "claude-sonnet-4-20250514"
-        model: DEFAULT_MODEL_STR,
-        max_tokens: 1200,
-        messages: messages,
-        system: `You are an advanced AI assistant with access to both a knowledge base and real-time web information.
+      const systemPrompt = customSystemPrompt || `You are an advanced AI assistant with access to both a knowledge base and real-time web information.
         
         Guidelines:
         - Prioritize knowledge base information for accuracy
@@ -144,7 +142,14 @@ export class ClaudeService {
         - Clearly indicate sources when information comes from web search
         - Synthesize information from multiple sources when relevant
         - Be clear about the recency and reliability of information
-        - Maintain conversational flow and context`
+        - Maintain conversational flow and context`;
+
+      const response = await this.anthropic.messages.create({
+        // "claude-sonnet-4-20250514"
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 1200,
+        messages: messages,
+        system: systemPrompt
       });
 
       const content = response.content[0];

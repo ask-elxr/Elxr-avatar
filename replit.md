@@ -1,10 +1,26 @@
 # Overview
 
-This is a full-stack web application that integrates HeyGen's AI streaming avatar technology to create an interactive chat experience. The application features a React-based frontend with a Node.js/Express backend, allowing users to have real-time conversations with AI-powered avatars through video streaming and text messaging.
+This is a full-stack AI avatar chat platform that combines HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. The application features a React-based frontend with a Node.js/Express backend, allowing users to have intelligent conversations with the Mark Kohl personality-driven avatar that accesses both a comprehensive Pinecone knowledge base and current web information.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+# Recent Changes
+
+## Latest Updates (January 2025)
+- **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
+- **Integrated Google Web Search** - Avatar now accesses real-time web information automatically
+- **Enhanced Avatar Intelligence** - Combines Pinecone knowledge base + Google Search + Claude Sonnet 4
+- **Mark Kohl Personality** - Full integration with custom personality system prompts
+- **Improved Response Quality** - Multi-source intelligence (knowledge base, web, AI reasoning)
+
+## Previous Updates
+- Connected to knowledge-base-assistant using Pinecone SDK (26k+ tokens processed)
+- Implemented avatar response system with knowledge base integration
+- Added interactive test buttons (microphone, knowledge base, force refresh)
+- Created clean full-screen avatar interface
+- Fixed HeyGen iframe audio and permission handling
 
 # System Architecture
 

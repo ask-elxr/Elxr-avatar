@@ -172,27 +172,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error listing Pinecone indexes:', error);
       res.status(500).json({ 
         error: "Failed to list Pinecone indexes",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
 
-  // Get avatar response with knowledge base integration
+  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
   app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { message, conversationHistory = [], avatarPersonality } = req.body;
+      const { message, conversationHistory = [], avatarPersonality, useWebSearch = true } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
-      }
-
-      // Import here to avoid circular dependency issues
-      const { pineconeAssistant } = await import('./mcpAssistant.js');
-      
-      if (!pineconeAssistant.isAvailable()) {
-        return res.status(400).json({ 
-          error: "Knowledge base not available - check API key configuration" 
-        });
       }
 
       // Default avatar personality - Mark Kohl
@@ -221,31 +212,70 @@ SIGNATURE LINES:
 - "Stop looking for gurus. They're just people who figured out how to sell common sense in bulk"
 - Remember: Balance sage & trickster, wisdom with wit, teaching with laughter`;
 
-      // Create enhanced query with personality context
       const personalityPrompt = avatarPersonality || defaultPersonality;
-      const enhancedQuery = `System: ${personalityPrompt}
 
-User Question: ${message}
+      // Get knowledge base context
+      const { pineconeAssistant } = await import('./mcpAssistant.js');
+      let knowledgeContext = '';
+      
+      if (pineconeAssistant.isAvailable()) {
+        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
+        knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
+      }
 
-Please provide a response that incorporates relevant knowledge while maintaining the specified personality and tone.`;
+      // Get web search results if requested or if query seems time-sensitive
+      let webSearchResults = '';
+      if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
+        if (googleSearchService.isAvailable()) {
+          webSearchResults = await googleSearchService.search(message, 3);
+        }
+      }
 
-      // Query knowledge base for context
-      const knowledgeResults = await pineconeAssistant.retrieveContext(enhancedQuery, 3);
-      const knowledgeResponse = knowledgeResults.length > 0 ? knowledgeResults[0].text : "I'm here to help, but I don't have specific information about that topic right now.";
+      // Generate response using Claude Sonnet 4 with all context
+      let aiResponse: string;
+      
+      if (claudeService.isAvailable()) {
+        // Use Claude Sonnet 4 with Mark Kohl personality
+        const enhancedConversationHistory = conversationHistory.map((msg: any) => ({
+          message: msg.message,
+          isUser: msg.isUser
+        }));
+
+        if (webSearchResults) {
+          aiResponse = await claudeService.generateEnhancedResponse(
+            message,
+            knowledgeContext,
+            webSearchResults,
+            enhancedConversationHistory,
+            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
+          );
+        } else {
+          aiResponse = await claudeService.generateResponse(
+            message,
+            knowledgeContext,
+            enhancedConversationHistory,
+            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
+          );
+        }
+      } else {
+        // Fallback to knowledge base only
+        aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
+      }
       
       res.json({ 
         success: true, 
         message,
-        knowledgeResponse,
+        knowledgeResponse: aiResponse,
         personalityUsed: personalityPrompt,
-        usage: knowledgeResults[0]?.metadata?.usage || {}
+        usedWebSearch: !!webSearchResults,
+        usedClaude: claudeService.isAvailable()
       });
     } catch (error) {
       console.error('Error getting avatar response:', error);
       if (!res.headersSent) {
         res.status(500).json({ 
           error: "Failed to get avatar response",
-          details: error.message 
+          details: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
@@ -277,7 +307,7 @@ Please provide a response that incorporates relevant knowledge while maintaining
       console.error('Error testing assistant connection:', error);
       res.status(500).json({ 
         error: "Failed to connect to Pinecone Assistant",
-        details: error.message 
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
