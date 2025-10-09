@@ -15,6 +15,7 @@ export function StreamingAvatarComponent() {
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [chatMessage, setChatMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [chatStarted, setChatStarted] = useState(false);
   
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -250,6 +251,19 @@ export function StreamingAvatarComponent() {
     }
   };
 
+  const startChat = async () => {
+    setChatStarted(true);
+    // Send a welcome message to get the avatar to introduce himself
+    setIsSending(true);
+    try {
+      await handleSpeak("Hello! Please introduce yourself and tell me how you can help.");
+    } catch (error) {
+      console.error("Error starting chat:", error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const testKnowledgeBase = async () => {
     try {
       const response = await getAvatarResponse("What are the main topics you can help with?");
@@ -377,28 +391,41 @@ export function StreamingAvatarComponent() {
         )}
       </div>
 
-      {/* Chat Input - Bottom */}
+      {/* Chat Controls - Bottom */}
       {avatarStarted && !isLoadingSession && (
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
-          <div className="max-w-4xl mx-auto flex gap-2">
-            <Input
-              value={chatMessage}
-              onChange={(e) => setChatMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your message and press Enter..."
-              disabled={isSending || !avatarStarted}
-              className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
-              data-testid="input-chat-message"
-            />
-            <Button
-              onClick={sendMessage}
-              disabled={isSending || !chatMessage.trim() || !avatarStarted}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6"
-              data-testid="button-send-message"
-            >
-              {isSending ? "Sending..." : <Send className="w-5 h-5" />}
-            </Button>
-          </div>
+          {!chatStarted ? (
+            <div className="max-w-4xl mx-auto flex justify-center">
+              <Button
+                onClick={startChat}
+                disabled={isSending}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-12 py-6 text-xl font-semibold rounded-full shadow-2xl transform transition-all hover:scale-105"
+                data-testid="button-start-chat"
+              >
+                {isSending ? "Starting..." : "Start Chat"}
+              </Button>
+            </div>
+          ) : (
+            <div className="max-w-4xl mx-auto flex gap-2">
+              <Input
+                value={chatMessage}
+                onChange={(e) => setChatMessage(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message and press Enter..."
+                disabled={isSending || !avatarStarted}
+                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
+                data-testid="input-chat-message"
+              />
+              <Button
+                onClick={sendMessage}
+                disabled={isSending || !chatMessage.trim() || !avatarStarted}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-6"
+                data-testid="button-send-message"
+              >
+                {isSending ? "Sending..." : <Send className="w-5 h-5" />}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
