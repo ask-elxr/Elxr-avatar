@@ -38,8 +38,8 @@ export function AvatarChat() {
         </Button>
       )}
 
-      {/* Logo - Top Left */}
-      <div className="absolute top-6 left-6 z-50">
+      {/* Logo - Top Left (moves to top right on mobile to avoid overlap with fullscreen button) */}
+      <div className={`absolute top-6 z-50 ${isMobile ? 'right-6' : 'left-6'}`}>
         <img 
           src={logoImage} 
           alt="Logo" 
