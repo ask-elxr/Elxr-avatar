@@ -8,7 +8,14 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (January 2025)
+## Latest Updates (October 2025)
+- **Multi-Index Pinecone Support** - Now supports accessing two Pinecone indexes (`avatar-chat-knowledge` and `ask-elxr`)
+  - All conversation endpoints accept optional `indexName` parameter to select target index
+  - Proper validation with 400 errors for invalid index names
+  - Backward compatible with default index for existing functionality
+  - Automatic index creation with readiness polling for serverless indexes
+
+## Previous Updates (January 2025)
 - **HeyGen Streaming SDK Integration** - Proper SDK implementation using @heygen/streaming-avatar package
 - **Dual Pinecone Assistant Access** - Now queries both `ask-elxr` and `knowledge-base-assistant` simultaneously in parallel
 - **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
