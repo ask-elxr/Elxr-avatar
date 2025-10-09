@@ -21,7 +21,13 @@ export function StreamingAvatarComponent() {
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const { getAvatarResponse, isLoading } = useKnowledgeBase();
-  const { isRecording, startRecording, stopRecording, error: audioError } = useAudioRecorder();
+  
+  const handleTranscript = async (transcript: string) => {
+    console.log("📝 Received transcript:", transcript);
+    await handleSpeak(transcript);
+  };
+  
+  const { isRecording, isListening, startListening, stopListening, error: audioError } = useAudioRecorder(handleTranscript);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -261,46 +267,6 @@ export function StreamingAvatarComponent() {
     }
   };
 
-  const handleVoiceInput = async () => {
-    if (isRecording) {
-      // Stop recording and process
-      const audioBlob = await stopRecording();
-      if (!audioBlob) {
-        console.error("No audio recorded");
-        return;
-      }
-
-      setIsSending(true);
-      try {
-        // Transcribe audio
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-        
-        const transcribeResponse = await fetch('/api/transcribe', {
-          method: 'POST',
-          body: formData
-        });
-
-        if (!transcribeResponse.ok) {
-          throw new Error('Transcription failed');
-        }
-
-        const { transcript } = await transcribeResponse.json();
-        console.log("📝 Transcript:", transcript);
-
-        // Send to custom AI backend
-        await handleSpeak(transcript);
-      } catch (error) {
-        console.error("Voice input error:", error);
-        alert(`Error: ${error instanceof Error ? error.message : 'Voice input failed'}`);
-      } finally {
-        setIsSending(false);
-      }
-    } else {
-      // Start recording
-      await startRecording();
-    }
-  };
 
 
   const testKnowledgeBase = async () => {
@@ -409,36 +375,32 @@ export function StreamingAvatarComponent() {
         </video>
         
         {/* Voice Chat Button - Center of Avatar */}
-        {avatarStarted && !isLoadingSession && (
+        {avatarStarted && !isLoadingSession && !chatButtonClicked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Button
-              onMouseDown={async () => {
+              onClick={async () => {
                 setChatButtonClicked(true);
-                await handleVoiceInput();
+                await startListening();
               }}
-              onMouseUp={handleVoiceInput}
-              onTouchStart={async () => {
-                setChatButtonClicked(true);
-                await handleVoiceInput();
-              }}
-              onTouchEnd={handleVoiceInput}
-              disabled={isSending}
-              className={`${
-                isRecording 
-                  ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
-                  : 'bg-purple-600 hover:bg-purple-700'
-              } text-white px-8 py-4 rounded-full pointer-events-auto transition-all transform ${
-                isRecording ? 'scale-110' : 'scale-100'
-              }`}
-              data-testid="button-voice-chat"
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg pointer-events-auto"
+              data-testid="button-chat-now"
             >
-              <div className="flex items-center gap-2">
-                <Mic className="w-5 h-5" />
-                <span>
-                  {isSending ? "Processing..." : isRecording ? "Release to Send" : "Hold to Talk"}
-                </span>
-              </div>
+              Chat now
             </Button>
+          </div>
+        )}
+        
+        {/* Listening Indicator */}
+        {isListening && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none">
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
+              isRecording ? 'bg-red-600 animate-pulse' : 'bg-green-600'
+            } text-white shadow-lg`}>
+              <Mic className="w-4 h-4" />
+              <span className="text-sm font-medium">
+                {isRecording ? 'Recording...' : 'Listening...'}
+              </span>
+            </div>
           </div>
         )}
         
