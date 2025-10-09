@@ -9,7 +9,7 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (January 2025)
-- **Dual Pinecone Assistant Access** - Now queries both `sk-elxr` and `knowledge-base-assistant` simultaneously
+- **Dual Pinecone Assistant Access** - Now queries both `ask-elxr` and `knowledge-base-assistant` simultaneously
 - **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
 - **Integrated Google Web Search** - Avatar now accesses real-time web information automatically
 - **Enhanced Avatar Intelligence** - Combines 2 Pinecone assistants + Google Search + Claude Sonnet 4
