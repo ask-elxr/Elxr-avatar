@@ -93,7 +93,6 @@ export function AvatarChat() {
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
           <video
             autoPlay
-            loop
             muted
             playsInline
             className="max-w-[80%] max-h-[80%] object-contain"
