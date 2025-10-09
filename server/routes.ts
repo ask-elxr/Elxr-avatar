@@ -34,7 +34,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   // HeyGen API token endpoint
-  app.get("/api/heygen/token", async (req, res) => {
+  app.post("/api/heygen/token", async (req, res) => {
     console.log('🔑 HeyGen token endpoint hit');
     try {
       const apiKey = process.env.HEYGEN_API_KEY || process.env.VITE_HEYGEN_API_KEY;

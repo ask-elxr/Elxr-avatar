@@ -106,15 +106,42 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
       
       addMessage('user', text);
       
+      // Get intelligent response from backend (Claude Sonnet 4 + Pinecone + Google)
+      const response = await fetch('/api/avatar/response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          conversationHistory: messages.slice(-10),
+          useWebSearch: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Backend API failed');
+      }
+
+      const data = await response.json();
+      const intelligentResponse = data.knowledgeResponse || text;
+      
+      // Make avatar speak the intelligent response
       await avatarRef.current.speak({
-        text: text,
+        text: intelligentResponse,
         task_type: TaskType.TALK
       });
+      
+      addMessage('avatar', intelligentResponse);
     } catch (err) {
       console.error('Error sending message:', err);
       setError('Failed to send message');
+      
+      // Fallback to direct speech if backend fails
+      await avatarRef.current.speak({
+        text: text,
+        task_type: await import('@heygen/streaming-avatar').then(m => m.TaskType.TALK)
+      });
     }
-  }, [sessionActive, addMessage]);
+  }, [sessionActive, addMessage, messages]);
 
   // Cleanup on unmount
   useEffect(() => {

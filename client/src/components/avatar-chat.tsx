@@ -1,17 +1,28 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, MessageSquare, Mic, MicOff, ExternalLink } from "lucide-react";
+import { Maximize, Minimize, MessageSquare, Mic, MicOff, Power } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
+import { useAvatarSession } from "@/hooks/use-avatar-session";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [userInput, setUserInput] = useState("");
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const { user, isAuthenticated } = useAuth();
-  const { getAvatarResponse, isLoading, error } = useKnowledgeBase();
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  
+  const {
+    isLoading,
+    isConnected,
+    isSpeaking,
+    sessionActive,
+    messages,
+    error,
+    startSession,
+    endSession,
+    sendMessage
+  } = useAvatarSession(videoRef);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -33,7 +44,6 @@ export function AvatarChat() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMicPermission('granted');
       stream.getTracks().forEach(track => track.stop());
-      setRefreshKey(prev => prev + 1);
       alert('✅ Microphone permission granted! The avatar can now hear you.');
     } catch (err) {
       setMicPermission('denied');
@@ -41,22 +51,22 @@ export function AvatarChat() {
     }
   };
 
-  const testCurrentInfo = async () => {
-    try {
-      const response = await getAvatarResponse("Who is the current US president in 2025?");
-      alert(`✅ BACKEND API (WITH CURRENT DATA):\n\n${response.substring(0, 300)}...\n\n💡 This uses Pinecone + Google Search + Claude Sonnet 4 with current 2025 information!`);
-    } catch (err) {
-      alert(`❌ Error: ${err instanceof Error ? err.message : 'Failed to query'}`);
+  const handleSendMessage = () => {
+    if (userInput.trim() && sessionActive) {
+      sendMessage(userInput);
+      setUserInput("");
     }
   };
 
-  const openDirectLink = () => {
-    const heygenUrl = "https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9";
-    window.open(heygenUrl, '_blank');
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   };
 
   return (
-    <div className="w-full h-screen relative overflow-hidden">
+    <div className="w-full h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       {/* Fullscreen Button - Mobile Only */}
       {isMobile && (
         <Button
@@ -70,15 +80,19 @@ export function AvatarChat() {
 
       {/* Control Buttons - Top Right */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
-        {/* Test Backend API Button - SHOWS CURRENT DATA */}
+        {/* Power Button - Start/Stop Session */}
         <Button
-          onClick={testCurrentInfo}
+          onClick={sessionActive ? endSession : startSession}
           disabled={isLoading}
-          className="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full p-3 backdrop-blur-sm animate-pulse"
-          data-testid="button-test-backend"
-          title="Test backend API with current 2025 information (Pinecone + Google + Claude)"
+          className={`${
+            sessionActive 
+              ? 'bg-red-600/80 hover:bg-red-700' 
+              : 'bg-green-600/80 hover:bg-green-700'
+          } text-white rounded-full p-3 backdrop-blur-sm ${isLoading ? 'animate-pulse' : ''}`}
+          data-testid="button-session-toggle"
+          title={sessionActive ? 'End avatar session' : 'Start avatar session'}
         >
-          <MessageSquare className="w-5 h-5" />
+          <Power className="w-5 h-5" />
         </Button>
 
         {/* Microphone Permission Button */}
@@ -102,30 +116,66 @@ export function AvatarChat() {
         >
           {micPermission === 'granted' ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
         </Button>
-
-        {/* Direct Link Test Button */}
-        <Button
-          onClick={openDirectLink}
-          className="bg-purple-600/80 hover:bg-purple-700 text-white rounded-full p-3 backdrop-blur-sm"
-          data-testid="button-direct-link"
-          title="Open HeyGen avatar in new tab"
-        >
-          <ExternalLink className="w-5 h-5" />
-        </Button>
       </div>
 
-      {/* Video Avatar Iframe */}
-      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
-        <iframe
-          key={refreshKey}
-          ref={iframeRef}
-          src={`https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1&t=${refreshKey}`}
-          className="w-full h-full border-0"
-          allow="microphone; camera"
-          title="HeyGen Interactive Avatar"
-          data-testid="heygen-avatar-iframe"
+      {/* Video Avatar */}
+      <div className={`w-full h-full flex items-center justify-center ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+          data-testid="heygen-avatar-video"
         />
+        
+        {!sessionActive && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <div className="text-center text-white">
+              <h2 className="text-2xl font-bold mb-4">AI Avatar Ready</h2>
+              <p className="text-lg mb-6">Click the green power button to start</p>
+              {error && (
+                <p className="text-red-400 mt-2">Error: {error}</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Chat Interface - Bottom */}
+      {sessionActive && (
+        <div className="absolute bottom-0 left-0 right-0 z-50 bg-black/70 backdrop-blur-sm text-white p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your message..."
+                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                data-testid="input-chat-message"
+                disabled={!sessionActive || isSpeaking}
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!userInput.trim() || !sessionActive || isSpeaking}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
+                data-testid="button-send-message"
+              >
+                <MessageSquare className="w-5 h-5" />
+              </Button>
+            </div>
+            
+            {isSpeaking && (
+              <p className="text-sm text-blue-400 mt-2 animate-pulse">Avatar is speaking...</p>
+            )}
+            
+            <p className="text-xs text-white/60 mt-2">
+              💡 Powered by Claude Sonnet 4 + Pinecone + Google Search (Current 2025 Data)
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
