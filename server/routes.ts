@@ -34,16 +34,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   // HeyGen API token endpoint
-  app.post("/api/heygen/token", async (req, res) => {
+  app.get("/api/heygen/token", async (req, res) => {
+    console.log('🔑 HeyGen token endpoint hit');
     try {
       const apiKey = process.env.HEYGEN_API_KEY || process.env.VITE_HEYGEN_API_KEY;
+      console.log('API Key present:', !!apiKey);
       
       if (!apiKey) {
+        console.log('❌ No API key found');
         return res.status(500).json({ 
           error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable." 
         });
       }
 
+      console.log('📡 Calling HeyGen API...');
       const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
         method: 'POST',
         headers: {
@@ -51,6 +55,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           'Content-Type': 'application/json'
         }
       });
+
+      console.log('HeyGen API response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -61,11 +67,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const data = await response.json();
-      res.json(data);
+      console.log('✅ HeyGen token retrieved successfully');
+      return res.json(data);
     } catch (error) {
-      console.error('Error creating HeyGen token:', error);
-      res.status(500).json({ 
-        error: "Failed to create HeyGen access token" 
+      console.error('❌ Error creating HeyGen token:', error);
+      return res.status(500).json({ 
+        error: "Failed to create HeyGen access token",
+        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
