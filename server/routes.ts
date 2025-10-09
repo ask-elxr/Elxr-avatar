@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { pineconeService } from "./pinecone.js";
+import { pineconeService, PineconeIndexName } from "./pinecone.js";
 import { documentProcessor } from "./documentProcessor.js";
 import { ObjectStorageService } from "./objectStorage.js";
 import { insertConversationSchema, insertDocumentSchema } from "../shared/schema.js";
@@ -82,6 +82,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Pinecone conversation endpoints
   app.post("/api/conversations", async (req, res) => {
     try {
+      const { indexName } = req.body;
+      
+      // Validate indexName if provided
+      if (indexName && !Object.values(PineconeIndexName).includes(indexName)) {
+        return res.status(400).json({ 
+          error: "Invalid index name",
+          validIndexes: Object.values(PineconeIndexName)
+        });
+      }
+      
+      const targetIndex = indexName as PineconeIndexName | undefined;
       const validatedData = insertConversationSchema.parse(req.body);
       
       // Store in Pinecone if embedding is provided
@@ -92,13 +103,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           conversationId,
           validatedData.text,
           validatedData.embedding as number[],
-          validatedData.metadata || {}
+          validatedData.metadata || {},
+          undefined, // namespace
+          targetIndex
         );
 
         res.json({ 
           success: true, 
           id: conversationId,
-          message: "Conversation stored successfully" 
+          message: "Conversation stored successfully",
+          indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
         });
       } else {
         res.status(400).json({ 
@@ -115,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/conversations/search", async (req, res) => {
     try {
-      const { embedding, topK = 5 } = req.body;
+      const { embedding, topK = 5, indexName } = req.body;
       
       if (!embedding || !Array.isArray(embedding)) {
         return res.status(400).json({ 
@@ -123,7 +137,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const results = await pineconeService.searchSimilarConversations(embedding, topK);
+      // Validate indexName if provided
+      if (indexName && !Object.values(PineconeIndexName).includes(indexName)) {
+        return res.status(400).json({ 
+          error: "Invalid index name",
+          validIndexes: Object.values(PineconeIndexName)
+        });
+      }
+      
+      const targetIndex = indexName as PineconeIndexName | undefined;
+
+      const results = await pineconeService.searchSimilarConversations(embedding, topK, undefined, targetIndex);
       
       res.json({ 
         success: true, 
@@ -132,7 +156,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           score: match.score,
           text: match.metadata?.text,
           metadata: match.metadata
-        }))
+        })),
+        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
       });
     } catch (error) {
       console.error('Error searching conversations:', error);
@@ -145,12 +170,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/conversations/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      const indexName = req.query.indexName as string | undefined;
       
-      await pineconeService.deleteConversation(id);
+      // Validate indexName if provided
+      if (indexName && !Object.values(PineconeIndexName).includes(indexName as PineconeIndexName)) {
+        return res.status(400).json({ 
+          error: "Invalid index name",
+          validIndexes: Object.values(PineconeIndexName)
+        });
+      }
+      
+      const targetIndex = indexName as PineconeIndexName | undefined;
+      
+      await pineconeService.deleteConversation(id, undefined, targetIndex);
       
       res.json({ 
         success: true, 
-        message: "Conversation deleted successfully" 
+        message: "Conversation deleted successfully",
+        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
       });
     } catch (error) {
       console.error('Error deleting conversation:', error);
@@ -162,8 +199,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/pinecone/stats", async (req, res) => {
     try {
-      const stats = await pineconeService.getStats();
-      res.json({ success: true, stats });
+      const indexName = req.query.indexName as string | undefined;
+      
+      // Validate indexName if provided
+      if (indexName && !Object.values(PineconeIndexName).includes(indexName as PineconeIndexName)) {
+        return res.status(400).json({ 
+          error: "Invalid index name",
+          validIndexes: Object.values(PineconeIndexName)
+        });
+      }
+      
+      const targetIndex = indexName as PineconeIndexName | undefined;
+      
+      const stats = await pineconeService.getStats(targetIndex);
+      res.json({ 
+        success: true, 
+        stats,
+        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
+      });
     } catch (error) {
       console.error('Error getting Pinecone stats:', error);
       res.status(500).json({ 
