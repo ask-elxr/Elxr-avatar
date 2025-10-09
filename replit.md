@@ -8,7 +8,13 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (January 2025)
+## Latest Updates (October 2025)
+- **VIDEO AVATAR RESTORED** - HeyGen iframe video avatar working and visible
+- **Backend API Fully Functional** - Pinecone + Google Search + Claude Sonnet 4 responding with current 2025 data
+- **HeyGen SDK Integration Pending** - Requires valid HeyGen API key to connect video avatar to intelligent backend
+- **Workaround Active** - Blue chat button tests backend with current information while video avatar uses HeyGen's knowledge base
+
+## Previous Updates (January 2025)
 - **Dual Pinecone Assistant Access** - Now queries both `ask-elxr` and `knowledge-base-assistant` simultaneously
 - **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
 - **Integrated Google Web Search** - Avatar now accesses real-time web information automatically
