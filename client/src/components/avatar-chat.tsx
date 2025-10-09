@@ -64,42 +64,29 @@ export function AvatarChat() {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      {/* Mobile Controls */}
+      {/* Fullscreen Button - Mobile Only (Top Left) */}
       {isMobile && (
-        <>
-          {/* Fullscreen Button - Top Left */}
-          <Button
-            onClick={toggleFullscreen}
-            className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
-            data-testid="button-fullscreen-toggle"
-          >
-            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-          </Button>
-          
-          {/* End Chat Button - Top Right */}
-          <Button
-            onClick={endChat}
-            className="absolute top-4 right-4 z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3 backdrop-blur-sm"
-            data-testid="button-end-chat"
-            title="End chat and restart"
-          >
-            <X className="w-5 h-5" />
-          </Button>
-        </>
-      )}
-
-      {/* End Chat Button - Desktop (Top Right) */}
-      {!isMobile && (
         <Button
-          onClick={endChat}
-          className="absolute top-6 right-6 z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full px-4 py-2 backdrop-blur-sm flex items-center gap-2"
-          data-testid="button-end-chat-desktop"
-          title="End chat and restart"
+          onClick={toggleFullscreen}
+          className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-fullscreen-toggle"
         >
-          <X className="w-4 h-4" />
-          <span className="text-sm font-medium">End Chat</span>
+          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
         </Button>
       )}
+
+      {/* End Chat Button - Top Right (All Screens) */}
+      <Button
+        onClick={endChat}
+        className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+          isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
+        }`}
+        data-testid="button-end-chat"
+        title="End chat and restart"
+      >
+        <X className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+        {!isMobile && <span className="text-sm font-medium">End Chat</span>}
+      </Button>
 
       {/* Loading Video Overlay */}
       {isLoading && (
