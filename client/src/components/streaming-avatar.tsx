@@ -33,9 +33,19 @@ export function StreamingAvatarComponent() {
 
   useEffect(() => {
     if (stream && mediaStreamRef.current) {
+      console.log("🎥 Attaching stream to video element", {
+        streamTracks: stream.getTracks().length,
+        videoElement: !!mediaStreamRef.current
+      });
+      
       mediaStreamRef.current.srcObject = stream;
       mediaStreamRef.current.onloadedmetadata = () => {
-        mediaStreamRef.current?.play();
+        console.log("✅ Video metadata loaded, starting playback");
+        mediaStreamRef.current?.play().then(() => {
+          console.log("✅ Video playing successfully");
+        }).catch(err => {
+          console.error("❌ Video play error:", err);
+        });
       };
     }
   }, [stream]);
@@ -71,15 +81,30 @@ export function StreamingAvatarComponent() {
       
       const avatar = new StreamingAvatar({ token: newToken });
       avatarRef.current = avatar;
+      
+      // Set avatarStarted immediately so the video element exists when STREAM_READY fires
+      setAvatarStarted(true);
 
       avatar.on(StreamingEvents.STREAM_READY, (event) => {
-        console.log("Stream ready:", event.detail);
-        setStream(event.detail);
+        console.log("✅ Stream ready:", event.detail);
+        console.log("📹 Avatar mediaStream:", avatar.mediaStream);
+        console.log("📹 MediaStream tracks:", avatar.mediaStream?.getTracks());
+        console.log("📹 Video ref exists:", !!mediaStreamRef.current);
+        console.log("📹 Avatar started:", avatarStarted);
+        
+        // MediaStream is available via avatar.mediaStream property, NOT event.detail
+        if (avatar.mediaStream) {
+          console.log("🎬 Setting stream state...");
+          setStream(avatar.mediaStream);
+        } else {
+          console.error("❌ No mediaStream available on avatar object");
+        }
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log("Stream disconnected");
-        endSession();
+        console.warn("⚠️ Stream disconnected - this may be temporary");
+        // Don't automatically end the session - let the user manually restart if needed
+        // endSession();
       });
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
@@ -111,7 +136,7 @@ export function StreamingAvatarComponent() {
         disableIdleTimeout: false
       });
 
-      setAvatarStarted(true);
+      // avatarStarted is already set to true above
       setMicPermission('granted');
       
     } catch (error) {

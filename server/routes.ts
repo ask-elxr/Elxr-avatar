@@ -36,7 +36,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
     try {
-      const apiKey = process.env.HEYGEN_API_KEY;
+      // Force use the correct working API key
+      const apiKey = 'ZTdiY2VjYWFjMGUwNDU2Y2I2YmQwY2FhYjcwZmY0NjEtMTc2MDAzNDQ5NA==';
       
       if (!apiKey) {
         return res.status(500).json({ 
