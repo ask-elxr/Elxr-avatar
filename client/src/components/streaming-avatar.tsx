@@ -44,6 +44,18 @@ export function StreamingAvatarComponent() {
   }, []);
 
   useEffect(() => {
+    if (!avatarStarted && !isLoadingSession) {
+      startSession();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (avatarStarted && !isLoadingSession && !isListening) {
+      startListening();
+    }
+  }, [avatarStarted, isLoadingSession]);
+
+  useEffect(() => {
     if (stream && mediaStreamRef.current) {
       console.log("🎥 Attaching stream to video element", {
         streamTracks: stream.getTracks().length,
@@ -368,59 +380,22 @@ export function StreamingAvatarComponent() {
           ref={mediaStreamRef}
           autoPlay
           playsInline
-          className={`w-full h-full object-cover bg-black ${(!avatarStarted || isLoadingSession) ? 'hidden' : ''}`}
+          className="w-full h-full object-cover bg-black"
           data-testid="heygen-avatar-video"
         >
           <track kind="captions" />
         </video>
         
-        {/* Voice Chat Button - Center of Avatar */}
-        {avatarStarted && !isLoadingSession && !chatButtonClicked && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <Button
-              onClick={async () => {
-                setChatButtonClicked(true);
-                await startListening();
-              }}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg pointer-events-auto"
-              data-testid="button-chat-now"
-            >
-              Chat now
-            </Button>
-          </div>
-        )}
-        
         {/* Listening Indicator */}
         {isListening && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none">
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 pointer-events-none z-10">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${
               isRecording ? 'bg-red-600 animate-pulse' : 'bg-green-600'
             } text-white shadow-lg`}>
               <Mic className="w-4 h-4" />
               <span className="text-sm font-medium">
-                {isRecording ? 'Recording...' : 'Listening...'}
+                {isRecording ? 'Speaking...' : 'Listening...'}
               </span>
-            </div>
-          </div>
-        )}
-        
-        {/* Show loading overlay when not ready */}
-        {(!avatarStarted || isLoadingSession) && (
-          <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
-            <div className="text-center">
-              <h1 className="text-3xl font-bold text-white mb-4">
-                {isLoadingSession ? "Starting Avatar..." : "Loading Avatar"}
-              </h1>
-              <p className="text-gray-300 mb-6">SDK-based • No Branding • 4-Source Intelligence</p>
-              {!isLoadingSession && !avatarStarted && (
-                <Button
-                  onClick={startSession}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 rounded-lg text-lg"
-                  data-testid="button-start-session"
-                >
-                  Start Avatar Session
-                </Button>
-              )}
             </div>
           </div>
         )}
