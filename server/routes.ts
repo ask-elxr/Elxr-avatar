@@ -89,6 +89,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // HeyGen Interactive Avatar session endpoint (iframe approach)
+  app.post("/api/heygen/session", async (req, res) => {
+    try {
+      const apiKey = 'ZTdiY2VjYWFjMGUwNDU2Y2I2YmQwY2FhYjcwZmY0NjEtMTc2MDAzNDQ5NA==';
+      
+      if (!apiKey) {
+        return res.status(500).json({ 
+          error: "HeyGen API key not configured" 
+        });
+      }
+
+      console.log('Creating HeyGen interactive avatar session...');
+      
+      const response = await fetch('https://api.heygen.com/v1/interactive_avatars.create', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'x-api-key': apiKey
+        },
+        body: JSON.stringify({
+          quality: req.body.quality || "high",
+          avatar_name: req.body.avatar_name || "Angela-inblackskirt-20220820",
+          voice: req.body.voice || {
+            voice_id: "2b568345682d470ca1c71f2000159849"
+          },
+          language: req.body.language || "en"
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('HeyGen session creation error:', response.status, errorText);
+        return res.status(response.status).json({ 
+          error: `HeyGen API error: ${response.statusText}`,
+          details: errorText
+        });
+      }
+
+      const data = await response.json();
+      console.log('HeyGen session created:', data);
+      
+      res.json(data.data || data);
+    } catch (error) {
+      console.error('Error creating HeyGen session:', error);
+      res.status(500).json({ 
+        error: "Failed to create HeyGen session" 
+      });
+    }
+  });
+
+  // Delete HeyGen session
+  app.delete("/api/heygen/session/:sessionId", async (req, res) => {
+    try {
+      const apiKey = 'ZTdiY2VjYWFjMGUwNDU2Y2I2YmQwY2FhYjcwZmY0NjEtMTc2MDAzNDQ5NA==';
+      const { sessionId } = req.params;
+      
+      const response = await fetch(`https://api.heygen.com/v1/interactive_avatars/${sessionId}`, {
+        method: 'DELETE',
+        headers: {
+          'accept': 'application/json',
+          'x-api-key': apiKey
+        }
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('HeyGen session deletion error:', response.status, errorText);
+        return res.status(response.status).json({ 
+          error: `HeyGen API error: ${response.statusText}`,
+          details: errorText
+        });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error('Error deleting HeyGen session:', error);
+      res.status(500).json({ 
+        error: "Failed to delete HeyGen session" 
+      });
+    }
+  });
+
   // Pinecone conversation endpoints
   app.post("/api/conversations", async (req, res) => {
     try {
