@@ -45,17 +45,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('Creating HeyGen access token...');
+      console.log('API Key (first 20 chars):', apiKey?.substring(0, 20));
+      console.log('API Key length:', apiKey?.length);
+      
+      const requestBody = JSON.stringify({});
+      console.log('Request body:', requestBody);
       
       const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
         method: 'POST',
         headers: {
-          'X-Api-Key': apiKey,
-          'Content-Type': 'application/json'
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'x-api-key': apiKey
         },
-        body: JSON.stringify({
-          test: false // Set to false for API Pro plan
-        })
+        body: requestBody
       });
+      
+      console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
