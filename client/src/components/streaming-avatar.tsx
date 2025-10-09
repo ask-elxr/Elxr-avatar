@@ -148,7 +148,6 @@ export function StreamingAvatarComponent() {
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
         voice: {
-          voiceId: "en-US-JennyMultilingualNeural",
           rate: 1.0
         },
         language: "en",
