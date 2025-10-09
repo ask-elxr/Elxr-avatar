@@ -33,9 +33,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       profileImageUrl: null
     });
   });
-  // HeyGen API token endpoint
+  // HeyGen API session endpoint (LiveKit approach)
   app.post("/api/heygen/token", async (req, res) => {
-    console.log('🔑 HeyGen token endpoint hit');
+    console.log('🔑 HeyGen session endpoint hit (LiveKit approach)');
     try {
       const apiKey = process.env.HEYGEN_API_KEY || process.env.VITE_HEYGEN_API_KEY;
       console.log('API Key present:', !!apiKey);
@@ -47,13 +47,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      console.log('📡 Calling HeyGen API...');
-      const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
+      console.log('📡 Calling HeyGen streaming.new endpoint...');
+      const response = await fetch('https://api.heygen.com/v1/streaming.new', {
         method: 'POST',
         headers: {
-          'X-Api-Key': apiKey,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          avatar_name: '7e01e5d4e06149c9ba3c1728fa8f03d0',
+          quality: 'high'
+        })
       });
 
       console.log('HeyGen API response status:', response.status);
@@ -62,17 +66,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const errorText = await response.text();
         console.error('HeyGen API error:', response.status, errorText);
         return res.status(response.status).json({ 
-          error: `HeyGen API error: ${response.statusText}` 
+          error: `HeyGen API error: ${response.statusText}`,
+          details: errorText
         });
       }
 
       const data = await response.json();
-      console.log('✅ HeyGen token retrieved successfully');
+      console.log('✅ HeyGen session created successfully');
       return res.json(data);
     } catch (error) {
-      console.error('❌ Error creating HeyGen token:', error);
+      console.error('❌ Error creating HeyGen session:', error);
       return res.status(500).json({ 
-        error: "Failed to create HeyGen access token",
+        error: "Failed to create HeyGen session",
         details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
