@@ -147,8 +147,14 @@ export function StreamingAvatarComponent() {
 
       // Capture user's spoken message when they finish talking
       avatar.on(StreamingEvents.USER_END_MESSAGE, async (event: any) => {
-        const userSpeech = event.detail.message;
+        console.log("🎤 Raw event:", event);
+        const userSpeech = event?.detail?.message || event?.message || event;
         console.log("🎤 User said:", userSpeech);
+        
+        if (!userSpeech || userSpeech === null) {
+          console.warn("⚠️ No speech detected");
+          return;
+        }
         
         // Send to custom backend with dual Pinecone + Google Search + Claude Sonnet 4
         try {
