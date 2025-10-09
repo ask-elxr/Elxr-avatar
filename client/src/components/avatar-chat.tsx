@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize } from "lucide-react";
-import logoImage from "@assets/Asset 1@2x-8_1760048563105.png";
+import loadingVideo from "@assets/elxr_Transparent-DarkBg_1760049264390.mov";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check if device is mobile
@@ -19,6 +20,15 @@ export function AvatarChat() {
     
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    // Hide loading video after avatar iframe has time to initialize
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // Show loading for 3 seconds
+
+    return () => clearTimeout(timer);
+  }, [refreshKey]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
@@ -38,15 +48,23 @@ export function AvatarChat() {
         </Button>
       )}
 
-      {/* Logo - Top Left on desktop, Bottom Left on mobile to avoid overlaps */}
-      <div className={`absolute left-6 z-50 ${isMobile ? 'bottom-6' : 'top-6'}`}>
-        <img 
-          src={logoImage} 
-          alt="Logo" 
-          className="h-12 w-auto opacity-80"
-          data-testid="logo-image"
-        />
-      </div>
+      {/* Loading Video Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black animate-in fade-in duration-300">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-auto h-auto max-w-full max-h-full object-contain"
+            data-testid="loading-video"
+          >
+            <source src={loadingVideo} type="video/mp4" />
+            <source src={loadingVideo} type="video/quicktime" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      )}
 
       {/* Avatar Iframe */}
       <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
