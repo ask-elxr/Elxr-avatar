@@ -49,7 +49,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
         method: 'POST',
         headers: {
-          'x-api-key': apiKey,
+          'X-Api-Key': apiKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
