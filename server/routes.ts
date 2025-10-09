@@ -19,8 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware());
   
-  // Add timeout middleware for all routes (10 second timeout)
-  app.use(timeoutMiddleware(10000));
+  // Add timeout middleware for all routes (60 second timeout for AI operations with multiple sources)
+  app.use(timeoutMiddleware(60000));
 
   // Auth routes (disabled for now)
   app.get('/api/auth/user', async (req: any, res) => {
@@ -178,7 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
-  app.post("/api/avatar/response", timeoutMiddleware(30000), async (req, res) => {
+  app.post("/api/avatar/response", async (req, res) => {
     try {
       const { message, conversationHistory = [], avatarPersonality, useWebSearch = true } = req.body;
       
@@ -249,25 +249,30 @@ SIGNATURE LINES:
       let aiResponse: string;
       
       if (claudeService.isAvailable()) {
-        // Use Claude Sonnet 4 with Mark Kohl personality
-        const enhancedConversationHistory = conversationHistory.map((msg: any) => ({
+        // Limit conversation history to last 5 turns to reduce Claude latency
+        const recentHistory = conversationHistory.slice(-10).map((msg: any) => ({
           message: msg.message,
           isUser: msg.isUser
         }));
 
+        // Limit knowledge context to 1500 characters to reduce payload
+        const limitedKnowledgeContext = knowledgeContext 
+          ? knowledgeContext.substring(0, 1500) + (knowledgeContext.length > 1500 ? '...' : '')
+          : '';
+
         if (webSearchResults) {
           aiResponse = await claudeService.generateEnhancedResponse(
             message,
-            knowledgeContext,
+            limitedKnowledgeContext,
             webSearchResults,
-            enhancedConversationHistory,
+            recentHistory,
             personalityPrompt  // Pass Mark Kohl personality as custom system prompt
           );
         } else {
           aiResponse = await claudeService.generateResponse(
             message,
-            knowledgeContext,
-            enhancedConversationHistory,
+            limitedKnowledgeContext,
+            recentHistory,
             personalityPrompt  // Pass Mark Kohl personality as custom system prompt
           );
         }
@@ -276,14 +281,16 @@ SIGNATURE LINES:
         aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
       }
       
-      res.json({ 
-        success: true, 
-        message,
-        knowledgeResponse: aiResponse,
-        personalityUsed: personalityPrompt,
-        usedWebSearch: !!webSearchResults,
-        usedClaude: claudeService.isAvailable()
-      });
+      if (!res.headersSent) {
+        res.json({ 
+          success: true, 
+          message,
+          knowledgeResponse: aiResponse,
+          personalityUsed: personalityPrompt,
+          usedWebSearch: !!webSearchResults,
+          usedClaude: claudeService.isAvailable()
+        });
+      }
     } catch (error) {
       console.error('Error getting avatar response:', error);
       if (!res.headersSent) {

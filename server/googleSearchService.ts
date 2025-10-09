@@ -85,7 +85,9 @@ export class GoogleSearchService {
       
       data.items.slice(0, maxResults).forEach((item, index) => {
         formattedResults += `${index + 1}. ${item.title}\n`;
-        formattedResults += `   ${item.snippet}\n`;
+        // Limit snippet to 200 chars to reduce Claude payload and latency
+        const limitedSnippet = item.snippet.substring(0, 200) + (item.snippet.length > 200 ? '...' : '');
+        formattedResults += `   ${limitedSnippet}\n`;
         formattedResults += `   Source: ${item.link}\n\n`;
       });
 

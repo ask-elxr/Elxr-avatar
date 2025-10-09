@@ -75,7 +75,7 @@ export class ClaudeService {
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
-        max_tokens: 1000,
+        max_tokens: 600,  // Reduced for faster responses with lower latency
         messages: messages,
         system: systemPrompt
       });
@@ -148,7 +148,7 @@ export class ClaudeService {
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
-        max_tokens: 1200,
+        max_tokens: 600,  // Reduced for faster responses with lower latency
         messages: messages,
         system: systemPrompt
       });
