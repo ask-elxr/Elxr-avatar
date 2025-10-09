@@ -415,6 +415,19 @@ export function StreamingAvatarComponent() {
           <track kind="captions" />
         </video>
         
+        {/* Chat Now Button - Center of Avatar */}
+        {avatarStarted && !isLoadingSession && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <Button
+              onClick={() => {/* Voice is automatic */}}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg pointer-events-auto"
+              data-testid="button-chat-now"
+            >
+              Chat now
+            </Button>
+          </div>
+        )}
+        
         {/* Show loading overlay when not ready */}
         {(!avatarStarted || isLoadingSession) && (
           <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
