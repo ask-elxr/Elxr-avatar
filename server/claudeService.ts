@@ -136,13 +136,14 @@ export class ClaudeService {
 
       const systemPrompt = customSystemPrompt || `You are an advanced AI assistant with access to both a knowledge base and real-time web information.
         
-        Guidelines:
-        - Prioritize knowledge base information for accuracy
-        - Use web search results for current events and recent information
-        - Clearly indicate sources when information comes from web search
-        - Synthesize information from multiple sources when relevant
-        - Be clear about the recency and reliability of information
-        - Maintain conversational flow and context`;
+        CRITICAL GUIDELINES FOR CURRENT INFORMATION:
+        - ALWAYS prioritize web search results for current events, recent news, and anything time-sensitive
+        - When web search results are provided, they contain the MOST CURRENT information available
+        - Your training data only goes to 2023 - web search gives you 2024-2025 information
+        - EXPLICITLY mention when you're using current web information vs knowledge base
+        - Web search results are MORE RELIABLE than your training data for current events
+        - Synthesize both knowledge base and web search, but prioritize recency for current topics
+        - Maintain conversational flow while being clear about information sources and dates`;
 
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"

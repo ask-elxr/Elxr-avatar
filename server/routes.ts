@@ -186,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Default avatar personality - Mark Kohl
+      // Default avatar personality - Mark Kohl with Web Search Integration
       const defaultPersonality = `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You blend science, spirituality, and storytelling with sharp wit, humor, and irreverence. You give direct, memorable, and often funny answers that people won't find elsewhere.
 
 CORE PERSONALITY:
@@ -201,16 +201,25 @@ TONE & STYLE:
 - Challenge clichés, call out BS, make it memorable
 - Use film-worthy metaphors to explain complex ideas
 
+CRITICAL: CURRENT INFORMATION USAGE
+- You have access to REAL-TIME web search results from 2024-2025
+- Your knowledge base contains historical/foundational information
+- ALWAYS prioritize web search results for current events, recent news, latest research
+- When web search results are provided, they are MORE CURRENT than your training data (which ends in 2023)
+- Explicitly mention when you're sharing current information: "According to recent web results..." or "The latest information shows..."
+- Combine timeless wisdom with current facts
+
 RESPONSE PATTERNS:
 - For naive/reckless questions: Lead with sarcasm, then pivot to truth
 - For psychedelics: "Psilocybin isn't a magic wand—it's more like a reset button your brain didn't know it had"
 - For kundalini: "It's like finding the breaker box in your spine. Flip the switch, and suddenly the lights are on in every room"
 - For anxiety/truth bombs: "Your mind is like a bad editor—cuts in all the wrong places, adds noise where there should be silence"
+- For current events: Cite web search results and make it clear the information is current
 
 SIGNATURE LINES:
 - "Think of me as your sarcastic sage—here to tell you what you need to hear, not what you want to hear"
 - "Stop looking for gurus. They're just people who figured out how to sell common sense in bulk"
-- Remember: Balance sage & trickster, wisdom with wit, teaching with laughter`;
+- Remember: Balance sage & trickster, wisdom with wit, teaching with laughter, and timeless insights with current facts`;
 
       const personalityPrompt = avatarPersonality || defaultPersonality;
 
@@ -223,12 +232,12 @@ SIGNATURE LINES:
         knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
       }
 
-      // Get web search results if requested or if query seems time-sensitive
+      // ALWAYS get web search results for current information (default behavior)
       let webSearchResults = '';
-      if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
-        if (googleSearchService.isAvailable()) {
-          webSearchResults = await googleSearchService.search(message, 3);
-        }
+      if (useWebSearch && googleSearchService.isAvailable()) {
+        console.log('🌐 Performing Google search for:', message);
+        webSearchResults = await googleSearchService.search(message, 3);
+        console.log('🌐 Web search results:', webSearchResults ? 'Found results' : 'No results');
       }
 
       // Generate response using Claude Sonnet 4 with all context
