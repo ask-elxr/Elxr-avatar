@@ -15,6 +15,7 @@ export function StreamingAvatarComponent() {
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [chatMessage, setChatMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [chatButtonClicked, setChatButtonClicked] = useState(false);
   
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -416,10 +417,10 @@ export function StreamingAvatarComponent() {
         </video>
         
         {/* Chat Now Button - Center of Avatar */}
-        {avatarStarted && !isLoadingSession && (
+        {avatarStarted && !isLoadingSession && !chatButtonClicked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <Button
-              onClick={() => {/* Voice is automatic */}}
+              onClick={() => setChatButtonClicked(true)}
               className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg pointer-events-auto"
               data-testid="button-chat-now"
             >
