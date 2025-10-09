@@ -1,113 +1,27 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X, Mic } from "lucide-react";
-import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
+import { Mic, MicOff, MessageSquare, Video, VideoOff } from "lucide-react";
+import StreamingAvatar, { AvatarQuality, StreamingEvents } from "@heygen/streaming-avatar";
 
-export function StreamingAvatarComponent() {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+interface StreamingAvatarComponentProps {
+  onAvatarResponse?: (response: string) => void;
+}
+
+export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarComponentProps) {
   const [isLoadingSession, setIsLoadingSession] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [avatarStarted, setAvatarStarted] = useState(false);
-  const [isListening, setIsListening] = useState(false);
+  const [isUserTalking, setIsUserTalking] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("Click 'Start Avatar' to begin");
   
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
-  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
     return () => {
-      window.removeEventListener('resize', checkMobile);
       endSession();
     };
   }, []);
-
-  useEffect(() => {
-    if (!avatarStarted && !isLoadingSession) {
-      startSession();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (stream && mediaStreamRef.current) {
-      mediaStreamRef.current.srcObject = stream;
-      mediaStreamRef.current.onloadedmetadata = () => {
-        mediaStreamRef.current?.play().catch(err => {
-          console.error("Video play error:", err);
-        });
-      };
-    }
-  }, [stream]);
-
-  // Initialize Web Speech API when avatar is ready
-  useEffect(() => {
-    if (avatarStarted && !isLoadingSession && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      
-      recognition.continuous = true;
-      recognition.interimResults = false;
-      recognition.lang = 'en-US';
-
-      recognition.onstart = () => {
-        console.log('🎤 Voice recognition started');
-        setIsListening(true);
-      };
-
-      recognition.onresult = async (event: any) => {
-        const transcript = event.results[event.results.length - 1][0].transcript;
-        console.log('📝 Heard:', transcript);
-        
-        if (transcript.trim()) {
-          await handleSpeak(transcript);
-        }
-      };
-
-      recognition.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
-        if (event.error === 'no-speech') {
-          recognition.start();
-        }
-      };
-
-      recognition.onend = () => {
-        if (avatarStarted) {
-          recognition.start();
-        }
-      };
-
-      recognitionRef.current = recognition;
-      recognition.start();
-
-      return () => {
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      };
-    }
-  }, [avatarStarted, isLoadingSession]);
-
-  const toggleFullscreen = async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await document.documentElement.requestFullscreen();
-        setIsFullscreen(true);
-      } else {
-        await document.exitFullscreen();
-        setIsFullscreen(false);
-      }
-    } catch (err) {
-      console.error("Fullscreen error:", err);
-      setIsFullscreen(!isFullscreen);
-    }
-  };
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -116,8 +30,7 @@ export function StreamingAvatarComponent() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch access token");
+        throw new Error("Failed to fetch access token");
       }
 
       const data = await response.json();
@@ -129,129 +42,200 @@ export function StreamingAvatarComponent() {
   }
 
   async function startSession() {
-    console.log("🚀 Starting avatar session...");
     setIsLoadingSession(true);
+    setStatusMessage("Initializing avatar session...");
 
     try {
       const newToken = await fetchAccessToken();
       
       const avatar = new StreamingAvatar({ token: newToken });
       avatarRef.current = avatar;
-      setAvatarStarted(true);
 
       avatar.on(StreamingEvents.STREAM_READY, (event) => {
-        console.log("✅ Stream ready");
+        console.log("Stream ready:", event.detail);
         setStream(event.detail);
+        setStatusMessage("Avatar stream ready!");
       });
 
+      avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
+        console.log("Stream disconnected");
+        setStatusMessage("Avatar disconnected");
+        endSession();
+      });
+
+      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+        console.log("Avatar started talking");
+        setStatusMessage("Avatar is speaking...");
+      });
+
+      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+        console.log("Avatar stopped talking");
+        setStatusMessage("Avatar ready for input");
+      });
+
+      avatar.on(StreamingEvents.USER_START, () => {
+        console.log("User started talking");
+        setIsUserTalking(true);
+        setStatusMessage("Listening...");
+      });
+
+      avatar.on(StreamingEvents.USER_STOP, () => {
+        console.log("User stopped talking");
+        setIsUserTalking(false);
+        setStatusMessage("Processing your question...");
+      });
+
+      // Start avatar session with your avatar ID
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
-        avatarName: "Angela-inblackskirt-20220820",
+        avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0", // Your avatar ID
+        knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4", // Your knowledge base ID
+        voice: {
+          rate: 1.0
+        },
         language: "en",
         disableIdleTimeout: false
       });
 
-      setIsLoadingSession(false);
+      setAvatarStarted(true);
+      setStatusMessage("Avatar ready! Start talking or type a message");
+      
     } catch (error) {
-      console.error("❌ Error starting avatar session:", error);
-      setAvatarStarted(false);
+      console.error("Error starting avatar session:", error);
+      setStatusMessage(`Error: ${error instanceof Error ? error.message : 'Failed to start avatar'}`);
+    } finally {
       setIsLoadingSession(false);
     }
   }
 
+  async function endSession() {
+    if (avatarRef.current) {
+      try {
+        await avatarRef.current.stopAvatar();
+        avatarRef.current = null;
+      } catch (error) {
+        console.error("Error ending session:", error);
+      }
+    }
+    setStream(null);
+    setAvatarStarted(false);
+    setStatusMessage("Avatar session ended");
+  }
+
   async function handleSpeak(text: string) {
+    if (!avatarRef.current || !avatarStarted) {
+      setStatusMessage("Please start the avatar first");
+      return;
+    }
+
     try {
+      // Get enhanced response from backend with 4-source intelligence
       const response = await fetch("/api/chat/enhanced", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           message: text,
-          useWebSearch: true
+          useWebSearch: true // Enable web search for current information
         }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log("🤖 AI Response:", data.message);
-        
-        if (avatarRef.current) {
-          await avatarRef.current.speak({ 
-            text: data.message,
-            taskType: TaskType.TALK
-          });
-        }
+      if (!response.ok) {
+        throw new Error("Failed to get AI response");
+      }
+
+      const data = await response.json();
+      const aiResponse = data.message;
+
+      // Make avatar speak the response
+      await avatarRef.current.speak({ text: aiResponse });
+      
+      if (onAvatarResponse) {
+        onAvatarResponse(aiResponse);
       }
     } catch (error) {
-      console.error("Error processing message:", error);
+      console.error("Error in avatar speech:", error);
+      setStatusMessage(`Error: ${error instanceof Error ? error.message : 'Speech failed'}`);
     }
   }
 
-  async function endSession() {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+  useEffect(() => {
+    if (stream && mediaStreamRef.current) {
+      mediaStreamRef.current.srcObject = stream;
+      mediaStreamRef.current.onloadedmetadata = () => {
+        mediaStreamRef.current?.play();
+      };
     }
-    
-    if (avatarRef.current) {
-      try {
-        await avatarRef.current.stopAvatar();
-      } catch (error) {
-        console.error("Error ending session:", error);
-      }
-    }
-    setAvatarStarted(false);
-    setStream(null);
-    setIsListening(false);
-  }
-
-  const forceRefreshAvatar = async () => {
-    await endSession();
-    setTimeout(() => startSession(), 500);
-  };
+  }, [stream]);
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
-      
-      {/* Top Controls */}
-      <div className="absolute top-4 right-4 flex gap-2 z-50">
-        <Button
-          onClick={toggleFullscreen}
-          className="bg-gray-600/80 hover:bg-gray-700 text-white rounded-full p-3 backdrop-blur-sm"
-          data-testid="button-fullscreen"
-        >
-          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-        </Button>
-        <Button
-          onClick={forceRefreshAvatar}
-          className="bg-gray-600/80 hover:bg-gray-700 text-white rounded-full p-3 backdrop-blur-sm"
-          data-testid="button-force-refresh"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
-
-      {/* Avatar Video */}
-      <div className={`w-full h-full ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
-        <video
-          ref={mediaStreamRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover bg-black"
-          data-testid="heygen-avatar-video"
-        >
-          <track kind="captions" />
-        </video>
-        
-        {/* Listening Indicator */}
-        {isListening && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-600 text-white shadow-lg">
-              <Mic className="w-4 h-4 animate-pulse" />
-              <span className="text-sm font-medium">Listening...</span>
+    <div className="w-full h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Video Stream */}
+      <div className="w-full h-full flex items-center justify-center">
+        {!avatarStarted ? (
+          <div className="text-center">
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-white mb-4">AI Avatar with 4-Source Intelligence</h1>
+              <p className="text-gray-300 mb-2">Dual Pinecone Assistants + Google Search + Claude Sonnet 4</p>
+              <p className="text-gray-400 text-sm">ask-elxr & knowledge-base-assistant</p>
             </div>
+            <Button
+              onClick={startSession}
+              disabled={isLoadingSession}
+              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-6 text-lg rounded-full"
+              data-testid="button-start-avatar"
+            >
+              {isLoadingSession ? "Starting..." : "Start Avatar"}
+            </Button>
           </div>
+        ) : (
+          <>
+            <video
+              ref={mediaStreamRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+              data-testid="avatar-video-stream"
+            >
+              <track kind="captions" />
+            </video>
+
+            {/* Control Panel */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 bg-black/50 backdrop-blur-md rounded-full px-6 py-4">
+              <Button
+                onClick={endSession}
+                className="bg-red-600 hover:bg-red-700 text-white rounded-full px-6"
+                data-testid="button-end-session"
+              >
+                <VideoOff className="w-5 h-5 mr-2" />
+                End Session
+              </Button>
+              
+              <Button
+                onClick={() => handleSpeak("Hello! Tell me what you can help with.")}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                data-testid="button-test-message"
+              >
+                <MessageSquare className="w-5 h-5 mr-2" />
+                Test Message
+              </Button>
+            </div>
+
+            {/* Status Display */}
+            <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-md rounded-full px-6 py-3">
+              <div className="flex items-center gap-3">
+                {isUserTalking ? (
+                  <Mic className="w-5 h-5 text-green-400 animate-pulse" />
+                ) : (
+                  <MicOff className="w-5 h-5 text-gray-400" />
+                )}
+                <span className="text-white text-sm" data-testid="status-message">
+                  {statusMessage}
+                </span>
+              </div>
+            </div>
+          </>
         )}
       </div>
-
     </div>
   );
 }

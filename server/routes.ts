@@ -36,8 +36,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
     try {
-      // Force use the correct working API key
-      const apiKey = 'ZTdiY2VjYWFjMGUwNDU2Y2I2YmQwY2FhYjcwZmY0NjEtMTc2MDAzNDQ5NA==';
+      const apiKey = process.env.HEYGEN_API_KEY;
       
       if (!apiKey) {
         return res.status(500).json({ 
@@ -46,23 +45,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('Creating HeyGen access token...');
-      console.log('API Key (first 20 chars):', apiKey?.substring(0, 20));
-      console.log('API Key length:', apiKey?.length);
-      
-      const requestBody = JSON.stringify({});
-      console.log('Request body:', requestBody);
       
       const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'x-api-key': apiKey
-        },
-        body: requestBody
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json'
+        }
       });
-      
-      console.log('Response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -85,90 +75,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error creating HeyGen token:', error);
       res.status(500).json({ 
         error: "Failed to create HeyGen access token" 
-      });
-    }
-  });
-
-  // HeyGen Interactive Avatar session endpoint (iframe approach)
-  app.post("/api/heygen/session", async (req, res) => {
-    try {
-      const apiKey = 'ZTdiY2VjYWFjMGUwNDU2Y2I2YmQwY2FhYjcwZmY0NjEtMTc2MDAzNDQ5NA==';
-      
-      if (!apiKey) {
-        return res.status(500).json({ 
-          error: "HeyGen API key not configured" 
-        });
-      }
-
-      console.log('Creating HeyGen interactive avatar session...');
-      
-      const response = await fetch('https://api.heygen.com/v1/interactive_avatars.create', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'x-api-key': apiKey
-        },
-        body: JSON.stringify({
-          quality: req.body.quality || "high",
-          avatar_name: req.body.avatar_name || "Angela-inblackskirt-20220820",
-          voice: req.body.voice || {
-            voice_id: "2b568345682d470ca1c71f2000159849"
-          },
-          language: req.body.language || "en"
-        })
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('HeyGen session creation error:', response.status, errorText);
-        return res.status(response.status).json({ 
-          error: `HeyGen API error: ${response.statusText}`,
-          details: errorText
-        });
-      }
-
-      const data = await response.json();
-      console.log('HeyGen session created:', data);
-      
-      res.json(data.data || data);
-    } catch (error) {
-      console.error('Error creating HeyGen session:', error);
-      res.status(500).json({ 
-        error: "Failed to create HeyGen session" 
-      });
-    }
-  });
-
-  // Delete HeyGen session
-  app.delete("/api/heygen/session/:sessionId", async (req, res) => {
-    try {
-      const apiKey = 'ZTdiY2VjYWFjMGUwNDU2Y2I2YmQwY2FhYjcwZmY0NjEtMTc2MDAzNDQ5NA==';
-      const { sessionId } = req.params;
-      
-      const response = await fetch(`https://api.heygen.com/v1/interactive_avatars/${sessionId}`, {
-        method: 'DELETE',
-        headers: {
-          'accept': 'application/json',
-          'x-api-key': apiKey
-        }
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('HeyGen session deletion error:', response.status, errorText);
-        return res.status(response.status).json({ 
-          error: `HeyGen API error: ${response.statusText}`,
-          details: errorText
-        });
-      }
-
-      const data = await response.json();
-      res.json(data);
-    } catch (error) {
-      console.error('Error deleting HeyGen session:', error);
-      res.status(500).json({ 
-        error: "Failed to delete HeyGen session" 
       });
     }
   });
@@ -203,30 +109,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error storing conversation:', error);
       res.status(500).json({ 
         error: "Failed to store conversation" 
-      });
-    }
-  });
-
-  // Audio transcription endpoint using Deepgram
-  const uploadAudio = multer({ storage: multer.memoryStorage() });
-  app.post("/api/transcribe", uploadAudio.single('audio'), async (req: any, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No audio file provided" });
-      }
-
-      const { transcribeAudio } = await import("./deepgramService.js");
-      const transcript = await transcribeAudio(req.file.buffer);
-      
-      res.json({ 
-        success: true, 
-        transcript 
-      });
-    } catch (error) {
-      console.error('Transcription error:', error);
-      res.status(500).json({ 
-        error: "Failed to transcribe audio",
-        details: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });

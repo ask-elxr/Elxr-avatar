@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
-    "@deepgram/sdk": "^4.11.2",
     "@google-cloud/storage": "^7.17.0",
     "@google/genai": "^1.16.0",
     "@heygen/streaming-avatar": "^2.1.0",
