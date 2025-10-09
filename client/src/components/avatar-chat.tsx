@@ -1,330 +1,147 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Loader2, Mic, MicOff, Power, MessageSquare } from "lucide-react";
-import StreamingAvatar, { 
-  AvatarQuality, 
-  StreamingEvents,
-  TaskType,
-  VoiceEmotion 
-} from '@heygen/streaming-avatar';
+import { Maximize, Minimize, MessageSquare, Mic, MicOff, ExternalLink } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
 export function AvatarChat() {
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [isVoiceChatActive, setIsVoiceChatActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [status, setStatus] = useState("Click 'Start Avatar' to begin");
-  const [apiToken, setApiToken] = useState<string | null>(null);
-  
-  const avatarRef = useRef<any>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const conversationHistoryRef = useRef<Array<{message: string, isUser: boolean}>>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const { user, isAuthenticated } = useAuth();
+  const { getAvatarResponse, isLoading, error } = useKnowledgeBase();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  // Fetch HeyGen API token from backend
   useEffect(() => {
-    fetch('/api/heygen/token')
-      .then(res => res.json())
-      .then(data => {
-        if (data.token) {
-          setApiToken(data.token);
-        }
-      })
-      .catch(err => {
-        console.error('Failed to get HeyGen token:', err);
-        setStatus('Error: Failed to get API token');
-      });
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Initialize and start avatar session
-  const startSession = async () => {
-    if (!apiToken) {
-      setStatus('Error: No API token available');
-      return;
-    }
+  const toggleFullscreen = () => {
+    setIsFullscreen(!isFullscreen);
+  };
 
-    setIsLoading(true);
-    setStatus('Initializing avatar...');
-
+  const requestMicrophonePermission = async () => {
     try {
-      // Initialize streaming avatar
-      const avatar = new StreamingAvatar({ token: apiToken });
-      avatarRef.current = avatar;
-
-      // Set up event listeners
-      avatar.on(StreamingEvents.STREAM_READY, (event: any) => {
-        setStatus('Avatar ready! Click "Start Voice Chat" to begin.');
-        if (videoRef.current && event.stream) {
-          videoRef.current.srcObject = event.stream;
-          videoRef.current.play();
-        }
-      });
-
-      avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        setStatus('Avatar disconnected');
-        setIsSessionActive(false);
-        setIsVoiceChatActive(false);
-      });
-
-      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-        setIsSpeaking(true);
-        setStatus('Avatar is speaking...');
-      });
-
-      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-        setIsSpeaking(false);
-        setStatus(isVoiceChatActive ? 'Listening for your voice...' : 'Avatar ready');
-      });
-
-      // User speech events
-      avatar.on(StreamingEvents.USER_START, () => {
-        setStatus('You are speaking...');
-      });
-
-      avatar.on(StreamingEvents.USER_STOP, async (event: any) => {
-        setStatus('Processing your question...');
-        console.log('User said:', event);
-        
-        // Get user's transcribed text
-        const userMessage = event.message || event.text || '';
-        
-        if (userMessage.trim()) {
-          // Add to conversation history
-          conversationHistoryRef.current.push({
-            message: userMessage,
-            isUser: true
-          });
-
-          try {
-            // Call our backend API with Pinecone + Google Search + Claude
-            const response = await fetch('/api/avatar/response', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                message: userMessage,
-                conversationHistory: conversationHistoryRef.current,
-                useWebSearch: true
-              })
-            });
-
-            const data = await response.json();
-            
-            if (data.success && data.knowledgeResponse) {
-              const aiResponse = data.knowledgeResponse;
-              
-              // Add to conversation history
-              conversationHistoryRef.current.push({
-                message: aiResponse,
-                isUser: false
-              });
-
-              // Make avatar speak our backend response using REPEAT mode
-              await avatar.speak({
-                text: aiResponse,
-                task_type: TaskType.REPEAT
-              });
-
-              setStatus('Avatar responded - listening...');
-            }
-          } catch (error) {
-            console.error('Error getting backend response:', error);
-            setStatus('Error getting response - try again');
-          }
-        }
-      });
-
-      // Create and start avatar session
-      const sessionInfo = await avatar.createStartAvatar({
-        avatarName: '7e01e5d4e06149c9ba3c1728fa8f03d0', // Your avatar ID
-        quality: AvatarQuality.High,
-        voice: {
-          rate: 1.0,
-          emotion: VoiceEmotion.FRIENDLY
-        }
-      });
-
-      console.log('Session started:', sessionInfo.session_id);
-      setIsSessionActive(true);
-      setIsLoading(false);
-      
-    } catch (error) {
-      console.error('Error starting avatar:', error);
-      setStatus('Error: ' + (error instanceof Error ? error.message : 'Failed to start avatar'));
-      setIsLoading(false);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      setMicPermission('granted');
+      stream.getTracks().forEach(track => track.stop());
+      setRefreshKey(prev => prev + 1);
+      alert('✅ Microphone permission granted! The avatar can now hear you.');
+    } catch (err) {
+      setMicPermission('denied');
+      alert('❌ Microphone access denied. Click the 🔒 lock icon in your browser address bar and allow microphone access.');
     }
   };
 
-  // Start voice chat
-  const startVoiceChat = async () => {
-    if (!avatarRef.current) return;
-
+  const testCurrentInfo = async () => {
     try {
-      setStatus('Starting voice chat...');
-      await avatarRef.current.startVoiceChat({
-        useSilencePrompt: true
-      });
-      setIsVoiceChatActive(true);
-      setStatus('Listening for your voice... Speak now!');
-    } catch (error) {
-      console.error('Error starting voice chat:', error);
-      setStatus('Error: ' + (error instanceof Error ? error.message : 'Failed to start voice chat'));
+      const response = await getAvatarResponse("Who is the current US president in 2025?");
+      alert(`✅ BACKEND API (WITH CURRENT DATA):\n\n${response.substring(0, 300)}...\n\n💡 This uses Pinecone + Google Search + Claude Sonnet 4 with current 2025 information!`);
+    } catch (err) {
+      alert(`❌ Error: ${err instanceof Error ? err.message : 'Failed to query'}`);
     }
   };
 
-  // Stop voice chat
-  const stopVoiceChat = async () => {
-    if (!avatarRef.current) return;
-
-    try {
-      await avatarRef.current.closeVoiceChat();
-      setIsVoiceChatActive(false);
-      setStatus('Voice chat stopped');
-    } catch (error) {
-      console.error('Error stopping voice chat:', error);
-    }
-  };
-
-  // Stop session
-  const stopSession = async () => {
-    if (!avatarRef.current) return;
-
-    try {
-      setStatus('Stopping avatar...');
-      await avatarRef.current.stopAvatar();
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-      
-      setIsSessionActive(false);
-      setIsVoiceChatActive(false);
-      conversationHistoryRef.current = [];
-      setStatus('Avatar stopped. Click "Start Avatar" to begin again.');
-    } catch (error) {
-      console.error('Error stopping avatar:', error);
-      setStatus('Error stopping avatar');
-    }
-  };
-
-  // Test backend API directly
-  const testBackendAPI = async () => {
-    try {
-      setStatus('Testing backend API...');
-      const response = await fetch('/api/avatar/response', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: 'Who is the current US president in 2025?',
-          useWebSearch: true
-        })
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        alert(`✅ Backend API Works!\n\nResponse: ${data.knowledgeResponse.substring(0, 200)}...`);
-        setStatus('Backend API test successful');
-      }
-    } catch (error) {
-      alert('❌ Backend API Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
-      setStatus('Backend API test failed');
-    }
+  const openDirectLink = () => {
+    const heygenUrl = "https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9";
+    window.open(heygenUrl, '_blank');
   };
 
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
-      {/* Control Panel */}
-      <div className="absolute top-4 left-4 right-4 z-50 flex justify-between items-start">
-        {/* Status Display */}
-        <div className="bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-lg max-w-md">
-          <div className="flex items-center gap-2">
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isSpeaking && <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />}
-            <span className="text-sm">{status}</span>
-          </div>
-        </div>
-
-        {/* Control Buttons */}
-        <div className="flex gap-2">
-          {/* Test Backend Button */}
-          <Button
-            onClick={testBackendAPI}
-            className="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full p-3"
-            data-testid="button-test-backend"
-            title="Test backend API (Pinecone + Google + Claude)"
-          >
-            <MessageSquare className="w-5 h-5" />
-          </Button>
-
-          {/* Start/Stop Session Button */}
-          {!isSessionActive ? (
-            <Button
-              onClick={startSession}
-              disabled={isLoading || !apiToken}
-              className="bg-green-600/80 hover:bg-green-700 text-white rounded-full p-3"
-              data-testid="button-start-session"
-              title="Start Avatar Session"
-            >
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Power className="w-5 h-5" />}
-            </Button>
-          ) : (
-            <Button
-              onClick={stopSession}
-              className="bg-red-600/80 hover:bg-red-700 text-white rounded-full p-3"
-              data-testid="button-stop-session"
-              title="Stop Avatar Session"
-            >
-              <Power className="w-5 h-5" />
-            </Button>
-          )}
-
-          {/* Voice Chat Toggle */}
-          {isSessionActive && (
-            <Button
-              onClick={isVoiceChatActive ? stopVoiceChat : startVoiceChat}
-              className={`${
-                isVoiceChatActive 
-                  ? 'bg-orange-600/80 hover:bg-orange-700' 
-                  : 'bg-purple-600/80 hover:bg-purple-700'
-              } text-white rounded-full p-3`}
-              data-testid="button-voice-chat"
-              title={isVoiceChatActive ? 'Stop Voice Chat' : 'Start Voice Chat'}
-            >
-              {isVoiceChatActive ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </Button>
-          )}
-        </div>
+    <div className="w-full h-screen relative overflow-hidden">
+      {/* Warning Banner */}
+      <div className="absolute top-0 left-0 right-0 z-40 bg-yellow-600 text-white px-4 py-2 text-center text-sm">
+        ⚠️ <strong>VIDEO AVATAR:</strong> Uses HeyGen's knowledge base (may have outdated info). Click <strong>blue button</strong> to test backend with current 2025 data.
       </div>
 
-      {/* Video Container */}
-      <div className="w-full h-full flex items-center justify-center">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-          data-testid="avatar-video"
+      {/* Fullscreen Button - Mobile Only */}
+      {isMobile && (
+        <Button
+          onClick={toggleFullscreen}
+          className="absolute top-16 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-fullscreen-toggle"
+        >
+          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+        </Button>
+      )}
+
+      {/* Control Buttons - Top Right */}
+      <div className="absolute top-16 right-4 z-50 flex gap-2">
+        {/* Test Backend API Button - SHOWS CURRENT DATA */}
+        <Button
+          onClick={testCurrentInfo}
+          disabled={isLoading}
+          className="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full p-3 backdrop-blur-sm animate-pulse"
+          data-testid="button-test-backend"
+          title="Test backend API with current 2025 information (Pinecone + Google + Claude)"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </Button>
+
+        {/* Microphone Permission Button */}
+        <Button
+          onClick={requestMicrophonePermission}
+          className={`${
+            micPermission === 'granted' 
+              ? 'bg-green-600/80 hover:bg-green-700' 
+              : micPermission === 'denied'
+              ? 'bg-yellow-600/80 hover:bg-yellow-700'
+              : 'bg-orange-600/80 hover:bg-orange-700'
+          } text-white rounded-full p-3 backdrop-blur-sm`}
+          data-testid="button-microphone-permission"
+          title={
+            micPermission === 'granted' 
+              ? 'Microphone access granted' 
+              : micPermission === 'denied'
+              ? 'Microphone access denied - click to retry'
+              : 'Click to enable microphone access'
+          }
+        >
+          {micPermission === 'granted' ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        </Button>
+
+        {/* Direct Link Test Button */}
+        <Button
+          onClick={openDirectLink}
+          className="bg-purple-600/80 hover:bg-purple-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-direct-link"
+          title="Open HeyGen avatar in new tab"
+        >
+          <ExternalLink className="w-5 h-5" />
+        </Button>
+      </div>
+
+      {/* Video Avatar Iframe */}
+      <div className={`w-full h-full avatar-iframe-container pt-10 ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+        <iframe
+          key={refreshKey}
+          ref={iframeRef}
+          src={`https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1&t=${refreshKey}`}
+          className="w-full h-full border-0"
+          allow="microphone; camera"
+          title="HeyGen Interactive Avatar"
+          data-testid="heygen-avatar-iframe"
         />
       </div>
 
-      {/* Instructions Overlay (shown when no session) */}
-      {!isSessionActive && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="text-center text-white max-w-lg px-4">
-            <h2 className="text-3xl font-bold mb-4">AI Avatar Chat</h2>
-            <p className="text-lg mb-6">
-              Powered by Claude Sonnet 4, dual Pinecone knowledge bases, and real-time Google web search
-            </p>
-            <div className="space-y-3 text-left bg-white/10 p-6 rounded-lg">
-              <p>✅ <strong>Step 1:</strong> Click the green power button to start</p>
-              <p>✅ <strong>Step 2:</strong> Click the microphone button to enable voice chat</p>
-              <p>✅ <strong>Step 3:</strong> Speak your question</p>
-              <p>✅ <strong>Step 4:</strong> Avatar responds with current 2024-2025 information!</p>
-            </div>
-            <p className="text-sm mt-4 text-gray-300">
-              💡 Click the blue chat button to test the backend API directly
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Instructions Overlay */}
+      <div className="absolute bottom-4 left-4 right-4 z-50 bg-black/70 backdrop-blur-sm text-white p-4 rounded-lg text-sm">
+        <p className="font-bold mb-2">🎥 VIDEO AVATAR STATUS:</p>
+        <ul className="space-y-1 text-xs">
+          <li>✅ <strong>Video Avatar:</strong> Working (visible above)</li>
+          <li>⚠️ <strong>Knowledge:</strong> Uses HeyGen's database (may be outdated)</li>
+          <li>💡 <strong>Click blue button:</strong> Tests backend with CURRENT 2025 data (Pinecone + Google + Claude)</li>
+          <li>🔧 <strong>To connect avatar to backend:</strong> Need valid HeyGen API key from app.heygen.com → Settings → API</li>
+        </ul>
+      </div>
     </div>
   );
 }
