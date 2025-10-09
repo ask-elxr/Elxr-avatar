@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, MessageSquare, Mic, MicOff, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Maximize, Minimize, MessageSquare, Mic, MicOff, X, Send } from "lucide-react";
 import StreamingAvatar, { AvatarQuality, StreamingEvents } from "@heygen/streaming-avatar";
 import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
@@ -12,6 +13,8 @@ export function StreamingAvatarComponent() {
   const [avatarStarted, setAvatarStarted] = useState(false);
   const [isUserTalking, setIsUserTalking] = useState(false);
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [chatMessage, setChatMessage] = useState("");
+  const [isSending, setIsSending] = useState(false);
   
   const mediaStreamRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -222,6 +225,31 @@ export function StreamingAvatarComponent() {
     }
   }
 
+  async function sendMessage() {
+    if (!chatMessage.trim() || !avatarRef.current || !avatarStarted) {
+      return;
+    }
+
+    setIsSending(true);
+    const userMessage = chatMessage;
+    setChatMessage(""); // Clear input immediately
+
+    try {
+      await handleSpeak(userMessage);
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsSending(false);
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   const testKnowledgeBase = async () => {
     try {
       const response = await getAvatarResponse("What are the main topics you can help with?");
@@ -348,6 +376,31 @@ export function StreamingAvatarComponent() {
           </div>
         )}
       </div>
+
+      {/* Chat Input - Bottom */}
+      {avatarStarted && !isLoadingSession && (
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent">
+          <div className="max-w-4xl mx-auto flex gap-2">
+            <Input
+              value={chatMessage}
+              onChange={(e) => setChatMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Type your message and press Enter..."
+              disabled={isSending || !avatarStarted}
+              className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
+              data-testid="input-chat-message"
+            />
+            <Button
+              onClick={sendMessage}
+              disabled={isSending || !chatMessage.trim() || !avatarStarted}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-6"
+              data-testid="button-send-message"
+            >
+              {isSending ? "Sending..." : <Send className="w-5 h-5" />}
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
