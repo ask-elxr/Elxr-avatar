@@ -9,12 +9,13 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (January 2025)
+- **HeyGen Streaming SDK Integration** - Proper SDK implementation using @heygen/streaming-avatar package
 - **Dual Pinecone Assistant Access** - Now queries both `ask-elxr` and `knowledge-base-assistant` simultaneously in parallel
 - **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
-- **Integrated Google Web Search** - Avatar now accesses real-time web information automatically
+- **Integrated Google Web Search** - Avatar now accesses real-time web information (2025 data confirmed)
 - **Enhanced Avatar Intelligence** - Combines 2 Pinecone assistants + Google Search + Claude Sonnet 4
 - **Mark Kohl Personality** - Full integration with custom personality system prompts
-- **Updated HeyGen Share URL** - Fresh interactive avatar embed with latest share link
+- **Fixed Request Timeouts** - Increased timeout to 30s for full AI processing pipeline
 - **Improved Response Quality** - Multi-source intelligence (2 knowledge bases, web, AI reasoning)
 
 ## Previous Updates
