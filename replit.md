@@ -8,14 +8,8 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 2025)
-- **HeyGen SDK Integration Implemented** - Full SDK code ready to connect video avatar to intelligent backend
-- **Backend API Fully Functional** - Pinecone + Google Search + Claude Sonnet 4 responding with current 2025 data
-- **API Key Issue** - HeyGen API key provided returns 401 Unauthorized (needs valid key from app.heygen.com/settings?nav=API)
-- **Requirements** - Must use correct header (`X-Api-Key` not `x-api-key`) and may require paid HeyGen plan for streaming endpoints
-
-## Previous Updates (January 2025)
-- **Dual Pinecone Assistant Access** - Now queries both `ask-elxr` and `knowledge-base-assistant` simultaneously
+## Latest Updates (January 2025)
+- **Dual Pinecone Assistant Access** - Now queries both `sk-elxr` and `knowledge-base-assistant` simultaneously
 - **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
 - **Integrated Google Web Search** - Avatar now accesses real-time web information automatically
 - **Enhanced Avatar Intelligence** - Combines 2 Pinecone assistants + Google Search + Claude Sonnet 4

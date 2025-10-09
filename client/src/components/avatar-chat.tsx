@@ -1,30 +1,21 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, MessageSquare, Mic, MicOff, Power } from "lucide-react";
+import { Maximize, Minimize, X, MessageSquare, Mic, MicOff, ExternalLink } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useAvatarSession } from "@/hooks/use-avatar-session";
+import { useKnowledgeBase } from "@/hooks/useKnowledgeBase";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [userInput, setUserInput] = useState("");
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showKnowledgeTest, setShowKnowledgeTest] = useState(false);
   const [micPermission, setMicPermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const { user, isAuthenticated } = useAuth();
-  const videoRef = useRef<HTMLVideoElement>(null);
-  
-  const {
-    isLoading,
-    isConnected,
-    isSpeaking,
-    sessionActive,
-    messages,
-    error,
-    startSession,
-    endSession,
-    sendMessage
-  } = useAvatarSession(videoRef);
+  const { getAvatarResponse, isLoading, error } = useKnowledgeBase();
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
+    // Check if device is mobile
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 768);
     };
@@ -39,34 +30,62 @@ export function AvatarChat() {
     setIsFullscreen(!isFullscreen);
   };
 
+  const endCall = () => {
+    // Reset the iframe to end the call
+    setRefreshKey(prev => prev + 1);
+  };
+
+  const forceRefreshAvatar = () => {
+    // Force refresh with cache busting
+    const timestamp = new Date().getTime();
+    setRefreshKey(timestamp);
+    
+    // Also try to clear any cached iframe content
+    if (iframeRef.current) {
+      iframeRef.current.src = 'about:blank';
+      setTimeout(() => {
+        setRefreshKey(timestamp + 1);
+      }, 100);
+    }
+    
+    alert('🔄 Avatar refreshed with cache clearing. Try talking now!');
+  };
+
+  const testKnowledgeBase = async () => {
+    try {
+      // Test Mark Kohl personality with default system
+      const response = await getAvatarResponse("What are the main topics you can help with?");
+      alert(`Mark Kohl says: ${response}`);
+    } catch (err) {
+      alert(`Error: ${err instanceof Error ? err.message : 'Failed to query knowledge base'}`);
+    }
+  };
+
   const requestMicrophonePermission = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       setMicPermission('granted');
+      // Stop the stream immediately, we just needed permission
       stream.getTracks().forEach(track => track.stop());
-      alert('✅ Microphone permission granted! The avatar can now hear you.');
+      
+      // Refresh iframe to reinitialize with permissions
+      setRefreshKey(prev => prev + 1);
+      
+      alert('✅ Microphone permission granted! The avatar should now be able to hear you.');
     } catch (err) {
       setMicPermission('denied');
-      alert('❌ Microphone access denied. Click the 🔒 lock icon in your browser address bar and allow microphone access.');
+      alert('❌ Microphone access denied. Please:\n\n1. Click the 🔒 lock icon in your browser address bar\n2. Allow microphone access\n3. Refresh the page\n\nOr check your browser settings to allow microphone for this site.');
     }
   };
 
-  const handleSendMessage = () => {
-    if (userInput.trim() && sessionActive) {
-      sendMessage(userInput);
-      setUserInput("");
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const openDirectLink = () => {
+    const heygenUrl = "https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9";
+    window.open(heygenUrl, '_blank');
+    alert('🔗 Opened HeyGen avatar in new tab. Test if audio works there!\n\nIf it works in the new tab, the issue is with iframe embedding.\nIf it doesn\'t work there either, the HeyGen link may be expired.');
   };
 
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div className="w-full h-screen relative overflow-hidden">
       {/* Fullscreen Button - Mobile Only */}
       {isMobile && (
         <Button
@@ -80,19 +99,14 @@ export function AvatarChat() {
 
       {/* Control Buttons - Top Right */}
       <div className="absolute top-4 right-4 z-50 flex gap-2">
-        {/* Power Button - Start/Stop Session */}
+        {/* Direct Link Test Button */}
         <Button
-          onClick={sessionActive ? endSession : startSession}
-          disabled={isLoading}
-          className={`${
-            sessionActive 
-              ? 'bg-red-600/80 hover:bg-red-700' 
-              : 'bg-green-600/80 hover:bg-green-700'
-          } text-white rounded-full p-3 backdrop-blur-sm ${isLoading ? 'animate-pulse' : ''}`}
-          data-testid="button-session-toggle"
-          title={sessionActive ? 'End avatar session' : 'Start avatar session'}
+          onClick={openDirectLink}
+          className="bg-purple-600/80 hover:bg-purple-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-direct-link"
+          title="Open HeyGen avatar in new tab to test audio"
         >
-          <Power className="w-5 h-5" />
+          <ExternalLink className="w-5 h-5" />
         </Button>
 
         {/* Microphone Permission Button */}
@@ -116,66 +130,44 @@ export function AvatarChat() {
         >
           {micPermission === 'granted' ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
         </Button>
-      </div>
 
-      {/* Video Avatar */}
-      <div className={`w-full h-full flex items-center justify-center ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-          data-testid="heygen-avatar-video"
-        />
+        {/* Knowledge Base Test Button */}
+        <Button
+          onClick={testKnowledgeBase}
+          disabled={isLoading}
+          className="bg-blue-600/80 hover:bg-blue-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-test-knowledge"
+        >
+          <MessageSquare className="w-5 h-5" />
+        </Button>
         
-        {!sessionActive && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-            <div className="text-center text-white">
-              <h2 className="text-2xl font-bold mb-4">AI Avatar Ready</h2>
-              <p className="text-lg mb-6">Click the green power button to start</p>
-              {error && (
-                <p className="text-red-400 mt-2">Error: {error}</p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Force Refresh Button */}
+        <Button
+          onClick={forceRefreshAvatar}
+          className="bg-gray-600/80 hover:bg-gray-700 text-white rounded-full p-3 backdrop-blur-sm"
+          data-testid="button-force-refresh"
+          title="Force refresh avatar with cache clearing"
+        >
+          <X className="w-5 h-5" />
+        </Button>
       </div>
 
-      {/* Chat Interface - Bottom */}
-      {sessionActive && (
-        <div className="absolute bottom-0 left-0 right-0 z-50 bg-black/70 backdrop-blur-sm text-white p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={userInput}
-                onChange={(e) => setUserInput(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-4 py-2 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                data-testid="input-chat-message"
-                disabled={!sessionActive || isSpeaking}
-              />
-              <Button
-                onClick={handleSendMessage}
-                disabled={!userInput.trim() || !sessionActive || isSpeaking}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6"
-                data-testid="button-send-message"
-              >
-                <MessageSquare className="w-5 h-5" />
-              </Button>
-            </div>
-            
-            {isSpeaking && (
-              <p className="text-sm text-blue-400 mt-2 animate-pulse">Avatar is speaking...</p>
-            )}
-            
-            <p className="text-xs text-white/60 mt-2">
-              💡 Powered by Claude Sonnet 4 + Pinecone + Google Search (Current 2025 Data)
-            </p>
-          </div>
-        </div>
-      )}
+      {/* Avatar Iframe */}
+      <div className={`w-full h-full avatar-iframe-container ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+        <iframe
+          key={refreshKey}
+          ref={iframeRef}
+          src={`https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0IiwidXNlcm5hbWUiOiJlN2JjZWNhYWMwZTA0%0D%0ANTZjYjZiZDBjYWFiNzBmZjQ2MSJ9&inIFrame=1&t=${refreshKey}`}
+          className="w-full h-full border-0"
+          allow="microphone; camera"
+          title="HeyGen Interactive Avatar"
+          data-testid="heygen-avatar-iframe"
+        />
+        {/* Overlay to hide HeyGen branding - covers bottom right area */}
+        <div className="absolute bottom-0 right-0 w-64 h-16 bg-black pointer-events-none z-50"></div>
+        {/* Additional overlay for "powered by" text that might appear elsewhere */}
+        <div className="absolute top-2 right-2 w-48 h-12 bg-black pointer-events-none z-50"></div>
+      </div>
     </div>
   );
 }

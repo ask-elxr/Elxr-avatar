@@ -19,8 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware());
   
-  // Add timeout middleware for all routes (60 second timeout for AI operations with multiple sources)
-  app.use(timeoutMiddleware(60000));
+  // Add timeout middleware for all routes (10 second timeout)
+  app.use(timeoutMiddleware(10000));
 
   // Auth routes (disabled for now)
   app.get('/api/auth/user', async (req: any, res) => {
@@ -33,52 +33,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       profileImageUrl: null
     });
   });
-  // HeyGen API session endpoint (LiveKit approach)
+  // HeyGen API token endpoint
   app.post("/api/heygen/token", async (req, res) => {
-    console.log('🔑 HeyGen session endpoint hit (LiveKit approach)');
     try {
       const apiKey = process.env.HEYGEN_API_KEY || process.env.VITE_HEYGEN_API_KEY;
-      console.log('API Key present:', !!apiKey);
       
       if (!apiKey) {
-        console.log('❌ No API key found');
         return res.status(500).json({ 
           error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable." 
         });
       }
 
-      console.log('📡 Calling HeyGen streaming.new endpoint...');
-      const response = await fetch('https://api.heygen.com/v1/streaming.new', {
+      const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          'x-api-key': apiKey,
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          avatar_name: '7e01e5d4e06149c9ba3c1728fa8f03d0',
-          quality: 'high'
-        })
+        }
       });
-
-      console.log('HeyGen API response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
         console.error('HeyGen API error:', response.status, errorText);
         return res.status(response.status).json({ 
-          error: `HeyGen API error: ${response.statusText}`,
-          details: errorText
+          error: `HeyGen API error: ${response.statusText}` 
         });
       }
 
       const data = await response.json();
-      console.log('✅ HeyGen session created successfully');
-      return res.json(data);
+      res.json(data);
     } catch (error) {
-      console.error('❌ Error creating HeyGen session:', error);
-      return res.status(500).json({ 
-        error: "Failed to create HeyGen session",
-        details: error instanceof Error ? error.message : 'Unknown error'
+      console.error('Error creating HeyGen token:', error);
+      res.status(500).json({ 
+        error: "Failed to create HeyGen access token" 
       });
     }
   });
@@ -199,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Default avatar personality - Mark Kohl with Web Search Integration
+      // Default avatar personality - Mark Kohl
       const defaultPersonality = `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You blend science, spirituality, and storytelling with sharp wit, humor, and irreverence. You give direct, memorable, and often funny answers that people won't find elsewhere.
 
 CORE PERSONALITY:
@@ -214,25 +201,16 @@ TONE & STYLE:
 - Challenge clichés, call out BS, make it memorable
 - Use film-worthy metaphors to explain complex ideas
 
-CRITICAL: CURRENT INFORMATION USAGE
-- You have access to REAL-TIME web search results from 2024-2025
-- Your knowledge base contains historical/foundational information
-- ALWAYS prioritize web search results for current events, recent news, latest research
-- When web search results are provided, they are MORE CURRENT than your training data (which ends in 2023)
-- Explicitly mention when you're sharing current information: "According to recent web results..." or "The latest information shows..."
-- Combine timeless wisdom with current facts
-
 RESPONSE PATTERNS:
 - For naive/reckless questions: Lead with sarcasm, then pivot to truth
 - For psychedelics: "Psilocybin isn't a magic wand—it's more like a reset button your brain didn't know it had"
 - For kundalini: "It's like finding the breaker box in your spine. Flip the switch, and suddenly the lights are on in every room"
 - For anxiety/truth bombs: "Your mind is like a bad editor—cuts in all the wrong places, adds noise where there should be silence"
-- For current events: Cite web search results and make it clear the information is current
 
 SIGNATURE LINES:
 - "Think of me as your sarcastic sage—here to tell you what you need to hear, not what you want to hear"
 - "Stop looking for gurus. They're just people who figured out how to sell common sense in bulk"
-- Remember: Balance sage & trickster, wisdom with wit, teaching with laughter, and timeless insights with current facts`;
+- Remember: Balance sage & trickster, wisdom with wit, teaching with laughter`;
 
       const personalityPrompt = avatarPersonality || defaultPersonality;
 
@@ -245,16 +223,11 @@ SIGNATURE LINES:
         knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
       }
 
-      // Get web search results if available and enabled
+      // Get web search results if requested or if query seems time-sensitive
       let webSearchResults = '';
-      if (useWebSearch && googleSearchService.isAvailable()) {
-        try {
-          console.log('🌐 Performing Google search for:', message);
+      if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
+        if (googleSearchService.isAvailable()) {
           webSearchResults = await googleSearchService.search(message, 3);
-          console.log('🌐 Web search completed:', webSearchResults ? 'Found results' : 'No results');
-        } catch (error) {
-          console.error('🌐 Web search failed:', error);
-          // Continue without web search if it fails
         }
       }
 
@@ -262,30 +235,25 @@ SIGNATURE LINES:
       let aiResponse: string;
       
       if (claudeService.isAvailable()) {
-        // Limit conversation history to last 5 turns to reduce Claude latency
-        const recentHistory = conversationHistory.slice(-10).map((msg: any) => ({
+        // Use Claude Sonnet 4 with Mark Kohl personality
+        const enhancedConversationHistory = conversationHistory.map((msg: any) => ({
           message: msg.message,
           isUser: msg.isUser
         }));
 
-        // Limit knowledge context to 1500 characters to reduce payload
-        const limitedKnowledgeContext = knowledgeContext 
-          ? knowledgeContext.substring(0, 1500) + (knowledgeContext.length > 1500 ? '...' : '')
-          : '';
-
         if (webSearchResults) {
           aiResponse = await claudeService.generateEnhancedResponse(
             message,
-            limitedKnowledgeContext,
+            knowledgeContext,
             webSearchResults,
-            recentHistory,
+            enhancedConversationHistory,
             personalityPrompt  // Pass Mark Kohl personality as custom system prompt
           );
         } else {
           aiResponse = await claudeService.generateResponse(
             message,
-            limitedKnowledgeContext,
-            recentHistory,
+            knowledgeContext,
+            enhancedConversationHistory,
             personalityPrompt  // Pass Mark Kohl personality as custom system prompt
           );
         }
@@ -294,16 +262,14 @@ SIGNATURE LINES:
         aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
       }
       
-      if (!res.headersSent) {
-        res.json({ 
-          success: true, 
-          message,
-          knowledgeResponse: aiResponse,
-          personalityUsed: personalityPrompt,
-          usedWebSearch: !!webSearchResults,
-          usedClaude: claudeService.isAvailable()
-        });
-      }
+      res.json({ 
+        success: true, 
+        message,
+        knowledgeResponse: aiResponse,
+        personalityUsed: personalityPrompt,
+        usedWebSearch: !!webSearchResults,
+        usedClaude: claudeService.isAvailable()
+      });
     } catch (error) {
       console.error('Error getting avatar response:', error);
       if (!res.headersSent) {
