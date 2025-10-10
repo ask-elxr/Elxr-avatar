@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Maximize, Minimize, X } from "lucide-react";
+import { X } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
 export function AvatarChat() {
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
@@ -152,10 +151,6 @@ export function AvatarChat() {
     setIsLoading(true); // Show loading when restarting
   }
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
   const endChat = () => {
     endSession();
   };
@@ -173,17 +168,6 @@ export function AvatarChat() {
             Chat now
           </Button>
         </div>
-      )}
-
-      {/* Fullscreen Button - Mobile Only (Top Left) */}
-      {isMobile && sessionActive && (
-        <Button
-          onClick={toggleFullscreen}
-          className="absolute top-4 left-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 backdrop-blur-sm"
-          data-testid="button-fullscreen-toggle"
-        >
-          {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
-        </Button>
       )}
 
       {/* End Chat Button - Top Right (All Screens) - Only shown when session active */}
@@ -218,7 +202,7 @@ export function AvatarChat() {
       )}
 
       {/* Avatar Video Stream */}
-      <div className={`w-full h-full flex items-center justify-center ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
+      <div className="w-full h-full flex items-center justify-center">
         <video
           ref={videoRef}
           autoPlay
