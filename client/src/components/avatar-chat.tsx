@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Maximize2, Minimize2 } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
-import unpinchGraphic from "@assets/unpinch_1760076063334.png";
+import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
+import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
 export function AvatarChat() {
@@ -11,6 +12,7 @@ export function AvatarChat() {
   const [sessionActive, setSessionActive] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showExpandedFingers, setShowExpandedFingers] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -66,6 +68,17 @@ export function AvatarChat() {
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     };
   }, []);
+
+  useEffect(() => {
+    // Animate unpinch graphic by toggling between two images
+    if (sessionActive && !isFullscreen) {
+      const interval = setInterval(() => {
+        setShowExpandedFingers(prev => !prev);
+      }, 800); // Toggle every 800ms for smooth animation
+      
+      return () => clearInterval(interval);
+    }
+  }, [sessionActive, isFullscreen]);
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -291,12 +304,12 @@ export function AvatarChat() {
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <img 
-              src={unpinchGraphic} 
+              src={showExpandedFingers ? unpinchGraphic2 : unpinchGraphic1} 
               alt="Expand for fullscreen" 
-              className="w-16 h-16 opacity-90"
+              className="w-16 h-16 opacity-90 transition-opacity duration-300"
               data-testid="unpinch-graphic"
             />
-            <p className="text-white text-base font-medium">
+            <p className="text-white text-base font-medium text-center">
               Expand for<br/>Fullscreen
             </p>
           </div>
