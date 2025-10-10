@@ -3,10 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Maximize, Minimize, X } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import { heygenService } from "@/services/heygen-service";
-import { useToast } from "@/hooks/use-toast";
 
 export function AvatarChat() {
-  const { toast } = useToast();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showIntro, setShowIntro] = useState(true);
@@ -78,14 +76,6 @@ export function AvatarChat() {
       avatarRef.current = avatar;
     } catch (error) {
       console.error('Failed to start avatar:', error);
-      
-      // Show user-friendly error message
-      toast({
-        title: "Unable to start avatar",
-        description: "Please check your HeyGen API key configuration. Get your API key from: https://app.heygen.com/settings?nav=API",
-        variant: "destructive",
-      });
-      
       setIsInitializing(false);
       setIsChatStarted(false);
       setShowIntro(true);
