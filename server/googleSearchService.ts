@@ -47,6 +47,10 @@ export class GoogleSearchService {
       searchUrl.searchParams.set('cx', this.searchEngineId);
       searchUrl.searchParams.set('q', query);
       searchUrl.searchParams.set('num', Math.min(maxResults, 10).toString());
+      
+      // Add date restriction to get results from last month (most recent)
+      searchUrl.searchParams.set('dateRestrict', 'm1'); // Last month
+      searchUrl.searchParams.set('sort', 'date'); // Sort by date
 
       console.log(`Attempting Google search for: "${query}"`);
 
@@ -80,8 +84,9 @@ export class GoogleSearchService {
         return `[No recent web results found for: "${query}"]`;
       }
 
-      // Format results for context
-      let formattedResults = `Recent web search results for "${query}":\n\n`;
+      // Format results for context with today's date
+      const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      let formattedResults = `[Web search results retrieved on ${today}]\n\n`;
       
       data.items.slice(0, maxResults).forEach((item, index) => {
         formattedResults += `${index + 1}. ${item.title}\n`;
@@ -90,6 +95,7 @@ export class GoogleSearchService {
       });
 
       console.log(`Google search successful: Found ${data.items.length} results`);
+      console.log('Search results being sent to Claude:', formattedResults);
       return formattedResults;
     } catch (error) {
       if (error instanceof Error && error.name === 'AbortError') {
