@@ -51,12 +51,36 @@ export function AvatarChat() {
       setIsFullscreen(isCurrentlyFullscreen);
     };
 
+    const handleWebkitEnterFullscreen = () => {
+      console.log('iOS native fullscreen entered');
+      setIsFullscreen(true);
+    };
+
+    const handleWebkitExitFullscreen = () => {
+      console.log('iOS native fullscreen exited');
+      setIsFullscreen(false);
+      // Restore playsInline when exiting iOS fullscreen
+      if (videoRef.current) {
+        (videoRef.current as any).setAttribute('playsinline', '');
+      }
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    
+    // iOS-specific fullscreen events
+    if (videoRef.current) {
+      videoRef.current.addEventListener('webkitbeginfullscreen', handleWebkitEnterFullscreen);
+      videoRef.current.addEventListener('webkitendfullscreen', handleWebkitExitFullscreen);
+    }
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (videoRef.current) {
+        videoRef.current.removeEventListener('webkitbeginfullscreen', handleWebkitEnterFullscreen);
+        videoRef.current.removeEventListener('webkitendfullscreen', handleWebkitExitFullscreen);
+      }
     };
   }, []);
 
@@ -195,16 +219,16 @@ export function AvatarChat() {
         video.removeAttribute('playsinline');
         console.log('Removed playsInline, attempting fullscreen...');
         
-        // If not in full-screen, request it
-        if (video.requestFullscreen) {
-          console.log('Using requestFullscreen()');
-          await video.requestFullscreen();
+        // Prioritize iOS native fullscreen (webkitEnterFullscreen) - this is what pinch uses!
+        if (video.webkitEnterFullscreen) {
+          console.log('Using webkitEnterFullscreen() for iOS Safari');
+          video.webkitEnterFullscreen();
         } else if (video.webkitRequestFullscreen) { 
           console.log('Using webkitRequestFullscreen() for Safari');
           await video.webkitRequestFullscreen();
-        } else if (video.webkitEnterFullscreen) {
-          console.log('Using webkitEnterFullscreen() for iOS Safari');
-          video.webkitEnterFullscreen();
+        } else if (video.requestFullscreen) {
+          console.log('Using requestFullscreen()');
+          await video.requestFullscreen();
         } else {
           console.error('No fullscreen method available');
         }
