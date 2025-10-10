@@ -9,12 +9,6 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 2025)
-- **HeyGen SDK Migration** - Replaced iframe embed with @heygen/streaming-avatar v2.1.0 SDK
-  - Uses StreamingEvents.STREAM_READY to attach MediaStream to video element
-  - Backend token endpoint (`/api/heygen/token`) authenticates with HeyGen API
-  - Removes all HeyGen branding (paid tier SDK implementation)
-  - Proper session lifecycle management with cleanup on unmount/end-chat
-  - **IMPORTANT**: Requires HeyGen API key from https://app.heygen.com/settings?nav=API (separate from app subscription)
 - **Redesigned Intro Experience** - Clean loading video with integrated "Chat now" button
   - Intro logo video plays on loop when page loads
   - "Chat now" button overlaid on video for immediate interaction
@@ -81,11 +75,7 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Core Services
-- **HeyGen Streaming Avatar SDK**: Primary AI avatar service for real-time video streaming (@heygen/streaming-avatar v2.1.0)
-  - Requires API key from https://app.heygen.com/settings?nav=API (separate from HeyGen app subscription)
-  - Free tier: 10 API credits/month (~50 min streaming)
-  - Uses StreamingEvents.STREAM_READY for MediaStream attachment
-  - Backend token endpoint handles authentication
+- **HeyGen Streaming Avatar API**: Primary AI avatar service for real-time video streaming and conversation (iframe embed approach)
 - **Neon Database**: Managed PostgreSQL hosting for production data storage
 - **Pinecone Vector Database**: Vector storage for conversation embeddings and AI context memory
 

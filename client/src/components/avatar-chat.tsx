@@ -1,17 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize, X } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
-import { heygenService } from "@/services/heygen-service";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [showIntro, setShowIntro] = useState(true);
   const [isChatStarted, setIsChatStarted] = useState(false);
-  const [isInitializing, setIsInitializing] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const avatarRef = useRef<any>(null);
 
   useEffect(() => {
     // Check if device is mobile
@@ -26,78 +23,34 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Auto-hide intro video after avatar initializes
-    if (isChatStarted && showIntro && !isInitializing) {
+    // Auto-hide intro video after chat starts
+    if (isChatStarted && showIntro) {
       const timer = setTimeout(() => {
         setShowIntro(false);
-      }, 2000); // Show for 2 seconds after avatar is ready
+      }, 6000); // Show for 6 seconds to cover connecting phase
       
       return () => clearTimeout(timer);
     }
-  }, [isChatStarted, showIntro, isInitializing]);
-
-  // Cleanup avatar on unmount
-  useEffect(() => {
-    return () => {
-      if (avatarRef.current) {
-        heygenService.stopAvatar();
-      }
-    };
-  }, []);
+  }, [isChatStarted, showIntro]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
-  const startChat = async () => {
-    if (isInitializing) return;
-    
-    setIsInitializing(true);
+  const startChat = () => {
     setIsChatStarted(true);
-    
-    try {
-      // Initialize HeyGen avatar with SDK
-      const { StreamingEvents } = await import('@heygen/streaming-avatar');
-      const { avatar } = await heygenService.initializeAvatar();
-      
-      // Listen for stream ready event and attach to video
-      avatar.on(StreamingEvents.STREAM_READY, (event: any) => {
-        if (videoRef.current && event.detail) {
-          videoRef.current.srcObject = event.detail;
-          setIsInitializing(false);
-        }
-      });
-      
-      // Listen for disconnection
-      avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log('Stream disconnected');
-      });
-      
-      avatarRef.current = avatar;
-    } catch (error) {
-      console.error('Failed to start avatar:', error);
-      setIsInitializing(false);
-      setIsChatStarted(false);
-      setShowIntro(true);
+    // Trigger HeyGen's chat by sending a click event to the iframe
+    const iframe = document.querySelector('iframe[data-testid="heygen-avatar-iframe"]') as HTMLIFrameElement;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'start-chat' }, '*');
     }
   };
 
-  const endChat = async () => {
-    // Stop avatar
-    if (avatarRef.current) {
-      await heygenService.stopAvatar();
-      avatarRef.current = null;
-    }
-    
-    // Reset video
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-    
-    // Reset state
+  const endChat = () => {
+    // Reset everything
+    setRefreshKey(prev => prev + 1);
     setShowIntro(true);
     setIsChatStarted(false);
-    setIsInitializing(false);
   };
 
 
@@ -157,14 +110,24 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Avatar Video Stream - SDK Based */}
-      <div className={`w-full h-full overflow-hidden relative flex items-center justify-center bg-gradient-to-b from-gray-100 to-gray-200 ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-          data-testid="heygen-avatar-video"
+      {/* Avatar Iframe - Clipped to hide HeyGen controls */}
+      <div 
+        className={`w-full h-full overflow-hidden relative ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}
+        style={{
+          clipPath: 'inset(0 0 100px 0)'
+        }}
+      >
+        <iframe
+          key={refreshKey}
+          src={`https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0Iiwic2hhcmVfY29kZSI6IjhiZWM2YzBlLTJl%0D%0AYjEtNGVkMy04ODBiLTdiN2I3Yzg3NDFmZSIsInVzZXJuYW1lIjoiZTdiY2VjYWFjMGUwNDU2Y2I2%0D%0AYmQwY2FhYjcwZmY0NjEifQ%3D%3D&inIFrame=1&t=${refreshKey}`}
+          className="w-full border-0"
+          style={{ 
+            height: 'calc(100% + 100px)',
+            marginBottom: '-100px'
+          }}
+          allow="microphone; camera"
+          title="HeyGen Interactive Avatar"
+          data-testid="heygen-avatar-iframe"
         />
       </div>
     </div>
