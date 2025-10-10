@@ -184,9 +184,26 @@ export function AvatarChat() {
     
     try {
       if (isMobile) {
-        // iOS/Mobile: Use CSS pseudo-fullscreen to keep video inline (so object-cover works!)
+        // iOS/Mobile: Use CSS pseudo-fullscreen with body-level styling
         const newFullscreenState = !isFullscreen;
         console.log('Setting CSS fullscreen to:', newFullscreenState);
+        
+        if (newFullscreenState) {
+          // Enter fullscreen: Lock body to prevent scrolling and set black background
+          document.body.style.backgroundColor = '#000000';
+          document.body.style.overflow = 'hidden';
+          document.body.style.height = '100dvh';
+          document.body.style.position = 'fixed';
+          document.body.style.width = '100%';
+        } else {
+          // Exit fullscreen: Restore body styles
+          document.body.style.backgroundColor = '';
+          document.body.style.overflow = '';
+          document.body.style.height = '';
+          document.body.style.position = '';
+          document.body.style.width = '';
+        }
+        
         setIsFullscreen(newFullscreenState);
       } else {
         // Desktop: Use standard fullscreen API
@@ -217,7 +234,7 @@ export function AvatarChat() {
       ref={containerRef} 
       className={`relative overflow-hidden bg-black ${
         isMobile && isFullscreen 
-          ? 'fixed inset-0 z-[9999] w-screen h-screen' 
+          ? 'fixed inset-0 z-[9999]' 
           : 'w-full h-screen'
       }`}
       style={isMobile && isFullscreen ? {
@@ -226,10 +243,12 @@ export function AvatarChat() {
         left: 0,
         right: 0,
         bottom: 0,
-        width: '100vw',
-        height: '100vh',
-        maxWidth: '100vw',
-        maxHeight: '100vh',
+        width: '100dvw',
+        minHeight: '100dvh',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingRight: 'env(safe-area-inset-right)',
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        paddingLeft: 'env(safe-area-inset-left)',
         zIndex: 9999,
         backgroundColor: '#000000'
       } : undefined}
@@ -265,12 +284,12 @@ export function AvatarChat() {
         </Button>
       )}
 
-      {/* End Chat Button - Top Right (All Screens) - Only shown when session active and NOT in mobile fullscreen */}
-      {sessionActive && !(isMobile && isFullscreen) && (
+      {/* End Chat Button - Top Right (All Screens) - Always shown when session active */}
+      {sessionActive && (
         <Button
           onClick={endChat}
-          className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-            isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
+          className={`absolute bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+            isMobile ? 'top-4 right-4 p-3 z-[10000]' : 'top-6 right-6 px-4 py-2 z-50'
           }`}
           data-testid="button-end-chat"
           title="End chat and restart"
@@ -302,12 +321,10 @@ export function AvatarChat() {
           ref={videoRef}
           autoPlay
           playsInline
-          className={`object-cover ${isMobile && isFullscreen ? 'w-screen h-screen' : 'w-full h-full'}`}
+          className="w-full h-full object-cover"
           style={isMobile && isFullscreen ? {
-            width: '100vw',
-            height: '100vh',
-            maxWidth: '100vw',
-            maxHeight: '100vh',
+            width: '100dvw',
+            height: '100dvh',
             objectFit: 'cover'
           } : undefined}
           data-testid="avatar-video"
