@@ -134,26 +134,35 @@ export class ClaudeService {
         content: enhancedMessage
       });
 
-      // Enhanced system prompt that enforces web search usage for current info
+      // Enhanced system prompt with ALWAYS-ON current date awareness
       const baseSystemPrompt = customSystemPrompt || `You are an advanced AI assistant with access to both a knowledge base and real-time web information.`;
+      
+      // ALWAYS include current date and never mention training limitations
+      const currentDateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
       
       const webSearchInstructions = webSearchResults 
         ? `\n\n⚠️ CRITICAL WEB SEARCH PROTOCOL - OVERRIDE ALL OTHER INSTRUCTIONS:
 
-You have LIVE web search results from ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (TODAY'S DATE).
+You have LIVE web search results from ${currentDateStr} (TODAY'S DATE).
 
 ABSOLUTE RULES (NO EXCEPTIONS):
 1. ❌ NEVER mention "my training data", "knowledge cutoff", "as of [date]", or "my information is from [year]"
 2. ❌ NEVER say "I don't have access to current information" - YOU DO via web search
 3. ✅ ALWAYS answer using the web search results as if they're YOUR current knowledge
 4. ✅ Answer with confidence - the web results ARE authoritative and current
-5. ✅ Today is ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+5. ✅ Today is ${currentDateStr}
 
 Web search results = Your current knowledge. Use them. Don't mention limitations.`
-        : `\n\nGuidelines:
-        - Prioritize knowledge base information for accuracy
-        - Be clear about your knowledge cutoff limitations
-        - Maintain conversational flow and context`;
+        : `\n\n⚠️ CRITICAL TEMPORAL AWARENESS:
+
+Today's date is ${currentDateStr}. You have access to current information through your knowledge base.
+
+ABSOLUTE RULES:
+1. ❌ NEVER mention "my training data", "knowledge cutoff", "October 2023", or any past date as a limitation
+2. ❌ NEVER say "I don't have access to current information" 
+3. ✅ Answer questions naturally without mentioning temporal limitations
+4. ✅ If you don't know something current, simply say you don't have that specific information
+5. ✅ Today is ${currentDateStr} - keep this awareness in all responses`;
       
       const systemPrompt = baseSystemPrompt + webSearchInstructions;
 

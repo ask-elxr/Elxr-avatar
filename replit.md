@@ -8,13 +8,24 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 2025)
+## Latest Updates (October 10, 2025)
+- **Fixed October 2023 Reference Bug** - Avatar now maintains current date awareness from first response
+  - System prompt always includes today's date (dynamic, updates automatically)
+  - Explicit prohibition against mentioning "October 2023", "training data", or "knowledge cutoff"
+  - Mark Kohl personality prompt includes current date at top of system configuration
+  - Works correctly even when Google Search returns poor results
+  - No more "my knowledge is from Oct 2023" disclaimers
+- **Universal Auto-Start** - Avatar now auto-starts on all devices (mobile and desktop)
+  - Removed "Chat now" button on desktop (ready for custom trigger implementation)
+  - Auto-restart functionality on both platforms when "End Chat" is clicked
+  - Loading video displays during initialization and restart
+  - Mobile: Unpinch animation guides users to fullscreen
+  - Desktop: Clean interface without mobile-specific graphics
 - **Smart Loading Video Integration** - Loading video displays at the right moments during user interaction
-  - Shows MP4 intro logo when user clicks "Chat now" button (detected via HeyGen postMessage events)
+  - Shows MP4 intro logo when session starts
   - Also displays when ending chat and restarting avatar session
   - 5-second display duration with automatic fade-out
-  - No loading screen on initial page load (allows immediate access to "Chat now" button)
-  - PostMessage listener detects HeyGen's `streaming-embed:show` action to trigger overlay
+  - PostMessage listener detects HeyGen's `streaming-embed:show` action
 - **End Chat Controls** - Added prominent end chat buttons for easy session restart
   - Mobile: Red circular X button in top right corner
   - Desktop: Red rounded button with "End Chat" text label
