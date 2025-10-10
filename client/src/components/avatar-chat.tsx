@@ -42,15 +42,27 @@ export function AvatarChat() {
   }, [isLoading]);
 
   useEffect(() => {
-    // Listen for fullscreen changes
+    // Listen for fullscreen changes (both desktop and mobile)
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement || 
+        (document as any).webkitFullscreenElement ||
+        (videoRef.current as any)?.webkitDisplayingFullscreen
+      );
+      setIsFullscreen(isCurrentlyFullscreen);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    
+    if (videoRef.current) {
+      videoRef.current.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
+      videoRef.current.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
+    }
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
     };
   }, []);
 
@@ -172,12 +184,26 @@ export function AvatarChat() {
 
   const toggleFullscreen = async () => {
     try {
-      if (!document.fullscreenElement) {
-        // Enter fullscreen
-        await containerRef.current?.requestFullscreen();
+      // Mobile-specific: Use video element fullscreen for better compatibility
+      if (isMobile && videoRef.current) {
+        const videoElement = videoRef.current as any; // TypeScript workaround
+        
+        if (videoElement.requestFullscreen) {
+          await videoElement.requestFullscreen();
+        } else if (videoElement.webkitEnterFullscreen) {
+          // iOS Safari
+          videoElement.webkitEnterFullscreen();
+        } else if (videoElement.webkitRequestFullscreen) {
+          // Other webkit browsers
+          await videoElement.webkitRequestFullscreen();
+        }
       } else {
-        // Exit fullscreen
-        await document.exitFullscreen();
+        // Desktop: Use container fullscreen
+        if (!document.fullscreenElement) {
+          await containerRef.current?.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
