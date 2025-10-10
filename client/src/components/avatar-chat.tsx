@@ -13,6 +13,7 @@ export function AvatarChat() {
   const [showChatButton, setShowChatButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpandedFingers, setShowExpandedFingers] = useState(false);
+  const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -53,13 +54,21 @@ export function AvatarChat() {
         (videoRef.current as any)?.webkitDisplayingFullscreen
       );
       setIsFullscreen(isCurrentlyFullscreen);
+      
+      // Track that fullscreen has been used at least once
+      if (isCurrentlyFullscreen) {
+        setHasUsedFullscreen(true);
+      }
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     
     if (videoRef.current) {
-      videoRef.current.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
+      videoRef.current.addEventListener('webkitbeginfullscreen', () => {
+        setIsFullscreen(true);
+        setHasUsedFullscreen(true);
+      });
       videoRef.current.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
     }
     
@@ -71,14 +80,15 @@ export function AvatarChat() {
 
   useEffect(() => {
     // Animate unpinch graphic by toggling between two images
-    if (sessionActive && !isFullscreen) {
+    // Only show AFTER user has used fullscreen once and then exited
+    if (sessionActive && !isFullscreen && hasUsedFullscreen) {
       const interval = setInterval(() => {
         setShowExpandedFingers(prev => !prev);
       }, 800); // Toggle every 800ms for smooth animation
       
       return () => clearInterval(interval);
     }
-  }, [sessionActive, isFullscreen]);
+  }, [sessionActive, isFullscreen, hasUsedFullscreen]);
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -299,8 +309,8 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Unpinch Graphic - Shows when video is NOT fullscreen */}
-      {sessionActive && !isFullscreen && (
+      {/* Unpinch Graphic - Shows when video is small (after exiting fullscreen) */}
+      {sessionActive && !isFullscreen && hasUsedFullscreen && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <img 
