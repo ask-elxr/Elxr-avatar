@@ -151,7 +151,14 @@ iframe[data-testid="heygen-avatar-iframe"]::after {
     @apply border-border;
   }
 
-  body {
+  html, body {
     @apply font-sans antialiased bg-background text-foreground;
+  }
+  
+  /* Ensure black background on mobile fullscreen */
+  @media (max-width: 768px) {
+    html, body {
+      background-color: #000000 !important;
+    }
   }
 }

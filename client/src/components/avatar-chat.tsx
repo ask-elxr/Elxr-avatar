@@ -230,7 +230,8 @@ export function AvatarChat() {
         height: '100vh',
         maxWidth: '100vw',
         maxHeight: '100vh',
-        zIndex: 9999
+        zIndex: 9999,
+        backgroundColor: '#000000'
       } : undefined}
     >
       {/* Chat Now Button - Only shown before session starts */}
