@@ -110,24 +110,23 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Avatar Iframe - Clipped to hide HeyGen controls */}
-      <div 
-        className={`w-full h-full overflow-hidden relative ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}
-        style={{
-          clipPath: 'inset(0 0 100px 0)'
-        }}
-      >
+      {/* Avatar Iframe Container */}
+      <div className={`w-full h-full overflow-hidden relative ${isFullscreen && isMobile ? 'transform scale-[4] origin-center' : ''}`}>
         <iframe
           key={refreshKey}
           src={`https://labs.heygen.com/guest/streaming-embed?share=eyJxdWFsaXR5IjoiaGlnaCIsImF2YXRhck5hbWUiOiI3ZTAxZTVkNGUwNjE0OWM5YmEzYzE3Mjhm%0D%0AYThmMDNkMCIsInByZXZpZXdJbWciOiJodHRwczovL2ZpbGVzMi5oZXlnZW4uYWkvYXZhdGFyL3Yz%0D%0ALzdlMDFlNWQ0ZTA2MTQ5YzliYTNjMTcyOGZhOGYwM2QwL2Z1bGwvMi4yL3ByZXZpZXdfdGFyZ2V0%0D%0ALndlYnAiLCJuZWVkUmVtb3ZlQmFja2dyb3VuZCI6ZmFsc2UsImtub3dsZWRnZUJhc2VJZCI6ImVk%0D%0AYjA0Y2I4ZTdiNDRiNmZiMGNkNzNhM2VkZDRiY2E0Iiwic2hhcmVfY29kZSI6IjhiZWM2YzBlLTJl%0D%0AYjEtNGVkMy04ODBiLTdiN2I3Yzg3NDFmZSIsInVzZXJuYW1lIjoiZTdiY2VjYWFjMGUwNDU2Y2I2%0D%0AYmQwY2FhYjcwZmY0NjEifQ%3D%3D&inIFrame=1&t=${refreshKey}`}
-          className="w-full border-0"
-          style={{ 
-            height: 'calc(100% + 100px)',
-            marginBottom: '-100px'
-          }}
+          className="w-full h-full border-0"
           allow="microphone; camera"
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
+        />
+        
+        {/* Solid overlay to completely hide HeyGen's bottom controls */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-[100]"
+          style={{
+            background: 'linear-gradient(to top, #e5e1d8 60%, transparent 100%)'
+          }}
         />
       </div>
     </div>
