@@ -184,40 +184,26 @@ export function AvatarChat() {
 
   const toggleFullscreen = async () => {
     try {
-      if (isMobile && videoRef.current) {
-        const videoElement = videoRef.current as any;
+      if (isMobile) {
+        // Mobile: Use CSS-based fullscreen by hiding browser chrome
+        setIsFullscreen(!isFullscreen);
         
-        // For iOS Safari: Remove playsInline to allow native fullscreen
-        videoElement.removeAttribute('playsinline');
-        
-        // Ensure video is playing before entering fullscreen
-        if (videoElement.paused) {
-          await videoElement.play();
-        }
-        
-        // Small delay to ensure video is in correct state
-        setTimeout(() => {
-          try {
-            if (videoElement.webkitEnterFullscreen) {
-              // iOS Safari - this is the most reliable method
-              videoElement.webkitEnterFullscreen();
-            } else if (videoElement.webkitRequestFullscreen) {
-              videoElement.webkitRequestFullscreen();
-            } else if (videoElement.requestFullscreen) {
-              videoElement.requestFullscreen();
-            }
-          } catch (err) {
-            console.error('Fullscreen error:', err);
-            videoElement.setAttribute('playsinline', '');
+        if (!isFullscreen) {
+          // Enter fullscreen: scroll to top and try to minimize browser UI
+          window.scrollTo(0, 0);
+          
+          // Request fullscreen on the container to hide browser UI
+          if (containerRef.current?.requestFullscreen) {
+            await containerRef.current.requestFullscreen().catch(() => {
+              // If fullscreen API fails, just use CSS (which is already applied via state)
+            });
           }
-        }, 100);
-        
-        // Restore playsInline when exiting fullscreen
-        const handleFullscreenExit = () => {
-          videoElement.setAttribute('playsinline', '');
-          videoElement.removeEventListener('webkitendfullscreen', handleFullscreenExit);
-        };
-        videoElement.addEventListener('webkitendfullscreen', handleFullscreenExit);
+        } else {
+          // Exit fullscreen
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          }
+        }
       } else {
         // Desktop: Use container fullscreen
         if (!document.fullscreenElement) {
@@ -228,15 +214,25 @@ export function AvatarChat() {
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
-      // Restore playsInline on error
-      if (isMobile && videoRef.current) {
-        (videoRef.current as any).setAttribute('playsinline', '');
-      }
     }
   };
 
   return (
-    <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
+    <div 
+      ref={containerRef} 
+      className={`w-full h-screen relative overflow-hidden bg-black ${
+        isMobile && isFullscreen ? 'fixed inset-0 z-[9999]' : ''
+      }`}
+      style={isMobile && isFullscreen ? { 
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100dvh' // Dynamic viewport height for mobile
+      } : undefined}
+    >
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center">
