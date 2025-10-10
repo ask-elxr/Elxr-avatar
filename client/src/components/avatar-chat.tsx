@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Maximize2, Minimize2 } from "lucide-react";
+import { X, Maximize2, Minimize2, Pause, Play } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
@@ -14,6 +14,7 @@ export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpandedFingers, setShowExpandedFingers] = useState(false);
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -221,6 +222,26 @@ export function AvatarChat() {
     endSession();
   };
 
+  const togglePause = async () => {
+    if (!avatarRef.current) return;
+
+    try {
+      if (isPaused) {
+        // Resume: Start voice chat again
+        await avatarRef.current.startVoiceChat();
+        setIsPaused(false);
+        console.log("Avatar resumed");
+      } else {
+        // Pause: Stop voice chat (mutes microphone)
+        await avatarRef.current.closeVoiceChat();
+        setIsPaused(true);
+        console.log("Avatar paused");
+      }
+    } catch (error) {
+      console.error("Error toggling pause:", error);
+    }
+  };
+
   const toggleFullscreen = async () => {
     try {
       if (isMobile && videoRef.current) {
@@ -276,6 +297,30 @@ export function AvatarChat() {
             <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
           ) : (
             <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          )}
+        </Button>
+      )}
+
+      {/* Pause/Resume Button - Top Center - Only shown when session active */}
+      {sessionActive && (
+        <Button
+          onClick={togglePause}
+          className={`absolute z-50 left-1/2 -translate-x-1/2 bg-yellow-600/80 hover:bg-yellow-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+            isMobile ? 'top-4 p-3' : 'top-6 px-4 py-2'
+          }`}
+          data-testid="button-pause-toggle"
+          title={isPaused ? "Resume chat" : "Pause chat"}
+        >
+          {isPaused ? (
+            <>
+              <Play className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+              {!isMobile && <span className="text-sm font-medium">Resume</span>}
+            </>
+          ) : (
+            <>
+              <Pause className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+              {!isMobile && <span className="text-sm font-medium">Pause</span>}
+            </>
           )}
         </Button>
       )}
