@@ -188,19 +188,23 @@ export function AvatarChat() {
       }
       
       console.log('Video element found:', video);
-      console.log('Current fullscreen element:', document.fullscreenElement);
-      console.log('Video has requestFullscreen:', !!video.requestFullscreen);
-      console.log('Video has webkitRequestFullscreen:', !!video.webkitRequestFullscreen);
+      console.log('Has playsInline:', video.hasAttribute('playsinline'));
       
       if (!document.fullscreenElement) {
+        // Remove playsInline to enable fullscreen (mimic pinch behavior)
+        video.removeAttribute('playsinline');
+        console.log('Removed playsInline, attempting fullscreen...');
+        
         // If not in full-screen, request it
-        console.log('Attempting to enter fullscreen...');
         if (video.requestFullscreen) {
           console.log('Using requestFullscreen()');
           await video.requestFullscreen();
         } else if (video.webkitRequestFullscreen) { 
           console.log('Using webkitRequestFullscreen() for Safari');
           await video.webkitRequestFullscreen();
+        } else if (video.webkitEnterFullscreen) {
+          console.log('Using webkitEnterFullscreen() for iOS Safari');
+          video.webkitEnterFullscreen();
         } else {
           console.error('No fullscreen method available');
         }
@@ -212,9 +216,15 @@ export function AvatarChat() {
         } else if ((document as any).webkitExitFullscreen) { 
           await (document as any).webkitExitFullscreen();
         }
+        // Restore playsInline after exiting
+        video.setAttribute('playsinline', '');
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
+      // Restore playsInline on error
+      if (videoRef.current) {
+        (videoRef.current as any).setAttribute('playsinline', '');
+      }
     }
   };
 
