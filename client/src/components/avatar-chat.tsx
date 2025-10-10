@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Maximize2, Minimize2 } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
+import unpinchGraphic from "@assets/unpinch_1760076063334.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
 export function AvatarChat() {
@@ -282,6 +283,23 @@ export function AvatarChat() {
             <source src={loadingVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+        </div>
+      )}
+
+      {/* Unpinch Graphic - Shows when video is NOT fullscreen */}
+      {sessionActive && !isFullscreen && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+          <div className="flex flex-col items-center gap-3">
+            <img 
+              src={unpinchGraphic} 
+              alt="Expand for fullscreen" 
+              className="w-16 h-16 opacity-90"
+              data-testid="unpinch-graphic"
+            />
+            <p className="text-white text-base font-medium">
+              Expand for<br/>Fullscreen
+            </p>
+          </div>
         </div>
       )}
 
