@@ -192,15 +192,42 @@ export function AvatarChat() {
     endSession();
   };
 
-  const handleVideoTap = () => {
+  const handleVideoTap = async () => {
     if (!isMobile) return;
     
     const now = Date.now();
     const DOUBLE_TAP_DELAY = 300; // 300ms window for double tap
     
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected - toggle video size
-      setIsVideoExpanded(!isVideoExpanded);
+      // Double tap detected - toggle video size and fullscreen
+      const newExpandedState = !isVideoExpanded;
+      setIsVideoExpanded(newExpandedState);
+      
+      if (newExpandedState && containerRef.current) {
+        // Enter fullscreen mode to hide browser UI
+        try {
+          const container = containerRef.current as any;
+          if (container.requestFullscreen) {
+            await container.requestFullscreen();
+          } else if (container.webkitRequestFullscreen) {
+            await container.webkitRequestFullscreen();
+          }
+        } catch (err) {
+          console.log('Fullscreen request failed:', err);
+        }
+      } else {
+        // Exit fullscreen mode
+        try {
+          if (document.fullscreenElement) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitFullscreenElement) {
+            await (document as any).webkitExitFullscreen();
+          }
+        } catch (err) {
+          console.log('Fullscreen exit failed:', err);
+        }
+      }
+      
       lastTapRef.current = 0; // Reset
     } else {
       lastTapRef.current = now;
