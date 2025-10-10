@@ -215,16 +215,22 @@ export function AvatarChat() {
   return (
     <div 
       ref={containerRef} 
-      className={`w-full h-screen relative overflow-hidden bg-black ${
-        isMobile && isFullscreen ? 'fixed inset-0 z-[9999]' : ''
+      className={`relative overflow-hidden bg-black ${
+        isMobile && isFullscreen 
+          ? 'fixed inset-0 z-[9999] w-screen h-screen' 
+          : 'w-full h-screen'
       }`}
       style={isMobile && isFullscreen ? {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100dvh'
-      } as React.CSSProperties : undefined}
+        position: 'fixed !important' as any,
+        top: '0 !important',
+        left: '0 !important',
+        right: '0 !important',
+        bottom: '0 !important',
+        width: '100vw !important',
+        height: '100vh !important',
+        maxWidth: '100vw !important',
+        maxHeight: '100vh !important'
+      } : undefined}
     >
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
