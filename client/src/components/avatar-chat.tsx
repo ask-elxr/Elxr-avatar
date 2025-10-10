@@ -35,14 +35,14 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Auto-start the session when component mounts (MOBILE ONLY)
-    if (isMobile && !hasStartedRef.current) {
+    // Auto-start the session when component mounts (both mobile and desktop)
+    if (!hasStartedRef.current) {
       hasStartedRef.current = true;
       setIsLoading(true);
       setShowChatButton(false);
       startSession();
     }
-  }, [isMobile]);
+  }, []);
 
   useEffect(() => {
     // Auto-hide loading video after 5 seconds to show the avatar
@@ -208,18 +208,13 @@ export function AvatarChat() {
       avatarRef.current = null;
     }
     setSessionActive(false);
+    setIsLoading(true);
     
-    // Mobile: Auto-restart with loading
-    if (isMobile) {
-      setIsLoading(true);
-      setTimeout(() => {
-        hasStartedRef.current = false;
-        startSession();
-      }, 100);
-    } else {
-      // Desktop: Show chat button again
-      setShowChatButton(true);
-    }
+    // Auto-restart on both mobile and desktop
+    setTimeout(() => {
+      hasStartedRef.current = false;
+      startSession();
+    }, 100);
   }
 
   const endChat = () => {
@@ -267,19 +262,6 @@ export function AvatarChat() {
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
-      {/* Chat Now Button - Desktop only */}
-      {!isMobile && showChatButton && !sessionActive && !isLoading && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center">
-          <Button
-            onClick={startSession}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
-            data-testid="button-chat-now"
-          >
-            Chat now
-          </Button>
-        </div>
-      )}
-
       {/* Fullscreen Button - Top Left - Only shown when session active */}
       {sessionActive && (
         <Button
