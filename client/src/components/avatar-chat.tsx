@@ -246,26 +246,22 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Fullscreen Button - Top Left - Only shown when session active */}
-      {sessionActive && (
+      {/* Fullscreen Button - Top Left - Only shown when session active and NOT in fullscreen */}
+      {sessionActive && !isFullscreen && (
         <Button
           onClick={toggleFullscreen}
           className={`absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
             isMobile ? 'top-4 left-4 p-3' : 'top-6 left-6 p-2'
           }`}
           data-testid="button-fullscreen-toggle"
-          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          title="Enter fullscreen"
         >
-          {isFullscreen ? (
-            <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
-          ) : (
-            <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
-          )}
+          <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
         </Button>
       )}
 
-      {/* End Chat Button - Top Right (All Screens) - Only shown when session active */}
-      {sessionActive && (
+      {/* End Chat Button - Top Right (All Screens) - Only shown when session active and NOT in fullscreen */}
+      {sessionActive && !isFullscreen && (
         <Button
           onClick={endChat}
           className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
@@ -296,7 +292,10 @@ export function AvatarChat() {
       )}
 
       {/* Avatar Video Stream */}
-      <div className="w-full h-full flex items-center justify-center">
+      <div 
+        className="w-full h-full flex items-center justify-center"
+        onClick={isFullscreen ? toggleFullscreen : undefined}
+      >
         <video
           ref={videoRef}
           autoPlay
@@ -304,6 +303,13 @@ export function AvatarChat() {
           className="w-full h-full object-cover"
           data-testid="avatar-video"
         />
+        
+        {/* Exit Fullscreen Hint - Only shown in fullscreen */}
+        {isFullscreen && (
+          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/50 text-white px-4 py-2 rounded-full text-sm backdrop-blur-sm animate-fade-in">
+            Tap to exit fullscreen
+          </div>
+        )}
       </div>
     </div>
   );
