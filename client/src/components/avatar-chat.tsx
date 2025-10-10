@@ -184,19 +184,26 @@ export function AvatarChat() {
 
   const toggleFullscreen = async () => {
     try {
-      // Mobile-specific: Use video element fullscreen for better compatibility
       if (isMobile && videoRef.current) {
-        const videoElement = videoRef.current as any; // TypeScript workaround
+        const videoElement = videoRef.current as any;
         
-        if (videoElement.requestFullscreen) {
-          await videoElement.requestFullscreen();
-        } else if (videoElement.webkitEnterFullscreen) {
-          // iOS Safari
+        // For iOS Safari: Remove playsInline to allow native fullscreen
+        videoElement.removeAttribute('playsinline');
+        
+        // Try different fullscreen methods
+        if (videoElement.webkitEnterFullscreen) {
+          // iOS Safari - this is the most reliable method
           videoElement.webkitEnterFullscreen();
         } else if (videoElement.webkitRequestFullscreen) {
-          // Other webkit browsers
           await videoElement.webkitRequestFullscreen();
+        } else if (videoElement.requestFullscreen) {
+          await videoElement.requestFullscreen();
         }
+        
+        // Restore playsInline after a delay (when exiting fullscreen)
+        setTimeout(() => {
+          videoElement.setAttribute('playsinline', '');
+        }, 500);
       } else {
         // Desktop: Use container fullscreen
         if (!document.fullscreenElement) {
@@ -207,6 +214,10 @@ export function AvatarChat() {
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
+      // Restore playsInline on error
+      if (isMobile && videoRef.current) {
+        (videoRef.current as any).setAttribute('playsinline', '');
+      }
     }
   };
 
