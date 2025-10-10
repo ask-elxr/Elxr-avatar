@@ -162,7 +162,7 @@ export function AvatarChat() {
         <div className="absolute inset-0 z-40 flex items-center justify-center">
           <Button
             onClick={startSession}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-xl rounded-full"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
             data-testid="button-chat-now"
           >
             Chat now
