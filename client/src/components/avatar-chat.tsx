@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Maximize2, Minimize2 } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
+import pinchIcon from "@assets/unpinch_1760074997827.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
 export function AvatarChat() {
@@ -249,7 +250,7 @@ export function AvatarChat() {
       {/* Mobile Fullscreen Hint - Shows for 5 seconds after session starts */}
       {showPinchHint && (
         <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 animate-fade-in">
-          <img src="/attached_assets/unpinch_1760074356896.png" alt="Pinch gesture" className="w-16 h-16" />
+          <img src={pinchIcon} alt="Pinch gesture" className="w-16 h-16" />
           <div className="text-white text-center">
             <div className="text-lg font-semibold">Expand for</div>
             <div className="text-lg font-semibold">Fullscreen</div>
