@@ -80,35 +80,45 @@ export function AvatarChat() {
         endSession();
       });
 
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event) => {
-        console.log("User message:", event.detail.message);
+      // Listen for user message events
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event: any) => {
+        const message = event?.detail?.message || event?.message;
+        console.log("User message captured:", message);
         
-        // Get response from Claude backend
-        try {
-          const response = await fetch("/api/avatar/response", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: event.detail.message })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            // Make avatar speak the Claude response
-            await avatar.speak({
-              text: data.response,
-              task_type: TaskType.REPEAT
+        if (message) {
+          // Get response from Claude backend
+          try {
+            const response = await fetch("/api/avatar/response", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message })
             });
+
+            if (response.ok) {
+              const data = await response.json();
+              console.log("Claude response:", data.knowledgeResponse);
+              
+              // Interrupt knowledge base response and speak Claude response instead
+              if (avatar.interrupt) {
+                await avatar.interrupt();
+              }
+              await avatar.speak({
+                text: data.knowledgeResponse,
+                task_type: TaskType.REPEAT
+              });
+            }
+          } catch (error) {
+            console.error("Error getting Claude response:", error);
           }
-        } catch (error) {
-          console.error("Error getting Claude response:", error);
         }
       });
 
-      // Start avatar session
+      // Start avatar session with knowledge base (required for voice recognition)
+      // We intercept and override responses with Claude
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-        knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4", // Required but overridden
+        knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
         voice: {
           rate: 1.0
         },
