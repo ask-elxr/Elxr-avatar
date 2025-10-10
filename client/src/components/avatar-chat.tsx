@@ -123,28 +123,14 @@ export function AvatarChat() {
           data-testid="heygen-avatar-iframe"
         />
         
-        {/* ELXR logo in bottom-right corner */}
+        {/* ELXR logo to cover HeyGen's top-right branding */}
         <div 
-          className="absolute bottom-28 right-4 pointer-events-none z-[100]"
+          className="absolute top-4 right-4 pointer-events-none z-[100]"
         >
           <img 
             src={elxrCoverLogo} 
             alt="ELXR" 
-            className="h-16 w-auto object-contain"
-          />
-        </div>
-        
-        {/* ELXR solid purple bar at bottom */}
-        <div 
-          className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-[100] flex items-center px-6"
-          style={{
-            background: '#7c3aed'
-          }}
-        >
-          <img 
-            src={elxrLogo} 
-            alt="ELXR" 
-            className="h-10 object-contain"
+            className="h-20 w-auto object-contain"
           />
         </div>
       </div>
