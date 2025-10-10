@@ -333,7 +333,7 @@ export function AvatarChat() {
           ref={videoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-contain"
+          className={`w-full h-full ${isFullscreen ? 'object-cover' : 'object-contain'}`}
           data-testid="avatar-video"
         />
       </div>
