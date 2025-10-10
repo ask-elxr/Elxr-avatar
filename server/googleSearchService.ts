@@ -45,21 +45,14 @@ export class GoogleSearchService {
       const searchUrl = new URL('https://www.googleapis.com/customsearch/v1');
       searchUrl.searchParams.set('key', this.apiKey);
       searchUrl.searchParams.set('cx', this.searchEngineId);
-      
-      // Add keywords to force news/current results
-      const enhancedQuery = `${query} news 2025 OR current`;
-      searchUrl.searchParams.set('q', enhancedQuery);
+      searchUrl.searchParams.set('q', query);
       searchUrl.searchParams.set('num', Math.min(maxResults, 10).toString());
       
-      // Add date restriction to get results from last week (very recent)
-      searchUrl.searchParams.set('dateRestrict', 'd7'); // Last 7 days
-      searchUrl.searchParams.set('sort', 'date'); // Sort by date
+      // Use Google's date range filter to get ONLY 2025 results
+      // Format: sort=date:r:YYYYMMDD:YYYYMMDD (inclusive range)
+      searchUrl.searchParams.set('sort', 'date:r:20250101:20251231');
       
-      // Restrict to news sites if possible
-      searchUrl.searchParams.set('siteSearch', 'cnn.com OR bbc.com OR reuters.com OR apnews.com OR nytimes.com OR washingtonpost.com');
-      searchUrl.searchParams.set('siteSearchFilter', 'i'); // Include these sites
-
-      console.log(`Attempting Google search for: "${query}"`);
+      console.log(`Attempting Google search for: "${query}" (filtered to 2025 only)`);
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 8000);
