@@ -8,8 +8,9 @@ import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heyg
 
 export function AvatarChat() {
   const [isMobile, setIsMobile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
+  const [showChatButton, setShowChatButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpandedFingers, setShowExpandedFingers] = useState(false);
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
@@ -34,12 +35,14 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Auto-start the session when component mounts
-    if (!hasStartedRef.current) {
+    // Auto-start the session when component mounts (MOBILE ONLY)
+    if (isMobile && !hasStartedRef.current) {
       hasStartedRef.current = true;
+      setIsLoading(true);
+      setShowChatButton(false);
       startSession();
     }
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     // Auto-hide loading video after 5 seconds to show the avatar
@@ -86,16 +89,16 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Animate unpinch graphic by toggling between two images
+    // Animate unpinch graphic by toggling between two images (MOBILE ONLY)
     // Show whenever session is active and not in fullscreen
-    if (sessionActive && !isFullscreen) {
+    if (isMobile && sessionActive && !isFullscreen) {
       const interval = setInterval(() => {
         setShowExpandedFingers(prev => !prev);
       }, 800); // Toggle every 800ms for smooth animation
       
       return () => clearInterval(interval);
     }
-  }, [sessionActive, isFullscreen]);
+  }, [isMobile, sessionActive, isFullscreen]);
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -117,6 +120,7 @@ export function AvatarChat() {
 
   async function startSession() {
     setIsLoading(true);
+    setShowChatButton(false);
 
     try {
       const token = await fetchAccessToken();
@@ -194,6 +198,7 @@ export function AvatarChat() {
     } catch (error) {
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
+      setShowChatButton(true);
     }
   }
 
@@ -203,13 +208,18 @@ export function AvatarChat() {
       avatarRef.current = null;
     }
     setSessionActive(false);
-    setIsLoading(true); // Show loading when restarting
     
-    // Restart session after a brief delay
-    setTimeout(() => {
-      hasStartedRef.current = false; // Reset flag so we can restart
-      startSession();
-    }, 100);
+    // Mobile: Auto-restart with loading
+    if (isMobile) {
+      setIsLoading(true);
+      setTimeout(() => {
+        hasStartedRef.current = false;
+        startSession();
+      }, 100);
+    } else {
+      // Desktop: Show chat button again
+      setShowChatButton(true);
+    }
   }
 
   const endChat = () => {
@@ -257,6 +267,19 @@ export function AvatarChat() {
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
+      {/* Chat Now Button - Desktop only */}
+      {!isMobile && showChatButton && !sessionActive && !isLoading && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center">
+          <Button
+            onClick={startSession}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
+            data-testid="button-chat-now"
+          >
+            Chat now
+          </Button>
+        </div>
+      )}
+
       {/* Fullscreen Button - Top Left - Only shown when session active */}
       {sessionActive && (
         <Button
@@ -306,8 +329,8 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Unpinch Graphic - Shows when video is not in fullscreen */}
-      {sessionActive && !isFullscreen && (
+      {/* Unpinch Graphic - Mobile only, shows when video is not in fullscreen */}
+      {isMobile && sessionActive && !isFullscreen && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <img 
