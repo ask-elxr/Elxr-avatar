@@ -29,8 +29,14 @@ export function AvatarChat() {
       
       const data = event.data;
       
-      // Show loading video when "Chat now" is clicked
-      if (data.type === 'streaming-embed' && data.action === 'show') {
+      // Show loading video when chat starts/connects
+      if (data.type === 'streaming-embed' && 
+          (data.action === 'show' || data.action === 'start' || data.action === 'connect' || data.action === 'connecting')) {
+        setIsLoading(true);
+      }
+      
+      // Also show on connection status changes
+      if (data.status === 'connecting' || data.event === 'connecting') {
         setIsLoading(true);
       }
     };
@@ -41,11 +47,11 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Auto-hide loading video after 5 seconds to show the avatar
+    // Auto-hide loading video after 8 seconds to ensure it covers full connecting phase
     if (isLoading) {
       const timer = setTimeout(() => {
         setIsLoading(false);
-      }, 5000);
+      }, 8000);
       
       return () => clearTimeout(timer);
     }
