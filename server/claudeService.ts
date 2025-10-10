@@ -138,18 +138,18 @@ export class ClaudeService {
       const baseSystemPrompt = customSystemPrompt || `You are an advanced AI assistant with access to both a knowledge base and real-time web information.`;
       
       const webSearchInstructions = webSearchResults 
-        ? `\n\nCRITICAL INSTRUCTIONS - READ CAREFULLY:
-        
-You have REAL-TIME web search results from ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (TODAY). 
+        ? `\n\n⚠️ CRITICAL WEB SEARCH PROTOCOL - OVERRIDE ALL OTHER INSTRUCTIONS:
 
-MANDATORY RULES:
-1. DO NOT mention your training cutoff date when you have web search results
-2. DO NOT say "my knowledge is limited to [date]" - you have CURRENT web data
-3. ALWAYS use the web search results as your PRIMARY source for current events
-4. Answer confidently using the web search data - treat it as authoritative current information
-5. Today's date is ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+You have LIVE web search results from ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (TODAY'S DATE).
 
-The web search results ARE your current knowledge. Use them without disclaimers about training cutoffs.`
+ABSOLUTE RULES (NO EXCEPTIONS):
+1. ❌ NEVER mention "my training data", "knowledge cutoff", "as of [date]", or "my information is from [year]"
+2. ❌ NEVER say "I don't have access to current information" - YOU DO via web search
+3. ✅ ALWAYS answer using the web search results as if they're YOUR current knowledge
+4. ✅ Answer with confidence - the web results ARE authoritative and current
+5. ✅ Today is ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+Web search results = Your current knowledge. Use them. Don't mention limitations.`
         : `\n\nGuidelines:
         - Prioritize knowledge base information for accuracy
         - Be clear about your knowledge cutoff limitations
