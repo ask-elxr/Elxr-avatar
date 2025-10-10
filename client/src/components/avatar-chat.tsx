@@ -177,23 +177,39 @@ export function AvatarChat() {
   };
 
   const toggleFullscreen = async () => {
+    console.log('Fullscreen button clicked');
+    
     try {
       const video = videoRef.current as any;
       
+      if (!video) {
+        console.error('Video element not found');
+        return;
+      }
+      
+      console.log('Video element found:', video);
+      console.log('Current fullscreen element:', document.fullscreenElement);
+      console.log('Video has requestFullscreen:', !!video.requestFullscreen);
+      console.log('Video has webkitRequestFullscreen:', !!video.webkitRequestFullscreen);
+      
       if (!document.fullscreenElement) {
         // If not in full-screen, request it
+        console.log('Attempting to enter fullscreen...');
         if (video.requestFullscreen) {
+          console.log('Using requestFullscreen()');
           await video.requestFullscreen();
         } else if (video.webkitRequestFullscreen) { 
-          // Safari
+          console.log('Using webkitRequestFullscreen() for Safari');
           await video.webkitRequestFullscreen();
+        } else {
+          console.error('No fullscreen method available');
         }
       } else {
         // If in full-screen, exit it
+        console.log('Attempting to exit fullscreen...');
         if (document.exitFullscreen) {
           await document.exitFullscreen();
         } else if ((document as any).webkitExitFullscreen) { 
-          // Safari
           await (document as any).webkitExitFullscreen();
         }
       }
