@@ -129,13 +129,14 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
     }
 
     try {
-      // Get enhanced response from backend with 4-source intelligence
-      const response = await fetch("/api/chat/enhanced", {
+      // Get response from backend using Claude Sonnet 4 + Pinecone Assistants (ask-elxr & knowledge-base-assistant) + Google Search
+      const response = await fetch("/api/avatar/response", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           message: text,
-          useWebSearch: true // Enable web search for current information
+          useWebSearch: true, // Enable Google web search for current information
+          conversationHistory: [] // Could be extended to include conversation history
         }),
       });
 
@@ -144,7 +145,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
       }
 
       const data = await response.json();
-      const aiResponse = data.message;
+      const aiResponse = data.knowledgeResponse;
 
       // Make avatar speak the response
       await avatarRef.current.speak({ text: aiResponse });
