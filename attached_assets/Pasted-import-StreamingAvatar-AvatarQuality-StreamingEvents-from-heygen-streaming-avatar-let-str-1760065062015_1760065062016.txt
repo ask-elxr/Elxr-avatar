@@ -1,0 +1,64 @@
+import StreamingAvatar, { AvatarQuality, StreamingEvents } from '@heygen/streaming-avatar';
+
+let streamingAvatar;
+async function startChatCreation(){
+    streamingAvatar = new StreamingAvatar({token: 'ENTER_ACCESS_TOKEN_HERE'});
+
+    // some events
+    streamingAvatar.on(StreamingEvents.AVATAR_START_TALKING, (e) => {});
+    streamingAvatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {});
+    streamingAvatar.on(StreamingEvents.STREAM_READY, (event) => {});
+
+    const sessionInfo = await streamingAvatar.createStartAvatar({
+        quality: AvatarQuality.Low,
+        avatarName: avatarId,
+        knowledgeId: knowledgeId, // from labs.heygen.com
+        // knowledgeBase: knowledgeBase, // your customized prompt content
+        voice: {
+          voiceId: voiceId,
+          rate: 1.5, // 0.5 ~ 1.5
+          emotion: VoiceEmotion.EXCITED,
+          // elevenlabsSettings: {} // https://docs.heygen.com/reference/new-session#voicesetting
+          // model: ElevenLabsModel.MULTILINGUAL, elevenlabs audio model
+        },
+        sttSettings: {
+          provider: STTProvider.DEEPGRAM, // STT provider to use. The default is DEEPGRAM.
+          confidence: 0.55, // The default is 0.55.
+        },
+        language: language,
+        // disableIdleTimeout: false, // Default is false; enable cautiously.
+        voiceChatTransport?: VoiceChatTransport.WEBSOCKET, // user input transport. The default is WEBSOCKET
+        // number of seconds that avatar will wait before closing session after last activity, 
+        // expects value from 30 to 3600 (1h)
+        activityIdleTimeout?: number, // The default is 120 (2 minutes)
+    });
+    
+    // switch to voice chat. in this mode, we will record your voice and keep chatting with avatar in real time.
+    await streamingAvatar.startVoiceChat({
+      useSilencePrompt: true, // the default is false. true means you will receive silence prompts.
+      isInputAudioMuted: true, // the default is false. you can also handle `mute` by using streamingAvatar.muteInputAudio(), streamingAvatar.unmuteInputAudio().
+    });
+}
+
+// In text mode, please use the speak method (Default TALK type).
+streamingAvatar.speak({ text: text, task_type: TaskType.REPEAT, taskMode: TaskMode.SYNC });
+
+// Please note, you can use the speak method in voice chat, but only the TALK type is supported in voice chat mode.
+streamingAvatar.speak({ text: text })
+
+// close voice chat, will stop recording your voice.
+streamingAvatar.closeVoiceChat();
+
+// close the session
+streamingAvatar.stopAvatar();
+
+// keep session alive, will be count as an activity to keep session for additional `activityIdleTimeout` seconds
+// after last activity.
+streamingAvatar.keepAlive();
+
+// interrupt the avatar's talking
+streamingAvatar.interrupt();
+
+// it's helpful in text mode. `startListening` will let the avatar switch to listening state.
+streamingAvatar.startListening();
+streamingAvatar.stopListening();
