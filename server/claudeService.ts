@@ -138,14 +138,18 @@ export class ClaudeService {
       const baseSystemPrompt = customSystemPrompt || `You are an advanced AI assistant with access to both a knowledge base and real-time web information.`;
       
       const webSearchInstructions = webSearchResults 
-        ? `\n\nCRITICAL: You have access to REAL-TIME web search results from ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Your training data has a knowledge cutoff, but the web search results provided are CURRENT. For any questions about recent events, news, current date/time, or anything happening after your training cutoff, you MUST use the web search results as your PRIMARY source of truth.
+        ? `\n\nCRITICAL INSTRUCTIONS - READ CAREFULLY:
+        
+You have REAL-TIME web search results from ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} (TODAY). 
 
-        Guidelines:
-        - For current events, news, or time-sensitive info: Use web search results as the definitive source
-        - For historical or timeless knowledge: Use your knowledge base
-        - When web search results are provided, they override your training data for current information
-        - Always reference that information came from recent web search when using those results
-        - Today's date is ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`
+MANDATORY RULES:
+1. DO NOT mention your training cutoff date when you have web search results
+2. DO NOT say "my knowledge is limited to [date]" - you have CURRENT web data
+3. ALWAYS use the web search results as your PRIMARY source for current events
+4. Answer confidently using the web search data - treat it as authoritative current information
+5. Today's date is ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+
+The web search results ARE your current knowledge. Use them without disclaimers about training cutoffs.`
         : `\n\nGuidelines:
         - Prioritize knowledge base information for accuracy
         - Be clear about your knowledge cutoff limitations
