@@ -122,15 +122,9 @@ iframe[data-testid="heygen-avatar-iframe"]::after {
   50% { transform: scale(1.05); }
 }
 
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
 .pulse { animation: pulse 2s infinite; }
 .spin { animation: spin 1s linear infinite; }
 .speaking { animation: speaking 1s ease-in-out infinite; }
-.animate-fade-in { animation: fade-in 0.3s ease-in; }
 
 /* Custom scrollbar */
 .custom-scroll::-webkit-scrollbar {

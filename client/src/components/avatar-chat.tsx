@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Maximize2, Minimize2 } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
-import pinchIcon from "@assets/unpinch_1760074997827.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
 export function AvatarChat() {
@@ -11,13 +10,10 @@ export function AvatarChat() {
   const [sessionActive, setSessionActive] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showPinchHint, setShowPinchHint] = useState(false);
-  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const lastTapRef = useRef<number>(0);
 
   useEffect(() => {
     // Check if device is mobile
@@ -46,29 +42,23 @@ export function AvatarChat() {
   }, [isLoading]);
 
   useEffect(() => {
-    // Show pinch hint on mobile when session becomes active
-    if (sessionActive && isMobile) {
-      setShowPinchHint(true);
-      const timer = setTimeout(() => {
-        setShowPinchHint(false);
-      }, 5000); // Hide after 5 seconds
-      
-      return () => clearTimeout(timer);
-    }
-  }, [sessionActive, isMobile]);
-
-  useEffect(() => {
-    // Listen for fullscreen changes (desktop only - mobile uses CSS)
+    // Listen for fullscreen changes (both desktop and mobile)
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!(
         document.fullscreenElement || 
-        (document as any).webkitFullscreenElement
+        (document as any).webkitFullscreenElement ||
+        (videoRef.current as any)?.webkitDisplayingFullscreen
       );
       setIsFullscreen(isCurrentlyFullscreen);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    
+    if (videoRef.current) {
+      videoRef.current.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
+      videoRef.current.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
+    }
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
@@ -192,78 +182,47 @@ export function AvatarChat() {
     endSession();
   };
 
-  const handleVideoTap = async () => {
-    if (!isMobile) return;
-    
-    const now = Date.now();
-    const DOUBLE_TAP_DELAY = 300; // 300ms window for double tap
-    
-    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected - toggle video fullscreen
-      if (!isVideoExpanded && videoRef.current) {
-        // Enter fullscreen mode on VIDEO element (iOS Safari compatible)
-        try {
-          const video = videoRef.current as any;
-          if (video.webkitEnterFullscreen) {
-            // iOS Safari specific
-            video.webkitEnterFullscreen();
-          } else if (video.requestFullscreen) {
-            await video.requestFullscreen();
-          } else if (video.webkitRequestFullscreen) {
-            await video.webkitRequestFullscreen();
-          }
-        } catch (err) {
-          console.log('Fullscreen request failed:', err);
-        }
-      } else {
-        // Exit fullscreen mode
-        try {
-          if (document.fullscreenElement) {
-            await document.exitFullscreen();
-          } else if ((document as any).webkitFullscreenElement) {
-            await (document as any).webkitExitFullscreen();
-          } else if ((document as any).webkitCancelFullScreen) {
-            (document as any).webkitCancelFullScreen();
-          }
-        } catch (err) {
-          console.log('Fullscreen exit failed:', err);
-        }
-      }
-      setIsVideoExpanded(!isVideoExpanded);
-      lastTapRef.current = 0; // Reset
-    } else {
-      lastTapRef.current = now;
-    }
-  };
-
   const toggleFullscreen = async () => {
-    // Desktop only: Use standard fullscreen API
     try {
-      const video = videoRef.current as any;
-      
-      if (!document.fullscreenElement) {
-        if (video.requestFullscreen) {
-          await video.requestFullscreen();
-        } else if (video.webkitRequestFullscreen) {
-          await video.webkitRequestFullscreen();
+      if (isMobile && videoRef.current) {
+        const videoElement = videoRef.current as any;
+        
+        // For iOS Safari: Remove playsInline to allow native fullscreen
+        videoElement.removeAttribute('playsinline');
+        
+        // Try different fullscreen methods
+        if (videoElement.webkitEnterFullscreen) {
+          // iOS Safari - this is the most reliable method
+          videoElement.webkitEnterFullscreen();
+        } else if (videoElement.webkitRequestFullscreen) {
+          await videoElement.webkitRequestFullscreen();
+        } else if (videoElement.requestFullscreen) {
+          await videoElement.requestFullscreen();
         }
+        
+        // Restore playsInline after a delay (when exiting fullscreen)
+        setTimeout(() => {
+          videoElement.setAttribute('playsinline', '');
+        }, 500);
       } else {
-        if (document.exitFullscreen) {
+        // Desktop: Use container fullscreen
+        if (!document.fullscreenElement) {
+          await containerRef.current?.requestFullscreen();
+        } else {
           await document.exitFullscreen();
-        } else if ((document as any).webkitExitFullscreen) {
-          await (document as any).webkitExitFullscreen();
         }
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
+      // Restore playsInline on error
+      if (isMobile && videoRef.current) {
+        (videoRef.current as any).setAttribute('playsinline', '');
+      }
     }
   };
 
   return (
-    <div 
-      ref={containerRef} 
-      className="relative bg-black w-full h-screen overflow-hidden"
-    >
+    <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center">
@@ -277,39 +236,30 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Fullscreen Button - Desktop Only */}
-      {sessionActive && !isMobile && (
+      {/* Fullscreen Button - Top Left - Only shown when session active */}
+      {sessionActive && (
         <Button
           onClick={toggleFullscreen}
-          className="absolute top-6 left-6 p-2 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm"
+          className={`absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
+            isMobile ? 'top-4 left-4 p-3' : 'top-6 left-6 p-2'
+          }`}
           data-testid="button-fullscreen-toggle"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? (
-            <Minimize2 className="w-5 h-5" />
+            <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
           ) : (
-            <Maximize2 className="w-5 h-5" />
+            <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
           )}
         </Button>
       )}
 
-      {/* Mobile Fullscreen Hint - Shows for 5 seconds after session starts */}
-      {showPinchHint && !isVideoExpanded && (
-        <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 animate-fade-in pointer-events-none">
-          <img src={pinchIcon} alt="Tap gesture" className="w-16 h-16" />
-          <div className="text-white text-center">
-            <div className="text-lg font-semibold">Double-tap to</div>
-            <div className="text-lg font-semibold">Expand Fullscreen</div>
-          </div>
-        </div>
-      )}
-
-      {/* End Chat Button - Top Right (All Screens) - Always shown when session active */}
+      {/* End Chat Button - Top Right (All Screens) - Only shown when session active */}
       {sessionActive && (
         <Button
           onClick={endChat}
-          className={`absolute bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-            isMobile ? 'top-4 right-4 p-3 z-[10000]' : 'top-6 right-6 px-4 py-2 z-50'
+          className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+            isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
           }`}
           data-testid="button-end-chat"
           title="End chat and restart"
@@ -341,12 +291,7 @@ export function AvatarChat() {
           ref={videoRef}
           autoPlay
           playsInline
-          onClick={handleVideoTap}
-          className={
-            isMobile 
-              ? `transition-all duration-300 object-cover ${isVideoExpanded ? 'w-full h-full' : 'max-w-full max-h-[65vh] object-contain'}` 
-              : "w-full h-full object-cover"
-          }
+          className="w-full h-full object-cover"
           data-testid="avatar-video"
         />
       </div>

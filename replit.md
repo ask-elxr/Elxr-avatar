@@ -9,12 +9,6 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 2025)
-- **Mobile Pinch-to-Zoom Fullscreen** - Native iOS-friendly fullscreen experience
-  - Video starts at 65% screen height with black letterboxing on mobile
-  - "Expand for Fullscreen" hint with pinch gesture icon appears for 5 seconds
-  - Users pinch-to-zoom naturally to expand video to fullscreen
-  - Viewport configured with `user-scalable=yes` to enable pinch gestures
-  - Desktop retains traditional fullscreen button (top-left corner)
 - **Smart Loading Video Integration** - Loading video displays at the right moments during user interaction
   - Shows MP4 intro logo when user clicks "Chat now" button (detected via HeyGen postMessage events)
   - Also displays when ending chat and restarting avatar session
