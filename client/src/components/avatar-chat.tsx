@@ -42,38 +42,21 @@ export function AvatarChat() {
   }, [isLoading]);
 
   useEffect(() => {
-    // Listen for fullscreen changes (both desktop and mobile)
+    // Listen for fullscreen changes
     const handleFullscreenChange = () => {
       const isCurrentlyFullscreen = !!(
         document.fullscreenElement || 
-        (document as any).webkitFullscreenElement ||
-        (videoRef.current as any)?.webkitDisplayingFullscreen
+        (document as any).webkitFullscreenElement
       );
       setIsFullscreen(isCurrentlyFullscreen);
-    };
-
-    const handleFullscreenExit = () => {
-      // Restore playsInline when exiting fullscreen
-      if (videoRef.current) {
-        (videoRef.current as any).setAttribute('playsinline', '');
-      }
-      setIsFullscreen(false);
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     
-    if (videoRef.current) {
-      videoRef.current.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
-      videoRef.current.addEventListener('webkitendfullscreen', handleFullscreenExit);
-    }
-    
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('webkitendfullscreen', handleFullscreenExit);
-      }
     };
   }, []);
 
@@ -195,26 +178,23 @@ export function AvatarChat() {
 
   const toggleFullscreen = async () => {
     try {
-      if (isMobile && videoRef.current) {
-        const videoElement = videoRef.current as any;
-        
-        // Remove playsInline to enable native fullscreen
-        videoElement.removeAttribute('playsinline');
-        
-        // Try native video fullscreen methods
-        if (videoElement.webkitEnterFullscreen) {
-          videoElement.webkitEnterFullscreen();
-        } else if (videoElement.webkitRequestFullscreen) {
-          await videoElement.webkitRequestFullscreen();
-        } else if (videoElement.requestFullscreen) {
-          await videoElement.requestFullscreen();
+      const video = videoRef.current as any;
+      
+      if (!document.fullscreenElement) {
+        // If not in full-screen, request it
+        if (video.requestFullscreen) {
+          await video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) { 
+          // Safari
+          await video.webkitRequestFullscreen();
         }
       } else {
-        // Desktop: Use container fullscreen
-        if (!document.fullscreenElement) {
-          await containerRef.current?.requestFullscreen();
-        } else {
+        // If in full-screen, exit it
+        if (document.exitFullscreen) {
           await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) { 
+          // Safari
+          await (document as any).webkitExitFullscreen();
         }
       }
     } catch (error) {
@@ -240,22 +220,26 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Fullscreen Button - Top Left - Only shown when session active and NOT in fullscreen */}
-      {sessionActive && !isFullscreen && (
+      {/* Fullscreen Button - Top Left - Only shown when session active */}
+      {sessionActive && (
         <Button
           onClick={toggleFullscreen}
           className={`absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
             isMobile ? 'top-4 left-4 p-3' : 'top-6 left-6 p-2'
           }`}
           data-testid="button-fullscreen-toggle"
-          title="Enter fullscreen"
+          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
-          <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          {isFullscreen ? (
+            <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          ) : (
+            <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          )}
         </Button>
       )}
 
-      {/* End Chat Button - Top Right (All Screens) - Only shown when session active and NOT in fullscreen */}
-      {sessionActive && !isFullscreen && (
+      {/* End Chat Button - Top Right (All Screens) - Only shown when session active */}
+      {sessionActive && (
         <Button
           onClick={endChat}
           className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
