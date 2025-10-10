@@ -52,17 +52,28 @@ export function AvatarChat() {
       setIsFullscreen(isCurrentlyFullscreen);
     };
 
+    const handleFullscreenExit = () => {
+      // Restore playsInline when exiting fullscreen
+      if (videoRef.current) {
+        (videoRef.current as any).setAttribute('playsinline', '');
+      }
+      setIsFullscreen(false);
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     
     if (videoRef.current) {
       videoRef.current.addEventListener('webkitbeginfullscreen', () => setIsFullscreen(true));
-      videoRef.current.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
+      videoRef.current.addEventListener('webkitendfullscreen', handleFullscreenExit);
     }
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (videoRef.current) {
+        videoRef.current.removeEventListener('webkitendfullscreen', handleFullscreenExit);
+      }
     };
   }, []);
 
@@ -184,25 +195,19 @@ export function AvatarChat() {
 
   const toggleFullscreen = async () => {
     try {
-      if (isMobile) {
-        // Mobile: Use CSS-based fullscreen by hiding browser chrome
-        setIsFullscreen(!isFullscreen);
+      if (isMobile && videoRef.current) {
+        const videoElement = videoRef.current as any;
         
-        if (!isFullscreen) {
-          // Enter fullscreen: scroll to top and try to minimize browser UI
-          window.scrollTo(0, 0);
-          
-          // Request fullscreen on the container to hide browser UI
-          if (containerRef.current?.requestFullscreen) {
-            await containerRef.current.requestFullscreen().catch(() => {
-              // If fullscreen API fails, just use CSS (which is already applied via state)
-            });
-          }
-        } else {
-          // Exit fullscreen
-          if (document.fullscreenElement) {
-            await document.exitFullscreen();
-          }
+        // Remove playsInline to enable native fullscreen
+        videoElement.removeAttribute('playsinline');
+        
+        // Try native video fullscreen methods
+        if (videoElement.webkitEnterFullscreen) {
+          videoElement.webkitEnterFullscreen();
+        } else if (videoElement.webkitRequestFullscreen) {
+          await videoElement.webkitRequestFullscreen();
+        } else if (videoElement.requestFullscreen) {
+          await videoElement.requestFullscreen();
         }
       } else {
         // Desktop: Use container fullscreen
@@ -220,18 +225,7 @@ export function AvatarChat() {
   return (
     <div 
       ref={containerRef} 
-      className={`w-full h-screen relative overflow-hidden bg-black ${
-        isMobile && isFullscreen ? 'fixed inset-0 z-[9999]' : ''
-      }`}
-      style={isMobile && isFullscreen ? { 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: '100dvh' // Dynamic viewport height for mobile
-      } : undefined}
+      className="w-full h-screen relative overflow-hidden bg-black"
     >
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
@@ -292,10 +286,7 @@ export function AvatarChat() {
       )}
 
       {/* Avatar Video Stream */}
-      <div 
-        className="w-full h-full flex items-center justify-center"
-        onClick={isFullscreen ? toggleFullscreen : undefined}
-      >
+      <div className="w-full h-full flex items-center justify-center">
         <video
           ref={videoRef}
           autoPlay
@@ -303,13 +294,6 @@ export function AvatarChat() {
           className="w-full h-full object-cover"
           data-testid="avatar-video"
         />
-        
-        {/* Exit Fullscreen Hint - Only shown in fullscreen */}
-        {isFullscreen && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 bg-black/50 text-white px-4 py-2 rounded-full text-sm backdrop-blur-sm animate-fade-in">
-            Tap to exit fullscreen
-          </div>
-        )}
       </div>
     </div>
   );
