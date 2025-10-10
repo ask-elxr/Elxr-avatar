@@ -80,30 +80,33 @@ export function AvatarChat() {
         endSession();
       });
 
-      // Listen for user message events
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event: any) => {
-        const message = event?.detail?.message || event?.message;
-        console.log("User message captured:", message);
+      // Listen for user message events - fires when user talks
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
+        console.log("USER_TALKING_MESSAGE event received:", message);
         
-        if (message) {
+        const userMessage = message?.detail?.message || message?.message || message;
+        console.log("User message extracted:", userMessage);
+        
+        if (userMessage) {
           // Get response from Claude backend
           try {
             const response = await fetch("/api/avatar/response", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message })
+              body: JSON.stringify({ message: userMessage })
             });
 
             if (response.ok) {
               const data = await response.json();
-              console.log("Claude response:", data.knowledgeResponse);
+              const claudeResponse = data.knowledgeResponse || data.response;
+              console.log("Claude response received:", claudeResponse);
               
-              // Interrupt knowledge base response and speak Claude response instead
-              if (avatar.interrupt) {
-                await avatar.interrupt();
-              }
+              // Interrupt any GPT-4 response from knowledge base
+              await avatar.interrupt().catch(() => {});
+              
+              // Make avatar speak Claude's response using REPEAT (not TALK)
               await avatar.speak({
-                text: data.knowledgeResponse,
+                text: claudeResponse,
                 task_type: TaskType.REPEAT
               });
             }
