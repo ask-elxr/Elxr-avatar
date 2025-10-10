@@ -7,7 +7,8 @@ export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+  const [isChatStarted, setIsChatStarted] = useState(false);
 
   useEffect(() => {
     // Check if device is mobile
@@ -22,49 +23,34 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Listen for HeyGen iframe messages to detect when chat starts
-    const handleMessage = (event: MessageEvent) => {
-      // Verify message is from HeyGen
-      if (!event.origin.includes('heygen.com')) return;
-      
-      const data = event.data;
-      
-      // Show loading video when chat starts/connects
-      if (data.type === 'streaming-embed' && 
-          (data.action === 'show' || data.action === 'start' || data.action === 'connect' || data.action === 'connecting')) {
-        setIsLoading(true);
-      }
-      
-      // Also show on connection status changes
-      if (data.status === 'connecting' || data.event === 'connecting') {
-        setIsLoading(true);
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-    
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
-
-  useEffect(() => {
-    // Auto-hide loading video after 8 seconds to ensure it covers full connecting phase
-    if (isLoading) {
+    // Auto-hide intro video after chat starts
+    if (isChatStarted && showIntro) {
       const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 8000);
+        setShowIntro(false);
+      }, 6000); // Show for 6 seconds to cover connecting phase
       
       return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [isChatStarted, showIntro]);
 
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
 
+  const startChat = () => {
+    setIsChatStarted(true);
+    // Trigger HeyGen's chat by sending a click event to the iframe
+    const iframe = document.querySelector('iframe[data-testid="heygen-avatar-iframe"]') as HTMLIFrameElement;
+    if (iframe?.contentWindow) {
+      iframe.contentWindow.postMessage({ type: 'start-chat' }, '*');
+    }
+  };
+
   const endChat = () => {
-    // Reset the iframe to end the call
+    // Reset everything
     setRefreshKey(prev => prev + 1);
-    setIsLoading(true); // Show loading again when restarting
+    setShowIntro(true);
+    setIsChatStarted(false);
   };
 
 
@@ -81,32 +67,46 @@ export function AvatarChat() {
         </Button>
       )}
 
-      {/* End Chat Button - Top Right (All Screens) */}
-      <Button
-        onClick={endChat}
-        className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-          isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
-        }`}
-        data-testid="button-end-chat"
-        title="End chat and restart"
-      >
-        <X className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-        {!isMobile && <span className="text-sm font-medium">End Chat</span>}
-      </Button>
+      {/* End Chat Button - Top Right (Show only when chat is active) */}
+      {isChatStarted && !showIntro && (
+        <Button
+          onClick={endChat}
+          className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+            isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
+          }`}
+          data-testid="button-end-chat"
+          title="End chat and restart"
+        >
+          <X className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+          {!isMobile && <span className="text-sm font-medium">End Chat</span>}
+        </Button>
+      )}
 
-      {/* Loading Video Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black">
+      {/* Intro Video Overlay with Chat Now Button */}
+      {showIntro && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black">
           <video
             autoPlay
+            loop
             muted
             playsInline
-            className="max-w-[80%] max-h-[80%] object-contain"
-            data-testid="loading-video"
+            className="max-w-[80%] max-h-[60%] object-contain mb-8"
+            data-testid="intro-video"
           >
             <source src={loadingVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+          
+          {/* Chat Now Button - Only show if chat hasn't started */}
+          {!isChatStarted && (
+            <Button
+              onClick={startChat}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-3 text-lg font-semibold rounded-lg shadow-xl transition-all duration-200 hover:scale-105"
+              data-testid="button-chat-now"
+            >
+              Chat now
+            </Button>
+          )}
         </div>
       )}
 
@@ -119,14 +119,6 @@ export function AvatarChat() {
           allow="microphone; camera"
           title="HeyGen Interactive Avatar"
           data-testid="heygen-avatar-iframe"
-        />
-        
-        {/* Mask overlay to hide HeyGen's built-in End Chat button (bottom right) */}
-        <div 
-          className="absolute bottom-0 right-0 w-64 h-28 z-[100] pointer-events-none"
-          style={{
-            background: '#e5e1d8'
-          }}
         />
       </div>
     </div>

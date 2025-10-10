@@ -9,16 +9,18 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 2025)
-- **Smart Loading Video Integration** - Loading video displays at the right moments during user interaction
-  - Shows MP4 intro logo when user clicks "Chat now" button (detected via HeyGen postMessage events)
-  - Also displays when ending chat and restarting avatar session
-  - 5-second display duration with automatic fade-out
-  - No loading screen on initial page load (allows immediate access to "Chat now" button)
-  - PostMessage listener detects HeyGen's `streaming-embed:show` action to trigger overlay
-- **End Chat Controls** - Added prominent end chat buttons for easy session restart
+- **Redesigned Intro Experience** - Clean loading video with integrated "Chat now" button
+  - Intro logo video plays on loop when page loads
+  - "Chat now" button overlaid on video for immediate interaction
+  - When clicked, video continues playing for 6 seconds to cover HeyGen's connecting phase
+  - No duplicate "Chat now" buttons - single, clear call to action
+  - Eliminates the "Connecting..." screen by covering it with branded intro video
+- **Streamlined End Chat Control** - Single, adaptive end chat button
+  - Shows only when avatar chat is active (after intro completes)
   - Mobile: Red circular X button in top right corner
   - Desktop: Red rounded button with "End Chat" text label
-  - Both trigger loading video overlay during avatar reset
+  - Clicking resets to intro screen with logo and "Chat now" button
+  - No duplicate buttons - HeyGen's built-in controls are hidden
 - **Multi-Index Pinecone Support** - Now supports accessing two Pinecone indexes (`avatar-chat-knowledge` and `ask-elxr`)
   - All conversation endpoints accept optional `indexName` parameter to select target index
   - Proper validation with 400 errors for invalid index names
