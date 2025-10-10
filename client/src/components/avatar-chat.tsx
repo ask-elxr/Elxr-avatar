@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Maximize2, Minimize2 } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
@@ -9,9 +9,11 @@ export function AvatarChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check if device is mobile
@@ -38,6 +40,19 @@ export function AvatarChat() {
       return () => clearTimeout(timer);
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    // Listen for fullscreen changes
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -155,8 +170,22 @@ export function AvatarChat() {
     endSession();
   };
 
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        await containerRef.current?.requestFullscreen();
+      } else {
+        // Exit fullscreen
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.error('Error toggling fullscreen:', error);
+    }
+  };
+
   return (
-    <div className="w-full h-screen relative overflow-hidden bg-black">
+    <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
         <div className="absolute inset-0 z-40 flex items-center justify-center">
@@ -168,6 +197,24 @@ export function AvatarChat() {
             Chat now
           </Button>
         </div>
+      )}
+
+      {/* Fullscreen Button - Top Left - Only shown when session active */}
+      {sessionActive && (
+        <Button
+          onClick={toggleFullscreen}
+          className={`absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
+            isMobile ? 'top-4 left-4 p-3' : 'top-6 left-6 p-2'
+          }`}
+          data-testid="button-fullscreen-toggle"
+          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        >
+          {isFullscreen ? (
+            <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          ) : (
+            <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+          )}
+        </Button>
       )}
 
       {/* End Chat Button - Top Right (All Screens) - Only shown when session active */}
