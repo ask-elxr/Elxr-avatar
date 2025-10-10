@@ -123,14 +123,14 @@ export function AvatarChat() {
           data-testid="heygen-avatar-iframe"
         />
         
-        {/* ELXR logo to cover HeyGen's top-right branding */}
+        {/* ELXR logo to cover HeyGen's branding */}
         <div 
-          className="absolute top-4 right-4 pointer-events-none z-[100]"
+          className="absolute top-8 right-6 pointer-events-none z-[100]"
         >
           <img 
             src={elxrCoverLogo} 
             alt="ELXR" 
-            className="h-20 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
         </div>
       </div>
