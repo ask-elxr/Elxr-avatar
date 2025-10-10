@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Maximize, Minimize, X } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
+import elxrLogo from "@assets/Asset 2_1760060611407.png";
 
 export function AvatarChat() {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -121,13 +122,20 @@ export function AvatarChat() {
           data-testid="heygen-avatar-iframe"
         />
         
-        {/* Solid overlay to completely hide HeyGen's bottom controls */}
+        {/* ELXR branded gradient bar to hide HeyGen's controls */}
         <div 
-          className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-[100]"
+          className="absolute bottom-0 left-0 right-0 h-28 pointer-events-none z-[100] flex items-center justify-center pb-2"
           style={{
-            background: 'linear-gradient(to top, #e5e1d8 60%, transparent 100%)'
+            background: 'linear-gradient(to top, rgba(88, 28, 135, 0.98) 0%, rgba(124, 58, 237, 0.85) 40%, rgba(124, 58, 237, 0.4) 80%, transparent 100%)'
           }}
-        />
+        >
+          <img 
+            src={elxrLogo} 
+            alt="ELXR" 
+            className="h-14 object-contain opacity-95"
+            style={{ filter: 'brightness(1.1)' }}
+          />
+        </div>
       </div>
     </div>
   );
