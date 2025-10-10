@@ -180,6 +180,7 @@ export function AvatarChat() {
     console.log('=== FULLSCREEN BUTTON CLICKED ===');
     console.log('isMobile:', isMobile);
     console.log('window.innerWidth:', window.innerWidth);
+    console.log('window.innerHeight:', window.innerHeight);
     console.log('Current isFullscreen:', isFullscreen);
     
     try {
@@ -190,9 +191,11 @@ export function AvatarChat() {
         
         if (newFullscreenState) {
           // Enter fullscreen: Lock body to prevent scrolling and set black background
+          const actualHeight = window.innerHeight + 'px';
+          console.log('Setting body height to:', actualHeight);
           document.body.style.backgroundColor = '#000000';
           document.body.style.overflow = 'hidden';
-          document.body.style.height = '100dvh';
+          document.body.style.height = actualHeight;
           document.body.style.position = 'fixed';
           document.body.style.width = '100%';
         } else {
@@ -243,12 +246,8 @@ export function AvatarChat() {
         left: 0,
         right: 0,
         bottom: 0,
-        width: '100dvw',
-        minHeight: '100dvh',
-        paddingTop: 'env(safe-area-inset-top)',
-        paddingRight: 'env(safe-area-inset-right)',
-        paddingBottom: 'env(safe-area-inset-bottom)',
-        paddingLeft: 'env(safe-area-inset-left)',
+        width: '100vw',
+        height: `${window.innerHeight}px`,
         zIndex: 9999,
         backgroundColor: '#000000'
       } : undefined}
@@ -323,8 +322,8 @@ export function AvatarChat() {
           playsInline
           className="w-full h-full object-cover"
           style={isMobile && isFullscreen ? {
-            width: '100dvw',
-            height: '100dvh',
+            width: '100vw',
+            height: `${window.innerHeight}px`,
             objectFit: 'cover'
           } : undefined}
           data-testid="avatar-video"
