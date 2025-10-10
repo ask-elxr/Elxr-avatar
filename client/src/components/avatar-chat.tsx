@@ -129,6 +129,11 @@ export function AvatarChat() {
         disableIdleTimeout: false
       });
 
+      // Start voice chat to enable microphone input
+      console.log("Starting voice chat...");
+      await avatar.startVoiceChat();
+      console.log("Voice chat started - you can now speak to the avatar");
+
       setSessionActive(true);
     } catch (error) {
       console.error("Error starting avatar session:", error);
