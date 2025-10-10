@@ -122,7 +122,15 @@ export function AvatarChat() {
           data-testid="heygen-avatar-iframe"
         />
         
-        {/* ELXR solid purple bar to hide HeyGen's controls */}
+        {/* Overlay to hide HeyGen's top-right logo and button */}
+        <div 
+          className="absolute top-0 right-0 w-48 h-20 pointer-events-none z-[100]"
+          style={{
+            background: 'linear-gradient(to left, #e5e1d8 60%, transparent 100%)'
+          }}
+        />
+        
+        {/* ELXR solid purple bar at bottom */}
         <div 
           className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none z-[100] flex items-center px-6"
           style={{
