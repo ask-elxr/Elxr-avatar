@@ -10,6 +10,7 @@ export function AvatarChat() {
   const [sessionActive, setSessionActive] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showPinchHint, setShowPinchHint] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -40,6 +41,18 @@ export function AvatarChat() {
       return () => clearTimeout(timer);
     }
   }, [isLoading]);
+
+  useEffect(() => {
+    // Show pinch hint on mobile when session becomes active
+    if (sessionActive && isMobile) {
+      setShowPinchHint(true);
+      const timer = setTimeout(() => {
+        setShowPinchHint(false);
+      }, 5000); // Hide after 5 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [sessionActive, isMobile]);
 
   useEffect(() => {
     // Listen for fullscreen changes (desktop only - mobile uses CSS)
@@ -177,54 +190,21 @@ export function AvatarChat() {
   };
 
   const toggleFullscreen = async () => {
-    console.log('=== FULLSCREEN BUTTON CLICKED ===');
-    console.log('isMobile:', isMobile);
-    console.log('window.innerWidth:', window.innerWidth);
-    console.log('window.innerHeight:', window.innerHeight);
-    console.log('Current isFullscreen:', isFullscreen);
-    
+    // Desktop only: Use standard fullscreen API
     try {
-      if (isMobile) {
-        // iOS/Mobile: Use CSS pseudo-fullscreen with body-level styling
-        const newFullscreenState = !isFullscreen;
-        console.log('Setting CSS fullscreen to:', newFullscreenState);
-        
-        if (newFullscreenState) {
-          // Enter fullscreen: Lock body to prevent scrolling and set black background
-          const actualHeight = window.innerHeight + 'px';
-          console.log('Setting body height to:', actualHeight);
-          document.body.style.backgroundColor = '#000000';
-          document.body.style.overflow = 'hidden';
-          document.body.style.height = actualHeight;
-          document.body.style.position = 'fixed';
-          document.body.style.width = '100%';
-        } else {
-          // Exit fullscreen: Restore body styles
-          document.body.style.backgroundColor = '';
-          document.body.style.overflow = '';
-          document.body.style.height = '';
-          document.body.style.position = '';
-          document.body.style.width = '';
+      const video = videoRef.current as any;
+      
+      if (!document.fullscreenElement) {
+        if (video.requestFullscreen) {
+          await video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+          await video.webkitRequestFullscreen();
         }
-        
-        setIsFullscreen(newFullscreenState);
       } else {
-        // Desktop: Use standard fullscreen API
-        console.log('Using desktop fullscreen API');
-        const video = videoRef.current as any;
-        
-        if (!document.fullscreenElement) {
-          if (video.requestFullscreen) {
-            await video.requestFullscreen();
-          } else if (video.webkitRequestFullscreen) {
-            await video.webkitRequestFullscreen();
-          }
-        } else {
-          if (document.exitFullscreen) {
-            await document.exitFullscreen();
-          } else if ((document as any).webkitExitFullscreen) {
-            await (document as any).webkitExitFullscreen();
-          }
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
         }
       }
     } catch (error) {
@@ -235,22 +215,7 @@ export function AvatarChat() {
   return (
     <div 
       ref={containerRef} 
-      className={`relative overflow-hidden bg-black ${
-        isMobile && isFullscreen 
-          ? 'fixed inset-0 z-[9999]' 
-          : 'w-full h-screen'
-      }`}
-      style={isMobile && isFullscreen ? {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        width: '100vw',
-        height: `${window.innerHeight}px`,
-        zIndex: 9999,
-        backgroundColor: '#000000'
-      } : undefined}
+      className="relative overflow-hidden bg-black w-full h-screen"
     >
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
@@ -265,22 +230,28 @@ export function AvatarChat() {
         </div>
       )}
 
-      {/* Fullscreen/Exit Button - Top Left - Only shown when session active */}
-      {sessionActive && (
+      {/* Fullscreen Button - Desktop Only */}
+      {sessionActive && !isMobile && (
         <Button
           onClick={toggleFullscreen}
-          className={`absolute bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
-            isMobile ? 'top-4 left-4 p-3 z-[10000]' : 'top-6 left-6 p-2 z-50'
-          }`}
+          className="absolute top-6 left-6 p-2 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm"
           data-testid="button-fullscreen-toggle"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? (
-            <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+            <Minimize2 className="w-5 h-5" />
           ) : (
-            <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+            <Maximize2 className="w-5 h-5" />
           )}
         </Button>
+      )}
+
+      {/* Mobile Fullscreen Hint - Shows for 5 seconds after session starts */}
+      {showPinchHint && (
+        <div className="absolute top-4 left-4 z-50 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 animate-fade-in">
+          <img src="/attached_assets/unpinch_1760074356896.png" alt="Pinch gesture" className="w-6 h-6" />
+          <span className="text-white text-sm font-medium">Pinch to zoom for fullscreen</span>
+        </div>
       )}
 
       {/* End Chat Button - Top Right (All Screens) - Always shown when session active */}
@@ -321,11 +292,6 @@ export function AvatarChat() {
           autoPlay
           playsInline
           className="w-full h-full object-cover"
-          style={isMobile && isFullscreen ? {
-            width: '100vw',
-            height: `${window.innerHeight}px`,
-            objectFit: 'cover'
-          } : undefined}
           data-testid="avatar-video"
         />
       </div>
