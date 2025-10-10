@@ -190,20 +190,34 @@ export function AvatarChat() {
         // For iOS Safari: Remove playsInline to allow native fullscreen
         videoElement.removeAttribute('playsinline');
         
-        // Try different fullscreen methods
-        if (videoElement.webkitEnterFullscreen) {
-          // iOS Safari - this is the most reliable method
-          videoElement.webkitEnterFullscreen();
-        } else if (videoElement.webkitRequestFullscreen) {
-          await videoElement.webkitRequestFullscreen();
-        } else if (videoElement.requestFullscreen) {
-          await videoElement.requestFullscreen();
+        // Ensure video is playing before entering fullscreen
+        if (videoElement.paused) {
+          await videoElement.play();
         }
         
-        // Restore playsInline after a delay (when exiting fullscreen)
+        // Small delay to ensure video is in correct state
         setTimeout(() => {
+          try {
+            if (videoElement.webkitEnterFullscreen) {
+              // iOS Safari - this is the most reliable method
+              videoElement.webkitEnterFullscreen();
+            } else if (videoElement.webkitRequestFullscreen) {
+              videoElement.webkitRequestFullscreen();
+            } else if (videoElement.requestFullscreen) {
+              videoElement.requestFullscreen();
+            }
+          } catch (err) {
+            console.error('Fullscreen error:', err);
+            videoElement.setAttribute('playsinline', '');
+          }
+        }, 100);
+        
+        // Restore playsInline when exiting fullscreen
+        const handleFullscreenExit = () => {
           videoElement.setAttribute('playsinline', '');
-        }, 500);
+          videoElement.removeEventListener('webkitendfullscreen', handleFullscreenExit);
+        };
+        videoElement.addEventListener('webkitendfullscreen', handleFullscreenExit);
       } else {
         // Desktop: Use container fullscreen
         if (!document.fullscreenElement) {
