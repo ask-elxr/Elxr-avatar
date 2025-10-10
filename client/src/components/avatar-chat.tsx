@@ -248,9 +248,12 @@ export function AvatarChat() {
 
       {/* Mobile Fullscreen Hint - Shows for 5 seconds after session starts */}
       {showPinchHint && (
-        <div className="absolute top-4 left-4 z-50 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg flex items-center gap-2 animate-fade-in">
-          <img src="/attached_assets/unpinch_1760074356896.png" alt="Pinch gesture" className="w-6 h-6" />
-          <span className="text-white text-sm font-medium">Pinch to zoom for fullscreen</span>
+        <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 animate-fade-in">
+          <img src="/attached_assets/unpinch_1760074356896.png" alt="Pinch gesture" className="w-16 h-16" />
+          <div className="text-white text-center">
+            <div className="text-lg font-semibold">Expand for</div>
+            <div className="text-lg font-semibold">Fullscreen</div>
+          </div>
         </div>
       )}
 
@@ -291,7 +294,8 @@ export function AvatarChat() {
           ref={videoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover"
+          className={isMobile ? "max-w-full max-h-[65vh] object-contain" : "w-full h-full object-cover"}
+          style={isMobile ? { touchAction: 'pinch-zoom' } : undefined}
           data-testid="avatar-video"
         />
       </div>
