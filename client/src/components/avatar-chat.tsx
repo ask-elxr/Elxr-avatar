@@ -177,15 +177,20 @@ export function AvatarChat() {
   };
 
   const toggleFullscreen = async () => {
-    console.log('Fullscreen button clicked');
+    console.log('=== FULLSCREEN BUTTON CLICKED ===');
+    console.log('isMobile:', isMobile);
+    console.log('window.innerWidth:', window.innerWidth);
+    console.log('Current isFullscreen:', isFullscreen);
     
     try {
       if (isMobile) {
         // iOS/Mobile: Use CSS pseudo-fullscreen to keep video inline (so object-cover works!)
-        setIsFullscreen(!isFullscreen);
-        console.log('Toggle CSS fullscreen:', !isFullscreen);
+        const newFullscreenState = !isFullscreen;
+        console.log('Setting CSS fullscreen to:', newFullscreenState);
+        setIsFullscreen(newFullscreenState);
       } else {
         // Desktop: Use standard fullscreen API
+        console.log('Using desktop fullscreen API');
         const video = videoRef.current as any;
         
         if (!document.fullscreenElement) {
