@@ -297,20 +297,17 @@ export function AvatarChat() {
       )}
 
       {/* Avatar Video Stream */}
-      <div className={`w-full h-full ${isMobile && isFullscreen ? '' : 'flex items-center justify-center'}`}>
+      <div className="w-full h-full flex items-center justify-center">
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          width="1920"
-          height="1080"
-          className="w-full h-full object-cover"
+          className={`object-cover ${isMobile && isFullscreen ? 'w-screen h-screen' : 'w-full h-full'}`}
           style={isMobile && isFullscreen ? {
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
+            width: '100vw',
+            height: '100vh',
+            maxWidth: '100vw',
+            maxHeight: '100vh',
             objectFit: 'cover'
           } : undefined}
           data-testid="avatar-video"
