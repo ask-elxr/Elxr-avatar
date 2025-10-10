@@ -12,12 +12,12 @@ export function AvatarChat() {
   const [showChatButton, setShowChatButton] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showPinchHint, setShowPinchHint] = useState(false);
-  const [videoScale, setVideoScale] = useState(1);
+  const [isVideoExpanded, setIsVideoExpanded] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const initialDistanceRef = useRef<number | null>(null);
+  const lastTapRef = useRef<number>(0);
 
   useEffect(() => {
     // Check if device is mobile
@@ -56,54 +56,6 @@ export function AvatarChat() {
       return () => clearTimeout(timer);
     }
   }, [sessionActive, isMobile]);
-
-  useEffect(() => {
-    // Handle pinch-to-zoom on mobile
-    if (!isMobile || !containerRef.current) return;
-
-    const container = containerRef.current;
-
-    const getDistance = (touches: TouchList) => {
-      const touch1 = touches[0];
-      const touch2 = touches[1];
-      const dx = touch2.clientX - touch1.clientX;
-      const dy = touch2.clientY - touch1.clientY;
-      return Math.sqrt(dx * dx + dy * dy);
-    };
-
-    const handleTouchStart = (e: TouchEvent) => {
-      if (e.touches.length === 2) {
-        initialDistanceRef.current = getDistance(e.touches);
-      }
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (e.touches.length === 2 && initialDistanceRef.current) {
-        e.preventDefault();
-        const currentDistance = getDistance(e.touches);
-        const scale = currentDistance / initialDistanceRef.current;
-        
-        // Scale between 1x (original) and 2.5x (fullscreen-ish)
-        const newScale = Math.min(Math.max(videoScale * scale, 1), 2.5);
-        setVideoScale(newScale);
-        initialDistanceRef.current = currentDistance;
-      }
-    };
-
-    const handleTouchEnd = () => {
-      initialDistanceRef.current = null;
-    };
-
-    container.addEventListener('touchstart', handleTouchStart, { passive: false });
-    container.addEventListener('touchmove', handleTouchMove, { passive: false });
-    container.addEventListener('touchend', handleTouchEnd);
-
-    return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [isMobile, videoScale]);
 
   useEffect(() => {
     // Listen for fullscreen changes (desktop only - mobile uses CSS)
@@ -240,6 +192,21 @@ export function AvatarChat() {
     endSession();
   };
 
+  const handleVideoTap = () => {
+    if (!isMobile) return;
+    
+    const now = Date.now();
+    const DOUBLE_TAP_DELAY = 300; // 300ms window for double tap
+    
+    if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
+      // Double tap detected - toggle video size
+      setIsVideoExpanded(!isVideoExpanded);
+      lastTapRef.current = 0; // Reset
+    } else {
+      lastTapRef.current = now;
+    }
+  };
+
   const toggleFullscreen = async () => {
     // Desktop only: Use standard fullscreen API
     try {
@@ -266,7 +233,7 @@ export function AvatarChat() {
   return (
     <div 
       ref={containerRef} 
-      className={`relative bg-black w-full h-screen ${isMobile ? 'overflow-auto' : 'overflow-hidden'}`}
+      className="relative bg-black w-full h-screen overflow-hidden"
     >
       {/* Chat Now Button - Only shown before session starts */}
       {showChatButton && !sessionActive && !isLoading && (
@@ -298,12 +265,12 @@ export function AvatarChat() {
       )}
 
       {/* Mobile Fullscreen Hint - Shows for 5 seconds after session starts */}
-      {showPinchHint && (
-        <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 animate-fade-in">
-          <img src={pinchIcon} alt="Pinch gesture" className="w-16 h-16" />
+      {showPinchHint && !isVideoExpanded && (
+        <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-3 animate-fade-in pointer-events-none">
+          <img src={pinchIcon} alt="Tap gesture" className="w-16 h-16" />
           <div className="text-white text-center">
-            <div className="text-lg font-semibold">Expand for</div>
-            <div className="text-lg font-semibold">Fullscreen</div>
+            <div className="text-lg font-semibold">Double-tap to</div>
+            <div className="text-lg font-semibold">Expand Fullscreen</div>
           </div>
         </div>
       )}
@@ -340,16 +307,17 @@ export function AvatarChat() {
       )}
 
       {/* Avatar Video Stream */}
-      <div className="w-full h-full flex items-center justify-center" style={isMobile ? { touchAction: 'none' } : undefined}>
+      <div className="w-full h-full flex items-center justify-center">
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          className={isMobile ? "max-w-full max-h-[65vh] object-contain transition-transform duration-100" : "w-full h-full object-cover"}
-          style={isMobile ? { 
-            transform: `scale(${videoScale})`,
-            transformOrigin: 'center center'
-          } : undefined}
+          onClick={handleVideoTap}
+          className={
+            isMobile 
+              ? `transition-all duration-300 object-cover ${isVideoExpanded ? 'w-full h-full' : 'max-w-full max-h-[65vh] object-contain'}` 
+              : "w-full h-full object-cover"
+          }
           data-testid="avatar-video"
         />
       </div>
