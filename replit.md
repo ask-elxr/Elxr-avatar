@@ -9,24 +9,16 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 2025)
-- **HeyGen SDK Migration** - Replaced iframe embed with @heygen/streaming-avatar v2.1.0 SDK
-  - Uses StreamingEvents.STREAM_READY to attach MediaStream to video element
-  - Backend token endpoint (`/api/heygen/token`) authenticates with HeyGen API
-  - Removes all HeyGen branding (paid tier SDK implementation)
-  - Proper session lifecycle management with cleanup on unmount/end-chat
-  - **IMPORTANT**: Requires HeyGen API key from https://app.heygen.com/settings?nav=API (separate from app subscription)
-- **Redesigned Intro Experience** - Clean loading video with integrated "Chat now" button
-  - Intro logo video plays on loop when page loads
-  - "Chat now" button overlaid on video for immediate interaction
-  - When clicked, video continues playing for 6 seconds to cover HeyGen's connecting phase
-  - No duplicate "Chat now" buttons - single, clear call to action
-  - Eliminates the "Connecting..." screen by covering it with branded intro video
-- **Streamlined End Chat Control** - Single, adaptive end chat button
-  - Shows only when avatar chat is active (after intro completes)
+- **Smart Loading Video Integration** - Loading video displays at the right moments during user interaction
+  - Shows MP4 intro logo when user clicks "Chat now" button (detected via HeyGen postMessage events)
+  - Also displays when ending chat and restarting avatar session
+  - 5-second display duration with automatic fade-out
+  - No loading screen on initial page load (allows immediate access to "Chat now" button)
+  - PostMessage listener detects HeyGen's `streaming-embed:show` action to trigger overlay
+- **End Chat Controls** - Added prominent end chat buttons for easy session restart
   - Mobile: Red circular X button in top right corner
   - Desktop: Red rounded button with "End Chat" text label
-  - Clicking resets to intro screen with logo and "Chat now" button
-  - No duplicate buttons - HeyGen's built-in controls are hidden
+  - Both trigger loading video overlay during avatar reset
 - **Multi-Index Pinecone Support** - Now supports accessing two Pinecone indexes (`avatar-chat-knowledge` and `ask-elxr`)
   - All conversation endpoints accept optional `indexName` parameter to select target index
   - Proper validation with 400 errors for invalid index names
@@ -81,11 +73,7 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Core Services
-- **HeyGen Streaming Avatar SDK**: Primary AI avatar service for real-time video streaming (@heygen/streaming-avatar v2.1.0)
-  - Requires API key from https://app.heygen.com/settings?nav=API (separate from HeyGen app subscription)
-  - Free tier: 10 API credits/month (~50 min streaming)
-  - Uses StreamingEvents.STREAM_READY for MediaStream attachment
-  - Backend token endpoint handles authentication
+- **HeyGen Streaming Avatar API**: Primary AI avatar service for real-time video streaming and conversation (iframe embed approach)
 - **Neon Database**: Managed PostgreSQL hosting for production data storage
 - **Pinecone Vector Database**: Vector storage for conversation embeddings and AI context memory
 

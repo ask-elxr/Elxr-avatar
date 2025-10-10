@@ -32,8 +32,8 @@ export class HeyGenService {
         throw new Error(`Failed to fetch access token: ${response.statusText}`);
       }
 
-      const data: any = await response.json();
-      return data.token;
+      const data: CreateTokenResponse = await response.json();
+      return data.data.token;
     } catch (error) {
       console.error('Error fetching access token:', error);
       throw new Error('Failed to authenticate with HeyGen service');
