@@ -199,18 +199,18 @@ export function AvatarChat() {
     const DOUBLE_TAP_DELAY = 300; // 300ms window for double tap
     
     if (now - lastTapRef.current < DOUBLE_TAP_DELAY) {
-      // Double tap detected - toggle video size and fullscreen
-      const newExpandedState = !isVideoExpanded;
-      setIsVideoExpanded(newExpandedState);
-      
-      if (newExpandedState && containerRef.current) {
-        // Enter fullscreen mode to hide browser UI
+      // Double tap detected - toggle video fullscreen
+      if (!isVideoExpanded && videoRef.current) {
+        // Enter fullscreen mode on VIDEO element (iOS Safari compatible)
         try {
-          const container = containerRef.current as any;
-          if (container.requestFullscreen) {
-            await container.requestFullscreen();
-          } else if (container.webkitRequestFullscreen) {
-            await container.webkitRequestFullscreen();
+          const video = videoRef.current as any;
+          if (video.webkitEnterFullscreen) {
+            // iOS Safari specific
+            video.webkitEnterFullscreen();
+          } else if (video.requestFullscreen) {
+            await video.requestFullscreen();
+          } else if (video.webkitRequestFullscreen) {
+            await video.webkitRequestFullscreen();
           }
         } catch (err) {
           console.log('Fullscreen request failed:', err);
@@ -222,12 +222,14 @@ export function AvatarChat() {
             await document.exitFullscreen();
           } else if ((document as any).webkitFullscreenElement) {
             await (document as any).webkitExitFullscreen();
+          } else if ((document as any).webkitCancelFullScreen) {
+            (document as any).webkitCancelFullScreen();
           }
         } catch (err) {
           console.log('Fullscreen exit failed:', err);
         }
       }
-      
+      setIsVideoExpanded(!isVideoExpanded);
       lastTapRef.current = 0; // Reset
     } else {
       lastTapRef.current = now;
