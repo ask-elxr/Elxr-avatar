@@ -45,12 +45,19 @@ export class GoogleSearchService {
       const searchUrl = new URL('https://www.googleapis.com/customsearch/v1');
       searchUrl.searchParams.set('key', this.apiKey);
       searchUrl.searchParams.set('cx', this.searchEngineId);
-      searchUrl.searchParams.set('q', query);
+      
+      // Add keywords to force news/current results
+      const enhancedQuery = `${query} news 2025 OR current`;
+      searchUrl.searchParams.set('q', enhancedQuery);
       searchUrl.searchParams.set('num', Math.min(maxResults, 10).toString());
       
-      // Add date restriction to get results from last month (most recent)
-      searchUrl.searchParams.set('dateRestrict', 'm1'); // Last month
+      // Add date restriction to get results from last week (very recent)
+      searchUrl.searchParams.set('dateRestrict', 'd7'); // Last 7 days
       searchUrl.searchParams.set('sort', 'date'); // Sort by date
+      
+      // Restrict to news sites if possible
+      searchUrl.searchParams.set('siteSearch', 'cnn.com OR bbc.com OR reuters.com OR apnews.com OR nytimes.com OR washingtonpost.com');
+      searchUrl.searchParams.set('siteSearchFilter', 'i'); // Include these sites
 
       console.log(`Attempting Google search for: "${query}"`);
 
