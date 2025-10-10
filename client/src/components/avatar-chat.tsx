@@ -8,11 +8,12 @@ import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heyg
 
 export function AvatarChat() {
   const [isMobile, setIsMobile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading true
+  const [isLoading, setIsLoading] = useState(false); // Don't show loading on first screen
   const [sessionActive, setSessionActive] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showExpandedFingers, setShowExpandedFingers] = useState(false);
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
+  const [showLoadingForRestart, setShowLoadingForRestart] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -42,15 +43,15 @@ export function AvatarChat() {
   }, []);
 
   useEffect(() => {
-    // Auto-hide loading video after 5 seconds to show the avatar
-    if (isLoading) {
+    // Auto-hide loading video after 5 seconds when restarting
+    if (showLoadingForRestart) {
       const timer = setTimeout(() => {
-        setIsLoading(false);
+        setShowLoadingForRestart(false);
       }, 5000);
       
       return () => clearTimeout(timer);
     }
-  }, [isLoading]);
+  }, [showLoadingForRestart]);
 
   useEffect(() => {
     // Listen for fullscreen changes (both desktop and mobile)
@@ -116,7 +117,10 @@ export function AvatarChat() {
   }
 
   async function startSession() {
-    setIsLoading(true);
+    // Don't show loading on first start, only on restarts
+    if (hasStartedRef.current) {
+      setShowLoadingForRestart(true);
+    }
 
     try {
       const token = await fetchAccessToken();
@@ -191,9 +195,10 @@ export function AvatarChat() {
       console.log("Voice chat started - you can now speak to the avatar");
 
       setSessionActive(true);
+      setShowLoadingForRestart(false); // Hide loading after session starts
     } catch (error) {
       console.error("Error starting avatar session:", error);
-      setIsLoading(false);
+      setShowLoadingForRestart(false);
     }
   }
 
@@ -203,11 +208,10 @@ export function AvatarChat() {
       avatarRef.current = null;
     }
     setSessionActive(false);
-    setIsLoading(true); // Show loading when restarting
     
     // Restart session after a brief delay
     setTimeout(() => {
-      hasStartedRef.current = false; // Reset flag so we can restart
+      hasStartedRef.current = true; // Mark as restarting
       startSession();
     }, 100);
   }
@@ -290,8 +294,8 @@ export function AvatarChat() {
         </Button>
       )}
 
-      {/* Loading Video Overlay */}
-      {isLoading && (
+      {/* Loading Video Overlay - Only shown on restart */}
+      {showLoadingForRestart && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
           <video
             autoPlay
