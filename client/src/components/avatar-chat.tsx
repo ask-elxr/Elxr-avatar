@@ -221,15 +221,16 @@ export function AvatarChat() {
           : 'w-full h-screen'
       }`}
       style={isMobile && isFullscreen ? {
-        position: 'fixed !important' as any,
-        top: '0 !important',
-        left: '0 !important',
-        right: '0 !important',
-        bottom: '0 !important',
-        width: '100vw !important',
-        height: '100vh !important',
-        maxWidth: '100vw !important',
-        maxHeight: '100vh !important'
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        width: '100vw',
+        height: '100vh',
+        maxWidth: '100vw',
+        maxHeight: '100vh',
+        zIndex: 9999
       } : undefined}
     >
       {/* Chat Now Button - Only shown before session starts */}
@@ -295,7 +296,7 @@ export function AvatarChat() {
       )}
 
       {/* Avatar Video Stream */}
-      <div className="w-full h-full flex items-center justify-center">
+      <div className={`w-full h-full ${isMobile && isFullscreen ? '' : 'flex items-center justify-center'}`}>
         <video
           ref={videoRef}
           autoPlay
@@ -303,6 +304,14 @@ export function AvatarChat() {
           width="1920"
           height="1080"
           className="w-full h-full object-cover"
+          style={isMobile && isFullscreen ? {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover'
+          } : undefined}
           data-testid="avatar-video"
         />
       </div>
