@@ -8,12 +8,17 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 10, 2025)
-- **Inactivity Timeout** - Automatic session restart after 1 minute of no user interaction
+## Latest Updates (October 11, 2025)
+- **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
+  - After 1 minute of inactivity, logo appears with "Reconnect" button
+  - User must click "Reconnect" to restart session (no auto-restart loop)
+  - Manual "End Chat" button still auto-restarts immediately
+  - Prevents continuous resource usage when idle
+- **Inactivity Timeout** - Automatic timeout after 1 minute of no user interaction
   - Timer starts when session becomes active
   - Resets on any user activity (speaking, button clicks)
   - Paused when avatar is manually paused
-  - Restarts session automatically when timeout occurs
+  - Shows reconnect screen when timeout occurs
 - **Added Pause/Resume Control** - Yellow pause button in top center for controlling avatar
   - Pause: Stops voice chat (mutes microphone and stops listening)
   - Resume: Restarts voice chat (enables microphone again)

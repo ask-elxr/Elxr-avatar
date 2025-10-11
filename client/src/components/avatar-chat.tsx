@@ -15,6 +15,7 @@ export function AvatarChat() {
   const [showExpandedFingers, setShowExpandedFingers] = useState(false);
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [showReconnect, setShowReconnect] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -54,8 +55,8 @@ export function AvatarChat() {
     
     // Set new 1-minute timeout
     inactivityTimerRef.current = setTimeout(() => {
-      console.log("Inactivity timeout - restarting session");
-      endSession();
+      console.log("Inactivity timeout - showing reconnect screen");
+      endSessionShowReconnect();
     }, 60000); // 60 seconds = 1 minute
   };
 
@@ -233,6 +234,22 @@ export function AvatarChat() {
     }
   }
 
+  function endSessionShowReconnect() {
+    // Clear inactivity timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    
+    if (avatarRef.current) {
+      avatarRef.current.stopAvatar().catch(console.error);
+      avatarRef.current = null;
+    }
+    setSessionActive(false);
+    setIsLoading(true);
+    setShowReconnect(true);
+  }
+
   function endSession() {
     // Clear inactivity timer
     if (inactivityTimerRef.current) {
@@ -256,6 +273,12 @@ export function AvatarChat() {
 
   const endChat = () => {
     endSession();
+  };
+
+  const reconnect = () => {
+    setShowReconnect(false);
+    hasStartedRef.current = false;
+    startSession();
   };
 
   const togglePause = async () => {
@@ -384,7 +407,7 @@ export function AvatarChat() {
       )}
 
       {/* Loading Video Overlay */}
-      {isLoading && (
+      {isLoading && !showReconnect && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
           <video
             autoPlay
@@ -396,6 +419,30 @@ export function AvatarChat() {
             <source src={loadingVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+        </div>
+      )}
+
+      {/* Reconnect Screen - Shows after inactivity timeout */}
+      {showReconnect && (
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-8">
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="max-w-[60%] max-h-[60%] object-contain"
+            data-testid="reconnect-video"
+          >
+            <source src={loadingVideo} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          <Button
+            onClick={reconnect}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
+            data-testid="button-reconnect"
+          >
+            Reconnect
+          </Button>
         </div>
       )}
 
