@@ -38,12 +38,16 @@ export function AvatarChat({
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
+  const [reconnectReason, setReconnectReason] = useState<'inactivity' | 'demo-expired'>('inactivity');
+  const [demoTimeRemaining, setDemoTimeRemaining] = useState<number | null>(null);
+  const [showDemoWarning, setShowDemoWarning] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const demoTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if device is mobile
@@ -94,6 +98,57 @@ export function AvatarChat({
       }
     };
   }, [sessionActive, isPaused]);
+
+  // Start demo timer when session becomes active
+  useEffect(() => {
+    if (sessionActive) {
+      // Set initial time in seconds
+      const demoSeconds = avatarConfig.demoMinutes * 60;
+      setDemoTimeRemaining(demoSeconds);
+      
+      // Update timer every second
+      const interval = setInterval(() => {
+        setDemoTimeRemaining(prev => {
+          if (prev === null || prev <= 0) {
+            clearInterval(interval);
+            return 0;
+          }
+          
+          const newTime = prev - 1;
+          
+          // Show warning at 1 minute remaining
+          if (newTime === 60 && !showDemoWarning) {
+            setShowDemoWarning(true);
+          }
+          
+          // End session when time runs out
+          if (newTime === 0) {
+            setTimeout(() => {
+              endDemoSession();
+            }, 100);
+          }
+          
+          return newTime;
+        });
+      }, 1000);
+      
+      demoTimerRef.current = interval as any;
+    } else {
+      // Clear timer when session is not active
+      if (demoTimerRef.current) {
+        clearInterval(demoTimerRef.current);
+        demoTimerRef.current = null;
+      }
+      setDemoTimeRemaining(null);
+      setShowDemoWarning(false);
+    }
+    
+    return () => {
+      if (demoTimerRef.current) {
+        clearInterval(demoTimerRef.current);
+      }
+    };
+  }, [sessionActive, avatarConfig.demoMinutes]);
 
   useEffect(() => {
     // Auto-hide loading video after 5 seconds to show the avatar
@@ -270,6 +325,7 @@ export function AvatarChat({
       avatarRef.current.stopAvatar().catch(console.error);
       avatarRef.current = null;
     }
+    setReconnectReason('inactivity');
     setSessionActive(false);
     setIsLoading(true);
     setShowReconnect(true);
@@ -294,6 +350,27 @@ export function AvatarChat({
       hasStartedRef.current = false;
       startSession();
     }, 100);
+  }
+
+  function endDemoSession() {
+    // Clear all timers
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    if (demoTimerRef.current) {
+      clearInterval(demoTimerRef.current);
+      demoTimerRef.current = null;
+    }
+    
+    if (avatarRef.current) {
+      avatarRef.current.stopAvatar().catch(console.error);
+      avatarRef.current = null;
+    }
+    setReconnectReason('demo-expired');
+    setSessionActive(false);
+    setIsLoading(true);
+    setShowReconnect(true);
   }
 
   const endChat = () => {
@@ -446,6 +523,29 @@ export function AvatarChat({
         </Button>
       )}
 
+      {/* Demo Timer Display - Bottom Right */}
+      {sessionActive && demoTimeRemaining !== null && demoTimeRemaining > 0 && (
+        <div 
+          className={`absolute z-50 bg-purple-600/80 backdrop-blur-sm rounded-full px-4 py-2 ${
+            isMobile ? 'bottom-4 right-4' : 'bottom-6 right-6'
+          } ${showDemoWarning ? 'animate-pulse bg-orange-600/80' : ''}`}
+          data-testid="demo-timer"
+        >
+          <span className="text-white text-sm font-medium">
+            {Math.floor(demoTimeRemaining / 60)}:{(demoTimeRemaining % 60).toString().padStart(2, '0')}
+          </span>
+        </div>
+      )}
+
+      {/* Demo Warning Message - Center */}
+      {showDemoWarning && sessionActive && (
+        <div className="absolute z-50 top-24 left-1/2 -translate-x-1/2 bg-orange-600/90 backdrop-blur-sm rounded-lg px-6 py-3 max-w-md">
+          <p className="text-white text-center text-sm font-medium" data-testid="demo-warning">
+            1 minute remaining in demo. Sign in for unlimited access!
+          </p>
+        </div>
+      )}
+
       {/* Loading Video Overlay */}
       {isLoading && !showReconnect && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
@@ -462,9 +562,9 @@ export function AvatarChat({
         </div>
       )}
 
-      {/* Reconnect Screen - Shows after inactivity timeout */}
+      {/* Reconnect Screen - Shows after inactivity timeout or demo expiration */}
       {showReconnect && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-8">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-6">
           <video
             autoPlay
             muted
@@ -476,13 +576,44 @@ export function AvatarChat({
             <source src={loadingVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-          <Button
-            onClick={reconnect}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
-            data-testid="button-reconnect"
-          >
-            Reconnect
-          </Button>
+          {reconnectReason === 'demo-expired' ? (
+            <>
+              <div className="text-center max-w-md px-4">
+                <h3 className="text-white text-xl font-bold mb-2" data-testid="demo-expired-title">
+                  Demo Time Expired
+                </h3>
+                <p className="text-gray-300 text-sm mb-4" data-testid="demo-expired-message">
+                  Your {avatarConfig.demoMinutes}-minute demo with {avatarConfig.name} has ended. Sign in for unlimited access or try another demo!
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <Button
+                  onClick={reconnect}
+                  className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-sm font-semibold rounded-full shadow-lg"
+                  data-testid="button-try-again"
+                >
+                  Try Another Demo
+                </Button>
+                {onBackToSelection && (
+                  <Button
+                    onClick={onBackToSelection}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-8 py-3 text-sm font-semibold rounded-full shadow-lg"
+                    data-testid="button-change-avatar"
+                  >
+                    Change Avatar
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <Button
+              onClick={reconnect}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
+              data-testid="button-reconnect"
+            >
+              Reconnect
+            </Button>
+          )}
         </div>
       )}
 
