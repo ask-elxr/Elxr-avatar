@@ -19,19 +19,16 @@ class PineconeAssistantAPI {
     }
   }
 
-  async retrieveContext(query: string, maxResults: number = 5, customAssistants?: string[]): Promise<any[]> {
+  async retrieveContext(query: string, maxResults: number = 5): Promise<any[]> {
     if (!this.apiKey || !this.client) {
       throw new Error('Pinecone API key not configured');
     }
 
     try {
       const allResults: any[] = [];
-      
-      // Use custom assistants if provided, otherwise use default
-      const assistantsToQuery = customAssistants || this.assistantNames;
 
-      // Query assistants in parallel for faster responses
-      const assistantPromises = assistantsToQuery.map(async (assistantName) => {
+      // Query both assistants in parallel for faster responses
+      const assistantPromises = this.assistantNames.map(async (assistantName) => {
         try {
           console.log(`🔍 Querying Pinecone Assistant: ${assistantName}`);
           

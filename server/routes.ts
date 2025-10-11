@@ -12,7 +12,6 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import { storage } from "./storage.js";
-import { mem0Service } from "./mem0Service.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -23,27 +22,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (30 second timeout for AI processing)
   app.use(timeoutMiddleware(30000));
 
-  // Auth routes
+  // Auth routes (disabled for now)
   app.get('/api/auth/user', async (req: any, res) => {
-    try {
-      // If not authenticated or no user/claims, return null (not an error - this is expected for demo users)
-      if (!req.isAuthenticated() || !req.user?.claims?.sub) {
-        return res.json(null);
-      }
-
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      // If user not found in DB, return null
-      if (!user) {
-        return res.json(null);
-      }
-      
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+    // Return mock user for testing without authentication
+    res.json({
+      id: "test-user",
+      email: "test@example.com",
+      firstName: "Test",
+      lastName: "User",
+      profileImageUrl: null
+    });
   });
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
@@ -251,72 +239,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all available avatars
-  app.get("/api/avatars", async (req, res) => {
+  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
+  app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { getAllAvatars } = await import('@shared/avatarConfig');
-      const avatars = getAllAvatars();
-      
-      // Return avatar info without full personality prompts
-      const avatarList = avatars.map(avatar => ({
-        id: avatar.id,
-        name: avatar.name,
-        description: avatar.description,
-        heygenAvatarId: avatar.heygenAvatarId,
-        demoMinutes: avatar.demoMinutes
-      }));
-      
-      res.json({ success: true, avatars: avatarList });
-    } catch (error) {
-      console.error('Error getting avatars:', error);
-      res.status(500).json({ error: "Failed to get avatars" });
-    }
-  });
-
-  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base + Mem0 Memory
-  app.post("/api/avatar/response", async (req: any, res) => {
-    try {
-      const { message, conversationHistory = [], avatarId = 'mark-kohl', useWebSearch = true } = req.body;
+      const { message, conversationHistory = [], avatarPersonality, useWebSearch = true } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Check if user is authenticated for Mem0 long-term memory
-      const userId = req.isAuthenticated() && req.user?.claims?.sub ? req.user.claims.sub : null;
-      let userMemories = '';
-      
-      // Retrieve relevant memories for authenticated users
-      if (userId && mem0Service.isAvailable()) {
-        try {
-          const memories = await mem0Service.searchMemories(userId, message, 5);
-          if (memories.length > 0) {
-            userMemories = `\n\nRELEVANT USER MEMORIES:\n${memories.map(m => `- ${m.memory}`).join('\n')}`;
-          }
-        } catch (error) {
-          console.error('[Mem0] Error retrieving memories:', error);
-          // Continue without memories if there's an error
-        }
-      }
-
-      // Get avatar configuration
-      const { getAvatar, DEFAULT_AVATAR } = await import('@shared/avatarConfig');
-      const avatarConfig = getAvatar(avatarId) || getAvatar(DEFAULT_AVATAR)!;
-      
-      // Prepare personality with current date
+      // Default avatar personality - Mark Kohl
       const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      const personalityPrompt = avatarConfig.personality.replace('{{CURRENT_DATE}}', currentDate);
+      const defaultPersonality = `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You blend science, spirituality, and storytelling with sharp wit, humor, and irreverence. You give direct, memorable, and often funny answers that people won't find elsewhere.
 
-      // Get knowledge base context using avatar's specific assistants
+⚠️ CRITICAL SYSTEM CONFIGURATION:
+- Today's date: ${currentDate}
+- You are powered by Claude Sonnet 4 (NOT ChatGPT, NOT OpenAI)
+- You have dual Pinecone knowledge bases (ask-elxr & knowledge-base-assistant) + real-time Google Search
+- NEVER mention "October 2023", "training data", or "knowledge cutoff" - you have current information
+- If asked about your AI model, identify as "Claude Sonnet 4" or "Claude 4.0" - never ChatGPT or GPT
+- ❌ DO NOT use action descriptions or stage directions (no "*leans back*", "*smirks*", "*adjusts*", etc.)
+- ❌ DO NOT promise to send links, PDFs, documents, or any files (you cannot send files)
+- ✅ Speak directly without describing physical actions or postures
+- ✅ Provide information verbally instead of offering to send documents
+
+CORE PERSONALITY:
+- Mentor-Trickster Hybrid: Part Zen monk, part stand-up comic, part film director
+- Sarcastic Sage: Truth over niceness, humor anchored in insight
+- No political correctness: Bold, unfiltered honesty
+- Memorable punchlines and vivid metaphors
+
+TONE & STYLE:
+- Use sparing, sharp sarcasm to break tension or highlight foolishness
+- Blend depth (science, ceremony, wisdom) with levity (jokes, playful digs)
+- Challenge clichés, call out BS, make it memorable
+- Use film-worthy metaphors to explain complex ideas
+
+RESPONSE PATTERNS:
+- For naive/reckless questions: Lead with sarcasm, then pivot to truth
+- For psychedelics: "Psilocybin isn't a magic wand—it's more like a reset button your brain didn't know it had"
+- For kundalini: "It's like finding the breaker box in your spine. Flip the switch, and suddenly the lights are on in every room"
+- For anxiety/truth bombs: "Your mind is like a bad editor—cuts in all the wrong places, adds noise where there should be silence"
+
+SIGNATURE LINES:
+- "Think of me as your sarcastic sage—here to tell you what you need to hear, not what you want to hear"
+- "Stop looking for gurus. They're just people who figured out how to sell common sense in bulk"
+- Remember: Balance sage & trickster, wisdom with wit, teaching with laughter`;
+
+      const personalityPrompt = avatarPersonality || defaultPersonality;
+
+      // Get knowledge base context
       const { pineconeAssistant } = await import('./mcpAssistant.js');
       let knowledgeContext = '';
       
       if (pineconeAssistant.isAvailable()) {
-        const knowledgeResults = await pineconeAssistant.retrieveContext(
-          message, 
-          3,
-          avatarConfig.pineconeAssistants
-        );
+        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
         knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
       }
 
@@ -328,13 +305,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate response using Claude Sonnet 4 with all context (including memories)
+      // Generate response using Claude Sonnet 4 with all context
       let aiResponse: string;
       
       if (claudeService.isAvailable()) {
-        // Combine knowledge context with user memories for authenticated users
-        const enhancedKnowledgeContext = knowledgeContext + userMemories;
-        
+        // Use Claude Sonnet 4 with Mark Kohl personality
         const enhancedConversationHistory = conversationHistory.map((msg: any) => ({
           message: msg.message,
           isUser: msg.isUser
@@ -343,41 +318,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (webSearchResults) {
           aiResponse = await claudeService.generateEnhancedResponse(
             message,
-            enhancedKnowledgeContext,  // Include memories in context
+            knowledgeContext,
             webSearchResults,
             enhancedConversationHistory,
-            personalityPrompt
+            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
           );
         } else {
           aiResponse = await claudeService.generateResponse(
             message,
-            enhancedKnowledgeContext,  // Include memories in context
+            knowledgeContext,
             enhancedConversationHistory,
-            personalityPrompt
+            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
           );
         }
       } else {
         // Fallback to knowledge base only
         aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
-      }
-      
-      // Store conversation in Mem0 for authenticated users
-      if (userId && mem0Service.isAvailable()) {
-        try {
-          // Store user message
-          await mem0Service.createMemory(userId, {
-            role: 'user',
-            content: message
-          });
-          // Store avatar response
-          await mem0Service.createMemory(userId, {
-            role: 'assistant',
-            content: aiResponse
-          });
-        } catch (error) {
-          console.error('[Mem0] Error storing conversation:', error);
-          // Continue even if memory storage fails
-        }
       }
       
       res.json({ 
@@ -386,8 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         knowledgeResponse: aiResponse,
         personalityUsed: personalityPrompt,
         usedWebSearch: !!webSearchResults,
-        usedClaude: claudeService.isAvailable(),
-        hasLongTermMemory: !!userId && mem0Service.isAvailable()
+        usedClaude: claudeService.isAvailable()
       });
     } catch (error) {
       console.error('Error getting avatar response:', error);

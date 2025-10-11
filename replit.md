@@ -1,6 +1,6 @@
 # Overview
 
-This is a full-stack AI avatar chat platform featuring 3 unique avatars (Mark Kohl, Sarah Chen, Dr. James Rivera), each with distinct personalities and specialized Pinecone knowledge bases. Built with HeyGen's streaming avatar SDK, Claude Sonnet 4 AI, and real-time Google web search. The platform offers 5-minute demo sessions for each avatar, with optional sign-in for unlimited access and long-term memory via Mem0 API.
+This is a full-stack AI avatar chat platform that combines HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. The application features a React-based frontend with a Node.js/Express backend, allowing users to have intelligent conversations with the Mark Kohl personality-driven avatar that accesses both a comprehensive Pinecone knowledge base and current web information.
 
 # User Preferences
 
@@ -9,35 +9,6 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 11, 2025)
-- **Multi-Avatar System** - 3 unique avatars with distinct personalities and knowledge bases
-  - Mark Kohl: Sarcastic sage blending mycology, filmmaking, kundalini (Pinecone: ask-elxr, knowledge-base-assistant)
-  - Sarah Chen: Wellness expert focusing on holistic health (Pinecone: wellness-assistant)
-  - Dr. James Rivera: Research specialist in academic/scientific topics (Pinecone: research-assistant)
-  - Each avatar has separate HeyGen avatar ID, personality prompts, and Pinecone assistants
-  - Avatar configuration system in shared/avatarConfig.ts for centralized management
-- **Avatar Selection Interface** - Beautiful card-based UI for choosing avatars
-  - Grid layout showing all 3 avatars with descriptions
-  - "Back to Selection" button to switch avatars during session
-  - Responsive design for mobile and desktop
-  - Avatar props passed to chat component for dynamic configuration
-- **5-Minute Demo Timer** - Time-limited demo sessions for each avatar
-  - Countdown timer displayed in bottom-right corner (shows MM:SS format)
-  - Warning message at 1 minute remaining (orange pulsing badge)
-  - Demo expiration screen with options to try another demo or change avatar
-  - Different reconnect messages for demo expiration vs inactivity timeout
-  - Timer pauses when avatar is paused, resets on reconnection
-- **Replit Authentication Integration** - Fully integrated sign-in system with Mem0 long-term memory
-  - Replit Auth with Google, GitHub, X (Twitter), Apple, and email/password support
-  - Session-based authentication stored in PostgreSQL (auth_sessions table)
-  - Demo timer automatically bypassed for authenticated users (unlimited chat sessions)
-  - Sign-in prompts on demo expiration screen for easy conversion
-- **Mem0 Long-Term Memory System** - Personalized memory for authenticated users
-  - Automatic memory retrieval before generating responses (searches user's conversation history)
-  - Memories included in Claude's context for personalized responses
-  - Stores all conversations (user messages + avatar responses) in Mem0 after each exchange
-  - Graceful degradation when Mem0 API key not present (system continues working without memory)
-  - Response includes hasLongTermMemory flag to indicate memory status
-  - Uses user's unique ID (req.user.claims.sub) to isolate memories per user
 - **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
   - After 1 minute of inactivity, logo appears with "Reconnect" button
   - User must click "Reconnect" to restart session (no auto-restart loop)
