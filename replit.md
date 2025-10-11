@@ -9,11 +9,17 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 10, 2025)
+- **Inactivity Timeout** - Automatic session restart after 1 minute of no user interaction
+  - Timer starts when session becomes active
+  - Resets on any user activity (speaking, button clicks)
+  - Paused when avatar is manually paused
+  - Restarts session automatically when timeout occurs
 - **Added Pause/Resume Control** - Yellow pause button in top center for controlling avatar
   - Pause: Stops voice chat (mutes microphone and stops listening)
   - Resume: Restarts voice chat (enables microphone again)
   - Button shows Pause icon when active, Play icon when paused
   - Works on both mobile and desktop
+  - Pausing also stops the inactivity timer
 - **Removed Action Descriptions** - Avatar no longer uses stage directions like "*leans back*" or "*smirks*"
 - **No File Promises** - Avatar won't promise to send links, PDFs, or documents (speaks information instead)
 - **Fixed October 2023 Reference Bug** - Avatar now maintains current date awareness from first response

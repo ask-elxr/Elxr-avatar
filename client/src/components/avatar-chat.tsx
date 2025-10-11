@@ -20,6 +20,7 @@ export function AvatarChat() {
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if device is mobile
@@ -44,6 +45,32 @@ export function AvatarChat() {
       startSession();
     }
   }, []);
+
+  // Reset inactivity timer
+  const resetInactivityTimer = () => {
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    
+    // Set new 1-minute timeout
+    inactivityTimerRef.current = setTimeout(() => {
+      console.log("Inactivity timeout - restarting session");
+      endSession();
+    }, 60000); // 60 seconds = 1 minute
+  };
+
+  // Start inactivity timer when session becomes active
+  useEffect(() => {
+    if (sessionActive && !isPaused) {
+      resetInactivityTimer();
+    }
+    
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [sessionActive, isPaused]);
 
   useEffect(() => {
     // Auto-hide loading video after 5 seconds to show the avatar
@@ -145,6 +172,9 @@ export function AvatarChat() {
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
         console.log("USER_TALKING_MESSAGE event received:", message);
         
+        // Reset inactivity timer on user activity
+        resetInactivityTimer();
+        
         const userMessage = message?.detail?.message || message?.message || message;
         console.log("User message extracted:", userMessage);
         
@@ -204,6 +234,12 @@ export function AvatarChat() {
   }
 
   function endSession() {
+    // Clear inactivity timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    
     if (avatarRef.current) {
       avatarRef.current.stopAvatar().catch(console.error);
       avatarRef.current = null;
@@ -231,11 +267,18 @@ export function AvatarChat() {
         await avatarRef.current.startVoiceChat();
         setIsPaused(false);
         console.log("Avatar resumed");
+        // Reset inactivity timer when resuming
+        resetInactivityTimer();
       } else {
         // Pause: Stop voice chat (mutes microphone)
         await avatarRef.current.closeVoiceChat();
         setIsPaused(true);
         console.log("Avatar paused");
+        // Clear inactivity timer when paused
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
+          inactivityTimerRef.current = null;
+        }
       }
     } catch (error) {
       console.error("Error toggling pause:", error);
