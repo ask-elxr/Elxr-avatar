@@ -26,10 +26,18 @@ Preferred communication style: Simple, everyday language.
   - Demo expiration screen with options to try another demo or change avatar
   - Different reconnect messages for demo expiration vs inactivity timeout
   - Timer pauses when avatar is paused, resets on reconnection
-- **Mem0 API Integration** - Long-term memory system for signed-in users (Phase 2)
-  - Graceful degradation when API key not present
-  - Mem0Service for user memory creation, retrieval, and search
-  - Ready for integration with user authentication system
+- **Replit Authentication Integration** - Fully integrated sign-in system with Mem0 long-term memory
+  - Replit Auth with Google, GitHub, X (Twitter), Apple, and email/password support
+  - Session-based authentication stored in PostgreSQL (auth_sessions table)
+  - Demo timer automatically bypassed for authenticated users (unlimited chat sessions)
+  - Sign-in prompts on demo expiration screen for easy conversion
+- **Mem0 Long-Term Memory System** - Personalized memory for authenticated users
+  - Automatic memory retrieval before generating responses (searches user's conversation history)
+  - Memories included in Claude's context for personalized responses
+  - Stores all conversations (user messages + avatar responses) in Mem0 after each exchange
+  - Graceful degradation when Mem0 API key not present (system continues working without memory)
+  - Response includes hasLongTermMemory flag to indicate memory status
+  - Uses user's unique ID (req.user.claims.sub) to isolate memories per user
 - **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
   - After 1 minute of inactivity, logo appears with "Reconnect" button
   - User must click "Reconnect" to restart session (no auto-restart loop)
