@@ -1,12 +1,34 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { X, Maximize2, Minimize2, Pause, Play } from "lucide-react";
+import { X, Maximize2, Minimize2, Pause, Play, ArrowLeft } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
-export function AvatarChat() {
+interface AvatarChatProps {
+  avatarId?: string;
+  avatarConfig?: {
+    id: string;
+    name: string;
+    description: string;
+    heygenAvatarId: string;
+    demoMinutes: number;
+  };
+  onBackToSelection?: () => void;
+}
+
+export function AvatarChat({ 
+  avatarId = "mark-kohl", 
+  avatarConfig = {
+    id: "mark-kohl",
+    name: "Mark Kohl",
+    description: "Your no-nonsense guide",
+    heygenAvatarId: "josh_lite3_20230714",
+    demoMinutes: 5
+  },
+  onBackToSelection
+}: AvatarChatProps = {}) {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
@@ -185,7 +207,10 @@ export function AvatarChat() {
             const response = await fetch("/api/avatar/response", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: userMessage })
+              body: JSON.stringify({ 
+                message: userMessage,
+                avatarId: avatarId
+              })
             });
 
             if (response.ok) {
@@ -212,7 +237,7 @@ export function AvatarChat() {
       // We intercept and override responses with Claude
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
-        avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
+        avatarName: avatarConfig.heygenAvatarId,
         knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
         voice: {
           rate: 1.0
@@ -403,6 +428,21 @@ export function AvatarChat() {
         >
           <X className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
           {!isMobile && <span className="text-sm font-medium">End Chat</span>}
+        </Button>
+      )}
+
+      {/* Back to Selection Button - Bottom Left - Only shown when callback provided */}
+      {onBackToSelection && !showReconnect && !isLoading && (
+        <Button
+          onClick={onBackToSelection}
+          className={`absolute z-50 bg-gray-600/80 hover:bg-gray-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+            isMobile ? 'bottom-4 left-4 p-3' : 'bottom-6 left-6 px-4 py-2'
+          }`}
+          data-testid="button-back-to-selection"
+          title="Choose different avatar"
+        >
+          <ArrowLeft className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+          {!isMobile && <span className="text-sm font-medium">Change Avatar</span>}
         </Button>
       )}
 

@@ -242,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all available avatars
   app.get("/api/avatars", async (req, res) => {
     try {
-      const { getAllAvatars } = await import('../shared/avatarConfig.js');
+      const { getAllAvatars } = await import('@shared/avatarConfig');
       const avatars = getAllAvatars();
       
       // Return avatar info without full personality prompts
@@ -271,7 +271,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get avatar configuration
-      const { getAvatar, DEFAULT_AVATAR } = await import('../shared/avatarConfig.js');
+      const { getAvatar, DEFAULT_AVATAR } = await import('@shared/avatarConfig');
       const avatarConfig = getAvatar(avatarId) || getAvatar(DEFAULT_AVATAR)!;
       
       // Prepare personality with current date
