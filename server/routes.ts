@@ -12,6 +12,7 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import { storage } from "./storage.js";
+import { mem0Service } from "./mem0Service.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -272,13 +273,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
-  app.post("/api/avatar/response", async (req, res) => {
+  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base + Mem0 Memory
+  app.post("/api/avatar/response", async (req: any, res) => {
     try {
       const { message, conversationHistory = [], avatarId = 'mark-kohl', useWebSearch = true } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Check if user is authenticated for Mem0 long-term memory
+      const userId = req.isAuthenticated() && req.user?.claims?.sub ? req.user.claims.sub : null;
+      let userMemories = '';
+      
+      // Retrieve relevant memories for authenticated users
+      if (userId && mem0Service.isAvailable()) {
+        try {
+          const memories = await mem0Service.searchMemories(userId, message, 5);
+          if (memories.length > 0) {
+            userMemories = `\n\nRELEVANT USER MEMORIES:\n${memories.map(m => `- ${m.memory}`).join('\n')}`;
+          }
+        } catch (error) {
+          console.error('[Mem0] Error retrieving memories:', error);
+          // Continue without memories if there's an error
+        }
       }
 
       // Get avatar configuration
@@ -310,11 +328,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate response using Claude Sonnet 4 with all context
+      // Generate response using Claude Sonnet 4 with all context (including memories)
       let aiResponse: string;
       
       if (claudeService.isAvailable()) {
-        // Use Claude Sonnet 4 with Mark Kohl personality
+        // Combine knowledge context with user memories for authenticated users
+        const enhancedKnowledgeContext = knowledgeContext + userMemories;
+        
         const enhancedConversationHistory = conversationHistory.map((msg: any) => ({
           message: msg.message,
           isUser: msg.isUser
@@ -323,22 +343,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (webSearchResults) {
           aiResponse = await claudeService.generateEnhancedResponse(
             message,
-            knowledgeContext,
+            enhancedKnowledgeContext,  // Include memories in context
             webSearchResults,
             enhancedConversationHistory,
-            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
+            personalityPrompt
           );
         } else {
           aiResponse = await claudeService.generateResponse(
             message,
-            knowledgeContext,
+            enhancedKnowledgeContext,  // Include memories in context
             enhancedConversationHistory,
-            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
+            personalityPrompt
           );
         }
       } else {
         // Fallback to knowledge base only
         aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
+      }
+      
+      // Store conversation in Mem0 for authenticated users
+      if (userId && mem0Service.isAvailable()) {
+        try {
+          // Store user message
+          await mem0Service.createMemory(userId, {
+            role: 'user',
+            content: message
+          });
+          // Store avatar response
+          await mem0Service.createMemory(userId, {
+            role: 'assistant',
+            content: aiResponse
+          });
+        } catch (error) {
+          console.error('[Mem0] Error storing conversation:', error);
+          // Continue even if memory storage fails
+        }
       }
       
       res.json({ 
@@ -347,7 +386,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         knowledgeResponse: aiResponse,
         personalityUsed: personalityPrompt,
         usedWebSearch: !!webSearchResults,
-        usedClaude: claudeService.isAvailable()
+        usedClaude: claudeService.isAvailable(),
+        hasLongTermMemory: !!userId && mem0Service.isAvailable()
       });
     } catch (error) {
       console.error('Error getting avatar response:', error);
