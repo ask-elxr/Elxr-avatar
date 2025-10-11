@@ -11,7 +11,7 @@
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.37.0",
+    "@anthropic-ai/sdk": "^0.40.1",
     "@google-cloud/storage": "^7.17.0",
     "@google/genai": "^1.16.0",
     "@heygen/streaming-avatar": "^2.1.0",
@@ -65,6 +65,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.453.0",
     "mammoth": "^1.10.0",
+    "mem0ai": "^2.1.38",
     "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",
     "multer": "^2.0.2",

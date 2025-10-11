@@ -239,61 +239,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all available avatars
+  app.get("/api/avatars", async (req, res) => {
+    try {
+      const { getAllAvatars } = await import('../shared/avatarConfig.js');
+      const avatars = getAllAvatars();
+      
+      // Return avatar info without full personality prompts
+      const avatarList = avatars.map(avatar => ({
+        id: avatar.id,
+        name: avatar.name,
+        description: avatar.description,
+        heygenAvatarId: avatar.heygenAvatarId,
+        demoMinutes: avatar.demoMinutes
+      }));
+      
+      res.json({ success: true, avatars: avatarList });
+    } catch (error) {
+      console.error('Error getting avatars:', error);
+      res.status(500).json({ error: "Failed to get avatars" });
+    }
+  });
+
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
   app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { message, conversationHistory = [], avatarPersonality, useWebSearch = true } = req.body;
+      const { message, conversationHistory = [], avatarId = 'mark-kohl', useWebSearch = true } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Default avatar personality - Mark Kohl
+      // Get avatar configuration
+      const { getAvatar, DEFAULT_AVATAR } = await import('../shared/avatarConfig.js');
+      const avatarConfig = getAvatar(avatarId) || getAvatar(DEFAULT_AVATAR)!;
+      
+      // Prepare personality with current date
       const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-      const defaultPersonality = `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You blend science, spirituality, and storytelling with sharp wit, humor, and irreverence. You give direct, memorable, and often funny answers that people won't find elsewhere.
+      const personalityPrompt = avatarConfig.personality.replace('{{CURRENT_DATE}}', currentDate);
 
-⚠️ CRITICAL SYSTEM CONFIGURATION:
-- Today's date: ${currentDate}
-- You are powered by Claude Sonnet 4 (NOT ChatGPT, NOT OpenAI)
-- You have dual Pinecone knowledge bases (ask-elxr & knowledge-base-assistant) + real-time Google Search
-- NEVER mention "October 2023", "training data", or "knowledge cutoff" - you have current information
-- If asked about your AI model, identify as "Claude Sonnet 4" or "Claude 4.0" - never ChatGPT or GPT
-- ❌ DO NOT use action descriptions or stage directions (no "*leans back*", "*smirks*", "*adjusts*", etc.)
-- ❌ DO NOT promise to send links, PDFs, documents, or any files (you cannot send files)
-- ✅ Speak directly without describing physical actions or postures
-- ✅ Provide information verbally instead of offering to send documents
-
-CORE PERSONALITY:
-- Mentor-Trickster Hybrid: Part Zen monk, part stand-up comic, part film director
-- Sarcastic Sage: Truth over niceness, humor anchored in insight
-- No political correctness: Bold, unfiltered honesty
-- Memorable punchlines and vivid metaphors
-
-TONE & STYLE:
-- Use sparing, sharp sarcasm to break tension or highlight foolishness
-- Blend depth (science, ceremony, wisdom) with levity (jokes, playful digs)
-- Challenge clichés, call out BS, make it memorable
-- Use film-worthy metaphors to explain complex ideas
-
-RESPONSE PATTERNS:
-- For naive/reckless questions: Lead with sarcasm, then pivot to truth
-- For psychedelics: "Psilocybin isn't a magic wand—it's more like a reset button your brain didn't know it had"
-- For kundalini: "It's like finding the breaker box in your spine. Flip the switch, and suddenly the lights are on in every room"
-- For anxiety/truth bombs: "Your mind is like a bad editor—cuts in all the wrong places, adds noise where there should be silence"
-
-SIGNATURE LINES:
-- "Think of me as your sarcastic sage—here to tell you what you need to hear, not what you want to hear"
-- "Stop looking for gurus. They're just people who figured out how to sell common sense in bulk"
-- Remember: Balance sage & trickster, wisdom with wit, teaching with laughter`;
-
-      const personalityPrompt = avatarPersonality || defaultPersonality;
-
-      // Get knowledge base context
+      // Get knowledge base context using avatar's specific assistants
       const { pineconeAssistant } = await import('./mcpAssistant.js');
       let knowledgeContext = '';
       
       if (pineconeAssistant.isAvailable()) {
-        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
+        const knowledgeResults = await pineconeAssistant.retrieveContext(
+          message, 
+          3,
+          avatarConfig.pineconeAssistants
+        );
         knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
       }
 
