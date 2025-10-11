@@ -5,6 +5,7 @@ import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
+import { useAuth } from "@/hooks/useAuth";
 
 interface AvatarChatProps {
   avatarId?: string;
@@ -29,6 +30,7 @@ export function AvatarChat({
   },
   onBackToSelection
 }: AvatarChatProps = {}) {
+  const { isAuthenticated } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);
@@ -99,8 +101,15 @@ export function AvatarChat({
     };
   }, [sessionActive, isPaused]);
 
-  // Start demo timer when session becomes active
+  // Start demo timer when session becomes active (only for non-authenticated users)
   useEffect(() => {
+    // Skip demo timer for authenticated users - they have unlimited access
+    if (isAuthenticated) {
+      setDemoTimeRemaining(null);
+      setShowDemoWarning(false);
+      return;
+    }
+
     if (sessionActive) {
       // Set initial time in seconds
       const demoSeconds = avatarConfig.demoMinutes * 60;
@@ -148,7 +157,7 @@ export function AvatarChat({
         clearInterval(demoTimerRef.current);
       }
     };
-  }, [sessionActive, avatarConfig.demoMinutes]);
+  }, [sessionActive, avatarConfig.demoMinutes, isAuthenticated]);
 
   useEffect(() => {
     // Auto-hide loading video after 5 seconds to show the avatar
@@ -586,7 +595,14 @@ export function AvatarChat({
                   Your {avatarConfig.demoMinutes}-minute demo with {avatarConfig.name} has ended. Sign in for unlimited access or try another demo!
                 </p>
               </div>
-              <div className="flex gap-4">
+              <div className="flex flex-wrap gap-3 justify-center">
+                <Button
+                  onClick={() => window.location.href = "/api/login"}
+                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 text-sm font-semibold rounded-full shadow-lg"
+                  data-testid="button-sign-in"
+                >
+                  Sign In for Unlimited Access
+                </Button>
                 <Button
                   onClick={reconnect}
                   className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-sm font-semibold rounded-full shadow-lg"
