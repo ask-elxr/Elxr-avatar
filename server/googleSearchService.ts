@@ -120,13 +120,26 @@ export class GoogleSearchService {
 
   // Check if query might benefit from web search
   shouldUseWebSearch(query: string): boolean {
+    const lowerQuery = query.toLowerCase();
+    
+    // Exclude date/time queries - these are better handled by system prompt with current date
+    const dateTimeQueries = [
+      'what day', 'what date', 'what time', 'what\'s the date', 'what\'s the day',
+      'what is the date', 'what is the day', 'current date', 'current day',
+      "today's date", 'date today', 'day today'
+    ];
+    
+    if (dateTimeQueries.some(pattern => lowerQuery.includes(pattern))) {
+      return false; // Skip web search for date/time queries
+    }
+    
+    // Web search keywords for current events, news, prices, etc.
     const webSearchKeywords = [
-      'current', 'recent', 'latest', 'news', 'today', 'this year', '2024', '2025',
+      'current', 'recent', 'latest', 'news', 'this year', '2024', '2025',
       'update', 'happening', 'now', 'live', 'breaking', 'price', 'stock',
       'weather', 'forecast', 'schedule', 'events', 'when is', 'what happened'
     ];
 
-    const lowerQuery = query.toLowerCase();
     return webSearchKeywords.some(keyword => lowerQuery.includes(keyword));
   }
 }
