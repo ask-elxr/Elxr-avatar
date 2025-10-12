@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Satoshi Font */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap');
+
 :root {
   --background: hsl(210, 40%, 98%);
   --foreground: hsl(215, 28%, 17%);
@@ -35,7 +38,7 @@
   --sidebar-accent-foreground: hsl(215, 85%, 50%);
   --sidebar-border: hsl(220, 13%, 91%);
   --sidebar-ring: hsl(215, 85%, 50%);
-  --font-sans: "Inter", "Open Sans", sans-serif;
+  --font-sans: "Satoshi", "Inter", sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
   --radius: 8px;

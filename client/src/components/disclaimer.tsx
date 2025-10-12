@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DisclaimerProps {
@@ -23,23 +24,17 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-purple-900 p-4">
       <Card className="w-full max-w-2xl bg-black/80 border-purple-500/30 backdrop-blur-xl">
         <CardHeader className="space-y-4">
-          <div className="flex items-center justify-center mb-4">
-            <div className="w-16 h-16 rounded-full bg-purple-600/20 flex items-center justify-center">
-              <svg
-                className="w-8 h-8 text-purple-400"
-                fill="none"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-              </svg>
+          {/* ELXR Logo */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="text-center">
+              <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent tracking-wider">
+                ELXR
+              </h1>
             </div>
           </div>
+          
           <CardTitle className="text-3xl font-bold text-center text-white">
-            Welcome to ELXR
+            Welcome
           </CardTitle>
           <CardDescription className="text-center text-gray-300 text-base">
             You're about to talk with an AI avatar powered by real expert knowledge
@@ -64,26 +59,29 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
 
           {/* Memory Toggle */}
           <div className="bg-purple-950/20 border border-purple-500/20 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4 text-center">
+            <h3 className="text-lg font-semibold text-white mb-6 text-center">
               Choose Your Experience
             </h3>
-            <label className="flex items-center space-x-3 bg-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/15 transition-colors">
-              <Checkbox
+            <div className="flex items-center justify-between bg-white/5 p-5 rounded-xl border border-purple-500/20">
+              <label htmlFor="memory" className="flex-1 cursor-pointer">
+                <p className="text-lg font-medium text-white mb-1" data-testid="text-memory-status">
+                  {remember ? "Remember my conversations" : "Anonymous session"}
+                </p>
+                <p className="text-sm text-gray-400">
+                  {remember 
+                    ? "Personalized experience with memory" 
+                    : "Private and temporary"}
+                </p>
+              </label>
+              <Switch
                 id="memory"
                 checked={remember}
                 onCheckedChange={(checked) => setRemember(checked as boolean)}
-                className="border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-                data-testid="checkbox-memory-toggle"
+                className="data-[state=checked]:bg-purple-600"
+                data-testid="switch-memory-toggle"
+                aria-label="Toggle conversation memory"
               />
-              <span className="text-lg text-white">
-                {remember ? "✅ Remember my conversations" : "🕶️ Stay anonymous this session"}
-              </span>
-            </label>
-            <p className="text-sm text-gray-400 mt-3 text-center">
-              {remember 
-                ? "Your conversations will be remembered for a personalized experience across sessions"
-                : "Your conversations won't be saved - completely private and anonymous"}
-            </p>
+            </div>
           </div>
 
           <div className="flex items-start space-x-3 p-4 bg-purple-950/20 rounded-lg border border-purple-500/10">
