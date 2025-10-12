@@ -65,11 +65,14 @@ export function AvatarChat() {
   const resetInactivityTimer = () => {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
+      console.log("Inactivity timer cleared and reset");
+    } else {
+      console.log("Inactivity timer started for first time");
     }
     
     // Set new 1-minute timeout
     inactivityTimerRef.current = setTimeout(() => {
-      console.log("Inactivity timeout - showing reconnect screen");
+      console.log("Inactivity timeout triggered - 60 seconds elapsed");
       endSessionShowReconnect();
     }, 60000); // 60 seconds = 1 minute
   };
@@ -247,6 +250,10 @@ export function AvatarChat() {
             // Set up interval to add follow-up phrases every 12 seconds while waiting
             const fillerInterval = setInterval(async () => {
               const followUpPhrase = followUpPhrases[Math.floor(Math.random() * followUpPhrases.length)];
+              
+              // Reset timer before each filler phrase to keep session alive
+              resetInactivityTimer();
+              
               await avatar.interrupt().catch(() => {});
               await avatar.speak({
                 text: followUpPhrase,
