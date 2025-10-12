@@ -84,10 +84,16 @@ export function AvatarChat() {
         console.log("Asking if there's anything else...");
         
         try {
+          // First interrupt any ongoing speech
+          await avatarRef.current.interrupt().catch(() => {});
+          console.log("About to speak: Is there anything else...");
+          
           await avatarRef.current.speak({
             text: "Is there anything else I can help you with?",
             task_type: TaskType.REPEAT
           });
+          
+          console.log("Successfully spoke the question");
           
           // Give user 20 more seconds to respond
           inactivityTimerRef.current = setTimeout(() => {
@@ -100,6 +106,7 @@ export function AvatarChat() {
         }
       } else {
         // Already asked or no avatar - just end session
+        console.log("Already asked or no avatar - terminating immediately");
         endSessionShowReconnect();
       }
     }, 60000); // 60 seconds = 1 minute
