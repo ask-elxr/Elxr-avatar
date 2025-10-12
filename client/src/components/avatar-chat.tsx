@@ -157,10 +157,13 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         (document as any).webkitFullscreenElement ||
         (videoRef.current as any)?.webkitDisplayingFullscreen
       );
+      
+      console.log("Fullscreen change detected:", isCurrentlyFullscreen);
       setIsFullscreen(isCurrentlyFullscreen);
       
       // Track that fullscreen has been used at least once
       if (isCurrentlyFullscreen) {
+        console.log("Entering fullscreen - showing unpinch animation");
         setHasUsedFullscreen(true);
         
         // Show unpinch animation for 5 seconds when entering fullscreen
@@ -173,10 +176,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         
         // Hide after 5 seconds
         unpinchTimerRef.current = setTimeout(() => {
+          console.log("Hiding unpinch animation after 5 seconds");
           setShowUnpinchAnimation(false);
         }, 5000);
       } else {
         // Hide animation when exiting fullscreen
+        console.log("Exiting fullscreen - hiding unpinch animation");
         setShowUnpinchAnimation(false);
         if (unpinchTimerRef.current) {
           clearTimeout(unpinchTimerRef.current);
@@ -184,20 +189,48 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       }
     };
 
+    const handleWebkitBeginFullscreen = () => {
+      console.log("Webkit begin fullscreen - showing unpinch animation");
+      setIsFullscreen(true);
+      setHasUsedFullscreen(true);
+      setShowUnpinchAnimation(true);
+      
+      // Clear any existing timer
+      if (unpinchTimerRef.current) {
+        clearTimeout(unpinchTimerRef.current);
+      }
+      
+      // Hide after 5 seconds
+      unpinchTimerRef.current = setTimeout(() => {
+        console.log("Hiding unpinch animation after 5 seconds (webkit)");
+        setShowUnpinchAnimation(false);
+      }, 5000);
+    };
+
+    const handleWebkitEndFullscreen = () => {
+      console.log("Webkit end fullscreen");
+      setIsFullscreen(false);
+      setShowUnpinchAnimation(false);
+      if (unpinchTimerRef.current) {
+        clearTimeout(unpinchTimerRef.current);
+      }
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     
     if (videoRef.current) {
-      videoRef.current.addEventListener('webkitbeginfullscreen', () => {
-        setIsFullscreen(true);
-        setHasUsedFullscreen(true);
-      });
-      videoRef.current.addEventListener('webkitendfullscreen', () => setIsFullscreen(false));
+      videoRef.current.addEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+      videoRef.current.addEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
     }
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      if (videoRef.current) {
+        videoRef.current.removeEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
+        videoRef.current.removeEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
+      }
     };
   }, []);
 
