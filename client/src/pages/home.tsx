@@ -9,11 +9,7 @@ export default function Home() {
   const { user, isLoading, isAuthenticated } = useAuth();
 
   useEffect(() => {
-    // ALWAYS show disclaimer on first load (reset each session)
-    // Remove this line to persist acceptance across sessions
-    localStorage.removeItem('disclaimer-accepted');
-    localStorage.removeItem('memory-enabled');
-    
+    // Check if disclaimer was already accepted
     const accepted = localStorage.getItem('disclaimer-accepted');
     if (accepted === 'true') {
       setDisclaimerAccepted(true);
@@ -21,8 +17,9 @@ export default function Home() {
   }, []);
 
   const handleAcceptDisclaimer = (rememberConversations: boolean) => {
+    localStorage.setItem('disclaimer-accepted', 'true');
     setDisclaimerAccepted(true);
-    // Memory preference is already saved in localStorage by the Disclaimer component
+    console.log('Disclaimer accepted, memory enabled:', rememberConversations);
   };
 
   // Show disclaimer first
@@ -32,6 +29,7 @@ export default function Home() {
 
   // After disclaimer, check authentication
   if (isLoading) {
+    console.log('[Home] Auth loading...');
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
         <div className="text-white text-xl">Loading...</div>
@@ -40,7 +38,9 @@ export default function Home() {
   }
 
   // If not authenticated, show login screen
+  console.log('[Home] Auth state:', { isAuthenticated, user });
   if (!isAuthenticated) {
+    console.log('[Home] Showing sign-in screen');
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
         <div className="text-center space-y-6 p-8">
