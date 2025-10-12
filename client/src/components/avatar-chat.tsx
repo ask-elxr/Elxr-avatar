@@ -6,7 +6,11 @@ import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
 
-export function AvatarChat() {
+interface AvatarChatProps {
+  userId: string;
+}
+
+export function AvatarChat({ userId }: AvatarChatProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [sessionActive, setSessionActive] = useState(false);

@@ -22,16 +22,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (45 second timeout for AI processing)
   app.use(timeoutMiddleware(45000));
 
-  // Auth routes (disabled for now)
-  app.get('/api/auth/user', async (req: any, res) => {
-    // Return mock user for testing without authentication
-    res.json({
-      id: "test-user",
-      email: "test@example.com",
-      firstName: "Test",
-      lastName: "User",
-      profileImageUrl: null
-    });
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
   });
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
