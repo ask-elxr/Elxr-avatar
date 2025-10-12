@@ -227,6 +227,15 @@ export function AvatarChat() {
               "That's a great one, hold on...",
               "Mmm, let me dig into that..."
             ];
+            
+            const followUpPhrases = [
+              "Still digging through the archives...",
+              "Hang tight, pulling up the good stuff...",
+              "Almost there, just connecting the dots...",
+              "This is a juicy one, give me another moment...",
+              "Alright, piecing this together..."
+            ];
+            
             const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
             
             // Reset inactivity timer before thinking phrase to prevent timeout
@@ -239,9 +248,22 @@ export function AvatarChat() {
               task_type: TaskType.REPEAT
             });
             
+            // Set up interval to add follow-up phrases every 12 seconds while waiting
+            const fillerInterval = setInterval(async () => {
+              const followUpPhrase = followUpPhrases[Math.floor(Math.random() * followUpPhrases.length)];
+              await avatar.interrupt().catch(() => {});
+              await avatar.speak({
+                text: followUpPhrase,
+                task_type: TaskType.REPEAT
+              }).catch(() => {}); // Catch errors if response arrives during speak
+            }, 12000);
+            
             // Wait for Claude response (already started processing above)
             try {
               const response = await responsePromise;
+              
+              // Clear the filler interval once response arrives
+              clearInterval(fillerInterval);
 
               if (response.ok) {
                 const data = await response.json();
@@ -261,6 +283,9 @@ export function AvatarChat() {
                 });
               }
             } catch (error) {
+              // Clear the filler interval on error
+              clearInterval(fillerInterval);
+              
               if (error instanceof Error && error.name === 'AbortError') {
                 console.log("Request cancelled - user asked a new question");
               } else {
