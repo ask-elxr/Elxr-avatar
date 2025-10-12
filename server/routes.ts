@@ -19,8 +19,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add performance monitoring middleware
   app.use(performanceMiddleware());
   
-  // Add timeout middleware for all routes (30 second timeout for AI processing)
-  app.use(timeoutMiddleware(30000));
+  // Add timeout middleware for all routes (45 second timeout for AI processing)
+  app.use(timeoutMiddleware(45000));
 
   // Auth routes (disabled for now)
   app.get('/api/auth/user', async (req: any, res) => {
