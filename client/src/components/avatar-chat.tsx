@@ -199,7 +199,15 @@ export function AvatarChat() {
           // Create new AbortController for this request
           abortControllerRef.current = new AbortController();
           
-          // Interrupt HeyGen and say a quick thinking phrase to buy time
+          // START THE API CALL IMMEDIATELY (don't wait for thinking phrase)
+          const responsePromise = fetch("/api/avatar/response", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: userMessage }),
+            signal: abortControllerRef.current.signal
+          });
+          
+          // While API is processing, interrupt HeyGen and say a quick thinking phrase
           const thinkingPhrases = [
             "Let me think on that...",
             "Good question, give me a sec...",
@@ -216,14 +224,9 @@ export function AvatarChat() {
             task_type: TaskType.REPEAT
           });
           
-          // Get response from Claude backend while thinking phrase plays
+          // Wait for Claude response (already started processing above)
           try {
-            const response = await fetch("/api/avatar/response", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: userMessage }),
-              signal: abortControllerRef.current.signal
-            });
+            const response = await responsePromise;
 
             if (response.ok) {
               const data = await response.json();
