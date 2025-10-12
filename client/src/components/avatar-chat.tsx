@@ -21,7 +21,9 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
+  const [showUnpinchAnimation, setShowUnpinchAnimation] = useState(false);
   const intentionalStopRef = useRef(false);
+  const unpinchTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     // Check if user enabled memory
@@ -160,6 +162,25 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       // Track that fullscreen has been used at least once
       if (isCurrentlyFullscreen) {
         setHasUsedFullscreen(true);
+        
+        // Show unpinch animation for 5 seconds when entering fullscreen
+        setShowUnpinchAnimation(true);
+        
+        // Clear any existing timer
+        if (unpinchTimerRef.current) {
+          clearTimeout(unpinchTimerRef.current);
+        }
+        
+        // Hide after 5 seconds
+        unpinchTimerRef.current = setTimeout(() => {
+          setShowUnpinchAnimation(false);
+        }, 5000);
+      } else {
+        // Hide animation when exiting fullscreen
+        setShowUnpinchAnimation(false);
+        if (unpinchTimerRef.current) {
+          clearTimeout(unpinchTimerRef.current);
+        }
       }
     };
 
@@ -182,16 +203,16 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
   useEffect(() => {
     // Animate unpinch graphic by toggling between two images (MOBILE/TABLET ONLY)
-    // Show WHEN in browser fullscreen to guide user to pinch for true fullscreen
-    // This creates a two-step process: 1) Tap fullscreen button, 2) Then unpinch appears
-    if (isMobile && sessionActive && isFullscreen) {
+    // Show for 5 seconds after entering browser fullscreen to guide user to pinch for true fullscreen
+    // This creates a two-step process: 1) Tap fullscreen button, 2) Then unpinch appears for 5 seconds
+    if (isMobile && sessionActive && showUnpinchAnimation) {
       const interval = setInterval(() => {
         setShowExpandedFingers(prev => !prev);
       }, 800); // Toggle every 800ms for smooth animation
       
       return () => clearInterval(interval);
     }
-  }, [isMobile, sessionActive, isFullscreen]);
+  }, [isMobile, sessionActive, showUnpinchAnimation]);
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -681,8 +702,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         </div>
       )}
 
-      {/* Unpinch Graphic - Mobile/Tablet only, shows WHEN in fullscreen to guide pinch gesture */}
-      {isMobile && sessionActive && isFullscreen && (
+      {/* Unpinch Graphic - Mobile/Tablet only, shows for 5 seconds after entering fullscreen */}
+      {isMobile && sessionActive && showUnpinchAnimation && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <img 
