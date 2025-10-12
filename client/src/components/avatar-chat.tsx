@@ -234,17 +234,38 @@ export function AvatarChat() {
     }
   }
 
-  function endSessionShowReconnect() {
+  async function endSessionShowReconnect() {
     // Clear inactivity timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
     
+    // Make avatar say goodbye message before stopping
     if (avatarRef.current) {
-      avatarRef.current.stopAvatar().catch(console.error);
-      avatarRef.current = null;
+      try {
+        // Avatar speaks a funny timeout message
+        await avatarRef.current.speak({
+          text: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!",
+          task_type: TaskType.REPEAT
+        });
+        
+        // Wait a moment for the message to finish
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Now stop the avatar stream (saves credits!)
+        await avatarRef.current.stopAvatar().catch(console.error);
+        avatarRef.current = null;
+      } catch (error) {
+        console.error("Error in timeout message:", error);
+        // Stop avatar anyway
+        if (avatarRef.current) {
+          await avatarRef.current.stopAvatar().catch(console.error);
+          avatarRef.current = null;
+        }
+      }
     }
+    
     setSessionActive(false);
     setIsLoading(true);
     setShowReconnect(true);
@@ -282,29 +303,27 @@ export function AvatarChat() {
   };
 
   const togglePause = async () => {
-    if (!avatarRef.current) return;
-
-    try {
-      if (isPaused) {
-        // Resume: Start voice chat again
-        await avatarRef.current.startVoiceChat();
-        setIsPaused(false);
-        console.log("Avatar resumed");
-        // Reset inactivity timer when resuming
-        resetInactivityTimer();
-      } else {
-        // Pause: Stop voice chat (mutes microphone)
-        await avatarRef.current.closeVoiceChat();
-        setIsPaused(true);
-        console.log("Avatar paused");
-        // Clear inactivity timer when paused
-        if (inactivityTimerRef.current) {
-          clearTimeout(inactivityTimerRef.current);
-          inactivityTimerRef.current = null;
-        }
+    if (isPaused) {
+      // Resume: Restart the entire avatar session
+      setIsPaused(false);
+      hasStartedRef.current = false;
+      startSession();
+      console.log("Avatar resuming - restarting session");
+    } else {
+      // Pause: STOP the avatar stream completely (saves credits!)
+      if (avatarRef.current) {
+        await avatarRef.current.stopAvatar().catch(console.error);
+        avatarRef.current = null;
       }
-    } catch (error) {
-      console.error("Error toggling pause:", error);
+      setSessionActive(false);
+      setIsPaused(true);
+      console.log("Avatar paused - stream stopped to save credits");
+      
+      // Clear inactivity timer when paused
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
     }
   };
 
