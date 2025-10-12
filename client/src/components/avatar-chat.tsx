@@ -23,6 +23,7 @@ export function AvatarChat() {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     // Check if device is mobile
@@ -189,12 +190,22 @@ export function AvatarChat() {
         console.log("User message extracted:", userMessage);
         
         if (userMessage) {
+          // Cancel any previous pending request to prevent multiple contradictory responses
+          if (abortControllerRef.current) {
+            console.log("Cancelling previous request - new question detected");
+            abortControllerRef.current.abort();
+          }
+          
+          // Create new AbortController for this request
+          abortControllerRef.current = new AbortController();
+          
           // Get response from Claude backend
           try {
             const response = await fetch("/api/avatar/response", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: userMessage })
+              body: JSON.stringify({ message: userMessage }),
+              signal: abortControllerRef.current.signal
             });
 
             if (response.ok) {
@@ -212,7 +223,11 @@ export function AvatarChat() {
               });
             }
           } catch (error) {
-            console.error("Error getting Claude response:", error);
+            if (error instanceof Error && error.name === 'AbortError') {
+              console.log("Request cancelled - user asked a new question");
+            } else {
+              console.error("Error getting Claude response:", error);
+            }
           }
         }
       });
