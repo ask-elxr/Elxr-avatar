@@ -181,77 +181,84 @@ export function AvatarChat() {
 
       // Listen for user message events - fires when user talks
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
-        console.log("USER_TALKING_MESSAGE event received:", message);
-        
-        // Reset inactivity timer on user activity
-        resetInactivityTimer();
-        
-        const userMessage = message?.detail?.message || message?.message || message;
-        console.log("User message extracted:", userMessage);
-        
-        if (userMessage) {
-          // Cancel any previous pending request to prevent multiple contradictory responses
-          if (abortControllerRef.current) {
-            console.log("Cancelling previous request - new question detected");
+        try {
+          console.log("USER_TALKING_MESSAGE event received:", message);
+          
+          // Reset inactivity timer on user activity
+          resetInactivityTimer();
+          
+          const userMessage = message?.detail?.message || message?.message || message;
+          console.log("User message extracted:", userMessage);
+          
+          if (userMessage) {
+            // Cancel any previous pending request to prevent multiple contradictory responses
+            if (abortControllerRef.current) {
+              console.log("Cancelling previous request - new question detected");
+              abortControllerRef.current.abort();
+            }
+            
+            // Create new AbortController for this request
+            abortControllerRef.current = new AbortController();
+            
+            // START THE API CALL IMMEDIATELY (don't wait for thinking phrase)
+            const responsePromise = fetch("/api/avatar/response", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ message: userMessage }),
+              signal: abortControllerRef.current.signal
+            });
+            
+            // While API is processing, interrupt HeyGen and say a quick thinking phrase
+            const thinkingPhrases = [
+              "Let me think on that...",
+              "Good question, give me a sec...",
+              "Ah, interesting - let me pull that up...",
+              "That's a great one, hold on...",
+              "Mmm, let me dig into that..."
+            ];
+            const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
+            
+            // Interrupt any HeyGen response and say thinking phrase
+            await avatar.interrupt().catch(() => {});
+            await avatar.speak({
+              text: randomPhrase,
+              task_type: TaskType.REPEAT
+            });
+            
+            // Wait for Claude response (already started processing above)
             try {
-              abortControllerRef.current.abort("New question detected - cancelling previous request");
-            } catch (e) {
-              // Ignore abort errors - they're expected when cancelling requests
+              const response = await responsePromise;
+
+              if (response.ok) {
+                const data = await response.json();
+                const claudeResponse = data.knowledgeResponse || data.response;
+                console.log("Claude response received:", claudeResponse);
+                
+                // Interrupt thinking phrase and speak the real response
+                await avatar.interrupt().catch(() => {});
+                
+                // Make avatar speak Claude's response using REPEAT (not TALK)
+                await avatar.speak({
+                  text: claudeResponse,
+                  task_type: TaskType.REPEAT
+                });
+              }
+            } catch (error) {
+              if (error instanceof Error && error.name === 'AbortError') {
+                console.log("Request cancelled - user asked a new question");
+              } else {
+                console.error("Error getting Claude response:", error);
+              }
             }
           }
-          
-          // Create new AbortController for this request
-          abortControllerRef.current = new AbortController();
-          
-          // START THE API CALL IMMEDIATELY (don't wait for thinking phrase)
-          const responsePromise = fetch("/api/avatar/response", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: userMessage }),
-            signal: abortControllerRef.current.signal
-          });
-          
-          // While API is processing, interrupt HeyGen and say a quick thinking phrase
-          const thinkingPhrases = [
-            "Let me think on that...",
-            "Good question, give me a sec...",
-            "Ah, interesting - let me pull that up...",
-            "That's a great one, hold on...",
-            "Mmm, let me dig into that..."
-          ];
-          const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
-          
-          // Interrupt any HeyGen response and say thinking phrase
-          await avatar.interrupt().catch(() => {});
-          await avatar.speak({
-            text: randomPhrase,
-            task_type: TaskType.REPEAT
-          });
-          
-          // Wait for Claude response (already started processing above)
-          try {
-            const response = await responsePromise;
-
-            if (response.ok) {
-              const data = await response.json();
-              const claudeResponse = data.knowledgeResponse || data.response;
-              console.log("Claude response received:", claudeResponse);
-              
-              // Interrupt thinking phrase and speak the real response
-              await avatar.interrupt().catch(() => {});
-              
-              // Make avatar speak Claude's response using REPEAT (not TALK)
-              await avatar.speak({
-                text: claudeResponse,
-                task_type: TaskType.REPEAT
-              });
-            }
-          } catch (error) {
-            if (error instanceof Error && error.name === 'AbortError') {
-              console.log("Request cancelled - user asked a new question");
-            } else {
-              console.error("Error getting Claude response:", error);
-            }
+        } catch (error) {
+          // Silently catch abort errors to prevent error overlay
+          if (error instanceof Error && error.name === 'AbortError') {
+            // This is expected - do nothing
+          } else if (error instanceof DOMException && error.name === 'AbortError') {
+            // This is expected - do nothing  
+          } else {
+            console.error("Unexpected error in message handler:", error);
           }
         }
       });
