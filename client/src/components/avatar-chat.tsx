@@ -34,8 +34,19 @@ export function AvatarChat() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
+    // Global handler to suppress abort error overlays
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      if (event.reason?.name === 'AbortError' || event.reason?.message?.includes('aborted')) {
+        event.preventDefault(); // Suppress the error overlay
+        console.log("Abort error suppressed - this is expected when cancelling requests");
+      }
+    };
+    
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
     return () => {
       window.removeEventListener('resize', checkMobile);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
     };
   }, []);
 
