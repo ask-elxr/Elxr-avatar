@@ -8,7 +8,11 @@ export default function Home() {
   const { userId, isLoading } = useAnonymousUser();
 
   useEffect(() => {
-    // Check if disclaimer was previously accepted in this session
+    // ALWAYS show disclaimer on first load (reset each session)
+    // Remove this line to persist acceptance across sessions
+    localStorage.removeItem('disclaimer-accepted');
+    localStorage.removeItem('memory-enabled');
+    
     const accepted = localStorage.getItem('disclaimer-accepted');
     if (accepted === 'true') {
       setDisclaimerAccepted(true);
