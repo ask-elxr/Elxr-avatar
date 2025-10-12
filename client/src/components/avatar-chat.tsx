@@ -245,13 +245,55 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         try {
           console.log("USER_TALKING_MESSAGE event received:", message);
           
-          // Reset inactivity timer on user activity
-          resetInactivityTimer();
-          
           const userMessage = message?.detail?.message || message?.message || message;
           console.log("User message extracted:", userMessage);
           
           if (userMessage) {
+            // Check if we just asked "anything else" and user said no
+            if (hasAskedAnythingElseRef.current) {
+              const lowerMessage = userMessage.toLowerCase();
+              const negativeResponses = [
+                'no', 'nope', 'nothing', 'nah', "that's all", "that's it", 
+                "i'm good", "im good", "all good", "no thanks", "nothing else"
+              ];
+              
+              const isNegativeResponse = negativeResponses.some(phrase => 
+                lowerMessage.includes(phrase)
+              );
+              
+              if (isNegativeResponse) {
+                console.log("User declined - ending session gracefully");
+                hasAskedAnythingElseRef.current = false;
+                
+                // Say goodbye
+                const goodbyeMessages = [
+                  "Alright, catch you later! Stay curious.",
+                  "Cool. Take care and keep questioning everything!",
+                  "Got it. Peace out, and keep your mind open!",
+                  "Right on. Until next time, stay wild!"
+                ];
+                const goodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
+                
+                await avatar.interrupt().catch(() => {});
+                await avatar.speak({
+                  text: goodbye,
+                  task_type: TaskType.REPEAT
+                });
+                
+                // Wait for goodbye to finish, then end session
+                setTimeout(() => {
+                  endSessionShowReconnect();
+                }, 4000); // 4 seconds for goodbye message
+                
+                return; // Exit early - don't process as normal message
+              }
+              
+              // If positive response or new question, reset the flag and continue
+              hasAskedAnythingElseRef.current = false;
+            }
+            
+            // Reset inactivity timer on user activity
+            resetInactivityTimer();
             // Generate unique request ID to track this request
             const requestId = Date.now().toString() + Math.random().toString(36);
             currentRequestIdRef.current = requestId;
