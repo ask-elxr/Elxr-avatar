@@ -182,16 +182,16 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
   useEffect(() => {
     // Animate unpinch graphic by toggling between two images (MOBILE/TABLET ONLY)
-    // Show ONLY AFTER user has tapped browser fullscreen button at least once
-    // This creates a two-step process: 1) Tap fullscreen button, 2) Then unpinch
-    if (isMobile && sessionActive && !isFullscreen && hasUsedFullscreen) {
+    // Show WHEN in browser fullscreen to guide user to pinch for true fullscreen
+    // This creates a two-step process: 1) Tap fullscreen button, 2) Then unpinch appears
+    if (isMobile && sessionActive && isFullscreen) {
       const interval = setInterval(() => {
         setShowExpandedFingers(prev => !prev);
       }, 800); // Toggle every 800ms for smooth animation
       
       return () => clearInterval(interval);
     }
-  }, [isMobile, sessionActive, isFullscreen, hasUsedFullscreen]);
+  }, [isMobile, sessionActive, isFullscreen]);
 
   async function fetchAccessToken(): Promise<string> {
     try {
@@ -681,8 +681,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         </div>
       )}
 
-      {/* Unpinch Graphic - Mobile/Tablet only, shows AFTER user taps fullscreen button */}
-      {isMobile && sessionActive && !isFullscreen && hasUsedFullscreen && (
+      {/* Unpinch Graphic - Mobile/Tablet only, shows WHEN in fullscreen to guide pinch gesture */}
+      {isMobile && sessionActive && isFullscreen && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <img 
