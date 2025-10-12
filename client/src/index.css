@@ -1,9 +1,9 @@
+/* Satoshi Font - must be imported first */
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Satoshi Font */
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400&display=swap');
 
 :root {
   --background: hsl(210, 40%, 98%);

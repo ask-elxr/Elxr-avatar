@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import elxrLogo from "@assets/Asset 2_1760249308314.png";
 
 interface DisclaimerProps {
   onAccept: (rememberConversations: boolean) => void;
@@ -26,11 +27,12 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
         <CardHeader className="space-y-4">
           {/* ELXR Logo */}
           <div className="flex items-center justify-center mb-6">
-            <div className="text-center">
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-indigo-400 bg-clip-text text-transparent tracking-wider">
-                ELXR
-              </h1>
-            </div>
+            <img 
+              src={elxrLogo} 
+              alt="ELXR" 
+              className="h-12 w-auto"
+              data-testid="img-elxr-logo"
+            />
           </div>
           
           <CardTitle className="text-3xl font-bold text-center text-white">
