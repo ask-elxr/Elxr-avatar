@@ -1,0 +1,59 @@
+/*
+ELXR — Sign-In Prompt with Memory Toggle
+Purpose: Let users choose if their avatar conversations are remembered or stay anonymous.
+*/
+
+import React, { useState } from "react";
+
+export default function SignInPrompt() {
+  const [remember, setRemember] = useState(false);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (remember) {
+      console.log("User opted in: conversations will be remembered.");
+      // 🔒 Save session preference to your backend or local storage
+      // e.g. api.saveUserPreference({ memory: true });
+    } else {
+      console.log("User chose anonymous mode.");
+      // 🕶️ Don’t store user identity or chat history
+      // e.g. api.saveUserPreference({ memory: false });
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-purple-800 to-indigo-900 text-white p-6">
+      <h1 className="text-3xl font-bold mb-4">Welcome to ELXR</h1>
+      <p className="text-center max-w-md mb-6">
+        You’re about to talk with an AI avatar powered by real expert knowledge.
+        Choose how you’d like to experience it:
+      </p>
+
+      <form onSubmit={handleSubmit} className="flex flex-col items-center space-y-4">
+        <label className="flex items-center space-x-3 bg-white/10 p-3 rounded-xl cursor-pointer">
+          <input
+            type="checkbox"
+            checked={remember}
+            onChange={() => setRemember(!remember)}
+            className="w-5 h-5 accent-purple-500"
+          />
+          <span className="text-lg">
+            {remember ? "✅ Remember my conversations" : "🕶️ Stay anonymous this session"}
+          </span>
+        </label>
+
+        <button
+          type="submit"
+          className="mt-6 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-full text-lg font-semibold transition-all"
+        >
+          {remember ? "Continue with Memory" : "Continue Anonymously"}
+        </button>
+
+        <p className="text-xs text-gray-300 mt-4 max-w-sm text-center">
+          By continuing, you acknowledge you’re talking with an AI avatar and agree
+          to ELXR’s <a href="#" className="underline">Terms</a> & <a href="#" className="underline">Privacy Policy</a>.
+        </p>
+      </form>
+    </div>
+  );
+}

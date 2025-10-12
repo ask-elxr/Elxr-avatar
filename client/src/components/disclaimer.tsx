@@ -4,16 +4,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface DisclaimerProps {
-  onAccept: () => void;
+  onAccept: (rememberConversations: boolean) => void;
 }
 
 export function Disclaimer({ onAccept }: DisclaimerProps) {
   const [accepted, setAccepted] = useState(false);
+  const [remember, setRemember] = useState(false);
 
   const handleAccept = () => {
     if (accepted) {
       localStorage.setItem('disclaimer-accepted', 'true');
-      onAccept();
+      localStorage.setItem('memory-enabled', remember.toString());
+      onAccept(remember);
     }
   };
 
@@ -36,11 +38,11 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
               </svg>
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold text-center text-white">
-            Important Notice
+          <CardTitle className="text-3xl font-bold text-center text-white">
+            Welcome to ELXR
           </CardTitle>
           <CardDescription className="text-center text-gray-300 text-base">
-            Before you continue, please read and accept our terms
+            You're about to talk with an AI avatar powered by real expert knowledge
           </CardDescription>
         </CardHeader>
         
@@ -57,6 +59,30 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
               </a>
               . This conversation may be recorded and used to improve the experience.{" "}
               <strong className="text-red-400">Do not share personal medical or financial details.</strong>
+            </p>
+          </div>
+
+          {/* Memory Toggle */}
+          <div className="bg-purple-950/20 border border-purple-500/20 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4 text-center">
+              Choose Your Experience
+            </h3>
+            <label className="flex items-center space-x-3 bg-white/10 p-4 rounded-xl cursor-pointer hover:bg-white/15 transition-colors">
+              <Checkbox
+                id="memory"
+                checked={remember}
+                onCheckedChange={(checked) => setRemember(checked as boolean)}
+                className="border-purple-400 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                data-testid="checkbox-memory-toggle"
+              />
+              <span className="text-lg text-white">
+                {remember ? "✅ Remember my conversations" : "🕶️ Stay anonymous this session"}
+              </span>
+            </label>
+            <p className="text-sm text-gray-400 mt-3 text-center">
+              {remember 
+                ? "Your conversations will be remembered for a personalized experience across sessions"
+                : "Your conversations won't be saved - completely private and anonymous"}
             </p>
           </div>
 
@@ -84,10 +110,10 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-6 text-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             data-testid="button-continue"
           >
-            Continue to Avatar Chat
+            {remember ? "Continue with Memory" : "Continue Anonymously"}
           </Button>
           <p className="text-xs text-gray-500 text-center">
-            This disclaimer will be shown once per browser session
+            Your preferences will be saved for this browser session
           </p>
         </CardFooter>
       </Card>

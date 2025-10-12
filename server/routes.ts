@@ -22,19 +22,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (45 second timeout for AI processing)
   app.use(timeoutMiddleware(45000));
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
+  // Anonymous user session endpoint (no authentication needed)
+  app.get('/api/auth/user', async (req: any, res) => {
+    // For anonymous users, just return a simple response
+    // The user ID is managed on the client side
+    res.json({ 
+      anonymous: true,
+      message: "Anonymous user session"
+    });
   });
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
@@ -242,13 +237,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
+  // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base + Mem0 Memory
   app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { message, conversationHistory = [], avatarPersonality, useWebSearch = false } = req.body;
+      const { message, conversationHistory = [], avatarPersonality, useWebSearch = false, userId } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Get Mem0 memories for personalized context (if userId provided)
+      let mem0Context = '';
+      if (userId) {
+        try {
+          const { mem0Service } = await import('./mem0Service.js');
+          const memories = await mem0Service.searchMemories(userId, message, 3);
+          if (memories && memories.length > 0) {
+            mem0Context = '\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n' + 
+              memories.map(m => `- ${m.memory}`).join('\n');
+          }
+        } catch (memError) {
+          console.error('Error fetching Mem0 memories:', memError);
+          // Continue without memories if there's an error
+        }
       }
 
       // Default avatar personality - Mark Kohl
@@ -293,6 +304,11 @@ SIGNATURE LINES:
 
       const personalityPrompt = avatarPersonality || defaultPersonality;
 
+      // Enhanced personality prompt with Mem0 context
+      const enhancedPersonality = mem0Context 
+        ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
+        : personalityPrompt;
+
       // Get knowledge base context
       const { pineconeAssistant } = await import('./mcpAssistant.js');
       let knowledgeContext = '';
@@ -326,19 +342,36 @@ SIGNATURE LINES:
             knowledgeContext,
             webSearchResults,
             enhancedConversationHistory,
-            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
+            enhancedPersonality  // Pass enhanced personality with memories
           );
         } else {
           aiResponse = await claudeService.generateResponse(
             message,
             knowledgeContext,
             enhancedConversationHistory,
-            personalityPrompt  // Pass Mark Kohl personality as custom system prompt
+            enhancedPersonality  // Pass enhanced personality with memories
           );
         }
       } else {
         // Fallback to knowledge base only
         aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
+      }
+
+      // Store conversation in Mem0 for future memory (if userId provided)
+      if (userId) {
+        try {
+          const { mem0Service } = await import('./mem0Service.js');
+          // Store both the user's message and the AI's response
+          const conversationText = `User asked: "${message}"\nAssistant responded: "${aiResponse}"`;
+          await mem0Service.addMemory(userId, conversationText, {
+            timestamp: new Date().toISOString(),
+            hasKnowledgeBase: !!knowledgeContext,
+            hasWebSearch: !!webSearchResults
+          });
+        } catch (memError) {
+          console.error('Error storing Mem0 memory:', memError);
+          // Continue even if memory storage fails
+        }
       }
       
       res.json({ 
@@ -347,7 +380,8 @@ SIGNATURE LINES:
         knowledgeResponse: aiResponse,
         personalityUsed: personalityPrompt,
         usedWebSearch: !!webSearchResults,
-        usedClaude: claudeService.isAvailable()
+        usedClaude: claudeService.isAvailable(),
+        hasMemories: !!mem0Context
       });
     } catch (error) {
       console.error('Error getting avatar response:', error);

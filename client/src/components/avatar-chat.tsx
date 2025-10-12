@@ -20,7 +20,14 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
+  const [memoryEnabled, setMemoryEnabled] = useState(false);
   const intentionalStopRef = useRef(false);
+
+  useEffect(() => {
+    // Check if user enabled memory
+    const memoryPref = localStorage.getItem('memory-enabled');
+    setMemoryEnabled(memoryPref === 'true');
+  }, []);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -254,7 +261,10 @@ export function AvatarChat({ userId }: AvatarChatProps) {
             const responsePromise = fetch("/api/avatar/response", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: userMessage })
+              body: JSON.stringify({ 
+                message: userMessage,
+                userId: memoryEnabled ? userId : undefined  // Only pass user ID if memory is enabled
+              })
             });
             
             // While API is processing, interrupt HeyGen and say a quick thinking phrase
