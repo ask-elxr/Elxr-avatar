@@ -235,12 +235,12 @@ export function AvatarChat() {
         }
       });
 
-      // Start avatar session with knowledge base (required for voice recognition)
-      // We intercept and override responses with Claude
+      // Start avatar session WITHOUT knowledge base to prevent generic responses
+      // Voice recognition will work without it - we'll provide responses via Claude
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-        knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
+        // Removed knowledgeBase to prevent generic HeyGen responses
         voice: {
           rate: 1.0
         },
