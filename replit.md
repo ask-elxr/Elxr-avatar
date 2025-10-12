@@ -8,17 +8,21 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 11, 2025)
+## Latest Updates (October 12, 2025)
+- **CRITICAL FIX: Pause Now Stops Avatar Stream** - Prevents credit drain when paused
+  - Pause button now completely stops the HeyGen avatar stream (calls `stopAvatar()`)
+  - Previously only muted microphone, avatar kept streaming and charging credits
+  - Resume button restarts the entire session (new stream starts)
+  - Saves significant HeyGen credits when taking breaks
+- **Timeout Message with Credit Savings** - Funny message before stopping avatar
+  - After 1 minute inactivity, avatar says: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!"
+  - Then fully stops avatar stream to prevent credit charges
+  - Shows reconnect button (no auto-loop)
 - **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
   - After 1 minute of inactivity, logo appears with "Reconnect" button
   - User must click "Reconnect" to restart session (no auto-restart loop)
   - Manual "End Chat" button still auto-restarts immediately
   - Prevents continuous resource usage when idle
-- **Inactivity Timeout** - Automatic timeout after 1 minute of no user interaction
-  - Timer starts when session becomes active
-  - Resets on any user activity (speaking, button clicks)
-  - Paused when avatar is manually paused
-  - Shows reconnect screen when timeout occurs
 - **Added Pause/Resume Control** - Yellow pause button in top center for controlling avatar
   - Pause: Stops voice chat (mutes microphone and stops listening)
   - Resume: Restarts voice chat (enables microphone again)
