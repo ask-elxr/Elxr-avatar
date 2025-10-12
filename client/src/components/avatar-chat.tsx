@@ -16,6 +16,7 @@ export function AvatarChat() {
   const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
+  const intentionalStopRef = useRef(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const avatarRef = useRef<StreamingAvatar | null>(null);
@@ -166,7 +167,13 @@ export function AvatarChat() {
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
         console.log("Stream disconnected");
-        endSession();
+        // Only auto-restart if disconnect was NOT intentional (e.g., not from pause/timeout)
+        if (!intentionalStopRef.current) {
+          endSession();
+        } else {
+          console.log("Intentional stop - not auto-restarting");
+          intentionalStopRef.current = false; // Reset flag
+        }
       });
 
       // Listen for user message events - fires when user talks
@@ -253,6 +260,9 @@ export function AvatarChat() {
         // Wait a moment for the message to finish
         await new Promise(resolve => setTimeout(resolve, 2000));
         
+        // Mark this as intentional stop so it doesn't auto-restart
+        intentionalStopRef.current = true;
+        
         // Now stop the avatar stream (saves credits!)
         await avatarRef.current.stopAvatar().catch(console.error);
         avatarRef.current = null;
@@ -260,6 +270,7 @@ export function AvatarChat() {
         console.error("Error in timeout message:", error);
         // Stop avatar anyway
         if (avatarRef.current) {
+          intentionalStopRef.current = true;
           await avatarRef.current.stopAvatar().catch(console.error);
           avatarRef.current = null;
         }
@@ -312,6 +323,8 @@ export function AvatarChat() {
     } else {
       // Pause: STOP the avatar stream completely (saves credits!)
       if (avatarRef.current) {
+        // Mark this as intentional stop so it doesn't auto-restart
+        intentionalStopRef.current = true;
         await avatarRef.current.stopAvatar().catch(console.error);
         avatarRef.current = null;
       }
