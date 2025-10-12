@@ -181,16 +181,17 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   }, []);
 
   useEffect(() => {
-    // Animate unpinch graphic by toggling between two images (MOBILE ONLY)
-    // Show whenever session is active and not in fullscreen
-    if (isMobile && sessionActive && !isFullscreen) {
+    // Animate unpinch graphic by toggling between two images (MOBILE/TABLET ONLY)
+    // Show ONLY AFTER user has tapped browser fullscreen button at least once
+    // This creates a two-step process: 1) Tap fullscreen button, 2) Then unpinch
+    if (isMobile && sessionActive && !isFullscreen && hasUsedFullscreen) {
       const interval = setInterval(() => {
         setShowExpandedFingers(prev => !prev);
       }, 800); // Toggle every 800ms for smooth animation
       
       return () => clearInterval(interval);
     }
-  }, [isMobile, sessionActive, isFullscreen]);
+  }, [isMobile, sessionActive, isFullscreen, hasUsedFullscreen]);
 
   async function fetchAccessToken(): Promise<string> {
     try {
