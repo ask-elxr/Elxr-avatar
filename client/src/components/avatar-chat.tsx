@@ -24,6 +24,7 @@ export function AvatarChat() {
   const hasStartedRef = useRef(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const currentRequestIdRef = useRef<string>("");
 
   useEffect(() => {
     // Check if device is mobile
@@ -202,26 +203,16 @@ export function AvatarChat() {
           console.log("User message extracted:", userMessage);
           
           if (userMessage) {
-            // Cancel any previous pending request to prevent multiple contradictory responses
-            if (abortControllerRef.current) {
-              console.log("Cancelling previous request - new question detected");
-              try {
-                // Wrap in Promise to ensure errors are caught properly
-                Promise.resolve().then(() => abortControllerRef.current?.abort()).catch(() => {});
-              } catch (e) {
-                // Silently ignore abort errors
-              }
-            }
-            
-            // Create new AbortController for this request
-            abortControllerRef.current = new AbortController();
+            // Generate unique request ID to track this request
+            const requestId = Date.now().toString() + Math.random().toString(36);
+            currentRequestIdRef.current = requestId;
+            console.log("New question detected - Request ID:", requestId);
             
             // START THE API CALL IMMEDIATELY (don't wait for thinking phrase)
             const responsePromise = fetch("/api/avatar/response", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ message: userMessage }),
-              signal: abortControllerRef.current.signal
+              body: JSON.stringify({ message: userMessage })
             });
             
             // While API is processing, interrupt HeyGen and say a quick thinking phrase
@@ -270,6 +261,12 @@ export function AvatarChat() {
               // Clear the filler interval once response arrives
               clearInterval(fillerInterval);
 
+              // Check if this is still the current request - ignore if a newer one exists
+              if (requestId !== currentRequestIdRef.current) {
+                console.log("Ignoring old response - newer request in progress");
+                return;
+              }
+
               if (response.ok) {
                 const data = await response.json();
                 const claudeResponse = data.knowledgeResponse || data.response;
@@ -290,12 +287,7 @@ export function AvatarChat() {
             } catch (error) {
               // Clear the filler interval on error
               clearInterval(fillerInterval);
-              
-              if (error instanceof Error && error.name === 'AbortError') {
-                console.log("Request cancelled - user asked a new question");
-              } else {
-                console.error("Error getting Claude response:", error);
-              }
+              console.error("Error getting Claude response:", error);
             }
           }
         } catch (error) {
