@@ -205,7 +205,12 @@ export function AvatarChat() {
             // Cancel any previous pending request to prevent multiple contradictory responses
             if (abortControllerRef.current) {
               console.log("Cancelling previous request - new question detected");
-              abortControllerRef.current.abort();
+              try {
+                // Wrap in Promise to ensure errors are caught properly
+                Promise.resolve().then(() => abortControllerRef.current?.abort()).catch(() => {});
+              } catch (e) {
+                // Silently ignore abort errors
+              }
             }
             
             // Create new AbortController for this request
