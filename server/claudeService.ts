@@ -53,9 +53,9 @@ export class ClaudeService {
         }
       }
       
-      // Add current query with context
+      // Add current query with context - FORCE Claude to use the knowledge base
       const currentMessage = context 
-        ? `Context from knowledge base:\n${context}\n\nUser question: ${query}`
+        ? `IMPORTANT: Use the following verified knowledge from the database as your PRIMARY source. Base your answer on this information:\n\n${context}\n\n---\n\nUser question: ${query}\n\nIMPORTANT: Answer using the knowledge above. Do not give generic responses - use specific details from the provided context.`
         : query;
         
       messages.push({
@@ -116,18 +116,18 @@ export class ClaudeService {
         }
       }
       
-      // Build enhanced message with all available information
-      let enhancedMessage = `User question: ${query}\n\n`;
+      // Build enhanced message with all available information - PRIORITIZE knowledge base
+      let enhancedMessage = '';
       
       if (context) {
-        enhancedMessage += `Knowledge base context:\n${context}\n\n`;
+        enhancedMessage += `IMPORTANT: Use this verified knowledge from your database as the PRIMARY source:\n\n${context}\n\n---\n\n`;
       }
       
       if (webSearchResults) {
-        enhancedMessage += `Recent web search results:\n${webSearchResults}\n\n`;
+        enhancedMessage += `Additional web search results (use as secondary source):\n${webSearchResults}\n\n---\n\n`;
       }
       
-      enhancedMessage += `Please provide a comprehensive answer using all available information.`;
+      enhancedMessage += `User question: ${query}\n\nIMPORTANT: Base your answer on the database knowledge above. Include specific details, personal experiences, and exact information from the context. Do NOT give generic responses.`;
       
       messages.push({
         role: 'user',
