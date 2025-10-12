@@ -87,9 +87,9 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     // Reset the "asked anything else" flag when user is active
     hasAskedAnythingElseRef.current = false;
     
-    // Set new 1-minute timeout
+    // Set new 5-minute timeout (increased from 1 minute to give users more time)
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 60 seconds elapsed");
+      console.log("Inactivity timeout triggered - 5 minutes elapsed");
       
       // First timeout: Ask if there's anything else
       if (!hasAskedAnythingElseRef.current && avatarRef.current) {
@@ -108,11 +108,11 @@ export function AvatarChat({ userId }: AvatarChatProps) {
           
           console.log("Successfully spoke the question");
           
-          // Give user 20 more seconds to respond
+          // Give user 30 more seconds to respond
           inactivityTimerRef.current = setTimeout(() => {
             console.log("No response after asking - terminating session");
             endSessionShowReconnect();
-          }, 20000); // 20 seconds to respond
+          }, 30000); // 30 seconds to respond
         } catch (error) {
           console.error("Error asking if anything else:", error);
           endSessionShowReconnect();
@@ -122,7 +122,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         console.log("Already asked or no avatar - terminating immediately");
         endSessionShowReconnect();
       }
-    }, 60000); // 60 seconds = 1 minute
+    }, 300000); // 300 seconds = 5 minutes
   };
 
   // Start inactivity timer when session becomes active
@@ -216,12 +216,42 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       }
     };
 
+    // iOS Safari presentation mode changed
+    const handlePresentationModeChanged = (e: any) => {
+      const mode = (e.target as any)?.webkitPresentationMode;
+      console.log("Presentation mode changed:", mode);
+      
+      if (mode === 'fullscreen') {
+        console.log("iOS fullscreen detected - showing unpinch animation");
+        setIsFullscreen(true);
+        setHasUsedFullscreen(true);
+        setShowUnpinchAnimation(true);
+        
+        if (unpinchTimerRef.current) {
+          clearTimeout(unpinchTimerRef.current);
+        }
+        
+        unpinchTimerRef.current = setTimeout(() => {
+          console.log("Hiding unpinch animation after 5 seconds (iOS)");
+          setShowUnpinchAnimation(false);
+        }, 5000);
+      } else {
+        console.log("iOS exiting fullscreen");
+        setIsFullscreen(false);
+        setShowUnpinchAnimation(false);
+        if (unpinchTimerRef.current) {
+          clearTimeout(unpinchTimerRef.current);
+        }
+      }
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
     
     if (videoRef.current) {
       videoRef.current.addEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
       videoRef.current.addEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
+      videoRef.current.addEventListener('webkitpresentationmodechanged', handlePresentationModeChanged);
     }
     
     return () => {
@@ -230,6 +260,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       if (videoRef.current) {
         videoRef.current.removeEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
         videoRef.current.removeEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
+        videoRef.current.removeEventListener('webkitpresentationmodechanged', handlePresentationModeChanged);
       }
     };
   }, []);
