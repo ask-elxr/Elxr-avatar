@@ -229,6 +229,9 @@ export function AvatarChat() {
             ];
             const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
             
+            // Reset inactivity timer before thinking phrase to prevent timeout
+            resetInactivityTimer();
+            
             // Interrupt any HeyGen response and say thinking phrase
             await avatar.interrupt().catch(() => {});
             await avatar.speak({
@@ -244,6 +247,9 @@ export function AvatarChat() {
                 const data = await response.json();
                 const claudeResponse = data.knowledgeResponse || data.response;
                 console.log("Claude response received:", claudeResponse);
+                
+                // Reset inactivity timer before avatar starts speaking to prevent timeout mid-response
+                resetInactivityTimer();
                 
                 // Interrupt thinking phrase and speak the real response
                 await avatar.interrupt().catch(() => {});
