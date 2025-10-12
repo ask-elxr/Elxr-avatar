@@ -25,6 +25,7 @@ export function AvatarChat() {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentRequestIdRef = useRef<string>("");
+  const hasAskedAnythingElseRef = useRef(false);
 
   useEffect(() => {
     // Check if device is mobile
@@ -70,10 +71,37 @@ export function AvatarChat() {
       console.log("Inactivity timer started for first time");
     }
     
+    // Reset the "asked anything else" flag when user is active
+    hasAskedAnythingElseRef.current = false;
+    
     // Set new 1-minute timeout
-    inactivityTimerRef.current = setTimeout(() => {
+    inactivityTimerRef.current = setTimeout(async () => {
       console.log("Inactivity timeout triggered - 60 seconds elapsed");
-      endSessionShowReconnect();
+      
+      // First timeout: Ask if there's anything else
+      if (!hasAskedAnythingElseRef.current && avatarRef.current) {
+        hasAskedAnythingElseRef.current = true;
+        console.log("Asking if there's anything else...");
+        
+        try {
+          await avatarRef.current.speak({
+            text: "Is there anything else I can help you with?",
+            task_type: TaskType.REPEAT
+          });
+          
+          // Give user 20 more seconds to respond
+          inactivityTimerRef.current = setTimeout(() => {
+            console.log("No response after asking - terminating session");
+            endSessionShowReconnect();
+          }, 20000); // 20 seconds to respond
+        } catch (error) {
+          console.error("Error asking if anything else:", error);
+          endSessionShowReconnect();
+        }
+      } else {
+        // Already asked or no avatar - just end session
+        endSessionShowReconnect();
+      }
     }, 60000); // 60 seconds = 1 minute
   };
 

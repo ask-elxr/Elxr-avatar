@@ -14,8 +14,13 @@ Preferred communication style: Simple, everyday language.
   - Previously only muted microphone, avatar kept streaming and charging credits
   - Resume button restarts the entire session (new stream starts)
   - Saves significant HeyGen credits when taking breaks
+- **Two-Stage Timeout with Polite Prompt** - Avatar asks before terminating
+  - After 60 seconds inactivity → Avatar asks: "Is there anything else I can help you with?"
+  - User gets 20 more seconds to respond
+  - If user responds → Timer resets, conversation continues
+  - If no response → Avatar gives funny timeout message and terminates with reconnect screen
 - **Timeout Message with Credit Savings** - Funny message before stopping avatar
-  - After 1 minute inactivity, avatar says: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!"
+  - After asking "anything else?" with no response, avatar says: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!"
   - Then fully stops avatar stream to prevent credit charges
   - Shows reconnect button (no auto-loop)
 - **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
