@@ -242,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base
   app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { message, conversationHistory = [], avatarPersonality, useWebSearch = true } = req.body;
+      const { message, conversationHistory = [], avatarPersonality, useWebSearch = false } = req.body;
       
       if (!message) {
         return res.status(400).json({ error: "Message is required" });

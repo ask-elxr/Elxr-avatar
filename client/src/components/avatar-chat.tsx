@@ -199,10 +199,24 @@ export function AvatarChat() {
           // Create new AbortController for this request
           abortControllerRef.current = new AbortController();
           
-          // DON'T interrupt yet - let HeyGen respond while we fetch Claude response in background
-          // This prevents awkward silence
+          // Interrupt HeyGen and say a quick thinking phrase to buy time
+          const thinkingPhrases = [
+            "Let me think on that...",
+            "Good question, give me a sec...",
+            "Ah, interesting - let me pull that up...",
+            "That's a great one, hold on...",
+            "Mmm, let me dig into that..."
+          ];
+          const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
           
-          // Get response from Claude backend
+          // Interrupt any HeyGen response and say thinking phrase
+          await avatar.interrupt().catch(() => {});
+          await avatar.speak({
+            text: randomPhrase,
+            task_type: TaskType.REPEAT
+          });
+          
+          // Get response from Claude backend while thinking phrase plays
           try {
             const response = await fetch("/api/avatar/response", {
               method: "POST",
@@ -216,7 +230,7 @@ export function AvatarChat() {
               const claudeResponse = data.knowledgeResponse || data.response;
               console.log("Claude response received:", claudeResponse);
               
-              // NOW interrupt HeyGen's generic response and speak Claude's knowledge-based response
+              // Interrupt thinking phrase and speak the real response
               await avatar.interrupt().catch(() => {});
               
               // Make avatar speak Claude's response using REPEAT (not TALK)
