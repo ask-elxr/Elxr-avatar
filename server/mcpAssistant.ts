@@ -7,8 +7,8 @@ class PineconeAssistantAPI {
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
-    // Query both assistants: ask-elxr and knowledge-base-assistant
-    this.assistantNames = ['ask-elxr', 'knowledge-base-assistant'];
+    // Use only knowledge-base-assistant for faster responses
+    this.assistantNames = ['knowledge-base-assistant'];
     
     if (!this.apiKey) {
       console.warn('PINECONE_API_KEY not found - Assistant API will not be available');
@@ -27,7 +27,7 @@ class PineconeAssistantAPI {
     try {
       const allResults: any[] = [];
 
-      // Query both assistants in parallel for faster responses
+      // Query assistant(s) for knowledge retrieval
       const assistantPromises = this.assistantNames.map(async (assistantName) => {
         try {
           console.log(`🔍 Querying Pinecone Assistant: ${assistantName}`);
@@ -63,11 +63,11 @@ class PineconeAssistantAPI {
       // Wait for all assistant queries to complete
       const results = await Promise.all(assistantPromises);
       
-      // Combine results from both assistants
+      // Combine results from assistant(s)
       const validResults = results.filter(r => r !== null);
       
       if (validResults.length === 0) {
-        throw new Error('No results from any Pinecone Assistant');
+        throw new Error('No results from Pinecone Assistant');
       }
 
       // If we have multiple results, combine them intelligently
