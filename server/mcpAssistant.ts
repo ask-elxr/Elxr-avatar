@@ -43,10 +43,13 @@ class PineconeAssistantAPI {
             ]
           });
 
+          const responseContent = response.message?.content || 'No response content';
           console.log(`✅ Successfully connected to ${assistantName}`);
+          console.log(`📚 Knowledge retrieved (${responseContent.length} chars):`, responseContent.substring(0, 500) + '...');
+          console.log(`📖 Citations:`, response.citations?.length || 0, 'sources');
           
           return {
-            text: response.message?.content || 'No response content',
+            text: responseContent,
             score: 1.0,
             metadata: { 
               source: assistantName,
