@@ -190,10 +190,6 @@ export function AvatarChat() {
         console.log("User message extracted:", userMessage);
         
         if (userMessage) {
-          // IMMEDIATELY interrupt HeyGen's knowledge base response to prevent generic answers
-          await avatar.interrupt().catch(() => {});
-          console.log("Interrupted HeyGen knowledge base - waiting for Claude response");
-          
           // Cancel any previous pending request to prevent multiple contradictory responses
           if (abortControllerRef.current) {
             console.log("Cancelling previous request - new question detected");
@@ -202,6 +198,9 @@ export function AvatarChat() {
           
           // Create new AbortController for this request
           abortControllerRef.current = new AbortController();
+          
+          // DON'T interrupt yet - let HeyGen respond while we fetch Claude response in background
+          // This prevents awkward silence
           
           // Get response from Claude backend
           try {
@@ -216,6 +215,9 @@ export function AvatarChat() {
               const data = await response.json();
               const claudeResponse = data.knowledgeResponse || data.response;
               console.log("Claude response received:", claudeResponse);
+              
+              // NOW interrupt HeyGen's generic response and speak Claude's knowledge-based response
+              await avatar.interrupt().catch(() => {});
               
               // Make avatar speak Claude's response using REPEAT (not TALK)
               await avatar.speak({
