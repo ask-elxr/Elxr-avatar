@@ -30,7 +30,7 @@ export function Disclaimer({ onAccept }: DisclaimerProps) {
             <img 
               src={elxrLogo} 
               alt="ELXR" 
-              className="h-12 w-auto"
+              className="h-10 sm:h-12 w-auto"
               data-testid="img-elxr-logo"
             />
           </div>
