@@ -29,7 +29,7 @@ export function getSession() {
     conString: process.env.DATABASE_URL,
     createTableIfMissing: false,
     ttl: sessionTtl,
-    tableName: "auth_sessions",
+    tableName: "sessions",
   });
   return session({
     secret: process.env.SESSION_SECRET!,

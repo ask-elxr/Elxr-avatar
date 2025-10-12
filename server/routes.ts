@@ -22,14 +22,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (45 second timeout for AI processing)
   app.use(timeoutMiddleware(45000));
 
-  // Anonymous user session endpoint (no authentication needed)
-  app.get('/api/auth/user', async (req: any, res) => {
-    // For anonymous users, just return a simple response
-    // The user ID is managed on the client side
-    res.json({ 
-      anonymous: true,
-      message: "Anonymous user session"
-    });
+  // Auth user endpoint - returns authenticated user data
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
   });
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
@@ -238,6 +240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base + Mem0 Memory
+  // NOTE: This endpoint is intentionally NOT protected by isAuthenticated
+  // to allow both authenticated and anonymous users to use the avatar
   app.post("/api/avatar/response", async (req, res) => {
     try {
       const { message, conversationHistory = [], avatarPersonality, useWebSearch = false, userId } = req.body;
