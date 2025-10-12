@@ -681,8 +681,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         </div>
       )}
 
-      {/* Unpinch Graphic - Mobile only, shows when video is not in fullscreen */}
-      {isMobile && sessionActive && !isFullscreen && (
+      {/* Unpinch Graphic - Mobile/Tablet only, shows AFTER user taps fullscreen button */}
+      {isMobile && sessionActive && !isFullscreen && hasUsedFullscreen && (
         <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
           <div className="flex flex-col items-center gap-3">
             <img 
