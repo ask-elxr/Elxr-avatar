@@ -229,14 +229,13 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
         console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
-        // Only auto-restart if disconnect was NOT intentional (e.g., not from pause/timeout)
-        if (!intentionalStopRef.current) {
-          console.log("Unintentional disconnect - auto-restarting");
-          endSession();
-        } else {
-          console.log("Intentional stop - NOT auto-restarting, staying stopped");
-          intentionalStopRef.current = false; // Reset flag
-          setSessionActive(false);
+        // NEVER auto-restart - always show reconnect screen to prevent credit drain
+        console.log("Session disconnected - showing reconnect screen to save credits");
+        intentionalStopRef.current = false; // Reset flag
+        setSessionActive(false);
+        setShowReconnect(true); // Show manual reconnect option
+        if (inactivityTimerRef.current) {
+          clearTimeout(inactivityTimerRef.current);
         }
       });
 
@@ -482,17 +481,20 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     }
     
     if (avatarRef.current) {
+      // Mark as intentional stop to prevent auto-restart loops
+      intentionalStopRef.current = true;
       avatarRef.current.stopAvatar().catch(console.error);
       avatarRef.current = null;
     }
+    
+    // Clear the video element
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    
     setSessionActive(false);
     setIsLoading(true);
-    
-    // Auto-restart on both mobile and desktop
-    setTimeout(() => {
-      hasStartedRef.current = false;
-      startSession();
-    }, 100);
+    setShowReconnect(true); // Show reconnect screen instead of auto-restarting
   }
 
   const endChat = () => {

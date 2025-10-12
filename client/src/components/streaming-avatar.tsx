@@ -58,9 +58,15 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log("Stream disconnected");
-        setStatusMessage("Avatar disconnected");
-        endSession();
+        console.log("Stream disconnected - stopping to save credits");
+        setStatusMessage("Avatar disconnected - Click 'Start Avatar' to reconnect");
+        // Stop the session but DON'T auto-restart to prevent credit drain
+        if (avatarRef.current) {
+          avatarRef.current.stopAvatar().catch(console.error);
+          avatarRef.current = null;
+        }
+        setStream(null);
+        setAvatarStarted(false);
       });
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
