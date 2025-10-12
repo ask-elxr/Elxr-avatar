@@ -190,6 +190,10 @@ export function AvatarChat() {
         console.log("User message extracted:", userMessage);
         
         if (userMessage) {
+          // IMMEDIATELY interrupt HeyGen's knowledge base response to prevent generic answers
+          await avatar.interrupt().catch(() => {});
+          console.log("Interrupted HeyGen knowledge base - waiting for Claude response");
+          
           // Cancel any previous pending request to prevent multiple contradictory responses
           if (abortControllerRef.current) {
             console.log("Cancelling previous request - new question detected");
@@ -212,9 +216,6 @@ export function AvatarChat() {
               const data = await response.json();
               const claudeResponse = data.knowledgeResponse || data.response;
               console.log("Claude response received:", claudeResponse);
-              
-              // Interrupt any GPT-4 response from knowledge base
-              await avatar.interrupt().catch(() => {});
               
               // Make avatar speak Claude's response using REPEAT (not TALK)
               await avatar.speak({
