@@ -166,13 +166,15 @@ export function AvatarChat() {
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log("Stream disconnected");
+        console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
         // Only auto-restart if disconnect was NOT intentional (e.g., not from pause/timeout)
         if (!intentionalStopRef.current) {
+          console.log("Unintentional disconnect - auto-restarting");
           endSession();
         } else {
-          console.log("Intentional stop - not auto-restarting");
+          console.log("Intentional stop - NOT auto-restarting, staying stopped");
           intentionalStopRef.current = false; // Reset flag
+          setSessionActive(false);
         }
       });
 
@@ -262,6 +264,7 @@ export function AvatarChat() {
         
         // Mark this as intentional stop so it doesn't auto-restart
         intentionalStopRef.current = true;
+        console.log("Setting intentionalStop flag to TRUE for timeout");
         
         // Now stop the avatar stream (saves credits!)
         await avatarRef.current.stopAvatar().catch(console.error);
@@ -275,6 +278,12 @@ export function AvatarChat() {
           avatarRef.current = null;
         }
       }
+    }
+    
+    // Clear the video element to remove any lingering stream
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      console.log("Video element cleared on timeout");
     }
     
     setSessionActive(false);
@@ -325,9 +334,17 @@ export function AvatarChat() {
       if (avatarRef.current) {
         // Mark this as intentional stop so it doesn't auto-restart
         intentionalStopRef.current = true;
+        console.log("Setting intentionalStop flag to TRUE for pause");
         await avatarRef.current.stopAvatar().catch(console.error);
         avatarRef.current = null;
       }
+      
+      // Clear the video element to remove any lingering stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+        console.log("Video element cleared");
+      }
+      
       setSessionActive(false);
       setIsPaused(true);
       console.log("Avatar paused - stream stopped to save credits");
