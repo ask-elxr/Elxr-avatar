@@ -371,7 +371,7 @@ export function AvatarChat() {
       {sessionActive && (
         <Button
           onClick={togglePause}
-          className={`absolute z-50 left-1/2 -translate-x-1/2 bg-yellow-600/80 hover:bg-yellow-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+          className={`absolute z-50 left-1/2 -translate-x-1/2 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
             isMobile ? 'top-4 p-3' : 'top-6 px-4 py-2'
           }`}
           data-testid="button-pause-toggle"
@@ -395,7 +395,7 @@ export function AvatarChat() {
       {sessionActive && (
         <Button
           onClick={endChat}
-          className={`absolute z-50 bg-red-600/80 hover:bg-red-700 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+          className={`absolute z-50 bg-purple-700/80 hover:bg-purple-800 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
             isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
           }`}
           data-testid="button-end-chat"
