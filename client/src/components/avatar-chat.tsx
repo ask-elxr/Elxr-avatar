@@ -119,10 +119,10 @@ export function AvatarChat({ userId }: AvatarChatProps) {
           
           console.log("Sign-off message delivered");
           
-          // Wait 3 seconds for message to finish, then end session
+          // Wait 5 seconds for message to finish, then end session
           setTimeout(() => {
             endSessionShowReconnect();
-          }, 3000);
+          }, 5000);
         } catch (error) {
           console.error("Error during sign-off:", error);
           endSessionShowReconnect();
@@ -543,6 +543,11 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         text: randomGreeting,
         task_type: TaskType.REPEAT
       }).catch(console.error);
+      
+      // Start inactivity timer AFTER greeting is done (wait 2 seconds for it to finish)
+      setTimeout(() => {
+        resetInactivityTimer();
+      }, 2000);
     } catch (error) {
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
