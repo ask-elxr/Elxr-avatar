@@ -766,17 +766,20 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         </div>
       )}
 
-      {/* Unpinch Graphic - Mobile/Tablet only, shows for 5 seconds after entering fullscreen */}
-      {isMobile && sessionActive && showUnpinchAnimation && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+      {/* Unpinch Graphic - Mobile/Tablet only, always at top edge, visible when fullscreen shrinks video */}
+      {isMobile && sessionActive && (
+        <div className={`absolute top-0 left-1/2 transform -translate-x-1/2 z-40 pointer-events-none transition-opacity duration-500 ${
+          showUnpinchAnimation ? 'opacity-90' : 'opacity-0'
+        }`}
+        style={{ marginTop: '-10px' }}>
           <div className="flex flex-col items-center gap-3">
             <img 
               src={showExpandedFingers ? unpinchGraphic2 : unpinchGraphic1} 
               alt="Expand for fullscreen" 
-              className="w-16 h-16 opacity-90 transition-opacity duration-300"
+              className="w-16 h-16 transition-opacity duration-300"
               data-testid="unpinch-graphic"
             />
-            <p className="text-white text-base font-medium text-center">
+            <p className="text-white text-base font-medium text-center drop-shadow-lg">
               Expand for<br/>Fullscreen
             </p>
           </div>
