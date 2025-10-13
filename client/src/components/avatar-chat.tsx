@@ -75,6 +75,21 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     }
   }, []);
 
+  // Show unpinch animation on mobile after session starts
+  useEffect(() => {
+    if (isMobile && sessionActive && !isLoading) {
+      console.log("Session active on mobile - showing unpinch animation for 5 seconds");
+      setShowUnpinchAnimation(true);
+      
+      const timer = setTimeout(() => {
+        console.log("Hiding unpinch animation");
+        setShowUnpinchAnimation(false);
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isMobile, sessionActive, isLoading]);
+
   // Reset inactivity timer
   const resetInactivityTimer = () => {
     if (inactivityTimerRef.current) {
