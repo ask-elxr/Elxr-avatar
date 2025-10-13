@@ -781,12 +781,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         </div>
       )}
 
-      {/* Unpinch Graphic - Mobile/Tablet only, always at top edge, visible when fullscreen shrinks video */}
+      {/* Unpinch Graphic - Mobile/Tablet only, positioned over lower chest area */}
       {isMobile && sessionActive && (
-        <div className={`absolute top-0 left-1/2 transform -translate-x-1/2 z-40 pointer-events-none transition-opacity duration-500 ${
+        <div className={`absolute left-1/2 transform -translate-x-1/2 z-40 pointer-events-none transition-opacity duration-500 ${
           showUnpinchAnimation ? 'opacity-90' : 'opacity-0'
         }`}
-        style={{ marginTop: '-10px' }}>
+        style={{ top: '55%' }}>
           <div className="flex flex-col items-center gap-3">
             <img 
               src={showExpandedFingers ? unpinchGraphic2 : unpinchGraphic1} 
