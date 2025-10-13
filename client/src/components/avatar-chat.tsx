@@ -795,7 +795,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               data-testid="unpinch-graphic"
             />
             <p className="text-white text-base font-medium text-center drop-shadow-lg">
-              Expand for<br/>Fullscreen
+              Click full screen<br/>then expand
             </p>
           </div>
         </div>
