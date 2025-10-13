@@ -102,42 +102,36 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     // Reset the "asked anything else" flag when user is active
     hasAskedAnythingElseRef.current = false;
     
-    // Set new 5-minute timeout (increased from 1 minute to give users more time)
+    // Set 60-second timeout - simple sign-off after 1 minute of inactivity
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 5 minutes elapsed");
+      console.log("Inactivity timeout triggered - 60 seconds elapsed");
       
-      // First timeout: Ask if there's anything else
-      if (!hasAskedAnythingElseRef.current && avatarRef.current) {
-        hasAskedAnythingElseRef.current = true;
-        console.log("Asking if there's anything else...");
-        
+      if (avatarRef.current) {
         try {
-          // First interrupt any ongoing speech
+          // Interrupt any ongoing speech
           await avatarRef.current.interrupt().catch(() => {});
-          console.log("About to speak: Is there anything else...");
           
+          // Simple sign-off message
           await avatarRef.current.speak({
-            text: "Is there anything else I can help you with?",
+            text: "Alright, if that's all for now, I'm going to sign off. Hit that reconnect button when you need me again.",
             task_type: TaskType.REPEAT
           });
           
-          console.log("Successfully spoke the question");
+          console.log("Sign-off message delivered");
           
-          // Give user 30 more seconds to respond
-          inactivityTimerRef.current = setTimeout(() => {
-            console.log("No response after asking - terminating session");
+          // Wait 3 seconds for message to finish, then end session
+          setTimeout(() => {
             endSessionShowReconnect();
-          }, 30000); // 30 seconds to respond
+          }, 3000);
         } catch (error) {
-          console.error("Error asking if anything else:", error);
+          console.error("Error during sign-off:", error);
           endSessionShowReconnect();
         }
       } else {
-        // Already asked or no avatar - just end session
-        console.log("Already asked or no avatar - terminating immediately");
+        // No avatar - just end session
         endSessionShowReconnect();
       }
-    }, 300000); // 300 seconds = 5 minutes
+    }, 60000); // 60 seconds = 1 minute
   };
 
   // Start inactivity timer when session becomes active
@@ -523,6 +517,32 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       console.log("Voice chat started - you can now speak to the avatar");
 
       setSessionActive(true);
+      
+      // Mark greets users with a random intro
+      const greetings = [
+        "Hey there — I'm Mark Kohl. You're actually talking to my digital self, but everything you'll hear comes directly from my real experiences, my research, and my life's work.",
+        "Hi, I'm Mark Kohl. This is my avatar — but what you're about to hear comes straight from me. I helped build this AI so my work could reach more people, in more ways.",
+        "Hello. I'm Mark Kohl — or at least, the AI version of me. I've spent years teaching, learning, and exploring what makes us human. This is my way of sharing that knowledge with anyone who needs it.",
+        "Hey there. I'm Mark Kohl. You're talking to my avatar — but rest assured, what comes out of my mouth was written, spoken, and lived by me.",
+        "Hi, I'm Mark Kohl. Think of this as a conversation with my digital twin — powered by AI, but shaped by decades of lived experience.",
+        "Hey, I'm Mark Kohl. You're meeting the AI version of me — something I created so I could be here even when I can't be in person.",
+        "Hi there. I'm Mark Kohl. What you're seeing is my avatar, but the thoughts, insights, and stories are all mine — carefully trained so this version of me could keep sharing what matters most.",
+        "Hey. I'm Mark Kohl — the human behind this AI avatar. I created this so that the things I've learned through experience don't just live in one lifetime.",
+        "Hi, I'm Mark Kohl. I know it might feel strange talking to an avatar — but everything I say here is rooted in years of study, teaching, and real human connection.",
+        "Hey there, I'm Mark Kohl. I built this AI version of myself to do what one person alone can't — make real knowledge accessible to anyone who needs it, 24/7.",
+        "Hi, I'm Mark Kohl. The world changes fast, but wisdom shouldn't get lost along the way. That's why I helped create this AI — to share my work and insights with anyone, anywhere.",
+        "Hello. I'm Mark Kohl — the human behind the avatar. Together, we're here to bridge the gap between technology and truth, between information and wisdom.",
+        "Hey, I'm Mark Kohl. Yep, I'm an avatar — but don't worry, this version of me is powered by the real one.",
+        "Hi there, I'm Mark Kohl. This is the AI version of me — kind of like me on my best day, when I've had enough sleep and plenty of coffee.",
+        "Hello, I'm Mark Kohl. You're chatting with my AI self — think of it as me multiplied, so I can have a lot more of these conversations.",
+        "Hi, I'm Mark Kohl. The version you're seeing here might be digital, but the heart, intention, and voice behind it are 100% human."
+      ];
+      
+      const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+      await avatar.speak({
+        text: randomGreeting,
+        task_type: TaskType.REPEAT
+      }).catch(console.error);
     } catch (error) {
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
