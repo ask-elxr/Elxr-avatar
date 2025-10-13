@@ -743,7 +743,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
       {/* Loading Video Overlay */}
       {isLoading && !showReconnect && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-purple-900 via-black to-purple-900">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
           <video
             autoPlay
             muted
