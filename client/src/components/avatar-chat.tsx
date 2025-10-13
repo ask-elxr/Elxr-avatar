@@ -399,6 +399,9 @@ export function AvatarChat({ userId }: AvatarChatProps) {
             currentRequestIdRef.current = requestId;
             console.log("New question detected - Request ID:", requestId);
             
+            // Create new abort controller for this request
+            abortControllerRef.current = new AbortController();
+            
             // START THE API CALL IMMEDIATELY (don't wait for thinking phrase)
             const responsePromise = fetch("/api/avatar/response", {
               method: "POST",
@@ -406,7 +409,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               body: JSON.stringify({ 
                 message: userMessage,
                 userId: memoryEnabled ? userId : undefined  // Only pass user ID if memory is enabled
-              })
+              }),
+              signal: abortControllerRef.current.signal  // Add abort signal
             });
             
             // While API is processing, interrupt HeyGen and say a quick thinking phrase
@@ -527,6 +531,13 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   }
 
   async function endSessionShowReconnect() {
+    // Cancel any ongoing API requests
+    if (abortControllerRef.current) {
+      console.log("Cancelling ongoing API request");
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
     // Clear inactivity timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
@@ -575,6 +586,13 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   }
 
   function endSession() {
+    // Cancel any ongoing API requests
+    if (abortControllerRef.current) {
+      console.log("Cancelling ongoing API request on end session");
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
     // Clear inactivity timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
@@ -617,6 +635,14 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       console.log("Avatar resuming - restarting session");
     } else {
       // Pause: STOP the avatar stream completely (saves credits!)
+      
+      // Cancel any ongoing API requests
+      if (abortControllerRef.current) {
+        console.log("Cancelling ongoing API request on pause");
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
       if (avatarRef.current) {
         // Mark this as intentional stop so it doesn't auto-restart
         intentionalStopRef.current = true;
