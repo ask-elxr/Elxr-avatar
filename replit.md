@@ -8,7 +8,12 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 12, 2025)
+## Latest Updates (October 22, 2025)
+- **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + Pinecone knowledge base (no web search delays)
+- **20 Authentic Mark Kohl Sign-Offs** - After 60 seconds inactivity, Mark says one of 20 personalized goodbyes
+- **Fixed Greeting Timing** - Inactivity timer now starts 2 seconds AFTER Mark's greeting (no more cut-offs)
+
+## Previous Updates (October 12, 2025)
 - **CRITICAL FIX: Pause Now Stops Avatar Stream** - Prevents credit drain when paused
   - Pause button now completely stops the HeyGen avatar stream (calls `stopAvatar()`)
   - Previously only muted microphone, avatar kept streaming and charging credits

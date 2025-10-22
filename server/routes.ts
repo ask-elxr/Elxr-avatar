@@ -327,13 +327,13 @@ SIGNATURE LINES:
         knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
       }
 
-      // Get web search results if requested or if query seems time-sensitive
+      // DISABLED: Web search (speeds up responses - only using Claude + Pinecone now)
       let webSearchResults = '';
-      if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
-        if (googleSearchService.isAvailable()) {
-          webSearchResults = await googleSearchService.search(message, 3);
-        }
-      }
+      // if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
+      //   if (googleSearchService.isAvailable()) {
+      //     webSearchResults = await googleSearchService.search(message, 3);
+      //   }
+      // }
 
       // Generate response using Claude Sonnet 4 with all context
       let aiResponse: string;
