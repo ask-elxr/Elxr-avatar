@@ -9,7 +9,8 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (October 22, 2025)
-- **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + Pinecone knowledge base (no web search delays)
+- **Dual Pinecone Knowledge Base Access** - Mark now queries BOTH `knowledge-base-assistant` AND `ask-elxr` assistants in parallel for comprehensive responses
+- **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + dual Pinecone knowledge bases (no web search delays)
 - **20 Authentic Mark Kohl Sign-Offs** - After 60 seconds inactivity, Mark says one of 20 personalized goodbyes
 - **Fixed Greeting Timing** - Inactivity timer now starts 2 seconds AFTER Mark's greeting (no more cut-offs)
 
