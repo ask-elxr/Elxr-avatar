@@ -36,6 +36,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const signOffTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentRequestIdRef = useRef<string>("");
   const hasAskedAnythingElseRef = useRef(false);
@@ -92,11 +93,24 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
   // Reset inactivity timer
   const resetInactivityTimer = () => {
+    // Clear main inactivity timer
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       console.log("Inactivity timer cleared and reset");
     } else {
       console.log("Inactivity timer started for first time");
+    }
+    
+    // Cancel sign-off timeout if user speaks during sign-off
+    if (signOffTimeoutRef.current) {
+      clearTimeout(signOffTimeoutRef.current);
+      signOffTimeoutRef.current = null;
+      console.log("Sign-off timeout cancelled - user is active again");
+      
+      // Interrupt avatar if it's speaking the sign-off message
+      if (avatarRef.current) {
+        avatarRef.current.interrupt().catch(() => {});
+      }
     }
     
     // Reset the "asked anything else" flag when user is active
@@ -144,7 +158,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
           console.log("Sign-off message delivered:", randomSignOff);
           
           // Wait 5 seconds for message to finish, then end session
-          setTimeout(() => {
+          // Store timeout in ref so it can be cancelled if user speaks
+          signOffTimeoutRef.current = setTimeout(() => {
             endSessionShowReconnect();
           }, 5000);
         } catch (error) {
@@ -593,6 +608,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       inactivityTimerRef.current = null;
     }
     
+    // Clear sign-off timeout
+    if (signOffTimeoutRef.current) {
+      clearTimeout(signOffTimeoutRef.current);
+      signOffTimeoutRef.current = null;
+    }
+    
     // Make avatar say goodbye message before stopping
     if (avatarRef.current) {
       try {
@@ -646,6 +667,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
+    }
+    
+    // Clear sign-off timeout
+    if (signOffTimeoutRef.current) {
+      clearTimeout(signOffTimeoutRef.current);
+      signOffTimeoutRef.current = null;
     }
     
     if (avatarRef.current) {
@@ -714,6 +741,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
         inactivityTimerRef.current = null;
+      }
+      
+      // Clear sign-off timeout when paused
+      if (signOffTimeoutRef.current) {
+        clearTimeout(signOffTimeoutRef.current);
+        signOffTimeoutRef.current = null;
       }
     }
   };
