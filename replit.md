@@ -10,6 +10,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Latest Updates (October 28, 2025)
 - **MAJOR: Deeper, Richer Responses** - Increased Claude token limit (1000→2500), improved prompting for substantive answers, better knowledge retrieval (3→5 results)
+- **Fixed Mid-Answer Cutoffs** - Timer now resets every 10 seconds while avatar is speaking, preventing timeout during long responses
 - **Fixed Timeout Interruptions** - If user speaks during sign-off, avatar immediately stops goodbye message and listens to new question
 - **Dual Pinecone Knowledge Base Access** - Mark now queries BOTH `knowledge-base-assistant` AND `ask-elxr` assistants in parallel for comprehensive responses
 - **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + dual Pinecone knowledge bases (no web search delays)

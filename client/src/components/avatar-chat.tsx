@@ -513,11 +513,24 @@ export function AvatarChat({ userId }: AvatarChatProps) {
                 // Interrupt thinking phrase and speak the real response
                 await avatar.interrupt().catch(() => {});
                 
+                // Set up interval to keep resetting timer while avatar speaks (every 10 seconds)
+                // This prevents timeout during long responses
+                const speakingInterval = setInterval(() => {
+                  resetInactivityTimer();
+                  console.log("Resetting timer during avatar speech");
+                }, 10000);
+                
                 // Make avatar speak Claude's response using REPEAT (not TALK)
                 await avatar.speak({
                   text: claudeResponse,
                   task_type: TaskType.REPEAT
                 });
+                
+                // Clear interval once speaking is done
+                clearInterval(speakingInterval);
+                
+                // Reset timer one final time after speaking completes
+                resetInactivityTimer();
               }
             } catch (error) {
               // Clear the filler interval on error
