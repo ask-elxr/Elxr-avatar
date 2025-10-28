@@ -318,13 +318,17 @@ SIGNATURE LINES:
         ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
         : personalityPrompt;
 
-      // Get knowledge base context
+      // Get knowledge base context from BOTH Pinecone assistants
       const { pineconeAssistant } = await import('./mcpAssistant.js');
       let knowledgeContext = '';
       
       if (pineconeAssistant.isAvailable()) {
-        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
-        knowledgeContext = knowledgeResults.length > 0 ? knowledgeResults[0].text : '';
+        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 5);
+        // Use ALL results from both assistants (they're already combined)
+        if (knowledgeResults.length > 0) {
+          knowledgeContext = knowledgeResults[0].text;
+          console.log(`📚 Full knowledge context retrieved (${knowledgeContext.length} chars)`);
+        }
       }
 
       // DISABLED: Web search (speeds up responses - only using Claude + Pinecone now)

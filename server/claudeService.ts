@@ -55,7 +55,23 @@ export class ClaudeService {
       
       // Add current query with context - FORCE Claude to use the knowledge base
       const currentMessage = context 
-        ? `IMPORTANT: Use the following verified knowledge from the database as your PRIMARY source. Base your answer on this information:\n\n${context}\n\n---\n\nUser question: ${query}\n\nIMPORTANT: Answer using the knowledge above. Do not give generic responses - use specific details from the provided context.`
+        ? `CRITICAL: You have extensive verified knowledge below. Use it fully to give a DEEP, detailed, insightful response.
+
+KNOWLEDGE BASE CONTENT:
+${context}
+
+---
+
+User question: ${query}
+
+RESPONSE REQUIREMENTS:
+- Draw from the specific details, examples, and insights in the knowledge above
+- Go DEEP - don't skim the surface
+- Use actual quotes, examples, and specifics from the context
+- Weave in relevant stories, experiences, or details
+- Make it conversational but rich with substance
+- If the knowledge base has nuanced points, include them
+- Do NOT give generic responses - this is your chance to share real expertise`
         : query;
         
       messages.push({
@@ -75,7 +91,7 @@ export class ClaudeService {
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
-        max_tokens: 1000,
+        max_tokens: 2500, // Increased for deeper, more complete responses
         messages: messages,
         system: systemPrompt
       });
@@ -120,14 +136,35 @@ export class ClaudeService {
       let enhancedMessage = '';
       
       if (context) {
-        enhancedMessage += `IMPORTANT: Use this verified knowledge from your database as the PRIMARY source:\n\n${context}\n\n---\n\n`;
+        enhancedMessage += `CRITICAL: You have extensive verified knowledge below. Use it fully to give a DEEP, detailed, insightful response.
+
+PRIMARY KNOWLEDGE BASE CONTENT:
+${context}
+
+---
+
+`;
       }
       
       if (webSearchResults) {
-        enhancedMessage += `Additional web search results (use as secondary source):\n${webSearchResults}\n\n---\n\n`;
+        enhancedMessage += `ADDITIONAL WEB SEARCH RESULTS (secondary source):
+${webSearchResults}
+
+---
+
+`;
       }
       
-      enhancedMessage += `User question: ${query}\n\nIMPORTANT: Base your answer on the database knowledge above. Include specific details, personal experiences, and exact information from the context. Do NOT give generic responses.`;
+      enhancedMessage += `User question: ${query}
+
+RESPONSE REQUIREMENTS:
+- Draw from the specific details, examples, and insights in the knowledge base above
+- Go DEEP - don't skim the surface, provide rich, substantive answers
+- Use actual quotes, examples, and specifics from the context
+- Weave in relevant stories, experiences, or details
+- Make it conversational but rich with substance
+- If the knowledge base has nuanced points, include them
+- Do NOT give generic responses - this is your chance to share real expertise`;
       
       messages.push({
         role: 'user',
@@ -169,7 +206,7 @@ ABSOLUTE RULES:
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
-        max_tokens: 1200,
+        max_tokens: 2500, // Increased for deeper, more complete responses
         messages: messages,
         system: systemPrompt
       });

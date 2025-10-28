@@ -8,7 +8,9 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 22, 2025)
+## Latest Updates (October 28, 2025)
+- **MAJOR: Deeper, Richer Responses** - Increased Claude token limit (1000→2500), improved prompting for substantive answers, better knowledge retrieval (3→5 results)
+- **Fixed Timeout Interruptions** - If user speaks during sign-off, avatar immediately stops goodbye message and listens to new question
 - **Dual Pinecone Knowledge Base Access** - Mark now queries BOTH `knowledge-base-assistant` AND `ask-elxr` assistants in parallel for comprehensive responses
 - **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + dual Pinecone knowledge bases (no web search delays)
 - **20 Authentic Mark Kohl Sign-Offs** - After 60 seconds inactivity, Mark says one of 20 personalized goodbyes
