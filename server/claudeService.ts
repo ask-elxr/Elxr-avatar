@@ -91,7 +91,7 @@ RESPONSE REQUIREMENTS:
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
-        max_tokens: 600, // Optimized for speed - short, punchy responses
+        max_tokens: 350, // Ultra-short responses to prevent cutoffs
         messages: messages,
         system: systemPrompt
       });
@@ -206,7 +206,7 @@ ABSOLUTE RULES:
       const response = await this.anthropic.messages.create({
         // "claude-sonnet-4-20250514"
         model: DEFAULT_MODEL_STR,
-        max_tokens: 600, // Optimized for speed - short, punchy responses
+        max_tokens: 350, // Ultra-short responses to prevent cutoffs
         messages: messages,
         system: systemPrompt
       });
