@@ -37,6 +37,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const hasStartedRef = useRef(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const signOffTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const speakingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentRequestIdRef = useRef<string>("");
   const hasAskedAnythingElseRef = useRef(false);
@@ -111,6 +112,13 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       if (avatarRef.current) {
         avatarRef.current.interrupt().catch(() => {});
       }
+    }
+    
+    // Clear speaking interval if it exists (user spoke while avatar was talking)
+    if (speakingIntervalRef.current) {
+      clearInterval(speakingIntervalRef.current);
+      speakingIntervalRef.current = null;
+      console.log("Cleared speaking interval - user interrupted");
     }
     
     // Reset the "asked anything else" flag when user is active
@@ -513,24 +521,40 @@ export function AvatarChat({ userId }: AvatarChatProps) {
                 // Interrupt thinking phrase and speak the real response
                 await avatar.interrupt().catch(() => {});
                 
+                // Clear any existing speaking interval
+                if (speakingIntervalRef.current) {
+                  clearInterval(speakingIntervalRef.current);
+                }
+                
                 // Set up interval to keep resetting timer while avatar speaks (every 10 seconds)
                 // This prevents timeout during long responses
-                const speakingInterval = setInterval(() => {
+                // Store in ref so it persists even after speak() resolves
+                speakingIntervalRef.current = setInterval(() => {
                   resetInactivityTimer();
                   console.log("Resetting timer during avatar speech");
                 }, 10000);
                 
+                // Safety timeout: stop the speaking interval after 3 minutes max
+                // (avatar should be done by then, and this prevents infinite loop)
+                setTimeout(() => {
+                  if (speakingIntervalRef.current) {
+                    clearInterval(speakingIntervalRef.current);
+                    speakingIntervalRef.current = null;
+                    console.log("Cleared speaking interval - max duration reached");
+                    // Start fresh 60-second timer now that avatar is done
+                    resetInactivityTimer();
+                  }
+                }, 180000); // 3 minutes
+                
                 // Make avatar speak Claude's response using REPEAT (not TALK)
+                // NOTE: This promise resolves immediately after queueing, NOT after vocalization completes
                 await avatar.speak({
                   text: claudeResponse,
                   task_type: TaskType.REPEAT
                 });
                 
-                // Clear interval once speaking is done
-                clearInterval(speakingInterval);
-                
-                // Reset timer one final time after speaking completes
-                resetInactivityTimer();
+                // DON'T clear interval here - avatar is still speaking!
+                // Interval will be cleared when user speaks again OR after 3 minutes
               }
             } catch (error) {
               // Clear the filler interval on error
