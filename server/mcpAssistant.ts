@@ -7,8 +7,8 @@ class PineconeAssistantAPI {
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
-    // Query both Pinecone assistants for comprehensive knowledge
-    this.assistantNames = ['knowledge-base-assistant', 'ask-elxr'];
+    // Query ONLY knowledge-base-assistant for fastest responses
+    this.assistantNames = ['knowledge-base-assistant'];
     
     if (!this.apiKey) {
       console.warn('PINECONE_API_KEY not found - Assistant API will not be available');
