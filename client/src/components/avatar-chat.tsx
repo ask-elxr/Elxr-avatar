@@ -456,19 +456,27 @@ export function AvatarChat({ userId }: AvatarChatProps) {
             
             // While API is processing, interrupt HeyGen and say a quick thinking phrase
             const thinkingPhrases = [
-              "Let me think on that...",
-              "Good question, give me a sec...",
-              "Ah, interesting - let me pull that up...",
-              "That's a great one, hold on...",
-              "Mmm, let me dig into that..."
+              "Ooh, good question - let me pull that up...",
+              "Alright, digging into the vault on this one...",
+              "Mmm, hold on - this is a juicy topic...",
+              "Let me grab my notes on that...",
+              "Ah, yeah - give me a sec to find the good stuff...",
+              "Interesting - let me think on that for a moment...",
+              "Hold tight, pulling up what I know...",
+              "Good one - let me connect some dots here...",
+              "Alright, accessing the archives...",
+              "Mmm, let me unpack that for you..."
             ];
             
             const followUpPhrases = [
-              "Still digging through the archives...",
-              "Hang tight, pulling up the good stuff...",
-              "Almost there, just connecting the dots...",
-              "This is a juicy one, give me another moment...",
-              "Alright, piecing this together..."
+              "Still digging - this is worth getting right...",
+              "Hang on, connecting the dots here...",
+              "Almost there, piecing this together...",
+              "Give me another beat - this is a good one...",
+              "Still pulling threads, hang tight...",
+              "Working on it - want to give you the real answer...",
+              "One more sec, getting the full picture...",
+              "Patience, grasshopper - quality takes a moment..."
             ];
             
             const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
@@ -483,7 +491,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               task_type: TaskType.REPEAT
             });
             
-            // Set up interval to add follow-up phrases every 12 seconds while waiting
+            // Set up interval to add follow-up phrases every 9 seconds while waiting
             const fillerInterval = setInterval(async () => {
               const followUpPhrase = followUpPhrases[Math.floor(Math.random() * followUpPhrases.length)];
               
@@ -495,7 +503,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
                 text: followUpPhrase,
                 task_type: TaskType.REPEAT
               }).catch(() => {}); // Catch errors if response arrives during speak
-            }, 12000);
+            }, 9000);
             
             // Wait for Claude response (already started processing above)
             try {

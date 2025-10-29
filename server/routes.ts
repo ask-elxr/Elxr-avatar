@@ -331,8 +331,8 @@ SIGNATURE LINES:
       let knowledgeContext = '';
       
       if (pineconeAssistant.isAvailable()) {
-        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 5);
-        // Use ALL results from both assistants (they're already combined)
+        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
+        // Use top 3 results for faster retrieval
         if (knowledgeResults.length > 0) {
           knowledgeContext = knowledgeResults[0].text;
           console.log(`📚 Full knowledge context retrieved (${knowledgeContext.length} chars)`);
