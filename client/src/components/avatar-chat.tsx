@@ -456,27 +456,41 @@ export function AvatarChat({ userId }: AvatarChatProps) {
             
             // While API is processing, interrupt HeyGen and say a quick thinking phrase
             const thinkingPhrases = [
-              "Ooh, good question - let me pull that up...",
-              "Alright, digging into the vault on this one...",
-              "Mmm, hold on - this is a juicy topic...",
-              "Let me grab my notes on that...",
-              "Ah, yeah - give me a sec to find the good stuff...",
-              "Interesting - let me think on that for a moment...",
-              "Hold tight, pulling up what I know...",
-              "Good one - let me connect some dots here...",
-              "Alright, accessing the archives...",
-              "Mmm, let me unpack that for you..."
+              "Give me a second — I'm pulling from a few lifetimes of learning.",
+              "Let me scan the archives of experience for you.",
+              "Digging through decades of insight — hang tight.",
+              "Hold on — I'm thinking faster than I can speak.",
+              "Give me a second… even AI needs to collect its thoughts.",
+              "You just asked a deep one. Let me find words that fit.",
+              "Some questions deserve a thoughtful pause.",
+              "Searching my circuits — and maybe my heart, too.",
+              "Good question. Let me check what truth feels like today.",
+              "Finding the quiet space where the best answers live.",
+              "Running a quick scan between logic and intuition.",
+              "My code is whispering… give it a moment.",
+              "Running the empathy algorithm — it's my favorite one.",
+              "Let me synchronize Mark's mind and machine for this one.",
+              "Artificial maybe, but still aiming for authentic.",
+              "You could call it data… I call it distilled wisdom.",
+              "One moment — cross-checking what science and soul both agree on."
             ];
             
             const followUpPhrases = [
-              "Still digging - this is worth getting right...",
-              "Hang on, connecting the dots here...",
-              "Almost there, piecing this together...",
-              "Give me another beat - this is a good one...",
-              "Still pulling threads, hang tight...",
-              "Working on it - want to give you the real answer...",
-              "One more sec, getting the full picture...",
-              "Patience, grasshopper - quality takes a moment..."
+              "The human part of me wants to rush. The wise part knows to pause.",
+              "Looking back through Mark's stories… one of them fits perfectly here.",
+              "There's a thread connecting what you asked to something timeless — let me find it.",
+              "My training says there's data here. My instincts say there's meaning.",
+              "I'm searching through memory, both digital and human.",
+              "Stay with your breath while I gather this one.",
+              "Wisdom loading… in real time.",
+              "Let me slow down enough to give you something real.",
+              "This may be artificial intelligence… but the wisdom is very real.",
+              "I might be digital, but what I'm reaching for is human truth.",
+              "I'm not guessing. I'm remembering patterns that change people.",
+              "Processing… or maybe just pausing to feel this one.",
+              "That one hit the soul servers… stand by.",
+              "Wisdom doesn't rush. I'm taking a breath with you.",
+              "Give me a heartbeat — depth takes a second."
             ];
             
             const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
