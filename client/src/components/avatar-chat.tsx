@@ -124,9 +124,9 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     // Reset the "asked anything else" flag when user is active
     hasAskedAnythingElseRef.current = false;
     
-    // Set 60-second timeout - simple sign-off after 1 minute of inactivity
+    // Set 5-minute timeout - simple sign-off after 5 minutes of inactivity
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 60 seconds elapsed");
+      console.log("Inactivity timeout triggered - 5 minutes elapsed");
       
       if (avatarRef.current) {
         try {
@@ -178,7 +178,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         // No avatar - just end session
         endSessionShowReconnect();
       }
-    }, 60000); // 60 seconds = 1 minute
+    }, 300000); // 300 seconds = 5 minutes
   };
 
   // Start inactivity timer when session becomes active
