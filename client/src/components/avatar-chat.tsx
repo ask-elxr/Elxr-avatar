@@ -124,52 +124,45 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     // Reset the "asked anything else" flag when user is active
     hasAskedAnythingElseRef.current = false;
     
-    // Set 5-minute timeout - simple sign-off after 5 minutes of inactivity
+    // Set 1-minute timeout - ask if anything else after 1 minute of inactivity
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 5 minutes elapsed");
+      console.log("Inactivity timeout triggered - 1 minute elapsed");
       
       if (avatarRef.current) {
         try {
           // Interrupt any ongoing speech
           await avatarRef.current.interrupt().catch(() => {});
           
-          // Mark's authentic sign-offs
-          const signOffs = [
-            "Thanks for spending a little time with me. Remember — curiosity is the beginning of every transformation.",
-            "I'm glad we got to connect today. Keep exploring, keep questioning — that's where growth begins.",
-            "Appreciate you being here. I hope something we talked about stays with you in the best way.",
-            "That's it for now — but remember, this conversation doesn't end here. It continues every time you pause and reflect.",
-            "Take care of yourself out there — and take the time to stay curious.",
-            "Thanks for listening. This project is about one thing — bringing real wisdom to as many people as possible. You're part of that.",
-            "I built this AI version of myself so I could keep sharing what I've learned — thanks for helping make that mission real.",
-            "I appreciate you spending a few minutes with me. That's how we make knowledge human again — one real conversation at a time.",
-            "If anything here helped you think differently, then it's doing exactly what it was meant to.",
-            "Thanks for letting me be part of your day — I hope this AI version of me carries something useful from the real one.",
-            "Before you go — take a breath. Let what resonated sink in. That's how change begins.",
-            "Every good conversation leaves us a little different than before. I hope this one did, too.",
-            "You don't need to have it all figured out — just keep asking the right questions.",
-            "I'll leave you with this — stay awake, stay kind, and keep learning.",
-            "The beauty of AI is reach; the beauty of being human is connection. Thanks for sharing both.",
-            "Alright, that's enough wisdom for one sitting — go stretch, breathe, live a little.",
-            "Don't let this chat be the smartest thing you do today — but it's a good start.",
-            "I'll be here whenever you're ready for round two. Until then, keep doing life your way.",
-            "That's me signing off — or at least, my digital twin. The real one's probably out getting some sunlight.",
-            "Until next time — stay curious, stay kind, and don't forget to laugh a little."
-          ];
+          // Ask if there's anything else before ending
+          const anythingElseMessage = "Is there anything else I can help you with today?";
           
-          const randomSignOff = signOffs[Math.floor(Math.random() * signOffs.length)];
           await avatarRef.current.speak({
-            text: randomSignOff,
+            text: anythingElseMessage,
             task_type: TaskType.REPEAT
           });
           
-          console.log("Sign-off message delivered:", randomSignOff);
+          console.log("'Anything else?' message delivered");
           
-          // Wait 5 seconds for message to finish, then end session
+          // Wait 20 seconds for user response
           // Store timeout in ref so it can be cancelled if user speaks
-          signOffTimeoutRef.current = setTimeout(() => {
-            endSessionShowReconnect();
-          }, 5000);
+          signOffTimeoutRef.current = setTimeout(async () => {
+            // User didn't respond - give final summary and end session
+            const finalMessage = "Alright. Thanks for the conversation - hope it was helpful. Take care.";
+            
+            if (avatarRef.current) {
+              await avatarRef.current.speak({
+                text: finalMessage,
+                task_type: TaskType.REPEAT
+              });
+              
+              // Wait 5 seconds for final message to finish, then end
+              setTimeout(() => {
+                endSessionShowReconnect();
+              }, 5000);
+            } else {
+              endSessionShowReconnect();
+            }
+          }, 20000); // 20 seconds to respond
         } catch (error) {
           console.error("Error during sign-off:", error);
           endSessionShowReconnect();
@@ -178,7 +171,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         // No avatar - just end session
         endSessionShowReconnect();
       }
-    }, 300000); // 300 seconds = 5 minutes
+    }, 60000); // 60 seconds = 1 minute
   };
 
   // Start inactivity timer when session becomes active
