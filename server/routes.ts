@@ -314,16 +314,16 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
         ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
         : personalityPrompt;
 
-      // Get knowledge base context from BOTH Pinecone assistants
-      const { pineconeAssistant } = await import('./mcpAssistant.js');
+      // Get knowledge base context from Pinecone using namespace-based queries (cheaper than Assistants)
+      const { pineconeNamespaceService } = await import('./pineconeNamespaceService.js');
       let knowledgeContext = '';
       
-      if (pineconeAssistant.isAvailable()) {
-        const knowledgeResults = await pineconeAssistant.retrieveContext(message, 3);
-        // Use top 3 results for faster retrieval
+      if (pineconeNamespaceService.isAvailable()) {
+        const knowledgeResults = await pineconeNamespaceService.retrieveContext(message, 3);
+        // Use top 3 results from namespaces (mark-kohl + default)
         if (knowledgeResults.length > 0) {
           knowledgeContext = knowledgeResults[0].text;
-          console.log(`📚 Full knowledge context retrieved (${knowledgeContext.length} chars)`);
+          console.log(`📚 Knowledge context retrieved (${knowledgeContext.length} chars)`);
         }
       }
 
