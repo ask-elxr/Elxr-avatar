@@ -454,43 +454,20 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               signal: abortControllerRef.current.signal  // Add abort signal
             });
             
-            // While API is processing, interrupt HeyGen and say a quick thinking phrase
+            // While API is processing, optionally rephrase question or stay silent
             const thinkingPhrases = [
-              "Give me a second — I'm pulling from a few lifetimes of learning.",
-              "Let me scan the archives of experience for you.",
-              "Digging through decades of insight — hang tight.",
-              "Hold on — I'm thinking faster than I can speak.",
-              "Give me a second… even AI needs to collect its thoughts.",
-              "You just asked a deep one. Let me find words that fit.",
-              "Some questions deserve a thoughtful pause.",
-              "Searching my circuits — and maybe my heart, too.",
-              "Good question. Let me check what truth feels like today.",
-              "Finding the quiet space where the best answers live.",
-              "Running a quick scan between logic and intuition.",
-              "My code is whispering… give it a moment.",
-              "Running the empathy algorithm — it's my favorite one.",
-              "Let me synchronize Mark's mind and machine for this one.",
-              "Artificial maybe, but still aiming for authentic.",
-              "You could call it data… I call it distilled wisdom.",
-              "One moment — cross-checking what science and soul both agree on."
+              "", // Silent - just process
+              "", // Silent
+              "", // Silent
+              "Let me pull up what I know about that.",
+              "Give me a moment to access the knowledge base.",
+              "Checking the research on that."
             ];
             
             const followUpPhrases = [
-              "The human part of me wants to rush. The wise part knows to pause.",
-              "Looking back through Mark's stories… one of them fits perfectly here.",
-              "There's a thread connecting what you asked to something timeless — let me find it.",
-              "My training says there's data here. My instincts say there's meaning.",
-              "I'm searching through memory, both digital and human.",
-              "Stay with your breath while I gather this one.",
-              "Wisdom loading… in real time.",
-              "Let me slow down enough to give you something real.",
-              "This may be artificial intelligence… but the wisdom is very real.",
-              "I might be digital, but what I'm reaching for is human truth.",
-              "I'm not guessing. I'm remembering patterns that change people.",
-              "Processing… or maybe just pausing to feel this one.",
-              "That one hit the soul servers… stand by.",
-              "Wisdom doesn't rush. I'm taking a breath with you.",
-              "Give me a heartbeat — depth takes a second."
+              "Still processing...",
+              "One more moment...",
+              "Almost there..."
             ];
             
             const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
