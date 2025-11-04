@@ -447,13 +447,10 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               signal: abortControllerRef.current.signal  // Add abort signal
             });
             
-            // While API is processing, optionally rephrase question or stay silent
+            // While API is processing, optionally say a brief phrase (50% chance of silence)
             const thinkingPhrases = [
-              "", // Silent - just process
-              "", // Silent
-              "", // Silent
               "Let me pull up what I know about that.",
-              "Give me a moment to access the knowledge base.",
+              "Give me a moment.",
               "Checking the research on that."
             ];
             
@@ -463,17 +460,20 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               "Almost there..."
             ];
             
-            const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
-            
             // Reset inactivity timer before thinking phrase to prevent timeout
             resetInactivityTimer();
             
-            // Interrupt any HeyGen response and say thinking phrase
+            // Interrupt any HeyGen response
             await avatar.interrupt().catch(() => {});
-            await avatar.speak({
-              text: randomPhrase,
-              task_type: TaskType.REPEAT
-            });
+            
+            // 50% chance of silence, 50% chance of saying a brief phrase
+            if (Math.random() > 0.5) {
+              const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
+              await avatar.speak({
+                text: randomPhrase,
+                task_type: TaskType.REPEAT
+              });
+            }
             
             // Set up interval to add follow-up phrases every 9 seconds while waiting
             const fillerInterval = setInterval(async () => {
