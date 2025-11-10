@@ -9,6 +9,14 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (November 10, 2025)
+- **Pinecone Query Caching** - Intelligent caching system for faster responses
+  - Implemented normalized query cache with 45-second TTL (Time To Live)
+  - Cache key normalization: lowercase query + sorted namespaces + topK parameter
+  - Persistent hit/miss metrics tracking via `/api/performance/cache` endpoint
+  - Automatic cache invalidation after document uploads (prevents stale results)
+  - LRU eviction with 100-entry maximum to prevent memory bloat
+  - Reduces latency for repeated queries by skipping embedding generation
+  - Cache metrics: hit rate, total requests, cache size, performance recommendations
 - **Bundle Optimization for Fast Loading** - Significantly reduced initial bundle size
   - Replaced 363KB video asset with lightweight CSS-based LoadingPlaceholder component (~2KB)
   - Created pure CSS loading animation with ELXR purple gradient branding
