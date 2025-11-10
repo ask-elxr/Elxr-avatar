@@ -3,25 +3,30 @@ import IORedis from 'ioredis';
 import { documentProcessor } from './documentProcessor.js';
 import type { InsertJob } from '../shared/schema.js';
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL;
 
-const connection = new IORedis(REDIS_URL, {
+if (!REDIS_URL) {
+  console.warn('⚠️  REDIS_URL not set - background job queue disabled. Document processing will use synchronous processing.');
+  console.warn('   To enable background jobs: Set REDIS_URL environment variable (e.g., Upstash Redis)');
+}
+
+const connection = REDIS_URL ? new IORedis(REDIS_URL, {
   maxRetriesPerRequest: null,
   retryStrategy(times) {
     const delay = Math.min(times * 50, 2000);
     return delay;
   },
-});
+}) : null;
 
-connection.on('error', (error) => {
+connection?.on('error', (error) => {
   console.error('Redis connection error:', error);
 });
 
-connection.on('connect', () => {
-  console.log('Connected to Redis for job queue');
+connection?.on('connect', () => {
+  console.log('✅ Connected to Redis for job queue');
 });
 
-export const documentQueue = new Queue('document-processing', {
+export const documentQueue = connection ? new Queue('document-processing', {
   connection,
   defaultJobOptions: {
     attempts: 3,
@@ -37,7 +42,7 @@ export const documentQueue = new Queue('document-processing', {
       age: 7 * 24 * 3600, // Keep failed jobs for 7 days
     },
   },
-});
+}) : null;
 
 export interface DocumentJobData {
   jobId: string;
@@ -60,7 +65,7 @@ export interface UrlProcessingJobData {
 
 type JobData = DocumentJobData | UrlProcessingJobData;
 
-const worker = new Worker<JobData>(
+const worker = connection ? new Worker<JobData>(
   'document-processing',
   async (job: Job<JobData>) => {
     console.log(`Processing job ${job.id}:`, job.data);
@@ -100,23 +105,26 @@ const worker = new Worker<JobData>(
     connection,
     concurrency: 2,
   }
-);
+) : null;
 
-worker.on('completed', (job) => {
+worker?.on('completed', (job) => {
   console.log(`Job ${job.id} completed successfully`);
 });
 
-worker.on('failed', (job, err) => {
+worker?.on('failed', (job, err) => {
   if (job) {
     console.error(`Job ${job.id} failed after ${job.attemptsMade} attempts:`, err.message);
   }
 });
 
-worker.on('error', (error) => {
+worker?.on('error', (error) => {
   console.error('Worker error:', error);
 });
 
 export async function enqueueDocumentJob(data: DocumentJobData): Promise<string> {
+  if (!documentQueue) {
+    throw new Error('Job queue not available - REDIS_URL not configured');
+  }
   const job = await documentQueue.add('process-document', data, {
     jobId: data.jobId,
   });
@@ -124,6 +132,9 @@ export async function enqueueDocumentJob(data: DocumentJobData): Promise<string>
 }
 
 export async function enqueueUrlJob(data: UrlProcessingJobData): Promise<string> {
+  if (!documentQueue) {
+    throw new Error('Job queue not available - REDIS_URL not configured');
+  }
   const job = await documentQueue.add('process-url', data, {
     jobId: data.jobId,
   });
@@ -131,6 +142,9 @@ export async function enqueueUrlJob(data: UrlProcessingJobData): Promise<string>
 }
 
 export async function getJobStatus(jobId: string) {
+  if (!documentQueue) {
+    throw new Error('Job queue not available - REDIS_URL not configured');
+  }
   const job = await documentQueue.getJob(jobId);
   
   if (!job) {
@@ -153,12 +167,20 @@ export async function getJobStatus(jobId: string) {
   };
 }
 
-export async function gracefulShutdown() {
-  console.log('Shutting down document queue worker...');
-  await worker.close();
-  await documentQueue.close();
-  connection.disconnect();
+export function isQueueAvailable(): boolean {
+  return !!documentQueue;
 }
 
-process.on('SIGTERM', gracefulShutdown);
-process.on('SIGINT', gracefulShutdown);
+export async function gracefulShutdown() {
+  if (worker && documentQueue && connection) {
+    console.log('Shutting down document queue worker...');
+    await worker.close();
+    await documentQueue.close();
+    connection.disconnect();
+  }
+}
+
+if (connection) {
+  process.on('SIGTERM', gracefulShutdown);
+  process.on('SIGINT', gracefulShutdown);
+}

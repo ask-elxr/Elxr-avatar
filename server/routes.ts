@@ -468,6 +468,139 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
   // Configure multer for file uploads
   const upload = multer({ dest: 'uploads/' });
   const objectStorageService = new ObjectStorageService();
+  
+  // Import document queue for background processing
+  const { enqueueDocumentJob, getJobStatus } = await import('./documentQueue.js');
+
+  // Get presigned URL for direct-to-storage upload (fast response)
+  app.get("/api/documents/upload-url", isAuthenticated, async (req: any, res) => {
+    try {
+      const { filename, fileType } = req.query;
+      
+      if (!filename || !fileType) {
+        return res.status(400).json({ 
+          error: "filename and fileType query parameters are required" 
+        });
+      }
+
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const objectId = uploadURL.split('/').pop()?.split('?')[0] || '';
+      const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      res.json({
+        success: true,
+        uploadURL,
+        documentId,
+        objectPath: uploadURL.split('?')[0],
+        metadata: {
+          filename: decodeURIComponent(filename as string),
+          fileType: fileType as string,
+        }
+      });
+    } catch (error) {
+      console.error('Error generating upload URL:', error);
+      res.status(500).json({ 
+        error: "Failed to generate upload URL",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Enqueue document processing job (after client uploads to presigned URL)
+  app.post("/api/documents/process", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    try {
+      const { documentId, filename, fileType, objectPath, indexName, namespace } = req.body;
+      
+      if (!documentId || !filename || !fileType || !objectPath) {
+        return res.status(400).json({ 
+          error: "Missing required fields: documentId, filename, fileType, objectPath" 
+        });
+      }
+
+      const { isQueueAvailable } = await import('./documentQueue.js');
+      
+      if (isQueueAvailable()) {
+        const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        await enqueueDocumentJob({
+          jobId,
+          documentId,
+          userId,
+          filename,
+          fileType,
+          objectPath,
+          indexName,
+          namespace,
+        });
+
+        res.json({
+          success: true,
+          jobId,
+          documentId,
+          processing: "async",
+          message: "Document processing started in background. Poll /api/jobs/:jobId for status."
+        });
+      } else {
+        const metadata = { userId, indexName, namespace };
+        const result = await documentProcessor.processDocument(
+          objectPath,
+          fileType,
+          documentId,
+          metadata
+        );
+
+        res.json({
+          success: true,
+          documentId,
+          processing: "sync",
+          result,
+          message: "Document processed synchronously (Redis not configured)"
+        });
+      }
+    } catch (error) {
+      console.error('Error processing document:', error);
+      res.status(500).json({ 
+        error: "Failed to process document",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Get job status (for polling)
+  app.get("/api/jobs/:jobId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { jobId } = req.params;
+      
+      const { isQueueAvailable } = await import('./documentQueue.js');
+      
+      if (!isQueueAvailable()) {
+        return res.status(503).json({ 
+          error: "Job queue not available - Redis not configured",
+          message: "Set REDIS_URL environment variable to enable background job processing"
+        });
+      }
+      
+      const jobStatus = await getJobStatus(jobId);
+      
+      if (!jobStatus) {
+        return res.status(404).json({ 
+          error: "Job not found" 
+        });
+      }
+
+      res.json({
+        success: true,
+        job: jobStatus
+      });
+    } catch (error) {
+      console.error('Error getting job status:', error);
+      res.status(500).json({ 
+        error: "Failed to get job status",
+        details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
 
   // Document upload and processing endpoints (protected)
   app.post("/api/documents/upload", isAuthenticated, upload.single('document'), async (req: any, res) => {
