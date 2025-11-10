@@ -57,6 +57,20 @@ export const chatSessions = pgTable("chat_sessions", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Background job tracking table
+export const jobs = pgTable("jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  documentId: varchar("document_id").references(() => documents.id),
+  userId: varchar("user_id").references(() => users.id),
+  type: varchar("type").notNull(), // 'document-upload', 'url-processing'
+  status: varchar("status").notNull().default("pending"), // pending, processing, completed, failed
+  progress: text("progress").default("0"), // 0-1 as string for compatibility
+  error: jsonb("error"), // Error message and stack trace
+  result: jsonb("result"), // Job result data
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Schema for Replit Auth user operations
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,
@@ -87,6 +101,16 @@ export const insertChatSessionSchema = createInsertSchema(chatSessions).pick({
   context: true,
 });
 
+export const insertJobSchema = createInsertSchema(jobs).pick({
+  documentId: true,
+  userId: true,
+  type: true,
+  status: true,
+  progress: true,
+  error: true,
+  result: true,
+});
+
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
@@ -95,3 +119,5 @@ export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documents.$inferSelect;
 export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
 export type ChatSession = typeof chatSessions.$inferSelect;
+export type InsertJob = z.infer<typeof insertJobSchema>;
+export type Job = typeof jobs.$inferSelect;
