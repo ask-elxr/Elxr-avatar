@@ -9,6 +9,16 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (November 10, 2025)
+- **Background Job Queue for Document Processing** - Offloads processing to background workers
+  - Implemented BullMQ + Redis queue system for async document processing
+  - API endpoints return immediately with job ID (< 100ms response time)
+  - Presigned URL flow: Client uploads directly to Google Cloud Storage
+  - Background worker handles chunking, embedding, Pinecone storage (30+ seconds)
+  - Job status polling endpoint with progress tracking
+  - Automatic retry with exponential backoff (3 attempts)
+  - Graceful degradation: Falls back to synchronous processing when Redis not configured
+  - New endpoints: GET `/api/documents/upload-url`, POST `/api/documents/process`, GET `/api/jobs/:jobId`
+  - See BACKGROUND_JOBS.md for setup instructions (requires Redis URL)
 - **Pinecone Query Caching** - Intelligent caching system for faster responses
   - Implemented normalized query cache with 45-second TTL (Time To Live)
   - Cache key normalization: lowercase query + sorted namespaces + topK parameter
