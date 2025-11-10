@@ -8,7 +8,23 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 28, 2025)
+## Latest Updates (November 10, 2025)
+- **Bundle Optimization for Fast Loading** - Significantly reduced initial bundle size
+  - Replaced 363KB video asset with lightweight CSS-based LoadingPlaceholder component (~2KB)
+  - Created pure CSS loading animation with ELXR purple gradient branding
+  - Removed video from bundle entirely - 99.5% size reduction for loading UI
+  - Installed rollup-plugin-visualizer for future bundle analysis
+  - Verified lucide-react icons are properly tree-shaken (only imported icons bundled)
+  - Created comprehensive BUNDLE_OPTIMIZATION.md documentation
+  - React lazy loading already in place for all page components (code-splitting enabled)
+- **Avatar Chat Refactoring** - Improved code organization and memory management
+  - Created useAvatarSession hook for HeyGen session lifecycle management
+  - Created useInactivityTimer hook for idle timeout cleanup
+  - Fixed circular dependency bugs using callback ref bridge pattern
+  - Better separation of concerns between UI state and session management
+  - Improved memory leak prevention with proper cleanup on unmount
+
+## Previous Updates (October 28, 2025)
 - **MAJOR: Deeper, Richer Responses** - Increased Claude token limit (1000→2500), improved prompting for substantive answers, better knowledge retrieval (3→5 results)
 - **Fixed Mid-Answer Cutoffs** - Timer now resets every 10 seconds while avatar is speaking, preventing timeout during long responses
 - **Fixed Timeout Interruptions** - If user speaks during sign-off, avatar immediately stops goodbye message and listens to new question
