@@ -9,6 +9,13 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (November 10, 2025)
+- **Testing Infrastructure** - Baseline regression tests for avatar endpoint and document processing
+  - Installed Vitest testing framework with 57 passing tests
+  - Avatar tests: Dual namespace querying, score filtering, request validation, error handling
+  - Document tests: Text/chunk limits, file types, circuit breaker config, metadata handling
+  - Configuration-focused tests catch constant/threshold changes but don't test real implementation
+  - See TESTING.md for test coverage, limitations, and recommended improvements
+  - Run tests: `npx vitest run` or `npx vitest` for watch mode
 - **Production Reliability & Observability** - Circuit breakers, structured logging, and metrics
   - Circuit breakers (Opossum) wrap all external APIs: Claude, Pinecone, OpenAI, HeyGen
   - Timeouts configured per service: 30s (Claude), 10-15s (Pinecone/HeyGen/OpenAI embeddings), 60s (Whisper)

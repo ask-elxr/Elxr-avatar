@@ -1,15 +1,23 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
-import * as claudeService from './claudeService';
-import * as pineconeNamespaceService from './pineconeNamespaceService';
-import * as documentProcessor from './documentProcessor';
+import { claudeService } from './claudeService';
+import { pineconeNamespaceService } from './pineconeNamespaceService';
 
 // Mock the services
-vi.mock('./claudeService');
-vi.mock('./pineconeNamespaceService');
-vi.mock('./pineconeService');
-vi.mock('./documentProcessor');
+vi.mock('./claudeService', () => ({
+  claudeService: {
+    generateResponse: vi.fn(),
+    generateEnhancedResponse: vi.fn(),
+  },
+}));
+
+vi.mock('./pineconeNamespaceService', () => ({
+  pineconeNamespaceService: {
+    queryNamespace: vi.fn(),
+  },
+}));
+
 vi.mock('./logger');
 vi.mock('./metrics');
 
@@ -89,16 +97,16 @@ describe('Avatar Response Endpoint', () => {
       { metadata: { text: 'Ask ELXR result 1' }, score: 0.9 },
     ];
 
-    vi.mocked(pineconeNamespaceService.queryNamespace).mockImplementation(
-      async (namespace: string) => {
-        if (namespace === 'knowledge-base-assistant') {
-          return mockKnowledgeBaseResults;
-        }
-        return mockAskElxrResults;
+    const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
+    mockQueryNamespace.mockImplementation(async (namespace: string) => {
+      if (namespace === 'knowledge-base-assistant') {
+        return mockKnowledgeBaseResults;
       }
-    );
+      return mockAskElxrResults;
+    });
 
-    vi.mocked(claudeService.generateResponse).mockResolvedValue({
+    const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
+    mockGenerateResponse.mockResolvedValue({
       text: 'Generated response',
       usage: { input_tokens: 100, output_tokens: 50 },
     } as any);
@@ -132,21 +140,21 @@ describe('Avatar Response Endpoint', () => {
       { metadata: { text: 'Medium score result' }, score: 0.6 },
     ];
 
-    vi.mocked(pineconeNamespaceService.queryNamespace).mockResolvedValue(mockResults);
+    const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
+    mockQueryNamespace.mockResolvedValue(mockResults);
 
-    vi.mocked(claudeService.generateResponse).mockImplementation(
-      async (message, context) => {
-        // Verify the context only includes high-score results
-        expect(context).toContain('High score result');
-        expect(context).toContain('Medium score result');
-        expect(context).not.toContain('Low score result');
+    const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
+    mockGenerateResponse.mockImplementation(async (message, context) => {
+      // Verify the context only includes high-score results
+      expect(context).toContain('High score result');
+      expect(context).toContain('Medium score result');
+      expect(context).not.toContain('Low score result');
 
-        return {
-          text: 'Generated response',
-          usage: { input_tokens: 100, output_tokens: 50 },
-        } as any;
-      }
-    );
+      return {
+        text: 'Generated response',
+        usage: { input_tokens: 100, output_tokens: 50 },
+      } as any;
+    });
 
     await request(app)
       .post('/api/avatar/response')
@@ -156,10 +164,11 @@ describe('Avatar Response Endpoint', () => {
   });
 
   it('should handle Claude service errors gracefully', async () => {
-    vi.mocked(pineconeNamespaceService.queryNamespace).mockResolvedValue([]);
-    vi.mocked(claudeService.generateResponse).mockRejectedValue(
-      new Error('Claude API timeout')
-    );
+    const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
+    mockQueryNamespace.mockResolvedValue([]);
+    
+    const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
+    mockGenerateResponse.mockRejectedValue(new Error('Claude API timeout'));
 
     const response = await request(app)
       .post('/api/avatar/response')
@@ -171,9 +180,8 @@ describe('Avatar Response Endpoint', () => {
   });
 
   it('should handle Pinecone service errors gracefully', async () => {
-    vi.mocked(pineconeNamespaceService.queryNamespace).mockRejectedValue(
-      new Error('Pinecone connection failed')
-    );
+    const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
+    mockQueryNamespace.mockRejectedValue(new Error('Pinecone connection failed'));
 
     const response = await request(app)
       .post('/api/avatar/response')
@@ -185,9 +193,11 @@ describe('Avatar Response Endpoint', () => {
   });
 
   it('should handle empty knowledge base results', async () => {
-    vi.mocked(pineconeNamespaceService.queryNamespace).mockResolvedValue([]);
+    const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
+    mockQueryNamespace.mockResolvedValue([]);
 
-    vi.mocked(claudeService.generateResponse).mockResolvedValue({
+    const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
+    mockGenerateResponse.mockResolvedValue({
       text: 'Response without context',
       usage: { input_tokens: 50, output_tokens: 30 },
     } as any);
@@ -217,27 +227,25 @@ describe('Avatar Response Endpoint', () => {
       { metadata: { text: 'ELXR result' }, score: 0.85 },
     ];
 
-    vi.mocked(pineconeNamespaceService.queryNamespace).mockImplementation(
-      async (namespace: string) => {
-        if (namespace === 'knowledge-base-assistant') {
-          return mockKnowledgeBaseResults;
-        }
-        return mockAskElxrResults;
+    const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
+    mockQueryNamespace.mockImplementation(async (namespace: string) => {
+      if (namespace === 'knowledge-base-assistant') {
+        return mockKnowledgeBaseResults;
       }
-    );
+      return mockAskElxrResults;
+    });
 
-    vi.mocked(claudeService.generateResponse).mockImplementation(
-      async (message, context) => {
-        // Verify both results are in the context
-        expect(context).toContain('KB result');
-        expect(context).toContain('ELXR result');
+    const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
+    mockGenerateResponse.mockImplementation(async (message, context) => {
+      // Verify both results are in the context
+      expect(context).toContain('KB result');
+      expect(context).toContain('ELXR result');
 
-        return {
-          text: 'Combined response',
-          usage: { input_tokens: 100, output_tokens: 50 },
-        } as any;
-      }
-    );
+      return {
+        text: 'Combined response',
+        usage: { input_tokens: 100, output_tokens: 50 },
+      } as any;
+    });
 
     await request(app)
       .post('/api/avatar/response')
