@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { X, Maximize2, Minimize2, Pause, Play } from "lucide-react";
-import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
+import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 
 interface AvatarChatProps {
   userId: string;
@@ -338,36 +338,17 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         </Button>
       )}
 
-      {/* Loading Video Overlay */}
+      {/* Loading Overlay */}
       {isLoading && !showReconnect && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
-          <video
-            autoPlay
-            muted
-            playsInline
-            className="max-w-[80%] max-h-[80%] object-contain"
-            data-testid="loading-video"
-          >
-            <source src={loadingVideo} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          <LoadingPlaceholder data-testid="loading-placeholder" />
         </div>
       )}
 
       {/* Reconnect Screen */}
       {showReconnect && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-8">
-          <video
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="max-w-[60%] max-h-[60%] object-contain"
-            data-testid="reconnect-video"
-          >
-            <source src={loadingVideo} type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
+          <LoadingPlaceholder data-testid="reconnect-placeholder" />
           <Button
             onClick={reconnect}
             className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
