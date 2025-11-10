@@ -205,6 +205,10 @@ class DocumentProcessor {
       }
 
       console.log(`Document processing complete: ${documentId}`);
+      
+      // Invalidate Pinecone cache after successful document processing
+      latencyCache.invalidatePineconeCache();
+      
       return {
         documentId,
         chunksProcessed: processedChunks,

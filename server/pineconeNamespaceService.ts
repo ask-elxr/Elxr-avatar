@@ -1,5 +1,6 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
+import { latencyCache } from './cache';
 
 // Namespace-based Pinecone service - cheaper than Assistants API
 class PineconeNamespaceService {
@@ -35,6 +36,15 @@ class PineconeNamespaceService {
     }
 
     try {
+      // Check cache first
+      const cachedResults = latencyCache.getPineconeQuery(query, this.namespaces, topK);
+      if (cachedResults) {
+        console.log(`💾 Cache HIT for query: "${query.substring(0, 50)}..."`);
+        return cachedResults;
+      }
+      
+      console.log(`❌ Cache MISS for query: "${query.substring(0, 50)}..."`);
+
       // Generate embedding for the query using OpenAI
       console.log(`🔍 Generating embedding for query: "${query}"`);
       const embeddingResponse = await this.openai.embeddings.create({
@@ -105,7 +115,7 @@ class PineconeNamespaceService {
       console.log(`📚 Total results: ${allResults.length}, returning top ${topResults.length}`);
       console.log(`📝 Combined context length: ${combinedText.length} chars`);
 
-      return [{
+      const results = [{
         text: combinedText,
         score: topResults[0]?.score || 0,
         metadata: {
@@ -114,6 +124,12 @@ class PineconeNamespaceService {
           topResults: topResults.length
         }
       }];
+      
+      // Cache the results for future queries
+      latencyCache.setPineconeQuery(query, this.namespaces, topK, results);
+      console.log(`💾 Cached results for query: "${query.substring(0, 50)}..."`);
+      
+      return results;
       
     } catch (error) {
       console.error('Error retrieving context from Pinecone:', error);

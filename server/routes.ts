@@ -12,6 +12,7 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import { storage } from "./storage.js";
+import { latencyCache } from "./cache.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -235,6 +236,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: "Failed to list Pinecone indexes",
         details: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Performance metrics endpoint - cache hit rates and statistics
+  app.get("/api/performance/cache", async (req, res) => {
+    try {
+      const cacheMetrics = latencyCache.getCacheMetrics();
+      const cacheStats = latencyCache.getStats();
+      
+      res.json({ 
+        success: true,
+        timestamp: new Date().toISOString(),
+        metrics: cacheMetrics,
+        stats: cacheStats,
+        performance: {
+          averageQueryTime: cacheMetrics.hitRate > 0 
+            ? `~${Math.round(cacheMetrics.hitRate * 100)}% faster with cache`
+            : 'No data yet',
+          recommendations: cacheMetrics.hitRate < 0.3 && cacheMetrics.totalRequests > 10
+            ? 'Low hit rate - consider increasing TTL or reviewing query patterns'
+            : cacheMetrics.hitRate >= 0.5
+            ? 'Good cache performance'
+            : 'Gathering data...'
+        }
+      });
+    } catch (error) {
+      console.error('Error getting cache metrics:', error);
+      res.status(500).json({ 
+        error: "Failed to get cache metrics"
       });
     }
   });
