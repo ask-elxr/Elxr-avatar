@@ -1,4 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { wrapServiceCall } from './circuitBreaker';
+import { logger } from './logger';
 
 /*
 <important_code_snippet_instructions>
@@ -14,11 +16,12 @@ const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 
 export class ClaudeService {
   private anthropic: Anthropic | null;
+  private createMessageBreaker: any;
 
   constructor() {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      console.warn('ANTHROPIC_API_KEY not found - Claude Sonnet features will be disabled');
+      logger.warn({ service: 'claude' }, 'ANTHROPIC_API_KEY not found - Claude Sonnet features will be disabled');
       this.anthropic = null;
       return;
     }
@@ -26,6 +29,17 @@ export class ClaudeService {
     this.anthropic = new Anthropic({
       apiKey: apiKey,
     });
+
+    this.createMessageBreaker = wrapServiceCall(
+      async (params: any) => {
+        if (!this.anthropic) {
+          throw new Error('Anthropic client not initialized');
+        }
+        return await this.anthropic.messages.create(params);
+      },
+      'claude',
+      { timeout: 30000, errorThresholdPercentage: 50 }
+    );
   }
 
   // Check if Claude is available
@@ -39,7 +53,17 @@ export class ClaudeService {
       throw new Error('Claude Sonnet is not available - API key not configured');
     }
 
+    const log = logger.child({ 
+      service: 'claude', 
+      operation: 'generateResponse',
+      queryLength: query.length,
+      contextLength: context.length,
+      historyLength: conversationHistory.length
+    });
+
     try {
+      log.debug('Generating Claude response');
+      const startTime = Date.now();
       // Build conversation messages
       const messages: any[] = [];
       
@@ -88,21 +112,23 @@ RESPONSE REQUIREMENTS:
         - Maintain context from the conversation history
         - Provide specific, actionable answers when possible`;
 
-      const response = await this.anthropic.messages.create({
-        // "claude-sonnet-4-20250514"
+      const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 350, // Ultra-short responses to prevent cutoffs
+        max_tokens: 350,
         messages: messages,
         system: systemPrompt
       });
+
+      const duration = Date.now() - startTime;
+      log.info({ duration, tokensUsed: response.usage?.total_tokens }, 'Claude response generated successfully');
 
       const content = response.content[0];
       if (content && content.type === 'text') {
         return content.text;
       }
       return 'I apologize, but I was unable to generate a response at this time.';
-    } catch (error) {
-      console.error('Claude API error:', error);
+    } catch (error: any) {
+      log.error({ error: error.message, stack: error.stack }, 'Claude API error');
       throw new Error('Failed to generate response from Claude Sonnet');
     }
   }
@@ -119,7 +145,18 @@ RESPONSE REQUIREMENTS:
       throw new Error('Claude Sonnet is not available - API key not configured');
     }
 
+    const log = logger.child({ 
+      service: 'claude', 
+      operation: 'generateEnhancedResponse',
+      queryLength: query.length,
+      contextLength: context.length,
+      webSearchLength: webSearchResults.length,
+      historyLength: conversationHistory.length
+    });
+
     try {
+      log.debug('Generating enhanced Claude response');
+      const startTime = Date.now();
       const messages: any[] = [];
       
       // Add conversation history
@@ -203,21 +240,24 @@ ABSOLUTE RULES:
       
       const systemPrompt = baseSystemPrompt + webSearchInstructions;
 
-      const response = await this.anthropic.messages.create({
-        // "claude-sonnet-4-20250514"
+      const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 350, // Ultra-short responses to prevent cutoffs
+        max_tokens: 350,
         messages: messages,
         system: systemPrompt
       });
+
+      const duration = Date.now() - startTime;
+      log.info({ duration, tokensUsed: response.usage?.total_tokens, hadWebSearch: !!webSearchResults }, 
+        'Enhanced Claude response generated successfully');
 
       const content = response.content[0];
       if (content && content.type === 'text') {
         return content.text;
       }
       return 'I apologize, but I was unable to generate a response at this time.';
-    } catch (error) {
-      console.error('Claude enhanced response error:', error);
+    } catch (error: any) {
+      log.error({ error: error.message, stack: error.stack }, 'Claude enhanced response error');
       throw new Error('Failed to generate enhanced response from Claude Sonnet');
     }
   }

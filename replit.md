@@ -9,6 +9,17 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (November 10, 2025)
+- **Production Reliability & Observability** - Circuit breakers, structured logging, and metrics
+  - Circuit breakers (Opossum) wrap all external APIs: Claude, Pinecone, OpenAI, HeyGen
+  - Timeouts configured per service: 30s (Claude), 10-15s (Pinecone/HeyGen/OpenAI embeddings), 60s (Whisper)
+  - Automatic failure detection: 50% error threshold triggers circuit breaker open state
+  - Graceful degradation: Circuit open = fast fail with clear error messages
+  - Structured logging (Pino): Development pretty-print, Production JSON format
+  - Child loggers with context: service, operation, duration, token counts
+  - Prometheus metrics: 10+ metric types including API call totals/durations, circuit breaker state, HTTP traffic, cache hit/miss, document processing
+  - GET /metrics endpoint for Prometheus scraping
+  - HTTP request middleware: Tracks all requests (method, route, status, duration)
+  - All critical external calls protected and observable
 - **Background Job Queue for Document Processing** - Offloads processing to background workers
   - Implemented BullMQ + Redis queue system for async document processing
   - API endpoints return immediately with job ID (< 100ms response time)

@@ -1,6 +1,9 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 import { latencyCache } from './cache';
+import { wrapServiceCall } from './circuitBreaker';
+import { logger } from './logger';
+import { metrics } from './metrics';
 
 // Namespace-based Pinecone service - cheaper than Assistants API
 class PineconeNamespaceService {
@@ -9,6 +12,8 @@ class PineconeNamespaceService {
   private apiKey: string;
   private indexName: string;
   private namespaces: string[];
+  private queryBreaker: any;
+  private embeddingBreaker: any;
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
@@ -16,18 +21,41 @@ class PineconeNamespaceService {
     this.namespaces = ['mark-kohl', 'default']; // Query Mark's namespace + general
     
     if (!this.apiKey) {
-      console.warn('PINECONE_API_KEY not found - Namespace service will not be available');
+      logger.warn({ service: 'pinecone' }, 'PINECONE_API_KEY not found - Namespace service will not be available');
       return;
     }
 
     const openaiKey = process.env.OPENAI_API_KEY;
     if (!openaiKey) {
-      console.warn('OPENAI_API_KEY not found - Cannot generate embeddings');
+      logger.warn({ service: 'openai' }, 'OPENAI_API_KEY not found - Cannot generate embeddings');
       return;
     }
     
     this.client = new Pinecone({ apiKey: this.apiKey });
     this.openai = new OpenAI({ apiKey: openaiKey });
+
+    this.embeddingBreaker = wrapServiceCall(
+      async (params: any) => {
+        if (!this.openai) {
+          throw new Error('OpenAI client not initialized');
+        }
+        return await this.openai.embeddings.create(params);
+      },
+      'openai-embeddings',
+      { timeout: 15000, errorThresholdPercentage: 50 }
+    );
+
+    this.queryBreaker = wrapServiceCall(
+      async (namespace: string, queryParams: any) => {
+        if (!this.client) {
+          throw new Error('Pinecone client not initialized');
+        }
+        const index = this.client.index(this.indexName);
+        return await index.namespace(namespace).query(queryParams);
+      },
+      'pinecone',
+      { timeout: 10000, errorThresholdPercentage: 50 }
+    );
   }
 
   async retrieveContext(query: string, topK: number = 3): Promise<any[]> {
@@ -35,44 +63,52 @@ class PineconeNamespaceService {
       throw new Error('Pinecone or OpenAI not configured');
     }
 
+    const log = logger.child({
+      service: 'pinecone',
+      operation: 'retrieveContext',
+      queryLength: query.length,
+      topK,
+      namespaces: this.namespaces
+    });
+
     try {
       // Check cache first
       const cachedResults = latencyCache.getPineconeQuery(query, this.namespaces, topK);
       if (cachedResults) {
-        console.log(`💾 Cache HIT for query: "${query.substring(0, 50)}..."`);
+        log.debug({ cacheHit: true }, `Cache HIT for query: "${query.substring(0, 50)}..."`);
+        metrics.recordPineconeCacheHit();
         return cachedResults;
       }
       
-      console.log(`❌ Cache MISS for query: "${query.substring(0, 50)}..."`);
+      log.debug({ cacheMiss: true }, `Cache MISS for query: "${query.substring(0, 50)}..."`);
+      metrics.recordPineconeCacheMiss();
 
       // Generate embedding for the query using OpenAI
-      console.log(`🔍 Generating embedding for query: "${query}"`);
-      const embeddingResponse = await this.openai.embeddings.create({
+      log.debug('Generating embedding for query');
+      const embeddingResponse = await this.embeddingBreaker.execute({
         model: 'text-embedding-ada-002',
         input: query,
       });
       
       const embedding = embeddingResponse.data[0].embedding;
-      console.log(`✅ Embedding generated (${embedding.length} dimensions)`);
+      log.debug({ dimensions: embedding.length }, 'Embedding generated successfully');
 
-      // Get the index
-      const index = this.client.index(this.indexName);
-      
       // Query across all namespaces and combine results
       const allResults: any[] = [];
       
       for (const namespace of this.namespaces) {
         try {
-          console.log(`🔍 Querying namespace: ${namespace}`);
+          log.debug({ namespace }, `Querying namespace: ${namespace}`);
           
-          const queryResponse = await index.namespace(namespace).query({
+          const queryResponse = await this.queryBreaker.execute(namespace, {
             vector: embedding,
             topK: topK,
             includeMetadata: true,
           });
 
           if (queryResponse.matches && queryResponse.matches.length > 0) {
-            console.log(`✅ Found ${queryResponse.matches.length} results in ${namespace}`);
+            log.debug({ namespace, count: queryResponse.matches.length }, 
+              `Found ${queryResponse.matches.length} results in ${namespace}`);
             
             // Extract text from metadata and format results
             for (const match of queryResponse.matches) {
@@ -88,16 +124,16 @@ class PineconeNamespaceService {
               }
             }
           } else {
-            console.log(`📭 No results in ${namespace}`);
+            log.debug({ namespace }, `No results in ${namespace}`);
           }
-        } catch (error) {
-          console.error(`Error querying namespace ${namespace}:`, error);
+        } catch (error: any) {
+          log.error({ namespace, error: error.message }, `Error querying namespace ${namespace}`);
           // Continue with other namespaces
         }
       }
 
       if (allResults.length === 0) {
-        console.log('📭 No results from any namespace');
+        log.info('No results from any namespace');
         return [];
       }
 
@@ -112,8 +148,11 @@ class PineconeNamespaceService {
         .map((r, i) => `[Result ${i + 1} from ${r.metadata.namespace}]\n${r.text}`)
         .join('\n\n---\n\n');
 
-      console.log(`📚 Total results: ${allResults.length}, returning top ${topResults.length}`);
-      console.log(`📝 Combined context length: ${combinedText.length} chars`);
+      log.info({ 
+        totalResults: allResults.length, 
+        topResults: topResults.length,
+        combinedLength: combinedText.length 
+      }, `Retrieved ${topResults.length} results from Pinecone`);
 
       const results = [{
         text: combinedText,
@@ -127,12 +166,12 @@ class PineconeNamespaceService {
       
       // Cache the results for future queries
       latencyCache.setPineconeQuery(query, this.namespaces, topK, results);
-      console.log(`💾 Cached results for query: "${query.substring(0, 50)}..."`);
+      log.debug({ queryPrefix: query.substring(0, 50) }, 'Cached results for query');
       
       return results;
       
-    } catch (error) {
-      console.error('Error retrieving context from Pinecone:', error);
+    } catch (error: any) {
+      log.error({ error: error.message, stack: error.stack }, 'Error retrieving context from Pinecone');
       throw error;
     }
   }

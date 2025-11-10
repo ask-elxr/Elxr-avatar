@@ -2,6 +2,9 @@ import OpenAI from 'openai';
 import { pineconeService } from './pinecone.js';
 import { pineconeAssistant } from './mcpAssistant.js';
 import { latencyCache } from './cache.js';
+import { wrapServiceCall } from './circuitBreaker.js';
+import { logger } from './logger.js';
+import { metrics } from './metrics.js';
 import * as fs from 'fs';
 import * as path from 'path';
 // PDF parsing will be loaded dynamically to avoid import issues
@@ -9,6 +12,8 @@ import * as mammoth from 'mammoth';
 
 class DocumentProcessor {
   private openai: OpenAI;
+  private embeddingBreaker: any;
+  private transcriptionBreaker: any;
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
@@ -19,6 +24,22 @@ class DocumentProcessor {
     this.openai = new OpenAI({
       apiKey: apiKey,
     });
+
+    this.embeddingBreaker = wrapServiceCall(
+      async (params: any) => {
+        return await this.openai.embeddings.create(params);
+      },
+      'openai-embeddings',
+      { timeout: 15000, errorThresholdPercentage: 50 }
+    );
+
+    this.transcriptionBreaker = wrapServiceCall(
+      async (params: any) => {
+        return await this.openai.audio.transcriptions.create(params);
+      },
+      'openai-transcription',
+      { timeout: 60000, errorThresholdPercentage: 50 }
+    );
   }
 
   // Split text into chunks for processing - optimized for small files
@@ -53,8 +74,8 @@ class DocumentProcessor {
           const pdfBuffer = fs.readFileSync(filePath);
           const pdfData = await pdfParse(pdfBuffer);
           return pdfData.text || `[PDF Document: ${path.basename(filePath)}]\n\nText could not be extracted from this PDF file.`;
-        } catch (error) {
-          console.warn('PDF parsing failed:', error);
+        } catch (error: any) {
+          logger.warn({ error: error.message, file: filePath }, 'PDF parsing failed');
           return `[PDF Document: ${path.basename(filePath)}]\n\nText extraction failed - PDF may be image-based or corrupted.`;
         }
       } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
@@ -68,40 +89,56 @@ class DocumentProcessor {
       } else {
         throw new Error(`Unsupported file type: ${fileType}`);
       }
-    } catch (error) {
-      console.error('Error extracting text from file:', error);
+    } catch (error: any) {
+      logger.error({ error: error.message, filePath, fileType }, 'Error extracting text from file');
       throw error;
     }
   }
 
   // Transcribe audio using OpenAI Whisper
   async transcribeAudio(audioFilePath: string): Promise<string> {
+    const log = logger.child({ 
+      service: 'openai', 
+      operation: 'transcribeAudio',
+      file: path.basename(audioFilePath)
+    });
+
     try {
+      log.debug('Transcribing audio with Whisper');
       const audioFile = fs.createReadStream(audioFilePath);
-      const response = await this.openai.audio.transcriptions.create({
+      const response = await this.transcriptionBreaker.execute({
         file: audioFile,
         model: 'whisper-1',
         response_format: 'text',
-        language: 'en', // Can be made configurable
+        language: 'en',
       });
       
+      log.info({ length: response.toString().length }, 'Audio transcription completed');
       return response.toString();
-    } catch (error) {
-      console.error('Error transcribing audio:', error);
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Error transcribing audio');
       throw error;
     }
   }
 
   // Generate embeddings for text using OpenAI with caching
   async generateEmbedding(text: string): Promise<number[]> {
+    const log = logger.child({ 
+      service: 'openai', 
+      operation: 'generateEmbedding',
+      textLength: text.length 
+    });
+
     try {
       // Check cache first for faster response
       const cached = latencyCache.getEmbedding(text);
       if (cached) {
+        log.debug('Embedding cache hit');
         return cached;
       }
 
-      const response = await this.openai.embeddings.create({
+      log.debug('Generating embedding via OpenAI');
+      const response = await this.embeddingBreaker.execute({
         model: 'text-embedding-3-small',
         input: text,
       });
@@ -110,10 +147,11 @@ class DocumentProcessor {
       
       // Cache the result for future use
       latencyCache.setEmbedding(text, embedding);
+      log.debug({ dimensions: embedding.length }, 'Embedding generated and cached');
       
       return embedding;
-    } catch (error) {
-      console.error('Error generating embedding:', error);
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Error generating embedding');
       throw error;
     }
   }
@@ -124,29 +162,38 @@ class DocumentProcessor {
     chunksProcessed: number;
     totalChunks: number;
   }> {
+    const log = logger.child({ 
+      service: 'documentProcessor', 
+      operation: 'processDocument',
+      documentId,
+      fileType
+    });
+
     try {
-      console.log(`Processing document: ${documentId}`);
+      log.info({ filePath }, 'Processing document');
       
       // Extract text from document
       const text = await this.extractTextFromFile(filePath, fileType);
-      console.log(`Extracted ${text.length} characters from document`);
+      log.debug({ textLength: text.length }, 'Extracted text from document');
 
       // Limit text size to prevent memory issues (max 500KB of text)
       const maxTextSize = 512 * 1024; // 500KB
       const limitedText = text.length > maxTextSize ? text.substring(0, maxTextSize) : text;
       if (text.length > maxTextSize) {
-        console.warn(`Document ${documentId} truncated from ${text.length} to ${maxTextSize} characters`);
+        log.warn({ originalLength: text.length, truncatedLength: maxTextSize }, 
+          'Document truncated to prevent memory overflow');
       }
 
       // Split into chunks
       const chunks = this.chunkText(limitedText);
-      console.log(`Created ${chunks.length} chunks`);
+      log.debug({ chunkCount: chunks.length }, 'Created text chunks');
 
       // Limit number of chunks to prevent memory overflow (max 25 chunks)
       const maxChunks = 25;
       const limitedChunks = chunks.slice(0, maxChunks);
       if (chunks.length > maxChunks) {
-        console.warn(`Document ${documentId} limited to ${maxChunks} chunks (was ${chunks.length})`);
+        log.warn({ originalChunks: chunks.length, limitedChunks: maxChunks }, 
+          'Chunk count limited to prevent memory overflow');
       }
 
       let processedChunks = 0;
@@ -187,9 +234,10 @@ class DocumentProcessor {
             await pineconeService.storeConversation(chunkId, chunk, embedding, cleanMetadata);
 
             processedChunks++;
-            console.log(`Processed chunk ${i + 1}/${limitedChunks.length} for ${documentId}`);
-          } catch (error) {
-            console.error(`Error processing chunk ${i} for ${documentId}:`, error);
+            log.debug({ chunkIndex: i + 1, totalChunks: limitedChunks.length }, 
+              'Processed chunk successfully');
+          } catch (error: any) {
+            log.error({ chunkIndex: i, error: error.message }, 'Error processing chunk');
           }
         }));
         
@@ -204,18 +252,23 @@ class DocumentProcessor {
         }
       }
 
-      console.log(`Document processing complete: ${documentId}`);
+      log.info({ chunksProcessed: processedChunks, totalChunks: limitedChunks.length }, 
+        'Document processing complete');
       
       // Invalidate Pinecone cache after successful document processing
       latencyCache.invalidatePineconeCache();
       
+      metrics.recordDocumentProcessed('success', fileType);
+      metrics.recordDocumentChunks(processedChunks);
+
       return {
         documentId,
         chunksProcessed: processedChunks,
         totalChunks: limitedChunks.length
       };
-    } catch (error) {
-      console.error('Error processing document:', error);
+    } catch (error: any) {
+      log.error({ error: error.message, stack: error.stack }, 'Error processing document');
+      metrics.recordDocumentProcessed('failure', fileType);
       throw error;
     }
   }
@@ -241,11 +294,11 @@ class DocumentProcessor {
       // Try to use Pinecone Assistant first (your MCP assistant)
       if (pineconeAssistant.isAvailable()) {
         try {
-          console.log(`Trying Pinecone Assistant for query: "${query}"`);
+          logger.debug({ query: query.substring(0, 50), topK }, 'Trying Pinecone Assistant');
           const assistantResults = await pineconeAssistant.retrieveContext(query, topK);
           
           if (assistantResults && assistantResults.length > 0) {
-            console.log(`Pinecone Assistant found ${assistantResults.length} results`);
+            logger.debug({ resultCount: assistantResults.length }, 'Pinecone Assistant found results');
             // Cache the results
             latencyCache.setSearchResults(query, assistantResults);
             return assistantResults;

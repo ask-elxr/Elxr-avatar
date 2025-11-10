@@ -13,10 +13,49 @@ import { googleSearchService } from "./googleSearchService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
+import { metrics } from "./metrics.js";
+import { logger } from "./logger.js";
+import { wrapServiceCall } from "./circuitBreaker.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create circuit breaker for HeyGen API
+  const heygenTokenBreaker = wrapServiceCall(
+    async (apiKey: string) => {
+      const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
+        method: 'POST',
+        headers: {
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      return await response.json();
+    },
+    'heygen',
+    { timeout: 10000, errorThresholdPercentage: 50 }
+  );
+
   // Auth middleware
   await setupAuth(app);
+
+  // HTTP metrics middleware - record all requests
+  app.use((req, res, next) => {
+    const startTime = Date.now();
+    
+    res.on('finish', () => {
+      const duration = Date.now() - startTime;
+      const route = req.route?.path || req.path || 'unknown';
+      metrics.recordHttpRequest(req.method, route, res.statusCode, duration);
+    });
+    
+    next();
+  });
+
   // Add performance monitoring middleware
   app.use(performanceMiddleware());
   
@@ -36,44 +75,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
+    const log = logger.child({ service: 'heygen', operation: 'createToken' });
+
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
       
       if (!apiKey) {
+        log.error('HeyGen API key not configured');
         return res.status(500).json({ 
           error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable." 
         });
       }
 
-      console.log('Creating HeyGen access token...');
+      log.debug('Creating HeyGen access token');
       
-      const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
+      const data = await heygenTokenBreaker.execute(apiKey);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('HeyGen API error:', response.status, errorText);
-        return res.status(response.status).json({ 
-          error: `HeyGen API error: ${response.statusText}`,
-          details: errorText
-        });
-      }
-
-      const data = await response.json();
-      console.log('HeyGen token created successfully');
+      log.info('HeyGen token created successfully');
       
       // Return the token in the expected format
       res.json({ 
         token: data.data?.token || data.token,
         ...data 
       });
-    } catch (error) {
-      console.error('Error creating HeyGen token:', error);
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Error creating HeyGen token');
       res.status(500).json({ 
         error: "Failed to create HeyGen access token" 
       });
@@ -240,6 +266,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Prometheus metrics endpoint - for monitoring and alerting
+  app.get("/metrics", async (req, res) => {
+    try {
+      res.set('Content-Type', metrics.register.contentType);
+      const metricsData = await metrics.getMetrics();
+      res.end(metricsData);
+    } catch (error: any) {
+      logger.error({ error: error.message }, 'Error generating Prometheus metrics');
+      res.status(500).json({ error: 'Failed to generate metrics' });
+    }
+  });
+
   // Performance metrics endpoint - cache hit rates and statistics
   app.get("/api/performance/cache", async (req, res) => {
     try {
@@ -262,8 +300,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             : 'Gathering data...'
         }
       });
-    } catch (error) {
-      console.error('Error getting cache metrics:', error);
+    } catch (error: any) {
+      logger.error({ error: error.message }, 'Error getting cache metrics');
       res.status(500).json({ 
         error: "Failed to get cache metrics"
       });
