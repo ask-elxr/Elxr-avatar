@@ -1,198 +1,83 @@
 # Overview
 
-This is a full-stack AI avatar chat platform that combines HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. The application features a React-based frontend with a Node.js/Express backend, allowing users to have intelligent conversations with the Mark Kohl personality-driven avatar that accesses both a comprehensive Pinecone knowledge base and current web information.
+This project is a full-stack AI avatar chat platform that integrates HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. The application features a React frontend and a Node.js/Express backend, enabling users to engage in intelligent conversations with a Mark Kohl-personality-driven avatar. The avatar leverages a comprehensive Pinecone knowledge base and current web information to provide rich and informed responses.
 
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
 
-# Recent Changes
-
-## Latest Updates (November 10, 2025)
-- **Testing Infrastructure** - Baseline regression tests for avatar endpoint and document processing
-  - Installed Vitest testing framework with 57 passing tests
-  - Avatar tests: Dual namespace querying, score filtering, request validation, error handling
-  - Document tests: Text/chunk limits, file types, circuit breaker config, metadata handling
-  - Configuration-focused tests catch constant/threshold changes but don't test real implementation
-  - See TESTING.md for test coverage, limitations, and recommended improvements
-  - Run tests: `npx vitest run` or `npx vitest` for watch mode
-- **Production Reliability & Observability** - Circuit breakers, structured logging, and metrics
-  - Circuit breakers (Opossum) wrap all external APIs: Claude, Pinecone, OpenAI, HeyGen
-  - Timeouts configured per service: 30s (Claude), 10-15s (Pinecone/HeyGen/OpenAI embeddings), 60s (Whisper)
-  - Automatic failure detection: 50% error threshold triggers circuit breaker open state
-  - Graceful degradation: Circuit open = fast fail with clear error messages
-  - Structured logging (Pino): Development pretty-print, Production JSON format
-  - Child loggers with context: service, operation, duration, token counts
-  - Prometheus metrics: 10+ metric types including API call totals/durations, circuit breaker state, HTTP traffic, cache hit/miss, document processing
-  - GET /metrics endpoint for Prometheus scraping
-  - HTTP request middleware: Tracks all requests (method, route, status, duration)
-  - All critical external calls protected and observable
-- **Background Job Queue for Document Processing** - Offloads processing to background workers
-  - Implemented BullMQ + Redis queue system for async document processing
-  - API endpoints return immediately with job ID (< 100ms response time)
-  - Presigned URL flow: Client uploads directly to Google Cloud Storage
-  - Background worker handles chunking, embedding, Pinecone storage (30+ seconds)
-  - Job status polling endpoint with progress tracking
-  - Automatic retry with exponential backoff (3 attempts)
-  - Graceful degradation: Falls back to synchronous processing when Redis not configured
-  - New endpoints: GET `/api/documents/upload-url`, POST `/api/documents/process`, GET `/api/jobs/:jobId`
-  - See BACKGROUND_JOBS.md for setup instructions (requires Redis URL)
-- **Pinecone Query Caching** - Intelligent caching system for faster responses
-  - Implemented normalized query cache with 45-second TTL (Time To Live)
-  - Cache key normalization: lowercase query + sorted namespaces + topK parameter
-  - Persistent hit/miss metrics tracking via `/api/performance/cache` endpoint
-  - Automatic cache invalidation after document uploads (prevents stale results)
-  - LRU eviction with 100-entry maximum to prevent memory bloat
-  - Reduces latency for repeated queries by skipping embedding generation
-  - Cache metrics: hit rate, total requests, cache size, performance recommendations
-- **Bundle Optimization for Fast Loading** - Significantly reduced initial bundle size
-  - Replaced 363KB video asset with lightweight CSS-based LoadingPlaceholder component (~2KB)
-  - Created pure CSS loading animation with ELXR purple gradient branding
-  - Removed video from bundle entirely - 99.5% size reduction for loading UI
-  - Installed rollup-plugin-visualizer for future bundle analysis
-  - Verified lucide-react icons are properly tree-shaken (only imported icons bundled)
-  - Created comprehensive BUNDLE_OPTIMIZATION.md documentation
-  - React lazy loading already in place for all page components (code-splitting enabled)
-- **Avatar Chat Refactoring** - Improved code organization and memory management
-  - Created useAvatarSession hook for HeyGen session lifecycle management
-  - Created useInactivityTimer hook for idle timeout cleanup
-  - Fixed circular dependency bugs using callback ref bridge pattern
-  - Better separation of concerns between UI state and session management
-  - Improved memory leak prevention with proper cleanup on unmount
-
-## Previous Updates (October 28, 2025)
-- **MAJOR: Deeper, Richer Responses** - Increased Claude token limit (1000→2500), improved prompting for substantive answers, better knowledge retrieval (3→5 results)
-- **Fixed Mid-Answer Cutoffs** - Timer now resets every 10 seconds while avatar is speaking, preventing timeout during long responses
-- **Fixed Timeout Interruptions** - If user speaks during sign-off, avatar immediately stops goodbye message and listens to new question
-- **Dual Pinecone Knowledge Base Access** - Mark now queries BOTH `knowledge-base-assistant` AND `ask-elxr` assistants in parallel for comprehensive responses
-- **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + dual Pinecone knowledge bases (no web search delays)
-- **20 Authentic Mark Kohl Sign-Offs** - After 60 seconds inactivity, Mark says one of 20 personalized goodbyes
-- **Fixed Greeting Timing** - Inactivity timer now starts 2 seconds AFTER Mark's greeting (no more cut-offs)
-
-## Previous Updates (October 12, 2025)
-- **CRITICAL FIX: Pause Now Stops Avatar Stream** - Prevents credit drain when paused
-  - Pause button now completely stops the HeyGen avatar stream (calls `stopAvatar()`)
-  - Previously only muted microphone, avatar kept streaming and charging credits
-  - Resume button restarts the entire session (new stream starts)
-  - Saves significant HeyGen credits when taking breaks
-- **Two-Stage Timeout with Polite Prompt** - Avatar asks before terminating
-  - After 60 seconds inactivity → Avatar asks: "Is there anything else I can help you with?"
-  - User gets 20 more seconds to respond
-  - If user responds → Timer resets, conversation continues
-  - If no response → Avatar gives funny timeout message and terminates with reconnect screen
-- **Timeout Message with Credit Savings** - Funny message before stopping avatar
-  - After asking "anything else?" with no response, avatar says: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!"
-  - Then fully stops avatar stream to prevent credit charges
-  - Shows reconnect button (no auto-loop)
-- **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
-  - After 1 minute of inactivity, logo appears with "Reconnect" button
-  - User must click "Reconnect" to restart session (no auto-restart loop)
-  - Manual "End Chat" button still auto-restarts immediately
-  - Prevents continuous resource usage when idle
-- **Added Pause/Resume Control** - Purple pause button in top center for controlling avatar
-  - Pause: Completely stops avatar stream (saves HeyGen credits!)
-  - Resume: Restarts entire session with new stream
-  - Button shows Pause icon when active, Play icon when paused
-  - Works on both mobile and desktop
-  - Pausing stops the inactivity timer and clears video element
-- **Removed Action Descriptions** - Avatar no longer uses stage directions like "*leans back*" or "*smirks*"
-- **No File Promises** - Avatar won't promise to send links, PDFs, or documents (speaks information instead)
-- **Fixed October 2023 Reference Bug** - Avatar now maintains current date awareness from first response
-  - System prompt always includes today's date (dynamic, updates automatically)
-  - Explicit prohibition against mentioning "October 2023", "training data", or "knowledge cutoff"
-  - Mark Kohl personality prompt includes current date at top of system configuration
-  - Works correctly even when Google Search returns poor results
-  - No more "my knowledge is from Oct 2023" disclaimers
-- **Universal Auto-Start** - Avatar now auto-starts on all devices (mobile and desktop)
-  - Removed "Chat now" button on desktop (ready for custom trigger implementation)
-  - Auto-restart functionality on both platforms when "End Chat" is clicked
-  - Loading video displays during initialization and restart
-  - Mobile: Unpinch animation guides users to fullscreen
-  - Desktop: Clean interface without mobile-specific graphics
-- **Smart Loading Video Integration** - Loading video displays at the right moments during user interaction
-  - Shows MP4 intro logo when session starts
-  - Also displays when ending chat and restarting avatar session
-  - 5-second display duration with automatic fade-out
-  - PostMessage listener detects HeyGen's `streaming-embed:show` action
-- **End Chat Controls** - Added prominent end chat buttons for easy session restart
-  - Mobile: Red circular X button in top right corner
-  - Desktop: Red rounded button with "End Chat" text label
-  - Both trigger loading video overlay during avatar reset
-- **Multi-Index Pinecone Support** - Now supports accessing two Pinecone indexes (`avatar-chat-knowledge` and `ask-elxr`)
-  - All conversation endpoints accept optional `indexName` parameter to select target index
-  - Proper validation with 400 errors for invalid index names
-  - Backward compatible with default index for existing functionality
-  - Automatic index creation with readiness polling for serverless indexes
-
-## Previous Updates (January 2025)
-- **HeyGen Streaming SDK Integration** - Proper SDK implementation using @heygen/streaming-avatar package
-- **Optimized Pinecone Access** - Uses single `knowledge-base-assistant` for faster responses (30-40% speed improvement)
-- **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
-- **Integrated Google Web Search** - Avatar now accesses real-time web information (2025 data confirmed)
-- **Enhanced Avatar Intelligence** - Combines Pinecone knowledge base + Google Search + Claude Sonnet 4
-- **Mark Kohl Personality** - Full integration with custom personality system prompts
-- **Fixed Request Timeouts** - Increased timeout to 30s for full AI processing pipeline
-- **Improved Response Quality** - Multi-source intelligence (knowledge base, web, AI reasoning)
-
-## Previous Updates
-- Connected to knowledge-base-assistant using Pinecone SDK (26k+ tokens processed)
-- Implemented avatar response system with knowledge base integration
-- Added interactive test buttons (microphone, knowledge base, force refresh)
-- Created clean full-screen avatar interface
-- Fixed HeyGen iframe audio and permission handling
-
 # System Architecture
 
 ## Frontend Architecture
-- **React with TypeScript**: Single-page application built with React 18 and TypeScript for type safety
-- **Vite Build System**: Modern build tool for fast development and optimized production builds
-- **Component Design**: Uses shadcn/ui component library built on Radix UI primitives for consistent, accessible UI components
-- **Styling**: Tailwind CSS with CSS custom properties for theming and responsive design
-- **State Management**: TanStack Query for server state management and React hooks for local state
-- **Routing**: Wouter for lightweight client-side routing
+- **Framework**: React with TypeScript.
+- **Build System**: Vite for fast development and optimized production builds.
+- **UI/UX**: `shadcn/ui` component library built on Radix UI primitives, styled with Tailwind CSS for consistent, accessible, and responsive design.
+- **State Management**: TanStack Query for server state and React hooks for local state.
+- **Routing**: Wouter for lightweight client-side routing.
+- **Loading UI**: Pure CSS loading animation with ELXR purple gradient branding, replacing heavier video assets.
+- **Optimization**: React lazy loading for page components (code-splitting), tree-shaking for icons.
+- **Avatar Session Management**: `useAvatarSession` and `useInactivityTimer` hooks for lifecycle and cleanup.
 
 ## Backend Architecture
-- **Express.js Server**: RESTful API server with middleware for JSON parsing and request logging
-- **Database Layer**: Drizzle ORM configured for PostgreSQL with schema definitions and migrations
-- **Storage Abstraction**: Pluggable storage interface with in-memory implementation for development
-- **Environment-based Configuration**: Separate development and production modes with environment variable support
+- **Framework**: Express.js for a RESTful API server.
+- **Database ORM**: Drizzle ORM for PostgreSQL.
+- **Configuration**: Environment-based configuration for development and production.
+- **Background Processing**: BullMQ and Redis queue for asynchronous document processing (chunking, embedding, Pinecone storage) with retry mechanisms and job status tracking.
+- **API Security**: Credential-based requests with CORS handling.
+- **Reliability & Observability**:
+    - Circuit breakers (Opossum) for external APIs (Claude, Pinecone, OpenAI, HeyGen) with configured timeouts and automatic failure detection.
+    - Structured logging (Pino) with contextual information.
+    - Prometheus metrics for API calls, circuit breaker states, HTTP traffic, and cache performance.
 
 ## Data Storage
-- **Primary Database**: PostgreSQL via Neon Database service for production data persistence
-- **Vector Database**: Pinecone for storing conversation embeddings (1536 dimensions for OpenAI compatibility)
-- **ORM**: Drizzle ORM for type-safe database operations and schema management
-- **Session Storage**: PostgreSQL-based session storage using connect-pg-simple
-- **Schema Design**: User management with UUID primary keys, conversations table with embedding support
+- **Primary Database**: PostgreSQL (Neon Database service) for persistent data.
+- **Vector Database**: Pinecone for storing conversation embeddings (1536 dimensions).
+- **ORM**: Drizzle ORM for type-safe operations.
+- **Session Storage**: PostgreSQL-based session storage using `connect-pg-simple`.
+- **Schema**: User management with UUIDs, conversations table with embedding support.
+- **Pinecone Query Caching**: Intelligent normalized query cache with TTL, automatic invalidation, and LRU eviction for faster responses.
 
 ## Authentication & Authorization
-- **Session-based Authentication**: Server-side sessions stored in PostgreSQL
-- **User Management**: Username/password authentication with secure password storage
-- **API Security**: Credential-based requests with CORS handling
+- **Authentication**: Session-based, server-side authentication stored in PostgreSQL.
+- **User Management**: Username/password authentication with secure storage.
 
-## External Dependencies
+## Core Features
+- **AI Avatar**: HeyGen Streaming SDK integration for real-time avatar interaction.
+- **AI Model**: Claude Sonnet 4 (`claude-sonnet-4-20250514`) for advanced AI reasoning.
+- **Knowledge Retrieval**: Dual Pinecone knowledge base access (`knowledge-base-assistant` and `ask-elxr`) in parallel for comprehensive responses.
+- **Web Search**: Integrated Google Web Search for real-time information access.
+- **Personality Integration**: Mark Kohl personality applied via custom system prompts.
+- **Conversation Management**:
+    - Enhanced token limits and prompting for deeper responses.
+    - Improved timeout handling, including mid-answer cutoff prevention and polite prompts before session termination.
+    - Inactivity detection with personalized sign-offs.
+    - Pause/Resume functionality that fully stops the avatar stream to save credits.
+    - Removal of action descriptions and promises for external resources from avatar responses.
+    - Current date awareness in avatar responses.
 
-### Core Services
-- **HeyGen Streaming Avatar API**: Primary AI avatar service for real-time video streaming and conversation (iframe embed approach)
-- **Neon Database**: Managed PostgreSQL hosting for production data storage
-- **Pinecone Vector Database**: Vector storage for conversation embeddings and AI context memory
+# External Dependencies
 
-### Frontend Libraries
-- **UI Framework**: React 18 with TypeScript support
-- **Component Library**: Radix UI primitives with shadcn/ui customizations
-- **Styling**: Tailwind CSS with autoprefixer and PostCSS
-- **State Management**: TanStack React Query for server state
-- **Routing**: Wouter for lightweight client-side navigation
-- **Form Handling**: React Hook Form with Zod validation
-- **Icons**: Lucide React icon library
+## Core Services
+- **HeyGen Streaming Avatar API**: Real-time AI avatar video streaming.
+- **Neon Database**: Managed PostgreSQL hosting.
+- **Pinecone Vector Database**: Vector storage for embeddings and AI context memory.
+- **Claude Sonnet 4**: AI model for natural language processing and generation.
+- **Google Web Search**: Real-time web information retrieval.
+- **Redis**: Used by BullMQ for background job queuing.
 
-### Backend Dependencies
-- **Server Framework**: Express.js with TypeScript
-- **Database**: Drizzle ORM with PostgreSQL driver
-- **Session Management**: express-session with PostgreSQL store
-- **Development Tools**: tsx for TypeScript execution, esbuild for production builds
+## Frontend Libraries
+- **React**: UI framework.
+- **shadcn/ui & Radix UI**: Component libraries.
+- **Tailwind CSS**: Styling framework.
+- **TanStack React Query**: Server state management.
+- **Wouter**: Client-side routing.
+- **React Hook Form & Zod**: Form handling and validation.
+- **Lucide React**: Icon library.
 
-### Development Tools
-- **Build System**: Vite with React plugin and runtime error overlay
-- **Type Checking**: TypeScript with strict mode enabled
-- **Database Migrations**: Drizzle Kit for schema management
-- **Environment Management**: dotenv for configuration management
+## Backend Dependencies
+- **Express.js**: Web application framework.
+- **Drizzle ORM**: PostgreSQL ORM.
+- **express-session & connect-pg-simple**: Session management.
+- **BullMQ**: Job queue for background processing.
+- **Pino**: Structured logging.
+- **Opossum**: Circuit breaker implementation.
