@@ -199,7 +199,7 @@ export function useAvatarSession({
               });
             }
 
-            const fillerInterval = setInterval(async () => {
+            /*const fillerInterval = setInterval(async () => {
               const followUpPhrase =
                 followUpPhrases[
                   Math.floor(Math.random() * followUpPhrases.length)
@@ -214,12 +214,24 @@ export function useAvatarSession({
                   task_type: TaskType.TALK,
                 })
                 .catch(() => {});
-            }, 20000);
+            }, 15000);*/
+            const fillerTimeout = setTimeout(async () => {
+              const followUp =
+                followUpPhrases[
+                  Math.floor(Math.random() * followUpPhrases.length)
+                ];
+              await avatar
+                .speak({
+                  text: followUp,
+                  task_type: TaskType.TALK,
+                })
+                .catch(() => {});
+            }, 15000);
 
             try {
               const response = await responsePromise;
 
-              clearInterval(fillerInterval);
+              clearTimeout(fillerTimeout);
 
               if (requestId !== currentRequestIdRef.current) {
                 console.log(
@@ -263,7 +275,7 @@ export function useAvatarSession({
                 });
               }
             } catch (error) {
-              clearInterval(fillerInterval);
+              clearTimeout(fillerTimeout);
               console.error("Error getting Claude response:", error);
             }
           }
