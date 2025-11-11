@@ -21,7 +21,7 @@ export function useInactivityTimer({
   avatarRef,
   speakingIntervalRef,
   hasAskedAnythingElseRef,
-  onEndSessionShowReconnect
+  onEndSessionShowReconnect,
 }: InactivityTimerConfig): InactivityTimerReturn {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const signOffTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -31,7 +31,7 @@ export function useInactivityTimer({
       clearTimeout(inactivityTimerRef.current);
       inactivityTimerRef.current = null;
     }
-    
+
     if (signOffTimeoutRef.current) {
       clearTimeout(signOffTimeoutRef.current);
       signOffTimeoutRef.current = null;
@@ -50,52 +50,54 @@ export function useInactivityTimer({
     } else {
       console.log("Inactivity timer started for first time");
     }
-    
+
     if (signOffTimeoutRef.current) {
       clearTimeout(signOffTimeoutRef.current);
       signOffTimeoutRef.current = null;
       console.log("Sign-off timeout cancelled - user is active again");
-      
+
       if (avatarRef.current) {
         avatarRef.current.interrupt().catch(() => {});
       }
     }
-    
+
     if (speakingIntervalRef.current) {
       clearInterval(speakingIntervalRef.current);
       speakingIntervalRef.current = null;
       console.log("Cleared speaking interval - user interrupted");
     }
-    
+
     hasAskedAnythingElseRef.current = false;
-    
+
     inactivityTimerRef.current = setTimeout(async () => {
       console.log("Inactivity timeout triggered - 1 minute elapsed");
-      
+
       if (avatarRef.current) {
         try {
           await avatarRef.current.interrupt().catch(() => {});
-          
-          const anythingElseMessage = "Is there anything else I can help you with today?";
-          
+
+          const anythingElseMessage =
+            "Is there anything else I can help you with today?";
+
           hasAskedAnythingElseRef.current = true;
-          
+
           await avatarRef.current.speak({
             text: anythingElseMessage,
-            task_type: TaskType.REPEAT
+            task_type: TaskType.TALK,
           });
-          
+
           console.log("'Anything else?' message delivered");
-          
+
           signOffTimeoutRef.current = setTimeout(async () => {
-            const finalMessage = "Alright. Thanks for the conversation - hope it was helpful. Take care.";
-            
+            const finalMessage =
+              "Alright. Thanks for the conversation - hope it was helpful. Take care.";
+
             if (avatarRef.current) {
               await avatarRef.current.speak({
                 text: finalMessage,
-                task_type: TaskType.REPEAT
+                task_type: TaskType.TALK,
               });
-              
+
               setTimeout(() => {
                 onEndSessionShowReconnect();
               }, 5000);
@@ -117,7 +119,7 @@ export function useInactivityTimer({
     if (sessionActive && !isPaused) {
       resetInactivityTimer();
     }
-    
+
     return () => {
       if (inactivityTimerRef.current) {
         clearTimeout(inactivityTimerRef.current);
@@ -133,6 +135,6 @@ export function useInactivityTimer({
 
   return {
     resetInactivityTimer,
-    clearAllTimers
+    clearAllTimers,
   };
 }

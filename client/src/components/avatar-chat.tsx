@@ -6,6 +6,7 @@ import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
+import { useStreamStats } from "@/hooks/useStreamStats";
 
 interface AvatarChatProps {
   userId: string;
@@ -69,6 +70,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   
   // Bridge the actual function to the ref
   resetTimerRef.current = resetInactivityTimer;
+  
+  // Hook 3: Stream statistics for testing
+  const streamStats = useStreamStats({ 
+    avatarRef, 
+    sessionActive: sessionActive && !isPaused 
+  });
   
   // Auto-start effect
   useEffect(() => {
@@ -389,6 +396,34 @@ export function AvatarChat({ userId }: AvatarChatProps) {
           data-testid="avatar-video"
         />
       </div>
+
+      {/* Testing Overlay - Stream Statistics (Development Only) */}
+      {import.meta.env.MODE !== "production" && sessionActive && !isPaused && (
+        <div 
+          className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-sm text-white p-3 rounded-lg text-xs font-mono z-50 min-w-[200px]"
+          data-testid="stream-stats-overlay"
+        >
+          <div className="text-purple-400 font-semibold mb-2 text-center">Stream Stats</div>
+          <div className="space-y-1">
+            <div className="flex justify-between">
+              <span className="text-gray-400">FPS:</span>
+              <span className="font-semibold">{streamStats.fps}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Resolution:</span>
+              <span className="font-semibold">{streamStats.frameWidth}×{streamStats.frameHeight}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Bitrate:</span>
+              <span className="font-semibold">{streamStats.bitrateKbps} Kbps</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-400">Audio:</span>
+              <span className="font-semibold">{streamStats.audioLevel}%</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

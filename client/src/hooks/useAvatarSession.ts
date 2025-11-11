@@ -1,5 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
+import StreamingAvatar, {
+  AvatarQuality,
+  StreamingEvents,
+  TaskType,
+} from "@heygen/streaming-avatar";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -32,13 +36,13 @@ export function useAvatarSession({
   userId,
   memoryEnabled,
   onSessionActiveChange,
-  onResetInactivityTimer
+  onResetInactivityTimer,
 }: AvatarSessionConfig): AvatarSessionReturn {
   const [sessionActive, setSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  
+
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const intentionalStopRef = useRef(false);
   const hasStartedRef = useRef(false);
@@ -77,8 +81,13 @@ export function useAvatarSession({
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
-        console.log("Session disconnected - showing reconnect screen to save credits");
+        console.log(
+          "Stream disconnected - intentionalStop flag:",
+          intentionalStopRef.current,
+        );
+        console.log(
+          "Session disconnected - showing reconnect screen to save credits",
+        );
         intentionalStopRef.current = false;
         setSessionActive(false);
         setShowReconnect(true);
@@ -88,110 +97,134 @@ export function useAvatarSession({
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
         try {
           console.log("USER_TALKING_MESSAGE event received:", message);
-          
-          const userMessage = message?.detail?.message || message?.message || message;
+
+          const userMessage =
+            message?.detail?.message || message?.message || message;
           console.log("User message extracted:", userMessage);
-          
+
           if (userMessage) {
             if (hasAskedAnythingElseRef.current) {
               const lowerMessage = userMessage.toLowerCase();
               const negativeResponses = [
-                'no', 'nope', 'nothing', 'nah', "that's all", "that's it", 
-                "i'm good", "im good", "all good", "no thanks", "nothing else"
+                "no",
+                "nope",
+                "nothing",
+                "nah",
+                "that's all",
+                "that's it",
+                "i'm good",
+                "im good",
+                "all good",
+                "no thanks",
+                "nothing else",
               ];
-              
-              const isNegativeResponse = negativeResponses.some(phrase => 
-                lowerMessage.includes(phrase)
+
+              const isNegativeResponse = negativeResponses.some((phrase) =>
+                lowerMessage.includes(phrase),
               );
-              
+
               if (isNegativeResponse) {
                 console.log("User declined - ending session gracefully");
                 hasAskedAnythingElseRef.current = false;
-                
+
                 const goodbyeMessages = [
                   "Alright, catch you later! Stay curious.",
                   "Cool. Take care and keep questioning everything!",
                   "Got it. Peace out, and keep your mind open!",
-                  "Right on. Until next time, stay wild!"
+                  "Right on. Until next time, stay wild!",
                 ];
-                const goodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
-                
+                const goodbye =
+                  goodbyeMessages[
+                    Math.floor(Math.random() * goodbyeMessages.length)
+                  ];
+
                 await avatar.interrupt().catch(() => {});
                 await avatar.speak({
                   text: goodbye,
-                  task_type: TaskType.REPEAT
+                  task_type: TaskType.TALK,
                 });
-                
+
                 setTimeout(() => {
                   endSessionShowReconnect();
                 }, 4000);
-                
+
                 return;
               }
-              
+
               hasAskedAnythingElseRef.current = false;
             }
-            
+
             onResetInactivityTimer?.();
-            const requestId = Date.now().toString() + Math.random().toString(36);
+            const requestId =
+              Date.now().toString() + Math.random().toString(36);
             currentRequestIdRef.current = requestId;
             console.log("New question detected - Request ID:", requestId);
-            
+
             abortControllerRef.current = new AbortController();
-            
+
             const responsePromise = fetch("/api/avatar/response", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ 
+              body: JSON.stringify({
                 message: userMessage,
-                userId: memoryEnabled ? userId : undefined
+                userId: memoryEnabled ? userId : undefined,
               }),
-              signal: abortControllerRef.current.signal
+              signal: abortControllerRef.current.signal,
             });
-            
+
             const thinkingPhrases = [
               "Let me pull up what I know about that.",
               "Give me a moment.",
-              "Checking the research on that."
+              "Checking the research on that.",
             ];
-            
+
             const followUpPhrases = [
               "Still processing...",
               "One more moment...",
-              "Almost there..."
+              "Almost there...",
             ];
-            
+
             onResetInactivityTimer?.();
-            
+
             await avatar.interrupt().catch(() => {});
-            
+
             if (Math.random() > 0.5) {
-              const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
+              const randomPhrase =
+                thinkingPhrases[
+                  Math.floor(Math.random() * thinkingPhrases.length)
+                ];
               await avatar.speak({
                 text: randomPhrase,
-                task_type: TaskType.REPEAT
+                task_type: TaskType.TALK,
               });
             }
-            
+
             const fillerInterval = setInterval(async () => {
-              const followUpPhrase = followUpPhrases[Math.floor(Math.random() * followUpPhrases.length)];
-              
+              const followUpPhrase =
+                followUpPhrases[
+                  Math.floor(Math.random() * followUpPhrases.length)
+                ];
+
               onResetInactivityTimer?.();
-              
+
               await avatar.interrupt().catch(() => {});
-              await avatar.speak({
-                text: followUpPhrase,
-                task_type: TaskType.REPEAT
-              }).catch(() => {});
-            }, 9000);
-            
+              await avatar
+                .speak({
+                  text: followUpPhrase,
+                  task_type: TaskType.TALK,
+                })
+                .catch(() => {});
+            }, 20000);
+
             try {
               const response = await responsePromise;
-              
+
               clearInterval(fillerInterval);
 
               if (requestId !== currentRequestIdRef.current) {
-                console.log("Ignoring old response - newer request in progress");
+                console.log(
+                  "Ignoring old response - newer request in progress",
+                );
                 return;
               }
 
@@ -199,32 +232,34 @@ export function useAvatarSession({
                 const data = await response.json();
                 const claudeResponse = data.knowledgeResponse || data.response;
                 console.log("Claude response received:", claudeResponse);
-                
+
                 onResetInactivityTimer?.();
-                
+
                 await avatar.interrupt().catch(() => {});
-                
+
                 if (speakingIntervalRef.current) {
                   clearInterval(speakingIntervalRef.current);
                 }
-                
+
                 speakingIntervalRef.current = setInterval(() => {
                   onResetInactivityTimer?.();
                   console.log("Resetting timer during avatar speech");
                 }, 10000);
-                
+
                 setTimeout(() => {
                   if (speakingIntervalRef.current) {
                     clearInterval(speakingIntervalRef.current);
                     speakingIntervalRef.current = null;
-                    console.log("Cleared speaking interval - max duration reached");
+                    console.log(
+                      "Cleared speaking interval - max duration reached",
+                    );
                     onResetInactivityTimer?.();
                   }
                 }, 180000);
-                
+
                 await avatar.speak({
                   text: claudeResponse,
-                  task_type: TaskType.REPEAT
+                  task_type: TaskType.TALK,
                 });
               }
             } catch (error) {
@@ -233,10 +268,13 @@ export function useAvatarSession({
             }
           }
         } catch (error) {
-          if (error instanceof Error && error.name === 'AbortError') {
+          if (error instanceof Error && error.name === "AbortError") {
             // Expected - do nothing
-          } else if (error instanceof DOMException && error.name === 'AbortError') {
-            // Expected - do nothing  
+          } else if (
+            error instanceof DOMException &&
+            error.name === "AbortError"
+          ) {
+            // Expected - do nothing
           } else {
             console.error("Unexpected error in message handler:", error);
           }
@@ -248,10 +286,10 @@ export function useAvatarSession({
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
         knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
         voice: {
-          rate: 1.0
+          rate: 1.0,
         },
         language: "en",
-        disableIdleTimeout: false
+        disableIdleTimeout: false,
       });
 
       console.log("Starting voice chat...");
@@ -261,7 +299,7 @@ export function useAvatarSession({
       setSessionActive(true);
       onSessionActiveChange?.(true);
       setIsLoading(false);
-      
+
       const greetings = [
         "Hey there — I'm Mark Kohl. You're actually talking to my digital self, but everything you'll hear comes directly from my real experiences, my research, and my life's work.",
         "Hi, I'm Mark Kohl. This is my avatar — but what you're about to hear comes straight from me. I helped build this AI so my work could reach more people, in more ways.",
@@ -278,15 +316,18 @@ export function useAvatarSession({
         "Hey, I'm Mark Kohl. Yep, I'm an avatar — but don't worry, this version of me is powered by the real one.",
         "Hi there, I'm Mark Kohl. This is the AI version of me — kind of like me on my best day, when I've had enough sleep and plenty of coffee.",
         "Hello, I'm Mark Kohl. You're chatting with my AI self — think of it as me multiplied, so I can have a lot more of these conversations.",
-        "Hi, I'm Mark Kohl. The version you're seeing here might be digital, but the heart, intention, and voice behind it are 100% human."
+        "Hi, I'm Mark Kohl. The version you're seeing here might be digital, but the heart, intention, and voice behind it are 100% human.",
       ];
-      
-      const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-      await avatar.speak({
-        text: randomGreeting,
-        task_type: TaskType.REPEAT
-      }).catch(console.error);
-      
+
+      const randomGreeting =
+        greetings[Math.floor(Math.random() * greetings.length)];
+      await avatar
+        .speak({
+          text: randomGreeting,
+          task_type: TaskType.TALK,
+        })
+        .catch(console.error);
+
       setTimeout(() => {
         onResetInactivityTimer?.();
       }, 2000);
@@ -294,7 +335,13 @@ export function useAvatarSession({
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
     }
-  }, [videoRef, userId, memoryEnabled, onSessionActiveChange, onResetInactivityTimer]);
+  }, [
+    videoRef,
+    userId,
+    memoryEnabled,
+    onSessionActiveChange,
+    onResetInactivityTimer,
+  ]);
 
   const endSessionShowReconnect = useCallback(async () => {
     if (abortControllerRef.current) {
@@ -302,19 +349,19 @@ export function useAvatarSession({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     if (avatarRef.current) {
       try {
         await avatarRef.current.speak({
           text: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!",
-          task_type: TaskType.REPEAT
+          task_type: TaskType.TALK,
         });
-        
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
+
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for timeout");
-        
+
         await avatarRef.current.stopAvatar().catch(console.error);
         avatarRef.current = null;
       } catch (error) {
@@ -326,12 +373,12 @@ export function useAvatarSession({
         }
       }
     }
-    
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
       console.log("Video element cleared on timeout");
     }
-    
+
     setSessionActive(false);
     setIsLoading(true);
     setShowReconnect(true);
@@ -344,17 +391,17 @@ export function useAvatarSession({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    
+
     if (avatarRef.current) {
       intentionalStopRef.current = true;
       avatarRef.current.stopAvatar().catch(console.error);
       avatarRef.current = null;
     }
-    
+
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-    
+
     setSessionActive(false);
     setIsLoading(true);
     setShowReconnect(true);
@@ -379,19 +426,19 @@ export function useAvatarSession({
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      
+
       if (avatarRef.current) {
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for pause");
         await avatarRef.current.stopAvatar().catch(console.error);
         avatarRef.current = null;
       }
-      
+
       if (videoRef.current) {
         videoRef.current.srcObject = null;
         console.log("Video element cleared");
       }
-      
+
       setSessionActive(false);
       setIsPaused(true);
       console.log("Avatar paused - stream stopped to save credits");
@@ -429,6 +476,6 @@ export function useAvatarSession({
     abortControllerRef,
     currentRequestIdRef,
     speakingIntervalRef,
-    hasAskedAnythingElseRef
+    hasAskedAnythingElseRef,
   };
 }
