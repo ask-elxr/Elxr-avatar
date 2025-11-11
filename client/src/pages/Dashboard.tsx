@@ -2,14 +2,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  FileText,
-  Users,
-  Database,
-  BarChart,
-  MessageSquare,
-  FolderOpen,
-} from "lucide-react";
+import { FileText, Users, Database, BarChart, MessageSquare, FolderOpen } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Dashboard() {
@@ -39,13 +32,9 @@ export default function Dashboard() {
       <div className="border-b">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-foreground">
-              Dashboard
-            </h1>
+            <h1 className="text-2xl font-semibold text-foreground">Dashboard</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground">
-                Welcome, Test User
-              </span>
+              <span className="text-sm text-muted-foreground">Welcome, Test User</span>
             </div>
           </div>
         </div>
@@ -64,8 +53,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Start a conversation with your AI avatar. Get answers from
-                  your knowledge base through natural conversation.
+                  Start a conversation with your AI avatar. Get answers from your knowledge base through natural conversation.
                 </p>
                 <Button className="mt-4" size="sm">
                   Start Chatting
@@ -84,8 +72,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Manage your documents, upload new files, and organize your
-                  knowledge base for better AI responses.
+                  Manage your documents, upload new files, and organize your knowledge base for better AI responses.
                 </p>
                 <Button className="mt-4" size="sm" variant="outline">
                   Manage Documents
@@ -106,8 +93,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Upload and process PDFs, Word documents, and text files with
-                automatic chunking and indexing.
+                Upload and process PDFs, Word documents, and text files with automatic chunking and indexing.
               </p>
             </CardContent>
           </Card>
@@ -121,8 +107,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Advanced vector database integration with embedding generation
-                for semantic search capabilities.
+                Advanced vector database integration with embedding generation for semantic search capabilities.
               </p>
             </CardContent>
           </Card>
@@ -136,8 +121,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Secure user authentication with document ownership tracking and
-                access controls.
+                Secure user authentication with document ownership tracking and access controls.
               </p>
             </CardContent>
           </Card>
@@ -151,8 +135,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground">
-                Track document usage, storage metrics, and user activity with
-                comprehensive reporting.
+                Track document usage, storage metrics, and user activity with comprehensive reporting.
               </p>
             </CardContent>
           </Card>
