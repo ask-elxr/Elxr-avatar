@@ -50,6 +50,7 @@ export function useAvatarSession({
   const currentRequestIdRef = useRef<string>("");
   const speakingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasAskedAnythingElseRef = useRef(false);
+  const isSpeakingRef = useRef(false);
 
   const fetchAccessToken = async (): Promise<string> => {
     const response = await fetch("/api/heygen/token", {
@@ -89,9 +90,18 @@ export function useAvatarSession({
           "Session disconnected - showing reconnect screen to save credits",
         );
         intentionalStopRef.current = false;
+        isSpeakingRef.current = false;
         setSessionActive(false);
         setShowReconnect(true);
         onSessionActiveChange?.(false);
+      });
+
+      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+        isSpeakingRef.current = true;
+      });
+
+      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+        isSpeakingRef.current = false;
       });
 
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
@@ -138,7 +148,9 @@ export function useAvatarSession({
                     Math.floor(Math.random() * goodbyeMessages.length)
                   ];
 
-                await avatar.interrupt().catch(() => {});
+                if (isSpeakingRef.current) {
+                  await avatar.interrupt().catch(() => {});
+                }
                 await avatar.speak({
                   text: goodbye,
                   task_type: TaskType.TALK,
@@ -186,7 +198,9 @@ export function useAvatarSession({
 
             onResetInactivityTimer?.();
 
-            await avatar.interrupt().catch(() => {});
+            if (isSpeakingRef.current) {
+              await avatar.interrupt().catch(() => {});
+            }
 
             if (Math.random() > 0.5) {
               const randomPhrase =
@@ -247,7 +261,9 @@ export function useAvatarSession({
 
                 onResetInactivityTimer?.();
 
-                await avatar.interrupt().catch(() => {});
+                if (isSpeakingRef.current) {
+                  await avatar.interrupt().catch(() => {});
+                }
 
                 if (speakingIntervalRef.current) {
                   clearInterval(speakingIntervalRef.current);
@@ -301,7 +317,7 @@ export function useAvatarSession({
           rate: 1.0,
         },
         language: "en",
-        disableIdleTimeout: false,
+        disableIdleTimeout: true,
       });
 
       console.log("Starting voice chat...");

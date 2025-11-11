@@ -81,3 +81,27 @@ Preferred communication style: Simple, everyday language.
 - **BullMQ**: Job queue for background processing.
 - **Pino**: Structured logging.
 - **Opossum**: Circuit breaker implementation.
+
+# Recent Changes
+
+## November 11, 2025
+
+### Optimized Avatar Interrupt Logic
+- Added event-driven tracking for avatar speaking state using AVATAR_START_TALKING and AVATAR_STOP_TALKING events
+- Only interrupts when avatar is actively speaking, preventing unnecessary API calls
+- Improves conversation flow smoothness and reduces potential errors
+- Implemented via `isSpeakingRef` that tracks real-time speaking state
+
+### Stream Statistics Overlay (Development Only)
+- Created useStreamStats hook that reads WebRTC peer connection stats via getStats()
+- Displays FPS, resolution, bitrate (Kbps), and audio level in bottom-right overlay
+- Only visible in development mode (import.meta.env.MODE !== "production")
+- Polls every 1 second, handles peer connection availability gracefully
+- Auto-resets stats when session ends
+
+### Testing Infrastructure
+- Installed Vitest testing framework with 57 passing tests
+- Avatar tests: Dual namespace querying, score filtering, request validation, error handling
+- Document tests: Text/chunk limits, file types, circuit breaker config, metadata handling
+- Configuration-focused tests catch constant/threshold changes
+- See TESTING.md for full details, limitations, and recommended improvements
