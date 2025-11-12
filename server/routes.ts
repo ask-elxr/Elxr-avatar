@@ -3,11 +3,18 @@ import { createServer, type Server } from "http";
 import { pineconeService, PineconeIndexName } from "./pinecone.js";
 import { documentProcessor } from "./documentProcessor.js";
 import { ObjectStorageService } from "./objectStorage.js";
-import { insertConversationSchema, insertDocumentSchema } from "../shared/schema.js";
+import {
+  insertConversationSchema,
+  insertDocumentSchema,
+} from "../shared/schema.js";
 import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";
-import { timeoutMiddleware, performanceMiddleware, rateLimitMiddleware } from "./performance.js";
+import {
+  timeoutMiddleware,
+  performanceMiddleware,
+  rateLimitMiddleware,
+} from "./performance.js";
 import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
@@ -21,23 +28,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
   const heygenTokenBreaker = wrapServiceCall(
     async (apiKey: string) => {
-      const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
-        method: 'POST',
-        headers: {
-          'x-api-key': apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
+      const response = await fetch(
+        "https://api.heygen.com/v1/streaming.create_token",
+        {
+          method: "POST",
+          headers: {
+            "x-api-key": apiKey,
+            "Content-Type": "application/json",
+          },
+        },
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`);
+        throw new Error(
+          `HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`,
+        );
       }
 
       return await response.json();
     },
-    'heygen',
-    { timeout: 10000, errorThresholdPercentage: 50 }
+    "heygen",
+    { timeout: 10000, errorThresholdPercentage: 50 },
   );
 
   // Auth middleware
@@ -46,24 +58,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // HTTP metrics middleware - record all requests
   app.use((req, res, next) => {
     const startTime = Date.now();
-    
-    res.on('finish', () => {
+
+    res.on("finish", () => {
       const duration = Date.now() - startTime;
-      const route = req.route?.path || req.path || 'unknown';
+      const route = req.route?.path || req.path || "unknown";
       metrics.recordHttpRequest(req.method, route, res.statusCode, duration);
     });
-    
+
     next();
   });
 
   // Add performance monitoring middleware
   app.use(performanceMiddleware());
-  
+
   // Add timeout middleware for all routes (45 second timeout for AI processing)
   app.use(timeoutMiddleware(45000));
 
   // Auth user endpoint - returns authenticated user data
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
@@ -75,33 +87,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
-    const log = logger.child({ service: 'heygen', operation: 'createToken' });
+    const log = logger.child({ service: "heygen", operation: "createToken" });
 
     try {
       const apiKey = process.env.HEYGEN_API_KEY;
-      
+
       if (!apiKey) {
-        log.error('HeyGen API key not configured');
-        return res.status(500).json({ 
-          error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable." 
+        log.error("HeyGen API key not configured");
+        return res.status(500).json({
+          error:
+            "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable.",
         });
       }
 
-      log.debug('Creating HeyGen access token');
-      
+      log.debug("Creating HeyGen access token");
+
       const data = await heygenTokenBreaker.execute(apiKey);
 
-      log.info('HeyGen token created successfully');
-      
+      log.info("HeyGen token created successfully");
+
       // Return the token in the expected format
-      res.json({ 
+      res.json({
         token: data.data?.token || data.token,
-        ...data 
+        ...data,
       });
     } catch (error: any) {
-      log.error({ error: error.message }, 'Error creating HeyGen token');
-      res.status(500).json({ 
-        error: "Failed to create HeyGen access token" 
+      log.error({ error: error.message }, "Error creating HeyGen token");
+      res.status(500).json({
+        error: "Failed to create HeyGen access token",
       });
     }
   });
@@ -110,46 +123,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/conversations", async (req, res) => {
     try {
       const { indexName } = req.body;
-      
+
       // Validate indexName if provided
       if (indexName && !Object.values(PineconeIndexName).includes(indexName)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Invalid index name",
-          validIndexes: Object.values(PineconeIndexName)
+          validIndexes: Object.values(PineconeIndexName),
         });
       }
-      
+
       const targetIndex = indexName as PineconeIndexName | undefined;
       const validatedData = insertConversationSchema.parse(req.body);
-      
+
       // Store in Pinecone if embedding is provided
       if (validatedData.embedding) {
         const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         await pineconeService.storeConversation(
           conversationId,
           validatedData.text,
           validatedData.embedding as number[],
           validatedData.metadata || {},
           undefined, // namespace
-          targetIndex
+          targetIndex,
         );
 
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           id: conversationId,
           message: "Conversation stored successfully",
-          indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
+          indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
         });
       } else {
-        res.status(400).json({ 
-          error: "Embedding is required to store conversation" 
+        res.status(400).json({
+          error: "Embedding is required to store conversation",
         });
       }
     } catch (error) {
-      console.error('Error storing conversation:', error);
-      res.status(500).json({ 
-        error: "Failed to store conversation" 
+      console.error("Error storing conversation:", error);
+      res.status(500).json({
+        error: "Failed to store conversation",
       });
     }
   });
@@ -157,39 +170,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/conversations/search", async (req, res) => {
     try {
       const { embedding, topK = 5, indexName } = req.body;
-      
+
       if (!embedding || !Array.isArray(embedding)) {
-        return res.status(400).json({ 
-          error: "Valid embedding array is required" 
+        return res.status(400).json({
+          error: "Valid embedding array is required",
         });
       }
 
       // Validate indexName if provided
       if (indexName && !Object.values(PineconeIndexName).includes(indexName)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Invalid index name",
-          validIndexes: Object.values(PineconeIndexName)
+          validIndexes: Object.values(PineconeIndexName),
         });
       }
-      
+
       const targetIndex = indexName as PineconeIndexName | undefined;
 
-      const results = await pineconeService.searchSimilarConversations(embedding, topK, undefined, targetIndex);
-      
-      res.json({ 
-        success: true, 
-        results: results.map(match => ({
+      const results = await pineconeService.searchSimilarConversations(
+        embedding,
+        topK,
+        undefined,
+        targetIndex,
+      );
+
+      res.json({
+        success: true,
+        results: results.map((match) => ({
           id: match.id,
           score: match.score,
           text: match.metadata?.text,
-          metadata: match.metadata
+          metadata: match.metadata,
         })),
-        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
+        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
       });
     } catch (error) {
-      console.error('Error searching conversations:', error);
-      res.status(500).json({ 
-        error: "Failed to search conversations" 
+      console.error("Error searching conversations:", error);
+      res.status(500).json({
+        error: "Failed to search conversations",
       });
     }
   });
@@ -198,28 +216,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const indexName = req.query.indexName as string | undefined;
-      
+
       // Validate indexName if provided
-      if (indexName && !Object.values(PineconeIndexName).includes(indexName as PineconeIndexName)) {
-        return res.status(400).json({ 
+      if (
+        indexName &&
+        !Object.values(PineconeIndexName).includes(
+          indexName as PineconeIndexName,
+        )
+      ) {
+        return res.status(400).json({
           error: "Invalid index name",
-          validIndexes: Object.values(PineconeIndexName)
+          validIndexes: Object.values(PineconeIndexName),
         });
       }
-      
+
       const targetIndex = indexName as PineconeIndexName | undefined;
-      
+
       await pineconeService.deleteConversation(id, undefined, targetIndex);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message: "Conversation deleted successfully",
-        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
+        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
       });
     } catch (error) {
-      console.error('Error deleting conversation:', error);
-      res.status(500).json({ 
-        error: "Failed to delete conversation" 
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({
+        error: "Failed to delete conversation",
       });
     }
   });
@@ -227,27 +250,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/pinecone/stats", async (req, res) => {
     try {
       const indexName = req.query.indexName as string | undefined;
-      
+
       // Validate indexName if provided
-      if (indexName && !Object.values(PineconeIndexName).includes(indexName as PineconeIndexName)) {
-        return res.status(400).json({ 
+      if (
+        indexName &&
+        !Object.values(PineconeIndexName).includes(
+          indexName as PineconeIndexName,
+        )
+      ) {
+        return res.status(400).json({
           error: "Invalid index name",
-          validIndexes: Object.values(PineconeIndexName)
+          validIndexes: Object.values(PineconeIndexName),
         });
       }
-      
+
       const targetIndex = indexName as PineconeIndexName | undefined;
-      
+
       const stats = await pineconeService.getStats(targetIndex);
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         stats,
-        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT
+        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
       });
     } catch (error) {
-      console.error('Error getting Pinecone stats:', error);
-      res.status(500).json({ 
-        error: "Failed to get Pinecone stats" 
+      console.error("Error getting Pinecone stats:", error);
+      res.status(500).json({
+        error: "Failed to get Pinecone stats",
       });
     }
   });
@@ -258,10 +286,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const indexes = await pineconeService.listIndexes();
       res.json({ success: true, indexes });
     } catch (error) {
-      console.error('Error listing Pinecone indexes:', error);
-      res.status(500).json({ 
+      console.error("Error listing Pinecone indexes:", error);
+      res.status(500).json({
         error: "Failed to list Pinecone indexes",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
@@ -269,12 +297,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Prometheus metrics endpoint - for monitoring and alerting
   app.get("/metrics", async (req, res) => {
     try {
-      res.set('Content-Type', metrics.register.contentType);
+      res.set("Content-Type", metrics.register.contentType);
       const metricsData = await metrics.getMetrics();
       res.end(metricsData);
     } catch (error: any) {
-      logger.error({ error: error.message }, 'Error generating Prometheus metrics');
-      res.status(500).json({ error: 'Failed to generate metrics' });
+      logger.error(
+        { error: error.message },
+        "Error generating Prometheus metrics",
+      );
+      res.status(500).json({ error: "Failed to generate metrics" });
     }
   });
 
@@ -283,27 +314,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const cacheMetrics = latencyCache.getCacheMetrics();
       const cacheStats = latencyCache.getStats();
-      
-      res.json({ 
+
+      res.json({
         success: true,
         timestamp: new Date().toISOString(),
         metrics: cacheMetrics,
         stats: cacheStats,
         performance: {
-          averageQueryTime: cacheMetrics.hitRate > 0 
-            ? `~${Math.round(cacheMetrics.hitRate * 100)}% faster with cache`
-            : 'No data yet',
-          recommendations: cacheMetrics.hitRate < 0.3 && cacheMetrics.totalRequests > 10
-            ? 'Low hit rate - consider increasing TTL or reviewing query patterns'
-            : cacheMetrics.hitRate >= 0.5
-            ? 'Good cache performance'
-            : 'Gathering data...'
-        }
+          averageQueryTime:
+            cacheMetrics.hitRate > 0
+              ? `~${Math.round(cacheMetrics.hitRate * 100)}% faster with cache`
+              : "No data yet",
+          recommendations:
+            cacheMetrics.hitRate < 0.3 && cacheMetrics.totalRequests > 10
+              ? "Low hit rate - consider increasing TTL or reviewing query patterns"
+              : cacheMetrics.hitRate >= 0.5
+                ? "Good cache performance"
+                : "Gathering data...",
+        },
       });
     } catch (error: any) {
-      logger.error({ error: error.message }, 'Error getting cache metrics');
-      res.status(500).json({ 
-        error: "Failed to get cache metrics"
+      logger.error({ error: error.message }, "Error getting cache metrics");
+      res.status(500).json({
+        error: "Failed to get cache metrics",
       });
     }
   });
@@ -313,30 +346,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // to allow both authenticated and anonymous users to use the avatar
   app.post("/api/avatar/response", async (req, res) => {
     try {
-      const { message, conversationHistory = [], avatarPersonality, useWebSearch = false, userId } = req.body;
-      
+      const {
+        message,
+        conversationHistory = [],
+        avatarPersonality,
+        useWebSearch = false,
+        userId,
+      } = req.body;
+
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // DISABLED: Mem0 memories (speeds up responses)
-      let mem0Context = '';
-      // if (userId) {
-      //   try {
-      //     const { mem0Service } = await import('./mem0Service.js');
-      //     const memories = await mem0Service.searchMemories(userId, message, 3);
-      //     if (memories && memories.length > 0) {
-      //       mem0Context = '\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n' + 
-      //         memories.map(m => `- ${m.memory}`).join('\n');
-      //     }
-      //   } catch (memError) {
-      //     console.error('Error fetching Mem0 memories:', memError);
-      //     // Continue without memories if there's an error
-      //   }
-      // }
+      let mem0Context = "";
+      if (userId) {
+        try {
+          const { mem0Service } = await import("./mem0Service.js");
+          const memories = await mem0Service.searchMemories(userId, message, 3);
+          if (memories && memories.length > 0) {
+            mem0Context =
+              "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
+              memories.map((m) => `- ${m.memory}`).join("\n");
+          }
+        } catch (memError) {
+          console.error("Error fetching Mem0 memories:", memError);
+          // Continue without memories if there's an error
+        }
+      }
 
       // Default avatar personality - Mark Kohl
-      const currentDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+      const currentDate = new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
       const defaultPersonality = `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You provide knowledgeable, direct answers grounded in science, spirituality, and real-world experience.
 
 YOUR CORE MISSION:
@@ -379,25 +422,32 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
       const personalityPrompt = avatarPersonality || defaultPersonality;
 
       // Enhanced personality prompt with Mem0 context
-      const enhancedPersonality = mem0Context 
+      const enhancedPersonality = mem0Context
         ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
         : personalityPrompt;
 
       // Get knowledge base context from Pinecone using namespace-based queries (cheaper than Assistants)
-      const { pineconeNamespaceService } = await import('./pineconeNamespaceService.js');
-      let knowledgeContext = '';
-      
+      const { pineconeNamespaceService } = await import(
+        "./pineconeNamespaceService.js"
+      );
+      let knowledgeContext = "";
+
       if (pineconeNamespaceService.isAvailable()) {
-        const knowledgeResults = await pineconeNamespaceService.retrieveContext(message, 3);
+        const knowledgeResults = await pineconeNamespaceService.retrieveContext(
+          message,
+          3,
+        );
         // Use top 3 results from namespaces (mark-kohl + default)
         if (knowledgeResults.length > 0) {
           knowledgeContext = knowledgeResults[0].text;
-          console.log(`📚 Knowledge context retrieved (${knowledgeContext.length} chars)`);
+          console.log(
+            `📚 Knowledge context retrieved (${knowledgeContext.length} chars)`,
+          );
         }
       }
 
       // DISABLED: Web search (speeds up responses - only using Claude + Pinecone now)
-      let webSearchResults = '';
+      let webSearchResults = "";
       // if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
       //   if (googleSearchService.isAvailable()) {
       //     webSearchResults = await googleSearchService.search(message, 3);
@@ -406,13 +456,15 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
 
       // Generate response using Claude Sonnet 4 with all context
       let aiResponse: string;
-      
+
       if (claudeService.isAvailable()) {
         // Use Claude Sonnet 4 with Mark Kohl personality
-        const enhancedConversationHistory = conversationHistory.map((msg: any) => ({
-          message: msg.message,
-          isUser: msg.isUser
-        }));
+        const enhancedConversationHistory = conversationHistory.map(
+          (msg: any) => ({
+            message: msg.message,
+            isUser: msg.isUser,
+          }),
+        );
 
         if (webSearchResults) {
           aiResponse = await claudeService.generateEnhancedResponse(
@@ -420,19 +472,21 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
             knowledgeContext,
             webSearchResults,
             enhancedConversationHistory,
-            enhancedPersonality  // Pass enhanced personality with memories
+            enhancedPersonality, // Pass enhanced personality with memories
           );
         } else {
           aiResponse = await claudeService.generateResponse(
             message,
             knowledgeContext,
             enhancedConversationHistory,
-            enhancedPersonality  // Pass enhanced personality with memories
+            enhancedPersonality, // Pass enhanced personality with memories
           );
         }
       } else {
         // Fallback to knowledge base only
-        aiResponse = knowledgeContext || "I'm here to help, but I don't have specific information about that topic right now.";
+        aiResponse =
+          knowledgeContext ||
+          "I'm here to help, but I don't have specific information about that topic right now.";
       }
 
       // DISABLED: Store conversation in Mem0 (speeds up responses)
@@ -451,22 +505,22 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
       //     // Continue even if memory storage fails
       //   }
       // }
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         message,
         knowledgeResponse: aiResponse,
         personalityUsed: personalityPrompt,
         usedWebSearch: !!webSearchResults,
         usedClaude: claudeService.isAvailable(),
-        hasMemories: !!mem0Context
+        hasMemories: !!mem0Context,
       });
     } catch (error) {
-      console.error('Error getting avatar response:', error);
+      console.error("Error getting avatar response:", error);
       if (!res.headersSent) {
-        res.status(500).json({ 
+        res.status(500).json({
           error: "Failed to get avatar response",
-          details: error instanceof Error ? error.message : 'Unknown error'
+          details: error instanceof Error ? error.message : "Unknown error",
         });
       }
     }
@@ -476,91 +530,106 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
   app.post("/api/assistant/test", async (req, res) => {
     try {
       const { query = "test query" } = req.body;
-      
+
       // Import here to avoid circular dependency issues
-      const { pineconeAssistant } = await import('./mcpAssistant.js');
-      
+      const { pineconeAssistant } = await import("./mcpAssistant.js");
+
       if (!pineconeAssistant.isAvailable()) {
-        return res.status(400).json({ 
-          error: "Pinecone Assistant not available - check API key configuration" 
+        return res.status(400).json({
+          error:
+            "Pinecone Assistant not available - check API key configuration",
         });
       }
 
       const results = await pineconeAssistant.retrieveContext(query, 3);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         query,
         results,
-        message: "Pinecone Assistant connection successful"
+        message: "Pinecone Assistant connection successful",
       });
     } catch (error) {
-      console.error('Error testing assistant connection:', error);
-      res.status(500).json({ 
+      console.error("Error testing assistant connection:", error);
+      res.status(500).json({
         error: "Failed to connect to Pinecone Assistant",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
   // Configure multer for file uploads
-  const upload = multer({ dest: 'uploads/' });
+  const upload = multer({ dest: "uploads/" });
   const objectStorageService = new ObjectStorageService();
-  
+
   // Import document queue for background processing
-  const { enqueueDocumentJob, getJobStatus } = await import('./documentQueue.js');
+  const { enqueueDocumentJob, getJobStatus } = await import(
+    "./documentQueue.js"
+  );
 
   // Get presigned URL for direct-to-storage upload (fast response)
-  app.get("/api/documents/upload-url", isAuthenticated, async (req: any, res) => {
-    try {
-      const { filename, fileType } = req.query;
-      
-      if (!filename || !fileType) {
-        return res.status(400).json({ 
-          error: "filename and fileType query parameters are required" 
+  app.get(
+    "/api/documents/upload-url",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        const { filename, fileType } = req.query;
+
+        if (!filename || !fileType) {
+          return res.status(400).json({
+            error: "filename and fileType query parameters are required",
+          });
+        }
+
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+        const objectId = uploadURL.split("/").pop()?.split("?")[0] || "";
+        const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        res.json({
+          success: true,
+          uploadURL,
+          documentId,
+          objectPath: uploadURL.split("?")[0],
+          metadata: {
+            filename: decodeURIComponent(filename as string),
+            fileType: fileType as string,
+          },
+        });
+      } catch (error) {
+        console.error("Error generating upload URL:", error);
+        res.status(500).json({
+          error: "Failed to generate upload URL",
+          details: error instanceof Error ? error.message : "Unknown error",
         });
       }
-
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      const objectId = uploadURL.split('/').pop()?.split('?')[0] || '';
-      const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      res.json({
-        success: true,
-        uploadURL,
-        documentId,
-        objectPath: uploadURL.split('?')[0],
-        metadata: {
-          filename: decodeURIComponent(filename as string),
-          fileType: fileType as string,
-        }
-      });
-    } catch (error) {
-      console.error('Error generating upload URL:', error);
-      res.status(500).json({ 
-        error: "Failed to generate upload URL",
-        details: error instanceof Error ? error.message : 'Unknown error'
-      });
-    }
-  });
+    },
+  );
 
   // Enqueue document processing job (after client uploads to presigned URL)
   app.post("/api/documents/process", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     try {
-      const { documentId, filename, fileType, objectPath, indexName, namespace } = req.body;
-      
+      const {
+        documentId,
+        filename,
+        fileType,
+        objectPath,
+        indexName,
+        namespace,
+      } = req.body;
+
       if (!documentId || !filename || !fileType || !objectPath) {
-        return res.status(400).json({ 
-          error: "Missing required fields: documentId, filename, fileType, objectPath" 
+        return res.status(400).json({
+          error:
+            "Missing required fields: documentId, filename, fileType, objectPath",
         });
       }
 
-      const { isQueueAvailable } = await import('./documentQueue.js');
-      
+      const { isQueueAvailable } = await import("./documentQueue.js");
+
       if (isQueueAvailable()) {
         const jobId = `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         await enqueueDocumentJob({
           jobId,
           documentId,
@@ -577,7 +646,8 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
           jobId,
           documentId,
           processing: "async",
-          message: "Document processing started in background. Poll /api/jobs/:jobId for status."
+          message:
+            "Document processing started in background. Poll /api/jobs/:jobId for status.",
         });
       } else {
         const metadata = { userId, indexName, namespace };
@@ -585,7 +655,7 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
           objectPath,
           fileType,
           documentId,
-          metadata
+          metadata,
         );
 
         res.json({
@@ -593,14 +663,14 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
           documentId,
           processing: "sync",
           result,
-          message: "Document processed synchronously (Redis not configured)"
+          message: "Document processed synchronously (Redis not configured)",
         });
       }
     } catch (error) {
-      console.error('Error processing document:', error);
-      res.status(500).json({ 
+      console.error("Error processing document:", error);
+      res.status(500).json({
         error: "Failed to process document",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
@@ -609,147 +679,162 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
   app.get("/api/jobs/:jobId", isAuthenticated, async (req: any, res) => {
     try {
       const { jobId } = req.params;
-      
-      const { isQueueAvailable } = await import('./documentQueue.js');
-      
+
+      const { isQueueAvailable } = await import("./documentQueue.js");
+
       if (!isQueueAvailable()) {
-        return res.status(503).json({ 
+        return res.status(503).json({
           error: "Job queue not available - Redis not configured",
-          message: "Set REDIS_URL environment variable to enable background job processing"
+          message:
+            "Set REDIS_URL environment variable to enable background job processing",
         });
       }
-      
+
       const jobStatus = await getJobStatus(jobId);
-      
+
       if (!jobStatus) {
-        return res.status(404).json({ 
-          error: "Job not found" 
+        return res.status(404).json({
+          error: "Job not found",
         });
       }
 
       res.json({
         success: true,
-        job: jobStatus
+        job: jobStatus,
       });
     } catch (error) {
-      console.error('Error getting job status:', error);
-      res.status(500).json({ 
+      console.error("Error getting job status:", error);
+      res.status(500).json({
         error: "Failed to get job status",
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : "Unknown error",
       });
     }
   });
 
   // Document upload and processing endpoints (protected)
-  app.post("/api/documents/upload", isAuthenticated, upload.single('document'), async (req: any, res) => {
-    const userId = req.user.claims.sub;
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-
-      const { originalname, mimetype, size, path: tempPath } = req.file;
-      const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Validate file type
-      const allowedTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'text/plain',
-        'audio/mp3',
-        'audio/mpeg',
-        'audio/wav',
-        'audio/m4a',
-        'audio/webm',
-        'audio/mp4'
-      ];
-
-      if (!allowedTypes.includes(mimetype)) {
-        fs.unlinkSync(tempPath); // Clean up temp file
-        return res.status(400).json({ 
-          error: "Unsupported file type. Supported types: PDF, DOCX, TXT, MP3, WAV, M4A, WebM" 
-        });
-      }
-
-      // Get upload URL from object storage
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      
-      // Read file and upload to object storage
-      const fileBuffer = fs.readFileSync(tempPath);
-      
+  app.post(
+    "/api/documents/upload",
+    isAuthenticated,
+    upload.single("document"),
+    async (req: any, res) => {
+      const userId = req.user.claims.sub;
       try {
-        const uploadResponse = await fetch(uploadURL, {
-          method: 'PUT',
-          body: fileBuffer,
-          headers: {
-            'Content-Type': mimetype,
-          },
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
         }
 
-        // Get the object path from the upload URL
-        const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+        const documentId = `doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Get category from form data
-        const category = req.body.category || null;
-        
-        // Process document in background with better error handling and resource cleanup
-        documentProcessor.processDocument(tempPath, mimetype, documentId, {
-          filename: originalname,
-          fileSize: size,
-          category,
-          uploadedAt: new Date().toISOString(),
-          userId
-        }).then((result) => {
-          console.log(`Document processing completed for ${documentId}:`, result);
-        }).catch((error) => {
-          console.error(`Document processing failed for ${documentId}:`, error);
-          // Clean up temp file on processing error
-          try {
-            if (fs.existsSync(tempPath)) {
-              fs.unlinkSync(tempPath);
-            }
-          } catch (cleanupError) {
-            console.error('Error cleaning up temp file:', cleanupError);
+        // Validate file type
+        const allowedTypes = [
+          "application/pdf",
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "text/plain",
+          "audio/mp3",
+          "audio/mpeg",
+          "audio/wav",
+          "audio/m4a",
+          "audio/webm",
+          "audio/mp4",
+        ];
+
+        if (!allowedTypes.includes(mimetype)) {
+          fs.unlinkSync(tempPath); // Clean up temp file
+          return res.status(400).json({
+            error:
+              "Unsupported file type. Supported types: PDF, DOCX, TXT, MP3, WAV, M4A, WebM",
+          });
+        }
+
+        // Get upload URL from object storage
+        const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+
+        // Read file and upload to object storage
+        const fileBuffer = fs.readFileSync(tempPath);
+
+        try {
+          const uploadResponse = await fetch(uploadURL, {
+            method: "PUT",
+            body: fileBuffer,
+            headers: {
+              "Content-Type": mimetype,
+            },
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error(`Upload failed: ${uploadResponse.statusText}`);
           }
-        });
 
-        // Clean up temp file
-        fs.unlinkSync(tempPath);
+          // Get the object path from the upload URL
+          const objectPath =
+            objectStorageService.normalizeObjectEntityPath(uploadURL);
 
-        res.json({
-          success: true,
-          documentId,
-          filename: originalname,
-          fileType: mimetype,
-          fileSize: size,
-          objectPath,
-          status: "completed",
-          message: "Document uploaded successfully",
-          userId
-        });
+          // Get category from form data
+          const category = req.body.category || null;
 
-      } catch (uploadError) {
-        console.error('Object storage upload error:', uploadError);
-        fs.unlinkSync(tempPath);
-        return res.status(500).json({ 
-          error: "Failed to upload to object storage" 
+          // Process document in background with better error handling and resource cleanup
+          documentProcessor
+            .processDocument(tempPath, mimetype, documentId, {
+              filename: originalname,
+              fileSize: size,
+              category,
+              uploadedAt: new Date().toISOString(),
+              userId,
+            })
+            .then((result) => {
+              console.log(
+                `Document processing completed for ${documentId}:`,
+                result,
+              );
+            })
+            .catch((error) => {
+              console.error(
+                `Document processing failed for ${documentId}:`,
+                error,
+              );
+              // Clean up temp file on processing error
+              try {
+                if (fs.existsSync(tempPath)) {
+                  fs.unlinkSync(tempPath);
+                }
+              } catch (cleanupError) {
+                console.error("Error cleaning up temp file:", cleanupError);
+              }
+            });
+
+          // Clean up temp file
+          fs.unlinkSync(tempPath);
+
+          res.json({
+            success: true,
+            documentId,
+            filename: originalname,
+            fileType: mimetype,
+            fileSize: size,
+            objectPath,
+            status: "completed",
+            message: "Document uploaded successfully",
+            userId,
+          });
+        } catch (uploadError) {
+          console.error("Object storage upload error:", uploadError);
+          fs.unlinkSync(tempPath);
+          return res.status(500).json({
+            error: "Failed to upload to object storage",
+          });
+        }
+      } catch (error) {
+        console.error("Document upload error:", error);
+        if (req.file?.path) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to upload document",
         });
       }
-
-    } catch (error) {
-      console.error('Document upload error:', error);
-      if (req.file?.path) {
-        fs.unlinkSync(req.file.path);
-      }
-      res.status(500).json({ 
-        error: "Failed to upload document" 
-      });
-    }
-  });
+    },
+  );
 
   // Get user's documents
   app.get("/api/documents/user", async (req: any, res) => {
@@ -762,12 +847,12 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
         success: true,
         userId,
         stats: stats,
-        message: "User documents retrieved successfully"
+        message: "User documents retrieved successfully",
       });
     } catch (error) {
-      console.error('Error fetching user documents:', error);
-      res.status(500).json({ 
-        error: "Failed to fetch user documents" 
+      console.error("Error fetching user documents:", error);
+      res.status(500).json({
+        error: "Failed to fetch user documents",
       });
     }
   });
@@ -778,9 +863,9 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
       const documents = await storage.getAllDocuments();
       res.json(documents);
     } catch (error) {
-      console.error('Error fetching documents:', error);
-      res.status(500).json({ 
-        error: "Failed to fetch documents" 
+      console.error("Error fetching documents:", error);
+      res.status(500).json({
+        error: "Failed to fetch documents",
       });
     }
   });
@@ -790,24 +875,24 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
     try {
       const { id } = req.params;
       const userId = "test-user";
-      
+
       // Get the document to check ownership
       const document = await storage.getDocument(id);
       if (!document) {
         return res.status(404).json({ error: "Document not found" });
       }
-      
+
       // Check if user owns the document (in a production system you'd implement proper access control)
       if (document.userId !== userId) {
         return res.status(403).json({ error: "Access denied" });
       }
-      
+
       await storage.deleteDocument(id);
       res.json({ success: true, message: "Document deleted successfully" });
     } catch (error) {
-      console.error('Error deleting document:', error);
-      res.status(500).json({ 
-        error: "Failed to delete document" 
+      console.error("Error deleting document:", error);
+      res.status(500).json({
+        error: "Failed to delete document",
       });
     }
   });
@@ -818,9 +903,9 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
       const users = await storage.getAllUsers();
       res.json(users);
     } catch (error) {
-      console.error('Error fetching users:', error);
-      res.status(500).json({ 
-        error: "Failed to fetch users" 
+      console.error("Error fetching users:", error);
+      res.status(500).json({
+        error: "Failed to fetch users",
       });
     }
   });
@@ -829,84 +914,94 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
   app.post("/api/documents/search", async (req, res) => {
     try {
       const { query, maxResults = 5 } = req.body;
-      
+
       if (!query) {
-        return res.status(400).json({ 
-          error: "Query is required" 
+        return res.status(400).json({
+          error: "Query is required",
         });
       }
 
-      const results = await documentProcessor.searchDocuments(query, maxResults);
-      
+      const results = await documentProcessor.searchDocuments(
+        query,
+        maxResults,
+      );
+
       res.json({
         success: true,
         query,
-        results: results.map(result => ({
+        results: results.map((result) => ({
           text: result.text,
           score: result.score,
           documentId: result.documentId,
-          metadata: result.metadata
-        }))
+          metadata: result.metadata,
+        })),
       });
     } catch (error) {
-      console.error('Document search error:', error);
-      res.status(500).json({ 
-        error: "Failed to search documents" 
+      console.error("Document search error:", error);
+      res.status(500).json({
+        error: "Failed to search documents",
       });
     }
   });
 
   // Get conversation context for RAG
-  app.post("/api/chat/context", rateLimitMiddleware(20, 60000), async (req, res) => {
-    try {
-      const { query, maxTokens = 2000 } = req.body;
-      
-      if (!query) {
-        return res.status(400).json({ 
-          error: "Query is required" 
+  app.post(
+    "/api/chat/context",
+    rateLimitMiddleware(20, 60000),
+    async (req, res) => {
+      try {
+        const { query, maxTokens = 2000 } = req.body;
+
+        if (!query) {
+          return res.status(400).json({
+            error: "Query is required",
+          });
+        }
+
+        const context = await documentProcessor.getConversationContext(
+          query,
+          maxTokens,
+        );
+
+        res.json({
+          success: true,
+          query,
+          context,
+          length: context.length,
+        });
+      } catch (error) {
+        console.error("Context retrieval error:", error);
+        res.status(500).json({
+          error: "Failed to get conversation context",
         });
       }
-
-      const context = await documentProcessor.getConversationContext(query, maxTokens);
-      
-      res.json({
-        success: true,
-        query,
-        context,
-        length: context.length
-      });
-    } catch (error) {
-      console.error('Context retrieval error:', error);
-      res.status(500).json({ 
-        error: "Failed to get conversation context" 
-      });
-    }
-  });
+    },
+  );
 
   // Session management endpoints
   app.post("/api/sessions", async (req, res) => {
     try {
       const { userId } = req.body;
-      
+
       if (!userId) {
-        return res.status(400).json({ 
-          error: "User ID is required" 
+        return res.status(400).json({
+          error: "User ID is required",
         });
       }
 
       const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       res.json({
         success: true,
         sessionId,
         userId,
         conversationHistory: [],
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Session creation error:', error);
-      res.status(500).json({ 
-        error: "Failed to create session" 
+      console.error("Session creation error:", error);
+      res.status(500).json({
+        error: "Failed to create session",
       });
     }
   });
@@ -915,15 +1010,15 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
     try {
       const { sessionId } = req.params;
       const { message, isUser = true } = req.body;
-      
+
       if (!message) {
-        return res.status(400).json({ 
-          error: "Message is required" 
+        return res.status(400).json({
+          error: "Message is required",
         });
       }
 
       // If this is a user message, get RAG context
-      let context = '';
+      let context = "";
       if (isUser) {
         context = await documentProcessor.getConversationContext(message);
       }
@@ -933,19 +1028,19 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
         message,
         isUser,
         context: isUser ? context : undefined,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       res.json({
         success: true,
         sessionId,
         message: messageEntry,
-        context: isUser ? context : undefined
+        context: isUser ? context : undefined,
       });
     } catch (error) {
-      console.error('Message processing error:', error);
-      res.status(500).json({ 
-        error: "Failed to process message" 
+      console.error("Message processing error:", error);
+      res.status(500).json({
+        error: "Failed to process message",
       });
     }
   });
@@ -954,7 +1049,7 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
   app.post("/api/documents/url", async (req, res) => {
     try {
       const { url, category = null } = req.body;
-      
+
       if (!url) {
         return res.status(400).json({ error: "URL is required" });
       }
@@ -967,58 +1062,64 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
 
       const html = await response.text();
       // Simple text extraction (in a real app, you'd use a proper HTML parser)
-      let textContent = html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      
+      let textContent = html
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
       const documentId = `url_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Process the extracted text with size limits
-      if (textContent.length > 500000) { // Limit to 500KB
+      if (textContent.length > 500000) {
+        // Limit to 500KB
         textContent = textContent.substring(0, 500000);
         console.warn(`URL content truncated to 500KB for ${documentId}`);
       }
-      
+
       // Create temporary file with extracted content
       const tempFilePath = `/tmp/${documentId}.txt`;
       fs.writeFileSync(tempFilePath, textContent);
-      
+
       // Process the extracted text
-      documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
-        url,
-        category,
-        type: 'url_content',
-        extractedAt: new Date().toISOString()
-      }).then((result) => {
-        console.log(`URL processing completed for ${documentId}:`, result);
-        // Clean up temp file
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (cleanupError) {
-          console.error('Error cleaning up temp file:', cleanupError);
-        }
-      }).catch((error) => {
-        console.error(`URL processing failed for ${documentId}:`, error);
-        // Clean up temp file on error too
-        try { 
-          fs.unlinkSync(tempFilePath); 
-        } catch (cleanupError) {
-          console.error('Error cleaning up temp file:', cleanupError);
-        }
-      });
+      documentProcessor
+        .processDocument(tempFilePath, "text/plain", documentId, {
+          url,
+          category,
+          type: "url_content",
+          extractedAt: new Date().toISOString(),
+        })
+        .then((result) => {
+          console.log(`URL processing completed for ${documentId}:`, result);
+          // Clean up temp file
+          try {
+            fs.unlinkSync(tempFilePath);
+          } catch (cleanupError) {
+            console.error("Error cleaning up temp file:", cleanupError);
+          }
+        })
+        .catch((error) => {
+          console.error(`URL processing failed for ${documentId}:`, error);
+          // Clean up temp file on error too
+          try {
+            fs.unlinkSync(tempFilePath);
+          } catch (cleanupError) {
+            console.error("Error cleaning up temp file:", cleanupError);
+          }
+        });
 
       res.json({
         success: true,
         documentId,
         filename: new URL(url).hostname,
-        fileType: 'text/html',
+        fileType: "text/html",
         fileSize: textContent.length,
         status: "completed",
-        message: "URL content extracted and processing started"
+        message: "URL content extracted and processing started",
       });
-
     } catch (error) {
-      console.error('URL processing error:', error);
-      res.status(500).json({ 
-        error: "Failed to process URL" 
+      console.error("URL processing error:", error);
+      res.status(500).json({
+        error: "Failed to process URL",
       });
     }
   });
@@ -1026,213 +1127,250 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
   // Text content processing endpoint
   app.post("/api/documents/text", async (req, res) => {
     try {
-      const { text, title = 'Custom Text Input', category = null } = req.body;
-      
+      const { text, title = "Custom Text Input", category = null } = req.body;
+
       if (!text) {
         return res.status(400).json({ error: "Text content is required" });
       }
 
       const documentId = `text_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Limit text size to prevent memory issues
       let limitedText = text;
-      if (text.length > 500000) { // Limit to 500KB
+      if (text.length > 500000) {
+        // Limit to 500KB
         limitedText = text.substring(0, 500000);
         console.warn(`Text content truncated to 500KB for ${documentId}`);
       }
-      
+
       // Create temporary file with text content
       const tempFilePath = `/tmp/${documentId}.txt`;
       fs.writeFileSync(tempFilePath, limitedText);
 
       // Process the text
-      documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
-        title,
-        category,
-        type: 'document_chunk',
-        createdAt: new Date().toISOString()
-      }).then((result) => {
-        console.log(`Text processing completed for ${documentId}:`, result);
-        // Clean up temp file
-        fs.unlinkSync(tempFilePath);
-      }).catch((error) => {
-        console.error(`Text processing failed for ${documentId}:`, error);
-        // Clean up temp file on error too
-        try { fs.unlinkSync(tempFilePath); } catch {}
-      });
+      documentProcessor
+        .processDocument(tempFilePath, "text/plain", documentId, {
+          title,
+          category,
+          type: "document_chunk",
+          createdAt: new Date().toISOString(),
+        })
+        .then((result) => {
+          console.log(`Text processing completed for ${documentId}:`, result);
+          // Clean up temp file
+          fs.unlinkSync(tempFilePath);
+        })
+        .catch((error) => {
+          console.error(`Text processing failed for ${documentId}:`, error);
+          // Clean up temp file on error too
+          try {
+            fs.unlinkSync(tempFilePath);
+          } catch {}
+        });
 
       res.json({
         success: true,
         documentId,
         filename: title,
-        fileType: 'text/plain',
+        fileType: "text/plain",
         fileSize: text.length,
         status: "completed",
-        message: "Text content processing started"
+        message: "Text content processing started",
       });
-
     } catch (error) {
-      console.error('Text processing error:', error);
-      res.status(500).json({ 
-        error: "Failed to process text content" 
+      console.error("Text processing error:", error);
+      res.status(500).json({
+        error: "Failed to process text content",
       });
     }
   });
 
   // Audio transcription and processing endpoint
-  app.post("/api/documents/dictation", upload.single('audio'), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "Audio file is required" });
-      }
+  app.post(
+    "/api/documents/dictation",
+    upload.single("audio"),
+    async (req, res) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ error: "Audio file is required" });
+        }
 
-      const documentId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      const category = req.body.category || null;
-      
-      // Transcribe audio using OpenAI Whisper
-      const transcribedText = await documentProcessor.extractTextFromFile(req.file.path, req.file.mimetype);
-      
-      // Create temporary file with transcribed content
-      const tempFilePath = `/tmp/${documentId}.txt`;
-      fs.writeFileSync(tempFilePath, transcribedText);
+        const documentId = `audio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const category = req.body.category || null;
 
-      // Process the transcribed text
-      documentProcessor.processDocument(tempFilePath, "text/plain", documentId, {
-        originalFilename: req.file.originalname,
-        category,
-        type: 'audio_transcription',
-        audioFileSize: req.file.size,
-        transcribedAt: new Date().toISOString()
-      }).then((result) => {
-        console.log(`Audio transcription processing completed for ${documentId}:`, result);
-        // Clean up temp files
-        fs.unlinkSync(tempFilePath);
-        fs.unlinkSync(req.file!.path);
-      }).catch((error) => {
-        console.error(`Audio transcription processing failed for ${documentId}:`, error);
-        // Clean up temp files on error too
-        try { fs.unlinkSync(tempFilePath); } catch {}
-        try { fs.unlinkSync(req.file!.path); } catch {}
-      });
+        // Transcribe audio using OpenAI Whisper
+        const transcribedText = await documentProcessor.extractTextFromFile(
+          req.file.path,
+          req.file.mimetype,
+        );
 
-      res.json({
-        success: true,
-        documentId,
-        filename: `Audio Recording - ${new Date().toLocaleString()}`,
-        fileType: 'audio/wav',
-        fileSize: req.file.size,
-        status: "completed",
-        message: "Audio transcription and processing started"
-      });
+        // Create temporary file with transcribed content
+        const tempFilePath = `/tmp/${documentId}.txt`;
+        fs.writeFileSync(tempFilePath, transcribedText);
 
-    } catch (error) {
-      console.error('Audio processing error:', error);
-      if (req.file?.path) {
-        try { fs.unlinkSync(req.file.path); } catch {}
-      }
-      res.status(500).json({ 
-        error: "Failed to process audio recording" 
-      });
-    }
-  });
+        // Process the transcribed text
+        documentProcessor
+          .processDocument(tempFilePath, "text/plain", documentId, {
+            originalFilename: req.file.originalname,
+            category,
+            type: "audio_transcription",
+            audioFileSize: req.file.size,
+            transcribedAt: new Date().toISOString(),
+          })
+          .then((result) => {
+            console.log(
+              `Audio transcription processing completed for ${documentId}:`,
+              result,
+            );
+            // Clean up temp files
+            fs.unlinkSync(tempFilePath);
+            fs.unlinkSync(req.file!.path);
+          })
+          .catch((error) => {
+            console.error(
+              `Audio transcription processing failed for ${documentId}:`,
+              error,
+            );
+            // Clean up temp files on error too
+            try {
+              fs.unlinkSync(tempFilePath);
+            } catch {}
+            try {
+              fs.unlinkSync(req.file!.path);
+            } catch {}
+          });
 
-  // Enhanced AI chat endpoint with Claude Sonnet and Google Search
-  app.post("/api/chat/enhanced", rateLimitMiddleware(30, 60000), async (req, res) => {
-    try {
-      const { 
-        message, 
-        conversationHistory = [], 
-        useWebSearch = false,
-        maxTokens = 2000 
-      } = req.body;
-      
-      if (!message) {
-        return res.status(400).json({ 
-          error: "Message is required" 
+        res.json({
+          success: true,
+          documentId,
+          filename: `Audio Recording - ${new Date().toLocaleString()}`,
+          fileType: "audio/wav",
+          fileSize: req.file.size,
+          status: "completed",
+          message: "Audio transcription and processing started",
+        });
+      } catch (error) {
+        console.error("Audio processing error:", error);
+        if (req.file?.path) {
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch {}
+        }
+        res.status(500).json({
+          error: "Failed to process audio recording",
         });
       }
+    },
+  );
 
-      // Get conversation context from knowledge base
-      const context = await documentProcessor.getConversationContext(message, maxTokens);
-      
-      let webSearchResults = '';
-      
-      // Use Google Search for current information if requested or if query seems time-sensitive
-      if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
-        if (googleSearchService.isAvailable()) {
-          webSearchResults = await googleSearchService.search(message, 4);
-        } else {
-          console.warn('Google Search requested but not available');
-        }
-      }
-
-      let aiResponse: string;
-      
-      // Use Claude Sonnet if available, otherwise fallback to basic context response
-      if (claudeService.isAvailable()) {
-        if (webSearchResults) {
-          aiResponse = await claudeService.generateEnhancedResponse(
-            message, 
-            context, 
-            webSearchResults, 
-            conversationHistory
-          );
-        } else {
-          aiResponse = await claudeService.generateResponse(
-            message, 
-            context, 
-            conversationHistory
-          );
-        }
-      } else {
-        // Fallback response when Claude is not available
-        const contextInfo = context ? `Based on the knowledge base: ${context.substring(0, 500)}...` : '';
-        const webInfo = webSearchResults ? `\n\nCurrent information: ${webSearchResults.substring(0, 300)}...` : '';
-        aiResponse = `${contextInfo}${webInfo}\n\nI can provide information from the knowledge base${webSearchResults ? ' and current web results' : ''}, but for advanced AI conversation capabilities, Claude Sonnet integration is needed.`;
-      }
-
-      // Store conversation in Pinecone if it has good context
+  // Enhanced AI chat endpoint with Claude Sonnet and Google Search
+  app.post(
+    "/api/chat/enhanced",
+    rateLimitMiddleware(30, 60000),
+    async (req, res) => {
       try {
-        if (context) {
-          const embedding = await documentProcessor.generateEmbedding(message);
-          const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          await pineconeService.storeConversation(
-            conversationId,
-            `Q: ${message}\nA: ${aiResponse}`,
-            embedding,
-            {
-              type: 'chat_enhanced',
-              hasWebSearch: !!webSearchResults,
-              timestamp: new Date().toISOString()
-            }
-          );
+        const {
+          message,
+          conversationHistory = [],
+          useWebSearch = false,
+          maxTokens = 2000,
+        } = req.body;
+
+        if (!message) {
+          return res.status(400).json({
+            error: "Message is required",
+          });
         }
-      } catch (storeError) {
-        console.error('Error storing conversation:', storeError);
-        // Don't fail the request if storage fails
+
+        // Get conversation context from knowledge base
+        const context = await documentProcessor.getConversationContext(
+          message,
+          maxTokens,
+        );
+
+        let webSearchResults = "";
+
+        // Use Google Search for current information if requested or if query seems time-sensitive
+        if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
+          if (googleSearchService.isAvailable()) {
+            webSearchResults = await googleSearchService.search(message, 4);
+          } else {
+            console.warn("Google Search requested but not available");
+          }
+        }
+
+        let aiResponse: string;
+
+        // Use Claude Sonnet if available, otherwise fallback to basic context response
+        if (claudeService.isAvailable()) {
+          if (webSearchResults) {
+            aiResponse = await claudeService.generateEnhancedResponse(
+              message,
+              context,
+              webSearchResults,
+              conversationHistory,
+            );
+          } else {
+            aiResponse = await claudeService.generateResponse(
+              message,
+              context,
+              conversationHistory,
+            );
+          }
+        } else {
+          // Fallback response when Claude is not available
+          const contextInfo = context
+            ? `Based on the knowledge base: ${context.substring(0, 500)}...`
+            : "";
+          const webInfo = webSearchResults
+            ? `\n\nCurrent information: ${webSearchResults.substring(0, 300)}...`
+            : "";
+          aiResponse = `${contextInfo}${webInfo}\n\nI can provide information from the knowledge base${webSearchResults ? " and current web results" : ""}, but for advanced AI conversation capabilities, Claude Sonnet integration is needed.`;
+        }
+
+        // Store conversation in Pinecone if it has good context
+        try {
+          if (context) {
+            const embedding =
+              await documentProcessor.generateEmbedding(message);
+            const conversationId = `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+            await pineconeService.storeConversation(
+              conversationId,
+              `Q: ${message}\nA: ${aiResponse}`,
+              embedding,
+              {
+                type: "chat_enhanced",
+                hasWebSearch: !!webSearchResults,
+                timestamp: new Date().toISOString(),
+              },
+            );
+          }
+        } catch (storeError) {
+          console.error("Error storing conversation:", storeError);
+          // Don't fail the request if storage fails
+        }
+
+        res.json({
+          success: true,
+          message: aiResponse,
+          metadata: {
+            hasContext: !!context,
+            hasWebSearch: !!webSearchResults,
+            claudeAvailable: claudeService.isAvailable(),
+            googleSearchAvailable: googleSearchService.isAvailable(),
+            contextLength: context.length,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      } catch (error) {
+        console.error("Enhanced chat error:", error);
+        res.status(500).json({
+          error: "Failed to process enhanced chat request",
+        });
       }
-
-      res.json({
-        success: true,
-        message: aiResponse,
-        metadata: {
-          hasContext: !!context,
-          hasWebSearch: !!webSearchResults,
-          claudeAvailable: claudeService.isAvailable(),
-          googleSearchAvailable: googleSearchService.isAvailable(),
-          contextLength: context.length,
-          timestamp: new Date().toISOString()
-        }
-      });
-
-    } catch (error) {
-      console.error('Enhanced chat error:', error);
-      res.status(500).json({ 
-        error: "Failed to process enhanced chat request" 
-      });
-    }
-  });
+    },
+  );
 
   const httpServer = createServer(app);
   return httpServer;
