@@ -9,6 +9,7 @@ import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { useStreamStats } from "@/hooks/useStreamStats";
 import { AvatarSelector } from "@/components/avatar-selector";
+import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
 
 interface AvatarChatProps {
   userId: string;
@@ -437,9 +438,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           data-testid="avatar-video"
         />
         {audioOnly && sessionActive && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black text-white">
-            <p className="text-lg">Audio-only mode active</p>
-          </div>
+          <AudioOnlyDisplay isSpeaking={streamStats.audioLevel > 5} />
         )}
       </div>
 

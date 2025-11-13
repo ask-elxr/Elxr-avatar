@@ -125,6 +125,17 @@ iframe[data-testid="heygen-avatar-iframe"]::after {
   50% { transform: scale(1.05); }
 }
 
+@keyframes pulse-wave {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
 .pulse { animation: pulse 2s infinite; }
 .spin { animation: spin 1s linear infinite; }
 .speaking { animation: speaking 1s ease-in-out infinite; }
