@@ -30,6 +30,7 @@ interface AvatarSessionReturn {
   reconnect: () => void;
   togglePause: () => Promise<void>;
   isPaused: boolean;
+  isSpeaking: boolean;
   avatarRef: React.MutableRefObject<StreamingAvatar | null>;
   intentionalStopRef: React.MutableRefObject<boolean>;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
@@ -50,6 +51,7 @@ export function useAvatarSession({
   const [isLoading, setIsLoading] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isSpeakingState, setIsSpeakingState] = useState(false);
 
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const intentionalStopRef = useRef(false);
@@ -141,10 +143,12 @@ export function useAvatarSession({
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
         isSpeakingRef.current = true;
+        setIsSpeakingState(true);
       });
 
       avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
         isSpeakingRef.current = false;
+        setIsSpeakingState(false);
       });
 
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
@@ -546,6 +550,7 @@ export function useAvatarSession({
     reconnect,
     togglePause,
     isPaused,
+    isSpeaking: isSpeakingState,
     avatarRef,
     intentionalStopRef,
     abortControllerRef,

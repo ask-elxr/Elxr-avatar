@@ -28,6 +28,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [audioOnly, setAudioOnly] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -55,6 +56,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     reconnect,
     togglePause,
     isPaused,
+    isSpeaking: isSpeakingFromHook,
     avatarRef,
     hasAskedAnythingElseRef,
     speakingIntervalRef
@@ -65,6 +67,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     selectedAvatarId,
     onResetInactivityTimer: () => resetTimerRef.current?.()
   });
+  
+  // Sync isSpeaking state from hook
+  useEffect(() => {
+    setIsSpeaking(isSpeakingFromHook);
+  }, [isSpeakingFromHook]);
   
   // Hook 2: Inactivity timer management
   const { resetInactivityTimer, clearAllTimers } = useInactivityTimer({
@@ -429,16 +436,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
       {/* Avatar Video Stream */}
       <div className="w-full h-full flex items-center justify-center">
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-          style={{ display: audioOnly ? 'none' : 'block' }}
-          data-testid="avatar-video"
-        />
-        {audioOnly && sessionActive && (
-          <AudioOnlyDisplay isSpeaking={streamStats.audioLevel > 5} />
+        {audioOnly ? (
+          <AudioOnlyDisplay isSpeaking={isSpeaking} />
+        ) : (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+            data-testid="avatar-video"
+          />
         )}
       </div>
 
