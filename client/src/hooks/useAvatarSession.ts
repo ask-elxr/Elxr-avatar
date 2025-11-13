@@ -63,6 +63,7 @@ export function useAvatarSession({
   const isSpeakingRef = useRef(false);
   const audioOnlyRef = useRef(false);
   const currentAvatarIdRef = useRef(selectedAvatarId);
+  const isInternalPromptRef = useRef(false); // Track internal thinking/filler phrases
 
   const fetchAccessToken = async (): Promise<string> => {
     const response = await fetch("/api/heygen/token", {
@@ -158,6 +159,12 @@ export function useAvatarSession({
       avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
         try {
           console.log("USER_TALKING_MESSAGE event received:", message);
+
+          // Ignore messages when avatar is speaking internal/thinking phrases
+          if (isInternalPromptRef.current) {
+            console.log("Ignoring message - internal prompt is active");
+            return;
+          }
 
           const userMessage =
             message?.detail?.message || message?.message || message;
@@ -259,10 +266,13 @@ export function useAvatarSession({
                 thinkingPhrases[
                   Math.floor(Math.random() * thinkingPhrases.length)
                 ];
+              // Set flag to ignore USER_TALKING_MESSAGE during internal prompts
+              isInternalPromptRef.current = true;
               await avatar.speak({
                 text: randomPhrase,
                 task_type: TaskType.TALK,
               });
+              // Keep flag set - will be cleared when real response is ready
             }
 
             /*const fillerInterval = setInterval(async () => {
@@ -286,12 +296,15 @@ export function useAvatarSession({
                 followUpPhrases[
                   Math.floor(Math.random() * followUpPhrases.length)
                 ];
+              // Set flag to ignore USER_TALKING_MESSAGE during internal prompts
+              isInternalPromptRef.current = true;
               await avatar
                 .speak({
                   text: followUp,
                   task_type: TaskType.TALK,
                 })
                 .catch(() => {});
+              // Keep flag set - will be cleared when real response is ready
             }, 15000);
 
             try {
@@ -310,6 +323,9 @@ export function useAvatarSession({
                 const data = await response.json();
                 const claudeResponse = data.knowledgeResponse || data.response;
                 console.log("Claude response received:", claudeResponse);
+
+                // Clear the internal prompt flag now that we have the real response
+                isInternalPromptRef.current = false;
 
                 onResetInactivityTimer?.();
 
