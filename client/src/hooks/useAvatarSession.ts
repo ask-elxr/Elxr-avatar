@@ -9,12 +9,14 @@ interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
   userId: string;
   memoryEnabled: boolean;
+  selectedAvatarId?: string;
   onSessionActiveChange?: (active: boolean) => void;
   onResetInactivityTimer?: () => void;
 }
 
 interface StartSessionOptions {
   audioOnly?: boolean;
+  avatarId?: string;
 }
 
 interface AvatarSessionReturn {
@@ -39,6 +41,7 @@ export function useAvatarSession({
   videoRef,
   userId,
   memoryEnabled,
+  selectedAvatarId = "mark-kohl",
   onSessionActiveChange,
   onResetInactivityTimer,
 }: AvatarSessionConfig): AvatarSessionReturn {
@@ -56,6 +59,7 @@ export function useAvatarSession({
   const hasAskedAnythingElseRef = useRef(false);
   const isSpeakingRef = useRef(false);
   const audioOnlyRef = useRef(false);
+  const currentAvatarIdRef = useRef(selectedAvatarId);
 
   const fetchAccessToken = async (): Promise<string> => {
     const response = await fetch("/api/heygen/token", {
@@ -72,10 +76,19 @@ export function useAvatarSession({
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
-    const { audioOnly = false } = options || {};
+    const { audioOnly = false, avatarId } = options || {};
     audioOnlyRef.current = audioOnly;
+    
+    const activeAvatarId = avatarId || currentAvatarIdRef.current;
+    currentAvatarIdRef.current = activeAvatarId;
 
     try {
+      const avatarConfigResponse = await fetch(`/api/avatar/config/${activeAvatarId}`);
+      if (!avatarConfigResponse.ok) {
+        throw new Error("Failed to fetch avatar configuration");
+      }
+      const avatarConfig = await avatarConfigResponse.json();
+
       const token = await fetchAccessToken();
       const avatar = new StreamingAvatar({ token });
       avatarRef.current = avatar;
@@ -187,6 +200,7 @@ export function useAvatarSession({
               body: JSON.stringify({
                 message: userMessage,
                 userId: memoryEnabled ? userId : undefined,
+                avatarId: currentAvatarIdRef.current,
               }),
               signal: abortControllerRef.current.signal,
             });
@@ -318,10 +332,13 @@ export function useAvatarSession({
 
       await avatar.createStartAvatar({
         quality: audioOnly ? AvatarQuality.Low : AvatarQuality.High,
-        avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-        knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
-        voice: {
-          rate: 1.0,
+        avatarName: avatarConfig.heygenAvatarId,
+        knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
+        voice: avatarConfig.heygenVoiceId ? {
+          voiceId: avatarConfig.heygenVoiceId,
+          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
+        } : {
+          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
         },
         language: "en",
         disableIdleTimeout: true,

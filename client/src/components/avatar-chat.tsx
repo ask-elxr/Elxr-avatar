@@ -8,6 +8,7 @@ import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { useStreamStats } from "@/hooks/useStreamStats";
+import { AvatarSelector } from "@/components/avatar-selector";
 
 interface AvatarChatProps {
   userId: string;
@@ -23,6 +24,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [audioOnly, setAudioOnly] = useState(false);
+  const [selectedAvatarId, setSelectedAvatarId] = useState("mark-kohl");
+  const [showAvatarSelector, setShowAvatarSelector] = useState(true);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -57,6 +60,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     videoRef,
     userId,
     memoryEnabled,
+    selectedAvatarId,
     onResetInactivityTimer: () => resetTimerRef.current?.()
   });
   
@@ -79,14 +83,14 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     sessionActive: sessionActive && !isPaused 
   });
   
-  // Auto-start effect
+  // Auto-start effect (only after avatar is selected)
   useEffect(() => {
-    if (!hasAutoStarted.current) {
+    if (!hasAutoStarted.current && !showAvatarSelector) {
       hasAutoStarted.current = true;
       setShowChatButton(false);
-      startSession({ audioOnly });
+      startSession({ audioOnly, avatarId: selectedAvatarId });
     }
-  }, [startSession, audioOnly]);
+  }, [startSession, audioOnly, selectedAvatarId, showAvatarSelector]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -287,6 +291,20 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   };
 
   const endChat = () => endSession();
+
+  const handleAvatarConfirm = () => {
+    setShowAvatarSelector(false);
+  };
+
+  if (showAvatarSelector) {
+    return (
+      <AvatarSelector
+        selectedAvatarId={selectedAvatarId}
+        onSelect={setSelectedAvatarId}
+        onConfirm={handleAvatarConfirm}
+      />
+    );
+  }
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">

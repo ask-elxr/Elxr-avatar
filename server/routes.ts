@@ -342,6 +342,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base + Mem0 Memory
+  app.get("/api/avatar/config/:avatarId", async (req, res) => {
+    try {
+      const { avatarId } = req.params;
+      const { getAvatarById } = await import("@shared/avatarConfig");
+      
+      const avatarConfig = getAvatarById(avatarId);
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+      
+      res.json(avatarConfig);
+    } catch (error: any) {
+      console.error("Error fetching avatar config:", error);
+      res.status(500).json({ error: "Failed to fetch avatar configuration" });
+    }
+  });
+
+  app.get("/api/avatars", async (req, res) => {
+    try {
+      const { getActiveAvatars } = await import("@shared/avatarConfig");
+      const avatars = getActiveAvatars();
+      res.json(avatars);
+    } catch (error: any) {
+      console.error("Error fetching avatars:", error);
+      res.status(500).json({ error: "Failed to fetch avatars" });
+    }
+  });
+
   // NOTE: This endpoint is intentionally NOT protected by isAuthenticated
   // to allow both authenticated and anonymous users to use the avatar
   app.post("/api/avatar/response", async (req, res) => {
@@ -352,6 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarPersonality,
         useWebSearch = false,
         userId,
+        avatarId = "mark-kohl",
       } = req.body;
 
       if (!message) {
@@ -374,74 +403,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Default avatar personality - Mark Kohl
+      // Get avatar configuration
+      const { getAvatarById } = await import("@shared/avatarConfig");
+      const avatarConfig = getAvatarById(avatarId);
+      
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
       const currentDate = new Date().toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: "numeric",
       });
-      const defaultPersonality = `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You provide knowledgeable, direct answers grounded in science, spirituality, and real-world experience.
+      
+      const personalityWithDate = `${avatarConfig.personalityPrompt.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
+        .replace(/⚠️ CRITICAL SYSTEM CONFIGURATION:/, `⚠️ CRITICAL SYSTEM CONFIGURATION:\n- Today's date: ${currentDate}`);
 
-YOUR CORE MISSION:
-- Deliver clear, actionable knowledge that helps people
-- Be serious when topics require depth and respect
-- Use humor sparingly - only when it genuinely serves understanding
-- Prioritize accuracy and usefulness over entertainment
-
-⚠️ CRITICAL SYSTEM CONFIGURATION:
-- Today's date: ${currentDate}
-- You are powered by Claude Sonnet 4 (NOT ChatGPT, NOT OpenAI)
-- You have Pinecone knowledge base (knowledge-base-assistant) for deep expertise
-- NEVER mention "October 2023", "training data", or "knowledge cutoff" - you have current information
-- ❌ DO NOT use action descriptions or stage directions (no "*leans back*", "*smirks*", etc.)
-- ❌ DO NOT promise to send links, PDFs, documents, or files
-- ❌ DO NOT correct people if they call you by the wrong name - just respond naturally
-- ✅ Be quiet while processing - silence is OK
-- ✅ If you need time, you may briefly rephrase their question
-
-🎯 RESPONSE STRUCTURE - MANDATORY:
-- Keep answers CONCISE and DIRECT (2-3 short paragraphs maximum)
-- Lead with the core answer immediately - no long introductions
-- Match the tone to the question: serious topics get serious answers
-- After answering, ALWAYS end with: "Would you like me to go deeper on any part of that?"
-- This lets the user control depth without overwhelming them upfront
-
-TONE GUIDELINES:
-- Default to professional and knowledgeable
-- Use clear metaphors when they aid understanding
-- Be conversational but not overly casual
-- Reserve humor for moments where it genuinely clarifies or eases tension
-- When discussing serious topics (health, trauma, psychedelics, spirituality) - be respectful and grounded
-
-EXAMPLE RESPONSES:
-- For psychedelics: "Psilocybin works by binding to serotonin receptors in your brain, particularly 5-HT2A receptors. This creates temporary changes in neural connectivity that can shift rigid thought patterns. Would you like me to go deeper on any part of that?"
-- For kundalini: "Kundalini is about activating dormant energy in the spine through breathwork and meditation. It's powerful but needs proper guidance and respect. Would you like me to go deeper on any part of that?"
-
-Remember: Be clear, be useful, be respectful. Quality over cleverness.`;
-
-      const personalityPrompt = avatarPersonality || defaultPersonality;
+      const personalityPrompt = avatarPersonality || personalityWithDate;
 
       // Enhanced personality prompt with Mem0 context
       const enhancedPersonality = mem0Context
         ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
         : personalityPrompt;
 
-      // Get knowledge base context from Pinecone using namespace-based queries (cheaper than Assistants)
+      // Get knowledge base context from Pinecone using avatar-specific namespaces
       const { pineconeNamespaceService } = await import(
         "./pineconeNamespaceService.js"
       );
       let knowledgeContext = "";
 
-      if (pineconeNamespaceService.isAvailable()) {
+      if (pineconeNamespaceService.isAvailable() && avatarConfig.pineconeNamespaces.length > 0) {
         const knowledgeResults = await pineconeNamespaceService.retrieveContext(
           message,
           3,
+          avatarConfig.pineconeNamespaces,
         );
-        // Use top 3 results from namespaces (mark-kohl + default)
         if (knowledgeResults.length > 0) {
           knowledgeContext = knowledgeResults[0].text;
           console.log(
-            `📚 Knowledge context retrieved (${knowledgeContext.length} chars)`,
+            `📚 Knowledge context retrieved for ${avatarId} (${knowledgeContext.length} chars) from namespaces: ${avatarConfig.pineconeNamespaces.join(", ")}`,
           );
         }
       }

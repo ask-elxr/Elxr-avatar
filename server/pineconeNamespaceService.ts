@@ -58,22 +58,24 @@ class PineconeNamespaceService {
     );
   }
 
-  async retrieveContext(query: string, topK: number = 3): Promise<any[]> {
+  async retrieveContext(query: string, topK: number = 3, customNamespaces?: string[]): Promise<any[]> {
     if (!this.apiKey || !this.client || !this.openai) {
       throw new Error('Pinecone or OpenAI not configured');
     }
+
+    const namespacesToQuery = customNamespaces || this.namespaces;
 
     const log = logger.child({
       service: 'pinecone',
       operation: 'retrieveContext',
       queryLength: query.length,
       topK,
-      namespaces: this.namespaces
+      namespaces: namespacesToQuery
     });
 
     try {
       // Check cache first
-      const cachedResults = latencyCache.getPineconeQuery(query, this.namespaces, topK);
+      const cachedResults = latencyCache.getPineconeQuery(query, namespacesToQuery, topK);
       if (cachedResults) {
         log.debug({ cacheHit: true }, `Cache HIT for query: "${query.substring(0, 50)}..."`);
         metrics.recordPineconeCacheHit();
@@ -96,7 +98,7 @@ class PineconeNamespaceService {
       // Query across all namespaces and combine results
       const allResults: any[] = [];
       
-      for (const namespace of this.namespaces) {
+      for (const namespace of namespacesToQuery) {
         try {
           log.debug({ namespace }, `Querying namespace: ${namespace}`);
           
@@ -158,14 +160,14 @@ class PineconeNamespaceService {
         text: combinedText,
         score: topResults[0]?.score || 0,
         metadata: {
-          namespaces: this.namespaces,
+          namespaces: namespacesToQuery,
           totalResults: allResults.length,
           topResults: topResults.length
         }
       }];
       
       // Cache the results for future queries
-      latencyCache.setPineconeQuery(query, this.namespaces, topK, results);
+      latencyCache.setPineconeQuery(query, namespacesToQuery, topK, results);
       log.debug({ queryPrefix: query.substring(0, 50) }, 'Cached results for query');
       
       return results;
