@@ -1,6 +1,7 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
 import { CostTracking } from "@/components/CostTracking";
+import { KnowledgeSourceManager } from "@/components/KnowledgeSourceManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,6 +205,26 @@ export default function Admin() {
           <div className="lg:col-span-2">
             <CostTracking />
           </div>
+
+          {/* Personal Knowledge Base Sources */}
+          <Card className="lg:col-span-2 bg-gradient-to-br from-background via-background to-teal-500/5 border-teal-500/20 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-1.5 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-md">
+                  <Database className="w-5 h-5 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
+                  Personal Knowledge Sources
+                </span>
+              </CardTitle>
+              <CardDescription>
+                Connect your personal knowledge bases (Notion, Obsidian) to enhance avatar responses.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <KnowledgeSourceManager />
+            </CardContent>
+          </Card>
 
           {/* Knowledge Base Management */}
           <Card className="lg:col-span-2 bg-gradient-to-br from-background via-background to-blue-500/5 border-blue-500/20 shadow-lg">

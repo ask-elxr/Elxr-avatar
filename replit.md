@@ -94,6 +94,18 @@ Preferred communication style: Simple, everyday language.
 
 ## November 13, 2025
 
+### Personal Knowledge Base Integration
+- Implemented support for connecting personal knowledge sources (Notion, Obsidian)
+- Created `knowledge_base_sources` table with user-scoped access control
+- Each source gets isolated Pinecone namespace for data separation
+- Notion integration service syncs pages with full content extraction
+- API endpoints for CRUD operations on knowledge sources
+- Sync endpoint triggers Notion→Pinecone synchronization
+- Avatar responses automatically query user's active personal knowledge sources
+- UI component in admin panel for managing connections
+- Security: userId derived from authenticated session, not request body
+- Status tracking: active, syncing, error with detailed error messages
+
 ### API Cost Tracking & Premium Admin Styling
 - Created `api_calls` table to track all external API usage (Claude, ElevenLabs, HeyGen, Pinecone, OpenAI)
 - Implemented fire-and-forget logging across all services with error handling

@@ -137,10 +137,14 @@ export class NotionService {
     let startCursor: string | undefined;
 
     while (hasMore) {
-      const response: any = await this.notion.databases.query({
+      const queryParams: any = {
         database_id: databaseId,
-        start_cursor: startCursor
-      });
+      };
+      if (startCursor) {
+        queryParams.start_cursor = startCursor;
+      }
+      
+      const response: any = await (this.notion as any).databases.query(queryParams);
 
       for (const page of response.results) {
         const pageContent = await this.getPageContent(page.id);

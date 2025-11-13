@@ -8,6 +8,8 @@ import {
   insertDocumentSchema,
   insertAvatarProfileSchema,
   updateAvatarProfileSchema,
+  insertKnowledgeBaseSourceSchema,
+  updateKnowledgeBaseSourceSchema,
 } from "../shared/schema.js";
 import multer from "multer";
 import * as fs from "fs";
@@ -521,18 +523,152 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Personal Knowledge Base Management Routes
+  
+  // List all knowledge base sources for authenticated user
+  app.get("/api/knowledge-sources", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const sources = await storage.listKnowledgeSources(userId);
+      res.json({ sources });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error listing knowledge sources");
+      res.status(500).json({ error: "Failed to list knowledge sources" });
+    }
+  });
+
+  // Create a new knowledge base source
+  app.post("/api/knowledge-sources", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { type, name, config } = req.body;
+
+      // Validate request
+      if (!type || !name) {
+        return res.status(400).json({ error: "Type and name are required" });
+      }
+
+      if (!['notion', 'obsidian', 'manual'].includes(type)) {
+        return res.status(400).json({ error: "Invalid source type" });
+      }
+
+      // Generate unique namespace for this source
+      const namespace = `user-${userId}-${type}-${Date.now()}`;
+
+      const sourceData = insertKnowledgeBaseSourceSchema.parse({
+        userId,
+        type,
+        name,
+        pineconeNamespace: namespace,
+        config: config || {}
+      });
+
+      const source = await storage.createKnowledgeSource(sourceData);
+      logger.info({ sourceId: source.id, type, userId }, "Knowledge source created");
+      res.json({ source });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error creating knowledge source");
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create knowledge source" });
+    }
+  });
+
+  // Update a knowledge base source
+  app.put("/api/knowledge-sources/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+      
+      const validatedData = updateKnowledgeBaseSourceSchema.parse(req.body);
+      const source = await storage.updateKnowledgeSource(id, userId, validatedData);
+      
+      if (!source) {
+        return res.status(404).json({ error: "Knowledge source not found" });
+      }
+
+      logger.info({ sourceId: id }, "Knowledge source updated");
+      res.json({ source });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error updating knowledge source");
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: "Invalid data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update knowledge source" });
+    }
+  });
+
+  // Delete a knowledge base source
+  app.delete("/api/knowledge-sources/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+
+      await storage.deleteKnowledgeSource(id, userId);
+      logger.info({ sourceId: id }, "Knowledge source deleted");
+      res.json({ success: true });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error deleting knowledge source");
+      res.status(500).json({ error: "Failed to delete knowledge source" });
+    }
+  });
+
+  // Sync Notion database to Pinecone namespace
+  app.post("/api/knowledge-sources/:id/sync", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { id } = req.params;
+
+      const source = await storage.getKnowledgeSource(id, userId);
+      if (!source) {
+        return res.status(404).json({ error: "Knowledge source not found" });
+      }
+
+      if (source.type === 'notion') {
+        const { notionService } = await import('./notionService.js');
+        const databaseId = (source.config as any)?.databaseId;
+        
+        if (!databaseId) {
+          return res.status(400).json({ error: "Notion database ID not configured" });
+        }
+
+        const result = await notionService.syncDatabaseToNamespace(
+          databaseId,
+          source.pineconeNamespace,
+          source.id,
+          userId
+        );
+
+        if (result.success) {
+          logger.info({ sourceId: id, itemsCount: result.itemsCount }, "Notion sync completed");
+          return res.json({ success: true, itemsCount: result.itemsCount });
+        } else {
+          return res.status(500).json({ error: result.error });
+        }
+      }
+
+      res.status(400).json({ error: "Sync not supported for this source type" });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error syncing knowledge source");
+      res.status(500).json({ error: "Failed to sync knowledge source" });
+    }
+  });
+
   // NOTE: This endpoint is intentionally NOT protected by isAuthenticated
   // to allow both authenticated and anonymous users to use the avatar
-  app.post("/api/avatar/response", async (req, res) => {
+  app.post("/api/avatar/response", async (req: any, res) => {
     try {
       const {
         message,
         conversationHistory = [],
         avatarPersonality,
         useWebSearch = false,
-        userId,
         avatarId = "mark-kohl",
       } = req.body;
+
+      // Get userId from authenticated session if available (not from request body for security)
+      const userId = req.user?.claims?.sub || null;
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
@@ -578,22 +714,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
         : personalityPrompt;
 
-      // Get knowledge base context from Pinecone using avatar-specific namespaces
+      // Get knowledge base context from Pinecone using avatar-specific namespaces + user's personal knowledge sources
       const { pineconeNamespaceService } = await import(
         "./pineconeNamespaceService.js"
       );
       let knowledgeContext = "";
 
-      if (pineconeNamespaceService.isAvailable() && avatarConfig.pineconeNamespaces.length > 0) {
+      // Combine avatar namespaces with user's personal knowledge source namespaces
+      let allNamespaces = [...avatarConfig.pineconeNamespaces];
+      
+      if (userId) {
+        try {
+          const userSources = await storage.listKnowledgeSources(userId);
+          const activeSourceNamespaces = userSources
+            .filter(source => source.status === 'active' && source.itemsCount > 0)
+            .map(source => source.pineconeNamespace);
+          allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
+        } catch (error) {
+          console.error('Error fetching user knowledge sources:', error);
+        }
+      }
+
+      if (pineconeNamespaceService.isAvailable() && allNamespaces.length > 0) {
         const knowledgeResults = await pineconeNamespaceService.retrieveContext(
           message,
           3,
-          avatarConfig.pineconeNamespaces,
+          allNamespaces,
         );
         if (knowledgeResults.length > 0) {
           knowledgeContext = knowledgeResults[0].text;
           console.log(
-            `📚 Knowledge context retrieved for ${avatarId} (${knowledgeContext.length} chars) from namespaces: ${avatarConfig.pineconeNamespaces.join(", ")}`,
+            `📚 Knowledge context retrieved for ${avatarId} (${knowledgeContext.length} chars) from ${allNamespaces.length} namespaces`,
           );
         }
       }
