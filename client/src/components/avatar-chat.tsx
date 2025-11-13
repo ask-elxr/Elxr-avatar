@@ -15,7 +15,7 @@ interface AvatarChatProps {
   avatarId?: string;
 }
 
-export function AvatarChat({ userId, avatarId = "mark-kohl" }: AvatarChatProps) {
+export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // UI-only state
   const [isMobile, setIsMobile] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -25,8 +25,8 @@ export function AvatarChat({ userId, avatarId = "mark-kohl" }: AvatarChatProps) 
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [audioOnly, setAudioOnly] = useState(false);
-  const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId);
-  const [showAvatarSelector, setShowAvatarSelector] = useState(true);
+  const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
+  const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
