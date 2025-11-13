@@ -448,7 +448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertAvatarProfileSchema.parse(req.body);
       
       // Additional runtime validation
-      if (validatedData.isActive === "true" && validatedData.pineconeNamespaces.length === 0) {
+      if (validatedData.isActive === "true" && (!validatedData.pineconeNamespaces || validatedData.pineconeNamespaces.length === 0)) {
         return res.status(400).json({ 
           error: "Active avatars must have at least one Pinecone namespace" 
         });
@@ -1513,4 +1513,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Avatar seeding function - populates database with default avatars if empty
+export async function seedDefaultAvatars(): Promise<void> {
+  try {
+    const existingAvatars = await storage.listAvatars(false);
+    
+    if (existingAvatars.length === 0) {
+      const { defaultAvatars } = await import("@shared/avatarConfig");
+      
+      logger.info("Seeding database with default avatars...");
+      
+      for (const avatar of defaultAvatars) {
+        await storage.createAvatar(avatar);
+        logger.info({ avatarId: avatar.id, name: avatar.name }, "Seeded default avatar");
+      }
+      
+      logger.info({ count: defaultAvatars.length }, "Default avatars seeded successfully");
+    } else {
+      logger.info({ count: existingAvatars.length }, "Avatars already exist in database, skipping seed");
+    }
+  } catch (error: any) {
+    logger.error({ error: error.message }, "Failed to seed default avatars");
+    // Don't throw - allow server to start even if seeding fails
+  }
 }
