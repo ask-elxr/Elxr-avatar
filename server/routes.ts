@@ -6,6 +6,8 @@ import { ObjectStorageService } from "./objectStorage.js";
 import {
   insertConversationSchema,
   insertDocumentSchema,
+  insertAvatarProfileSchema,
+  updateAvatarProfileSchema,
 } from "../shared/schema.js";
 import multer from "multer";
 import * as fs from "fs";
@@ -388,9 +390,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/avatar/config/:avatarId", async (req, res) => {
     try {
       const { avatarId } = req.params;
-      const { getAvatarById } = await import("@shared/avatarConfig");
       
-      const avatarConfig = getAvatarById(avatarId);
+      // Try to load from database first
+      let avatarConfig = await storage.getAvatar(avatarId);
+      
+      // Fallback to default avatars if not found in DB
+      if (!avatarConfig) {
+        const { getAvatarById } = await import("@shared/avatarConfig");
+        avatarConfig = getAvatarById(avatarId);
+      }
+      
       if (!avatarConfig) {
         return res.status(404).json({ error: "Avatar not found" });
       }
@@ -404,12 +413,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/avatars", async (req, res) => {
     try {
+      // Try to load from database first, fallback to defaults if empty
+      const dbAvatars = await storage.listAvatars(true);
+      if (dbAvatars.length > 0) {
+        return res.json(dbAvatars);
+      }
+      
+      // Fallback to default avatars if database is empty
       const { getActiveAvatars } = await import("@shared/avatarConfig");
       const avatars = getActiveAvatars();
       res.json(avatars);
     } catch (error: any) {
       console.error("Error fetching avatars:", error);
       res.status(500).json({ error: "Failed to fetch avatars" });
+    }
+  });
+
+  // Admin avatar management endpoints
+  // TODO: Add proper role-based authorization check (verify user is admin)
+  app.get("/api/admin/avatars", isAuthenticated, async (req: any, res) => {
+    try {
+      // Return all avatars including inactive ones for admin view
+      const avatars = await storage.listAvatars(false);
+      res.json(avatars);
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error listing avatars for admin");
+      res.status(500).json({ error: "Failed to list avatars" });
+    }
+  });
+
+  app.post("/api/admin/avatars", isAuthenticated, async (req: any, res) => {
+    try {
+      // Validate request body
+      const validatedData = insertAvatarProfileSchema.parse(req.body);
+      
+      // Additional runtime validation
+      if (validatedData.isActive === "true" && validatedData.pineconeNamespaces.length === 0) {
+        return res.status(400).json({ 
+          error: "Active avatars must have at least one Pinecone namespace" 
+        });
+      }
+      
+      const newAvatar = await storage.createAvatar(validatedData);
+      logger.info({ avatarId: newAvatar.id }, "Avatar created by admin");
+      res.status(201).json(newAvatar);
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error creating avatar");
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: "Invalid avatar data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create avatar" });
+    }
+  });
+
+  app.put("/api/admin/avatars/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Validate request body
+      const validatedData = updateAvatarProfileSchema.parse(req.body);
+      
+      // Additional runtime validation
+      if (validatedData.isActive === "true" && validatedData.pineconeNamespaces?.length === 0) {
+        return res.status(400).json({ 
+          error: "Active avatars must have at least one Pinecone namespace" 
+        });
+      }
+      
+      const updatedAvatar = await storage.updateAvatar(id, validatedData);
+      if (!updatedAvatar) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+      
+      logger.info({ avatarId: id }, "Avatar updated by admin");
+      res.json(updatedAvatar);
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error updating avatar");
+      if (error.name === "ZodError") {
+        return res.status(400).json({ error: "Invalid avatar data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update avatar" });
+    }
+  });
+
+  app.delete("/api/admin/avatars/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      
+      await storage.softDeleteAvatar(id);
+      logger.info({ avatarId: id }, "Avatar soft deleted by admin");
+      res.json({ success: true, message: "Avatar deactivated successfully" });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error deleting avatar");
+      res.status(500).json({ error: "Failed to delete avatar" });
     }
   });
 
