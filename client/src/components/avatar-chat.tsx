@@ -265,6 +265,15 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
   }, [isMobile, sessionActive, showUnpinchAnimation]);
 
+  // Ensure video is visible when not in audio-only mode
+  useEffect(() => {
+    if (!audioOnly && videoRef.current) {
+      videoRef.current.style.display = 'block';
+      videoRef.current.style.visibility = 'visible';
+      videoRef.current.style.opacity = '1';
+    }
+  }, [audioOnly]);
+
   // UI handler functions
   const toggleFullscreen = async () => {
     try {
@@ -301,6 +310,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   const endChat = () => endSession();
 
+  const handleAudioOnlyToggle = async (checked: boolean) => {
+    const newAudioOnly = checked as boolean;
+    setAudioOnly(newAudioOnly);
+    
+    // If session is active, restart it with new mode
+    if (sessionActive) {
+      endSession(); // End current session
+      
+      // Wait a moment, then restart with new setting
+      setTimeout(() => {
+        startSession({ audioOnly: newAudioOnly, avatarId: selectedAvatarId });
+      }, 500);
+    }
+  };
+
   const handleAvatarConfirm = () => {
     setShowAvatarSelector(false);
   };
@@ -323,7 +347,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           <Checkbox
             id="audio-only"
             checked={audioOnly}
-            onCheckedChange={(checked) => setAudioOnly(checked as boolean)}
+            onCheckedChange={handleAudioOnlyToggle}
             className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
             data-testid="checkbox-audio-only"
           />
