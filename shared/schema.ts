@@ -121,3 +121,33 @@ export type InsertChatSession = z.infer<typeof insertChatSessionSchema>;
 export type ChatSession = typeof chatSessions.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;
+
+export const avatarProfiles = pgTable("avatar_profiles", {
+  id: varchar("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description").notNull(),
+  heygenAvatarId: text("heygen_avatar_id").notNull(),
+  heygenVoiceId: text("heygen_voice_id"),
+  heygenKnowledgeId: text("heygen_knowledge_id"),
+  voiceRate: text("voice_rate").default("1.0"),
+  personalityPrompt: text("personality_prompt").notNull(),
+  pineconeNamespaces: text("pinecone_namespaces").array().notNull().default(sql`ARRAY[]::text[]`),
+  isActive: text("is_active").default("true"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertAvatarProfileSchema = createInsertSchema(avatarProfiles).pick({
+  id: true,
+  name: true,
+  description: true,
+  heygenAvatarId: true,
+  heygenVoiceId: true,
+  heygenKnowledgeId: true,
+  voiceRate: true,
+  personalityPrompt: true,
+  pineconeNamespaces: true,
+  isActive: true,
+});
+
+export type InsertAvatarProfile = z.infer<typeof insertAvatarProfileSchema>;
+export type AvatarProfile = typeof avatarProfiles.$inferSelect;
