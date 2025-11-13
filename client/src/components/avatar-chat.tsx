@@ -460,16 +460,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
       {/* Avatar Video Stream */}
       <div className="w-full h-full flex items-center justify-center">
-        {audioOnly ? (
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className="w-full h-full object-cover"
+          style={{ display: audioOnly ? 'none' : 'block' }}
+          data-testid="avatar-video"
+        />
+        {audioOnly && (
           <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} />
-        ) : (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            className="w-full h-full object-cover"
-            data-testid="avatar-video"
-          />
         )}
       </div>
 
