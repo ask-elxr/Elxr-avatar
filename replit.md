@@ -84,6 +84,26 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## November 13, 2025
+
+### Avatar Management System
+- Migrated avatar configurations from hardcoded to database-driven system
+- Created `avatar_profiles` table with proper schema (boolean isActive, nullable fields)
+- Implemented full CRUD API endpoints:
+  - GET /api/admin/avatars - List all avatars (admin only)
+  - POST /api/admin/avatars - Create new avatar (admin only)
+  - PUT /api/admin/avatars/:id - Update avatar (admin only)
+  - DELETE /api/admin/avatars/:id - Soft delete avatar (admin only)
+- Added automatic database seeding on server startup (3 default avatars)
+- Updated public endpoints to load from DB with fallback to defaults
+- Created AvatarManager UI component for admin dashboard with:
+  - Table view with name, description, status, and actions
+  - Dialog-based create/edit form with full validation
+  - Tag-based namespace management
+  - Switch for active/inactive status
+  - Toast notifications for success/error states
+- Integrated Avatar Management into admin.tsx dashboard
+
 ## November 11, 2025
 
 ### Optimized Avatar Interrupt Logic

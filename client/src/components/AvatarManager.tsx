@@ -185,7 +185,7 @@ export function AvatarManager() {
     if (!formData.id.trim() || !formData.name.trim() || !formData.description.trim() || !formData.personalityPrompt.trim()) {
       toast({
         title: "Validation error",
-        description: "Please fill in all required fields.",
+        description: "Please fill in all required fields (ID, Name, Description, Personality Prompt).",
         variant: "destructive",
       });
       return;
@@ -200,11 +200,25 @@ export function AvatarManager() {
       return;
     }
 
+    // Clean data - trim all text fields and convert empty strings to null for optional fields
+    const cleanedData = {
+      ...formData,
+      id: formData.id.trim(),
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      personalityPrompt: formData.personalityPrompt.trim(),
+      heygenAvatarId: formData.heygenAvatarId?.trim() || null,
+      heygenVoiceId: formData.heygenVoiceId?.trim() || null,
+      heygenKnowledgeId: formData.heygenKnowledgeId?.trim() || null,
+      elevenlabsVoiceId: formData.elevenlabsVoiceId?.trim() || null,
+      voiceRate: formData.voiceRate?.trim() || null,
+    };
+
     if (editingAvatar) {
-      const { id, ...updateData } = formData;
+      const { id, ...updateData } = cleanedData;
       updateMutation.mutate({ id: editingAvatar.id, data: updateData });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(cleanedData);
     }
   };
 
