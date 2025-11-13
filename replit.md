@@ -94,6 +94,13 @@ Preferred communication style: Simple, everyday language.
 
 ## November 13, 2025
 
+### Anonymous User Support with Secure userId Handling
+- Updated avatar response endpoint to support both authenticated and anonymous users
+- Authenticated users: userId derived from session (req.user.claims.sub)
+- Anonymous users: Can send temp_ prefixed userId for session tracking (e.g., "temp_anonymous_123")
+- Security: Non-temp_ prefixed userIds from request body are rejected to prevent impersonation
+- Personal knowledge sources only loaded for authenticated users, not temp_ sessions
+
 ### CORS Middleware for Webflow Embedding
 - Added CORS middleware to server/index.ts for cross-origin support
 - Configured headers: Access-Control-Allow-Origin (*), Access-Control-Allow-Methods, Access-Control-Allow-Headers

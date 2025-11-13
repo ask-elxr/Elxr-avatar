@@ -667,8 +667,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarId = "mark-kohl",
       } = req.body;
 
-      // Get userId from authenticated session if available (not from request body for security)
-      const userId = req.user?.claims?.sub || null;
+      // Get userId from authenticated session if available, or allow temp_ prefixed IDs for anonymous users
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
@@ -723,11 +726,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Combine avatar namespaces with user's personal knowledge source namespaces
       let allNamespaces = [...avatarConfig.pineconeNamespaces];
       
-      if (userId) {
+      if (userId && !userId.startsWith('temp_')) {
         try {
           const userSources = await storage.listKnowledgeSources(userId);
           const activeSourceNamespaces = userSources
-            .filter(source => source.status === 'active' && source.itemsCount > 0)
+            .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
             .map(source => source.pineconeNamespace);
           allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
         } catch (error) {
