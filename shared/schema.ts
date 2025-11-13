@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, index, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, index, boolean, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -149,3 +149,22 @@ export const updateAvatarProfileSchema = createInsertSchema(avatarProfiles).omit
 export type InsertAvatarProfile = z.infer<typeof insertAvatarProfileSchema>;
 export type UpdateAvatarProfile = z.infer<typeof updateAvatarProfileSchema>;
 export type AvatarProfile = typeof avatarProfiles.$inferSelect;
+
+export const apiCalls = pgTable("api_calls", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  serviceName: varchar("service_name").notNull(),
+  endpoint: text("endpoint").notNull(),
+  userId: varchar("user_id").references(() => users.id),
+  responseTimeMs: integer("response_time_ms").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertApiCallSchema = createInsertSchema(apiCalls).pick({
+  serviceName: true,
+  endpoint: true,
+  userId: true,
+  responseTimeMs: true,
+});
+
+export type InsertApiCall = z.infer<typeof insertApiCallSchema>;
+export type ApiCall = typeof apiCalls.$inferSelect;
