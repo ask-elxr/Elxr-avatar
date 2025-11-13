@@ -90,6 +90,7 @@ export function useAvatarSession({
       // Hide video element
       if (videoRef.current) {
         videoRef.current.style.display = 'none';
+        videoRef.current.style.visibility = 'hidden';
       }
       
       // Set session as active but don't create HeyGen session
@@ -104,7 +105,10 @@ export function useAvatarSession({
 
     // For video mode, ensure video is visible
     if (videoRef.current) {
+      console.log('Video mode: Ensuring video element is visible');
       videoRef.current.style.display = 'block';
+      videoRef.current.style.visibility = 'visible';
+      videoRef.current.style.opacity = '1';
     }
 
     try {
