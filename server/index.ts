@@ -86,6 +86,28 @@ app.use((req, res, next) => {
   // Seed default avatars if database is empty
   await seedDefaultAvatars();
 
+  // Auto-sync Willie Gault's Wikipedia page on server start
+  try {
+    const { wikipediaService } = await import('./wikipediaService.js');
+    if (wikipediaService.isAvailable()) {
+      log('Syncing Willie Gault Wikipedia page to Pinecone...');
+      const result = await wikipediaService.syncArticleToNamespace(
+        'Willie Gault',
+        'willie-gault'
+      );
+      if (result.success) {
+        log(`✓ Willie Gault Wikipedia page synced successfully`);
+      } else {
+        console.warn(`⚠️  Failed to sync Willie Gault Wikipedia: ${result.message}`);
+      }
+    } else {
+      console.warn('⚠️  Wikipedia service not available - skipping Willie Gault sync');
+    }
+  } catch (error: any) {
+    console.error('Error syncing Willie Gault Wikipedia:', error.message);
+    // Continue server startup even if sync fails
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
