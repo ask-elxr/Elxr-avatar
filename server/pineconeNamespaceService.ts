@@ -4,6 +4,7 @@ import { latencyCache } from './cache';
 import { wrapServiceCall } from './circuitBreaker';
 import { logger } from './logger';
 import { metrics } from './metrics';
+import { storage } from './storage';
 
 // Namespace-based Pinecone service - cheaper than Assistants API
 class PineconeNamespaceService {
@@ -87,13 +88,25 @@ class PineconeNamespaceService {
 
       // Generate embedding for the query using OpenAI
       log.debug('Generating embedding for query');
+      const embeddingStartTime = Date.now();
       const embeddingResponse = await this.embeddingBreaker.execute({
         model: 'text-embedding-ada-002',
         input: query,
       });
       
       const embedding = embeddingResponse.data[0].embedding;
+      const embeddingDuration = Date.now() - embeddingStartTime;
       log.debug({ dimensions: embedding.length }, 'Embedding generated successfully');
+
+      // Log OpenAI embedding API call
+      storage.logApiCall({
+        serviceName: 'openai',
+        endpoint: 'embeddings.create',
+        userId: null,
+        responseTimeMs: embeddingDuration,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log API call');
+      });
 
       // Query across all namespaces and combine results
       const allResults: any[] = [];
@@ -102,10 +115,22 @@ class PineconeNamespaceService {
         try {
           log.debug({ namespace }, `Querying namespace: ${namespace}`);
           
+          const queryStartTime = Date.now();
           const queryResponse = await this.queryBreaker.execute(namespace, {
             vector: embedding,
             topK: topK,
             includeMetadata: true,
+          });
+          const queryDuration = Date.now() - queryStartTime;
+
+          // Log Pinecone query API call
+          storage.logApiCall({
+            serviceName: 'pinecone',
+            endpoint: `index.namespace(${namespace}).query`,
+            userId: null,
+            responseTimeMs: queryDuration,
+          }).catch((error) => {
+            log.error({ error: error.message }, 'Failed to log API call');
           });
 
           if (queryResponse.matches && queryResponse.matches.length > 0) {

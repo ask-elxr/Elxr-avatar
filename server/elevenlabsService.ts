@@ -2,6 +2,7 @@ import { ElevenLabsClient } from "elevenlabs";
 import { wrapServiceCall } from './circuitBreaker.js';
 import { logger } from './logger.js';
 import { metrics } from './metrics.js';
+import { storage } from './storage.js';
 
 class ElevenLabsService {
   private client?: ElevenLabsClient;
@@ -71,6 +72,16 @@ class ElevenLabsService {
       const duration = Date.now() - startTime;
       log.info({ duration, audioSize: audioBuffer.length }, 'Speech generated successfully');
       metrics.recordElevenLabsTTS(duration);
+
+      // Log API call for cost tracking
+      storage.logApiCall({
+        serviceName: 'elevenlabs',
+        endpoint: 'textToSpeech.convert',
+        userId: null,
+        responseTimeMs: duration,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log API call');
+      });
 
       return audioBuffer;
     } catch (error: any) {

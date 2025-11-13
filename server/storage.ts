@@ -2,15 +2,17 @@ import {
   users,
   documents,
   avatarProfiles,
+  apiCalls,
   type User,
   type UpsertUser,
   type Document,
   type AvatarProfile,
   type InsertAvatarProfile,
   type UpdateAvatarProfile,
+  type InsertApiCall,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, gte, sql as drizzleSql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -30,6 +32,18 @@ export interface IStorage {
   createAvatar(data: InsertAvatarProfile): Promise<AvatarProfile>;
   updateAvatar(id: string, data: UpdateAvatarProfile): Promise<AvatarProfile | undefined>;
   softDeleteAvatar(id: string): Promise<void>;
+
+  // API call tracking operations
+  logApiCall(data: InsertApiCall): Promise<void>;
+  getCostStats(): Promise<{
+    services: {
+      serviceName: string;
+      total: number;
+      last24h: number;
+      last7d: number;
+      avgResponseTimeMs: number;
+    }[];
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -107,6 +121,115 @@ export class DatabaseStorage implements IStorage {
       .update(avatarProfiles)
       .set({ isActive: false })
       .where(eq(avatarProfiles.id, id));
+  }
+
+  // API call tracking operations
+  async logApiCall(data: InsertApiCall): Promise<void> {
+    await db.insert(apiCalls).values(data);
+  }
+
+  async getCostStats(): Promise<{
+    services: {
+      serviceName: string;
+      total: number;
+      last24h: number;
+      last7d: number;
+      avgResponseTimeMs: number;
+    }[];
+  }> {
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    // Get all calls grouped by service
+    const allCalls = await db
+      .select({
+        serviceName: apiCalls.serviceName,
+        total: drizzleSql<number>`count(*)::int`,
+        avgResponseTimeMs: drizzleSql<number>`avg(${apiCalls.responseTimeMs})::int`,
+      })
+      .from(apiCalls)
+      .groupBy(apiCalls.serviceName);
+
+    // Get last 24h calls
+    const last24hCalls = await db
+      .select({
+        serviceName: apiCalls.serviceName,
+        count: drizzleSql<number>`count(*)::int`,
+      })
+      .from(apiCalls)
+      .where(gte(apiCalls.timestamp, last24h))
+      .groupBy(apiCalls.serviceName);
+
+    // Get last 7d calls
+    const last7dCalls = await db
+      .select({
+        serviceName: apiCalls.serviceName,
+        count: drizzleSql<number>`count(*)::int`,
+      })
+      .from(apiCalls)
+      .where(gte(apiCalls.timestamp, last7d))
+      .groupBy(apiCalls.serviceName);
+
+    // Merge all services from any time window
+    const serviceMap = new Map<string, {
+      serviceName: string;
+      total: number;
+      last24h: number;
+      last7d: number;
+      avgResponseTimeMs: number;
+    }>();
+
+    // Add all-time data
+    for (const service of allCalls) {
+      serviceMap.set(service.serviceName, {
+        serviceName: service.serviceName,
+        total: service.total,
+        last24h: 0,
+        last7d: 0,
+        avgResponseTimeMs: service.avgResponseTimeMs,
+      });
+    }
+
+    // Add/update with last 24h data
+    for (const service of last24hCalls) {
+      const existing = serviceMap.get(service.serviceName);
+      if (existing) {
+        existing.last24h = service.count;
+      } else {
+        // Service not in allCalls - use 24h count as best available total
+        serviceMap.set(service.serviceName, {
+          serviceName: service.serviceName,
+          total: service.count, // Use 24h count as total for new services
+          last24h: service.count,
+          last7d: 0,
+          avgResponseTimeMs: 0,
+        });
+      }
+    }
+
+    // Add/update with last 7d data
+    for (const service of last7dCalls) {
+      const existing = serviceMap.get(service.serviceName);
+      if (existing) {
+        existing.last7d = service.count;
+        // If service wasn't in allCalls, use 7d count as total (more accurate than 24h)
+        if (existing.total === existing.last24h) {
+          existing.total = Math.max(existing.total, service.count);
+        }
+      } else {
+        // Service only appears in 7d window
+        serviceMap.set(service.serviceName, {
+          serviceName: service.serviceName,
+          total: service.count,
+          last24h: 0,
+          last7d: service.count,
+          avgResponseTimeMs: 0,
+        });
+      }
+    }
+
+    return { services: Array.from(serviceMap.values()) };
   }
 }
 

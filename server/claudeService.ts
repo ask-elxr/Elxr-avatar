@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { wrapServiceCall } from './circuitBreaker';
 import { logger } from './logger';
+import { storage } from './storage';
 
 /*
 <important_code_snippet_instructions>
@@ -121,6 +122,16 @@ RESPONSE REQUIREMENTS:
 
       const duration = Date.now() - startTime;
       log.info({ duration, tokensUsed: response.usage?.total_tokens }, 'Claude response generated successfully');
+
+      // Log API call for cost tracking
+      storage.logApiCall({
+        serviceName: 'claude',
+        endpoint: 'messages.create',
+        userId: null,
+        responseTimeMs: duration,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log API call');
+      });
 
       const content = response.content[0];
       if (content && content.type === 'text') {
@@ -250,6 +261,16 @@ ABSOLUTE RULES:
       const duration = Date.now() - startTime;
       log.info({ duration, tokensUsed: response.usage?.total_tokens, hadWebSearch: !!webSearchResults }, 
         'Enhanced Claude response generated successfully');
+
+      // Log API call for cost tracking
+      storage.logApiCall({
+        serviceName: 'claude',
+        endpoint: 'messages.create',
+        userId: null,
+        responseTimeMs: duration,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log API call');
+      });
 
       const content = response.content[0];
       if (content && content.type === 'text') {

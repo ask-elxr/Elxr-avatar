@@ -106,9 +106,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.debug("Creating HeyGen access token");
 
+      const startTime = Date.now();
       const data = await heygenTokenBreaker.execute(apiKey);
+      const duration = Date.now() - startTime;
 
       log.info("HeyGen token created successfully");
+
+      // Log API call for cost tracking
+      storage.logApiCall({
+        serviceName: 'heygen',
+        endpoint: 'streaming.create_token',
+        userId: null,
+        responseTimeMs: duration,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log API call');
+      });
 
       // Return the token in the expected format
       res.json({
@@ -1045,6 +1057,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching users:", error);
       res.status(500).json({
         error: "Failed to fetch users",
+      });
+    }
+  });
+
+  // Get API cost tracking statistics
+  app.get("/api/admin/costs", isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await storage.getCostStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching cost stats:", error);
+      res.status(500).json({
+        error: "Failed to fetch cost statistics",
       });
     }
   });

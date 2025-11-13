@@ -1,5 +1,6 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
+import { CostTracking } from "@/components/CostTracking";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -190,6 +191,11 @@ export default function Admin() {
               <AvatarManager />
             </CardContent>
           </Card>
+
+          {/* Cost Tracking */}
+          <div className="lg:col-span-2">
+            <CostTracking />
+          </div>
 
           {/* Knowledge Base Management */}
           <Card className="lg:col-span-2">
