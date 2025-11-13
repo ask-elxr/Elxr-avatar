@@ -126,7 +126,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
-  heygenAvatarId: text("heygen_avatar_id").notNull(),
+  heygenAvatarId: text("heygen_avatar_id"),
   heygenVoiceId: text("heygen_voice_id"),
   heygenKnowledgeId: text("heygen_knowledge_id"),
   elevenlabsVoiceId: text("elevenlabs_voice_id"),
@@ -137,19 +137,15 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const insertAvatarProfileSchema = createInsertSchema(avatarProfiles).pick({
-  id: true,
-  name: true,
-  description: true,
-  heygenAvatarId: true,
-  heygenVoiceId: true,
-  heygenKnowledgeId: true,
-  elevenlabsVoiceId: true,
-  voiceRate: true,
-  personalityPrompt: true,
-  pineconeNamespaces: true,
-  isActive: true,
+export const insertAvatarProfileSchema = createInsertSchema(avatarProfiles).omit({
+  createdAt: true,
 });
 
+export const updateAvatarProfileSchema = createInsertSchema(avatarProfiles).omit({
+  id: true,
+  createdAt: true,
+}).partial();
+
 export type InsertAvatarProfile = z.infer<typeof insertAvatarProfileSchema>;
+export type UpdateAvatarProfile = z.infer<typeof updateAvatarProfileSchema>;
 export type AvatarProfile = typeof avatarProfiles.$inferSelect;
