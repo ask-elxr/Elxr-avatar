@@ -1,10 +1,11 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { AvatarManager } from "@/components/AvatarManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Search, Database, Activity, FileText, Home, User } from "lucide-react";
+import { Shield, Search, Database, Activity, FileText, Home, User, Users } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -174,6 +175,22 @@ export default function Admin() {
         {/* Main Admin Content */}
 
         <div className="grid gap-6 lg:grid-cols-2">
+          {/* Avatar Management */}
+          <Card className="lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Avatar Management
+              </CardTitle>
+              <CardDescription>
+                Create and manage AI avatar personalities with unique configurations.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AvatarManager />
+            </CardContent>
+          </Card>
+
           {/* Knowledge Base Management */}
           <Card className="lg:col-span-2">
             <CardHeader>

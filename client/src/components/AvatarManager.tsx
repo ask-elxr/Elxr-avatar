@@ -57,10 +57,7 @@ export function AvatarManager() {
   // Create avatar mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertAvatarProfile) => {
-      return await apiRequest("/api/admin/avatars", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("POST", "/api/admin/avatars", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/avatars"] });
@@ -82,10 +79,7 @@ export function AvatarManager() {
   // Update avatar mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertAvatarProfile> }) => {
-      return await apiRequest(`/api/admin/avatars/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("PUT", `/api/admin/avatars/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/avatars"] });
@@ -107,9 +101,7 @@ export function AvatarManager() {
   // Delete avatar mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/admin/avatars/${id}`, {
-        method: "DELETE",
-      });
+      return await apiRequest("DELETE", `/api/admin/avatars/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/avatars"] });
@@ -170,10 +162,10 @@ export function AvatarManager() {
   };
 
   const handleAddNamespace = () => {
-    if (namespaceInput.trim() && !formData.pineconeNamespaces.includes(namespaceInput.trim())) {
+    if (namespaceInput.trim() && !formData.pineconeNamespaces?.includes(namespaceInput.trim())) {
       setFormData({
         ...formData,
-        pineconeNamespaces: [...formData.pineconeNamespaces, namespaceInput.trim()],
+        pineconeNamespaces: [...(formData.pineconeNamespaces || []), namespaceInput.trim()],
       });
       setNamespaceInput("");
     }
@@ -182,7 +174,7 @@ export function AvatarManager() {
   const handleRemoveNamespace = (namespace: string) => {
     setFormData({
       ...formData,
-      pineconeNamespaces: formData.pineconeNamespaces.filter((ns) => ns !== namespace),
+      pineconeNamespaces: (formData.pineconeNamespaces || []).filter((ns) => ns !== namespace),
     });
   };
 
@@ -199,7 +191,7 @@ export function AvatarManager() {
       return;
     }
 
-    if (formData.isActive && formData.pineconeNamespaces.length === 0) {
+    if (formData.isActive && (!formData.pineconeNamespaces || formData.pineconeNamespaces.length === 0)) {
       toast({
         title: "Validation error",
         description: "Active avatars must have at least one Pinecone namespace.",
@@ -426,7 +418,7 @@ export function AvatarManager() {
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2 mt-2">
-                {formData.pineconeNamespaces.map((ns) => (
+                {(formData.pineconeNamespaces || []).map((ns) => (
                   <Badge key={ns} variant="secondary" className="flex items-center gap-1">
                     {ns}
                     <button
