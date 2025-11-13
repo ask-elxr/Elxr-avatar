@@ -431,22 +431,9 @@ export function AvatarChat({ userId }: AvatarChatProps) {
           ref={videoRef}
           autoPlay
           playsInline
-          className={`w-full h-full object-cover ${audioOnly && sessionActive ? 'opacity-0' : 'opacity-100'}`}
+          className="w-full h-full object-cover"
           data-testid="avatar-video"
         />
-        {audioOnly && sessionActive && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black">
-            <div className="text-center space-y-4">
-              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <p className="text-white text-lg font-medium">Audio Only Mode</p>
-              <p className="text-gray-400 text-sm">Listening...</p>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Testing Overlay - Stream Statistics (Development Only) */}
