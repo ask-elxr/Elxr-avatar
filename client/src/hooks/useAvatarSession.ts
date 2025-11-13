@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import StreamingAvatar, {
+  TaskType,
   AvatarQuality,
   StreamingEvents,
-  TaskType,
 } from "@heygen/streaming-avatar";
+import { SessionDriver, HeyGenDriver, AudioOnlyDriver } from "./sessionDrivers";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -51,6 +52,7 @@ export function useAvatarSession({
   const [isPaused, setIsPaused] = useState(false);
 
   const avatarRef = useRef<StreamingAvatar | null>(null);
+  const driverRef = useRef<SessionDriver | null>(null);
   const intentionalStopRef = useRef(false);
   const hasStartedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -60,19 +62,6 @@ export function useAvatarSession({
   const isSpeakingRef = useRef(false);
   const audioOnlyRef = useRef(false);
   const currentAvatarIdRef = useRef(selectedAvatarId);
-
-  const fetchAccessToken = async (): Promise<string> => {
-    const response = await fetch("/api/heygen/token", {
-      method: "POST",
-    });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch access token");
-    }
-
-    const data = await response.json();
-    return data.token;
-  };
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
