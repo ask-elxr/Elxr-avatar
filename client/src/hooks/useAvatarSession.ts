@@ -83,6 +83,28 @@ export function useAvatarSession({
     const activeAvatarId = avatarId || currentAvatarIdRef.current;
     currentAvatarIdRef.current = activeAvatarId;
 
+    // If audio-only mode, skip HeyGen video session
+    if (audioOnly) {
+      // Hide video element
+      if (videoRef.current) {
+        videoRef.current.style.display = 'none';
+      }
+      
+      // Set session as active but don't create HeyGen session
+      console.log('Audio-only mode: Video disabled');
+      setSessionActive(true);
+      setIsLoading(false);
+      onSessionActiveChange?.(true);
+      
+      // Return early - don't create HeyGen session
+      return;
+    }
+
+    // For video mode, ensure video is visible
+    if (videoRef.current) {
+      videoRef.current.style.display = 'block';
+    }
+
     try {
       const avatarConfigResponse = await fetch(`/api/avatar/config/${activeAvatarId}`);
       if (!avatarConfigResponse.ok) {
