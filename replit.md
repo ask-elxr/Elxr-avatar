@@ -82,7 +82,33 @@ Preferred communication style: Simple, everyday language.
 - **Pino**: Structured logging.
 - **Opossum**: Circuit breaker implementation.
 
+# Integration Notes
+
+## Personal Knowledge Base Integration
+- **Decision**: User dismissed Replit's Notion connector, will implement custom integration using API credentials stored as secrets
+- **Approach**: Support multiple knowledge base types (Notion, Obsidian) with flexible sync mechanism
+- **Storage**: Each user can connect their own knowledge bases with isolated Pinecone namespaces
+- **API Keys**: NOTION_API_KEY (optional) - for Notion integration via REST API
+
 # Recent Changes
+
+## November 13, 2025
+
+### API Cost Tracking & Premium Admin Styling
+- Created `api_calls` table to track all external API usage (Claude, ElevenLabs, HeyGen, Pinecone, OpenAI)
+- Implemented fire-and-forget logging across all services with error handling
+- Built admin endpoint `/api/admin/costs` with aggregations (total, 24h, 7d, avg response time)
+- Created CostTracking component with:
+  - Pie chart showing API usage distribution with percentages
+  - Premium color palette (purple, green, blue, orange, teal)
+  - Responsive table with service breakdown
+  - Zero-total edge case handling
+- Applied premium gradient styling throughout admin panel:
+  - Gradient backgrounds and borders on all cards
+  - Gradient text effects on titles
+  - Icon badges with gradient backgrounds
+  - Hover effects with scale and color transitions
+  - Each section has unique color theme for visual hierarchy
 
 ## November 13, 2025
 

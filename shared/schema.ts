@@ -168,3 +168,40 @@ export const insertApiCallSchema = createInsertSchema(apiCalls).pick({
 
 export type InsertApiCall = z.infer<typeof insertApiCallSchema>;
 export type ApiCall = typeof apiCalls.$inferSelect;
+
+// Personal knowledge base connections
+export const knowledgeBaseSources = pgTable("knowledge_base_sources", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: varchar("type").notNull(), // 'notion', 'obsidian', 'manual'
+  name: text("name").notNull(), // User-friendly name
+  pineconeNamespace: varchar("pinecone_namespace").notNull().unique(), // Isolated namespace for this source
+  config: jsonb("config"), // Source-specific configuration (e.g., Notion database ID, Obsidian vault path)
+  status: varchar("status").notNull().default("active"), // active, syncing, error, disabled
+  lastSyncAt: timestamp("last_sync_at"),
+  syncError: text("sync_error"),
+  itemsCount: integer("items_count").default(0), // Number of items synced
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertKnowledgeBaseSourceSchema = createInsertSchema(knowledgeBaseSources).pick({
+  userId: true,
+  type: true,
+  name: true,
+  pineconeNamespace: true,
+  config: true,
+});
+
+export const updateKnowledgeBaseSourceSchema = createInsertSchema(knowledgeBaseSources).pick({
+  name: true,
+  config: true,
+  status: true,
+  lastSyncAt: true,
+  syncError: true,
+  itemsCount: true,
+}).partial();
+
+export type InsertKnowledgeBaseSource = z.infer<typeof insertKnowledgeBaseSourceSchema>;
+export type UpdateKnowledgeBaseSource = z.infer<typeof updateKnowledgeBaseSourceSchema>;
+export type KnowledgeBaseSource = typeof knowledgeBaseSources.$inferSelect;

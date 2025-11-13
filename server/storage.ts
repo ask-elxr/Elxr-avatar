@@ -3,6 +3,7 @@ import {
   documents,
   avatarProfiles,
   apiCalls,
+  knowledgeBaseSources,
   type User,
   type UpsertUser,
   type Document,
@@ -10,9 +11,12 @@ import {
   type InsertAvatarProfile,
   type UpdateAvatarProfile,
   type InsertApiCall,
+  type KnowledgeBaseSource,
+  type InsertKnowledgeBaseSource,
+  type UpdateKnowledgeBaseSource,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, gte, sql as drizzleSql } from "drizzle-orm";
+import { eq, gte, sql as drizzleSql, and } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -44,6 +48,13 @@ export interface IStorage {
       avgResponseTimeMs: number;
     }[];
   }>;
+
+  // Knowledge base source operations
+  listKnowledgeSources(userId: string): Promise<KnowledgeBaseSource[]>;
+  getKnowledgeSource(id: string, userId: string): Promise<KnowledgeBaseSource | undefined>;
+  createKnowledgeSource(data: InsertKnowledgeBaseSource): Promise<KnowledgeBaseSource>;
+  updateKnowledgeSource(id: string, userId: string, data: UpdateKnowledgeBaseSource): Promise<KnowledgeBaseSource | undefined>;
+  deleteKnowledgeSource(id: string, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -230,6 +241,59 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { services: Array.from(serviceMap.values()) };
+  }
+
+  // Knowledge base source operations
+  async listKnowledgeSources(userId: string): Promise<KnowledgeBaseSource[]> {
+    const sources = await db
+      .select()
+      .from(knowledgeBaseSources)
+      .where(eq(knowledgeBaseSources.userId, userId));
+    return sources;
+  }
+
+  async getKnowledgeSource(id: string, userId: string): Promise<KnowledgeBaseSource | undefined> {
+    const [source] = await db
+      .select()
+      .from(knowledgeBaseSources)
+      .where(and(
+        eq(knowledgeBaseSources.id, id),
+        eq(knowledgeBaseSources.userId, userId)
+      ));
+    return source;
+  }
+
+  async createKnowledgeSource(data: InsertKnowledgeBaseSource): Promise<KnowledgeBaseSource> {
+    const [source] = await db
+      .insert(knowledgeBaseSources)
+      .values(data)
+      .returning();
+    return source;
+  }
+
+  async updateKnowledgeSource(
+    id: string,
+    userId: string,
+    data: UpdateKnowledgeBaseSource
+  ): Promise<KnowledgeBaseSource | undefined> {
+    const [source] = await db
+      .update(knowledgeBaseSources)
+      .set({ ...data, updatedAt: new Date() })
+      .where(and(
+        eq(knowledgeBaseSources.id, id),
+        eq(knowledgeBaseSources.userId, userId)
+      ))
+      .returning();
+    return source;
+  }
+
+  async deleteKnowledgeSource(id: string, userId: string): Promise<void> {
+    await db
+      .delete(knowledgeBaseSources)
+      .where(and(
+        eq(knowledgeBaseSources.id, id),
+        eq(knowledgeBaseSources.userId, userId)
+      ));
   }
 }
 
