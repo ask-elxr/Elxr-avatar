@@ -22,6 +22,7 @@ import {
 import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { elevenlabsService } from "./elevenlabsService.js";
+import { wikipediaService } from "./wikipediaService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
@@ -652,6 +653,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       logger.error({ error: error.message }, "Error syncing knowledge source");
       res.status(500).json({ error: "Failed to sync knowledge source" });
+    }
+  });
+
+  // Sync Wikipedia article to Pinecone namespace
+  app.post("/api/wikipedia/sync", async (req, res) => {
+    try {
+      const { title, namespace } = req.body;
+
+      if (!title || !namespace) {
+        return res.status(400).json({ error: "Title and namespace are required" });
+      }
+
+      if (!wikipediaService.isAvailable()) {
+        return res.status(503).json({ error: "Wikipedia service not available - check API keys" });
+      }
+
+      const result = await wikipediaService.syncArticleToNamespace(title, namespace);
+
+      if (result.success) {
+        logger.info({ title, namespace, articleId: result.articleId }, "Wikipedia article synced");
+        return res.json({
+          success: true,
+          articleId: result.articleId,
+          message: result.message
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          error: result.message
+        });
+      }
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error syncing Wikipedia article");
+      res.status(500).json({ error: "Failed to sync Wikipedia article" });
     }
   });
 
