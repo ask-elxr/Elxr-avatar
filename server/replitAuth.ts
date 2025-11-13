@@ -38,7 +38,7 @@ export function getSession() {
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
       maxAge: sessionTtl,
     },
   });
@@ -101,7 +101,34 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  app.get("/api/login", (req, res, next) => {
+  app.get("/api/login", async (req, res, next) => {
+    // Development mode: Allow localhost access with mock authentication
+    if (process.env.NODE_ENV === 'development' && (req.hostname === 'localhost' || req.hostname === '127.0.0.1')) {
+      const mockUser = {
+        claims: {
+          sub: 'dev-user-001',
+          email: 'dev@localhost.dev',
+          first_name: 'Dev',
+          last_name: 'User',
+          profile_image_url: null,
+          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days from now
+        },
+        access_token: 'dev-access-token',
+        refresh_token: 'dev-refresh-token',
+        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
+      };
+      
+      await upsertUser(mockUser.claims);
+      
+      req.login(mockUser, (err) => {
+        if (err) {
+          return next(err);
+        }
+        res.redirect('/');
+      });
+      return;
+    }
+
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
