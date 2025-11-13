@@ -22,11 +22,14 @@ class Mem0Service {
   private baseUrl: string = "https://api.mem0.ai/v1";
 
   constructor() {
-    const apiKey = process.env.MEM0_API_KEY;
-    if (!apiKey) {
-      throw new Error('MEM0_API_KEY environment variable is required');
+    this.apiKey = process.env.MEM0_API_KEY || '';
+    if (!this.apiKey) {
+      console.warn('⚠️  MEM0_API_KEY not set - Memory service will not be available');
     }
-    this.apiKey = apiKey;
+  }
+
+  isAvailable(): boolean {
+    return !!this.apiKey;
   }
 
   // Add a memory for a user

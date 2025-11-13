@@ -114,6 +114,11 @@ export const metrics = {
     pineconeQueryCacheMisses.inc();
   },
 
+  recordElevenLabsTTS(duration: number) {
+    externalCallDuration.observe({ service: 'elevenlabs' }, duration);
+    externalCallCounter.inc({ service: 'elevenlabs', status: 'success' });
+  },
+
   recordDocumentProcessed(status: 'success' | 'failure', type: string) {
     documentProcessingCounter.inc({ status, type });
   },

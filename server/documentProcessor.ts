@@ -11,22 +11,25 @@ import * as path from 'path';
 import * as mammoth from 'mammoth';
 
 class DocumentProcessor {
-  private openai: OpenAI;
+  private openai?: OpenAI;
+  private apiKey: string;
   private embeddingBreaker: any;
   private transcriptionBreaker: any;
 
   constructor() {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY environment variable is required');
+    this.apiKey = process.env.OPENAI_API_KEY || '';
+    if (!this.apiKey) {
+      console.warn('⚠️  OPENAI_API_KEY not set - Document processing will not be available');
+      return;
     }
     
     this.openai = new OpenAI({
-      apiKey: apiKey,
+      apiKey: this.apiKey,
     });
 
     this.embeddingBreaker = wrapServiceCall(
       async (params: any) => {
+        if (!this.openai) throw new Error('OpenAI client not initialized');
         return await this.openai.embeddings.create(params);
       },
       'openai-embeddings',
@@ -35,11 +38,16 @@ class DocumentProcessor {
 
     this.transcriptionBreaker = wrapServiceCall(
       async (params: any) => {
+        if (!this.openai) throw new Error('OpenAI client not initialized');
         return await this.openai.audio.transcriptions.create(params);
       },
       'openai-transcription',
       { timeout: 60000, errorThresholdPercentage: 50 }
     );
+  }
+
+  isAvailable(): boolean {
+    return !!this.apiKey && !!this.openai;
   }
 
   // Split text into chunks for processing - optimized for small files

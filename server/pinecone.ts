@@ -6,21 +6,31 @@ export enum PineconeIndexName {
 }
 
 class PineconeService {
-  private client: Pinecone;
+  private client?: Pinecone;
+  private apiKey: string;
   private defaultIndexName: PineconeIndexName = PineconeIndexName.AVATAR_CHAT;
 
   constructor() {
-    const apiKey = process.env.PINECONE_API_KEY;
-    if (!apiKey) {
-      throw new Error('PINECONE_API_KEY environment variable is required');
+    this.apiKey = process.env.PINECONE_API_KEY || '';
+    if (!this.apiKey) {
+      console.warn('⚠️  PINECONE_API_KEY not set - Pinecone service will not be available');
+      return;
     }
 
     this.client = new Pinecone({
-      apiKey: apiKey,
+      apiKey: this.apiKey,
     });
   }
 
+  isAvailable(): boolean {
+    return !!this.apiKey && !!this.client;
+  }
+
   async initializeIndex(indexName: PineconeIndexName = this.defaultIndexName) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
     try {
       // Check if index exists
       const indexes = await this.client.listIndexes();
@@ -175,6 +185,10 @@ class PineconeService {
   }
 
   async listIndexes() {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
     try {
       const response = await this.client.listIndexes();
       return response.indexes || [];
