@@ -533,22 +533,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "I'm here to help, but I don't have specific information about that topic right now.";
       }
 
-      // DISABLED: Store conversation in Mem0 (speeds up responses)
-      // if (userId) {
-      //   try {
-      //     const { mem0Service } = await import('./mem0Service.js');
-      //     // Store both the user's message and the AI's response
-      //     const conversationText = `User asked: "${message}"\nAssistant responded: "${aiResponse}"`;
-      //     await mem0Service.addMemory(userId, conversationText, {
-      //       timestamp: new Date().toISOString(),
-      //       hasKnowledgeBase: !!knowledgeContext,
-      //       hasWebSearch: !!webSearchResults
-      //     });
-      //   } catch (memError) {
-      //     console.error('Error storing Mem0 memory:', memError);
-      //     // Continue even if memory storage fails
-      //   }
-      // }
+      if (userId) {
+        try {
+          const { mem0Service } = await import('./mem0Service.js');
+          // Store both the user's message and the AI's response
+          const conversationText = `User asked: "${message}"\nAssistant responded: "${aiResponse}"`;
+          await mem0Service.addMemory(userId, conversationText, {
+            timestamp: new Date().toISOString(),
+            hasKnowledgeBase: !!knowledgeContext,
+            hasWebSearch: !!webSearchResults
+          });
+        } catch (memError) {
+          console.error('Error storing Mem0 memory:', memError);
+          // Continue even if memory storage fails
+        }
+      }
 
       res.json({
         success: true,
