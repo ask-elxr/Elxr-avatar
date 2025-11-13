@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { X, Maximize2, Minimize2, Pause, Play } from "lucide-react";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
@@ -21,6 +22,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const [showUnpinchAnimation, setShowUnpinchAnimation] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
+  const [audioOnly, setAudioOnly] = useState(false);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -82,9 +84,9 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     if (!hasAutoStarted.current) {
       hasAutoStarted.current = true;
       setShowChatButton(false);
-      startSession();
+      startSession({ audioOnly });
     }
-  }, [startSession]);
+  }, [startSession, audioOnly]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -288,6 +290,25 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
+      {/* Audio Only Toggle - Top Left (Before Session) */}
+      {!sessionActive && !isLoading && !showReconnect && (
+        <div className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-black/50 backdrop-blur-sm px-4 py-3 rounded-lg">
+          <Checkbox
+            id="audio-only"
+            checked={audioOnly}
+            onCheckedChange={(checked) => setAudioOnly(checked as boolean)}
+            className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+            data-testid="checkbox-audio-only"
+          />
+          <label
+            htmlFor="audio-only"
+            className="text-white text-sm font-medium cursor-pointer select-none"
+          >
+            Audio Only
+          </label>
+        </div>
+      )}
+
       {/* Fullscreen Button - Top Left */}
       {sessionActive && (
         <Button
@@ -392,9 +413,22 @@ export function AvatarChat({ userId }: AvatarChatProps) {
           ref={videoRef}
           autoPlay
           playsInline
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-cover ${audioOnly && sessionActive ? 'opacity-0' : 'opacity-100'}`}
           data-testid="avatar-video"
         />
+        {audioOnly && sessionActive && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            <div className="text-center space-y-4">
+              <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center">
+                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </div>
+              <p className="text-white text-lg font-medium">Audio Only Mode</p>
+              <p className="text-gray-400 text-sm">Listening...</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Testing Overlay - Stream Statistics (Development Only) */}

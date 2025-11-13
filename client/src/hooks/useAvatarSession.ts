@@ -13,11 +13,15 @@ interface AvatarSessionConfig {
   onResetInactivityTimer?: () => void;
 }
 
+interface StartSessionOptions {
+  audioOnly?: boolean;
+}
+
 interface AvatarSessionReturn {
   sessionActive: boolean;
   isLoading: boolean;
   showReconnect: boolean;
-  startSession: () => Promise<void>;
+  startSession: (options?: StartSessionOptions) => Promise<void>;
   endSession: () => void;
   endSessionShowReconnect: () => Promise<void>;
   reconnect: () => void;
@@ -51,6 +55,7 @@ export function useAvatarSession({
   const speakingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasAskedAnythingElseRef = useRef(false);
   const isSpeakingRef = useRef(false);
+  const audioOnlyRef = useRef(false);
 
   const fetchAccessToken = async (): Promise<string> => {
     const response = await fetch("/api/heygen/token", {
@@ -65,8 +70,10 @@ export function useAvatarSession({
     return data.token;
   };
 
-  const startSession = useCallback(async () => {
+  const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
+    const { audioOnly = false } = options || {};
+    audioOnlyRef.current = audioOnly;
 
     try {
       const token = await fetchAccessToken();
@@ -310,7 +317,7 @@ export function useAvatarSession({
       });
 
       await avatar.createStartAvatar({
-        quality: AvatarQuality.High,
+        quality: audioOnly ? AvatarQuality.Low : AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
         knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
         voice: {
@@ -439,14 +446,14 @@ export function useAvatarSession({
   const reconnect = useCallback(() => {
     setShowReconnect(false);
     hasStartedRef.current = false;
-    startSession();
+    startSession({ audioOnly: audioOnlyRef.current });
   }, [startSession]);
 
   const togglePause = useCallback(async () => {
     if (isPaused) {
       setIsPaused(false);
       hasStartedRef.current = false;
-      startSession();
+      startSession({ audioOnly: audioOnlyRef.current });
       console.log("Avatar resuming - restarting session");
     } else {
       if (abortControllerRef.current) {
