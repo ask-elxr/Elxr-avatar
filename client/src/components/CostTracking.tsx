@@ -46,15 +46,19 @@ export function CostTracking() {
 
   if (!stats || stats.services.length === 0) {
     return (
-      <Card>
+      <Card className="bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
         <CardHeader>
-          <CardTitle>API Cost Tracking</CardTitle>
+          <CardTitle className="text-2xl bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            API Cost Tracking
+          </CardTitle>
           <CardDescription>Monitor API usage across all services</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">
-            No API calls tracked yet. Make some requests to see usage statistics.
-          </p>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              No API calls tracked yet. Make some requests to see usage statistics and distribution charts.
+            </p>
+          </div>
         </CardContent>
       </Card>
     );
@@ -91,6 +95,27 @@ export function CostTracking() {
 
   // Calculate total calls across all services
   const totalCalls = stats.services.reduce((sum, service) => sum + service.total, 0);
+
+  // Guard against zero total calls
+  if (totalCalls === 0) {
+    return (
+      <Card className="bg-gradient-to-br from-background via-background to-primary/5 border-primary/20">
+        <CardHeader>
+          <CardTitle className="text-2xl bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            API Cost Tracking
+          </CardTitle>
+          <CardDescription>Monitor API usage across all services</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">
+              No API calls tracked yet. Make some requests to see usage statistics and distribution charts.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Prepare data for pie chart
   const chartData = stats.services.map(service => ({

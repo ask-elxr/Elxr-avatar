@@ -140,35 +140,39 @@ export default function Admin() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-purple-500/10">
       <div className="container mx-auto p-6">
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <Shield className="w-6 h-6 text-blue-600" />
-              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-primary via-purple-500 to-pink-500 rounded-lg">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
             </div>
             <div className="flex items-center gap-2">
               <Link href="/account">
-                <Button variant="outline" data-testid="button-account">
+                <Button variant="outline" className="border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all" data-testid="button-account">
                   <User className="w-4 h-4 mr-2" />
                   My Account
                 </Button>
               </Link>
               <Link href="/">
-                <Button variant="outline" data-testid="button-home">
+                <Button variant="outline" className="border-primary/20 hover:bg-primary/10 hover:border-primary/40 transition-all" data-testid="button-home">
                   <Home className="w-4 h-4 mr-2" />
                   Back to Avatar
                 </Button>
               </Link>
               <div className="ml-4">
-                <Button asChild variant="outline" data-testid="button-signout">
+                <Button asChild variant="outline" className="border-primary/20 hover:bg-destructive/10 hover:border-destructive/40 transition-all" data-testid="button-signout">
                   <a href="/api/logout">Sign Out</a>
                 </Button>
               </div>
             </div>
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-lg">
             Secure document management and AI knowledge base administration
           </p>
         </div>
@@ -177,11 +181,15 @@ export default function Admin() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Avatar Management */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 bg-gradient-to-br from-background via-background to-primary/5 border-primary/20 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
-                Avatar Management
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-1.5 bg-gradient-to-br from-primary to-purple-500 rounded-md">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                  Avatar Management
+                </span>
               </CardTitle>
               <CardDescription>
                 Create and manage AI avatar personalities with unique configurations.
@@ -198,11 +206,15 @@ export default function Admin() {
           </div>
 
           {/* Knowledge Base Management */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 bg-gradient-to-br from-background via-background to-blue-500/5 border-blue-500/20 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Knowledge Base Management
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-1.5 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-md">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                  Knowledge Base Management
+                </span>
               </CardTitle>
               <CardDescription>
                 Add information to enhance the AI avatar's responses and capabilities.
@@ -214,11 +226,15 @@ export default function Admin() {
           </Card>
 
           {/* System Statistics */}
-          <Card>
+          <Card className="bg-gradient-to-br from-background via-background to-green-500/5 border-green-500/20 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                System Statistics
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-1.5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md">
+                  <Activity className="w-5 h-5 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                  System Statistics
+                </span>
               </CardTitle>
               <CardDescription>
                 Monitor system performance and usage metrics.
@@ -267,11 +283,15 @@ export default function Admin() {
           </Card>
 
           {/* Knowledge Base Search */}
-          <Card>
+          <Card className="bg-gradient-to-br from-background via-background to-orange-500/5 border-orange-500/20 shadow-lg">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="w-5 h-5" />
-                Knowledge Base Search
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-1.5 bg-gradient-to-br from-orange-500 to-amber-500 rounded-md">
+                  <Search className="w-5 h-5 text-white" />
+                </div>
+                <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent">
+                  Knowledge Base Search
+                </span>
               </CardTitle>
               <CardDescription>
                 Search through uploaded documents and content.
@@ -337,9 +357,11 @@ export default function Admin() {
         </div>
 
         {/* Quick Actions */}
-        <Card className="mt-6">
+        <Card className="mt-6 bg-gradient-to-br from-background via-background to-pink-500/5 border-pink-500/20 shadow-lg">
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="text-xl bg-gradient-to-r from-pink-500 to-rose-500 bg-clip-text text-transparent">
+              Quick Actions
+            </CardTitle>
             <CardDescription>
               Common administrative tasks and tools.
             </CardDescription>
@@ -348,29 +370,29 @@ export default function Admin() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button 
                 variant="outline" 
-                className="h-20 flex-col"
+                className="h-20 flex-col border-primary/20 hover:bg-primary/10 hover:border-primary/40 hover:scale-105 transition-all"
                 onClick={() => window.open('/api/chat/enhanced', '_blank')}
                 data-testid="button-test-claude"
               >
-                <Activity className="w-6 h-6 mb-2" />
+                <Activity className="w-6 h-6 mb-2 text-primary" />
                 Test Claude API
               </Button>
               <Button 
                 variant="outline" 
-                className="h-20 flex-col"
+                className="h-20 flex-col border-green-500/20 hover:bg-green-500/10 hover:border-green-500/40 hover:scale-105 transition-all"
                 onClick={() => fetchPineconeStats()}
                 data-testid="button-test-pinecone"
               >
-                <Database className="w-6 h-6 mb-2" />
+                <Database className="w-6 h-6 mb-2 text-green-500" />
                 Check Vector DB
               </Button>
               <Link href="/">
                 <Button 
                   variant="outline" 
-                  className="h-20 flex-col w-full"
+                  className="h-20 flex-col w-full border-blue-500/20 hover:bg-blue-500/10 hover:border-blue-500/40 hover:scale-105 transition-all"
                   data-testid="button-avatar-chat"
                 >
-                  <FileText className="w-6 h-6 mb-2" />
+                  <FileText className="w-6 h-6 mb-2 text-blue-500" />
                   Avatar Chat
                 </Button>
               </Link>
