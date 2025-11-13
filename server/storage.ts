@@ -78,7 +78,7 @@ export class DatabaseStorage implements IStorage {
   // Avatar operations
   async listAvatars(activeOnly: boolean = true): Promise<AvatarProfile[]> {
     if (activeOnly) {
-      return await db.select().from(avatarProfiles).where(eq(avatarProfiles.isActive, "true"));
+      return await db.select().from(avatarProfiles).where(eq(avatarProfiles.isActive, true));
     }
     return await db.select().from(avatarProfiles);
   }
@@ -105,7 +105,7 @@ export class DatabaseStorage implements IStorage {
   async softDeleteAvatar(id: string): Promise<void> {
     await db
       .update(avatarProfiles)
-      .set({ isActive: "false" })
+      .set({ isActive: false })
       .where(eq(avatarProfiles.id, id));
   }
 }

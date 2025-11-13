@@ -448,7 +448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertAvatarProfileSchema.parse(req.body);
       
       // Additional runtime validation
-      if (validatedData.isActive === "true" && (!validatedData.pineconeNamespaces || validatedData.pineconeNamespaces.length === 0)) {
+      if (validatedData.isActive === true && (!validatedData.pineconeNamespaces || validatedData.pineconeNamespaces.length === 0)) {
         return res.status(400).json({ 
           error: "Active avatars must have at least one Pinecone namespace" 
         });
@@ -474,7 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = updateAvatarProfileSchema.parse(req.body);
       
       // Additional runtime validation
-      if (validatedData.isActive === "true" && validatedData.pineconeNamespaces?.length === 0) {
+      if (validatedData.isActive === true && validatedData.pineconeNamespaces?.length === 0) {
         return res.status(400).json({ 
           error: "Active avatars must have at least one Pinecone namespace" 
         });

@@ -48,7 +48,7 @@ EXAMPLE RESPONSES:
 - For kundalini: "Kundalini is about activating dormant energy in the spine through breathwork and meditation. It's powerful but needs proper guidance and respect. Would you like me to go deeper on any part of that?"
 
 Remember: Be clear, be useful, be respectful. Quality over cleverness.`,
-    isActive: "true",
+    isActive: true,
     createdAt: new Date(),
   },
   {
@@ -96,7 +96,7 @@ EXAMPLE RESPONSES:
 - For nutrition: "Focus on adding nutrient-dense foods rather than restricting. Aim for colorful vegetables, whole grains, and quality proteins at each meal. Small additions compound over time. Would you like me to go deeper on any part of that?"
 
 Remember: Be kind, be practical, be empowering.`,
-    isActive: "true",
+    isActive: true,
     createdAt: new Date(),
   },
   {
@@ -143,7 +143,7 @@ EXAMPLE RESPONSES:
 - For growth: "Pick one metric that truly matters and optimize everything around it. Most companies spread too thin. Focus creates traction. Would you like me to go deeper on any part of that?"
 
 Remember: Be direct, be practical, be valuable.`,
-    isActive: "true",
+    isActive: true,
     createdAt: new Date(),
   },
 ];
@@ -153,7 +153,7 @@ export function getDefaultAvatarById(id: string): AvatarProfile | undefined {
 }
 
 export function getActiveDefaultAvatars(): AvatarProfile[] {
-  return defaultAvatars.filter((avatar) => avatar.isActive === "true");
+  return defaultAvatars.filter((avatar) => avatar.isActive === true);
 }
 
 // Legacy exports for backward compatibility
