@@ -433,8 +433,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           autoPlay
           playsInline
           className="w-full h-full object-cover"
+          style={{ display: audioOnly ? 'none' : 'block' }}
           data-testid="avatar-video"
         />
+        {audioOnly && sessionActive && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black text-white">
+            <p className="text-lg">Audio-only mode active</p>
+          </div>
+        )}
       </div>
 
       {/* Testing Overlay - Stream Statistics (Development Only) */}
