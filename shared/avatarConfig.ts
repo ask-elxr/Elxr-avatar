@@ -1,6 +1,6 @@
 import { AvatarProfile } from "./schema";
 
-export const AVATARS: AvatarProfile[] = [
+export const defaultAvatars: AvatarProfile[] = [
   {
     id: "mark-kohl",
     name: "Mark Kohl",
@@ -148,10 +148,15 @@ Remember: Be direct, be practical, be valuable.`,
   },
 ];
 
-export function getAvatarById(id: string): AvatarProfile | undefined {
-  return AVATARS.find((avatar) => avatar.id === id);
+export function getDefaultAvatarById(id: string): AvatarProfile | undefined {
+  return defaultAvatars.find((avatar) => avatar.id === id);
 }
 
-export function getActiveAvatars(): AvatarProfile[] {
-  return AVATARS.filter((avatar) => avatar.isActive === "true");
+export function getActiveDefaultAvatars(): AvatarProfile[] {
+  return defaultAvatars.filter((avatar) => avatar.isActive === "true");
 }
+
+// Legacy exports for backward compatibility
+export const AVATARS = defaultAvatars;
+export const getAvatarById = getDefaultAvatarById;
+export const getActiveAvatars = getActiveDefaultAvatars;
