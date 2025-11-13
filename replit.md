@@ -94,6 +94,13 @@ Preferred communication style: Simple, everyday language.
 
 ## November 13, 2025
 
+### CORS Middleware for Webflow Embedding
+- Added CORS middleware to server/index.ts for cross-origin support
+- Configured headers: Access-Control-Allow-Origin (*), Access-Control-Allow-Methods, Access-Control-Allow-Headers
+- Added X-Frame-Options (ALLOWALL) and Content-Security-Policy (frame-ancestors *;)
+- Handles OPTIONS preflight requests with 200 status
+- Enables iframe embedding in Webflow and other platforms
+
 ### Personal Knowledge Base Integration
 - Implemented support for connecting personal knowledge sources (Notion, Obsidian)
 - Created `knowledge_base_sources` table with user-scoped access control
