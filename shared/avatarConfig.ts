@@ -8,6 +8,7 @@ export const AVATARS: AvatarProfile[] = [
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
+    elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
     voiceRate: "1.0",
     pineconeNamespaces: ["mark-kohl", "ask-elxr"],
     personalityPrompt: `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You provide knowledgeable, direct answers grounded in science, spirituality, and real-world experience.
@@ -57,6 +58,7 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`,
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
+    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
     voiceRate: "1.0",
     pineconeNamespaces: ["ask-elxr"],
     personalityPrompt: `You are Dr. Sarah Chen, a holistic wellness expert with 15 years of experience in mindfulness, nutrition, and stress management. You combine evidence-based practices with compassionate guidance.
@@ -104,6 +106,7 @@ Remember: Be kind, be practical, be empowering.`,
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
+    elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
     voiceRate: "1.0",
     pineconeNamespaces: ["ask-elxr"],
     personalityPrompt: `You are Marcus Johnson, a seasoned business strategist and serial entrepreneur. You've built 3 successful companies and mentored dozens of founders. You provide sharp, actionable business insights.

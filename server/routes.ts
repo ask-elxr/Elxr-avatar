@@ -17,12 +17,14 @@ import {
 } from "./performance.js";
 import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
+import { elevenlabsService } from "./elevenlabsService.js";
 import { setupAuth, isAuthenticated } from "./replitAuth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
 import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
+import { getAvatarById } from "../shared/avatarConfig.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -115,6 +117,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log.error({ error: error.message }, "Error creating HeyGen token");
       res.status(500).json({
         error: "Failed to create HeyGen access token",
+      });
+    }
+  });
+
+  // ElevenLabs TTS endpoint for audio-only mode
+  app.post("/api/elevenlabs/tts", async (req, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "generateSpeech" });
+
+    try {
+      const { text, avatarId = "mark-kohl" } = req.body;
+
+      if (!text) {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      if (!elevenlabsService.isAvailable()) {
+        log.error("ElevenLabs service not available");
+        return res.status(500).json({
+          error: "ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY environment variable.",
+        });
+      }
+
+      const avatarConfig = getAvatarById(avatarId);
+      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+        log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
+        return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
+      }
+
+      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId }, "Generating TTS audio");
+
+      const audioBuffer = await elevenlabsService.generateSpeech(text, avatarConfig.elevenlabsVoiceId);
+
+      log.info({ audioSize: audioBuffer.length }, "TTS audio generated successfully");
+
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Length", audioBuffer.length.toString());
+      res.send(audioBuffer);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error generating TTS audio");
+      res.status(500).json({
+        error: "Failed to generate TTS audio",
       });
     }
   });
