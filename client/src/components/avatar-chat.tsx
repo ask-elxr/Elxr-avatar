@@ -12,9 +12,10 @@ import { AvatarSelector } from "@/components/avatar-selector";
 
 interface AvatarChatProps {
   userId: string;
+  avatarId?: string;
 }
 
-export function AvatarChat({ userId }: AvatarChatProps) {
+export function AvatarChat({ userId, avatarId = "mark-kohl" }: AvatarChatProps) {
   // UI-only state
   const [isMobile, setIsMobile] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -24,7 +25,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [audioOnly, setAudioOnly] = useState(false);
-  const [selectedAvatarId, setSelectedAvatarId] = useState("mark-kohl");
+  const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId);
   const [showAvatarSelector, setShowAvatarSelector] = useState(true);
   
   // UI-only refs

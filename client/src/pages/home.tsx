@@ -5,6 +5,7 @@ import { Disclaimer } from "@/components/disclaimer";
 export default function Home() {
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const [avatarId, setAvatarId] = useState<string>('mark-kohl');
 
   useEffect(() => {
     // Check if disclaimer was already accepted
@@ -20,6 +21,13 @@ export default function Home() {
       localStorage.setItem('temp-user-id', storedUserId);
     }
     setUserId(storedUserId);
+
+    // Read avatar parameter from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const avatarParam = urlParams.get('avatar');
+    if (avatarParam) {
+      setAvatarId(avatarParam);
+    }
   }, []);
 
   const handleAcceptDisclaimer = (rememberConversations: boolean) => {
@@ -33,6 +41,6 @@ export default function Home() {
     return <Disclaimer onAccept={handleAcceptDisclaimer} />;
   }
 
-  // Show avatar chat with placeholder user ID
-  return <AvatarChat userId={userId} />;
+  // Show avatar chat with placeholder user ID and selected avatar
+  return <AvatarChat userId={userId} avatarId={avatarId} />;
 }
