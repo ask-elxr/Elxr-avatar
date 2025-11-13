@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 
 interface AudioOnlyDisplayProps {
   isSpeaking: boolean;
+  sessionActive: boolean;
 }
 
-export function AudioOnlyDisplay({ isSpeaking }: AudioOnlyDisplayProps) {
+export function AudioOnlyDisplay({ isSpeaking, sessionActive }: AudioOnlyDisplayProps) {
   return (
     <div className="absolute inset-0 flex items-center justify-center bg-black">
       <div className="relative">
@@ -23,7 +24,7 @@ export function AudioOnlyDisplay({ isSpeaking }: AudioOnlyDisplayProps) {
           </svg>
         </div>
         
-        {isSpeaking && (
+        {isSpeaking && sessionActive && (
           <div className="absolute inset-0 flex items-center justify-center">
             {[0, 1, 2, 3].map((i) => (
               <div
@@ -44,7 +45,7 @@ export function AudioOnlyDisplay({ isSpeaking }: AudioOnlyDisplayProps) {
       
       <div className="absolute bottom-20 text-white text-center">
         <p className="text-lg font-medium">
-          {isSpeaking ? "Speaking..." : "Audio-only mode"}
+          {!sessionActive ? "Starting audio session..." : isSpeaking ? "Speaking..." : "Audio-only mode"}
         </p>
       </div>
     </div>
