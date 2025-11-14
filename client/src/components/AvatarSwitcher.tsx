@@ -65,7 +65,7 @@ export function AvatarSwitcher({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-background via-background to-purple-500/5">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl">
+          <DialogTitle className="flex items-center gap-2 text-2xl pr-8">
             <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
               <Users className="w-6 h-6 text-white" />
             </div>
@@ -73,7 +73,7 @@ export function AvatarSwitcher({
               Switch AI Guide
             </span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="pr-8">
             Choose a different AI personality to continue your conversation.
             {disabled && " (Please wait 30 seconds between avatar switches)"}
           </DialogDescription>
