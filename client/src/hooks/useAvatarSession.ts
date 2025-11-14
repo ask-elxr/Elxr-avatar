@@ -120,75 +120,67 @@ export function useAvatarSession({
     }
   };
 
-  const startSession = useCallback(async (options?: StartSessionOptions) => {
-    setIsLoading(true);
-    const { audioOnly = false, avatarId } = options || {};
-    audioOnlyRef.current = audioOnly;
+  const clearIdleTimeout = useCallback(() => {
+    if (idleTimeoutRef.current) {
+      clearTimeout(idleTimeoutRef.current);
+      idleTimeoutRef.current = null;
+    }
+  }, []);
+
+  const stopHeyGenSession = useCallback(async () => {
+    if (!avatarRef.current || !heygenSessionActive) return;
     
-    const activeAvatarId = avatarId || currentAvatarIdRef.current;
-    currentAvatarIdRef.current = activeAvatarId;
-
-    // If audio-only mode, skip HeyGen video session but still register the session
-    if (audioOnly) {
-      // Hide video element
+    console.log("Stopping HeyGen session - keeping UI active");
+    clearIdleTimeout();
+    
+    try {
+      intentionalStopRef.current = true;
+      await avatarRef.current.stopAvatar().catch(console.error);
+      avatarRef.current = null;
+      
       if (videoRef.current) {
-        videoRef.current.style.display = 'none';
-        videoRef.current.style.visibility = 'hidden';
+        videoRef.current.srcObject = null;
       }
       
-      // Register audio-only session with session manager
-      try {
-        const response = await fetch("/api/session/start", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId,
-            avatarId: activeAvatarId,
-          }),
-        });
+      setHeygenSessionActive(false);
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false);
+      
+      // End server session to actually save credits
+      await endSessionOnServer();
+      console.log("HeyGen session stopped - showing placeholder, credits saved");
+    } catch (error) {
+      console.error("Error stopping HeyGen session:", error);
+    }
+  }, [heygenSessionActive, videoRef, clearIdleTimeout]);
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          
-          if (response.status === 429) {
-            throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
-          }
-          
-          throw new Error(errorData.error || "Failed to start session");
-        }
+  const startIdleTimeout = useCallback(() => {
+    clearIdleTimeout();
+    
+    // Only start idle timeout in video mode when not paused
+    if (!audioOnlyRef.current && !isPaused) {
+      idleTimeoutRef.current = setTimeout(() => {
+        console.log("30s idle timeout - stopping HeyGen session to save credits");
+        stopHeyGenSession();
+      }, 30000); // 30 seconds
+    }
+  }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
-        const data = await response.json();
-        sessionIdRef.current = data.sessionId;
-      } catch (error: any) {
-        console.error("Error registering audio-only session:", error);
-        setIsLoading(false);
-        throw error;
-      }
-      
-      // Set session as active but don't create HeyGen session
-      console.log('Audio-only mode: Video disabled, session registered');
-      setSessionActive(true);
-      setIsLoading(false);
-      onSessionActiveChange?.(true);
-      
-      setTimeout(() => {
-        onResetInactivityTimer?.();
-      }, 500);
-      
-      // Return early - don't create HeyGen session
+  const startHeyGenSession = useCallback(async (activeAvatarId: string) => {
+    // Skip if audio-only or already loading
+    if (audioOnlyRef.current || isLoading) {
       return;
     }
-
-    // For video mode, ensure video is visible
-    if (videoRef.current) {
-      console.log('Video mode: Ensuring video element is visible');
-      videoRef.current.style.display = 'block';
-      videoRef.current.style.visibility = 'visible';
-      videoRef.current.style.opacity = '1';
+    
+    // If session is active, allow restart (for idle timeout recovery)
+    if (avatarRef.current && heygenSessionActive) {
+      console.log("HeyGen session already active");
+      return;
     }
-
+    
+    console.log("Starting HeyGen session for first message");
+    setIsLoading(true);
+    
     try {
       const avatarConfigResponse = await fetch(`/api/avatar/config/${activeAvatarId}`);
       if (!avatarConfigResponse.ok) {
@@ -210,38 +202,28 @@ export function useAvatarSession({
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log(
-          "Stream disconnected - intentionalStop flag:",
-          intentionalStopRef.current,
-        );
-        console.log(
-          "Session disconnected - showing reconnect screen to save credits",
-        );
+        console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
         intentionalStopRef.current = false;
         isSpeakingRef.current = false;
-        setSessionActive(false);
-        setShowReconnect(true);
-        onSessionActiveChange?.(false);
-        
-        endSessionOnServer();
+        avatarRef.current = null; // Clear ref immediately to allow restart
+        setHeygenSessionActive(false);
+        clearIdleTimeout();
       });
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
         isSpeakingRef.current = true;
         setIsSpeakingState(true);
+        clearIdleTimeout();
       });
 
       avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
         isSpeakingRef.current = false;
         setIsSpeakingState(false);
+        startIdleTimeout(); // Start 30s countdown after avatar stops talking
       });
 
-      // NOTE: USER_TALKING_MESSAGE handler removed to prevent voice transcription issues
-      // Avatar's own voice was being transcribed and sent back as new user messages
-      // Users can still send text messages via the handleSubmitMessage function
-
       await avatar.createStartAvatar({
-        quality: audioOnly ? AvatarQuality.Low : AvatarQuality.High,
+        quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
         knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
         voice: avatarConfig.heygenVoiceId ? {
@@ -254,31 +236,86 @@ export function useAvatarSession({
         disableIdleTimeout: true,
       });
 
-      // Voice chat disabled to prevent voice transcription issues
-      // Users can interact via text input only
-      console.log("Avatar session started - text input ready");
-
-      setSessionActive(true);
-      onSessionActiveChange?.(true);
+      console.log("HeyGen session started successfully");
+      setHeygenSessionActive(true);
       setIsLoading(false);
-
-      // No automatic greeting - saves HeyGen credits
-      // User can start conversation via text input
-      
-      // Reset inactivity timer after session starts
-      setTimeout(() => {
-        onResetInactivityTimer?.();
-      }, 500);
     } catch (error) {
-      console.error("Error starting avatar session:", error);
+      console.error("Error starting HeyGen session:", error);
       setIsLoading(false);
-      
-      endSessionOnServer();
+      throw error;
     }
+  }, [heygenSessionActive, videoRef, startIdleTimeout, clearIdleTimeout]);
+
+  const startSession = useCallback(async (options?: StartSessionOptions) => {
+    setIsLoading(true);
+    const { audioOnly = false, avatarId } = options || {};
+    audioOnlyRef.current = audioOnly;
+    
+    const activeAvatarId = avatarId || currentAvatarIdRef.current;
+    currentAvatarIdRef.current = activeAvatarId;
+
+    // Register session with server (for both audio and video modes)
+    try {
+      const response = await fetch("/api/session/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          avatarId: activeAvatarId,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 429) {
+          throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
+        }
+        
+        throw new Error(errorData.error || "Failed to start session");
+      }
+
+      const data = await response.json();
+      sessionIdRef.current = data.sessionId;
+    } catch (error: any) {
+      console.error("Error registering session:", error);
+      setIsLoading(false);
+      throw error;
+    }
+
+    // Setup UI based on mode
+    if (audioOnly) {
+      // Hide video element for audio-only
+      if (videoRef.current) {
+        videoRef.current.style.display = 'none';
+        videoRef.current.style.visibility = 'hidden';
+      }
+      console.log('Audio-only mode: Video disabled, session registered');
+    } else {
+      // Ensure video container is visible for placeholder/HeyGen
+      if (videoRef.current) {
+        console.log('Video mode: UI ready, HeyGen will start on first message');
+        videoRef.current.style.display = 'block';
+        videoRef.current.style.visibility = 'visible';
+        videoRef.current.style.opacity = '1';
+      }
+    }
+
+    setSessionActive(true);
+    setIsLoading(false);
+    onSessionActiveChange?.(true);
+    
+    setTimeout(() => {
+      onResetInactivityTimer?.();
+    }, 500);
+    
+    // LAZY LOADING: Don't start HeyGen session here
+    // It will be started when user sends first message (in handleSubmitMessage)
   }, [
     videoRef,
     userId,
-    memoryEnabled,
     onSessionActiveChange,
     onResetInactivityTimer,
   ]);
@@ -329,6 +366,9 @@ export function useAvatarSession({
       abortControllerRef.current = null;
     }
 
+    // Clear idle timeout
+    clearIdleTimeout();
+
     if (avatarRef.current) {
       intentionalStopRef.current = true;
       await avatarRef.current.stopAvatar().catch(console.error);
@@ -346,12 +386,13 @@ export function useAvatarSession({
     }
 
     setSessionActive(false);
+    setHeygenSessionActive(false);
     setIsLoading(false);
     setShowReconnect(false);
     onSessionActiveChange?.(false);
     
     await endSessionOnServer();
-  }, [videoRef, onSessionActiveChange]);
+  }, [videoRef, onSessionActiveChange, clearIdleTimeout]);
 
   const reconnect = useCallback(() => {
     setShowReconnect(false);
@@ -409,6 +450,8 @@ export function useAvatarSession({
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
       
+      clearIdleTimeout();
+      
       if (avatarRef.current) {
         intentionalStopRef.current = true;
         avatarRef.current.stopAvatar().catch(console.error);
@@ -422,11 +465,14 @@ export function useAvatarSession({
       
       endSessionOnServer();
     };
-  }, []);
+  }, [clearIdleTimeout]);
 
   const handleSubmitMessage = useCallback(async (message: string) => {
     if (!message.trim() || !sessionActive) return;
 
+    // Clear idle timeout immediately to prevent mid-conversation shutdowns
+    clearIdleTimeout();
+    
     onResetInactivityTimer?.();
     const requestId = Date.now().toString() + Math.random().toString(36);
     currentRequestIdRef.current = requestId;
@@ -518,7 +564,17 @@ export function useAvatarSession({
           }
         }
       } else {
-        // Video mode: Get Claude response then speak via HeyGen
+        // Video mode: Start HeyGen session on first message if not already started
+        if (!heygenSessionActive) {
+          try {
+            await startHeyGenSession(currentAvatarIdRef.current);
+          } catch (error) {
+            console.error("Failed to start HeyGen session:", error);
+            return;
+          }
+        }
+        
+        // Get Claude response then speak via HeyGen
         const response = await fetch("/api/avatar/response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -545,6 +601,7 @@ export function useAvatarSession({
         console.log("Claude response received:", claudeResponse);
 
         onResetInactivityTimer?.();
+        clearIdleTimeout(); // Clear idle timeout when processing new message
 
         // Clear and reset speaking interval
         if (speakingIntervalRef.current) {
@@ -592,7 +649,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, memoryEnabled, userId, onResetInactivityTimer]);
+  }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout]);
 
   return {
     sessionActive,
