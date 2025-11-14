@@ -1,5 +1,6 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
+import { AvatarPreview } from "@/components/AvatarPreview";
 import { CostTracking } from "@/components/CostTracking";
 import { KnowledgeSourceManager } from "@/components/KnowledgeSourceManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Search, Database, Activity, FileText, Home, User, Users } from "lucide-react";
+import { Shield, Search, Database, Activity, FileText, Home, User, Users, Video } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -179,6 +180,26 @@ export default function Admin() {
         </div>
         
         {/* Main Admin Content */}
+
+        {/* Avatar Preview Section */}
+        <Card className="mb-6 bg-gradient-to-br from-background via-background to-purple-500/5 border-purple-500/20 shadow-lg">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <div className="p-1.5 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md">
+                <Video className="w-5 h-5 text-white" />
+              </div>
+              <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
+                Available Avatars
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Preview all configured AI avatars and interact with them directly.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AvatarPreview />
+          </CardContent>
+        </Card>
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Avatar Management */}
