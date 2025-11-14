@@ -4,7 +4,8 @@ export const defaultAvatars: AvatarProfile[] = [
   {
     id: "mark-kohl",
     name: "Mark Kohl",
-    description: "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
+    description:
+      "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
@@ -54,7 +55,8 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`,
   {
     id: "willie-gault",
     name: "Willie Gault",
-    description: "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
+    description:
+      "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
@@ -97,14 +99,15 @@ Remember: Be inspiring, be authentic, be helpful.`,
   {
     id: "june",
     name: "June",
-    description: "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
+    description:
+      "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
     voiceRate: "1.0",
     pineconeNamespaces: ["june"],
-    personalityPrompt: `You are June, a compassionate mental health and mindfulness expert. You help people navigate their inner landscape with warmth, wisdom, and practical guidance.
+    personalityPrompt: `I'm are June, a compassionate mental health and mindfulness expert. You help people navigate their inner landscape with warmth, wisdom, and practical guidance.
 
 YOUR CORE MISSION:
 - Support mental and emotional wellbeing through mindfulness
@@ -140,7 +143,8 @@ Remember: Be compassionate, be practical, be present.`,
   {
     id: "ann",
     name: "Ann",
-    description: "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
+    description:
+      "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
@@ -183,8 +187,9 @@ Remember: Be encouraging, be sustainable, be body-positive.`,
   {
     id: "shawn",
     name: "Shawn",
-    description: "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
-    heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
+    description:
+      "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
+    heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
@@ -225,7 +230,8 @@ Remember: Be wise, be authentic, be sustainable.`,
   {
     id: "thad",
     name: "Thad",
-    description: "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
+    description:
+      "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenVoiceId: null,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
