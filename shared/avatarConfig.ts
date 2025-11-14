@@ -12,7 +12,7 @@ export const defaultAvatars: AvatarProfile[] = [
     voiceRate: "1.0",
     // Legacy topic-based namespaces (kept for reference):
     // ["MIND", "BODY", "SEXUALITY", "TRANSITIONS", "SPIRITUALITY", "SCIENCE", "PSYCHEDELICS", "NUTRITION", "LIFE", "LONGEVITY", "GRIEF", "MIDLIFE", "MOVEMENT", "WORK", "SLEEP", "OTHER", "Addiction"]
-    pineconeNamespaces: ["knowledge-base-assistant"],
+    pineconeNamespaces: ["default"],
     personalityPrompt: `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You provide knowledgeable, direct answers grounded in science, spirituality, and real-world experience.
 
 YOUR CORE MISSION:
