@@ -1,0 +1,82 @@
+====================================================================
+ELXR AI MENTORS - IFRAME EMBED CODES
+====================================================================
+
+Current Domain: 55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev
+
+After deploying, replace the domain above with your production domain.
+
+====================================================================
+
+1. MARK KOHL - Psychedelics, Spirituality, Fungi, Kundalini
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=mark-kohl" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Mark Kohl"></iframe>
+
+Direct URL: https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=mark-kohl
+
+====================================================================
+
+2. WILLIE GAULT - Work, Career, Performance, Athletic Excellence
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=willie-gault" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Willie Gault"></iframe>
+
+Direct URL: https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=willie-gault
+
+====================================================================
+
+3. JUNE - Mental Health, Mindfulness, Emotional Wellbeing
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=june" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with June"></iframe>
+
+Direct URL: https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=june
+
+====================================================================
+
+4. ANN - Body Wellness, Physical Health, Movement, Nutrition
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=ann" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Ann"></iframe>
+
+Direct URL: https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=ann
+
+====================================================================
+
+5. SHAWN - Conscious Leadership, Performance Integration, Development
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=shawn" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Shawn"></iframe>
+
+Direct URL: https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=shawn
+
+====================================================================
+
+6. THAD - Financial Resilience, Purposeful Wealth, Money Mindset
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=thad" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Thad"></iframe>
+
+Direct URL: https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=thad
+
+====================================================================
+
+RESPONSIVE VERSION (Full Width):
+--------------------------------------------------------------------
+Replace "mark-kohl" with any mentor ID: willie-gault, june, ann, shawn, thad
+
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=mark-kohl" style="width: 100%; height: 600px; border: none;" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Mark Kohl"></iframe>
+
+====================================================================
+
+MOBILE OPTIMIZED (375x667):
+--------------------------------------------------------------------
+<iframe src="https://55697ee1-adac-4976-9e9e-36b801cd84e5-00-1vqbyzsuctsyg.picard.replit.dev/avatar?mentor=mark-kohl" width="375" height="667" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Mark Kohl"></iframe>
+
+====================================================================
+
+NOTES:
+- All iframes include required permissions: camera, microphone, autoplay, encrypted-media, fullscreen
+- Each mentor has their own unique knowledge base and personality
+- The avatars support both video mode (HeyGen) and audio-only mode (ElevenLabs)
+- Sessions auto-save credits with lazy loading and 90-second timeout
+
+After deploying to production:
+1. Get your production URL from Replit's "Overview" tab
+2. Use Find & Replace to change the development domain to your production domain
+3. Test each iframe before sending to clients
