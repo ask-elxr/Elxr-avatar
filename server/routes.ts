@@ -139,6 +139,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Combined audio endpoint: Get Claude response + convert to ElevenLabs audio
+  app.post("/api/audio", async (req: any, res) => {
+    const log = logger.child({ service: "audio-chat", operation: "processMessage" });
+
+    try {
+      const { message, avatarId = "mark-kohl" } = req.body;
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Get userId from authenticated session if available, or allow temp_ prefixed IDs
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
+
+      // Get avatar configuration
+      const avatarConfig = getAvatarById(avatarId);
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      if (!avatarConfig.elevenlabsVoiceId) {
+        log.error({ avatarId }, "Avatar missing ElevenLabs voice ID");
+        return res.status(400).json({ error: "Avatar not configured for audio mode" });
+      }
+
+      log.info({ avatarId, messageLength: message.length }, "Processing audio chat message");
+
+      // Step 1: Get Claude response with knowledge base context
+      const currentDate = new Date().toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+      
+      const personalityWithDate = `${avatarConfig.personalityPrompt.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
+        .replace(/⚠️ CRITICAL SYSTEM CONFIGURATION:/, `⚠️ CRITICAL SYSTEM CONFIGURATION:\n- Today's date: ${currentDate}`);
+
+      // Get knowledge base context
+      const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+      let knowledgeContext = "";
+      let allNamespaces = [...avatarConfig.pineconeNamespaces];
+      
+      if (userId && !userId.startsWith('temp_')) {
+        try {
+          const userSources = await storage.listKnowledgeSources(userId);
+          const activeSourceNamespaces = userSources
+            .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
+            .map(source => source.pineconeNamespace);
+          allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
+        } catch (error) {
+          log.warn({ error }, 'Error fetching user knowledge sources');
+        }
+      }
+
+      if (pineconeNamespaceService.isAvailable() && allNamespaces.length > 0) {
+        const knowledgeResults = await pineconeNamespaceService.retrieveContext(
+          message,
+          3,
+          allNamespaces,
+        );
+        if (knowledgeResults.length > 0) {
+          knowledgeContext = knowledgeResults[0].text;
+          log.debug({ contextLength: knowledgeContext.length, namespaces: allNamespaces.length }, "Knowledge context retrieved");
+        }
+      }
+
+      // Generate Claude response
+      const claudeResponseResult = await claudeService.generateEnhancedResponse(
+        message,
+        knowledgeContext,
+        personalityWithDate,
+        userId || undefined,
+        "",
+      );
+
+      const responseText = typeof claudeResponseResult === 'string' 
+        ? claudeResponseResult 
+        : (claudeResponseResult?.text || "");
+      
+      if (!responseText) {
+        log.error({ claudeResponseResult }, "Claude response was empty");
+        return res.status(500).json({ error: "No response generated from AI" });
+      }
+      
+      log.info({ responseLength: responseText.length }, "Claude response generated");
+
+      // Log API call
+      storage.logApiCall({
+        serviceName: 'claude',
+        endpoint: 'messages',
+        userId: userId || null,
+        responseTimeMs: 0,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log Claude API call');
+      });
+
+      // Step 2: Convert to ElevenLabs audio
+      if (!elevenlabsService.isAvailable()) {
+        log.error("ElevenLabs service not available");
+        return res.status(500).json({
+          error: "ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY environment variable.",
+        });
+      }
+
+      log.debug({ textLength: responseText.length, voiceId: avatarConfig.elevenlabsVoiceId }, "Generating TTS audio");
+      const audioBuffer = await elevenlabsService.generateSpeech(responseText, avatarConfig.elevenlabsVoiceId);
+
+      log.info({ audioSize: audioBuffer.length }, "Audio generated successfully");
+
+      // Log API call
+      storage.logApiCall({
+        serviceName: 'elevenlabs',
+        endpoint: 'text-to-speech',
+        userId: userId || null,
+        responseTimeMs: 0,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log ElevenLabs API call');
+      });
+
+      // Return audio
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Length", audioBuffer.length.toString());
+      res.send(audioBuffer);
+
+    } catch (error: any) {
+      log.error({ error: error.message, stack: error.stack }, "Error processing audio chat");
+      res.status(500).json({
+        error: "Failed to process audio message",
+      });
+    }
+  });
+
   // ElevenLabs TTS endpoint for audio-only mode
   app.post("/api/elevenlabs/tts", async (req, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "generateSpeech" });

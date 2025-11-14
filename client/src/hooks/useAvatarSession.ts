@@ -373,114 +373,125 @@ export function useAvatarSession({
     abortControllerRef.current = controller;
 
     try {
-      const response = await fetch("/api/avatar/response", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message,
-          userId: memoryEnabled ? userId : undefined,
-          avatarId: currentAvatarIdRef.current,
-        }),
-        signal: controller.signal,
-      });
-
-      if (requestId !== currentRequestIdRef.current) {
-        console.log("Ignoring old response - newer request in progress");
-        return;
-      }
-
-      if (!response.ok) {
-        console.error("Failed to get response from API:", response.statusText);
-        return;
-      }
-
-      const data = await response.json();
-      const claudeResponse = data.knowledgeResponse || data.response;
-      console.log("Claude response received:", claudeResponse);
-
-      onResetInactivityTimer?.();
-
-      // Clear and reset speaking interval
-      if (speakingIntervalRef.current) {
-        clearInterval(speakingIntervalRef.current);
-      }
-
-      speakingIntervalRef.current = setInterval(() => {
-        onResetInactivityTimer?.();
-        console.log("Resetting timer during avatar speech");
-      }, 10000);
-
-      setTimeout(() => {
-        if (speakingIntervalRef.current) {
-          clearInterval(speakingIntervalRef.current);
-          speakingIntervalRef.current = null;
-          console.log("Cleared speaking interval - max duration reached");
-          onResetInactivityTimer?.();
-        }
-      }, 180000);
-
-      // Speak the response based on mode
+      // Audio-only mode: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
       if (audioOnlyRef.current) {
-        // Audio-only mode: Use ElevenLabs TTS
-        console.log("Audio-only mode: Using ElevenLabs TTS");
+        console.log("Audio-only mode: Using /api/audio endpoint");
         isSpeakingRef.current = true;
         setIsSpeakingState(true);
 
         try {
-          const ttsResponse = await fetch("/api/elevenlabs/tts", {
+          const audioResponse = await fetch("/api/audio", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message,
+              userId: memoryEnabled ? userId : undefined,
+              avatarId: currentAvatarIdRef.current,
+            }),
+            signal: controller.signal,
+          });
+
+          if (requestId !== currentRequestIdRef.current) {
+            console.log("Ignoring old audio response - newer request in progress");
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+            return;
+          }
+
+          if (audioResponse.ok) {
+            const audioBlob = await audioResponse.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const audio = new Audio(audioUrl);
+            currentAudioRef.current = audio;
+
+            audio.onended = () => {
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+              URL.revokeObjectURL(audioUrl);
+              currentAudioRef.current = null;
+            };
+
+            audio.onerror = () => {
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+              URL.revokeObjectURL(audioUrl);
+              currentAudioRef.current = null;
+            };
+
+            await audio.play();
+            console.log("Audio playback started");
+          } else {
+            // Audio fetch failed - clear state
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+            currentAudioRef.current = null;
+            const errorText = await audioResponse.text();
+            console.error("Failed to get audio response:", audioResponse.status, errorText);
+          }
+        } catch (audioError) {
+          // Audio fetch or playback error - clear state
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          currentAudioRef.current = null;
+          if (audioError instanceof Error && audioError.name !== "AbortError") {
+            console.error("Audio error:", audioError);
+          }
+        }
+      } else {
+        // Video mode: Get Claude response then speak via HeyGen
+        const response = await fetch("/api/avatar/response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            text: claudeResponse,
+            message,
+            userId: memoryEnabled ? userId : undefined,
             avatarId: currentAvatarIdRef.current,
           }),
           signal: controller.signal,
         });
 
-        if (ttsResponse.ok) {
-          const audioBlob = await ttsResponse.blob();
-          const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          currentAudioRef.current = audio;
-
-          audio.onended = () => {
-            isSpeakingRef.current = false;
-            setIsSpeakingState(false);
-            URL.revokeObjectURL(audioUrl);
-            currentAudioRef.current = null;
-          };
-
-          audio.onerror = () => {
-            isSpeakingRef.current = false;
-            setIsSpeakingState(false);
-            URL.revokeObjectURL(audioUrl);
-            currentAudioRef.current = null;
-          };
-
-          await audio.play();
-        } else {
-          // TTS fetch failed - clear state
-          isSpeakingRef.current = false;
-          setIsSpeakingState(false);
-          currentAudioRef.current = null;
-          const errorText = await ttsResponse.text();
-          console.error("Failed to generate TTS audio:", ttsResponse.status, errorText);
+        if (requestId !== currentRequestIdRef.current) {
+          console.log("Ignoring old response - newer request in progress");
+          return;
         }
-        } catch (ttsError) {
-          // TTS fetch or playback error - clear state
-          isSpeakingRef.current = false;
-          setIsSpeakingState(false);
-          currentAudioRef.current = null;
-          if (ttsError instanceof Error && ttsError.name !== "AbortError") {
-            console.error("TTS error:", ttsError);
+
+        if (!response.ok) {
+          console.error("Failed to get response from API:", response.statusText);
+          return;
+        }
+
+        const data = await response.json();
+        const claudeResponse = data.knowledgeResponse || data.response;
+        console.log("Claude response received:", claudeResponse);
+
+        onResetInactivityTimer?.();
+
+        // Clear and reset speaking interval
+        if (speakingIntervalRef.current) {
+          clearInterval(speakingIntervalRef.current);
+        }
+
+        speakingIntervalRef.current = setInterval(() => {
+          onResetInactivityTimer?.();
+          console.log("Resetting timer during avatar speech");
+        }, 10000);
+
+        setTimeout(() => {
+          if (speakingIntervalRef.current) {
+            clearInterval(speakingIntervalRef.current);
+            speakingIntervalRef.current = null;
+            console.log("Cleared speaking interval - max duration reached");
+            onResetInactivityTimer?.();
           }
-        }
-      } else if (avatarRef.current) {
+        }, 180000);
+
         // Video mode: Use HeyGen avatar
-        await avatarRef.current.speak({
-          text: claudeResponse,
-          task_type: TaskType.TALK,
-        });
+        if (avatarRef.current) {
+          await avatarRef.current.speak({
+            text: claudeResponse,
+            task_type: TaskType.TALK,
+          });
+        }
       }
     } catch (error) {
       // Cleanup on any error
