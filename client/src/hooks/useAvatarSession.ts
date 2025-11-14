@@ -37,6 +37,7 @@ interface AvatarSessionReturn {
   currentRequestIdRef: React.MutableRefObject<string>;
   speakingIntervalRef: React.MutableRefObject<NodeJS.Timeout | null>;
   hasAskedAnythingElseRef: React.MutableRefObject<boolean>;
+  handleSubmitMessage: (message: string) => Promise<void>;
 }
 
 export function useAvatarSession({
@@ -63,6 +64,7 @@ export function useAvatarSession({
   const isSpeakingRef = useRef(false);
   const audioOnlyRef = useRef(false);
   const currentAvatarIdRef = useRef(selectedAvatarId);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const fetchAccessToken = async (): Promise<string> => {
     const response = await fetch("/api/heygen/token", {
@@ -342,6 +344,165 @@ export function useAvatarSession({
     };
   }, []);
 
+  const handleSubmitMessage = useCallback(async (message: string) => {
+    if (!message.trim() || !sessionActive) return;
+
+    onResetInactivityTimer?.();
+    const requestId = Date.now().toString() + Math.random().toString(36);
+    currentRequestIdRef.current = requestId;
+    console.log("User submitted message - Request ID:", requestId);
+
+    // Interrupt current speech IMMEDIATELY before any API calls
+    if (audioOnlyRef.current && currentAudioRef.current) {
+      // Audio-only mode: Stop current audio
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false);
+    } else if (avatarRef.current && isSpeakingRef.current) {
+      // Video mode: Interrupt avatar
+      await avatarRef.current.interrupt().catch(() => {});
+    }
+
+    // Cancel any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await fetch("/api/avatar/response", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          userId: memoryEnabled ? userId : undefined,
+          avatarId: currentAvatarIdRef.current,
+        }),
+        signal: controller.signal,
+      });
+
+      if (requestId !== currentRequestIdRef.current) {
+        console.log("Ignoring old response - newer request in progress");
+        return;
+      }
+
+      if (!response.ok) {
+        console.error("Failed to get response from API:", response.statusText);
+        return;
+      }
+
+      const data = await response.json();
+      const claudeResponse = data.knowledgeResponse || data.response;
+      console.log("Claude response received:", claudeResponse);
+
+      onResetInactivityTimer?.();
+
+      // Clear and reset speaking interval
+      if (speakingIntervalRef.current) {
+        clearInterval(speakingIntervalRef.current);
+      }
+
+      speakingIntervalRef.current = setInterval(() => {
+        onResetInactivityTimer?.();
+        console.log("Resetting timer during avatar speech");
+      }, 10000);
+
+      setTimeout(() => {
+        if (speakingIntervalRef.current) {
+          clearInterval(speakingIntervalRef.current);
+          speakingIntervalRef.current = null;
+          console.log("Cleared speaking interval - max duration reached");
+          onResetInactivityTimer?.();
+        }
+      }, 180000);
+
+      // Speak the response based on mode
+      if (audioOnlyRef.current) {
+        // Audio-only mode: Use ElevenLabs TTS
+        console.log("Audio-only mode: Using ElevenLabs TTS");
+        isSpeakingRef.current = true;
+        setIsSpeakingState(true);
+
+        try {
+          const ttsResponse = await fetch("/api/elevenlabs/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: claudeResponse,
+            avatarId: currentAvatarIdRef.current,
+          }),
+          signal: controller.signal,
+        });
+
+        if (ttsResponse.ok) {
+          const audioBlob = await ttsResponse.blob();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          currentAudioRef.current = audio;
+
+          audio.onended = () => {
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+            URL.revokeObjectURL(audioUrl);
+            currentAudioRef.current = null;
+          };
+
+          audio.onerror = () => {
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+            URL.revokeObjectURL(audioUrl);
+            currentAudioRef.current = null;
+          };
+
+          await audio.play();
+        } else {
+          // TTS fetch failed - clear state
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          currentAudioRef.current = null;
+          const errorText = await ttsResponse.text();
+          console.error("Failed to generate TTS audio:", ttsResponse.status, errorText);
+        }
+        } catch (ttsError) {
+          // TTS fetch or playback error - clear state
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          currentAudioRef.current = null;
+          if (ttsError instanceof Error && ttsError.name !== "AbortError") {
+            console.error("TTS error:", ttsError);
+          }
+        }
+      } else if (avatarRef.current) {
+        // Video mode: Use HeyGen avatar
+        await avatarRef.current.speak({
+          text: claudeResponse,
+          task_type: TaskType.TALK,
+        });
+      }
+    } catch (error) {
+      // Cleanup on any error
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false);
+      currentAudioRef.current = null;
+      
+      if (error instanceof Error && error.name === "AbortError") {
+        // Expected - request was cancelled
+      } else if (error instanceof DOMException && error.name === "AbortError") {
+        // Expected - request was cancelled
+      } else {
+        console.error("Error sending message:", error);
+      }
+    } finally {
+      // Clear abort controller only if it's still the one we created
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+    }
+  }, [sessionActive, memoryEnabled, userId, onResetInactivityTimer]);
+
   return {
     sessionActive,
     isLoading,
@@ -359,5 +520,6 @@ export function useAvatarSession({
     currentRequestIdRef,
     speakingIntervalRef,
     hasAskedAnythingElseRef,
+    handleSubmitMessage,
   };
 }

@@ -92,6 +92,24 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## November 14, 2025
+
+### Text Messaging System
+- Implemented text-based chat input for both video and audio-only modes
+- Added `handleSubmitMessage` function in useAvatarSession hook that:
+  - Cancels in-flight requests before starting new ones to prevent orphaned fetches
+  - Works in both video mode (HeyGen avatar) and audio-only mode (ElevenLabs TTS)
+  - Properly resets abortControllerRef after request completion
+  - Integrates with existing inactivity timer and speaking state management
+- Created text input UI at bottom of screen (always visible during active sessions)
+  - Input field with purple-themed styling matching ELXR branding
+  - Send button with disabled states for session status
+  - Positioned center-bottom with responsive max-width
+- Voice transcription permanently disabled to prevent self-interruption bugs
+  - HeyGen's USER_TALKING_MESSAGE event was transcribing avatar's own speech
+  - Text input is now the sole interaction method (cleaner, more reliable)
+- Audio-only toggle always visible in top-left corner for easy mode switching
+
 ## November 13, 2025
 
 ### Anonymous User Support with Secure userId Handling

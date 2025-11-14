@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Maximize2, Minimize2, Pause, Play } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { X, Maximize2, Minimize2, Pause, Play, Send } from "lucide-react";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -29,6 +30,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [inputMessage, setInputMessage] = useState("");
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -59,7 +61,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     isSpeaking: isSpeakingFromHook,
     avatarRef,
     hasAskedAnythingElseRef,
-    speakingIntervalRef
+    speakingIntervalRef,
+    handleSubmitMessage
   } = useAvatarSession({
     videoRef,
     userId,
@@ -476,7 +479,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {/* Testing Overlay - Stream Statistics (Development Only) */}
       {import.meta.env.MODE !== "production" && sessionActive && !isPaused && (
         <div 
-          className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-sm text-white p-3 rounded-lg text-xs font-mono z-50 min-w-[200px]"
+          className="absolute bottom-20 right-4 bg-black/80 backdrop-blur-sm text-white p-3 rounded-lg text-xs font-mono z-50 min-w-[200px]"
           data-testid="stream-stats-overlay"
         >
           <div className="text-purple-400 font-semibold mb-2 text-center">Stream Stats</div>
@@ -499,6 +502,38 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Text Input - Bottom Center */}
+      {sessionActive && !isPaused && (
+        <form 
+          onSubmit={(e: FormEvent) => {
+            e.preventDefault();
+            if (inputMessage.trim()) {
+              handleSubmitMessage(inputMessage);
+              setInputMessage("");
+            }
+          }}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 w-full max-w-2xl px-4"
+        >
+          <Input
+            type="text"
+            value={inputMessage}
+            onChange={(e) => setInputMessage(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-1 bg-black/50 backdrop-blur-sm text-white border-purple-500/30 focus:border-purple-500 placeholder:text-gray-400"
+            data-testid="input-message"
+            disabled={!sessionActive || isPaused}
+          />
+          <Button
+            type="submit"
+            disabled={!inputMessage.trim() || !sessionActive || isPaused}
+            className="bg-purple-500 hover:bg-purple-600 text-white rounded-full p-3"
+            data-testid="button-send-message"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
+        </form>
       )}
     </div>
   );
