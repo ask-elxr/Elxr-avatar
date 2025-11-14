@@ -581,15 +581,28 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       <div className="w-full h-full flex items-center justify-center">
         {/* Placeholder video when idle (session active but HeyGen not started) */}
         {sessionActive && !heygenSessionActive && !audioOnly && (
-          <video
-            src={placeholderVideo}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-            data-testid="placeholder-video"
-          />
+          <>
+            <video
+              src={placeholderVideo}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover"
+              data-testid="placeholder-video"
+            />
+            {/* Prompt to send message */}
+            <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
+              <div className="bg-black/60 backdrop-blur-md px-8 py-6 rounded-2xl border-2 border-purple-500/50 max-w-md mx-4 text-center">
+                <div className="text-white text-xl font-semibold mb-2">
+                  Ready to chat with {currentAvatarName || "your guide"}
+                </div>
+                <div className="text-purple-300 text-base">
+                  Type a message below to begin
+                </div>
+              </div>
+            </div>
+          </>
         )}
         
         {/* HeyGen avatar video stream */}
