@@ -30,6 +30,7 @@ import { metrics } from "./metrics.js";
 import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
 import { getAvatarById } from "../shared/avatarConfig.js";
+import { multiAssistantService } from "./multiAssistantService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -441,6 +442,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error fetching avatars:", error);
       res.status(500).json({ error: "Failed to fetch avatars" });
+    }
+  });
+
+  app.get("/api/avatars/:id/embed", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const embedConfig = multiAssistantService.getEmbedConfig(id);
+      
+      if (!embedConfig) {
+        const availableMentors = multiAssistantService.listMentors().map(m => m.name);
+        return res.status(404).json({ 
+          error: "Mentor not found",
+          availableMentors,
+        });
+      }
+      
+      res.json({
+        mentorId: id,
+        sceneId: embedConfig.sceneId,
+        voiceConfig: embedConfig.voiceConfig,
+        audioOnly: embedConfig.audioOnly,
+        assistantId: multiAssistantService.getAssistantId(),
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message, mentorId: req.params.id }, "Error fetching embed config");
+      res.status(500).json({ error: "Failed to fetch embed configuration" });
     }
   });
 

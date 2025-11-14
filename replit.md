@@ -94,6 +94,19 @@ Preferred communication style: Simple, everyday language.
 
 ## November 14, 2025
 
+### Multi-Assistant Service & Embed API
+- Created `server/multiAssistantService.ts` to manage mentor configurations
+- Centralized assistant to use only `ask-elxr` for all queries
+- Mentor-to-namespace mapping:
+  - Mark Kohl → `mark-kohl` namespace
+  - Willie Gault → `willie-gault` namespace
+  - June → `june` namespace
+  - Ann → `ann` namespace
+  - Katya → `katya` namespace
+- Added `/api/avatars/:id/embed` endpoint for Webflow embeds
+- Endpoint returns: HeyGen scene ID, ElevenLabs voice config, audioOnly flag, and assistant ID
+- Supports both legacy avatar IDs (mark-kohl) and short aliases (mark)
+
 ### Loading Screen Update
 - Replaced CSS loading animation with intro logo video
 - Video autoplays, loops, and is muted for seamless loading experience
