@@ -22,6 +22,7 @@ interface StartSessionOptions {
 
 interface AvatarSessionReturn {
   sessionActive: boolean;
+  heygenSessionActive: boolean;
   isLoading: boolean;
   showReconnect: boolean;
   startSession: (options?: StartSessionOptions) => Promise<void>;
@@ -49,6 +50,7 @@ export function useAvatarSession({
   onResetInactivityTimer,
 }: AvatarSessionConfig): AvatarSessionReturn {
   const [sessionActive, setSessionActive] = useState(false);
+  const [heygenSessionActive, setHeygenSessionActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -66,6 +68,7 @@ export function useAvatarSession({
   const currentAvatarIdRef = useRef(selectedAvatarId);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -593,6 +596,7 @@ export function useAvatarSession({
 
   return {
     sessionActive,
+    heygenSessionActive,
     isLoading,
     showReconnect,
     startSession,
