@@ -94,18 +94,19 @@ Preferred communication style: Simple, everyday language.
 
 ## November 14, 2025
 
-### Multi-Assistant Service & Embed API
-- Created `server/multiAssistantService.ts` to manage mentor configurations
-- Centralized assistant to use only `ask-elxr` for all queries
-- Mentor-to-namespace mapping:
-  - Mark Kohl → `mark-kohl` namespace
-  - Willie Gault → `willie-gault` namespace
-  - June → `june` namespace
-  - Ann → `ann` namespace
-  - Katya → `katya` namespace
+### Multi-Assistant Service & Per-Mentor Assistant Architecture
+- Created `server/multiAssistantService.ts` to manage mentor configurations with per-mentor assistant IDs
+- **Assistant Architecture**:
+  - **Mark Kohl**: Uses `knowledge-base-assistant` (dedicated) with namespace `knowledge-base-assistant`, category `psychedelics`
+  - **Willie Gault**: Uses `ask-elxr` (shared) with namespace `willie-gault`, category `work`
+  - **June**: Uses `ask-elxr` (shared) with namespace `june`, category `mind`
+  - **Ann**: Uses `ask-elxr` (shared) with namespace `ann`, category `body`
+  - **Katya**: Uses `ask-elxr` (shared) with namespace `katya`, category `sexuality`
+- Each mentor has dedicated Pinecone namespace with metadata-based filtering (userId, mentorId, category)
 - Added `/api/avatars/:id/embed` endpoint for Webflow embeds
-- Endpoint returns: HeyGen scene ID, ElevenLabs voice config, audioOnly flag, and assistant ID
+- Endpoint returns: HeyGen scene ID, ElevenLabs voice config, audioOnly flag, and per-mentor assistantId
 - Supports both legacy avatar IDs (mark-kohl) and short aliases (mark)
+- **Willie Gault Wikipedia Integration**: Auto-syncs Wikipedia article on startup with metadata `{ userId: 'user-1', mentorId: 'willie-gault', category: 'work' }`
 
 ### Loading Screen Update
 - Replaced CSS loading animation with intro logo video

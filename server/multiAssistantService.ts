@@ -3,6 +3,8 @@ import { logger } from './logger.js';
 export interface MentorConfig {
   name: string;
   pineconeNamespace: string;
+  assistantId: string;
+  category?: string;
   heygenAvatarId?: string;
   heygenSceneId?: string;
   elevenlabsVoiceId?: string;
@@ -12,7 +14,9 @@ export interface MentorConfig {
 const mentorConfigsBase: Record<string, MentorConfig> = {
   "mark-kohl": {
     name: "Mark Kohl",
-    pineconeNamespace: "mark-kohl",
+    pineconeNamespace: "knowledge-base-assistant",
+    assistantId: "knowledge-base-assistant",
+    category: "psychedelics",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "mark-kohl-scene",
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
@@ -21,6 +25,8 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   "willie-gault": {
     name: "Willie Gault",
     pineconeNamespace: "willie-gault",
+    assistantId: "ask-elxr",
+    category: "work",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "willie-gault-scene",
     elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
@@ -29,6 +35,8 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   june: {
     name: "June",
     pineconeNamespace: "june",
+    assistantId: "ask-elxr",
+    category: "mind",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "june-scene",
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
@@ -37,6 +45,8 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   ann: {
     name: "Ann",
     pineconeNamespace: "ann",
+    assistantId: "ask-elxr",
+    category: "body",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "ann-scene",
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
@@ -45,6 +55,8 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   katya: {
     name: "Katya",
     pineconeNamespace: "katya",
+    assistantId: "ask-elxr",
+    category: "sexuality",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "katya-scene",
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
@@ -63,8 +75,6 @@ const mentorAliases: Record<string, string> = {
 export const mentorConfigs = mentorConfigsBase;
 
 class MultiAssistantService {
-  private readonly assistantId = "ask-elxr";
-  
   private normalizeMentorId(mentorId: string): string {
     const normalized = mentorId.toLowerCase();
     return mentorAliases[normalized] || normalized;
@@ -89,8 +99,13 @@ class MultiAssistantService {
     return config.pineconeNamespace;
   }
 
-  getAssistantId(): string {
-    return this.assistantId;
+  getAssistantId(mentorId: string): string {
+    const config = this.getMentorConfig(mentorId);
+    if (!config) {
+      logger.warn({ mentorId }, 'Using default ask-elxr assistant');
+      return "ask-elxr";
+    }
+    return config.assistantId;
   }
 
   listMentors(): MentorConfig[] {
@@ -104,6 +119,7 @@ class MultiAssistantService {
       voiceRate: string;
     };
     audioOnly: boolean;
+    assistantId: string;
   } | null {
     const config = this.getMentorConfig(mentorId);
     if (!config) {
@@ -117,6 +133,20 @@ class MultiAssistantService {
         voiceRate: "1.0",
       },
       audioOnly: config.audioOnly || false,
+      assistantId: config.assistantId,
+    };
+  }
+
+  getMetadataForMentor(mentorId: string): Record<string, any> {
+    const config = this.getMentorConfig(mentorId);
+    if (!config) {
+      return {};
+    }
+
+    return {
+      mentorId: this.normalizeMentorId(mentorId),
+      category: config.category,
+      userId: 'user-1',
     };
   }
 }

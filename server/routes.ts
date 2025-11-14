@@ -464,7 +464,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sceneId: embedConfig.sceneId,
         voiceConfig: embedConfig.voiceConfig,
         audioOnly: embedConfig.audioOnly,
-        assistantId: multiAssistantService.getAssistantId(),
+        assistantId: embedConfig.assistantId,
       });
     } catch (error: any) {
       logger.error({ error: error.message, mentorId: req.params.id }, "Error fetching embed config");
