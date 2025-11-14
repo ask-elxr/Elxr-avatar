@@ -1477,12 +1477,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get active session statistics
   app.get("/api/admin/sessions", isAuthenticated, async (req: any, res) => {
     try {
-      const limit = parseInt(req.query.limit as string) || 100;
+      const limit = parseInt(req.query.limit as string) || 1000;
       const stats = sessionManager.getSessionStats();
-      const history = sessionManager.getSessionHistory(limit);
+      const historyData = sessionManager.getSessionHistory(limit);
+      
       res.json({
-        current: stats,
-        history,
+        current: {
+          totalActiveSessions: stats.totalActiveSessions,
+          sessionsByUser: stats.userSessionCounts,
+          sessionsByAvatar: stats.avatarSessionCounts,
+        },
+        history: historyData.recentSessions.map(session => ({
+          sessionId: session.sessionId,
+          userId: session.userId,
+          avatarId: session.avatarId,
+          startTime: session.startTime,
+          endTime: session.endTime,
+          duration: session.durationMs,
+        })),
       });
     } catch (error) {
       console.error("Error fetching session stats:", error);

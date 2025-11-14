@@ -2,6 +2,7 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
 import { AvatarPreview } from "@/components/AvatarPreview";
 import { CostTracking } from "@/components/CostTracking";
+import { SessionStats } from "@/components/SessionStats";
 import { KnowledgeSourceManager } from "@/components/KnowledgeSourceManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -221,6 +222,11 @@ export default function Admin() {
               <AvatarManager />
             </CardContent>
           </Card>
+
+          {/* Session Management & Credit Monitoring */}
+          <div className="lg:col-span-2">
+            <SessionStats />
+          </div>
 
           {/* Cost Tracking */}
           <div className="lg:col-span-2">
