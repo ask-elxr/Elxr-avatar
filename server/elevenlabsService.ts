@@ -1,8 +1,8 @@
 import { ElevenLabsClient } from "elevenlabs";
-import { wrapServiceCall } from './circuitBreaker.js';
-import { logger } from './logger.js';
-import { metrics } from './metrics.js';
-import { storage } from './storage.js';
+import { wrapServiceCall } from "./circuitBreaker.js";
+import { logger } from "./logger.js";
+import { metrics } from "./metrics.js";
+import { storage } from "./storage.js";
 
 class ElevenLabsService {
   private client?: ElevenLabsClient;
@@ -10,9 +10,12 @@ class ElevenLabsService {
   private ttsBreaker: any;
 
   constructor() {
-    this.apiKey = process.env.ELEVENLABS_API_KEY || '';
+    this.apiKey = process.env.ELEVENLABS_API_KEY || "";
     if (!this.apiKey) {
-      logger.warn({ service: 'elevenlabs' }, 'ELEVENLABS_API_KEY not found - TTS features will be disabled');
+      logger.warn(
+        { service: "elevenlabs" },
+        "ELEVENLABS_API_KEY not found - TTS features will be disabled",
+      );
       return;
     }
 
@@ -23,29 +26,37 @@ class ElevenLabsService {
     this.ttsBreaker = wrapServiceCall(
       async (params: any) => {
         if (!this.client) {
-          throw new Error('ElevenLabs client not initialized');
+          throw new Error("ElevenLabs client not initialized");
         }
-        return await this.client.textToSpeech.convert(params.voiceId, params.options);
+        return await this.client.textToSpeech.convert(
+          params.voiceId,
+          params.options,
+        );
       },
-      'elevenlabs-tts',
-      { timeout: 30000, errorThresholdPercentage: 50 }
+      "elevenlabs-tts",
+      { timeout: 30000, errorThresholdPercentage: 50 },
     );
   }
 
-  async generateSpeech(text: string, voiceId: string = "21m00Tcm4TlvDq8ikWAM"): Promise<Buffer> {
+  async generateSpeech(
+    text: string,
+    voiceId: string = "21m00Tcm4TlvDq8ikWAM",
+  ): Promise<Buffer> {
     if (!this.client) {
-      throw new Error('ElevenLabs client not initialized - check ELEVENLABS_API_KEY');
+      throw new Error(
+        "ElevenLabs client not initialized - check ELEVENLABS_API_KEY",
+      );
     }
 
     const log = logger.child({
-      service: 'elevenlabs',
-      operation: 'generateSpeech',
+      service: "elevenlabs",
+      operation: "generateSpeech",
       textLength: text.length,
       voiceId,
     });
 
     try {
-      log.debug('Generating speech with ElevenLabs');
+      log.debug("Generating speech with ElevenLabs");
       const startTime = Date.now();
 
       const audioStream = await this.ttsBreaker.execute({
@@ -57,9 +68,9 @@ class ElevenLabsService {
             stability: 0.5,
             similarity_boost: 0.75,
             style: 0.0,
-            use_speaker_boost: true
-          }
-        }
+            use_speaker_boost: true,
+          },
+        },
       });
 
       // Convert stream to buffer
@@ -70,22 +81,30 @@ class ElevenLabsService {
       const audioBuffer = Buffer.concat(chunks);
 
       const duration = Date.now() - startTime;
-      log.info({ duration, audioSize: audioBuffer.length }, 'Speech generated successfully');
+      log.info(
+        { duration, audioSize: audioBuffer.length },
+        "Speech generated successfully",
+      );
       metrics.recordElevenLabsTTS(duration);
 
       // Log API call for cost tracking
-      storage.logApiCall({
-        serviceName: 'elevenlabs',
-        endpoint: 'textToSpeech.convert',
-        userId: null,
-        responseTimeMs: duration,
-      }).catch((error) => {
-        log.error({ error: error.message }, 'Failed to log API call');
-      });
+      storage
+        .logApiCall({
+          serviceName: "elevenlabs",
+          endpoint: "textToSpeech.convert",
+          userId: null,
+          responseTimeMs: duration,
+        })
+        .catch((error) => {
+          log.error({ error: error.message }, "Failed to log API call");
+        });
 
       return audioBuffer;
     } catch (error: any) {
-      log.error({ error: error.message, stack: error.stack }, 'Error generating speech with ElevenLabs');
+      log.error(
+        { error: error.message, stack: error.stack },
+        "Error generating speech with ElevenLabs",
+      );
       throw error;
     }
   }
