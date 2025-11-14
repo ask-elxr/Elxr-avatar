@@ -31,6 +31,7 @@ import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
 import { getAvatarById } from "../shared/avatarConfig.js";
 import { multiAssistantService } from "./multiAssistantService.js";
+import { sessionManager } from "./sessionManager.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -98,6 +99,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "heygen", operation: "createToken" });
 
     try {
+      const { userId, avatarId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      const sessionCheck = sessionManager.canStartSession(userId);
+      if (!sessionCheck.allowed) {
+        log.warn({
+          userId,
+          reason: sessionCheck.reason,
+          currentCount: sessionCheck.currentCount,
+        }, "Session limit reached");
+        return res.status(429).json({
+          error: sessionCheck.reason,
+          currentCount: sessionCheck.currentCount,
+        });
+      }
+
+      if (avatarId) {
+        const switchCheck = sessionManager.canSwitchAvatar(userId, avatarId);
+        if (!switchCheck.allowed) {
+          log.warn({
+            userId,
+            avatarId,
+            reason: switchCheck.reason,
+            remainingCooldownMs: switchCheck.remainingCooldownMs,
+          }, "Avatar switch cooldown active");
+          return res.status(429).json({
+            error: switchCheck.reason,
+            remainingCooldownMs: switchCheck.remainingCooldownMs,
+          });
+        }
+      }
+
       const apiKey = process.env.HEYGEN_API_KEY;
 
       if (!apiKey) {
@@ -116,7 +152,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info("HeyGen token created successfully");
 
-      // Log API call for cost tracking
+      const sessionId = `session_${userId}_${Date.now()}`;
+      sessionManager.startSession(sessionId, userId, avatarId || 'unknown');
+
       storage.logApiCall({
         serviceName: 'heygen',
         endpoint: 'streaming.create_token',
@@ -126,9 +164,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         log.error({ error: error.message }, 'Failed to log API call');
       });
 
-      // Return the token in the expected format
       res.json({
         token: data.data?.token || data.token,
+        sessionId,
         ...data,
       });
     } catch (error: any) {
@@ -154,6 +192,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let userId = req.user?.claims?.sub || null;
       if (!userId && req.body.userId?.startsWith('temp_')) {
         userId = req.body.userId;
+      }
+
+      // Update session activity to prevent premature cleanup
+      if (userId) {
+        sessionManager.updateActivityByUserId(userId);
       }
 
       // Get avatar configuration
@@ -875,6 +918,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
+      // Update session activity to prevent premature cleanup
+      if (userId) {
+        sessionManager.updateActivityByUserId(userId);
+      }
+
       let mem0Context = "";
       if (userId) {
         try {
@@ -1422,6 +1470,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error fetching cost stats:", error);
       res.status(500).json({
         error: "Failed to fetch cost statistics",
+      });
+    }
+  });
+
+  // Get active session statistics
+  app.get("/api/admin/sessions", isAuthenticated, async (req: any, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 100;
+      const stats = sessionManager.getSessionStats();
+      const history = sessionManager.getSessionHistory(limit);
+      res.json({
+        current: stats,
+        history,
+      });
+    } catch (error) {
+      console.error("Error fetching session stats:", error);
+      res.status(500).json({
+        error: "Failed to fetch session statistics",
+      });
+    }
+  });
+
+  // Start a session (for audio-only mode or session registration without HeyGen token)
+  app.post("/api/session/start", async (req, res) => {
+    try {
+      const { userId, avatarId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      const sessionCheck = sessionManager.canStartSession(userId);
+      if (!sessionCheck.allowed) {
+        return res.status(429).json({
+          error: sessionCheck.reason,
+          currentCount: sessionCheck.currentCount,
+        });
+      }
+
+      if (avatarId) {
+        const switchCheck = sessionManager.canSwitchAvatar(userId, avatarId);
+        if (!switchCheck.allowed) {
+          return res.status(429).json({
+            error: switchCheck.reason,
+            remainingCooldownMs: switchCheck.remainingCooldownMs,
+          });
+        }
+      }
+
+      const sessionId = `session_${userId}_${Date.now()}`;
+      sessionManager.startSession(sessionId, userId, avatarId || 'unknown');
+
+      res.json({ sessionId });
+    } catch (error) {
+      console.error("Error starting session:", error);
+      res.status(500).json({
+        error: "Failed to start session",
+      });
+    }
+  });
+
+  // End a session
+  app.post("/api/session/end", async (req, res) => {
+    try {
+      const { sessionId } = req.body;
+      
+      if (!sessionId) {
+        return res.status(400).json({ error: "sessionId is required" });
+      }
+
+      sessionManager.endSession(sessionId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error ending session:", error);
+      res.status(500).json({
+        error: "Failed to end session",
       });
     }
   });

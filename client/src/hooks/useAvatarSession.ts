@@ -65,18 +65,51 @@ export function useAvatarSession({
   const audioOnlyRef = useRef(false);
   const currentAvatarIdRef = useRef(selectedAvatarId);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
-  const fetchAccessToken = async (): Promise<string> => {
+  const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        avatarId,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch access token");
+      const errorData = await response.json().catch(() => ({}));
+      
+      if (response.status === 429) {
+        throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
+      }
+      
+      throw new Error(errorData.error || "Failed to fetch access token");
     }
 
     const data = await response.json();
-    return data.token;
+    return { token: data.token, sessionId: data.sessionId };
+  };
+
+  const endSessionOnServer = async () => {
+    if (sessionIdRef.current) {
+      try {
+        await fetch("/api/session/end", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sessionId: sessionIdRef.current,
+          }),
+        });
+        sessionIdRef.current = null;
+      } catch (error) {
+        console.error("Failed to end session on server:", error);
+      }
+    }
   };
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
@@ -87,7 +120,7 @@ export function useAvatarSession({
     const activeAvatarId = avatarId || currentAvatarIdRef.current;
     currentAvatarIdRef.current = activeAvatarId;
 
-    // If audio-only mode, skip HeyGen video session
+    // If audio-only mode, skip HeyGen video session but still register the session
     if (audioOnly) {
       // Hide video element
       if (videoRef.current) {
@@ -95,11 +128,46 @@ export function useAvatarSession({
         videoRef.current.style.visibility = 'hidden';
       }
       
+      // Register audio-only session with session manager
+      try {
+        const response = await fetch("/api/session/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            avatarId: activeAvatarId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          
+          if (response.status === 429) {
+            throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
+          }
+          
+          throw new Error(errorData.error || "Failed to start session");
+        }
+
+        const data = await response.json();
+        sessionIdRef.current = data.sessionId;
+      } catch (error: any) {
+        console.error("Error registering audio-only session:", error);
+        setIsLoading(false);
+        throw error;
+      }
+      
       // Set session as active but don't create HeyGen session
-      console.log('Audio-only mode: Video disabled');
+      console.log('Audio-only mode: Video disabled, session registered');
       setSessionActive(true);
       setIsLoading(false);
       onSessionActiveChange?.(true);
+      
+      setTimeout(() => {
+        onResetInactivityTimer?.();
+      }, 500);
       
       // Return early - don't create HeyGen session
       return;
@@ -120,7 +188,8 @@ export function useAvatarSession({
       }
       const avatarConfig = await avatarConfigResponse.json();
 
-      const token = await fetchAccessToken();
+      const { token, sessionId } = await fetchAccessToken(activeAvatarId);
+      sessionIdRef.current = sessionId;
       const avatar = new StreamingAvatar({ token });
       avatarRef.current = avatar;
 
@@ -145,6 +214,8 @@ export function useAvatarSession({
         setSessionActive(false);
         setShowReconnect(true);
         onSessionActiveChange?.(false);
+        
+        endSessionOnServer();
       });
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
@@ -193,6 +264,8 @@ export function useAvatarSession({
     } catch (error) {
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
+      
+      endSessionOnServer();
     }
   }, [
     videoRef,
@@ -237,6 +310,8 @@ export function useAvatarSession({
     setIsLoading(true);
     setShowReconnect(true);
     onSessionActiveChange?.(false);
+    
+    endSessionOnServer();
   }, [videoRef, onSessionActiveChange]);
 
   const endSession = useCallback(() => {
@@ -260,6 +335,8 @@ export function useAvatarSession({
     setIsLoading(true);
     setShowReconnect(true);
     onSessionActiveChange?.(false);
+    
+    endSessionOnServer();
   }, [videoRef, onSessionActiveChange]);
 
   const reconnect = useCallback(() => {
@@ -297,11 +374,27 @@ export function useAvatarSession({
       setIsPaused(true);
       console.log("Avatar paused - stream stopped to save credits");
       onSessionActiveChange?.(false);
+      
+      endSessionOnServer();
     }
   }, [isPaused, startSession, videoRef, onSessionActiveChange]);
 
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (sessionIdRef.current) {
+        const blob = new Blob(
+          [JSON.stringify({ sessionId: sessionIdRef.current })],
+          { type: "application/json" }
+        );
+        navigator.sendBeacon("/api/session/end", blob);
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      
       if (avatarRef.current) {
         intentionalStopRef.current = true;
         avatarRef.current.stopAvatar().catch(console.error);
@@ -312,6 +405,8 @@ export function useAvatarSession({
       if (speakingIntervalRef.current) {
         clearInterval(speakingIntervalRef.current);
       }
+      
+      endSessionOnServer();
     };
   }, []);
 

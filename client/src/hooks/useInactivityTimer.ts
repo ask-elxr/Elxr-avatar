@@ -69,50 +69,12 @@ export function useInactivityTimer({
 
     hasAskedAnythingElseRef.current = false;
 
+    // Auto-end session after 90 seconds (1.5 minutes) of silence to save credits
+    // No farewell message - just show reconnect button
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 1 minute elapsed");
-
-      if (avatarRef.current) {
-        try {
-          await avatarRef.current.interrupt().catch(() => {});
-
-          const anythingElseMessage =
-            "Is there anything else I can help you with today?";
-
-          hasAskedAnythingElseRef.current = true;
-
-          await avatarRef.current.speak({
-            text: anythingElseMessage,
-            task_type: TaskType.TALK,
-          });
-
-          console.log("'Anything else?' message delivered");
-
-          signOffTimeoutRef.current = setTimeout(async () => {
-            const finalMessage =
-              "Alright. Thanks for the conversation - hope it was helpful. Take care.";
-
-            if (avatarRef.current) {
-              await avatarRef.current.speak({
-                text: finalMessage,
-                task_type: TaskType.TALK,
-              });
-
-              setTimeout(() => {
-                onEndSessionShowReconnect();
-              }, 5000);
-            } else {
-              onEndSessionShowReconnect();
-            }
-          }, 20000);
-        } catch (error) {
-          console.error("Error during sign-off:", error);
-          onEndSessionShowReconnect();
-        }
-      } else {
-        onEndSessionShowReconnect();
-      }
-    }, 60000);
+      console.log("Inactivity timeout triggered - 90 seconds elapsed, ending session to save credits");
+      onEndSessionShowReconnect();
+    }, 90000);
   }, [avatarRef, speakingIntervalRef, onEndSessionShowReconnect]);
 
   useEffect(() => {

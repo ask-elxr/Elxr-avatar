@@ -26,7 +26,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [showUnpinchAnimation, setShowUnpinchAnimation] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
-  const [audioOnly, setAudioOnly] = useState(false);
+  const [audioOnly, setAudioOnly] = useState(true); // Default to audio-only to save credits
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   const [isSpeaking, setIsSpeaking] = useState(false);
