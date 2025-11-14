@@ -341,31 +341,31 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
-      {/* Audio Only Toggle - Top Left (Before Session) */}
-      {!sessionActive && !isLoading && !showReconnect && (
-        <div className="absolute top-6 left-6 z-50 flex items-center gap-3 bg-black/50 backdrop-blur-sm px-4 py-3 rounded-lg">
-          <Checkbox
-            id="audio-only"
-            checked={audioOnly}
-            onCheckedChange={handleAudioOnlyToggle}
-            className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-            data-testid="checkbox-audio-only"
-          />
-          <label
-            htmlFor="audio-only"
-            className="text-white text-sm font-medium cursor-pointer select-none"
-          >
-            Audio Only
-          </label>
-        </div>
-      )}
+      {/* Audio Only Toggle - Top Left (Always Visible) */}
+      <div className={`absolute z-50 flex items-center gap-3 bg-black/50 backdrop-blur-sm px-4 py-3 rounded-lg ${
+        isMobile ? 'top-4 left-4' : 'top-6 left-6'
+      }`}>
+        <Checkbox
+          id="audio-only"
+          checked={audioOnly}
+          onCheckedChange={handleAudioOnlyToggle}
+          className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+          data-testid="checkbox-audio-only"
+        />
+        <label
+          htmlFor="audio-only"
+          className="text-white text-sm font-medium cursor-pointer select-none"
+        >
+          Audio Only
+        </label>
+      </div>
 
-      {/* Fullscreen Button - Top Left */}
+      {/* Fullscreen Button - Top Left (Below Audio Toggle) */}
       {sessionActive && (
         <Button
           onClick={toggleFullscreen}
           className={`absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
-            isMobile ? 'top-4 left-4 p-3' : 'top-6 left-6 p-2'
+            isMobile ? 'top-20 left-4 p-3' : 'top-24 left-6 p-2'
           }`}
           data-testid="button-fullscreen-toggle"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
