@@ -28,6 +28,7 @@ function Router() {
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/avatar" component={Home} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
         <Route path="/admin" component={Admin} />
