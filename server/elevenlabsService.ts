@@ -10,7 +10,7 @@ class ElevenLabsService {
   private ttsBreaker: any;
 
   constructor() {
-    this.apiKey = process.env.ELEVENLABS_API_KEY || '';5c531bc2c743cbfc3653aaa56d4f0126aee66faee69584647631d125c552b505
+    this.apiKey = process.env.ELEVENLABS_API_KEY || '';
     if (!this.apiKey) {
       logger.warn({ service: 'elevenlabs' }, 'ELEVENLABS_API_KEY not found - TTS features will be disabled');
       return;
