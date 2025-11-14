@@ -493,7 +493,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         <Button
           onClick={() => setShowAvatarSwitcher(true)}
           className={`absolute z-50 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-            isMobile ? 'top-4 right-20 p-3' : 'top-6 right-24 px-4 py-2'
+            isMobile ? 'top-20 right-4 p-3' : 'top-6 right-40 px-4 py-2'
           }`}
           disabled={switchingAvatar}
           data-testid="button-open-avatar-switcher"
