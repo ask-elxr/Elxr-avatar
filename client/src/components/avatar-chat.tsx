@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Maximize2, Minimize2, Pause, Play, Send } from "lucide-react";
+import { X, Maximize2, Minimize2, Pause, Play, Send, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -10,6 +11,7 @@ import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { useStreamStats } from "@/hooks/useStreamStats";
 import { AvatarSelector } from "@/components/avatar-selector";
+import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
 
 interface AvatarChatProps {
@@ -29,16 +31,38 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [audioOnly, setAudioOnly] = useState(true); // Default to audio-only to save credits
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
+  const [showAvatarSwitcher, setShowAvatarSwitcher] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
+  const [switchingAvatar, setSwitchingAvatar] = useState(false);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const unpinchTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  const { toast } = useToast();
+  
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
+  
+  // Fetch current avatar name for display
+  const [currentAvatarName, setCurrentAvatarName] = useState("");
+  
+  useEffect(() => {
+    const fetchAvatarName = async () => {
+      try {
+        const response = await fetch(`/api/avatar/config/${selectedAvatarId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCurrentAvatarName(data.name || "");
+        }
+      } catch (error) {
+        console.error("Error fetching avatar name:", error);
+      }
+    };
+    fetchAvatarName();
+  }, [selectedAvatarId]);
   
   // Memory preference from localStorage
   useEffect(() => {
@@ -307,21 +331,86 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   const handleAudioOnlyToggle = async (checked: boolean) => {
     const newAudioOnly = checked as boolean;
-    setAudioOnly(newAudioOnly);
+    const previousAudioOnly = audioOnly;
     
     // If session is active, restart it with new mode
     if (sessionActive) {
-      endSession(); // End current session
-      
-      // Wait a moment, then restart with new setting
-      setTimeout(() => {
-        startSession({ audioOnly: newAudioOnly, avatarId: selectedAvatarId });
-      }, 500);
+      try {
+        await endSession(); // End current session and wait for cleanup
+        
+        // Only update state after successful cleanup
+        setAudioOnly(newAudioOnly);
+        
+        // Restart with new setting
+        await startSession({ audioOnly: newAudioOnly, avatarId: selectedAvatarId });
+      } catch (error) {
+        console.error("Error toggling audio-only mode:", error);
+        // Revert state on error
+        setAudioOnly(previousAudioOnly);
+        
+        toast({
+          title: "Mode Switch Failed",
+          description: "Failed to switch mode. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // No active session, just update state
+      setAudioOnly(newAudioOnly);
     }
   };
 
   const handleAvatarConfirm = () => {
     setShowAvatarSelector(false);
+  };
+
+  const handleAvatarSwitch = async (newAvatarId: string) => {
+    if (newAvatarId === selectedAvatarId) {
+      return;
+    }
+
+    setSwitchingAvatar(true);
+    
+    try {
+      // End current session and wait for cleanup
+      if (sessionActive) {
+        await endSession();
+      }
+
+      // Update selected avatar
+      setSelectedAvatarId(newAvatarId);
+
+      // Start new session with new avatar
+      await startSession({ audioOnly, avatarId: newAvatarId });
+      
+      // Success - close dialog and show toast
+      setShowAvatarSwitcher(false);
+      toast({
+        title: "Avatar Switched",
+        description: "Your conversation continues with a new AI guide.",
+      });
+    } catch (error: any) {
+      console.error("Error switching avatar:", error);
+      
+      // Keep dialog open and show error
+      if (error.message?.includes("wait")) {
+        toast({
+          title: "Please Wait",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Switch Failed",
+          description: "Failed to switch avatar. Please try again.",
+          variant: "destructive",
+        });
+      }
+      
+      // Don't close dialog on error - let user try again
+    } finally {
+      setSwitchingAvatar(false);
+    }
   };
 
   if (showAvatarSelector) {
@@ -394,6 +483,22 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               {!isMobile && <span className="text-sm font-medium">Pause</span>}
             </>
           )}
+        </Button>
+      )}
+
+      {/* Avatar Switcher Button - Top Right (Next to End Chat) */}
+      {sessionActive && (
+        <Button
+          onClick={() => setShowAvatarSwitcher(true)}
+          className={`absolute z-50 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
+            isMobile ? 'top-4 right-20 p-3' : 'top-6 right-24 px-4 py-2'
+          }`}
+          disabled={switchingAvatar}
+          data-testid="button-open-avatar-switcher"
+          title="Switch AI Guide"
+        >
+          <Users className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+          {!isMobile && <span className="text-sm font-medium">Switch</span>}
         </Button>
       )}
 
@@ -544,6 +649,27 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </Button>
         </form>
       )}
+
+      {/* Current Avatar Indicator - Bottom Left */}
+      {sessionActive && currentAvatarName && (
+        <div className={`absolute z-40 bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-lg ${
+          isMobile ? 'bottom-20 left-4' : 'bottom-6 left-6'
+        }`}>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm font-medium">{currentAvatarName}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Avatar Switcher Dialog */}
+      <AvatarSwitcher
+        open={showAvatarSwitcher}
+        onOpenChange={setShowAvatarSwitcher}
+        currentAvatarId={selectedAvatarId}
+        onSwitch={handleAvatarSwitch}
+        disabled={switchingAvatar}
+      />
     </div>
   );
 }

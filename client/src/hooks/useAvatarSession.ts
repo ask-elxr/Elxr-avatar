@@ -25,7 +25,7 @@ interface AvatarSessionReturn {
   isLoading: boolean;
   showReconnect: boolean;
   startSession: (options?: StartSessionOptions) => Promise<void>;
-  endSession: () => void;
+  endSession: () => Promise<void>;
   endSessionShowReconnect: () => Promise<void>;
   reconnect: () => void;
   togglePause: () => Promise<void>;
@@ -66,6 +66,11 @@ export function useAvatarSession({
   const currentAvatarIdRef = useRef(selectedAvatarId);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+
+  // Sync currentAvatarIdRef with selectedAvatarId prop changes
+  useEffect(() => {
+    currentAvatarIdRef.current = selectedAvatarId;
+  }, [selectedAvatarId]);
 
   const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
@@ -314,7 +319,7 @@ export function useAvatarSession({
     endSessionOnServer();
   }, [videoRef, onSessionActiveChange]);
 
-  const endSession = useCallback(() => {
+  const endSession = useCallback(async () => {
     if (abortControllerRef.current) {
       console.log("Cancelling ongoing API request on end session");
       abortControllerRef.current.abort();
@@ -323,7 +328,7 @@ export function useAvatarSession({
 
     if (avatarRef.current) {
       intentionalStopRef.current = true;
-      avatarRef.current.stopAvatar().catch(console.error);
+      await avatarRef.current.stopAvatar().catch(console.error);
       avatarRef.current = null;
     }
 
@@ -331,12 +336,18 @@ export function useAvatarSession({
       videoRef.current.srcObject = null;
     }
 
+    // Stop current audio if playing
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+
     setSessionActive(false);
-    setIsLoading(true);
-    setShowReconnect(true);
+    setIsLoading(false);
+    setShowReconnect(false);
     onSessionActiveChange?.(false);
     
-    endSessionOnServer();
+    await endSessionOnServer();
   }, [videoRef, onSessionActiveChange]);
 
   const reconnect = useCallback(() => {
