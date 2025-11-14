@@ -183,37 +183,13 @@ export function useAvatarSession({
       onSessionActiveChange?.(true);
       setIsLoading(false);
 
-      const greetings = [
-        "Hey there — I'm Mark Kohl. You're actually talking to my digital self, but everything you'll hear comes directly from my real experiences, my research, and my life's work.",
-        "Hi, I'm Mark Kohl. This is my avatar — but what you're about to hear comes straight from me. I helped build this AI so my work could reach more people, in more ways.",
-        "Hello. I'm Mark Kohl — or at least, the AI version of me. I've spent years teaching, learning, and exploring what makes us human. This is my way of sharing that knowledge with anyone who needs it.",
-        "Hey there. I'm Mark Kohl — or at least, the AI version of me. I created this so I could be here even when I can't be in person.",
-        "Hi, I'm Mark Kohl. Think of this as a conversation with my digital twin — powered by AI, but shaped by decades of lived experience.",
-        "Hey, I'm Mark Kohl. You're meeting the AI version of me — something I created so I could be here even when I can't be in person.",
-        "Hi there. I'm Mark Kohl. What you're seeing is my avatar, but the thoughts, insights, and stories are all mine — carefully trained so this version of me could keep sharing what matters most.",
-        "Hey. I'm Mark Kohl — the human behind this AI avatar. I created this so that the things I've learned through experience don't just live in one lifetime.",
-        "Hi, I'm Mark Kohl. I know it might feel strange talking to an avatar — but everything I say here is rooted in years of study, teaching, and real human connection.",
-        "Hey there, I'm Mark Kohl. I built this AI version of myself to do what one person alone can't — make real knowledge accessible to anyone who needs it, 24/7.",
-        "Hi, I'm Mark Kohl. The world changes fast, but wisdom shouldn't get lost along the way. That's why I helped create this AI — to share my work and insights with anyone, anywhere.",
-        "Hello. I'm Mark Kohl — the human behind the avatar. Together, we're here to bridge the gap between technology and truth, between information and wisdom.",
-        "Hey, I'm Mark Kohl. Yep, I'm an avatar — but don't worry, this version of me is powered by the real one.",
-        "Hi there, I'm Mark Kohl. This is the AI version of me — kind of like me on my best day, when I've had enough sleep and plenty of coffee.",
-        "Hello, I'm Mark Kohl. You're chatting with my AI self — think of it as me multiplied, so I can have a lot more of these conversations.",
-        "Hi, I'm Mark Kohl. The version you're seeing here might be digital, but the heart, intention, and voice behind it are 100% human.",
-      ];
-
-      const randomGreeting =
-        greetings[Math.floor(Math.random() * greetings.length)];
-      await avatar
-        .speak({
-          text: randomGreeting,
-          task_type: TaskType.TALK,
-        })
-        .catch(console.error);
-
+      // No automatic greeting - saves HeyGen credits
+      // User can start conversation via text input
+      
+      // Reset inactivity timer after session starts
       setTimeout(() => {
         onResetInactivityTimer?.();
-      }, 2000);
+      }, 500);
     } catch (error) {
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
@@ -235,20 +211,15 @@ export function useAvatarSession({
 
     if (avatarRef.current) {
       try {
-        await avatarRef.current.speak({
-          text: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!",
-          task_type: TaskType.TALK,
-        });
-
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
+        // No automatic farewell - saves HeyGen credits
+        // Just stop the avatar session immediately
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for timeout");
 
         await avatarRef.current.stopAvatar().catch(console.error);
         avatarRef.current = null;
       } catch (error) {
-        console.error("Error in timeout message:", error);
+        console.error("Error stopping avatar on timeout:", error);
         if (avatarRef.current) {
           intentionalStopRef.current = true;
           await avatarRef.current.stopAvatar().catch(console.error);

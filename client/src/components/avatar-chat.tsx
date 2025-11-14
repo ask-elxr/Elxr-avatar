@@ -36,7 +36,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const unpinchTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const hasAutoStarted = useRef(false);
   
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
@@ -95,14 +94,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     sessionActive: sessionActive && !isPaused 
   });
   
-  // Auto-start effect (only after avatar is selected)
-  useEffect(() => {
-    if (!hasAutoStarted.current && !showAvatarSelector) {
-      hasAutoStarted.current = true;
-      setShowChatButton(false);
-      startSession({ audioOnly, avatarId: selectedAvatarId });
-    }
-  }, [startSession, audioOnly, selectedAvatarId, showAvatarSelector]);
+  // No auto-start - user must click Start button to avoid burning credits
   
   // Cleanup on unmount
   useEffect(() => {
@@ -418,6 +410,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           <X className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
           {!isMobile && <span className="text-sm font-medium">End Chat</span>}
         </Button>
+      )}
+
+      {/* Start Button - Shows when session not active, avatar selected, and not loading/reconnecting */}
+      {!sessionActive && !isLoading && !showReconnect && !showAvatarSelector && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
+          <Button
+            onClick={() => {
+              console.log("Start button clicked - initiating session manually");
+              setShowChatButton(false);
+              startSession({ audioOnly, avatarId: selectedAvatarId });
+            }}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-lg"
+            data-testid="button-start-session"
+          >
+            Start Chat
+          </Button>
+        </div>
       )}
 
       {/* Loading Overlay */}
