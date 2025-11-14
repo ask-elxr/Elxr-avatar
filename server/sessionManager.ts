@@ -66,19 +66,39 @@ class SessionManager {
   }
 
   canStartSession(userId: string): { allowed: boolean; reason?: string; currentCount?: number } {
-    const userSessions = Array.from(this.activeSessions.values()).filter(
-      (session) => session.userId === userId
-    );
+    // First, force cleanup of any inactive sessions for this user
+    const now = Date.now();
+    const userSessionIds: string[] = [];
+    
+    for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
+      if (session.userId === userId) {
+        // Check if session is inactive (older than timeout threshold)
+        if (now - session.lastActivity > this.SESSION_TIMEOUT_MS) {
+          this.activeSessions.delete(sessionId);
+          logger.info({
+            env: process.env.NODE_ENV || "production",
+            service: "session-manager",
+            operation: "forceCleanup",
+            sessionId,
+            userId: session.userId,
+            inactivityMs: now - session.lastActivity,
+          }, "Force cleaned up inactive session before new session start");
+        } else {
+          userSessionIds.push(sessionId);
+        }
+      }
+    }
 
-    if (userSessions.length >= this.MAX_CONCURRENT_SESSIONS_PER_USER) {
+    // Now check if user has reached the limit with active sessions only
+    if (userSessionIds.length >= this.MAX_CONCURRENT_SESSIONS_PER_USER) {
       return {
         allowed: false,
         reason: `Maximum ${this.MAX_CONCURRENT_SESSIONS_PER_USER} concurrent sessions reached`,
-        currentCount: userSessions.length,
+        currentCount: userSessionIds.length,
       };
     }
 
-    return { allowed: true, currentCount: userSessions.length };
+    return { allowed: true, currentCount: userSessionIds.length };
   }
 
   canSwitchAvatar(userId: string, newAvatarId: string): { allowed: boolean; reason?: string; remainingCooldownMs?: number } {
