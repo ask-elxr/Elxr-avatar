@@ -94,6 +94,12 @@ Preferred communication style: Simple, everyday language.
 
 ## November 14, 2025
 
+### Loading Screen Update
+- Replaced CSS loading animation with intro logo video
+- Video autoplays, loops, and is muted for seamless loading experience
+- Uses intro logo video: `attached_assets/intro logo_1760052672430.mp4`
+- Responsive design with max-width constraint for optimal display
+
 ### Text Messaging System
 - Implemented text-based chat input for both video and audio-only modes
 - Added `handleSubmitMessage` function in useAvatarSession hook that:
