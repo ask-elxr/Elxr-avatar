@@ -49,17 +49,27 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
     category: "body",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "ann-scene",
-    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
+    elevenlabsVoiceId: "21m00Tcm4TlvDq8ikWAM",
     audioOnly: false,
   },
-  katya: {
-    name: "Katya",
-    pineconeNamespace: "katya",
+  shawn: {
+    name: "Shawn",
+    pineconeNamespace: "shawn",
     assistantId: "ask-elxr",
-    category: "sexuality",
+    category: "leadership",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-    heygenSceneId: "katya-scene",
-    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
+    heygenSceneId: "shawn-scene",
+    elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
+    audioOnly: false,
+  },
+  thad: {
+    name: "Thad",
+    pineconeNamespace: "thad",
+    assistantId: "ask-elxr",
+    category: "finance",
+    heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
+    heygenSceneId: "thad-scene",
+    elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
     audioOnly: false,
   },
 };
@@ -69,7 +79,8 @@ const mentorAliases: Record<string, string> = {
   "willie": "willie-gault",
   "june": "june",
   "ann": "ann",
-  "katya": "katya",
+  "shawn": "shawn",
+  "thad": "thad",
 };
 
 export const mentorConfigs = mentorConfigsBase;
