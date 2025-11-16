@@ -68,3 +68,39 @@ Preferred communication style: Simple, everyday language.
 - **BullMQ**: Job queue.
 - **Pino**: Structured logging.
 - **Opossum**: Circuit breaker implementation.
+
+# Recent Changes
+
+## November 16, 2025
+
+### Avatar Photo Loading Screens & Error Handling
+- **Replaced logo video with static avatar photos**: Each mentor now displays their own photo before conversation starts
+  - Updated `LoadingPlaceholder` component to accept `avatarId` prop and show mentor-specific photos
+  - Avatar photos mapped by ID: mark-kohl, thad, willie-gault, june, ann, shawn
+  - Photos displayed in 3 states: initial loading, reconnect screen, and video mode idle (session active but HeyGen not started)
+  - Significant bandwidth savings: static images vs. looping video
+  - Removed `placeholderVideo` import from `avatar-chat.tsx`
+  - Falls back to default photo if mentor-specific image not available
+
+- **Fixed session limit error handling**: 429 errors now properly caught and displayed to user
+  - Updated Start button onClick handler to be async with try/catch
+  - Added toast notifications for session limit errors ("Cannot start session")  
+  - Fixed `reconnect()` and `togglePause()` functions in useAvatarSession to properly await and catch errors
+  - Prevents unhandled promise rejections in browser console
+  - User-friendly error messages instead of console errors
+
+### Avatar Switching Updates
+- **Smart cooldown system**: Cooldown clears when ALL user sessions end, maintains during concurrent sessions
+  - Reduced avatar switch cooldown from 30 seconds to 3 seconds
+  - Updated `endSession()`, `cleanupInactiveSessions()`, and `canStartSession()` to check for remaining user sessions
+  - Prevents abuse while allowing immediate switching after all sessions end
+
+### Database & Admin Panel
+- **All 6 real mentors**: Mark Kohl, Willie Gault, June, Ann, Shawn, Thad  
+  - Each mentor fully editable in admin panel with HeyGen IDs, ElevenLabs voices, Pinecone namespaces
+  - Cleared old test avatars (Marcus Johnson, Dr. Sarah Chen)
+
+### URL Routing
+- **Added `/avatar` route**: Enables mentor-specific URLs for iframe embeds
+  - Route `/avatar?mentor=<mentor-id>` loads specific mentor on page load
+  - Supports all 6 mentors for external platform integration

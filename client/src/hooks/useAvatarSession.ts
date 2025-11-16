@@ -28,7 +28,7 @@ interface AvatarSessionReturn {
   startSession: (options?: StartSessionOptions) => Promise<void>;
   endSession: () => Promise<void>;
   endSessionShowReconnect: () => Promise<void>;
-  reconnect: () => void;
+  reconnect: () => Promise<void>;
   togglePause: () => Promise<void>;
   isPaused: boolean;
   isSpeaking: boolean;
@@ -394,18 +394,34 @@ export function useAvatarSession({
     await endSessionOnServer();
   }, [videoRef, onSessionActiveChange, clearIdleTimeout]);
 
-  const reconnect = useCallback(() => {
+  const reconnect = useCallback(async () => {
     setShowReconnect(false);
     hasStartedRef.current = false;
-    startSession({ audioOnly: audioOnlyRef.current });
+    try {
+      await startSession({ audioOnly: audioOnlyRef.current });
+    } catch (error) {
+      console.error("Error reconnecting:", error);
+      setShowReconnect(true);
+      throw error; // Re-throw so component can show toast
+    }
   }, [startSession]);
 
   const togglePause = useCallback(async () => {
     if (isPaused) {
       setIsPaused(false);
       hasStartedRef.current = false;
-      startSession({ audioOnly: audioOnlyRef.current });
-      console.log("Avatar resuming - restarting session");
+      try {
+        await startSession({ audioOnly: audioOnlyRef.current });
+        console.log("Avatar resuming - restarting session");
+      } catch (error) {
+        console.error("Error resuming session:", error);
+        // End session and show reconnect screen on failure
+        setSessionActive(false);
+        setIsPaused(false);
+        setShowReconnect(true);
+        await endSessionOnServer();
+        throw error; // Re-throw so component can show toast
+      }
     } else {
       if (abortControllerRef.current) {
         console.log("Cancelling ongoing API request on pause");

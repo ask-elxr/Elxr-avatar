@@ -466,7 +466,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {/* Pause/Resume Button - Top Center */}
       {sessionActive && (
         <Button
-          onClick={togglePause}
+          onClick={async () => {
+            try {
+              await togglePause();
+            } catch (error: any) {
+              toast({
+                variant: "destructive",
+                title: isPaused ? "Cannot resume" : "Cannot pause",
+                description: error.message || `Failed to ${isPaused ? "resume" : "pause"} session. Please try again.`,
+              });
+            }
+          }}
           className={`absolute z-50 left-1/2 -translate-x-1/2 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
             isMobile ? 'top-4 p-3' : 'top-6 px-4 py-2'
           }`}
@@ -522,10 +532,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {!sessionActive && !isLoading && !showReconnect && !showAvatarSelector && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
           <Button
-            onClick={() => {
+            onClick={async () => {
               console.log("Start button clicked - initiating session manually");
               setShowChatButton(false);
-              startSession({ audioOnly, avatarId: selectedAvatarId });
+              try {
+                await startSession({ audioOnly, avatarId: selectedAvatarId });
+              } catch (error: any) {
+                setShowChatButton(true); // Restore button so user can retry
+                toast({
+                  variant: "destructive",
+                  title: "Cannot start session",
+                  description: error.message || "Failed to start session. Please try again.",
+                });
+              }
             }}
             className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-lg"
             data-testid="button-start-session"
@@ -547,7 +566,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-8">
           <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />
           <Button
-            onClick={reconnect}
+            onClick={async () => {
+              try {
+                await reconnect();
+              } catch (error: any) {
+                toast({
+                  variant: "destructive",
+                  title: "Cannot reconnect",
+                  description: error.message || "Failed to reconnect. Please try again.",
+                });
+              }
+            }}
             className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
             data-testid="button-reconnect"
           >
