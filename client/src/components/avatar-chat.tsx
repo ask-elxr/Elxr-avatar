@@ -6,7 +6,6 @@ import { X, Maximize2, Minimize2, Pause, Play, Send, Users } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
-import placeholderVideo from "@assets/intro logo_1760052672430.mp4";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
@@ -539,14 +538,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {/* Loading Overlay */}
       {isLoading && !showReconnect && (
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
-          <LoadingPlaceholder data-testid="loading-placeholder" />
+          <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
         </div>
       )}
 
       {/* Reconnect Screen */}
       {showReconnect && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-8">
-          <LoadingPlaceholder data-testid="reconnect-placeholder" />
+          <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />
           <Button
             onClick={reconnect}
             className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
@@ -579,17 +578,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
       {/* Avatar Video Stream */}
       <div className="w-full h-full flex items-center justify-center">
-        {/* Placeholder video when idle (session active but HeyGen not started) */}
+        {/* Placeholder photo when idle (session active but HeyGen not started) */}
         {sessionActive && !heygenSessionActive && !audioOnly && (
           <>
-            <video
-              src={placeholderVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-              data-testid="placeholder-video"
+            <LoadingPlaceholder 
+              avatarId={selectedAvatarId} 
+              className="w-full h-full"
+              data-testid="placeholder-photo"
             />
             {/* Prompt to send message */}
             <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
