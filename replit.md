@@ -92,6 +92,21 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
+## November 16, 2025
+
+### Avatar Switching & Admin Panel Updates
+- **Fixed avatar switching issue**: Reduced avatar switch cooldown from 30 seconds to 3 seconds in `sessionManager.ts`
+  - 30-second cooldown was preventing users from switching avatars after ending sessions
+  - New 3-second cooldown prevents accidental double-clicks while allowing quick switches
+- **Database seeding fix**: Cleared old test avatars (Marcus Johnson, Dr. Sarah Chen) and reseeded with all 6 real mentors
+  - All 6 mentors now available in admin panel: Mark Kohl, Willie Gault, June, Ann, Shawn, Thad
+  - Each mentor has full configuration: HeyGen avatar ID, ElevenLabs voice ID, Pinecone namespaces, personality prompts
+  - Admin panel's `AvatarManager` component allows full CRUD operations on all avatars
+- **Added `/avatar` route**: Enables mentor-specific URLs for Webflow embeds
+  - Route `/avatar?mentor=<mentor-id>` loads specific mentor on page load
+  - Supports all 6 mentors: mark-kohl, willie-gault, june, ann, shawn, thad
+  - Used for iframe embeds in external platforms
+
 ## November 14, 2025
 
 ### Multi-Assistant Service & Per-Mentor Assistant Architecture

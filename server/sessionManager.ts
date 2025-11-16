@@ -27,7 +27,7 @@ class SessionManager {
   private completedSessions: CompletedSession[] = [];
   
   private readonly MAX_CONCURRENT_SESSIONS_PER_USER = 2;
-  private readonly AVATAR_SWITCH_COOLDOWN_MS = 30000; // 30 seconds
+  private readonly AVATAR_SWITCH_COOLDOWN_MS = 3000; // 3 seconds - just enough to prevent accidental double-clicks
   private readonly SESSION_TIMEOUT_MS = 120000; // 2 minutes of inactivity (aligns with frontend 90s + buffer)
   private readonly MAX_HISTORY_LENGTH = 1000; // Keep last 1000 completed sessions
 
@@ -38,10 +38,12 @@ class SessionManager {
   private cleanupInactiveSessions() {
     const now = Date.now();
     let cleanedCount = 0;
+    const usersToCheck = new Set<string>();
 
     for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
       if (now - session.lastActivity > this.SESSION_TIMEOUT_MS) {
         this.activeSessions.delete(sessionId);
+        usersToCheck.add(session.userId);
         cleanedCount++;
         logger.info({
           env: process.env.NODE_ENV || "production",
@@ -51,6 +53,16 @@ class SessionManager {
           userId: session.userId,
           inactivityMs: now - session.lastActivity,
         }, "Cleaned up inactive session");
+      }
+    }
+
+    // Clear avatar switch cooldown only for users with no remaining active sessions
+    for (const userId of Array.from(usersToCheck)) {
+      const hasOtherSessions = Array.from(this.activeSessions.values()).some(
+        s => s.userId === userId
+      );
+      if (!hasOtherSessions) {
+        this.avatarSwitches.delete(userId);
       }
     }
 
@@ -69,12 +81,14 @@ class SessionManager {
     // First, force cleanup of any inactive sessions for this user
     const now = Date.now();
     const userSessionIds: string[] = [];
+    let cleanedAny = false;
     
     for (const [sessionId, session] of Array.from(this.activeSessions.entries())) {
       if (session.userId === userId) {
         // Check if session is inactive (older than timeout threshold)
         if (now - session.lastActivity > this.SESSION_TIMEOUT_MS) {
           this.activeSessions.delete(sessionId);
+          cleanedAny = true;
           logger.info({
             env: process.env.NODE_ENV || "production",
             service: "session-manager",
@@ -87,6 +101,11 @@ class SessionManager {
           userSessionIds.push(sessionId);
         }
       }
+    }
+    
+    // Clear avatar switch cooldown only if user has no remaining active sessions
+    if (cleanedAny && userSessionIds.length === 0) {
+      this.avatarSwitches.delete(userId);
     }
 
     // Now check if user has reached the limit with active sessions only
@@ -173,6 +192,14 @@ class SessionManager {
     const session = this.activeSessions.get(sessionId);
     if (session) {
       this.activeSessions.delete(sessionId);
+      
+      // Clear avatar switch cooldown only if user has no other active sessions
+      const hasOtherSessions = Array.from(this.activeSessions.values()).some(
+        s => s.userId === session.userId
+      );
+      if (!hasOtherSessions) {
+        this.avatarSwitches.delete(session.userId);
+      }
       
       const endTime = Date.now();
       const duration = endTime - session.startTime;
