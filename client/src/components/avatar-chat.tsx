@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Maximize2, Minimize2, Pause, Play, Send, Users } from "lucide-react";
+import { X, Maximize2, Minimize2, Pause, Play, Send, Users, Brain, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
@@ -12,6 +12,7 @@ import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
+import { MemoryViewer } from "@/components/MemoryViewer";
 
 interface AvatarChatProps {
   userId: string;
@@ -34,6 +35,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
+  const [showMemoryViewer, setShowMemoryViewer] = useState(false);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -68,6 +70,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     const memoryPref = localStorage.getItem('memory-enabled');
     setMemoryEnabled(memoryPref === 'true');
   }, []);
+
+  // Save memory preference to localStorage
+  const handleMemoryToggle = (checked: boolean) => {
+    setMemoryEnabled(checked);
+    localStorage.setItem('memory-enabled', checked.toString());
+    toast({
+      title: checked ? "Memory Enabled" : "Memory Disabled",
+      description: checked
+        ? "Your conversations will be remembered across sessions"
+        : "Memory has been turned off",
+    });
+  };
   
   // Hook 1: Avatar session management
   const {
@@ -442,28 +456,63 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
-      {/* Audio Only Toggle - Top Left (Always Visible) */}
-      <div className="absolute z-50 flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3 rounded-lg top-3 left-3 md:top-4 md:left-4 lg:top-6 lg:left-6">
-        <Checkbox
-          id="audio-only"
-          checked={audioOnly}
-          onCheckedChange={handleAudioOnlyToggle}
-          className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-          data-testid="checkbox-audio-only"
-        />
-        <label
-          htmlFor="audio-only"
-          className="text-white text-sm md:text-base font-medium cursor-pointer select-none"
+      {/* Control Panel - Top Left (Always Visible) */}
+      <div className="absolute z-50 top-3 left-3 md:top-4 md:left-4 lg:top-6 lg:left-6 flex flex-col gap-2">
+        {/* Audio Only Toggle */}
+        <div className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3 rounded-lg">
+          <Checkbox
+            id="audio-only"
+            checked={audioOnly}
+            onCheckedChange={handleAudioOnlyToggle}
+            className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+            data-testid="checkbox-audio-only"
+          />
+          <label
+            htmlFor="audio-only"
+            className="text-white text-sm md:text-base font-medium cursor-pointer select-none"
+          >
+            Audio Only
+          </label>
+        </div>
+
+        {/* Memory Toggle */}
+        <div className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3 rounded-lg">
+          <Checkbox
+            id="memory-enabled"
+            checked={memoryEnabled}
+            onCheckedChange={handleMemoryToggle}
+            className="border-white data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+            data-testid="checkbox-memory-enabled"
+          />
+          <label
+            htmlFor="memory-enabled"
+            className="text-white text-sm md:text-base font-medium cursor-pointer select-none flex items-center gap-1"
+          >
+            <Brain className="w-4 h-4" />
+            Memory
+          </label>
+          {memoryEnabled && (
+            <span className="ml-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Memory active" />
+          )}
+        </div>
+
+        {/* View Memories Button */}
+        <Button
+          onClick={() => setShowMemoryViewer(true)}
+          className="bg-black/50 hover:bg-black/70 text-white rounded-lg backdrop-blur-sm flex items-center gap-2 justify-center !h-auto !min-h-[44px] px-3 py-2 md:px-4 md:py-3"
+          data-testid="button-view-memories"
+          title="View stored memories"
         >
-          Audio Only
-        </label>
+          <Database className="w-4 h-4 md:w-5 md:h-5" />
+          <span className="text-sm md:text-base font-medium">Memories</span>
+        </Button>
       </div>
 
-      {/* Fullscreen Button - Top Left (Below Audio Toggle) */}
+      {/* Fullscreen Button - Top Left (Below Controls) */}
       {sessionActive && (
         <Button
           onClick={toggleFullscreen}
-          className="absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3 lg:px-3 lg:py-2 top-16 left-3 md:top-20 md:left-4 lg:top-24 lg:left-6"
+          className="absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3 lg:px-3 lg:py-2 top-44 left-3 md:top-52 md:left-4 lg:top-56 lg:left-6"
           data-testid="button-fullscreen-toggle"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
@@ -697,6 +746,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         onSwitch={handleAvatarSwitch}
         disabled={switchingAvatar}
       />
+
+      {/* Memory Viewer Dialog */}
+      {showMemoryViewer && (
+        <MemoryViewer
+          userId={userId}
+          onClose={() => setShowMemoryViewer(false)}
+        />
+      )}
     </div>
   );
 }

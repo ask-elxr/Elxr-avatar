@@ -401,15 +401,16 @@ class MemoryService {
       const index = this.pineconeClient!.index(this.indexName);
       const namespace = this.getUserNamespace(userId);
 
-      // Delete the entire namespace
+      // Delete all vectors in the user's namespace
       await index.namespace(namespace).deleteAll();
 
       logger.info(
         {
           service: 'memory',
           userId,
+          namespace,
         },
-        `Deleted all memories for user ${userId}`,
+        `Deleted all memories for user ${userId} in namespace ${namespace}`,
       );
 
       return { success: true };
@@ -432,30 +433,51 @@ class MemoryService {
         return { success: false, error: 'Memory service not available' };
       }
 
-      // Use OpenAI to generate a summary
+      // Validate userId
+      if (!userId || typeof userId !== 'string') {
+        return { success: false, error: 'Valid userId is required' };
+      }
+
+      // Use OpenAI to generate a summary with circuit breaker
       const conversationText = messages
         .map((m) => `${m.role}: ${m.content}`)
         .join('\n');
 
-      const completion = await this.openaiClient!.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a helpful assistant that creates concise summaries of conversations. Focus on key topics, user preferences mentioned, and important insights. Keep it under 200 words.',
-          },
-          {
-            role: 'user',
-            content: `Please summarize this conversation:\n\n${conversationText}`,
-          },
-        ],
-        temperature: 0.3,
-      });
+      const generateSummaryWithBreaker = wrapServiceCall(
+        async (text: string) => {
+          return await this.openaiClient!.chat.completions.create({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'You are a helpful assistant that creates concise summaries of conversations. Focus on key topics, user preferences mentioned, and important insights. Keep it under 200 words.',
+              },
+              {
+                role: 'user',
+                content: `Please summarize this conversation:\n\n${text}`,
+              },
+            ],
+            temperature: 0.3,
+          });
+        },
+        'openai-summary',
+        {
+          timeout: 30000,
+          errorThresholdPercentage: 50,
+          resetTimeout: 30000,
+        },
+      );
 
+      const completion = await generateSummaryWithBreaker.execute(conversationText);
       const summary = completion.choices[0]?.message?.content || '';
 
-      // Store as a summary memory
+      if (!summary) {
+        logger.warn({ service: 'memory', userId }, 'Generated empty summary');
+        return { success: false, error: 'Failed to generate summary' };
+      }
+
+      // Store as a summary memory (this already uses the user namespace)
       return await this.addMemory(summary, userId, MemoryType.SUMMARY, {
         ...sessionMetadata,
         messageCount: messages.length,
