@@ -3,6 +3,7 @@ import {
   documents,
   avatarProfiles,
   apiCalls,
+  heygenCreditUsage,
   knowledgeBaseSources,
   type User,
   type UpsertUser,
@@ -11,12 +12,14 @@ import {
   type InsertAvatarProfile,
   type UpdateAvatarProfile,
   type InsertApiCall,
+  type InsertHeygenCreditUsage,
+  type HeygenCreditUsage,
   type KnowledgeBaseSource,
   type InsertKnowledgeBaseSource,
   type UpdateKnowledgeBaseSource,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, gte, sql as drizzleSql, and } from "drizzle-orm";
+import { eq, gte, sql as drizzleSql, and, desc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -47,6 +50,18 @@ export interface IStorage {
       last7d: number;
       avgResponseTimeMs: number;
     }[];
+  }>;
+
+  // HeyGen credit tracking operations
+  logHeygenCredit(data: InsertHeygenCreditUsage): Promise<void>;
+  getHeygenCreditUsage(userId?: string, startDate?: Date): Promise<{
+    totalCredits: number;
+    recentUsage: HeygenCreditUsage[];
+  }>;
+  getHeygenCreditBalance(): Promise<{
+    totalUsed: number;
+    last24h: number;
+    last7d: number;
   }>;
 
   // Knowledge base source operations
@@ -241,6 +256,83 @@ export class DatabaseStorage implements IStorage {
     }
 
     return { services: Array.from(serviceMap.values()) };
+  }
+
+  // HeyGen credit tracking operations
+  async logHeygenCredit(data: InsertHeygenCreditUsage): Promise<void> {
+    await db.insert(heygenCreditUsage).values(data);
+  }
+
+  async getHeygenCreditUsage(userId?: string, startDate?: Date): Promise<{
+    totalCredits: number;
+    recentUsage: HeygenCreditUsage[];
+  }> {
+    const conditions = [];
+    
+    if (userId) {
+      conditions.push(eq(heygenCreditUsage.userId, userId));
+    }
+    
+    if (startDate) {
+      conditions.push(gte(heygenCreditUsage.timestamp, startDate));
+    }
+
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+    
+    const usage = await db
+      .select()
+      .from(heygenCreditUsage)
+      .where(whereClause)
+      .orderBy(desc(heygenCreditUsage.timestamp))
+      .limit(50);
+
+    const totalCreditsResult = await db
+      .select({
+        total: drizzleSql<number>`COALESCE(SUM(${heygenCreditUsage.creditsUsed}), 0)::int`,
+      })
+      .from(heygenCreditUsage)
+      .where(whereClause);
+
+    return {
+      totalCredits: totalCreditsResult[0]?.total || 0,
+      recentUsage: usage,
+    };
+  }
+
+  async getHeygenCreditBalance(): Promise<{
+    totalUsed: number;
+    last24h: number;
+    last7d: number;
+  }> {
+    const now = new Date();
+    const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const [totalResult] = await db
+      .select({
+        total: drizzleSql<number>`COALESCE(SUM(${heygenCreditUsage.creditsUsed}), 0)::int`,
+      })
+      .from(heygenCreditUsage);
+
+    const [last24hResult] = await db
+      .select({
+        total: drizzleSql<number>`COALESCE(SUM(${heygenCreditUsage.creditsUsed}), 0)::int`,
+      })
+      .from(heygenCreditUsage)
+      .where(gte(heygenCreditUsage.timestamp, last24h));
+
+    const [last7dResult] = await db
+      .select({
+        total: drizzleSql<number>`COALESCE(SUM(${heygenCreditUsage.creditsUsed}), 0)::int`,
+      })
+      .from(heygenCreditUsage)
+      .where(gte(heygenCreditUsage.timestamp, last7d));
+
+    return {
+      totalUsed: totalResult?.total || 0,
+      last24h: last24hResult?.total || 0,
+      last7d: last7dResult?.total || 0,
+    };
   }
 
   // Knowledge base source operations
