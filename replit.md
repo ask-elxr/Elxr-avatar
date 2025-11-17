@@ -138,3 +138,11 @@ Preferred communication style: Simple, everyday language.
 - **All mentor photos configured**: Each mentor now has their own unique loading screen photo
   - Willie Gault, June, Ann photos added to LoadingPlaceholder component
   - No more shared placeholder photos between mentors
+
+### Avatar Switching Bug Fix
+- **Fixed duplicate session creation bug**: Avatar switching now works correctly without 429 errors
+  - Previously: `/api/heygen/token` was creating a second session (duplicate)
+  - Now: Only `/api/session/start` creates sessions, `/api/heygen/token` just validates and returns token
+  - Issue: When switching avatars, lingering sessions caused "Maximum 2 concurrent sessions" errors
+  - Solution: Removed `sessionManager.startSession()` call from `/api/heygen/token` endpoint
+  - Result: Clean avatar switches with proper session cleanup

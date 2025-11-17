@@ -152,9 +152,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info("HeyGen token created successfully");
 
-      const sessionId = `session_${userId}_${Date.now()}`;
-      sessionManager.startSession(sessionId, userId, avatarId || 'unknown');
-
       storage.logApiCall({
         serviceName: 'heygen',
         endpoint: 'streaming.create_token',
@@ -166,7 +163,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         token: data.data?.token || data.token,
-        sessionId,
         ...data,
       });
     } catch (error: any) {
