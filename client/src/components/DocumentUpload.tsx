@@ -23,10 +23,17 @@ interface DocumentUploadProps {
   onUploadComplete?: () => void;
 }
 
+interface FileUploadStatus {
+  file: File;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  progress: string;
+  error?: string;
+}
+
 export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<string>("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<FileUploadStatus[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -48,107 +55,144 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     e.stopPropagation();
     setIsDragging(false);
 
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      validateAndSetFile(file);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      validateAndSetFiles(files);
     }
   }, []);
 
-  const validateAndSetFile = (file: File) => {
-    // Check file type
-    const isPDF = file.type === 'application/pdf';
-    const isVideo = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'].includes(file.type);
-    const isAudio = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/webm'].includes(file.type);
+  const validateAndSetFiles = (files: File[]) => {
+    const validFiles: FileUploadStatus[] = [];
+    const invalidFiles: string[] = [];
 
-    if (!isPDF && !isVideo && !isAudio) {
+    files.forEach(file => {
+      // Check file type
+      const isPDF = file.type === 'application/pdf';
+      const isVideo = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'].includes(file.type);
+      const isAudio = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/webm'].includes(file.type);
+
+      if (!isPDF && !isVideo && !isAudio) {
+        invalidFiles.push(`${file.name} (invalid type)`);
+        return;
+      }
+
+      // Check file size (max 100MB for videos, 25MB for PDFs)
+      const maxSize = isVideo || isAudio ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} (too large)`);
+        return;
+      }
+
+      validFiles.push({
+        file,
+        status: 'pending',
+        progress: ''
+      });
+    });
+
+    if (invalidFiles.length > 0) {
       toast({
-        title: "Invalid file type",
-        description: "Please upload PDF files or video/audio files (MP4, MOV, WebM, MP3, WAV, M4A).",
+        title: "Some files were skipped",
+        description: `Invalid: ${invalidFiles.join(', ')}`,
         variant: "destructive",
       });
-      return;
     }
 
-    // Check file size (max 100MB for videos, 25MB for PDFs)
-    const maxSize = isVideo || isAudio ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
       toast({
-        title: "File too large",
-        description: `Please upload files smaller than ${isVideo || isAudio ? '100MB' : '25MB'}.`,
-        variant: "destructive",
+        title: `${validFiles.length} file(s) added`,
+        description: `Ready to upload ${validFiles.length} file(s)`,
       });
-      return;
     }
-
-    setSelectedFile(file);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      validateAndSetFile(file);
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      validateAndSetFiles(Array.from(files));
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) return;
+  const handleBatchUpload = async () => {
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
-    setUploadProgress("Uploading file...");
+    let successCount = 0;
+    let errorCount = 0;
 
-    try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+    // Process files sequentially to avoid overwhelming the server
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const fileStatus = selectedFiles[i];
+      
+      if (fileStatus.status !== 'pending') continue;
 
-      // Determine endpoint based on file type
-      const isPDF = selectedFile.type === 'application/pdf';
-      const endpoint = isPDF ? '/api/documents/upload-pdf' : '/api/documents/upload-video';
+      // Update status to uploading
+      setSelectedFiles(prev => prev.map((f, idx) => 
+        idx === i ? { ...f, status: 'uploading' as const, progress: 'Uploading...' } : f
+      ));
 
-      setUploadProgress(isPDF ? "Extracting text from PDF..." : "Transcribing audio...");
+      try {
+        const formData = new FormData();
+        formData.append('file', fileStatus.file);
 
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
+        // Determine endpoint based on file type
+        const isPDF = fileStatus.file.type === 'application/pdf';
+        const endpoint = isPDF ? '/api/documents/upload-pdf' : '/api/documents/upload-video';
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
-      }
+        setUploadProgress(`Processing ${i + 1} of ${selectedFiles.length}: ${fileStatus.file.name}`);
 
-      const result = await response.json();
-
-      if (result.success) {
-        toast({
-          title: "Upload successful",
-          description: `${selectedFile.name} has been uploaded and is being processed.`,
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
         });
-        
-        setSelectedFile(null);
-        setUploadProgress("");
-        
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+          throw new Error(errorData.error || `Upload failed with status ${response.status}`);
         }
 
-        if (onUploadComplete) {
-          onUploadComplete();
+        const result = await response.json();
+
+        if (result.success) {
+          setSelectedFiles(prev => prev.map((f, idx) => 
+            idx === i ? { ...f, status: 'success' as const, progress: 'Completed' } : f
+          ));
+          successCount++;
+        } else {
+          throw new Error(result.error || "Upload failed");
         }
-      } else {
-        throw new Error(result.error || "Upload failed");
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        setSelectedFiles(prev => prev.map((f, idx) => 
+          idx === i ? { 
+            ...f, 
+            status: 'error' as const, 
+            progress: 'Failed', 
+            error: error.message 
+          } : f
+        ));
+        errorCount++;
       }
-    } catch (error: any) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: error.message || "An error occurred while uploading the file.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-      setUploadProgress("");
+    }
+
+    setIsUploading(false);
+    setUploadProgress("");
+
+    // Show summary toast
+    toast({
+      title: "Batch upload complete",
+      description: `✅ ${successCount} succeeded, ❌ ${errorCount} failed`,
+      variant: successCount > 0 ? "default" : "destructive",
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    if (onUploadComplete && successCount > 0) {
+      onUploadComplete();
     }
   };
 
@@ -187,53 +231,25 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
             className={cn(
               "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
               isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
-              selectedFile && "border-primary bg-primary/5"
+              selectedFiles.length > 0 && "border-primary bg-primary/5"
             )}
             onClick={() => fileInputRef.current?.click()}
             data-testid="dropzone-upload"
           >
-            {selectedFile ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-center">
-                  {getFileIcon(selectedFile)}
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">{selectedFile.name}</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {formatFileSize(selectedFile.size)}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                  disabled={isUploading}
-                  data-testid="button-clear-file"
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Remove
-                </Button>
+            <div className="space-y-2">
+              <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
+              <div>
+                <p className="text-base font-medium text-foreground">
+                  Drop files here or click to browse
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Supports PDF, MP4, MOV, WebM, MP3, WAV, M4A (multiple files)
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Max size: 25MB for PDFs, 100MB for videos
+                </p>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
-                <div>
-                  <p className="text-base font-medium text-foreground">
-                    Drop files here or click to browse
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Supports PDF, MP4, MOV, WebM, MP3, WAV, M4A
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Max size: 25MB for PDFs, 100MB for videos
-                  </p>
-                </div>
-              </div>
-            )}
+            </div>
           </div>
 
           <input
@@ -243,16 +259,82 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
             onChange={handleFileSelect}
             className="hidden"
             disabled={isUploading}
+            multiple
             data-testid="input-file-upload"
           />
 
-          {selectedFile && (
+          {/* File List */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-foreground">
+                  Selected Files ({selectedFiles.length})
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedFiles([]);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                  disabled={isUploading}
+                >
+                  Clear All
+                </Button>
+              </div>
+              <div className="max-h-60 overflow-y-auto space-y-2 border rounded-lg p-2 bg-muted/20">
+                {selectedFiles.map((fileStatus, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-2 bg-background rounded border"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {getFileIcon(fileStatus.file)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {fileStatus.file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(fileStatus.file.size)} • {fileStatus.progress || 'Ready'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {fileStatus.status === 'success' && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
+                      {fileStatus.status === 'error' && (
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                      )}
+                      {fileStatus.status === 'uploading' && (
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      )}
+                      {fileStatus.status === 'pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          disabled={isUploading}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedFiles.length > 0 && (
             <Button
-              onClick={handleFileUpload}
-              disabled={isUploading}
+              onClick={handleBatchUpload}
+              disabled={isUploading || selectedFiles.every(f => f.status !== 'pending')}
               className="w-full"
               size="lg"
-              data-testid="button-upload-document"
+              data-testid="button-upload-batch"
             >
               {isUploading ? (
                 <>
@@ -262,7 +344,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               ) : (
                 <>
                   <Upload className="w-4 h-4 mr-2" />
-                  Upload & Process
+                  Upload {selectedFiles.filter(f => f.status === 'pending').length} File(s)
                 </>
               )}
             </Button>
