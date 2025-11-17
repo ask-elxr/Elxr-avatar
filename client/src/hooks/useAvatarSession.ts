@@ -69,6 +69,7 @@ export function useAvatarSession({
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleSubmitMessageRef = useRef<((message: string) => Promise<void>) | null>(null);
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -222,6 +223,18 @@ export function useAvatarSession({
         startIdleTimeout(); // Start 30s countdown after avatar stops talking
       });
 
+      // Listen for user voice input
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event: any) => {
+        const userMessage = event?.detail?.message || event?.message || event;
+        if (userMessage && typeof userMessage === 'string' && userMessage.trim()) {
+          console.log("🎤 Voice input received:", userMessage);
+          // Process the voice message just like typed messages
+          if (handleSubmitMessageRef.current) {
+            await handleSubmitMessageRef.current(userMessage);
+          }
+        }
+      });
+
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
@@ -235,6 +248,17 @@ export function useAvatarSession({
         language: "en",
         disableIdleTimeout: true,
       });
+
+      // Enable voice recognition for hands-free interaction
+      try {
+        console.log("Starting voice chat to enable microphone...");
+        await avatar.startVoiceChat();
+        console.log("✅ Voice chat enabled - you can now talk to the avatar!");
+      } catch (voiceError) {
+        console.error("❌ Voice chat failed:", voiceError);
+        console.warn("Microphone not available - you can still type messages");
+        // Don't throw - allow text-only fallback
+      }
 
       console.log("HeyGen session started successfully");
       setHeygenSessionActive(true);
@@ -695,6 +719,11 @@ export function useAvatarSession({
       }
     }
   }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout]);
+
+  // Keep handleSubmitMessageRef in sync for voice input event listener
+  useEffect(() => {
+    handleSubmitMessageRef.current = handleSubmitMessage;
+  }, [handleSubmitMessage]);
 
   return {
     sessionActive,
