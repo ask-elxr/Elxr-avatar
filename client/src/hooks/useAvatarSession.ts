@@ -304,20 +304,31 @@ export function useAvatarSession({
     }
 
     setSessionActive(true);
-    setIsLoading(false);
     onSessionActiveChange?.(true);
+    
+    // Start HeyGen immediately in video mode for instant avatar appearance
+    if (!audioOnly) {
+      try {
+        await startHeyGenSession(activeAvatarId);
+      } catch (error) {
+        console.error("Error starting HeyGen in video mode:", error);
+        setIsLoading(false);
+        throw error;
+      }
+    } else {
+      // Audio mode: HeyGen will start on first message (lazy loading)
+      setIsLoading(false);
+    }
     
     setTimeout(() => {
       onResetInactivityTimer?.();
     }, 500);
-    
-    // LAZY LOADING: Don't start HeyGen session here
-    // It will be started when user sends first message (in handleSubmitMessage)
   }, [
     videoRef,
     userId,
     onSessionActiveChange,
     onResetInactivityTimer,
+    startHeyGenSession,
   ]);
 
   const endSessionShowReconnect = useCallback(async () => {

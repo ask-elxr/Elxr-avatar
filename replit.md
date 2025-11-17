@@ -120,10 +120,11 @@ Preferred communication style: Simple, everyday language.
   - Removed placeholder photo overlay when session active but HeyGen not started
   - Start button floats over video with transparent background (`pointer-events-none`) in video mode
   - Reconnect button floats over video with transparent background in video mode
-  - Loading overlay only appears in audio mode, not video mode
-- **Immediate video display**: Video element shows instantly when starting or switching to video mode
-  - Black screen displayed until HeyGen stream connects (clean appearance)
-  - No intermediate loading screens or static photos blocking the video
+  - Unobtrusive purple spinner shows during HeyGen connection (pointer-events-none)
+- **Immediate avatar appearance in video mode**: HeyGen starts immediately when clicking "Start Chat"
+  - Video element shows instantly with loading spinner
+  - HeyGen stream connects and avatar appears (no lazy loading in video mode)
+  - Audio mode retains lazy loading (HeyGen starts on first message to save credits)
   - Smart state management: Start button only reappears on true session end (not during initialization)
   
 ### Avatar Database Updates
