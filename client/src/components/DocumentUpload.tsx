@@ -235,7 +235,11 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
             </Label>
             <Select
               value={selectedCategory}
-              onValueChange={(value) => setSelectedCategory(value as PineconeCategory)}
+              onValueChange={(value) => {
+                if (PINECONE_CATEGORIES.includes(value as PineconeCategory)) {
+                  setSelectedCategory(value as PineconeCategory);
+                }
+              }}
               disabled={isUploading}
             >
               <SelectTrigger id="category" data-testid="select-category">
