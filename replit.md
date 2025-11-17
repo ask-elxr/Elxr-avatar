@@ -2,6 +2,8 @@
 
 This project is a full-stack AI avatar chat platform integrating HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. It features a React frontend and a Node.js/Express backend, enabling intelligent conversations with a Mark Kohl-personality-driven avatar. The avatar utilizes a Pinecone knowledge base and current web information for informed responses, supporting multi-mentor configurations and personal knowledge base integration.
 
+**Cost Control Features**: Comprehensive HeyGen credit tracking with pre-call balance checks, configurable thresholds, automatic circuit breaking, and per-user rate limiting to prevent unauthorized spending.
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -20,8 +22,9 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: Express.js for RESTful APIs.
 - **Database ORM**: Drizzle ORM for PostgreSQL.
 - **Background Processing**: BullMQ and Redis for asynchronous document processing (chunking, embedding, Pinecone storage).
-- **API Security**: Credential-based requests with CORS.
+- **API Security**: Credential-based requests with CORS, per-user rate limiting (1 request/minute for HeyGen/avatar endpoints).
 - **Reliability**: Circuit breakers (Opossum) for external APIs, Pino for structured logging, Prometheus for metrics.
+- **Cost Control**: HeyGen credit tracking with balance checks, configurable thresholds, automatic blocking on credit exhaustion.
 
 ## Data Storage
 - **Primary Database**: PostgreSQL (Neon Database service) for persistent data and session storage.
@@ -106,6 +109,33 @@ Preferred communication style: Simple, everyday language.
   - Supports all 6 mentors for external platform integration
 
 ## November 17, 2025
+
+### HeyGen Credit Tracking & Rate Limiting
+- **Implemented comprehensive credit monitoring system**: Prevents unauthorized HeyGen spending
+  - **Database schema**: New `heygen_credit_usage` table tracks all HeyGen API calls
+    - Fields: userId, operation (token_generation, streaming_session), creditsUsed, successful, timestamp
+  - **Credit service** (`server/heygenCreditService.ts`):
+    - Pre-call balance checking with configurable thresholds
+    - Default limit: 1000 credits (configurable via `HEYGEN_CREDIT_LIMIT`)
+    - Warning threshold: 20 credits (configurable via `HEYGEN_WARNING_THRESHOLD`)
+    - Critical threshold: 10 credits - blocks new requests (configurable via `HEYGEN_CRITICAL_THRESHOLD`)
+    - Automatic credit logging for every API call with success/failure tracking
+    - GET /api/heygen/credits endpoint for real-time usage monitoring
+  - **Credit checking integrated into /api/heygen/token**:
+    - Balance checked before every HeyGen API call
+    - Returns 402 Payment Required if credits exhausted
+    - Logs credit usage regardless of call success/failure
+    - Warning logs when balance drops below threshold
+  - **Per-user rate limiting**:
+    - 1 request per user per minute on /api/heygen/token
+    - 1 request per user per minute on /api/avatar/response
+    - Rate limiting uses userId from authenticated session or request body (for temp_ IDs)
+    - Returns 429 Too Many Requests if limit exceeded
+  - **Storage layer** (`server/storage.ts`):
+    - `logHeygenCredit()`: Records credit usage
+    - `getHeygenCreditUsage()`: Retrieves usage by user/date
+    - `getHeygenCreditBalance()`: Aggregates total, 24h, and 7d usage
+  - **Circuit breaker integration**: Credit exhaustion triggers automatic blocking to prevent wasteful API calls
 
 ### UI Cleanup
 - **Removed stream statistics overlay**: Deleted development-only stream stats display
