@@ -456,7 +456,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }
 
   return (
-    <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
+    <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-background">
+      {/* Animated Gradient Background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-cyan-900/20 animate-gradient-shift" />
+      <div className="absolute inset-0 dot-pattern opacity-30" />
+      
+      {/* Floating Gradient Orbs */}
+      <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-float" />
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-float-delayed" />
       {/* Sidebar Toggle Button - Top Left */}
       <Button
         onClick={() => setSidebarOpen(!sidebarOpen)}
