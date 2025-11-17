@@ -48,7 +48,14 @@ Preferred communication style: Simple, everyday language.
 - **Avatar Management System**: Database-driven configuration and CRUD operations for avatar profiles via admin panel.
 - **Credit Monitoring**: Comprehensive HeyGen credit tracking with pre-call balance checks, configurable thresholds, and automatic blocking.
 - **Persistent Memory**: Mem0 OSS for conversation persistence and user preference tracking.
-- **PubMed Integration**: Dual-mode medical/scientific literature search and retrieval:
+- **PubMed Integration**: Hybrid medical/scientific literature search with intelligent online/offline fallback:
+  - **Hybrid Search System**:
+    * Automatically checks offline Pinecone database first ('pubmed-offline' namespace)
+    * Falls back to live NCBI E-utilities API if configured
+    * Combines and deduplicates results by PMID
+    * Prioritizes recent papers (sorted by publication year)
+    * Configurable via OFFLINE_MODE environment variable
+    * Seamless integration with avatar chat responses
   - **Online Mode** (NCBI E-utilities API):
     * NCBI-compliant rate limiting (3 req/sec)
     * Smart caching with vector similarity (95% threshold, 7-day TTL in 'pubmed-cache' namespace)
@@ -71,6 +78,7 @@ Preferred communication style: Simple, everyday language.
     * Handles ~36M articles from PubMed baseline (1219 files)
     * Vector similarity search for offline article retrieval
     * No API rate limits, fully local operation after import
+    * Set OFFLINE_MODE=true to use only offline database
 
 # External Dependencies
 
