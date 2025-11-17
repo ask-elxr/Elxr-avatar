@@ -33,40 +33,51 @@ export default function KnowledgeBase() {
   }
 
   return (
-    <div className="min-h-screen bg-black dark:bg-black">
+    <div className="min-h-screen bg-background dot-pattern">
+      {/* Gradient overlay */}
+      <div className="fixed inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+      
       {/* Header */}
-      <div className="border-b border-white/10">
+      <div className="relative glass-strong border-b border-white/10">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/">
-                <Button variant="ghost" size="sm" className="gap-2 text-white/70 hover:text-white">
+                <Button variant="ghost" size="sm" className="gap-2 text-white/70 hover:text-white transition-all glow-hover">
                   <Home className="w-4 h-4" />
                   Back to Chat
                 </Button>
               </Link>
-              <div className="h-6 w-px bg-white/10" />
-              <h1 className="text-2xl font-semibold text-white">Knowledge Base</h1>
+              <div className="h-6 w-px bg-gradient-to-b from-transparent via-purple-500/50 to-transparent" />
+              <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse glow-primary" />
+                Knowledge Base
+              </h1>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="text-sm text-white/60">
-                {user?.email || 'Guest User'}
+            <div className="flex items-center gap-3">
+              <div className="glass px-4 py-2 rounded-lg">
+                <div className="text-xs text-white/50 uppercase tracking-wider mb-1">Logged in as</div>
+                <div className="text-sm text-white font-medium">{user?.email || 'Guest User'}</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-6 py-8">
+      <div className="relative container mx-auto px-6 py-8">
         <div className="max-w-5xl mx-auto">
           {/* Info Card */}
-          <Card className="mb-6 bg-gradient-to-r from-purple-500/10 to-blue-500/10 border-purple-500/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-white">
-                <FileText className="w-5 h-5" />
+          <Card className="mb-6 glass-strong border-purple-500/30 card-hover relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-cyan-500/5" />
+            <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl" />
+            <CardHeader className="relative">
+              <CardTitle className="flex items-center gap-3 text-white text-xl">
+                <div className="p-2 rounded-lg bg-gradient-primary glow-primary">
+                  <FileText className="w-5 h-5 text-white" />
+                </div>
                 Personal Knowledge Base
               </CardTitle>
-              <CardDescription className="text-white/70">
+              <CardDescription className="text-white/80 text-base leading-relaxed">
                 Upload PDF documents and video/audio files to enhance your AI avatars' knowledge. 
                 Your uploads are processed, embedded, and stored in a vector database for intelligent retrieval during conversations.
               </CardDescription>
@@ -75,12 +86,18 @@ export default function KnowledgeBase() {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 bg-white/5">
-              <TabsTrigger value="upload" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+            <TabsList className="grid w-full grid-cols-2 glass p-1">
+              <TabsTrigger 
+                value="upload" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+              >
                 <Upload className="w-4 h-4" />
                 Upload Files
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white">
+              <TabsTrigger 
+                value="documents" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+              >
                 <FileText className="w-4 h-4" />
                 My Documents
               </TabsTrigger>
@@ -89,54 +106,60 @@ export default function KnowledgeBase() {
             <TabsContent value="upload" className="space-y-6">
               <DocumentUpload onUploadComplete={handleUploadComplete} />
               
-              <Card className="bg-white/5 border-white/10">
+              <Card className="glass-strong border-white/10 card-hover overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-primary" />
                 <CardHeader>
-                  <CardTitle className="text-lg text-white">How It Works</CardTitle>
+                  <CardTitle className="text-lg text-white flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center glow-primary">
+                      <span className="text-white text-sm">✓</span>
+                    </div>
+                    How It Works
+                  </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 text-sm text-white/70">
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-semibold">
+                <CardContent className="space-y-4 text-sm text-white/70">
+                  <div className="flex gap-4 group">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold glow-primary transition-transform group-hover:scale-110">
                       1
                     </div>
-                    <div>
-                      <p className="font-medium text-white/90">Upload Your Content</p>
-                      <p>Drop PDF documents or video/audio files (MP4, MOV, MP3, WAV, etc.)</p>
+                    <div className="flex-1">
+                      <p className="font-semibold text-white mb-1">Upload Your Content</p>
+                      <p className="text-white/60">Drop PDF documents or video/audio files (MP4, MOV, MP3, WAV, etc.)</p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-semibold">
+                  <div className="flex gap-4 group">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold glow-primary transition-transform group-hover:scale-110">
                       2
                     </div>
-                    <div>
-                      <p className="font-medium text-white/90">Automatic Processing</p>
-                      <p>PDFs are text-extracted, videos are transcribed using OpenAI Whisper</p>
+                    <div className="flex-1">
+                      <p className="font-semibold text-white mb-1">Automatic Processing</p>
+                      <p className="text-white/60">PDFs are text-extracted, videos are transcribed using OpenAI Whisper</p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-semibold">
+                  <div className="flex gap-4 group">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold glow-primary transition-transform group-hover:scale-110">
                       3
                     </div>
-                    <div>
-                      <p className="font-medium text-white/90">Intelligent Chunking & Embedding</p>
-                      <p>Content is split into chunks and converted to vector embeddings</p>
+                    <div className="flex-1">
+                      <p className="font-semibold text-white mb-1">Intelligent Chunking & Embedding</p>
+                      <p className="text-white/60">Content is split into chunks and converted to vector embeddings</p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-semibold">
+                  <div className="flex gap-4 group">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold glow-primary transition-transform group-hover:scale-110">
                       4
                     </div>
-                    <div>
-                      <p className="font-medium text-white/90">Vector Database Storage</p>
-                      <p>Embeddings stored in Pinecone for semantic search during conversations</p>
+                    <div className="flex-1">
+                      <p className="font-semibold text-white mb-1">Vector Database Storage</p>
+                      <p className="text-white/60">Embeddings stored in Pinecone for semantic search during conversations</p>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-semibold">
+                  <div className="flex gap-4 group">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white font-bold glow-primary transition-transform group-hover:scale-110">
                       5
                     </div>
-                    <div>
-                      <p className="font-medium text-white/90">Avatar Integration</p>
-                      <p>AI avatars can now reference your personal knowledge in conversations</p>
+                    <div className="flex-1">
+                      <p className="font-semibold text-white mb-1">Avatar Integration</p>
+                      <p className="text-white/60">AI avatars can now reference your personal knowledge in conversations</p>
                     </div>
                   </div>
                 </CardContent>
