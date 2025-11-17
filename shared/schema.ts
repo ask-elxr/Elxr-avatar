@@ -169,6 +169,26 @@ export const insertApiCallSchema = createInsertSchema(apiCalls).pick({
 export type InsertApiCall = z.infer<typeof insertApiCallSchema>;
 export type ApiCall = typeof apiCalls.$inferSelect;
 
+// HeyGen credit usage tracking
+export const heygenCreditUsage = pgTable("heygen_credit_usage", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id),
+  operation: varchar("operation").notNull(), // 'token_generation', 'streaming_session', etc.
+  creditsUsed: integer("credits_used").notNull().default(1), // Estimated credits used
+  successful: boolean("successful").notNull().default(true),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertHeygenCreditUsageSchema = createInsertSchema(heygenCreditUsage).pick({
+  userId: true,
+  operation: true,
+  creditsUsed: true,
+  successful: true,
+});
+
+export type InsertHeygenCreditUsage = z.infer<typeof insertHeygenCreditUsageSchema>;
+export type HeygenCreditUsage = typeof heygenCreditUsage.$inferSelect;
+
 // Personal knowledge base connections
 export const knowledgeBaseSources = pgTable("knowledge_base_sources", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
