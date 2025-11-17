@@ -346,6 +346,52 @@ button:not(.no-glass):active {
   background-size: 20px 20px;
 }
 
+/* Animated gradient border for avatar cards */
+@keyframes gradient-xy {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-xy {
+  background-size: 400% 400%;
+  animation: gradient-xy 4s ease infinite;
+}
+
+/* Animated gradient text */
+@keyframes gradient-text {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient-text {
+  background-size: 200% auto;
+  animation: gradient-text 3s linear infinite;
+}
+
+/* Slow pulse animation */
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
 @layer base {
   * {
     @apply border-border;
