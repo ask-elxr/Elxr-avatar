@@ -37,7 +37,7 @@ Preferred communication style: Simple, everyday language.
 ## Core Features
 - **AI Avatar**: HeyGen Streaming SDK for real-time video interaction.
 - **AI Model**: Claude Sonnet 4 (`claude-sonnet-4-20250514`) for reasoning.
-- **Knowledge Retrieval**: Pinecone knowledge base (ask-elxr) and integrated Google Web Search with topic-based namespace mapping and parallel queries.
+- **Knowledge Retrieval**: Pinecone knowledge base (ask-elxr), integrated Google Web Search with topic-based namespace mapping, and PubMed research integration for medical/scientific literature.
 - **Personality Integration**: Mark Kohl personality (customizable per mentor) via system prompts.
 - **Conversation Management**: Enhanced token limits, timeout handling, inactivity detection, pause/resume, current date awareness.
 - **Multi-Assistant Architecture**: Per-mentor configurations with dedicated Pinecone namespaces and categories.
@@ -46,6 +46,7 @@ Preferred communication style: Simple, everyday language.
 - **Avatar Management System**: Database-driven configuration and CRUD operations for avatar profiles via admin panel.
 - **Credit Monitoring**: Comprehensive HeyGen credit tracking with pre-call balance checks, configurable thresholds, and automatic blocking.
 - **Persistent Memory**: Mem0 OSS for conversation persistence and user preference tracking.
+- **PubMed Integration**: NCBI E-utilities for searching and retrieving peer-reviewed medical/scientific research with NCBI-compliant rate limiting (3 req/sec).
 
 # External Dependencies
 
@@ -55,6 +56,7 @@ Preferred communication style: Simple, everyday language.
 - **Pinecone Vector Database**: Vector storage for embeddings.
 - **Claude Sonnet 4**: AI model.
 - **Google Web Search**: Real-time web information retrieval.
+- **NCBI E-utilities (PubMed)**: Medical and scientific literature search and retrieval.
 - **Redis**: Used by BullMQ for background job queuing.
 - **ElevenLabs**: Text-to-speech for audio-only mode.
 - **Mem0 OSS**: AI memory layer for conversation persistence and user preferences.
@@ -72,3 +74,5 @@ Preferred communication style: Simple, everyday language.
 - **BullMQ**: Job queue.
 - **Pino**: Structured logging.
 - **Opossum**: Circuit breaker implementation.
+- **Axios**: HTTP client for external API calls.
+- **xml2js**: XML parser for PubMed API responses.
