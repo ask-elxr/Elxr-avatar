@@ -1,6 +1,9 @@
 import markPhoto from "@assets/Mark_1763305942420.png";
 import thadPhoto from "@assets/Thad_1763305942420.png";
 import katyaPhoto from "@assets/Katya_1763305580145.png";
+import williePhoto from "@assets/Willie Gault.png";
+import junePhoto from "@assets/June.png";
+import annPhoto from "@assets/Ann.png";
 
 interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   avatarId?: string;
@@ -11,11 +14,10 @@ const avatarPhotos: Record<string, string> = {
   "mark": markPhoto,
   "thad": thadPhoto,
   "katya": katyaPhoto,
-  "willie-gault": markPhoto,
-  "willie": markPhoto,
-  "june": katyaPhoto,
-  "ann": katyaPhoto,
-  "shawn": thadPhoto,
+  "willie-gault": williePhoto,
+  "willie": williePhoto,
+  "june": junePhoto,
+  "ann": annPhoto,
 };
 
 export function LoadingPlaceholder({ 
