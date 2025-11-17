@@ -140,9 +140,14 @@ Preferred communication style: Simple, everyday language.
   - No more shared placeholder photos between mentors
 
 ### Avatar Switching Bug Fix
-- **Fixed duplicate session creation bug**: Avatar switching now works correctly without 429 errors
-  - Previously: `/api/heygen/token` was creating a second session (duplicate)
-  - Now: Only `/api/session/start` creates sessions, `/api/heygen/token` just validates and returns token
-  - Issue: When switching avatars, lingering sessions caused "Maximum 2 concurrent sessions" errors
-  - Solution: Removed `sessionManager.startSession()` call from `/api/heygen/token` endpoint
-  - Result: Clean avatar switches with proper session cleanup
+- **Fixed session cleanup bug**: Avatar switching now works correctly without 429 errors
+  - **Root cause**: Lingering sessions weren't being cleaned up when switching avatars
+  - **Previous issues**:
+    - `/api/heygen/token` was creating duplicate sessions
+    - Old sessions remained active when starting new avatar
+  - **Solutions implemented**:
+    1. Removed duplicate `sessionManager.startSession()` call from `/api/heygen/token`
+    2. Added `endAllUserSessions()` method to SessionManager to force cleanup
+    3. Created `/api/session/end-all` endpoint to terminate all user sessions
+    4. Updated `handleAvatarSwitch()` to call `/api/session/end-all` before starting new avatar
+  - **Result**: Clean avatar switches with guaranteed session cleanup, no more 429 errors

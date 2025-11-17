@@ -376,10 +376,22 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setSwitchingAvatar(true);
     
     try {
-      // End current session and wait for cleanup
+      // End current session
       if (sessionActive) {
         await endSession();
       }
+
+      // End ALL server sessions for this user to clean up any lingering sessions
+      await fetch("/api/session/end-all", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      // Small delay to ensure cleanup
+      await new Promise(resolve => setTimeout(resolve, 300));
 
       // Update selected avatar
       setSelectedAvatarId(newAvatarId);
@@ -397,7 +409,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       console.error("Error switching avatar:", error);
       
       // Keep dialog open and show error
-      if (error.message?.includes("wait")) {
+      if (error.message?.includes("wait") || error.message?.includes("Maximum")) {
         toast({
           title: "Please Wait",
           description: error.message,

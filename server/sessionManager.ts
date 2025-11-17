@@ -230,6 +230,26 @@ class SessionManager {
     }
   }
 
+  endAllUserSessions(userId: string): void {
+    const userSessions = Array.from(this.activeSessions.entries())
+      .filter(([_, session]) => session.userId === userId);
+    
+    for (const [sessionId, _] of userSessions) {
+      this.endSession(sessionId);
+    }
+    
+    // Clear avatar switch cooldown
+    this.avatarSwitches.delete(userId);
+    
+    logger.info({
+      env: process.env.NODE_ENV || "production",
+      service: "session-manager",
+      operation: "endAllUserSessions",
+      userId,
+      sessionsEnded: userSessions.length,
+    }, "All user sessions ended");
+  }
+
   getActiveSessionCount(userId?: string): number {
     if (userId) {
       return Array.from(this.activeSessions.values()).filter(

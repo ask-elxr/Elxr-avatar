@@ -1558,6 +1558,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // End all sessions for a user
+  app.post("/api/session/end-all", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      sessionManager.endAllUserSessions(userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error ending all user sessions:", error);
+      res.status(500).json({
+        error: "Failed to end all sessions",
+      });
+    }
+  });
+
   // Search documents for RAG
   app.post("/api/documents/search", async (req, res) => {
     try {
