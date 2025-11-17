@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes, seedDefaultAvatars } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { latencyCache } from "./cache";
 
 const app = express();
 
@@ -85,6 +86,10 @@ app.use((req, res, next) => {
   
   // Seed default avatars if database is empty
   await seedDefaultAvatars();
+
+  // Clear Pinecone cache to ensure cache key normalization changes take effect
+  latencyCache.invalidatePineconeCache();
+  log('💾 Pinecone cache cleared for cache key normalization update');
 
   // Auto-sync Willie Gault's Wikipedia page on server start with proper metadata
   try {

@@ -64,18 +64,22 @@ class PineconeNamespaceService {
       throw new Error('Pinecone or OpenAI not configured');
     }
 
-    const namespacesToQuery = customNamespaces || this.namespaces;
+    // Deduplicate and sort namespaces for consistent cache keys
+    const rawNamespaces = customNamespaces || this.namespaces;
+    const namespacesToQuery = Array.from(new Set(rawNamespaces)).sort();
 
     const log = logger.child({
       service: 'pinecone',
       operation: 'retrieveContext',
       queryLength: query.length,
       topK,
-      namespaces: namespacesToQuery
+      namespaces: namespacesToQuery,
+      rawCount: rawNamespaces.length,
+      deduplicatedCount: namespacesToQuery.length
     });
 
     try {
-      // Check cache first
+      // Check cache first (using deduplicated & sorted namespaces)
       const cachedResults = latencyCache.getPineconeQuery(query, namespacesToQuery, topK);
       if (cachedResults) {
         log.debug({ cacheHit: true }, `Cache HIT for query: "${query.substring(0, 50)}..."`);

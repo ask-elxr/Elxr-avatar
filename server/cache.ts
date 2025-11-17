@@ -118,11 +118,12 @@ class LatencyCache {
     return entry.data;
   }
 
-  // Pinecone query cache with normalized keys
+  // Pinecone query cache with normalized keys (deduplicate + sort for canonical keys)
   private normalizePineconeKey(query: string, namespaces: string[], topK: number): string {
     const normalizedQuery = query.toLowerCase().trim();
-    const sortedNamespaces = [...namespaces].sort().join(',');
-    const composite = `${normalizedQuery}|${sortedNamespaces}|${topK}`;
+    // Deduplicate and sort namespaces for canonical cache key
+    const canonicalNamespaces = Array.from(new Set(namespaces)).sort().join(',');
+    const composite = `${normalizedQuery}|${canonicalNamespaces}|${topK}`;
     return this.hashText(composite);
   }
 
