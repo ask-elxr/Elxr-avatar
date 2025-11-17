@@ -70,15 +70,17 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
     files.forEach(file => {
       // Check file type
       const isPDF = file.type === 'application/pdf';
+      const isDOCX = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx');
+      const isTXT = file.type === 'text/plain' || file.name.endsWith('.txt');
       const isVideo = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'].includes(file.type);
       const isAudio = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/webm'].includes(file.type);
 
-      if (!isPDF && !isVideo && !isAudio) {
+      if (!isPDF && !isDOCX && !isTXT && !isVideo && !isAudio) {
         invalidFiles.push(`${file.name} (invalid type)`);
         return;
       }
 
-      // Check file size (max 100MB for videos, 25MB for PDFs)
+      // Check file size (max 100MB for videos/audio, 25MB for documents)
       const maxSize = isVideo || isAudio ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
       if (file.size > maxSize) {
         invalidFiles.push(`${file.name} (too large)`);
@@ -141,7 +143,13 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
 
         // Determine endpoint based on file type
         const isPDF = fileStatus.file.type === 'application/pdf';
-        const endpoint = isPDF ? '/api/documents/upload-pdf' : '/api/documents/upload-video';
+        const isDOCX = fileStatus.file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileStatus.file.name.endsWith('.docx');
+        const isTXT = fileStatus.file.type === 'text/plain' || fileStatus.file.name.endsWith('.txt');
+        
+        let endpoint = '/api/documents/upload-video'; // default for video/audio
+        if (isPDF) endpoint = '/api/documents/upload-pdf';
+        else if (isDOCX) endpoint = '/api/documents/upload-docx';
+        else if (isTXT) endpoint = '/api/documents/upload-txt';
 
         setUploadProgress(`Processing ${i + 1} of ${selectedFiles.length}: ${fileStatus.file.name}`);
 
@@ -221,7 +229,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           Upload Documents & Videos
         </CardTitle>
         <CardDescription>
-          Upload PDF documents or video/audio files to add knowledge to your AI avatars
+          Upload documents (PDF, DOCX, TXT) or video/audio files (MP4, MP3, WAV, M4A) to add knowledge to your AI avatars
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -276,10 +284,10 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
                   Drop files here or click to browse
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Supports PDF, MP4, MOV, WebM, MP3, WAV, M4A (multiple files)
+                  Supports PDF, DOCX, TXT, MP4, MOV, WebM, MP3, WAV, M4A (multiple files)
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Max size: 25MB for PDFs, 100MB for videos
+                  Max size: 25MB for documents, 100MB for videos/audio
                 </p>
               </div>
             </div>
@@ -288,7 +296,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a"
+            accept=".pdf,.docx,.txt,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a"
             onChange={handleFileSelect}
             className="hidden"
             disabled={isUploading}

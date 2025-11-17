@@ -2198,6 +2198,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Upload and process DOCX document
+  app.post(
+    "/api/documents/upload-docx",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      const log = logger.child({ service: "document", operation: "uploadDOCX" });
+      
+      try {
+        const userId = req.user.claims.sub;
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { isAvailable, processDOCXDocument } = await import("./documentService.js");
+        
+        if (!isAvailable()) {
+          return res.status(503).json({ 
+            error: "Document service not available. Check OpenAI and Pinecone configuration." 
+          });
+        }
+
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+        const category = req.body.category || "OTHER";
+
+        // Validate DOCX file
+        if (mimetype !== "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && !originalname.endsWith('.docx')) {
+          fs.unlinkSync(tempPath);
+          return res.status(400).json({ error: "Only DOCX files are supported" });
+        }
+
+        const documentId = `docx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create database record with category-based namespace
+        const document = await storage.createDocument({
+          userId,
+          filename: originalname,
+          fileType: "docx",
+          fileSize: size.toString(),
+          pineconeNamespace: category,
+          objectPath: tempPath,
+        });
+
+        log.info({ documentId, filename: originalname, userId, category }, "Processing DOCX document");
+
+        // Process DOCX in background with category namespace and user tracking
+        processDOCXDocument(tempPath, originalname, category, documentId, userId)
+          .then(async (metadata: any) => {
+            await storage.updateDocumentStatus(
+              document.id,
+              "completed",
+              metadata.totalChunks,
+              metadata.textLength
+            );
+            log.info({ documentId, chunks: metadata.totalChunks }, "DOCX processed successfully");
+            // Clean up temp file
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          })
+          .catch(async (error: any) => {
+            await storage.updateDocumentStatus(document.id, "failed");
+            log.error({ documentId, error: error.message }, "DOCX processing failed");
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          });
+
+        res.json({
+          success: true,
+          documentId: document.id,
+          filename: originalname,
+          fileType: "docx",
+          status: "processing",
+          message: "DOCX upload started. Processing in background.",
+        });
+      } catch (error: any) {
+        log.error({ error: error.message }, "Error uploading DOCX");
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to upload DOCX",
+          details: error.message,
+        });
+      }
+    }
+  );
+
+  // Upload and process TXT document
+  app.post(
+    "/api/documents/upload-txt",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      const log = logger.child({ service: "document", operation: "uploadTXT" });
+      
+      try {
+        const userId = req.user.claims.sub;
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { isAvailable, processTXTDocument } = await import("./documentService.js");
+        
+        if (!isAvailable()) {
+          return res.status(503).json({ 
+            error: "Document service not available. Check OpenAI and Pinecone configuration." 
+          });
+        }
+
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+        const category = req.body.category || "OTHER";
+
+        // Validate TXT file
+        if (mimetype !== "text/plain" && !originalname.endsWith('.txt')) {
+          fs.unlinkSync(tempPath);
+          return res.status(400).json({ error: "Only TXT files are supported" });
+        }
+
+        const documentId = `txt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create database record with category-based namespace
+        const document = await storage.createDocument({
+          userId,
+          filename: originalname,
+          fileType: "txt",
+          fileSize: size.toString(),
+          pineconeNamespace: category,
+          objectPath: tempPath,
+        });
+
+        log.info({ documentId, filename: originalname, userId, category }, "Processing TXT document");
+
+        // Process TXT in background with category namespace and user tracking
+        processTXTDocument(tempPath, originalname, category, documentId, userId)
+          .then(async (metadata: any) => {
+            await storage.updateDocumentStatus(
+              document.id,
+              "completed",
+              metadata.totalChunks,
+              metadata.textLength
+            );
+            log.info({ documentId, chunks: metadata.totalChunks }, "TXT processed successfully");
+            // Clean up temp file
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          })
+          .catch(async (error: any) => {
+            await storage.updateDocumentStatus(document.id, "failed");
+            log.error({ documentId, error: error.message }, "TXT processing failed");
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          });
+
+        res.json({
+          success: true,
+          documentId: document.id,
+          filename: originalname,
+          fileType: "txt",
+          status: "processing",
+          message: "TXT upload started. Processing in background.",
+        });
+      } catch (error: any) {
+        log.error({ error: error.message }, "Error uploading TXT");
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to upload TXT",
+          details: error.message,
+        });
+      }
+    }
+  );
+
   // Get user's uploaded documents
   app.get("/api/documents/user/:userId", isAuthenticated, async (req: any, res) => {
     const log = logger.child({ service: "document", operation: "getUserDocuments" });

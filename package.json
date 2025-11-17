@@ -78,7 +78,7 @@
     "input-otp": "^1.4.2",
     "ioredis": "^5.8.2",
     "lucide-react": "^0.453.0",
-    "mammoth": "^1.10.0",
+    "mammoth": "^1.11.0",
     "mem0ai": "^2.1.38",
     "memoizee": "^0.4.17",
     "memorystore": "^1.6.7",

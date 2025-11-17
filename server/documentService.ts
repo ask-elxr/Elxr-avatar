@@ -34,14 +34,14 @@ export interface DocumentChunk {
     chunkIndex: number;
     totalChunks: number;
     uploadDate: string;
-    type: 'pdf' | 'video';
+    type: 'pdf' | 'video' | 'docx' | 'txt';
   };
 }
 
 export interface DocumentMetadata {
   id: string;
   name: string;
-  type: 'pdf' | 'video';
+  type: 'pdf' | 'video' | 'docx' | 'txt';
   userId: string;
   uploadDate: string;
   totalChunks: number;
@@ -83,6 +83,65 @@ export async function extractPDFText(filePath: string): Promise<string> {
       'Failed to extract PDF text'
     );
     throw new Error(`Failed to extract PDF text: ${error.message}`);
+  }
+}
+
+export async function extractDOCXText(filePath: string): Promise<string> {
+  try {
+    logger.info(
+      { service: 'document', operation: 'extractDOCXText', filePath },
+      'Extracting text from DOCX'
+    );
+
+    const mammoth = await import('mammoth');
+    const result = await mammoth.extractRawText({ path: filePath });
+
+    logger.info(
+      {
+        service: 'document',
+        operation: 'extractDOCXText',
+        filePath,
+        textLength: result.value.length,
+      },
+      'DOCX text extracted successfully'
+    );
+
+    return result.value;
+  } catch (error: any) {
+    logger.error(
+      { service: 'document', operation: 'extractDOCXText', error: error.message },
+      'Failed to extract DOCX text'
+    );
+    throw new Error(`Failed to extract DOCX text: ${error.message}`);
+  }
+}
+
+export async function extractTXTText(filePath: string): Promise<string> {
+  try {
+    logger.info(
+      { service: 'document', operation: 'extractTXTText', filePath },
+      'Reading text from TXT file'
+    );
+
+    const text = fs.readFileSync(filePath, 'utf-8');
+
+    logger.info(
+      {
+        service: 'document',
+        operation: 'extractTXTText',
+        filePath,
+        textLength: text.length,
+      },
+      'TXT text read successfully'
+    );
+
+    return text;
+  } catch (error: any) {
+    logger.error(
+      { service: 'document', operation: 'extractTXTText', error: error.message },
+      'Failed to read TXT file'
+    );
+    throw new Error(`Failed to read TXT file: ${error.message}`);
   }
 }
 
@@ -183,7 +242,7 @@ export async function storeInPinecone(
   userId: string,
   chunks: string[],
   embeddings: number[][],
-  documentType: 'pdf' | 'video',
+  documentType: 'pdf' | 'video' | 'docx' | 'txt',
   namespace: string = DOCUMENTS_NAMESPACE
 ): Promise<void> {
   if (!pineconeClient) {
@@ -304,6 +363,108 @@ export async function processPDFDocument(
     logger.error(
       { service: 'document', operation: 'processPDFDocument', error: error.message },
       'Failed to process PDF document'
+    );
+    throw error;
+  }
+}
+
+export async function processDOCXDocument(
+  filePath: string,
+  fileName: string,
+  namespace: string,
+  documentId: string,
+  userId?: string
+): Promise<DocumentMetadata> {
+  try {
+    logger.info(
+      { service: 'document', operation: 'processDOCXDocument', fileName, namespace, userId },
+      'Processing DOCX document'
+    );
+
+    const text = await extractDOCXText(filePath);
+    const chunks = chunkText(text);
+    const embeddings = await generateEmbeddings(chunks);
+    
+    const uploaderUserId = userId || 'system';
+    await storeInPinecone(documentId, fileName, uploaderUserId, chunks, embeddings, 'docx', namespace);
+
+    const metadata: DocumentMetadata = {
+      id: documentId,
+      name: fileName,
+      type: 'docx',
+      userId: uploaderUserId,
+      uploadDate: new Date().toISOString(),
+      totalChunks: chunks.length,
+      textLength: text.length,
+      filePath,
+    };
+
+    logger.info(
+      {
+        service: 'document',
+        operation: 'processDOCXDocument',
+        documentId,
+        totalChunks: chunks.length,
+      },
+      'DOCX document processed successfully'
+    );
+
+    return metadata;
+  } catch (error: any) {
+    logger.error(
+      { service: 'document', operation: 'processDOCXDocument', error: error.message },
+      'Failed to process DOCX document'
+    );
+    throw error;
+  }
+}
+
+export async function processTXTDocument(
+  filePath: string,
+  fileName: string,
+  namespace: string,
+  documentId: string,
+  userId?: string
+): Promise<DocumentMetadata> {
+  try {
+    logger.info(
+      { service: 'document', operation: 'processTXTDocument', fileName, namespace, userId },
+      'Processing TXT document'
+    );
+
+    const text = await extractTXTText(filePath);
+    const chunks = chunkText(text);
+    const embeddings = await generateEmbeddings(chunks);
+    
+    const uploaderUserId = userId || 'system';
+    await storeInPinecone(documentId, fileName, uploaderUserId, chunks, embeddings, 'txt', namespace);
+
+    const metadata: DocumentMetadata = {
+      id: documentId,
+      name: fileName,
+      type: 'txt',
+      userId: uploaderUserId,
+      uploadDate: new Date().toISOString(),
+      totalChunks: chunks.length,
+      textLength: text.length,
+      filePath,
+    };
+
+    logger.info(
+      {
+        service: 'document',
+        operation: 'processTXTDocument',
+        documentId,
+        totalChunks: chunks.length,
+      },
+      'TXT document processed successfully'
+    );
+
+    return metadata;
+  } catch (error: any) {
+    logger.error(
+      { service: 'document', operation: 'processTXTDocument', error: error.message },
+      'Failed to process TXT document'
     );
     throw error;
   }
