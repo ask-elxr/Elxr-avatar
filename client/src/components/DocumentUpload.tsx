@@ -249,14 +249,14 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
                 ))}
               </SelectContent>
             </Select>
-            {selectedCategory && (
-              <p className="text-xs text-muted-foreground mt-1">
+            <div className="space-y-1">
+              <p className="text-xs text-muted-foreground">
                 <span className="font-medium">{selectedCategory}:</span> {CATEGORY_DESCRIPTIONS[selectedCategory]}
               </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Documents will be saved to this category namespace and accessible to all avatars configured for it.
-            </p>
+              <p className="text-xs text-muted-foreground">
+                Documents will be saved to this category namespace and accessible to all avatars configured for it.
+              </p>
+            </div>
           </div>
 
           {/* Drag and drop area */}
