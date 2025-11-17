@@ -81,9 +81,16 @@ export class HeyGenDriver implements SessionDriver {
       disableIdleTimeout: true,
     });
 
-    console.log("Starting voice chat...");
-    await avatar.startVoiceChat();
-    console.log("Voice chat started");
+    try {
+      console.log("Starting voice chat...");
+      await avatar.startVoiceChat();
+      console.log("✅ Voice chat started successfully - microphone is active");
+    } catch (error) {
+      console.error("❌ Failed to start voice chat:", error);
+      console.error("This usually means microphone permission was denied or microphone is not available");
+      // Voice chat failed but avatar can still work with text input
+      // Don't throw error - allow text-only fallback
+    }
   }
 
   async stop(): Promise<void> {
