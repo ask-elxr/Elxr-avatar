@@ -248,12 +248,26 @@ export function useAvatarSession({
 
       // Enable voice recognition for hands-free interaction
       try {
+        // First, explicitly request microphone permission
+        console.log("Requesting microphone permission...");
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log("✅ Microphone permission granted");
+        
+        // Stop the test stream
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Now start voice chat with HeyGen
         console.log("Starting voice chat to enable microphone...");
         await avatar.startVoiceChat();
         console.log("✅ Voice chat enabled - you can now talk to the avatar!");
       } catch (voiceError) {
         console.error("❌ Voice chat failed:", voiceError);
         console.warn("Microphone not available - you can still type messages");
+        
+        // Show user-friendly message
+        if (voiceError instanceof DOMException && voiceError.name === 'NotAllowedError') {
+          console.error("Microphone permission denied by user. Please allow microphone access in your browser settings.");
+        }
         // Don't throw - allow text-only fallback
       }
 
