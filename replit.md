@@ -193,3 +193,24 @@ Preferred communication style: Simple, everyday language.
     - `client/src/components/streaming-avatar.tsx`: UI now shows "3-Source Intelligence" (was 4-Source)
     - `server/mcpAssistant.ts`: Changed from knowledge-base-assistant to ask-elxr
   - **Result**: ~50% reduction in Pinecone costs by eliminating duplicate assistant
+
+### Topic-Based Namespace Mapping
+- **Implemented multi-namespace knowledge retrieval**: Each mentor now queries topic-specific namespaces in addition to their personal namespace
+  - **17 topic namespaces mapped to avatars**: ADDICTION, MIND, BODY, SEXUALITY, TRANSITIONS, SPIRITUALITY, SCIENCE, PSYCHEDELICS, NUTRITION, LIFE, LONGEVITY, GRIEF, MIDLIFE, MOVEMENT, WORK, SLEEP, OTHER
+  - **Avatar → Topic mappings** (`shared/avatarConfig.ts`):
+    - Mark Kohl: default + PSYCHEDELICS, SPIRITUALITY, SCIENCE
+    - Willie Gault: willie-gault + WORK, MOVEMENT
+    - June: june + MIND, GRIEF, TRANSITIONS  
+    - Ann: ann + BODY, NUTRITION, MOVEMENT, SLEEP
+    - Shawn: shawn + WORK, LIFE, TRANSITIONS, MIDLIFE
+    - Thad: thad + WORK, LIFE, LONGEVITY
+  - **Parallel namespace queries** (`server/pineconeNamespaceService.ts`):
+    - Changed from sequential to parallel queries using Promise.all()
+    - Deduplicates and sorts namespaces before querying to avoid redundant API calls
+    - Results combined and scored across all namespaces
+  - **Cache normalization** (`server/cache.ts`):
+    - Updated normalizePineconeKey to deduplicate and sort namespaces for canonical cache keys
+    - Prevents cache misses from namespace ordering differences
+    - Cache invalidation on server startup to clear old entries with different normalization
+  - **Willie Gault Wikipedia integration**: Automatically syncs Willie Gault's Wikipedia page to his personal namespace on server startup
+  - **Result**: Broader knowledge coverage per mentor with minimal performance impact through parallelization and caching
