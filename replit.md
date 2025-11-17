@@ -48,17 +48,29 @@ Preferred communication style: Simple, everyday language.
 - **Avatar Management System**: Database-driven configuration and CRUD operations for avatar profiles via admin panel.
 - **Credit Monitoring**: Comprehensive HeyGen credit tracking with pre-call balance checks, configurable thresholds, and automatic blocking.
 - **Persistent Memory**: Mem0 OSS for conversation persistence and user preference tracking.
-- **PubMed Integration**: NCBI E-utilities for searching and retrieving peer-reviewed medical/scientific research with NCBI-compliant rate limiting (3 req/sec) and intelligent Pinecone-based caching.
-  - **Smart Caching**: Vector similarity search (95% threshold) with 7-day expiration in dedicated 'pubmed-cache' namespace
-  - **Cost Optimization**: Embedding reuse between cache check and storage, reducing OpenAI costs by 50% on cache misses
-  - **Performance**: 3x faster response times on cache hits (1619ms → 532ms for typical queries)
-  - **AI-Powered Summarization**: Claude Sonnet 4 generates comprehensive summaries of PubMed research results (~15s for 3-4 articles)
-    * **Main Findings**: 3-5 key discoveries with PMID citations for traceability
-    * **Common Themes**: 2-4 recurring patterns across studies
-    * **Controversies**: Conflicting results or debates in the literature
-    * **Relevance**: Explanation of how findings address the user's query
-    * **Synthesis**: 2-3 paragraph narrative integrating all findings
-    * **Cache Integration**: Summaries cached alongside articles for instant retrieval on subsequent requests
+- **PubMed Integration**: Dual-mode medical/scientific literature search and retrieval:
+  - **Online Mode** (NCBI E-utilities API):
+    * NCBI-compliant rate limiting (3 req/sec)
+    * Smart caching with vector similarity (95% threshold, 7-day TTL in 'pubmed-cache' namespace)
+    * Cost optimization with embedding reuse (50% OpenAI cost reduction on cache misses)
+    * Performance: 3x faster on cache hits (1619ms → 532ms)
+    * AI-powered summarization: Claude Sonnet 4 generates comprehensive summaries (~15s for 3-4 articles)
+      - Main findings with PMID citations
+      - Common themes across studies
+      - Controversies and debates
+      - Relevance explanation
+      - Integrated synthesis
+      - Cache integration for instant retrieval
+  - **Offline Mode** (Annual PubMed XML Dumps):
+    * Memory-efficient streaming XML parser using node-xml-stream
+    * Processes multi-GB compressed .xml.gz files without memory exhaustion
+    * Batch processing (1000 articles per batch) with promise chain serialization
+    * Resumable imports with progress tracking and checkpoint recovery
+    * Stores articles in 'pubmed-offline' Pinecone namespace
+    * Counter-based promise tracking ensures no dropped articles
+    * Handles ~36M articles from PubMed baseline (1219 files)
+    * Vector similarity search for offline article retrieval
+    * No API rate limits, fully local operation after import
 
 # External Dependencies
 

@@ -76,13 +76,11 @@ export async function streamParseXMLFile(
     let currentArticle: any = null;
     let elementStack: any[] = [];
     let inArticle = false;
-    let pendingPromises: Promise<void>[] = [];
+    let pendingCallbacks = 0;
     let streamEnded = false;
     
-    const checkComplete = async () => {
-      if (streamEnded && pendingPromises.length === 0) {
-        await Promise.all(pendingPromises);
-        
+    const checkComplete = () => {
+      if (streamEnded && pendingCallbacks === 0) {
         logger.info(
           { service: 'offline-pubmed', operation: 'streamParseXML', articleCount },
           'Streaming XML parse complete'
@@ -119,23 +117,21 @@ export async function streamParseXMLFile(
     parser.on('closetag', (name: string) => {
       if (name === 'PubmedArticle' && inArticle) {
         inArticle = false;
+        pendingCallbacks++;
         
-        const promise = onArticle(currentArticle)
+        onArticle(currentArticle)
           .then(() => {
             articleCount++;
             currentArticle = null;
             elementStack = [];
-            
-            pendingPromises = pendingPromises.filter(p => p !== promise);
-            checkComplete();
           })
           .catch((error) => {
             logger.error({ error: error.message, articleCount }, 'Error processing article');
-            pendingPromises = pendingPromises.filter(p => p !== promise);
+          })
+          .finally(() => {
+            pendingCallbacks--;
             checkComplete();
           });
-        
-        pendingPromises.push(promise);
         return;
       }
       
