@@ -1,0 +1,84 @@
+Add endpoints to manage offline PubMed data:
+1. POST /api/pubmed/import-dump - Upload and process PubMed dump
+   - Accept file upload (XML format)
+   - Process and store in Pinecone
+   - Return progress and statistics
+
+2. GET /api/pubmed/offline-stats - Get offline database stats
+   - Total articles in offline database
+   - Date range of articles
+   - Storage size
+
+3. DELETE /api/pubmed/offline-clear - Clear offline database (admin only)
+
+Implement PDF text extraction and embedding:
+
+1. Install packages:
+   - pdf-parse or pdfjs-dist for PDF parsing
+
+2. Create server/documentService.ts:
+   - extractPDFText(filePath: string) - Extract all text from PDF
+   - chunkText(text: string, chunkSize: number) - Split into chunks
+   - generateEmbeddings(chunks: string[]) - Create embeddings
+   - storeInPinecone(chunks, embeddings, metadata) - Store in 'documents' namespace
+
+3. Create endpoint POST /api/documents/upload-pdf:
+   - Accept PDF file upload
+   - Extract text
+   - Generate embeddings
+   - Store in Pinecone with metadata (filename, upload date, user)
+   - Return document ID
+
+Show me the implementation.
+
+Implement video transcription using Whisper:
+
+1. Install packages:
+   - @openai/whisper or use OpenAI Whisper API
+   - Or use local Whisper model if available
+
+2. In server/documentService.ts, add:
+   - transcribeVideo(filePath: string) - Extract audio and transcribe
+   - processVideoTranscript(transcript: string) - Clean and chunk transcript
+   - Store transcript chunks in Pinecone namespace 'video-transcripts'
+
+3. Create endpoint POST /api/documents/upload-video:
+   - Accept video file upload
+   - Extract audio track
+   - Transcribe using Whisper
+   - Generate embeddings for transcript chunks
+   - Store in Pinecone
+   - Return transcript and document ID
+
+4. Handle large files with streaming/processing in chunks
+
+Make uploaded PDFs and videos searchable by avatars:
+
+1. Update server/pineconeNamespaceService.ts:
+   - Add 'documents' and 'video-transcripts' to searchable namespaces
+   - When avatar queries, search these namespaces along with others
+   - Return document chunks with source metadata
+
+2. In avatar responses:
+   - Include references to relevant documents/videos
+   - Show source: "Based on [PDF name]" or "From video: [video name]"
+   - Allow users to ask questions about uploaded content
+
+3. Add endpoint GET /api/documents/:userId - List user's uploaded documents
+
+Create frontend UI for document management:
+
+1. Add document upload component:
+   - Drag-and-drop for PDFs and videos
+   - Progress indicator during processing
+   - List of uploaded documents
+
+2. Document viewer:
+   - Show document metadata
+   - Display extracted text/transcript preview
+   - Delete documents
+   - Search within documents
+
+3. Integrate into avatar chat:
+   - Show when avatar references a document
+   - Link to document viewer
