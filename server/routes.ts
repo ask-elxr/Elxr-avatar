@@ -1479,18 +1479,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       let knowledgeContext = "";
 
-      // Combine avatar namespaces with user's personal knowledge source namespaces
+      // Combine avatar namespaces with user's personal knowledge source namespaces and uploaded documents
       let allNamespaces = [...avatarConfig.pineconeNamespaces];
       
       if (userId && !userId.startsWith('temp_')) {
         try {
+          // Add user's connected knowledge sources (Notion, Obsidian, etc.)
           const userSources = await storage.listKnowledgeSources(userId);
           const activeSourceNamespaces = userSources
             .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
             .map(source => source.pineconeNamespace);
-          allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
+          
+          // Add user's uploaded documents namespaces (user-scoped for privacy)
+          const documentNamespaces = [`documents-${userId}`, `video-transcripts-${userId}`];
+          
+          allNamespaces = [...allNamespaces, ...activeSourceNamespaces, ...documentNamespaces];
+          
+          logger.info(
+            { 
+              userId, 
+              avatarNamespaces: avatarConfig.pineconeNamespaces.length,
+              knowledgeSourceNamespaces: activeSourceNamespaces.length,
+              documentNamespaces: documentNamespaces.length,
+              totalNamespaces: allNamespaces.length
+            },
+            'Combined namespaces for avatar knowledge retrieval'
+          );
         } catch (error) {
-          console.error('Error fetching user knowledge sources:', error);
+          logger.error({ error }, 'Error fetching user knowledge sources');
         }
       }
 
@@ -1995,9 +2011,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const { documentService } = await import("./documentService.js");
+        const { isAvailable, processPDFDocument } = await import("./documentService.js");
         
-        if (!documentService.isAvailable()) {
+        if (!isAvailable()) {
           return res.status(503).json({ 
             error: "Document service not available. Check OpenAI and Pinecone configuration." 
           });
@@ -2013,21 +2029,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const documentId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Create database record
+        // Create database record with user-scoped namespace
         const document = await storage.createDocument({
           userId,
           filename: originalname,
           fileType: "pdf",
           fileSize: size.toString(),
-          pineconeNamespace: "documents",
+          pineconeNamespace: `documents-${userId}`,
           objectPath: tempPath,
         });
 
         log.info({ documentId, filename: originalname, userId }, "Processing PDF document");
 
         // Process PDF in background
-        documentService.processPDFDocument(tempPath, originalname, userId, documentId)
-          .then(async (metadata) => {
+        processPDFDocument(tempPath, originalname, userId, documentId)
+          .then(async (metadata: any) => {
             await storage.updateDocumentStatus(
               document.id,
               "completed",
@@ -2040,7 +2056,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               fs.unlinkSync(tempPath);
             }
           })
-          .catch(async (error) => {
+          .catch(async (error: any) => {
             await storage.updateDocumentStatus(document.id, "failed");
             log.error({ documentId, error: error.message }, "PDF processing failed");
             if (fs.existsSync(tempPath)) {
@@ -2084,9 +2100,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ error: "No file uploaded" });
         }
 
-        const { documentService } = await import("./documentService.js");
+        const { isAvailable, processVideoDocument } = await import("./documentService.js");
         
-        if (!documentService.isAvailable()) {
+        if (!isAvailable()) {
           return res.status(503).json({ 
             error: "Document service not available. Check OpenAI and Pinecone configuration." 
           });
@@ -2117,21 +2133,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const documentId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Create database record
+        // Create database record with user-scoped namespace
         const document = await storage.createDocument({
           userId,
           filename: originalname,
           fileType: "video",
           fileSize: size.toString(),
-          pineconeNamespace: "video-transcripts",
+          pineconeNamespace: `video-transcripts-${userId}`,
           objectPath: tempPath,
         });
 
         log.info({ documentId, filename: originalname, userId }, "Processing video document");
 
         // Process video in background
-        documentService.processVideoDocument(tempPath, originalname, userId, documentId)
-          .then(async (metadata) => {
+        processVideoDocument(tempPath, originalname, userId, documentId)
+          .then(async (metadata: any) => {
             await storage.updateDocumentStatus(
               document.id,
               "completed",

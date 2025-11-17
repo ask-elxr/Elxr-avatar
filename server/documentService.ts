@@ -271,7 +271,10 @@ export async function processPDFDocument(
     const text = await extractPDFText(filePath);
     const chunks = chunkText(text);
     const embeddings = await generateEmbeddings(chunks);
-    await storeInPinecone(documentId, fileName, userId, chunks, embeddings, 'pdf', DOCUMENTS_NAMESPACE);
+    
+    // Use user-scoped namespace for privacy
+    const userNamespace = `documents-${userId}`;
+    await storeInPinecone(documentId, fileName, userId, chunks, embeddings, 'pdf', userNamespace);
 
     const metadata: DocumentMetadata = {
       id: documentId,
@@ -366,6 +369,9 @@ export async function processVideoDocument(
     const cleanedTranscript = processVideoTranscript(rawTranscript);
     const chunks = chunkText(cleanedTranscript);
     const embeddings = await generateEmbeddings(chunks);
+    
+    // Use user-scoped namespace for privacy
+    const userNamespace = `video-transcripts-${userId}`;
     await storeInPinecone(
       documentId,
       fileName,
@@ -373,7 +379,7 @@ export async function processVideoDocument(
       chunks,
       embeddings,
       'video',
-      VIDEO_TRANSCRIPTS_NAMESPACE
+      userNamespace
     );
 
     const metadata: DocumentMetadata = {
@@ -424,11 +430,13 @@ export async function searchDocuments(
     );
 
     const queryEmbedding = await generateEmbedding(query);
+    
+    // Use user-scoped namespaces for privacy
     const namespaces = documentType === 'video' 
-      ? [VIDEO_TRANSCRIPTS_NAMESPACE] 
+      ? [`video-transcripts-${userId}`] 
       : documentType === 'pdf' 
-      ? [DOCUMENTS_NAMESPACE] 
-      : [DOCUMENTS_NAMESPACE, VIDEO_TRANSCRIPTS_NAMESPACE];
+      ? [`documents-${userId}`] 
+      : [`documents-${userId}`, `video-transcripts-${userId}`];
 
     const results: Array<{ text: string; documentName: string; score: number }> = [];
 

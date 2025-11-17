@@ -24,6 +24,16 @@ export function DocumentViewer() {
   
   const { data: documents = [], isLoading } = useQuery<Document[]>({
     queryKey: ['/api/documents/user', user?.id],
+    queryFn: async () => {
+      if (!user?.id) throw new Error('User ID required');
+      const response = await fetch(`/api/documents/user/${user.id}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch documents: ${response.statusText}`);
+      }
+      return response.json();
+    },
     enabled: !!user?.id,
     refetchInterval: (query) => {
       const data = query.state.data;

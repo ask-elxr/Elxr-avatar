@@ -44,6 +44,14 @@ Preferred communication style: Simple, everyday language.
 - **Conversation Management**: Enhanced token limits, timeout handling, inactivity detection, pause/resume, current date awareness.
 - **Multi-Assistant Architecture**: Per-mentor configurations with dedicated Pinecone namespaces and categories.
 - **Personal Knowledge Bases**: Supports user-connected Notion/Obsidian knowledge sources with isolated Pinecone namespaces.
+- **Document Management System**: Complete PDF and video upload system with intelligent processing:
+  - **PDF Processing**: Text extraction using pdf-parse, intelligent chunking, and embedding generation
+  - **Video Transcription**: OpenAI Whisper API for audio/video transcription (MP4, MOV, WebM, MP3, WAV, M4A)
+  - **Vector Storage**: Documents stored in dedicated Pinecone namespaces ('documents', 'video-transcripts')
+  - **Background Processing**: Asynchronous processing with status tracking (processing, completed, failed)
+  - **Avatar Integration**: Uploaded documents automatically searchable by AI avatars during conversations
+  - **Document Viewer**: Real-time status updates with metadata (chunks, text length, processing status)
+  - **Drag-and-Drop UI**: Modern upload interface with file validation and progress tracking
 - **API Cost Tracking**: Tracks external API usage with admin dashboard.
 - **Avatar Management System**: Database-driven configuration and CRUD operations for avatar profiles via admin panel.
 - **Credit Monitoring**: Comprehensive HeyGen credit tracking with pre-call balance checks, configurable thresholds, and automatic blocking.
