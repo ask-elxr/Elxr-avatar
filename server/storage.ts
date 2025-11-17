@@ -31,6 +31,18 @@ export interface IStorage {
   // Document operations
   getAllDocuments(): Promise<Document[]>;
   getDocument(id: string): Promise<Document | undefined>;
+  getUserDocuments(userId: string): Promise<Document[]>;
+  createDocument(data: {
+    userId: string;
+    filename: string;
+    fileType: string;
+    fileSize?: string;
+    chunksCount?: number;
+    textLength?: number;
+    pineconeNamespace?: string;
+    objectPath?: string;
+  }): Promise<Document>;
+  updateDocumentStatus(id: string, status: string, chunksCount?: number, textLength?: number): Promise<void>;
   deleteDocument(id: string): Promise<void>;
   
   // Avatar operations
@@ -109,6 +121,46 @@ export class DatabaseStorage implements IStorage {
   async getDocument(id: string): Promise<Document | undefined> {
     const [document] = await db.select().from(documents).where(eq(documents.id, id));
     return document;
+  }
+
+  async getUserDocuments(userId: string): Promise<Document[]> {
+    const userDocs = await db
+      .select()
+      .from(documents)
+      .where(eq(documents.userId, userId))
+      .orderBy(desc(documents.createdAt));
+    return userDocs;
+  }
+
+  async createDocument(data: {
+    userId: string;
+    filename: string;
+    fileType: string;
+    fileSize?: string;
+    chunksCount?: number;
+    textLength?: number;
+    pineconeNamespace?: string;
+    objectPath?: string;
+  }): Promise<Document> {
+    const [document] = await db.insert(documents).values(data).returning();
+    return document;
+  }
+
+  async updateDocumentStatus(
+    id: string,
+    status: string,
+    chunksCount?: number,
+    textLength?: number
+  ): Promise<void> {
+    await db
+      .update(documents)
+      .set({ 
+        status, 
+        chunksCount,
+        textLength,
+        updatedAt: new Date() 
+      })
+      .where(eq(documents.id, id));
   }
 
   async deleteDocument(id: string): Promise<void> {

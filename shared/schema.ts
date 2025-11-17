@@ -38,10 +38,12 @@ export const documents = pgTable("documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id),
   filename: text("filename").notNull(),
-  fileType: text("file_type").notNull(),
+  fileType: text("file_type").notNull(), // 'pdf' or 'video'
   fileSize: text("file_size"),
   status: text("status").default("processing"), // processing, completed, failed
-  chunksCount: text("chunks_count"),
+  chunksCount: integer("chunks_count"),
+  textLength: integer("text_length"),
+  pineconeNamespace: text("pinecone_namespace"), // 'documents' or 'video-transcripts'
   objectPath: text("object_path"), // Path to file in object storage
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
