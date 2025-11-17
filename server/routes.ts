@@ -34,6 +34,7 @@ import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
 import { memoryService, MemoryType } from "./memoryService.js";
+import * as pubmedService from "./pubmedService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -1213,6 +1214,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       logger.error({ error: error.message }, "Error syncing Wikipedia article");
       res.status(500).json({ error: "Failed to sync Wikipedia article" });
+    }
+  });
+
+  app.get("/api/pubmed/status", async (req, res) => {
+    try {
+      const available = pubmedService.isAvailable();
+      res.json({ 
+        available,
+        service: "PubMed E-utilities",
+        rateLimit: "3 requests/second (NCBI compliant)",
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error checking PubMed status");
+      res.status(500).json({ error: "Failed to check PubMed status" });
+    }
+  });
+
+  app.post("/api/pubmed/search", async (req, res) => {
+    const log = logger.child({ service: "pubmed", operation: "search-api" });
+    try {
+      const { query, maxResults } = req.body;
+
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        return res.status(400).json({ error: "Query parameter is required and must be a non-empty string" });
+      }
+
+      const parsedMaxResults = maxResults !== undefined ? parseInt(String(maxResults), 10) : 10;
+      
+      if (isNaN(parsedMaxResults) || parsedMaxResults < 1 || parsedMaxResults > 100) {
+        return res.status(400).json({ 
+          error: "maxResults must be a number between 1 and 100",
+          received: maxResults 
+        });
+      }
+
+      if (!pubmedService.isAvailable()) {
+        return res.status(503).json({ 
+          error: "PubMed service is temporarily unavailable. Please try again later." 
+        });
+      }
+
+      log.info({ query, maxResults: parsedMaxResults }, "Searching PubMed via API");
+
+      const result = await pubmedService.searchAndFetchPubMed(query, parsedMaxResults);
+
+      log.info(
+        { 
+          query, 
+          articlesRetrieved: result.articles.length,
+          totalAvailable: result.totalCount 
+        },
+        "PubMed search completed"
+      );
+
+      res.json({
+        success: true,
+        query,
+        articles: result.articles,
+        formattedText: result.formattedText,
+        count: result.articles.length,
+        totalCount: result.totalCount,
+      });
+    } catch (error: any) {
+      const errorDetails = {
+        error: error.message,
+        code: error.code,
+        status: error.response?.status,
+        breakerOpen: !pubmedService.isAvailable(),
+      };
+      
+      log.error(errorDetails, "PubMed search API error");
+      
+      if (error.message?.includes('circuit breaker') || error.code === 'EOPENBREAKER') {
+        return res.status(503).json({ 
+          error: "PubMed service is temporarily unavailable due to repeated failures. Please try again in a few minutes.",
+          circuitBreakerOpen: true
+        });
+      }
+      
+      if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+        return res.status(504).json({ error: "PubMed request timed out. Please try again." });
+      }
+      
+      if (error.response?.status === 429) {
+        return res.status(429).json({ 
+          error: "Rate limit exceeded. Please wait a moment and try again." 
+        });
+      }
+
+      res.status(500).json({ 
+        error: "Failed to search PubMed",
+        message: error.message 
+      });
     }
   });
 
