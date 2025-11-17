@@ -112,3 +112,28 @@ Preferred communication style: Simple, everyday language.
   - Removed FPS, Resolution, Bitrate, and Audio level overlay
   - Removed `useStreamStats` hook import and usage
   - Cleaner UI without technical metrics cluttering the interface
+
+### Video Mode Default & Instant Display
+- **Changed default to video mode**: App now starts in video mode instead of audio-only
+  - `audioOnly` state changed from `useState(true)` to `useState(false)`
+- **Removed static placeholder screens in video mode**: Video element visible immediately without blocking overlays
+  - Removed placeholder photo overlay when session active but HeyGen not started
+  - Start button floats over video with transparent background (`pointer-events-none`) in video mode
+  - Reconnect button floats over video with transparent background in video mode
+  - Loading overlay only appears in audio mode, not video mode
+- **Immediate video display**: Video element shows instantly when starting or switching to video mode
+  - Black screen displayed until HeyGen stream connects (clean appearance)
+  - No intermediate loading screens or static photos blocking the video
+  - Smart state management: Start button only reappears on true session end (not during initialization)
+  
+### Avatar Database Updates
+- **Removed Shawn mentor**: Replaced with new mentor lineup
+- **Added Katya**: New emotional coach and self-awareness guide
+  - HeyGen Avatar ID: `Katya_Chair_Sitting_public`
+  - Description: "Emotional coach and self-awareness guide"
+  - Pinecone namespace: `katya`
+- **Updated Willie Gault**: Correct HeyGen avatar ID `a9d3346d94594c5f9ca522f6d0469038`
+- **Updated avatar IDs**: June (`June_HR_public`), Thad (`Thaddeus_Chair_Sitting_public`), Ann (`Ann_Therapist_public`)
+- **All mentor photos configured**: Each mentor now has their own unique loading screen photo
+  - Willie Gault, June, Ann photos added to LoadingPlaceholder component
+  - No more shared placeholder photos between mentors

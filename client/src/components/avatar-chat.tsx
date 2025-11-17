@@ -27,7 +27,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [showUnpinchAnimation, setShowUnpinchAnimation] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
-  const [audioOnly, setAudioOnly] = useState(true); // Default to audio-only to save credits
+  const [audioOnly, setAudioOnly] = useState(false); // Default to video mode
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   const [showAvatarSwitcher, setShowAvatarSwitcher] = useState(false);
@@ -98,6 +98,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   useEffect(() => {
     setIsSpeaking(isSpeakingFromHook);
   }, [isSpeakingFromHook]);
+  
+  // Reset Start button when session ends (but not during reconnect or initial state)
+  const prevSessionActiveRef = useRef(sessionActive);
+  useEffect(() => {
+    // Only reset when transitioning from active to inactive (true → false)
+    if (prevSessionActiveRef.current && !sessionActive && !showReconnect) {
+      setShowChatButton(true);
+    }
+    prevSessionActiveRef.current = sessionActive;
+  }, [sessionActive, showReconnect]);
   
   // Hook 2: Inactivity timer management
   const { resetInactivityTimer, clearAllTimers } = useInactivityTimer({
@@ -521,9 +531,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         </Button>
       )}
 
-      {/* Start Button - Shows when session not active, avatar selected, and not loading/reconnecting */}
-      {!sessionActive && !isLoading && !showReconnect && !showAvatarSelector && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
+      {/* Start Button - Full overlay in audio mode, positioned over video in video mode */}
+      {showChatButton && !showAvatarSelector && (
+        <div className={`absolute inset-0 z-50 flex items-center justify-center ${audioOnly ? 'bg-black' : 'pointer-events-none'}`}>
           <Button
             onClick={async () => {
               console.log("Start button clicked - initiating session manually");
@@ -539,7 +549,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 });
               }
             }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-lg"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-lg pointer-events-auto"
             data-testid="button-start-session"
           >
             Start Chat
@@ -547,17 +557,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         </div>
       )}
 
-      {/* Loading Overlay */}
+      {/* Loading Overlay - Full screen in audio mode, unobtrusive spinner in video mode */}
       {isLoading && !showReconnect && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
-          <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
-        </div>
+        audioOnly ? (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
+            <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" data-testid="loading-spinner" />
+          </div>
+        )
       )}
 
-      {/* Reconnect Screen */}
+      {/* Reconnect Screen - Full overlay in audio mode, floating button in video mode */}
       {showReconnect && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black gap-8">
-          <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />
+        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center gap-8 ${audioOnly ? 'bg-black' : 'pointer-events-none'}`}>
+          {audioOnly && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
           <Button
             onClick={async () => {
               try {
@@ -570,7 +586,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 });
               }
             }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg pointer-events-auto"
             data-testid="button-reconnect"
           >
             Reconnect
@@ -599,36 +615,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       )}
 
       {/* Avatar Video Stream */}
-      <div className="w-full h-full flex items-center justify-center">
-        {/* Placeholder photo when idle (session active but HeyGen not started) */}
-        {sessionActive && !heygenSessionActive && !audioOnly && (
-          <>
-            <LoadingPlaceholder 
-              avatarId={selectedAvatarId} 
-              className="w-full h-full"
-              data-testid="placeholder-photo"
-            />
-            {/* Prompt to send message */}
-            <div className="absolute inset-0 flex items-center justify-center z-40 pointer-events-none">
-              <div className="bg-black/60 backdrop-blur-md px-8 py-6 rounded-2xl border-2 border-purple-500/50 max-w-md mx-4 text-center">
-                <div className="text-white text-xl font-semibold mb-2">
-                  Ready to chat with {currentAvatarName || "your guide"}
-                </div>
-                <div className="text-purple-300 text-base">
-                  Type a message below to begin
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-        
+      <div className="w-full h-full flex items-center justify-center bg-black">
         {/* HeyGen avatar video stream */}
         <video
           ref={videoRef}
           autoPlay
           playsInline
           className="w-full h-full object-cover"
-          style={{ display: audioOnly || !heygenSessionActive ? 'none' : 'block' }}
+          style={{ display: audioOnly ? 'none' : 'block' }}
           data-testid="avatar-video"
         />
         
