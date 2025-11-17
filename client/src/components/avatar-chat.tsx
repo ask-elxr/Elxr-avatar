@@ -767,44 +767,61 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
       {/* Text Input - Bottom Center */}
       {sessionActive && !isPaused && (
-        <form 
-          onSubmit={(e: FormEvent) => {
-            e.preventDefault();
-            if (inputMessage.trim()) {
-              handleSubmitMessage(inputMessage);
-              setInputMessage("");
-            }
-          }}
-          className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 md:gap-2 w-full max-w-2xl px-3 md:px-4"
-        >
-          <Input
-            type="text"
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            placeholder="Type your message..."
-            className="flex-1 bg-black/50 backdrop-blur-sm text-white border-purple-500/30 focus:border-purple-500 placeholder:text-gray-400 text-sm md:text-base h-9 md:h-10"
-            data-testid="input-message"
-            disabled={!sessionActive || isPaused}
-          />
-          <Button
-            type="submit"
-            disabled={!inputMessage.trim() || !sessionActive || isPaused}
-            className="bg-purple-500 hover:bg-purple-600 text-white rounded-full flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3"
-            data-testid="button-send-message"
-            aria-label="Send message"
-          >
-            <Send className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-            <span className="hidden md:inline text-sm font-medium">Send</span>
-          </Button>
-        </form>
+        <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-3 md:px-4">
+          <div className="relative group">
+            {/* Animated gradient border */}
+            <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-500 via-cyan-500 to-purple-500 rounded-full opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+            
+            <form 
+              onSubmit={(e: FormEvent) => {
+                e.preventDefault();
+                if (inputMessage.trim()) {
+                  handleSubmitMessage(inputMessage);
+                  setInputMessage("");
+                }
+              }}
+              className="relative flex items-center gap-1.5 md:gap-2 glass-strong rounded-full p-1.5 md:p-2 border-purple-500/30 shadow-xl shadow-purple-500/20"
+            >
+              <Input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                placeholder="Type your message..."
+                className="flex-1 bg-transparent border-0 text-white placeholder:text-gray-400 text-sm md:text-base h-9 md:h-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                data-testid="input-message"
+                disabled={!sessionActive || isPaused}
+              />
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full opacity-75 blur group-hover:opacity-100 transition-opacity animate-pulse-slow" />
+                <Button
+                  type="submit"
+                  disabled={!inputMessage.trim() || !sessionActive || isPaused}
+                  className="relative bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-full flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3 shadow-lg shadow-purple-500/30 transition-all duration-300 disabled:opacity-50"
+                  data-testid="button-send-message"
+                  aria-label="Send message"
+                >
+                  <Send className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+                  <span className="hidden md:inline text-sm font-medium">Send</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Current Avatar Indicator - Bottom Left */}
       {sessionActive && currentAvatarName && (
-        <div className="absolute z-40 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg bottom-16 left-3 md:bottom-20 md:left-4 lg:bottom-6 lg:left-6">
-          <div className="flex items-center gap-1.5 md:gap-2">
-            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm md:text-base font-medium">{currentAvatarName}</span>
+        <div className="absolute z-40 bottom-16 left-3 md:bottom-20 md:left-4 lg:bottom-6 lg:left-6">
+          <div className="relative group">
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+            <div className="relative glass-strong text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg border-green-500/30 shadow-lg shadow-green-500/20">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50" />
+                <span className="text-sm md:text-base font-medium bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 bg-clip-text text-transparent animate-gradient-text">
+                  {currentAvatarName}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       )}
