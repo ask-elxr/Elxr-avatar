@@ -2,10 +2,17 @@ import axios, { AxiosError } from 'axios';
 import { parseStringPromise } from 'xml2js';
 import CircuitBreaker from 'opossum';
 import { logger } from './logger';
+import { OpenAI } from 'openai';
+import { Pinecone } from '@pinecone-database/pinecone';
+import { wrapServiceCall } from './circuitBreaker';
+import { storage } from './storage';
 
 const BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
 const EMAIL = 'support@elxr.ai';
 const TOOL = 'elxr-ai-platform';
+const CACHE_NAMESPACE = 'pubmed-cache';
+const CACHE_INDEX = 'ask-elxr';
+const CACHE_EXPIRY_DAYS = 7;
 
 export interface PubMedArticle {
   pmid: string;
@@ -68,6 +75,184 @@ class SharedRateLimiter {
 }
 
 const sharedRateLimiter = new SharedRateLimiter(3);
+
+let openaiClient: OpenAI | null = null;
+let pineconeClient: Pinecone | null = null;
+
+if (process.env.OPENAI_API_KEY) {
+  openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+} else {
+  logger.warn({ service: 'pubmed' }, 'OPENAI_API_KEY not set - PubMed caching will be disabled');
+}
+
+if (process.env.PINECONE_API_KEY) {
+  pineconeClient = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+} else {
+  logger.warn({ service: 'pubmed' }, 'PINECONE_API_KEY not set - PubMed caching will be disabled');
+}
+
+const embeddingBreaker = wrapServiceCall(
+  async (text: string) => {
+    if (!openaiClient) {
+      throw new Error('OpenAI client not initialized');
+    }
+    return await openaiClient.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: text,
+    });
+  },
+  'openai-embeddings',
+  { timeout: 30000, errorThresholdPercentage: 50 }
+);
+
+async function generateEmbedding(text: string): Promise<number[]> {
+  const log = logger.child({
+    service: 'pubmed',
+    operation: 'generateEmbedding',
+    textLength: text.length
+  });
+
+  try {
+    log.debug('Generating embedding for PubMed cache');
+    const startTime = Date.now();
+    
+    const response = await embeddingBreaker.execute(text);
+    const embedding = response.data[0].embedding;
+    const duration = Date.now() - startTime;
+    
+    log.debug({ dimensions: embedding.length, duration }, 'Embedding generated successfully');
+    
+    storage.logApiCall({
+      serviceName: 'openai',
+      endpoint: 'embeddings.create',
+      userId: null,
+      responseTimeMs: duration,
+    }).catch((error) => {
+      log.error({ error: error.message }, 'Failed to log API call');
+    });
+    
+    return embedding;
+  } catch (error: any) {
+    log.error({ error: error.message }, 'Error generating embedding');
+    throw error;
+  }
+}
+
+async function checkCache(query: string): Promise<{ articles: PubMedArticle[]; totalCount: number; queryEmbedding?: number[] } | null> {
+  const log = logger.child({ service: 'pubmed', operation: 'checkCache' });
+
+  if (!openaiClient || !pineconeClient) {
+    log.debug('Caching not available - missing OpenAI or Pinecone client');
+    return null;
+  }
+
+  try {
+    log.info({ query }, 'Checking PubMed cache for query');
+    
+    const queryEmbedding = await generateEmbedding(query);
+    const index = pineconeClient.index(CACHE_INDEX);
+    
+    const searchResults = await index.namespace(CACHE_NAMESPACE).query({
+      vector: queryEmbedding,
+      topK: 1,
+      includeMetadata: true,
+    });
+
+    if (searchResults.matches && searchResults.matches.length > 0) {
+      const match = searchResults.matches[0];
+      
+      if (match.score && match.score > 0.95) {
+        const metadata = match.metadata as any;
+        const cachedTimestamp = new Date(metadata.timestamp);
+        const now = new Date();
+        const ageInDays = (now.getTime() - cachedTimestamp.getTime()) / (1000 * 60 * 60 * 24);
+
+        if (ageInDays <= CACHE_EXPIRY_DAYS) {
+          log.info(
+            { 
+              query, 
+              cacheHit: true, 
+              similarity: match.score,
+              ageInDays: ageInDays.toFixed(2),
+              cachedQuery: metadata.query 
+            },
+            'PubMed cache HIT - returning cached results'
+          );
+
+          const articles: PubMedArticle[] = JSON.parse(metadata.articles);
+          const totalCount = metadata.totalCount || articles.length;
+
+          return { articles, totalCount, queryEmbedding };
+        } else {
+          log.info(
+            { query, cacheExpired: true, ageInDays: ageInDays.toFixed(2) },
+            'Cached results expired - returning embedding for reuse'
+          );
+          return { articles: [], totalCount: 0, queryEmbedding };
+        }
+      } else {
+        log.debug(
+          { query, similarity: match.score },
+          'Cache similarity too low - returning embedding for reuse'
+        );
+        return { articles: [], totalCount: 0, queryEmbedding };
+      }
+    } else {
+      log.info({ query }, 'PubMed cache MISS - returning embedding for reuse');
+      return { articles: [], totalCount: 0, queryEmbedding };
+    }
+
+    return null;
+  } catch (error: any) {
+    log.error({ error: error.message }, 'Error checking PubMed cache');
+    return null;
+  }
+}
+
+async function cacheResults(
+  query: string,
+  articles: PubMedArticle[],
+  totalCount: number,
+  queryEmbedding?: number[]
+): Promise<void> {
+  const log = logger.child({ service: 'pubmed', operation: 'cacheResults' });
+
+  if (!openaiClient || !pineconeClient) {
+    log.debug('Caching not available - missing OpenAI or Pinecone client');
+    return;
+  }
+
+  try {
+    log.info({ query, articleCount: articles.length, totalCount }, 'Caching PubMed results');
+    
+    const embedding = queryEmbedding || await generateEmbedding(query);
+    if (queryEmbedding) {
+      log.debug('Reusing query embedding from cache check - saving OpenAI API call');
+    }
+    const index = pineconeClient.index(CACHE_INDEX);
+    
+    const cacheId = `pubmed_${Buffer.from(query).toString('base64').substring(0, 50)}_${Date.now()}`;
+    
+    await index.namespace(CACHE_NAMESPACE).upsert([
+      {
+        id: cacheId,
+        values: embedding,
+        metadata: {
+          query,
+          articles: JSON.stringify(articles),
+          totalCount,
+          timestamp: new Date().toISOString(),
+          source: 'pubmed',
+          resultCount: articles.length,
+        },
+      },
+    ]);
+
+    log.info({ query, cacheId, articleCount: articles.length }, 'PubMed results cached successfully');
+  } catch (error: any) {
+    log.error({ error: error.message }, 'Error caching PubMed results');
+  }
+}
 
 async function searchPubMedInternal(query: string, maxResults = 20): Promise<SearchResult> {
   const url = `${BASE_URL}esearch.fcgi`;
@@ -363,11 +548,38 @@ export function formatPubMedResults(articles: PubMedArticle[]): string {
 export async function searchAndFetchPubMed(
   query: string,
   maxResults = 10
-): Promise<{ articles: PubMedArticle[]; formattedText: string; totalCount: number }> {
+): Promise<{ articles: PubMedArticle[]; formattedText: string; totalCount: number; fromCache?: boolean }> {
   logger.info(
     { service: 'pubmed', operation: 'searchAndFetch', query, maxResults },
     'Starting PubMed search and fetch'
   );
+
+  const cachedResult = await checkCache(query);
+  
+  if (cachedResult && cachedResult.articles.length > 0) {
+    const limitedArticles = cachedResult.articles.slice(0, maxResults);
+    const formattedText = formatPubMedResults(limitedArticles);
+    
+    logger.info(
+      { 
+        service: 'pubmed', 
+        operation: 'searchAndFetch', 
+        retrievedCount: limitedArticles.length,
+        totalCount: cachedResult.totalCount,
+        fromCache: true
+      },
+      'Returned cached PubMed results'
+    );
+    
+    return {
+      articles: limitedArticles,
+      formattedText,
+      totalCount: cachedResult.totalCount,
+      fromCache: true,
+    };
+  }
+
+  const queryEmbedding = cachedResult?.queryEmbedding;
 
   const searchResult = await searchPubMed(query, maxResults);
   
@@ -376,11 +588,14 @@ export async function searchAndFetchPubMed(
       articles: [],
       formattedText: 'No PubMed articles found for this query.',
       totalCount: 0,
+      fromCache: false,
     };
   }
 
   const articles = await fetchArticleDetails(searchResult.pmids);
   const formattedText = formatPubMedResults(articles);
+
+  await cacheResults(query, articles, searchResult.count, queryEmbedding);
 
   logger.info(
     { 
@@ -388,14 +603,16 @@ export async function searchAndFetchPubMed(
       operation: 'searchAndFetch', 
       retrievedCount: articles.length,
       totalCount: searchResult.count,
+      fromCache: false
     },
-    'PubMed search and fetch completed'
+    'PubMed search and fetch completed - results cached'
   );
 
   return {
     articles,
     formattedText,
     totalCount: searchResult.count,
+    fromCache: false,
   };
 }
 
