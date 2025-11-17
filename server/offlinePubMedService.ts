@@ -481,22 +481,75 @@ export async function clearOfflineDatabase(): Promise<void> {
 }
 
 export async function importPubMedDump(filePath: string): Promise<void> {
+  const fileName = filePath.split('/').pop() || 'unknown';
+  
   logger.info(
-    { service: 'offline-pubmed', operation: 'importDump', filePath },
+    { service: 'offline-pubmed', operation: 'importDump', filePath, fileName },
     'Starting PubMed dump import'
   );
 
   try {
+    const progress: ImportProgress = {
+      fileName,
+      totalArticles: 0,
+      processedArticles: 0,
+      successCount: 0,
+      errorCount: 0,
+      startTime: Date.now(),
+    };
+
+    const articleBatch: any[] = [];
+    const BATCH_SIZE = 1000;
+
+    // Process articles in batches as they're parsed
+    const onArticle = async (article: any) => {
+      articleBatch.push(article);
+      progress.processedArticles++;
+      
+      if (articleBatch.length >= BATCH_SIZE) {
+        const batchToStore = [...articleBatch];
+        articleBatch.length = 0; // Clear the batch
+        
+        const result = await storeBatchInPinecone(batchToStore, progress);
+        progress.successCount += result.success;
+        progress.errorCount += result.errors;
+        
+        logger.info(
+          {
+            service: 'offline-pubmed',
+            operation: 'importDump',
+            processed: progress.processedArticles,
+            success: progress.successCount,
+            errors: progress.errorCount,
+            batchSuccess: result.success,
+            batchErrors: result.errors,
+          },
+          'Batch import progress'
+        );
+      }
+    };
+
     // Use the streaming parser to process the dump file
-    const result = await processStreamingXML(filePath);
+    const totalParsed = await streamParseXMLFile(filePath, onArticle);
+    progress.totalArticles = totalParsed;
+
+    // Store remaining articles in the final batch
+    if (articleBatch.length > 0) {
+      const result = await storeBatchInPinecone(articleBatch, progress);
+      progress.successCount += result.success;
+      progress.errorCount += result.errors;
+    }
+
+    const durationMs = Date.now() - progress.startTime;
 
     logger.info(
       {
         service: 'offline-pubmed',
         operation: 'importDump',
-        totalProcessed: result.totalProcessed,
-        totalStored: result.totalStored,
-        errors: result.errors,
+        totalParsed: progress.totalArticles,
+        successCount: progress.successCount,
+        errorCount: progress.errorCount,
+        durationMs,
       },
       'PubMed dump import completed'
     );
