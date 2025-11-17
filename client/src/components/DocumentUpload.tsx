@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -233,22 +232,20 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               <Tag className="w-4 h-4" />
               Knowledge Category
             </Label>
-            <Select
+            <select
+              id="category"
+              data-testid="select-category"
               value={selectedCategory}
-              onValueChange={(value) => setSelectedCategory(value as PineconeCategory)}
+              onChange={(e) => setSelectedCategory(e.target.value as PineconeCategory)}
               disabled={isUploading}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <SelectTrigger id="category" data-testid="select-category">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {PINECONE_CATEGORIES.map((category) => (
-                  <SelectItem key={category} value={category}>
-                    {category}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {PINECONE_CATEGORIES.map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">
                 <span className="font-medium">{selectedCategory}:</span> {CATEGORY_DESCRIPTIONS[selectedCategory]}
