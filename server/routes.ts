@@ -32,6 +32,7 @@ import { wrapServiceCall } from "./circuitBreaker.js";
 import { getAvatarById } from "../shared/avatarConfig.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
+import { heygenCreditService } from "./heygenCreditService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -94,8 +95,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-  // HeyGen API token endpoint for Streaming SDK
-  app.post("/api/heygen/token", async (req, res) => {
+  // GET HeyGen credit usage endpoint
+  app.get("/api/heygen/credits", async (req: any, res) => {
+    const log = logger.child({ service: "heygen-credit", operation: "getCredits" });
+
+    try {
+      const userId = req.user?.claims?.sub;
+      const stats = await heygenCreditService.getCreditStats(userId);
+      
+      log.info({ userId, stats }, "Credit stats retrieved");
+      
+      res.json(stats);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting credit stats");
+      res.status(500).json({ error: "Failed to retrieve credit stats" });
+    }
+  });
+
+  // HeyGen API token endpoint for Streaming SDK with rate limiting (1 request per user per minute)
+  app.post("/api/heygen/token", rateLimitMiddleware(1, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen", operation: "createToken" });
 
     try {
@@ -103,6 +121,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!userId) {
         return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Check HeyGen credit balance before proceeding
+      const creditCheck = await heygenCreditService.checkCreditBalance();
+      if (!creditCheck.allowed) {
+        log.error({
+          userId,
+          reason: creditCheck.reason,
+          balance: creditCheck.balance,
+        }, "HeyGen credit limit exceeded");
+        return res.status(402).json({
+          error: "Payment Required",
+          message: creditCheck.reason,
+          balance: creditCheck.balance,
+        });
       }
 
       const sessionCheck = sessionManager.canStartSession(userId);
@@ -147,23 +180,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log.debug("Creating HeyGen access token");
 
       const startTime = Date.now();
-      const data = await heygenTokenBreaker.execute(apiKey);
-      const duration = Date.now() - startTime;
+      let tokenData;
+      let successful = true;
+
+      try {
+        tokenData = await heygenTokenBreaker.execute(apiKey);
+      } catch (error: any) {
+        successful = false;
+        throw error;
+      } finally {
+        const duration = Date.now() - startTime;
+
+        // Log credit usage (1 credit per token generation)
+        await heygenCreditService.logCreditUsage(userId, 'token_generation', 1, successful);
+
+        if (successful) {
+          storage.logApiCall({
+            serviceName: 'heygen',
+            endpoint: 'streaming.create_token',
+            userId: null,
+            responseTimeMs: duration,
+          }).catch((error) => {
+            log.error({ error: error.message }, 'Failed to log API call');
+          });
+        }
+      }
 
       log.info("HeyGen token created successfully");
 
-      storage.logApiCall({
-        serviceName: 'heygen',
-        endpoint: 'streaming.create_token',
-        userId: null,
-        responseTimeMs: duration,
-      }).catch((error) => {
-        log.error({ error: error.message }, 'Failed to log API call');
-      });
-
       res.json({
-        token: data.data?.token || data.token,
-        ...data,
+        token: tokenData.data?.token || tokenData.token,
+        ...tokenData,
       });
     } catch (error: any) {
       log.error({ error: error.message }, "Error creating HeyGen token");
@@ -894,7 +941,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // NOTE: This endpoint is intentionally NOT protected by isAuthenticated
   // to allow both authenticated and anonymous users to use the avatar
-  app.post("/api/avatar/response", async (req: any, res) => {
+  // Rate limiting applied: 1 request per user per minute
+  app.post("/api/avatar/response", rateLimitMiddleware(1, 60000), async (req: any, res) => {
     try {
       const {
         message,
