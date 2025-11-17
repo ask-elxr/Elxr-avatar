@@ -677,15 +677,35 @@ Format your response as valid JSON with this exact structure:
     if (content && content.type === 'text') {
       const textContent = content.text;
       
+      log.debug({ responsePreview: textContent.substring(0, 200) }, 'Claude response preview');
+      
       const jsonMatch = textContent.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        const summary: PubMedSummary = JSON.parse(jsonMatch[0]);
-        
-        log.info({ duration, articleCount: articles.length }, 'PubMed summarization completed successfully');
-        
-        return summary;
+        try {
+          const summary: PubMedSummary = JSON.parse(jsonMatch[0]);
+          
+          log.info({ 
+            duration, 
+            articleCount: articles.length,
+            mainFindingsCount: summary.mainFindings?.length || 0,
+            themesCount: summary.commonThemes?.length || 0,
+            controversiesCount: summary.controversies?.length || 0,
+            hasRelevance: !!summary.relevance,
+            hasSynthesis: !!summary.synthesisText
+          }, 'PubMed summarization completed successfully');
+          
+          log.debug({ summaryStructure: Object.keys(summary) }, 'Summary structure');
+          
+          return summary;
+        } catch (parseError: any) {
+          log.error({ 
+            error: parseError.message, 
+            jsonPreview: jsonMatch[0].substring(0, 500)
+          }, 'Failed to parse JSON from Claude response');
+          return null;
+        }
       } else {
-        log.error('Failed to extract JSON from Claude response');
+        log.error({ textPreview: textContent.substring(0, 500) }, 'Failed to extract JSON from Claude response');
         return null;
       }
     }

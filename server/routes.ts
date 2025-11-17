@@ -2615,6 +2615,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
+  // Test endpoint for PubMed summarization
+  app.post("/api/test-pubmed-summary", async (req, res) => {
+    try {
+      const { query, maxResults = 5 } = req.body;
+
+      if (!query) {
+        return res.status(400).json({ error: "query is required" });
+      }
+
+      logger.info({ query, maxResults }, "Testing PubMed summarization");
+
+      const result = await pubmedService.searchAndFetchPubMed(
+        query,
+        maxResults,
+        true // generateSummary = true
+      );
+
+      res.json({
+        success: true,
+        query,
+        totalArticles: result.totalCount,
+        returnedArticles: result.articles.length,
+        summary: result.summary,
+        fromCache: result.fromCache,
+        articles: result.articles.map(a => ({
+          pmid: a.pmid,
+          title: a.title,
+          authors: a.authors.slice(0, 3),
+          journal: a.journal,
+          year: a.pubDate.split('-')[0]
+        }))
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error testing PubMed summarization");
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
