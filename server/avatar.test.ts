@@ -2,11 +2,9 @@ import { describe, it, expect } from 'vitest';
 
 describe('Avatar Response Endpoint Configuration', () => {
   describe('Knowledge Base Querying', () => {
-    it('should query two knowledge base namespaces in parallel', () => {
-      const namespaces = ['knowledge-base-assistant', 'ask-elxr'];
-      expect(namespaces).toHaveLength(2);
-      expect(namespaces).toContain('knowledge-base-assistant');
-      expect(namespaces).toContain('ask-elxr');
+    it('should query ask-elxr assistant for knowledge', () => {
+      const assistant = 'ask-elxr';
+      expect(assistant).toBe('ask-elxr');
     });
 
     it('should retrieve 5 results per namespace', () => {

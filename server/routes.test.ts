@@ -41,16 +41,11 @@ describe('Avatar Response Endpoint', () => {
           });
         }
 
-        // Query knowledge bases in parallel
-        const knowledgePromises = [
-          pineconeNamespaceService.queryNamespace('knowledge-base-assistant', message, 5),
-          pineconeNamespaceService.queryNamespace('ask-elxr', message, 5),
-        ];
+        // Query ask-elxr knowledge base
+        const askElxrResults = await pineconeNamespaceService.queryNamespace('ask-elxr', message, 5);
 
-        const [knowledgeBaseResults, askElxrResults] = await Promise.all(knowledgePromises);
-
-        // Combine results
-        const allResults = [...knowledgeBaseResults, ...askElxrResults];
+        // Use results
+        const allResults = askElxrResults;
         const knowledgeContext = allResults
           .filter((result) => result.score && result.score > 0.5)
           .map((result) => result.metadata?.text || '')
@@ -87,23 +82,14 @@ describe('Avatar Response Endpoint', () => {
     expect(response.body.error).toBe('Message is required');
   });
 
-  it('should query both knowledge bases in parallel', async () => {
-    const mockKnowledgeBaseResults = [
-      { metadata: { text: 'Knowledge base result 1' }, score: 0.8 },
-      { metadata: { text: 'Knowledge base result 2' }, score: 0.7 },
-    ];
-
+  it('should query ask-elxr knowledge base', async () => {
     const mockAskElxrResults = [
       { metadata: { text: 'Ask ELXR result 1' }, score: 0.9 },
+      { metadata: { text: 'Ask ELXR result 2' }, score: 0.8 },
     ];
 
     const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
-    mockQueryNamespace.mockImplementation(async (namespace: string) => {
-      if (namespace === 'knowledge-base-assistant') {
-        return mockKnowledgeBaseResults;
-      }
-      return mockAskElxrResults;
-    });
+    mockQueryNamespace.mockResolvedValue(mockAskElxrResults);
 
     const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
     mockGenerateResponse.mockResolvedValue({
@@ -120,12 +106,7 @@ describe('Avatar Response Endpoint', () => {
     expect(response.body.response).toBe('Generated response');
     expect(response.body.tokensUsed).toBe(100);
 
-    // Verify both namespaces were queried
-    expect(pineconeNamespaceService.queryNamespace).toHaveBeenCalledWith(
-      'knowledge-base-assistant',
-      'Test question',
-      5
-    );
+    // Verify ask-elxr was queried
     expect(pineconeNamespaceService.queryNamespace).toHaveBeenCalledWith(
       'ask-elxr',
       'Test question',
@@ -218,31 +199,23 @@ describe('Avatar Response Endpoint', () => {
     );
   });
 
-  it('should combine results from multiple namespaces correctly', async () => {
-    const mockKnowledgeBaseResults = [
-      { metadata: { text: 'KB result' }, score: 0.9 },
-    ];
-
+  it('should process results from ask-elxr correctly', async () => {
     const mockAskElxrResults = [
-      { metadata: { text: 'ELXR result' }, score: 0.85 },
+      { metadata: { text: 'ELXR result 1' }, score: 0.9 },
+      { metadata: { text: 'ELXR result 2' }, score: 0.85 },
     ];
 
     const mockQueryNamespace = vi.mocked(pineconeNamespaceService.queryNamespace);
-    mockQueryNamespace.mockImplementation(async (namespace: string) => {
-      if (namespace === 'knowledge-base-assistant') {
-        return mockKnowledgeBaseResults;
-      }
-      return mockAskElxrResults;
-    });
+    mockQueryNamespace.mockResolvedValue(mockAskElxrResults);
 
     const mockGenerateResponse = vi.mocked(claudeService.generateResponse);
     mockGenerateResponse.mockImplementation(async (message, context) => {
-      // Verify both results are in the context
-      expect(context).toContain('KB result');
-      expect(context).toContain('ELXR result');
+      // Verify ask-elxr results are in the context
+      expect(context).toContain('ELXR result 1');
+      expect(context).toContain('ELXR result 2');
 
       return {
-        text: 'Combined response',
+        text: 'Response with context',
         usage: { input_tokens: 100, output_tokens: 50 },
       } as any;
     });

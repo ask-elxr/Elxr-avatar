@@ -22,17 +22,17 @@ npx vitest --ui
 **Location:** `server/avatar.test.ts` and `server/routes.test.ts`
 
 **Coverage:**
-- Dual knowledge base querying (knowledge-base-assistant + ask-elxr)
+- Ask-elxr knowledge base querying (single assistant for cost optimization)
 - Score threshold filtering (>0.5)
 - Request validation (message required)
 - Response format validation
 - Error handling (Claude failures, Pinecone failures)
 - Empty result handling
-- Knowledge context combination
+- Knowledge context processing
 
 **Key Regression Protections:**
-- ✅ Verifies 2 namespaces are queried in parallel
-- ✅ Ensures 5 results retrieved per namespace
+- ✅ Verifies ask-elxr assistant is queried
+- ✅ Ensures 5 results retrieved from knowledge base
 - ✅ Confirms 0.5 score threshold for filtering
 - ✅ Validates proper error responses
 - ✅ Tests empty knowledge base handling
