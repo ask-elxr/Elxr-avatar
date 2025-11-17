@@ -307,6 +307,21 @@ iframe[data-testid="heygen-avatar-iframe"]::after {
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Global button enhancements */
+button:not(.no-glass) {
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+
+button:not(.no-glass):hover {
+  transform: translateY(-1px);
+}
+
+button:not(.no-glass):active {
+  transform: translateY(0);
+}
+
 /* Card hover effects */
 .card-hover {
   transition: all 0.3s ease;
