@@ -99,15 +99,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setIsSpeaking(isSpeakingFromHook);
   }, [isSpeakingFromHook]);
   
-  // Reset Start button when session ends (but not during reconnect or initial state)
+  // Reset Start button when session ends (but not during reconnect, initial state, or avatar switching)
   const prevSessionActiveRef = useRef(sessionActive);
   useEffect(() => {
     // Only reset when transitioning from active to inactive (true → false)
-    if (prevSessionActiveRef.current && !sessionActive && !showReconnect) {
+    // And NOT during avatar switching
+    if (prevSessionActiveRef.current && !sessionActive && !showReconnect && !switchingAvatar) {
       setShowChatButton(true);
     }
     prevSessionActiveRef.current = sessionActive;
-  }, [sessionActive, showReconnect]);
+  }, [sessionActive, showReconnect, switchingAvatar]);
   
   // Hook 2: Inactivity timer management
   const { resetInactivityTimer, clearAllTimers } = useInactivityTimer({
