@@ -36,7 +36,7 @@ Preferred communication style: Simple, everyday language.
 ## Core Features
 - **AI Avatar**: HeyGen Streaming SDK for real-time video interaction.
 - **AI Model**: Claude Sonnet 4 (`claude-sonnet-4-20250514`) for reasoning.
-- **Knowledge Retrieval**: Dual Pinecone knowledge base access and integrated Google Web Search.
+- **Knowledge Retrieval**: Pinecone knowledge base (ask-elxr) and integrated Google Web Search.
 - **Personality Integration**: Mark Kohl personality (customizable per mentor) via system prompts.
 - **Conversation Management**: Enhanced token limits, timeout handling, inactivity detection, pause/resume, current date awareness.
 - **Multi-Assistant Architecture**: Per-mentor configurations with dedicated Pinecone namespaces and categories.
@@ -150,4 +150,16 @@ Preferred communication style: Simple, everyday language.
     2. Added `endAllUserSessions()` method to SessionManager to force cleanup
     3. Created `/api/session/end-all` endpoint to terminate all user sessions
     4. Updated `handleAvatarSwitch()` to call `/api/session/end-all` before starting new avatar
+    5. Prevented Start button from reappearing during avatar switch by checking `switchingAvatar` state
   - **Result**: Clean avatar switches with guaranteed session cleanup, no more 429 errors
+
+### Pinecone Cost Optimization
+- **Consolidated to single Pinecone assistant**: Reduced from 2 assistants to 1 (ask-elxr only)
+  - **Previous setup**: Mark Kohl used "knowledge-base-assistant", others used "ask-elxr"
+  - **New setup**: All mentors now use "ask-elxr" assistant
+  - **Files updated**:
+    - `server/multiAssistantService.ts`: Mark Kohl now uses ask-elxr
+    - `shared/avatarConfig.ts`: Updated system prompt references
+    - `client/src/components/streaming-avatar.tsx`: UI now shows "3-Source Intelligence" (was 4-Source)
+    - `server/mcpAssistant.ts`: Changed from knowledge-base-assistant to ask-elxr
+  - **Result**: ~50% reduction in Pinecone costs by eliminating duplicate assistant
