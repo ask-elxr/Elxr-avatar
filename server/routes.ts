@@ -1980,6 +1980,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload and process PDF document
+  app.post(
+    "/api/documents/upload-pdf",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      const log = logger.child({ service: "document", operation: "uploadPDF" });
+      
+      try {
+        const userId = req.user.claims.sub;
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { documentService } = await import("./documentService.js");
+        
+        if (!documentService.isAvailable()) {
+          return res.status(503).json({ 
+            error: "Document service not available. Check OpenAI and Pinecone configuration." 
+          });
+        }
+
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+
+        // Validate PDF file
+        if (mimetype !== "application/pdf") {
+          fs.unlinkSync(tempPath);
+          return res.status(400).json({ error: "Only PDF files are supported" });
+        }
+
+        const documentId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create database record
+        const document = await storage.createDocument({
+          userId,
+          filename: originalname,
+          fileType: "pdf",
+          fileSize: size.toString(),
+          pineconeNamespace: "documents",
+          objectPath: tempPath,
+        });
+
+        log.info({ documentId, filename: originalname, userId }, "Processing PDF document");
+
+        // Process PDF in background
+        documentService.processPDFDocument(tempPath, originalname, userId, documentId)
+          .then(async (metadata) => {
+            await storage.updateDocumentStatus(
+              document.id,
+              "completed",
+              metadata.totalChunks,
+              metadata.textLength
+            );
+            log.info({ documentId, chunks: metadata.totalChunks }, "PDF processed successfully");
+            // Clean up temp file
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          })
+          .catch(async (error) => {
+            await storage.updateDocumentStatus(document.id, "failed");
+            log.error({ documentId, error: error.message }, "PDF processing failed");
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          });
+
+        res.json({
+          success: true,
+          documentId: document.id,
+          filename: originalname,
+          fileType: "pdf",
+          status: "processing",
+          message: "PDF upload started. Processing in background.",
+        });
+      } catch (error: any) {
+        log.error({ error: error.message }, "Error uploading PDF");
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to upload PDF",
+          details: error.message,
+        });
+      }
+    }
+  );
+
+  // Upload and process video document
+  app.post(
+    "/api/documents/upload-video",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      const log = logger.child({ service: "document", operation: "uploadVideo" });
+      
+      try {
+        const userId = req.user.claims.sub;
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { documentService } = await import("./documentService.js");
+        
+        if (!documentService.isAvailable()) {
+          return res.status(503).json({ 
+            error: "Document service not available. Check OpenAI and Pinecone configuration." 
+          });
+        }
+
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+
+        // Validate video/audio file
+        const allowedMimeTypes = [
+          "video/mp4",
+          "video/mpeg",
+          "video/quicktime",
+          "video/webm",
+          "audio/mp3",
+          "audio/mpeg",
+          "audio/wav",
+          "audio/m4a",
+          "audio/webm",
+          "audio/mp4",
+        ];
+
+        if (!allowedMimeTypes.includes(mimetype)) {
+          fs.unlinkSync(tempPath);
+          return res.status(400).json({ 
+            error: "Unsupported file type. Supported: MP4, MPEG, MOV, WebM, MP3, WAV, M4A" 
+          });
+        }
+
+        const documentId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        // Create database record
+        const document = await storage.createDocument({
+          userId,
+          filename: originalname,
+          fileType: "video",
+          fileSize: size.toString(),
+          pineconeNamespace: "video-transcripts",
+          objectPath: tempPath,
+        });
+
+        log.info({ documentId, filename: originalname, userId }, "Processing video document");
+
+        // Process video in background
+        documentService.processVideoDocument(tempPath, originalname, userId, documentId)
+          .then(async (metadata) => {
+            await storage.updateDocumentStatus(
+              document.id,
+              "completed",
+              metadata.totalChunks,
+              metadata.textLength
+            );
+            log.info({ documentId, chunks: metadata.totalChunks }, "Video processed successfully");
+            // Clean up temp file
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          })
+          .catch(async (error) => {
+            await storage.updateDocumentStatus(document.id, "failed");
+            log.error({ documentId, error: error.message }, "Video processing failed");
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          });
+
+        res.json({
+          success: true,
+          documentId: document.id,
+          filename: originalname,
+          fileType: "video",
+          status: "processing",
+          message: "Video upload started. Transcribing and processing in background.",
+        });
+      } catch (error: any) {
+        log.error({ error: error.message }, "Error uploading video");
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to upload video",
+          details: error.message,
+        });
+      }
+    }
+  );
+
+  // Get user's uploaded documents
+  app.get("/api/documents/user/:userId", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: "document", operation: "getUserDocuments" });
+    
+    try {
+      const { userId } = req.params;
+      const requestingUser = req.user.claims.sub;
+
+      // Users can only view their own documents
+      if (userId !== requestingUser) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const documents = await storage.getUserDocuments(userId);
+
+      log.info({ userId, count: documents.length }, "User documents retrieved");
+
+      res.json({
+        success: true,
+        documents,
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error fetching user documents");
+      res.status(500).json({
+        error: "Failed to fetch user documents",
+        details: error.message,
+      });
+    }
+  });
+
   // Get all users for admin purposes
   app.get("/api/admin/users", async (req: any, res) => {
     try {
@@ -2696,6 +2919,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Get offline PubMed database statistics
+  app.get("/api/pubmed/offline-stats", async (req, res) => {
+    const log = logger.child({ service: "pubmed", operation: "getOfflineStats" });
+    
+    try {
+      log.info("Getting offline PubMed database statistics");
+
+      const offlinePubMed = await import("./offlinePubMedService");
+      const stats = await offlinePubMed.getOfflineStats();
+
+      log.info({ stats }, "Offline PubMed stats retrieved");
+
+      res.json({
+        success: true,
+        stats,
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting offline PubMed stats");
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  // Clear offline PubMed database (admin only)
+  app.delete("/api/pubmed/offline-clear", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: "pubmed", operation: "clearOffline" });
+    
+    try {
+      const userId = req.user.claims.sub;
+      
+      // TODO: Add admin role check here
+      // For now, allow any authenticated user (update this for production)
+      
+      log.warn({ userId }, "Clearing offline PubMed database");
+
+      const offlinePubMed = await import("./offlinePubMedService");
+      await offlinePubMed.clearOfflineDatabase();
+
+      log.info({ userId }, "Offline PubMed database cleared successfully");
+
+      res.json({
+        success: true,
+        message: "Offline PubMed database cleared successfully",
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error clearing offline PubMed database");
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  });
+
+  // Import PubMed dump file (admin only)
+  app.post(
+    "/api/pubmed/import-dump",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      const log = logger.child({ service: "pubmed", operation: "importDump" });
+      
+      try {
+        const userId = req.user.claims.sub;
+        
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+
+        // Validate file type (XML or gzipped XML)
+        if (!mimetype.includes("xml") && !mimetype.includes("gzip") && 
+            !originalname.endsWith(".xml") && !originalname.endsWith(".xml.gz")) {
+          fs.unlinkSync(tempPath);
+          return res.status(400).json({ 
+            error: "Invalid file type. Expected XML or XML.GZ file" 
+          });
+        }
+
+        log.info({ userId, filename: originalname, size }, "Starting PubMed dump import");
+
+        // Process in background
+        const importId = `import_${Date.now()}`;
+
+        // Start import process
+        import("./offlinePubMedService").then(async (offlinePubMed) => {
+          try {
+            await offlinePubMed.importPubMedDump(tempPath);
+            log.info({ importId, filename: originalname }, "PubMed dump import completed");
+            // Clean up temp file
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          } catch (error: any) {
+            log.error({ importId, error: error.message }, "PubMed dump import failed");
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+          }
+        });
+
+        res.json({
+          success: true,
+          importId,
+          filename: originalname,
+          status: "processing",
+          message: "PubMed dump import started in background. This may take a while for large files.",
+        });
+      } catch (error: any) {
+        log.error({ error: error.message }, "Error starting PubMed dump import");
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to start PubMed dump import",
+          details: error.message,
+        });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;

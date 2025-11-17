@@ -414,3 +414,97 @@ export async function searchOfflinePubMed(
 
   return articles;
 }
+
+export async function getOfflineStats(): Promise<{
+  totalArticles: number;
+  namespace: string;
+}> {
+  if (!pineconeClient) {
+    throw new Error('Pinecone client not initialized');
+  }
+
+  try {
+    logger.info(
+      { service: 'offline-pubmed', operation: 'getStats' },
+      'Getting offline PubMed database statistics'
+    );
+
+    const index = pineconeClient.index(CACHE_INDEX);
+    const stats = await index.describeIndexStats();
+
+    const namespaceStats = stats.namespaces?.[OFFLINE_NAMESPACE];
+    const totalArticles = namespaceStats?.recordCount || 0;
+
+    logger.info(
+      { service: 'offline-pubmed', operation: 'getStats', totalArticles },
+      'Offline PubMed stats retrieved'
+    );
+
+    return {
+      totalArticles,
+      namespace: OFFLINE_NAMESPACE,
+    };
+  } catch (error: any) {
+    logger.error(
+      { service: 'offline-pubmed', operation: 'getStats', error: error.message },
+      'Failed to get offline PubMed stats'
+    );
+    throw error;
+  }
+}
+
+export async function clearOfflineDatabase(): Promise<void> {
+  if (!pineconeClient) {
+    throw new Error('Pinecone client not initialized');
+  }
+
+  try {
+    logger.warn(
+      { service: 'offline-pubmed', operation: 'clearDatabase' },
+      'Clearing offline PubMed database'
+    );
+
+    const index = pineconeClient.index(CACHE_INDEX);
+    await index.namespace(OFFLINE_NAMESPACE).deleteAll();
+
+    logger.info(
+      { service: 'offline-pubmed', operation: 'clearDatabase' },
+      'Offline PubMed database cleared successfully'
+    );
+  } catch (error: any) {
+    logger.error(
+      { service: 'offline-pubmed', operation: 'clearDatabase', error: error.message },
+      'Failed to clear offline PubMed database'
+    );
+    throw error;
+  }
+}
+
+export async function importPubMedDump(filePath: string): Promise<void> {
+  logger.info(
+    { service: 'offline-pubmed', operation: 'importDump', filePath },
+    'Starting PubMed dump import'
+  );
+
+  try {
+    // Use the streaming parser to process the dump file
+    const result = await processStreamingXML(filePath);
+
+    logger.info(
+      {
+        service: 'offline-pubmed',
+        operation: 'importDump',
+        totalProcessed: result.totalProcessed,
+        totalStored: result.totalStored,
+        errors: result.errors,
+      },
+      'PubMed dump import completed'
+    );
+  } catch (error: any) {
+    logger.error(
+      { service: 'offline-pubmed', operation: 'importDump', error: error.message },
+      'PubMed dump import failed'
+    );
+    throw error;
+  }
+}
