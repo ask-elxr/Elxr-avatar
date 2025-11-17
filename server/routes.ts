@@ -2656,6 +2656,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Offline PubMed search endpoint
+  app.post("/api/pubmed/offline-search", async (req, res) => {
+    try {
+      const { query, maxResults = 10 } = req.body;
+
+      if (!query) {
+        return res.status(400).json({ error: "query is required" });
+      }
+
+      logger.info({ query, maxResults }, "Offline PubMed search request");
+
+      const offlinePubMed = await import("./offlinePubMedService");
+      const articles = await offlinePubMed.searchOfflinePubMed(query, maxResults);
+
+      const formattedText = articles.map((article, index) => 
+        `${index + 1}. ${article.title}\n` +
+        `   Authors: ${article.authors.slice(0, 3).join(', ')}${article.authors.length > 3 ? ' et al.' : ''}\n` +
+        `   Journal: ${article.journal} (${article.pubDate})\n` +
+        `   PMID: ${article.pmid}\n` +
+        (article.abstract ? `   Abstract: ${article.abstract.substring(0, 200)}...\n` : '') +
+        (article.keywords?.length ? `   Keywords: ${article.keywords.join(', ')}\n` : '')
+      ).join('\n');
+
+      res.json({
+        success: true,
+        query,
+        source: 'offline-database',
+        returnedArticles: articles.length,
+        articles,
+        formattedText
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error in offline PubMed search");
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
