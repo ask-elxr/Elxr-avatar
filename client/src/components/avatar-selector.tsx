@@ -41,14 +41,14 @@ export function AvatarSelector({ selectedAvatarId, onSelect, onConfirm }: Avatar
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-6">
+    <div className="min-h-screen bg-black flex items-center justify-center p-3 md:p-4 lg:p-6">
       <div className="max-w-5xl w-full">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-white mb-4">Choose Your AI Guide</h1>
-          <p className="text-gray-400 text-lg">Select an expert to help you on your journey</p>
+        <div className="text-center mb-8 md:mb-10 lg:mb-12">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-3 md:mb-4">Choose Your AI Guide</h1>
+          <p className="text-gray-400 text-sm md:text-base lg:text-lg">Select an expert to help you on your journey</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-6 md:mb-8">
           {avatars.map((avatar) => (
             <Card
               key={avatar.id}
@@ -60,16 +60,16 @@ export function AvatarSelector({ selectedAvatarId, onSelect, onConfirm }: Avatar
               }`}
               data-testid={`card-avatar-${avatar.id}`}
             >
-              <CardHeader>
+              <CardHeader className="p-4 md:p-5 lg:p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <CardTitle className="text-white text-xl mb-2">{avatar.name}</CardTitle>
-                    <CardDescription className="text-gray-400">{avatar.description}</CardDescription>
+                    <CardTitle className="text-white text-base md:text-lg lg:text-xl mb-1.5 md:mb-2">{avatar.name}</CardTitle>
+                    <CardDescription className="text-gray-400 text-xs md:text-sm">{avatar.description}</CardDescription>
                   </div>
                   {selectedAvatarId === avatar.id && (
-                    <div className="ml-3 flex-shrink-0">
-                      <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center">
-                        <Check className="w-5 h-5 text-white" />
+                    <div className="ml-2 md:ml-3 flex-shrink-0">
+                      <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-purple-600 flex items-center justify-center">
+                        <Check className="w-4 h-4 md:w-5 md:h-5 text-white" />
                       </div>
                     </div>
                   )}
@@ -82,8 +82,7 @@ export function AvatarSelector({ selectedAvatarId, onSelect, onConfirm }: Avatar
         <div className="text-center">
           <Button
             onClick={onConfirm}
-            size="lg"
-            className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-12 py-6 text-lg"
+            className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-semibold px-8 py-4 md:px-10 md:py-5 lg:px-12 lg:py-6 text-base md:text-lg"
             data-testid="button-start-chat"
           >
             Start Chat

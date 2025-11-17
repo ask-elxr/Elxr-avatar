@@ -132,10 +132,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     };
   }, [clearAllTimers]);
 
-  // Mobile detection effect
+  // Mobile detection effect - mobile (<768px), tablet/desktop (>=768px)
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+      setIsMobile(window.innerWidth < 768); // Mobile only, tablets get desktop layout
     };
     
     checkMobile();
@@ -443,9 +443,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
       {/* Audio Only Toggle - Top Left (Always Visible) */}
-      <div className={`absolute z-50 flex items-center gap-3 bg-black/50 backdrop-blur-sm px-4 py-3 rounded-lg ${
-        isMobile ? 'top-4 left-4' : 'top-6 left-6'
-      }`}>
+      <div className="absolute z-50 flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3 rounded-lg top-3 left-3 md:top-4 md:left-4 lg:top-6 lg:left-6">
         <Checkbox
           id="audio-only"
           checked={audioOnly}
@@ -455,7 +453,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         />
         <label
           htmlFor="audio-only"
-          className="text-white text-sm font-medium cursor-pointer select-none"
+          className="text-white text-sm md:text-base font-medium cursor-pointer select-none"
         >
           Audio Only
         </label>
@@ -465,16 +463,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {sessionActive && (
         <Button
           onClick={toggleFullscreen}
-          className={`absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm ${
-            isMobile ? 'top-20 left-4 p-3' : 'top-24 left-6 p-2'
-          }`}
+          className="absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3 lg:px-3 lg:py-2 top-16 left-3 md:top-20 md:left-4 lg:top-24 lg:left-6"
           data-testid="button-fullscreen-toggle"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? (
-            <Minimize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+            <>
+              <Minimize2 className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+              <span className="hidden md:inline text-sm font-medium">Exit</span>
+            </>
           ) : (
-            <Maximize2 className={isMobile ? 'w-5 h-5' : 'w-5 h-5'} />
+            <>
+              <Maximize2 className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+              <span className="hidden md:inline text-sm font-medium">Fullscreen</span>
+            </>
           )}
         </Button>
       )}
@@ -493,21 +496,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               });
             }
           }}
-          className={`absolute z-50 left-1/2 -translate-x-1/2 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-            isMobile ? 'top-4 p-3' : 'top-6 px-4 py-2'
-          }`}
+          className="absolute z-50 left-1/2 -translate-x-1/2 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] top-3 p-2 md:top-4 md:p-3 lg:top-6 lg:px-4 lg:py-2"
           data-testid="button-pause-toggle"
           title={isPaused ? "Resume chat" : "Pause chat"}
+          aria-label={isPaused ? "Resume chat" : "Pause chat"}
         >
           {isPaused ? (
             <>
-              <Play className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-              {!isMobile && <span className="text-sm font-medium">Resume</span>}
+              <Play className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
+              <span className="hidden md:inline text-sm font-medium">Resume</span>
             </>
           ) : (
             <>
-              <Pause className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-              {!isMobile && <span className="text-sm font-medium">Pause</span>}
+              <Pause className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
+              <span className="hidden md:inline text-sm font-medium">Pause</span>
             </>
           )}
         </Button>
@@ -517,15 +519,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {sessionActive && (
         <Button
           onClick={() => setShowAvatarSwitcher(true)}
-          className={`absolute z-50 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-            isMobile ? 'top-20 right-4 p-3' : 'top-6 right-40 px-4 py-2'
-          }`}
+          className="absolute z-50 bg-purple-500/80 hover:bg-purple-600 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] top-16 right-3 p-2 md:top-20 md:right-4 md:p-3 lg:top-6 lg:right-40 lg:px-4 lg:py-2"
           disabled={switchingAvatar}
           data-testid="button-open-avatar-switcher"
           title="Switch AI Guide"
+          aria-label="Switch AI Guide"
         >
-          <Users className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-          {!isMobile && <span className="text-sm font-medium">Switch</span>}
+          <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
+          <span className="hidden md:inline text-sm font-medium">Switch</span>
         </Button>
       )}
 
@@ -533,14 +534,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {sessionActive && (
         <Button
           onClick={endChat}
-          className={`absolute z-50 bg-purple-700/80 hover:bg-purple-800 text-white rounded-full backdrop-blur-sm flex items-center gap-2 ${
-            isMobile ? 'top-4 right-4 p-3' : 'top-6 right-6 px-4 py-2'
-          }`}
+          className="absolute z-50 bg-purple-700/80 hover:bg-purple-800 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] top-3 right-3 p-2 md:top-4 md:right-4 md:p-3 lg:top-6 lg:right-6 lg:px-4 lg:py-2"
           data-testid="button-end-chat"
           title="End chat and restart"
+          aria-label="End chat and restart"
         >
-          <X className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-          {!isMobile && <span className="text-sm font-medium">End Chat</span>}
+          <X className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
+          <span className="hidden md:inline text-sm font-medium">End Chat</span>
         </Button>
       )}
 
@@ -562,7 +562,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 });
               }
             }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-12 py-4 text-lg font-semibold rounded-full shadow-lg pointer-events-auto"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 md:px-12 md:py-4 text-base md:text-lg font-semibold rounded-full shadow-lg pointer-events-auto"
             data-testid="button-start-session"
           >
             Start Chat
@@ -585,7 +585,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
       {/* Reconnect Screen - Full overlay in audio mode, floating button in video mode */}
       {showReconnect && (
-        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center gap-8 ${audioOnly ? 'bg-black' : 'pointer-events-none'}`}>
+        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 md:gap-8 ${audioOnly ? 'bg-black' : 'pointer-events-none'}`}>
           {audioOnly && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
           <Button
             onClick={async () => {
@@ -599,7 +599,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 });
               }
             }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-10 py-3 text-base font-semibold rounded-full shadow-lg pointer-events-auto"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2.5 md:px-10 md:py-3 text-sm md:text-base font-semibold rounded-full shadow-lg pointer-events-auto"
             data-testid="button-reconnect"
           >
             Reconnect
@@ -613,14 +613,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           showUnpinchAnimation ? 'opacity-90' : 'opacity-0'
         }`}
         style={{ top: '55%' }}>
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-2 md:gap-3">
             <img 
               src={showExpandedFingers ? unpinchGraphic2 : unpinchGraphic1} 
               alt="Expand for fullscreen" 
-              className="w-16 h-16 transition-opacity duration-300"
+              className="w-12 h-12 md:w-16 md:h-16 transition-opacity duration-300"
               data-testid="unpinch-graphic"
             />
-            <p className="text-white text-base font-medium text-center drop-shadow-lg">
+            <p className="text-white text-sm md:text-base font-medium text-center drop-shadow-lg">
               Click full screen<br/>then expand
             </p>
           </div>
@@ -655,36 +655,36 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               setInputMessage("");
             }
           }}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 w-full max-w-2xl px-4"
+          className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-1.5 md:gap-2 w-full max-w-2xl px-3 md:px-4"
         >
           <Input
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 bg-black/50 backdrop-blur-sm text-white border-purple-500/30 focus:border-purple-500 placeholder:text-gray-400"
+            className="flex-1 bg-black/50 backdrop-blur-sm text-white border-purple-500/30 focus:border-purple-500 placeholder:text-gray-400 text-sm md:text-base h-9 md:h-10"
             data-testid="input-message"
             disabled={!sessionActive || isPaused}
           />
           <Button
             type="submit"
             disabled={!inputMessage.trim() || !sessionActive || isPaused}
-            className="bg-purple-500 hover:bg-purple-600 text-white rounded-full p-3"
+            className="bg-purple-500 hover:bg-purple-600 text-white rounded-full flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3"
             data-testid="button-send-message"
+            aria-label="Send message"
           >
-            <Send className="w-5 h-5" />
+            <Send className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
+            <span className="hidden md:inline text-sm font-medium">Send</span>
           </Button>
         </form>
       )}
 
       {/* Current Avatar Indicator - Bottom Left */}
       {sessionActive && currentAvatarName && (
-        <div className={`absolute z-40 bg-black/60 backdrop-blur-sm text-white px-4 py-2 rounded-lg ${
-          isMobile ? 'bottom-20 left-4' : 'bottom-6 left-6'
-        }`}>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-            <span className="text-sm font-medium">{currentAvatarName}</span>
+        <div className="absolute z-40 bg-black/60 backdrop-blur-sm text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg bottom-16 left-3 md:bottom-20 md:left-4 lg:bottom-6 lg:left-6">
+          <div className="flex items-center gap-1.5 md:gap-2">
+            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm md:text-base font-medium">{currentAvatarName}</span>
           </div>
         </div>
       )}

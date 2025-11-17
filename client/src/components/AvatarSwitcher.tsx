@@ -63,29 +63,29 @@ export function AvatarSwitcher({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-background via-background to-purple-500/5">
+      <DialogContent className="max-w-4xl max-h-[85vh] md:max-h-[80vh] overflow-y-auto bg-gradient-to-br from-background via-background to-purple-500/5">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-2xl pr-8">
-            <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
-              <Users className="w-6 h-6 text-white" />
+          <DialogTitle className="flex items-center gap-2 text-lg md:text-xl lg:text-2xl pr-8">
+            <div className="p-1.5 md:p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
+              <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
             </div>
             <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
               Switch AI Guide
             </span>
           </DialogTitle>
-          <DialogDescription className="pr-8">
+          <DialogDescription className="pr-8 text-sm md:text-base">
             Choose a different AI personality to continue your conversation.
             {disabled && " (Please wait 30 seconds between avatar switches)"}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+          <div className="flex items-center justify-center py-8 md:py-12">
+            <div className="animate-spin rounded-full h-6 w-6 md:h-8 md:w-8 border-b-2 border-purple-500" />
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 my-3 md:my-4">
               {avatars.map((avatar) => (
                 <Card
                   key={avatar.id}
@@ -99,25 +99,25 @@ export function AvatarSwitcher({
                   } ${avatar.id === currentAvatarId ? "ring-2 ring-green-500/50" : ""}`}
                   data-testid={`avatar-option-${avatar.id}`}
                 >
-                  <CardHeader>
+                  <CardHeader className="p-3 md:p-4 lg:p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg mb-1 flex items-center gap-2">
+                        <CardTitle className="text-base md:text-lg mb-1 flex items-center gap-1.5 md:gap-2">
                           {avatar.name}
                           {avatar.id === currentAvatarId && (
-                            <span className="text-xs px-2 py-1 bg-green-500/20 text-green-600 dark:text-green-400 rounded-full border border-green-500/30">
+                            <span className="text-sm px-1.5 py-0.5 md:px-2 md:py-1 bg-green-500/20 text-green-600 dark:text-green-400 rounded-full border border-green-500/30">
                               Current
                             </span>
                           )}
                         </CardTitle>
-                        <CardDescription className="text-sm line-clamp-2">
+                        <CardDescription className="text-sm md:text-base line-clamp-2">
                           {avatar.description}
                         </CardDescription>
                       </div>
                       {selectedAvatarId === avatar.id && (
-                        <div className="ml-3 flex-shrink-0">
-                          <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                            <Check className="w-4 h-4 text-white" />
+                        <div className="ml-2 md:ml-3 flex-shrink-0">
+                          <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                            <Check className="w-3 h-3 md:w-4 md:h-4 text-white" />
                           </div>
                         </div>
                       )}
@@ -127,18 +127,21 @@ export function AvatarSwitcher({
               ))}
             </div>
 
-            <div className="flex items-center justify-end gap-3 mt-4">
+            <div className="flex items-center justify-end gap-2 md:gap-3 mt-3 md:mt-4">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => onOpenChange(false)}
                 data-testid="button-cancel-switch"
+                className="text-sm md:text-base"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSwitch}
+                size="sm"
                 disabled={disabled || selectedAvatarId === currentAvatarId || !selectedAvatarId}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm md:text-base"
                 data-testid="button-confirm-switch"
               >
                 {selectedAvatarId === currentAvatarId ? "Already Selected" : "Switch Avatar"}
