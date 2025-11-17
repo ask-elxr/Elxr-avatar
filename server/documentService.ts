@@ -1,4 +1,3 @@
-import pdfParse from 'pdf-parse';
 import fs from 'fs';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
@@ -62,6 +61,8 @@ export async function extractPDFText(filePath: string): Promise<string> {
     );
 
     const dataBuffer = fs.readFileSync(filePath);
+    
+    const pdfParse = (await import('pdf-parse')).default;
     const pdfData = await pdfParse(dataBuffer);
 
     logger.info(
