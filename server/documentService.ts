@@ -260,12 +260,13 @@ export async function storeInPinecone(
 export async function processPDFDocument(
   filePath: string,
   fileName: string,
-  userId: string,
-  documentId: string
+  namespace: string,
+  documentId: string,
+  userId?: string
 ): Promise<DocumentMetadata> {
   try {
     logger.info(
-      { service: 'document', operation: 'processPDFDocument', fileName, userId },
+      { service: 'document', operation: 'processPDFDocument', fileName, namespace, userId },
       'Processing PDF document'
     );
 
@@ -273,15 +274,15 @@ export async function processPDFDocument(
     const chunks = chunkText(text);
     const embeddings = await generateEmbeddings(chunks);
     
-    // Use user-scoped namespace for privacy
-    const userNamespace = `documents-${userId}`;
-    await storeInPinecone(documentId, fileName, userId, chunks, embeddings, 'pdf', userNamespace);
+    // Store in the specified category namespace with real user tracking
+    const uploaderUserId = userId || 'system';
+    await storeInPinecone(documentId, fileName, uploaderUserId, chunks, embeddings, 'pdf', namespace);
 
     const metadata: DocumentMetadata = {
       id: documentId,
       name: fileName,
       type: 'pdf',
-      userId,
+      userId: uploaderUserId,
       uploadDate: new Date().toISOString(),
       totalChunks: chunks.length,
       textLength: text.length,
@@ -357,12 +358,13 @@ export function processVideoTranscript(transcript: string): string {
 export async function processVideoDocument(
   filePath: string,
   fileName: string,
-  userId: string,
-  documentId: string
+  namespace: string,
+  documentId: string,
+  userId?: string
 ): Promise<DocumentMetadata> {
   try {
     logger.info(
-      { service: 'document', operation: 'processVideoDocument', fileName, userId },
+      { service: 'document', operation: 'processVideoDocument', fileName, namespace, userId },
       'Processing video document'
     );
 
@@ -371,23 +373,23 @@ export async function processVideoDocument(
     const chunks = chunkText(cleanedTranscript);
     const embeddings = await generateEmbeddings(chunks);
     
-    // Use user-scoped namespace for privacy
-    const userNamespace = `video-transcripts-${userId}`;
+    // Store in the specified category namespace with real user tracking
+    const uploaderUserId = userId || 'system';
     await storeInPinecone(
       documentId,
       fileName,
-      userId,
+      uploaderUserId,
       chunks,
       embeddings,
       'video',
-      userNamespace
+      namespace
     );
 
     const metadata: DocumentMetadata = {
       id: documentId,
       name: fileName,
       type: 'video',
-      userId,
+      userId: uploaderUserId,
       uploadDate: new Date().toISOString(),
       totalChunks: chunks.length,
       textLength: cleanedTranscript.length,

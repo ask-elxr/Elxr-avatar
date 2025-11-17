@@ -2049,8 +2049,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         log.info({ documentId, filename: originalname, userId, category }, "Processing PDF document");
 
-        // Process PDF in background with category namespace
-        processPDFDocument(tempPath, originalname, category, documentId)
+        // Process PDF in background with category namespace and user tracking
+        processPDFDocument(tempPath, originalname, category, documentId, userId)
           .then(async (metadata: any) => {
             await storage.updateDocumentStatus(
               document.id,
@@ -2154,8 +2154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         log.info({ documentId, filename: originalname, userId, category }, "Processing video document");
 
-        // Process video in background with category namespace
-        processVideoDocument(tempPath, originalname, category, documentId)
+        // Process video in background with category namespace and user tracking
+        processVideoDocument(tempPath, originalname, category, documentId, userId)
           .then(async (metadata: any) => {
             await storage.updateDocumentStatus(
               document.id,
