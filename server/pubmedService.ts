@@ -6,6 +6,7 @@ import { OpenAI } from 'openai';
 import { Pinecone } from '@pinecone-database/pinecone';
 import { wrapServiceCall } from './circuitBreaker';
 import { storage } from './storage';
+import Anthropic from '@anthropic-ai/sdk';
 
 const BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
 const EMAIL = 'support@elxr.ai';
@@ -23,6 +24,14 @@ export interface PubMedArticle {
   pubDate: string;
   doi?: string;
   keywords?: string[];
+}
+
+export interface PubMedSummary {
+  mainFindings: string[];
+  commonThemes: string[];
+  controversies: string[];
+  relevance: string;
+  synthesisText: string;
 }
 
 interface SearchResult {
@@ -78,6 +87,7 @@ const sharedRateLimiter = new SharedRateLimiter(3);
 
 let openaiClient: OpenAI | null = null;
 let pineconeClient: Pinecone | null = null;
+let anthropicClient: Anthropic | null = null;
 
 if (process.env.OPENAI_API_KEY) {
   openaiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -89,6 +99,12 @@ if (process.env.PINECONE_API_KEY) {
   pineconeClient = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
 } else {
   logger.warn({ service: 'pubmed' }, 'PINECONE_API_KEY not set - PubMed caching will be disabled');
+}
+
+if (process.env.ANTHROPIC_API_KEY) {
+  anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+} else {
+  logger.warn({ service: 'pubmed' }, 'ANTHROPIC_API_KEY not set - PubMed summarization will be disabled');
 }
 
 const embeddingBreaker = wrapServiceCall(
@@ -103,6 +119,17 @@ const embeddingBreaker = wrapServiceCall(
   },
   'openai-embeddings',
   { timeout: 30000, errorThresholdPercentage: 50 }
+);
+
+const claudeSummarizationBreaker = wrapServiceCall(
+  async (params: any) => {
+    if (!anthropicClient) {
+      throw new Error('Anthropic client not initialized');
+    }
+    return await anthropicClient.messages.create(params);
+  },
+  'claude-pubmed-summarization',
+  { timeout: 60000, errorThresholdPercentage: 50 }
 );
 
 async function generateEmbedding(text: string): Promise<number[]> {
@@ -138,7 +165,7 @@ async function generateEmbedding(text: string): Promise<number[]> {
   }
 }
 
-async function checkCache(query: string): Promise<{ articles: PubMedArticle[]; totalCount: number; queryEmbedding?: number[] } | null> {
+async function checkCache(query: string): Promise<{ articles: PubMedArticle[]; totalCount: number; summary?: PubMedSummary | null; queryEmbedding?: number[] } | null> {
   const log = logger.child({ service: 'pubmed', operation: 'checkCache' });
 
   if (!openaiClient || !pineconeClient) {
@@ -181,8 +208,9 @@ async function checkCache(query: string): Promise<{ articles: PubMedArticle[]; t
 
           const articles: PubMedArticle[] = JSON.parse(metadata.articles);
           const totalCount = metadata.totalCount || articles.length;
+          const summary = metadata.summary ? JSON.parse(metadata.summary) : null;
 
-          return { articles, totalCount, queryEmbedding };
+          return { articles, totalCount, summary, queryEmbedding };
         } else {
           log.info(
             { query, cacheExpired: true, ageInDays: ageInDays.toFixed(2) },
@@ -213,7 +241,8 @@ async function cacheResults(
   query: string,
   articles: PubMedArticle[],
   totalCount: number,
-  queryEmbedding?: number[]
+  queryEmbedding?: number[],
+  summary?: PubMedSummary | null
 ): Promise<void> {
   const log = logger.child({ service: 'pubmed', operation: 'cacheResults' });
 
@@ -233,18 +262,24 @@ async function cacheResults(
     
     const cacheId = `pubmed_${Buffer.from(query).toString('base64').substring(0, 50)}_${Date.now()}`;
     
+    const metadata: any = {
+      query,
+      articles: JSON.stringify(articles),
+      totalCount,
+      timestamp: new Date().toISOString(),
+      source: 'pubmed',
+      resultCount: articles.length,
+    };
+
+    if (summary) {
+      metadata.summary = JSON.stringify(summary);
+    }
+
     await index.namespace(CACHE_NAMESPACE).upsert([
       {
         id: cacheId,
         values: embedding,
-        metadata: {
-          query,
-          articles: JSON.stringify(articles),
-          totalCount,
-          timestamp: new Date().toISOString(),
-          source: 'pubmed',
-          resultCount: articles.length,
-        },
+        metadata,
       },
     ]);
 
@@ -545,12 +580,131 @@ export function formatPubMedResults(articles: PubMedArticle[]): string {
   return formattedArticles.join('\n\n---');
 }
 
+export async function summarizeResults(
+  articles: PubMedArticle[],
+  userQuery: string
+): Promise<PubMedSummary | null> {
+  const log = logger.child({
+    service: 'pubmed',
+    operation: 'summarizeResults',
+    articleCount: articles.length,
+    queryLength: userQuery.length
+  });
+
+  if (!anthropicClient) {
+    log.warn('Anthropic client not available - summarization disabled');
+    return null;
+  }
+
+  if (articles.length === 0) {
+    log.warn('No articles to summarize');
+    return null;
+  }
+
+  try {
+    log.info('Starting PubMed results summarization');
+    const startTime = Date.now();
+
+    const articlesForClaude = articles.map(article => ({
+      pmid: article.pmid,
+      title: article.title,
+      abstract: article.abstract || 'No abstract available',
+      authors: article.authors.slice(0, 3).join(', '),
+      journal: article.journal,
+      year: article.pubDate.split('-')[0] || article.pubDate,
+      keywords: article.keywords?.join(', ') || 'None'
+    }));
+
+    const systemPrompt = `You are a medical research analyst tasked with synthesizing findings from multiple PubMed articles. Your goal is to provide a clear, structured summary that identifies key patterns, themes, and insights across the research.`;
+
+    const userPrompt = `Analyze the following ${articles.length} PubMed articles related to the query: "${userQuery}"
+
+Articles:
+${articlesForClaude.map((article, idx) => `
+[${idx + 1}] PMID: ${article.pmid}
+Title: ${article.title}
+Authors: ${article.authors}
+Journal: ${article.journal} (${article.year})
+Keywords: ${article.keywords}
+Abstract: ${article.abstract}
+`).join('\n---\n')}
+
+Please provide a comprehensive summary with the following structure:
+
+1. MAIN FINDINGS: List 3-5 key findings that emerge across these studies. Be specific and cite PMIDs.
+
+2. COMMON THEMES: Identify 2-4 recurring themes, patterns, or methodologies across the research.
+
+3. CONTROVERSIES OR DIFFERENCES: Note any conflicting results, methodological differences, or areas of debate between studies. If none exist, state "No major controversies identified."
+
+4. RELEVANCE TO QUERY: Explain how these findings directly address the original question: "${userQuery}"
+
+5. SYNTHESIS: Provide a 2-3 paragraph synthesis that integrates the findings into a coherent narrative.
+
+Format your response as valid JSON with this exact structure:
+{
+  "mainFindings": ["finding 1 (PMID: xxx)", "finding 2 (PMID: xxx)", ...],
+  "commonThemes": ["theme 1", "theme 2", ...],
+  "controversies": ["controversy 1" or "No major controversies identified"],
+  "relevance": "explanation of relevance to query",
+  "synthesisText": "2-3 paragraph synthesis"
+}`;
+
+    const response = await claudeSummarizationBreaker.execute({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt
+        }
+      ],
+      system: systemPrompt
+    });
+
+    const duration = Date.now() - startTime;
+
+    storage.logApiCall({
+      serviceName: 'claude',
+      endpoint: 'messages.create',
+      userId: null,
+      responseTimeMs: duration,
+    }).catch((error) => {
+      log.error({ error: error.message }, 'Failed to log API call');
+    });
+
+    const content = response.content[0];
+    if (content && content.type === 'text') {
+      const textContent = content.text;
+      
+      const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const summary: PubMedSummary = JSON.parse(jsonMatch[0]);
+        
+        log.info({ duration, articleCount: articles.length }, 'PubMed summarization completed successfully');
+        
+        return summary;
+      } else {
+        log.error('Failed to extract JSON from Claude response');
+        return null;
+      }
+    }
+
+    log.error('Invalid response format from Claude');
+    return null;
+  } catch (error: any) {
+    log.error({ error: error.message, stack: error.stack }, 'Error summarizing PubMed results');
+    return null;
+  }
+}
+
 export async function searchAndFetchPubMed(
   query: string,
-  maxResults = 10
-): Promise<{ articles: PubMedArticle[]; formattedText: string; totalCount: number; fromCache?: boolean }> {
+  maxResults = 10,
+  generateSummary = false
+): Promise<{ articles: PubMedArticle[]; formattedText: string; totalCount: number; summary?: PubMedSummary | null; fromCache?: boolean }> {
   logger.info(
-    { service: 'pubmed', operation: 'searchAndFetch', query, maxResults },
+    { service: 'pubmed', operation: 'searchAndFetch', query, maxResults, generateSummary },
     'Starting PubMed search and fetch'
   );
 
@@ -566,6 +720,7 @@ export async function searchAndFetchPubMed(
         operation: 'searchAndFetch', 
         retrievedCount: limitedArticles.length,
         totalCount: cachedResult.totalCount,
+        hasSummary: !!cachedResult.summary,
         fromCache: true
       },
       'Returned cached PubMed results'
@@ -575,6 +730,7 @@ export async function searchAndFetchPubMed(
       articles: limitedArticles,
       formattedText,
       totalCount: cachedResult.totalCount,
+      summary: cachedResult.summary,
       fromCache: true,
     };
   }
@@ -588,6 +744,7 @@ export async function searchAndFetchPubMed(
       articles: [],
       formattedText: 'No PubMed articles found for this query.',
       totalCount: 0,
+      summary: null,
       fromCache: false,
     };
   }
@@ -595,7 +752,12 @@ export async function searchAndFetchPubMed(
   const articles = await fetchArticleDetails(searchResult.pmids);
   const formattedText = formatPubMedResults(articles);
 
-  await cacheResults(query, articles, searchResult.count, queryEmbedding);
+  let summary: PubMedSummary | null = null;
+  if (generateSummary && articles.length > 0) {
+    summary = await summarizeResults(articles, query);
+  }
+
+  await cacheResults(query, articles, searchResult.count, queryEmbedding, summary);
 
   logger.info(
     { 
@@ -603,6 +765,7 @@ export async function searchAndFetchPubMed(
       operation: 'searchAndFetch', 
       retrievedCount: articles.length,
       totalCount: searchResult.count,
+      hasSummary: !!summary,
       fromCache: false
     },
     'PubMed search and fetch completed - results cached'
@@ -612,6 +775,7 @@ export async function searchAndFetchPubMed(
     articles,
     formattedText,
     totalCount: searchResult.count,
+    summary,
     fromCache: false,
   };
 }
