@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { PINECONE_CATEGORIES, CATEGORY_DESCRIPTIONS, type PineconeCategory } from "@shared/pineconeCategories";
 
 interface UploadResult {
   success: boolean;
@@ -35,6 +37,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   const [uploadProgress, setUploadProgress] = useState<string>("");
   const [selectedFiles, setSelectedFiles] = useState<FileUploadStatus[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<PineconeCategory>("OTHER");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -135,6 +138,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
       try {
         const formData = new FormData();
         formData.append('file', fileStatus.file);
+        formData.append('category', selectedCategory);
 
         // Determine endpoint based on file type
         const isPDF = fileStatus.file.type === 'application/pdf';
@@ -223,6 +227,38 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {/* Category Selector */}
+          <div className="space-y-2">
+            <Label htmlFor="category" className="flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              Knowledge Category
+            </Label>
+            <Select
+              value={selectedCategory}
+              onValueChange={(value) => setSelectedCategory(value as PineconeCategory)}
+              disabled={isUploading}
+            >
+              <SelectTrigger id="category" data-testid="select-category">
+                <SelectValue placeholder="Select a category" />
+              </SelectTrigger>
+              <SelectContent>
+                {PINECONE_CATEGORIES.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{category}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {CATEGORY_DESCRIPTIONS[category]}
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Documents will be saved to the "{selectedCategory}" namespace and accessible to avatars configured for this category.
+            </p>
+          </div>
+
           {/* Drag and drop area */}
           <div
             onDragOver={handleDragOver}
