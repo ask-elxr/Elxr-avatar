@@ -33,6 +33,7 @@ import { getAvatarById } from "../shared/avatarConfig.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
+import { memoryService } from "./memoryService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -526,6 +527,203 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({
         error: "Failed to delete conversation",
       });
+    }
+  });
+
+  // Memory API routes
+  app.post("/api/memory/add", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "add" });
+    try {
+      const { messages, userId, metadata } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!messages) {
+        return res.status(400).json({ error: "messages is required" });
+      }
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.addMemory(messages, userId, metadata);
+
+      if (!result.success) {
+        log.error({ error: result.error }, "Failed to add memory");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ userId }, "Memory added successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error adding memory");
+      res.status(500).json({ error: "Failed to add memory" });
+    }
+  });
+
+  app.post("/api/memory/search", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "search" });
+    try {
+      const { query, userId, limit, metadata } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!query) {
+        return res.status(400).json({ error: "query is required" });
+      }
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.searchMemories(query, userId, {
+        limit,
+        metadata,
+      });
+
+      if (!result.success) {
+        log.error({ error: result.error }, "Failed to search memories");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ userId, resultCount: result.memories?.length || 0 }, "Memories searched successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error searching memories");
+      res.status(500).json({ error: "Failed to search memories" });
+    }
+  });
+
+  app.get("/api/memory/all", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "getAll" });
+    try {
+      const userId = req.query.userId as string;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.getAllMemories(userId);
+
+      if (!result.success) {
+        log.error({ error: result.error }, "Failed to get all memories");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ userId, count: result.memories?.length || 0 }, "All memories retrieved successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting all memories");
+      res.status(500).json({ error: "Failed to get all memories" });
+    }
+  });
+
+  app.put("/api/memory/:id", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "update" });
+    try {
+      const { id } = req.params;
+      const { data } = req.body;
+
+      if (!data) {
+        return res.status(400).json({ error: "data is required" });
+      }
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.updateMemory(id, data);
+
+      if (!result.success) {
+        log.error({ error: result.error, memoryId: id }, "Failed to update memory");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ memoryId: id }, "Memory updated successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error updating memory");
+      res.status(500).json({ error: "Failed to update memory" });
+    }
+  });
+
+  app.delete("/api/memory/:id", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "delete" });
+    try {
+      const { id } = req.params;
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.deleteMemory(id);
+
+      if (!result.success) {
+        log.error({ error: result.error, memoryId: id }, "Failed to delete memory");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ memoryId: id }, "Memory deleted successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error deleting memory");
+      res.status(500).json({ error: "Failed to delete memory" });
+    }
+  });
+
+  app.delete("/api/memory/all/:userId", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "deleteAll" });
+    try {
+      const { userId } = req.params;
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.deleteAllMemories(userId);
+
+      if (!result.success) {
+        log.error({ error: result.error, userId }, "Failed to delete all memories");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ userId }, "All memories deleted successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error deleting all memories");
+      res.status(500).json({ error: "Failed to delete all memories" });
+    }
+  });
+
+  app.get("/api/memory/history/:id", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "history" });
+    try {
+      const { id } = req.params;
+
+      if (!memoryService.isAvailable()) {
+        return res.status(503).json({ error: "Memory service not available" });
+      }
+
+      const result = await memoryService.getMemoryHistory(id);
+
+      if (!result.success) {
+        log.error({ error: result.error, memoryId: id }, "Failed to get memory history");
+        return res.status(500).json({ error: result.error });
+      }
+
+      log.info({ memoryId: id }, "Memory history retrieved successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting memory history");
+      res.status(500).json({ error: "Failed to get memory history" });
     }
   });
 

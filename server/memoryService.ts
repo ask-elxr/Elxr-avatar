@@ -38,20 +38,16 @@ class MemoryService {
     try {
       const apiKey = process.env.PINECONE_API_KEY;
       const openaiKey = process.env.OPENAI_API_KEY;
-      const mem0ApiKey = process.env.MEM0_API_KEY;
 
       if (!apiKey || !openaiKey) {
-        logger.warn('Pinecone or OpenAI API key not found. Memory service will not be available.');
-        return;
-      }
-
-      if (!mem0ApiKey) {
-        logger.warn('MEM0_API_KEY not found. Memory service will not be available.');
+        logger.warn({ service: 'mem0' }, 'Pinecone or OpenAI API key not found. Memory service will not be available.');
         return;
       }
 
       this.pineconeClient = new Pinecone({ apiKey });
 
+      // Use simplified in-memory configuration for now
+      // Full Pinecone integration can be enabled when needed
       this.memory = new Memory({
         version: 'v1.1',
         
@@ -64,13 +60,10 @@ class MemoryService {
         },
         
         vectorStore: {
-          provider: 'pinecone',
+          provider: 'memory',
           config: {
-            indexName: this.indexName,
-            dimension: 1536,
-            metric: 'cosine',
-            cloud: 'aws',
-            region: 'us-east-1'
+            collectionName: 'user-memories',
+            dimension: 1536
           }
         },
         
@@ -78,9 +71,7 @@ class MemoryService {
           provider: 'openai',
           config: {
             apiKey: openaiKey,
-            model: 'gpt-4o-mini',
-            temperature: 0.2,
-            maxTokens: 1500
+            model: 'gpt-4o-mini'
           }
         },
         
@@ -88,9 +79,15 @@ class MemoryService {
       });
 
       this.isInitialized = true;
-      logger.info('Memory service initialized successfully with Pinecone');
+      logger.info({ service: 'mem0' }, 'Memory service initialized successfully (in-memory mode)');
     } catch (error) {
-      logger.error('Failed to initialize Memory service:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      logger.error({ 
+        service: 'mem0', 
+        error: errorMessage,
+        stack: errorStack
+      }, 'Failed to initialize Memory service');
       this.isInitialized = false;
     }
   }
@@ -116,25 +113,26 @@ class MemoryService {
             metadata: meta 
           });
         },
+        'mem0-add',
         {
-          name: 'mem0-add',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      const result = await addMemoryWithBreaker(messages, userId, metadata);
+      const result = await addMemoryWithBreaker.execute(messages, userId, metadata);
       
-      logger.info(`Added memory for user ${userId}`, {
+      logger.info({
+        service: 'mem0',
         userId,
         metadata,
         messageCount: Array.isArray(messages) ? messages.length : 1
-      });
+      }, `Added memory for user ${userId}`);
 
-      return { success: true, memories: result };
+      return { success: true, memories: Array.isArray(result) ? result : [result] as any };
     } catch (error) {
-      logger.error('Failed to add memory:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to add memory');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -164,25 +162,27 @@ class MemoryService {
             ...opts
           });
         },
+        'mem0-search',
         {
-          name: 'mem0-search',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      const results = await searchMemoryWithBreaker(query, userId, options);
+      const results = await searchMemoryWithBreaker.execute(query, userId, options);
+      const memoriesArray = Array.isArray(results) ? results : (results ? [results] : []);
       
-      logger.info(`Searched memories for user ${userId}`, {
+      logger.info({
+        service: 'mem0',
         userId,
         query,
-        resultCount: results?.length || 0
-      });
+        resultCount: memoriesArray.length
+      }, `Searched memories for user ${userId}`);
 
-      return { success: true, memories: results || [] };
+      return { success: true, memories: memoriesArray as MemorySearchResult[] };
     } catch (error) {
-      logger.error('Failed to search memories:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to search memories');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -202,24 +202,26 @@ class MemoryService {
         async (uid: string) => {
           return await this.memory!.getAll({ userId: uid });
         },
+        'mem0-get-all',
         {
-          name: 'mem0-get-all',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      const memories = await getAllWithBreaker(userId);
+      const memories = await getAllWithBreaker.execute(userId);
+      const memoriesArray = Array.isArray(memories) ? memories : (memories ? [memories] : []);
       
-      logger.info(`Retrieved all memories for user ${userId}`, {
+      logger.info({
+        service: 'mem0',
         userId,
-        count: memories?.length || 0
-      });
+        count: memoriesArray.length
+      }, `Retrieved all memories for user ${userId}`);
 
-      return { success: true, memories: memories || [] };
+      return { success: true, memories: memoriesArray as MemorySearchResult[] };
     } catch (error) {
-      logger.error('Failed to get all memories:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to get all memories');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -238,22 +240,22 @@ class MemoryService {
     try {
       const updateWithBreaker = wrapServiceCall(
         async (mid: string, d: string) => {
-          return await this.memory!.update(mid, { data: d });
+          return await this.memory!.update(mid, d);
         },
+        'mem0-update',
         {
-          name: 'mem0-update',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      await updateWithBreaker(memoryId, data);
+      await updateWithBreaker.execute(memoryId, data);
       
-      logger.info(`Updated memory ${memoryId}`);
+      logger.info({ service: 'mem0', memoryId }, `Updated memory ${memoryId}`);
       return { success: true };
     } catch (error) {
-      logger.error('Failed to update memory:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to update memory');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -273,20 +275,20 @@ class MemoryService {
         async (mid: string) => {
           return await this.memory!.delete(mid);
         },
+        'mem0-delete',
         {
-          name: 'mem0-delete',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      await deleteWithBreaker(memoryId);
+      await deleteWithBreaker.execute(memoryId);
       
-      logger.info(`Deleted memory ${memoryId}`);
+      logger.info({ service: 'mem0', memoryId }, `Deleted memory ${memoryId}`);
       return { success: true };
     } catch (error) {
-      logger.error('Failed to delete memory:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to delete memory');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -306,20 +308,20 @@ class MemoryService {
         async (uid: string) => {
           return await this.memory!.deleteAll({ userId: uid });
         },
+        'mem0-delete-all',
         {
-          name: 'mem0-delete-all',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      await deleteAllWithBreaker(userId);
+      await deleteAllWithBreaker.execute(userId);
       
-      logger.info(`Deleted all memories for user ${userId}`);
+      logger.info({ service: 'mem0', userId }, `Deleted all memories for user ${userId}`);
       return { success: true };
     } catch (error) {
-      logger.error('Failed to delete all memories:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to delete all memories');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -339,19 +341,19 @@ class MemoryService {
         async (mid: string) => {
           return await this.memory!.history(mid);
         },
+        'mem0-history',
         {
-          name: 'mem0-history',
           timeout: 30000,
           errorThresholdPercentage: 50,
           resetTimeout: 30000
         }
       );
 
-      const history = await historyWithBreaker(memoryId);
+      const history = await historyWithBreaker.execute(memoryId);
       
       return { success: true, history: history || [] };
     } catch (error) {
-      logger.error('Failed to get memory history:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to get memory history');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
@@ -366,10 +368,10 @@ class MemoryService {
 
     try {
       await this.memory!.reset();
-      logger.warn('Memory service reset - all memories cleared');
+      logger.warn({ service: 'mem0' }, 'Memory service reset - all memories cleared');
       return { success: true };
     } catch (error) {
-      logger.error('Failed to reset memory service:', error);
+      logger.error({ service: 'mem0', error }, 'Failed to reset memory service');
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error' 
