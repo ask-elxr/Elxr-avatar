@@ -1358,6 +1358,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // PubMed research integration
+      let pubmedContext = "";
+      let pubmedMetadata: {
+        papersFound: number;
+        totalAvailable: number;
+        fromCache: boolean;
+        query: string;
+        papers: Array<{ pmid: string; title: string; authors: string[] }>;
+      } | null = null;
+
+      // Check for explicit PubMed command: "search pubmed: [query]"
+      const pubmedCommandMatch = message.match(/search pubmed:\s*(.+)/i);
+      
+      // Keywords that suggest a research question
+      const researchKeywords = [
+        'research', 'study', 'studies', 'clinical trial', 'peer-reviewed',
+        'scientific evidence', 'medical literature', 'published', 'meta-analysis',
+        'systematic review', 'findings', 'recent research', 'what does research say',
+        'according to research', 'evidence-based'
+      ];
+      
+      const isResearchQuestion = researchKeywords.some(keyword => 
+        message.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      if (pubmedCommandMatch || isResearchQuestion) {
+        try {
+          const { searchAndFetchPubMed, isAvailable } = await import("./pubmedService.js");
+          
+          if (isAvailable()) {
+            const searchQuery = pubmedCommandMatch ? pubmedCommandMatch[1].trim() : message;
+            const maxResults = pubmedCommandMatch ? 10 : 5; // More results for explicit searches
+            
+            logger.info(
+              { 
+                userId, 
+                searchQuery, 
+                explicit: !!pubmedCommandMatch,
+                maxResults 
+              },
+              'Searching PubMed for avatar response'
+            );
+
+            const pubmedResults = await searchAndFetchPubMed(searchQuery, maxResults);
+            
+            if (pubmedResults.articles.length > 0) {
+              pubmedContext = `\n\nRELEVANT PEER-REVIEWED RESEARCH FROM PUBMED:\n${pubmedResults.formattedText}\n\n` +
+                `[Note: This research is ${pubmedResults.fromCache ? 'from cache (recently searched)' : 'freshly retrieved from PubMed'}. ` +
+                `${pubmedResults.totalCount} total papers available on this topic.]`;
+              
+              pubmedMetadata = {
+                papersFound: pubmedResults.articles.length,
+                totalAvailable: pubmedResults.totalCount,
+                fromCache: pubmedResults.fromCache || false,
+                query: searchQuery,
+                papers: pubmedResults.articles.map(article => ({
+                  pmid: article.pmid,
+                  title: article.title,
+                  authors: article.authors.slice(0, 3) // First 3 authors
+                }))
+              };
+
+              logger.info(
+                { 
+                  userId,
+                  papersFound: pubmedResults.articles.length,
+                  totalAvailable: pubmedResults.totalCount,
+                  fromCache: pubmedResults.fromCache,
+                  query: searchQuery
+                },
+                'PubMed research retrieved for avatar response'
+              );
+            } else {
+              logger.info({ userId, searchQuery }, 'No PubMed results found for query');
+            }
+          } else {
+            logger.warn('PubMed service not available for avatar response');
+          }
+        } catch (pubmedError: any) {
+          logger.error({ error: pubmedError.message }, 'Error fetching PubMed research for avatar');
+          // Continue without PubMed results if there's an error
+        }
+      }
+
       // Get avatar configuration
       const { getAvatarById } = await import("@shared/avatarConfig");
       const avatarConfig = getAvatarById(avatarId);
@@ -1377,10 +1461,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const personalityPrompt = avatarPersonality || personalityWithDate;
 
-      // Enhanced personality prompt with memory context
-      const enhancedPersonality = memoryContext
-        ? `${personalityPrompt}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
-        : personalityPrompt;
+      // Enhanced personality prompt with memory and PubMed context
+      let enhancedPersonality = personalityPrompt;
+      
+      if (memoryContext) {
+        enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`;
+      }
+      
+      if (pubmedContext) {
+        enhancedPersonality += `\n\n${pubmedContext}\n\nYou have access to peer-reviewed medical research. Incorporate these findings naturally in your response. Cite specific papers when relevant using "According to a ${pubmedMetadata?.fromCache ? 'recent study' : 'study'} by [authors]..." format. You can mention PMID numbers for credibility.`;
+      }
 
       // Get knowledge base context from Pinecone using avatar-specific namespaces + user's personal knowledge sources
       const { pineconeNamespaceService } = await import(
@@ -1473,6 +1563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               timestamp: new Date().toISOString(),
               hasKnowledgeBase: !!knowledgeContext,
               hasWebSearch: !!webSearchResults,
+              hasPubMedResearch: !!pubmedContext,
               avatarId,
             }
           );
@@ -1493,6 +1584,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         usedWebSearch: !!webSearchResults,
         usedClaude: claudeService.isAvailable(),
         hasMemories: !!memoryContext,
+        pubmedResearch: pubmedMetadata ? {
+          papersFound: pubmedMetadata.papersFound,
+          totalAvailable: pubmedMetadata.totalAvailable,
+          fromCache: pubmedMetadata.fromCache,
+          searchQuery: pubmedMetadata.query,
+          papers: pubmedMetadata.papers.map(paper => ({
+            pmid: paper.pmid,
+            title: paper.title,
+            authors: paper.authors,
+            url: `https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/`
+          }))
+        } : null,
       });
     } catch (error) {
       console.error("Error getting avatar response:", error);
