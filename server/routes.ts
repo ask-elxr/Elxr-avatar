@@ -1339,26 +1339,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionManager.updateActivityByUserId(userId);
       }
 
-      let memoryContext = "";
-      if (memoryEnabled && userId && memoryService.isAvailable()) {
-        try {
-          const memoryResult = await memoryService.searchMemories(message, userId, { limit: 5 });
-          if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
-            memoryContext =
-              "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
-              memoryResult.memories.map((m) => `- ${m.content}`).join("\n");
-            logger.info(
-              { userId, memoryCount: memoryResult.memories.length },
-              'Retrieved relevant memories for avatar conversation'
-            );
+      // Start performance timing
+      const perfStart = Date.now();
+      const perfTimings: Record<string, number> = {};
+
+      // Check for research question context
+      const pubmedCommandMatch = message.match(/search pubmed:\s*(.+)/i);
+      const researchKeywords = [
+        'research', 'study', 'studies', 'clinical trial', 'peer-reviewed',
+        'scientific evidence', 'medical literature', 'published', 'meta-analysis',
+        'systematic review', 'findings', 'recent research', 'what does research say',
+        'according to research', 'evidence-based'
+      ];
+      const isResearchQuestion = researchKeywords.some(keyword => 
+        message.toLowerCase().includes(keyword.toLowerCase())
+      );
+
+      // PARALLEL DATA FETCHING: Launch all enrichment operations concurrently
+      const [memoryResultSettled, pubmedResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+        // 1. Memory search
+        (async () => {
+          const memStart = Date.now();
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+            return { success: false, memories: [] };
           }
-        } catch (memError) {
-          logger.error({ error: memError }, "Error fetching memories");
-          // Continue without memories if there's an error
-        }
+          try {
+            const result = await memoryService.searchMemories(message, userId, { limit: 5 });
+            perfTimings.memory = Date.now() - memStart;
+            return result;
+          } catch (error) {
+            perfTimings.memory = Date.now() - memStart;
+            logger.error({ error }, "Error fetching memories");
+            return { success: false, memories: [] };
+          }
+        })(),
+
+        // 2. PubMed research
+        (async () => {
+          const pubmedStart = Date.now();
+          if (!pubmedCommandMatch && !isResearchQuestion) {
+            return null;
+          }
+          try {
+            const { searchHybrid, isAvailable } = await import("./pubmedService.js");
+            if (!isAvailable()) {
+              perfTimings.pubmed = Date.now() - pubmedStart;
+              return null;
+            }
+            
+            const searchQuery = pubmedCommandMatch ? pubmedCommandMatch[1].trim() : message;
+            const maxResults = pubmedCommandMatch ? 10 : 5;
+            
+            logger.info({ userId, searchQuery, explicit: !!pubmedCommandMatch, maxResults }, 
+              'Searching PubMed (hybrid mode) for avatar response');
+            
+            const results = await searchHybrid(searchQuery, maxResults);
+            perfTimings.pubmed = Date.now() - pubmedStart;
+            
+            if (results.articles.length > 0) {
+              logger.info({ userId, papersFound: results.articles.length, source: results.source }, 
+                'PubMed research retrieved');
+              return { results, searchQuery };
+            }
+            return null;
+          } catch (error: any) {
+            perfTimings.pubmed = Date.now() - pubmedStart;
+            logger.error({ error: error.message }, 'Error fetching PubMed research');
+            return null;
+          }
+        })(),
+
+        // 3. Knowledge base (Pinecone + user sources)
+        (async () => {
+          const kbStart = Date.now();
+          try {
+            const { getAvatarById } = await import("@shared/avatarConfig");
+            const avatarConfig = getAvatarById(avatarId);
+            if (!avatarConfig) throw new Error("Avatar not found");
+
+            let allNamespaces = [...avatarConfig.pineconeNamespaces];
+            
+            // Add user's knowledge sources and documents
+            if (userId && !userId.startsWith('temp_')) {
+              const userSources = await storage.listKnowledgeSources(userId);
+              const activeSourceNamespaces = userSources
+                .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
+                .map(source => source.pineconeNamespace);
+              
+              const documentNamespaces = [`documents-${userId}`, `video-transcripts-${userId}`];
+              allNamespaces = [...allNamespaces, ...activeSourceNamespaces, ...documentNamespaces];
+            }
+
+            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+            if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
+              perfTimings.knowledge = Date.now() - kbStart;
+              return { context: "", namespaces: 0, avatarConfig };
+            }
+
+            const knowledgeResults = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
+            perfTimings.knowledge = Date.now() - kbStart;
+            
+            const context = knowledgeResults.length > 0 ? knowledgeResults[0].text : "";
+            return { context, namespaces: allNamespaces.length, avatarConfig };
+          } catch (error) {
+            perfTimings.knowledge = Date.now() - kbStart;
+            logger.error({ error }, 'Error fetching knowledge base');
+            return { context: "", namespaces: 0, avatarConfig: null };
+          }
+        })()
+      ]);
+
+      // Extract results from settled promises
+      const memoryResult = memoryResultSettled.status === 'fulfilled' ? memoryResultSettled.value : { success: false, memories: [] };
+      const pubmedResult = pubmedResultSettled.status === 'fulfilled' ? pubmedResultSettled.value : null;
+      const knowledgeResult = knowledgeResultSettled.status === 'fulfilled' ? knowledgeResultSettled.value : { context: "", namespaces: 0, avatarConfig: null };
+
+      // Get avatar config from knowledge result
+      const avatarConfig = knowledgeResult.avatarConfig;
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
       }
 
-      // PubMed research integration
+      // Build memory context
+      let memoryContext = "";
+      if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
+        memoryContext = "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
+          memoryResult.memories.map((m) => `- ${m.content}`).join("\n");
+        logger.info({ userId, memoryCount: memoryResult.memories.length }, 'Retrieved relevant memories');
+      }
+
+      // Build PubMed context
       let pubmedContext = "";
       let pubmedMetadata: {
         papersFound: number;
@@ -1368,87 +1478,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         papers: Array<{ pmid: string; title: string; authors: string[] }>;
       } | null = null;
 
-      // Check for explicit PubMed command: "search pubmed: [query]"
-      const pubmedCommandMatch = message.match(/search pubmed:\s*(.+)/i);
-      
-      // Keywords that suggest a research question
-      const researchKeywords = [
-        'research', 'study', 'studies', 'clinical trial', 'peer-reviewed',
-        'scientific evidence', 'medical literature', 'published', 'meta-analysis',
-        'systematic review', 'findings', 'recent research', 'what does research say',
-        'according to research', 'evidence-based'
-      ];
-      
-      const isResearchQuestion = researchKeywords.some(keyword => 
-        message.toLowerCase().includes(keyword.toLowerCase())
-      );
-
-      if (pubmedCommandMatch || isResearchQuestion) {
-        try {
-          const { searchHybrid, isAvailable } = await import("./pubmedService.js");
-          
-          if (isAvailable()) {
-            const searchQuery = pubmedCommandMatch ? pubmedCommandMatch[1].trim() : message;
-            const maxResults = pubmedCommandMatch ? 10 : 5; // More results for explicit searches
-            
-            logger.info(
-              { 
-                userId, 
-                searchQuery, 
-                explicit: !!pubmedCommandMatch,
-                maxResults 
-              },
-              'Searching PubMed (hybrid mode) for avatar response'
-            );
-
-            const pubmedResults = await searchHybrid(searchQuery, maxResults);
-            
-            if (pubmedResults.articles.length > 0) {
-              const sourceDescription = pubmedResults.source || 'PubMed';
-              pubmedContext = `\n\nRELEVANT PEER-REVIEWED RESEARCH FROM PUBMED:\n${pubmedResults.formattedText}\n\n` +
-                `[Note: This research is from ${sourceDescription}. ` +
-                `${pubmedResults.totalCount} total papers available on this topic.]`;
-              
-              pubmedMetadata = {
-                papersFound: pubmedResults.articles.length,
-                totalAvailable: pubmedResults.totalCount,
-                fromCache: pubmedResults.fromCache || false,
-                query: searchQuery,
-                papers: pubmedResults.articles.map(article => ({
-                  pmid: article.pmid,
-                  title: article.title,
-                  authors: article.authors.slice(0, 3) // First 3 authors
-                }))
-              };
-
-              logger.info(
-                { 
-                  userId,
-                  papersFound: pubmedResults.articles.length,
-                  totalAvailable: pubmedResults.totalCount,
-                  source: pubmedResults.source,
-                  query: searchQuery
-                },
-                'PubMed research retrieved for avatar response (hybrid search)'
-              );
-            } else {
-              logger.info({ userId, searchQuery }, 'No PubMed results found for query');
-            }
-          } else {
-            logger.warn('PubMed service not available for avatar response');
-          }
-        } catch (pubmedError: any) {
-          logger.error({ error: pubmedError.message }, 'Error fetching PubMed research for avatar');
-          // Continue without PubMed results if there's an error
-        }
+      if (pubmedResult) {
+        const { results, searchQuery } = pubmedResult;
+        const sourceDescription = results.source || 'PubMed';
+        pubmedContext = `\n\nRELEVANT PEER-REVIEWED RESEARCH FROM PUBMED:\n${results.formattedText}\n\n` +
+          `[Note: This research is from ${sourceDescription}. ${results.totalCount} total papers available on this topic.]`;
+        
+        pubmedMetadata = {
+          papersFound: results.articles.length,
+          totalAvailable: results.totalCount,
+          fromCache: results.fromCache || false,
+          query: searchQuery,
+          papers: results.articles.map(article => ({
+            pmid: article.pmid,
+            title: article.title,
+            authors: article.authors.slice(0, 3)
+          }))
+        };
       }
 
-      // Get avatar configuration
-      const { getAvatarById } = await import("@shared/avatarConfig");
-      const avatarConfig = getAvatarById(avatarId);
-      
-      if (!avatarConfig) {
-        return res.status(404).json({ error: "Avatar not found" });
+      // Get knowledge context
+      const knowledgeContext = knowledgeResult.context;
+      if (knowledgeContext && knowledgeResult.namespaces > 0) {
+        console.log(`📚 Knowledge context retrieved for ${avatarId} (${knowledgeContext.length} chars) from ${knowledgeResult.namespaces} namespaces`);
       }
 
       const currentDate = new Date().toLocaleDateString("en-US", {
@@ -1473,70 +1525,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enhancedPersonality += `\n\n${pubmedContext}\n\nYou have access to peer-reviewed medical research. Incorporate these findings naturally in your response. Cite specific papers when relevant using "According to a ${pubmedMetadata?.fromCache ? 'recent study' : 'study'} by [authors]..." format. You can mention PMID numbers for credibility.`;
       }
 
-      // Get knowledge base context from Pinecone using avatar-specific namespaces + user's personal knowledge sources
-      const { pineconeNamespaceService } = await import(
-        "./pineconeNamespaceService.js"
-      );
-      let knowledgeContext = "";
-
-      // Combine avatar namespaces with user's personal knowledge source namespaces and uploaded documents
-      let allNamespaces = [...avatarConfig.pineconeNamespaces];
-      
-      if (userId && !userId.startsWith('temp_')) {
-        try {
-          // Add user's connected knowledge sources (Notion, Obsidian, etc.)
-          const userSources = await storage.listKnowledgeSources(userId);
-          const activeSourceNamespaces = userSources
-            .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
-            .map(source => source.pineconeNamespace);
-          
-          // Add user's uploaded documents namespaces (user-scoped for privacy)
-          const documentNamespaces = [`documents-${userId}`, `video-transcripts-${userId}`];
-          
-          allNamespaces = [...allNamespaces, ...activeSourceNamespaces, ...documentNamespaces];
-          
-          logger.info(
-            { 
-              userId, 
-              avatarNamespaces: avatarConfig.pineconeNamespaces.length,
-              knowledgeSourceNamespaces: activeSourceNamespaces.length,
-              documentNamespaces: documentNamespaces.length,
-              totalNamespaces: allNamespaces.length
-            },
-            'Combined namespaces for avatar knowledge retrieval'
-          );
-        } catch (error) {
-          logger.error({ error }, 'Error fetching user knowledge sources');
-        }
-      }
-
-      if (pineconeNamespaceService.isAvailable() && allNamespaces.length > 0) {
-        const knowledgeResults = await pineconeNamespaceService.retrieveContext(
-          message,
-          3,
-          allNamespaces,
-        );
-        if (knowledgeResults.length > 0) {
-          knowledgeContext = knowledgeResults[0].text;
-          console.log(
-            `📚 Knowledge context retrieved for ${avatarId} (${knowledgeContext.length} chars) from ${allNamespaces.length} namespaces`,
-          );
-        }
-      }
-
-      // DISABLED: Web search (speeds up responses - only using Claude + Pinecone now)
-      let webSearchResults = "";
-      // if (useWebSearch || googleSearchService.shouldUseWebSearch(message)) {
-      //   if (googleSearchService.isAvailable()) {
-      //     webSearchResults = await googleSearchService.search(message, 3);
-      //   }
-      // }
-
       // Generate response using Claude Sonnet 4 with all context
+      perfTimings.dataFetch = Date.now() - perfStart;
+      const claudeStart = Date.now();
+      
       let aiResponse: string;
+      const webSearchResults = ""; // Web search disabled for speed
 
       if (claudeService.isAvailable()) {
-        // Use Claude Sonnet 4 with Mark Kohl personality
         const enhancedConversationHistory = conversationHistory.map(
           (msg: any) => ({
             message: msg.message,
@@ -1544,28 +1540,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }),
         );
 
-        if (webSearchResults) {
-          aiResponse = await claudeService.generateEnhancedResponse(
-            message,
-            knowledgeContext,
-            webSearchResults,
-            enhancedConversationHistory,
-            enhancedPersonality, // Pass enhanced personality with memories
-          );
-        } else {
-          aiResponse = await claudeService.generateResponse(
-            message,
-            knowledgeContext,
-            enhancedConversationHistory,
-            enhancedPersonality, // Pass enhanced personality with memories
-          );
-        }
+        aiResponse = await claudeService.generateResponse(
+          message,
+          knowledgeContext,
+          enhancedConversationHistory,
+          enhancedPersonality,
+        );
       } else {
         // Fallback to knowledge base only
         aiResponse =
           knowledgeContext ||
           "I'm here to help, but I don't have specific information about that topic right now.";
       }
+      
+      perfTimings.claude = Date.now() - claudeStart;
 
       // Store conversation in memory if enabled
       if (memoryEnabled && userId && memoryService.isAvailable()) {
@@ -1593,6 +1581,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Calculate total response time
+      perfTimings.total = Date.now() - perfStart;
+
+      // Log performance metrics
+      logger.info({ 
+        userId, 
+        avatarId,
+        perfTimings,
+        hasMemories: !!memoryContext,
+        hasPubMed: !!pubmedContext,
+        hasKnowledge: !!knowledgeContext
+      }, 'Avatar response performance metrics');
+
       res.json({
         success: true,
         message,
@@ -1613,6 +1614,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             url: `https://pubmed.ncbi.nlm.nih.gov/${paper.pmid}/`
           }))
         } : null,
+        performance: {
+          totalMs: perfTimings.total,
+          dataFetchMs: perfTimings.dataFetch,
+          claudeMs: perfTimings.claude,
+          breakdown: perfTimings
+        }
       });
     } catch (error) {
       console.error("Error getting avatar response:", error);
