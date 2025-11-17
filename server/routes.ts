@@ -114,8 +114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // HeyGen API token endpoint for Streaming SDK with rate limiting (1 request per user per minute)
-  app.post("/api/heygen/token", rateLimitMiddleware(1, 60000), async (req, res) => {
+  // HeyGen API token endpoint for Streaming SDK with rate limiting (5 requests per user per minute to allow avatar switching)
+  app.post("/api/heygen/token", rateLimitMiddleware(5, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen", operation: "createToken" });
 
     try {
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const responseText = typeof claudeResponseResult === 'string' 
         ? claudeResponseResult 
-        : (claudeResponseResult?.text || "");
+        : ((claudeResponseResult as any)?.text || "");
       
       if (!responseText) {
         log.error({ claudeResponseResult }, "Claude response was empty");
