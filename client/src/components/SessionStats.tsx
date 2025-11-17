@@ -111,7 +111,8 @@ export function SessionStats() {
       'willie': "hsl(142, 76%, 36%)",
       'june': "hsl(217, 91%, 60%)",
       'ann': "hsl(24, 95%, 53%)",
-      'katya': "hsl(171, 77%, 64%)",
+      'shawn': "hsl(171, 77%, 64%)",
+      'thad': "hsl(45, 93%, 47%)",
     };
     return colors[avatarId] || "hsl(240, 5%, 64%)";
   };
@@ -124,7 +125,8 @@ export function SessionStats() {
       'willie': 'Willie Gault',
       'june': 'June',
       'ann': 'Ann',
-      'katya': 'Katya',
+      'shawn': 'Shawn',
+      'thad': 'Thad',
     };
     return displayNames[avatarId] || avatarId.split('-').map(word => 
       word.charAt(0).toUpperCase() + word.slice(1)

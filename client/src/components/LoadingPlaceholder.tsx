@@ -1,6 +1,6 @@
 import markPhoto from "@assets/Mark_1763305942420.png";
 import thadPhoto from "@assets/Thad_1763305942420.png";
-import katyaPhoto from "@assets/Katya_1763305580145.png";
+import shawnPhoto from "@assets/Katya_1763305580145.png";
 import williePhoto from "@assets/Willie Gault.png";
 import junePhoto from "@assets/June.png";
 import annPhoto from "@assets/Ann.png";
@@ -13,7 +13,7 @@ const avatarPhotos: Record<string, string> = {
   "mark-kohl": markPhoto,
   "mark": markPhoto,
   "thad": thadPhoto,
-  "katya": katyaPhoto,
+  "shawn": shawnPhoto,
   "willie-gault": williePhoto,
   "willie": williePhoto,
   "june": junePhoto,

@@ -158,11 +158,12 @@ Preferred communication style: Simple, everyday language.
   - Smart state management: Start button only reappears on true session end (not during initialization)
   
 ### Avatar Database Updates
-- **Removed Shawn mentor**: Replaced with new mentor lineup
-- **Added Katya**: New emotional coach and self-awareness guide
-  - HeyGen Avatar ID: `Katya_Chair_Sitting_public`
-  - Description: "Emotional coach and self-awareness guide"
-  - Pinecone namespace: `katya`
+- **All 6 mentors active**: Mark Kohl, Willie Gault, June, Ann, Shawn, Thad
+  - Shawn: Conscious leadership and performance integration expert
+    - HeyGen Avatar ID: `a9d3346d94594c5f9ca522f6d0469038`
+    - Description: "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance."
+    - Pinecone namespaces: `shawn`, `WORK`, `LIFE`, `TRANSITIONS`, `MIDLIFE`
+    - ElevenLabs Voice: `bVMeCyTHy58xNoL34h3H`
 - **Updated Willie Gault**: Correct HeyGen avatar ID `a9d3346d94594c5f9ca522f6d0469038`
 - **Updated avatar IDs**: June (`June_HR_public`), Thad (`Thaddeus_Chair_Sitting_public`), Ann (`Ann_Therapist_public`)
 - **All mentor photos configured**: Each mentor now has their own unique loading screen photo
