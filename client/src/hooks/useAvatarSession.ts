@@ -227,8 +227,17 @@ export function useAvatarSession({
         const userMessage = event?.detail?.message || event?.message || event;
         if (userMessage && typeof userMessage === 'string' && userMessage.trim()) {
           console.log("🎤 Voice input received:", userMessage);
+          console.log("Session active:", sessionActive, "HeyGen active:", heygenSessionActive);
+          
           // Process the voice message just like typed messages
-          handleSubmitMessage(userMessage).catch(console.error);
+          try {
+            await handleSubmitMessage(userMessage);
+            console.log("✅ Voice message processed successfully");
+          } catch (error) {
+            console.error("❌ Error processing voice message:", error);
+          }
+        } else {
+          console.warn("Voice event received but no valid message:", event);
         }
       });
 
@@ -546,7 +555,17 @@ export function useAvatarSession({
   }, [clearIdleTimeout]);
 
   const handleSubmitMessage = useCallback(async (message: string) => {
-    if (!message.trim() || !sessionActive) return;
+    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive });
+    
+    if (!message.trim()) {
+      console.warn("Empty message, skipping");
+      return;
+    }
+    
+    if (!sessionActive) {
+      console.error("Session not active! Cannot process message.");
+      return;
+    }
 
     // Clear idle timeout immediately to prevent mid-conversation shutdowns
     clearIdleTimeout();
@@ -554,7 +573,7 @@ export function useAvatarSession({
     onResetInactivityTimer?.();
     const requestId = Date.now().toString() + Math.random().toString(36);
     currentRequestIdRef.current = requestId;
-    console.log("User submitted message - Request ID:", requestId);
+    console.log("✅ Processing message - Request ID:", requestId);
 
     // Interrupt current speech IMMEDIATELY before any API calls
     if (audioOnlyRef.current && currentAudioRef.current) {
