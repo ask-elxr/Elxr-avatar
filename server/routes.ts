@@ -2027,6 +2027,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const { originalname, mimetype, size, path: tempPath } = req.file;
+        const category = req.body.category || "OTHER";
 
         // Validate PDF file
         if (mimetype !== "application/pdf") {
@@ -2036,20 +2037,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const documentId = `pdf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Create database record with user-scoped namespace
+        // Create database record with category-based namespace
         const document = await storage.createDocument({
           userId,
           filename: originalname,
           fileType: "pdf",
           fileSize: size.toString(),
-          pineconeNamespace: `documents-${userId}`,
+          pineconeNamespace: category,
           objectPath: tempPath,
         });
 
-        log.info({ documentId, filename: originalname, userId }, "Processing PDF document");
+        log.info({ documentId, filename: originalname, userId, category }, "Processing PDF document");
 
-        // Process PDF in background
-        processPDFDocument(tempPath, originalname, userId, documentId)
+        // Process PDF in background with category namespace
+        processPDFDocument(tempPath, originalname, category, documentId)
           .then(async (metadata: any) => {
             await storage.updateDocumentStatus(
               document.id,
@@ -2116,6 +2117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const { originalname, mimetype, size, path: tempPath } = req.file;
+        const category = req.body.category || "OTHER";
 
         // Validate video/audio file
         const allowedMimeTypes = [
@@ -2140,20 +2142,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const documentId = `video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Create database record with user-scoped namespace
+        // Create database record with category-based namespace
         const document = await storage.createDocument({
           userId,
           filename: originalname,
           fileType: "video",
           fileSize: size.toString(),
-          pineconeNamespace: `video-transcripts-${userId}`,
+          pineconeNamespace: category,
           objectPath: tempPath,
         });
 
-        log.info({ documentId, filename: originalname, userId }, "Processing video document");
+        log.info({ documentId, filename: originalname, userId, category }, "Processing video document");
 
-        // Process video in background
-        processVideoDocument(tempPath, originalname, userId, documentId)
+        // Process video in background with category namespace
+        processVideoDocument(tempPath, originalname, category, documentId)
           .then(async (metadata: any) => {
             await storage.updateDocumentStatus(
               document.id,
