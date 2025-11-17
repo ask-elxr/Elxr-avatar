@@ -83,8 +83,11 @@ export function compressionConfig() {
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export function rateLimitMiddleware(maxRequests: number = 10, windowMs: number = 60000) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const clientId = req.ip || 'unknown';
+  return (req: any, res: Response, next: NextFunction) => {
+    // Use userId from authenticated session or request body (for temp_ IDs)
+    // Fall back to IP address if no user identification available
+    let clientId = req.user?.claims?.sub || req.body?.userId || req.ip || 'unknown';
+    
     const now = Date.now();
     
     const clientData = rateLimitMap.get(clientId);
