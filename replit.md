@@ -52,6 +52,13 @@ Preferred communication style: Simple, everyday language.
   - **Smart Caching**: Vector similarity search (95% threshold) with 7-day expiration in dedicated 'pubmed-cache' namespace
   - **Cost Optimization**: Embedding reuse between cache check and storage, reducing OpenAI costs by 50% on cache misses
   - **Performance**: 3x faster response times on cache hits (1619ms → 532ms for typical queries)
+  - **AI-Powered Summarization**: Claude Sonnet 4 generates comprehensive summaries of PubMed research results (~15s for 3-4 articles)
+    * **Main Findings**: 3-5 key discoveries with PMID citations for traceability
+    * **Common Themes**: 2-4 recurring patterns across studies
+    * **Controversies**: Conflicting results or debates in the literature
+    * **Relevance**: Explanation of how findings address the user's query
+    * **Synthesis**: 2-3 paragraph narrative integrating all findings
+    * **Cache Integration**: Summaries cached alongside articles for instant retrieval on subsequent requests
 
 # External Dependencies
 
