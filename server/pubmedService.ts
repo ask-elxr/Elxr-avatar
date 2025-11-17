@@ -824,8 +824,8 @@ export async function searchHybrid(
   let summary: PubMedSummary | null = null;
 
   try {
-    const { searchOfflineArticles } = await import('./offlinePubMedService.js');
-    const offlineResults = await searchOfflineArticles(query, maxResults * 2);
+    const { searchOfflinePubMed } = await import('./offlinePubMedService.js');
+    const offlineResults = await searchOfflinePubMed(query, maxResults * 2);
     
     offlineArticles.push(...offlineResults);
     offlineCount = offlineResults.length;

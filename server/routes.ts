@@ -1385,7 +1385,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (pubmedCommandMatch || isResearchQuestion) {
         try {
-          const { searchAndFetchPubMed, isAvailable } = await import("./pubmedService.js");
+          const { searchHybrid, isAvailable } = await import("./pubmedService.js");
           
           if (isAvailable()) {
             const searchQuery = pubmedCommandMatch ? pubmedCommandMatch[1].trim() : message;
@@ -1398,14 +1398,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 explicit: !!pubmedCommandMatch,
                 maxResults 
               },
-              'Searching PubMed for avatar response'
+              'Searching PubMed (hybrid mode) for avatar response'
             );
 
-            const pubmedResults = await searchAndFetchPubMed(searchQuery, maxResults);
+            const pubmedResults = await searchHybrid(searchQuery, maxResults);
             
             if (pubmedResults.articles.length > 0) {
+              const sourceDescription = pubmedResults.source || 'PubMed';
               pubmedContext = `\n\nRELEVANT PEER-REVIEWED RESEARCH FROM PUBMED:\n${pubmedResults.formattedText}\n\n` +
-                `[Note: This research is ${pubmedResults.fromCache ? 'from cache (recently searched)' : 'freshly retrieved from PubMed'}. ` +
+                `[Note: This research is from ${sourceDescription}. ` +
                 `${pubmedResults.totalCount} total papers available on this topic.]`;
               
               pubmedMetadata = {
@@ -1425,10 +1426,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   userId,
                   papersFound: pubmedResults.articles.length,
                   totalAvailable: pubmedResults.totalCount,
-                  fromCache: pubmedResults.fromCache,
+                  source: pubmedResults.source,
                   query: searchQuery
                 },
-                'PubMed research retrieved for avatar response'
+                'PubMed research retrieved for avatar response (hybrid search)'
               );
             } else {
               logger.info({ userId, searchQuery }, 'No PubMed results found for query');
