@@ -32,7 +32,9 @@ export function DocumentViewer() {
       if (!response.ok) {
         throw new Error(`Failed to fetch documents: ${response.statusText}`);
       }
-      return response.json();
+      const data = await response.json();
+      // Extract documents array from response
+      return data.documents || [];
     },
     enabled: !!user?.id,
     refetchInterval: (query) => {
