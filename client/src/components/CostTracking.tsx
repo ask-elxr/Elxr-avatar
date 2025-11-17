@@ -172,49 +172,74 @@ export function CostTracking() {
             </div>
           </div>
 
-          {/* Table Section */}
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Service</TableHead>
-                  <TableHead className="text-right">%</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">24h</TableHead>
-                  <TableHead className="text-right">Avg (ms)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {stats.services.map((service) => {
-                  const percentage = ((service.total / totalCalls) * 100).toFixed(1);
-                  return (
-                    <TableRow key={service.serviceName} data-testid={`cost-row-${service.serviceName}`}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
+          {/* Service Cards Section */}
+          <div className="space-y-3">
+            {stats.services.map((service) => {
+              const percentage = ((service.total / totalCalls) * 100).toFixed(1);
+              const serviceColor = getServiceColor(service.serviceName);
+              
+              return (
+                <div 
+                  key={service.serviceName}
+                  className="relative group"
+                  data-testid={`cost-row-${service.serviceName}`}
+                >
+                  <div 
+                    className="absolute -inset-[1px] opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy rounded-lg"
+                    style={{ 
+                      background: `linear-gradient(90deg, ${serviceColor}, hsl(271, 91%, 65%), ${serviceColor})`
+                    }}
+                  />
+                  <Card className="relative glass border-purple-500/20 shadow-lg group-hover:shadow-xl transition-all duration-300">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3 flex-1">
                           <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ background: getServiceColor(service.serviceName) }}
-                          />
-                          {getServiceDisplayName(service.serviceName)}
+                            className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg animate-pulse-slow"
+                            style={{ 
+                              background: `linear-gradient(135deg, ${serviceColor}, ${serviceColor}dd)`,
+                              boxShadow: `0 0 20px ${serviceColor}40`
+                            }}
+                          >
+                            <div 
+                              className="w-3 h-3 rounded-full bg-white"
+                            />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-sm bg-gradient-to-r from-purple-500 via-cyan-500 to-purple-500 bg-clip-text text-transparent animate-gradient-text">
+                              {getServiceDisplayName(service.serviceName)}
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                              {service.avgResponseTimeMs > 0 ? `${service.avgResponseTimeMs.toLocaleString()}ms avg` : 'No data'}
+                            </p>
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold text-primary" data-testid={`percentage-${service.serviceName}`}>
-                        {percentage}%
-                      </TableCell>
-                      <TableCell className="text-right" data-testid={`total-${service.serviceName}`}>
-                        {service.total.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right" data-testid={`last24h-${service.serviceName}`}>
-                        {service.last24h.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right" data-testid={`avg-response-${service.serviceName}`}>
-                        {service.avgResponseTimeMs > 0 ? service.avgResponseTimeMs.toLocaleString() : 'N/A'}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <div className="flex items-center gap-2">
+                              <span className="text-2xl font-bold" style={{ color: serviceColor }}>
+                                {percentage}%
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">of total calls</p>
+                          </div>
+                          
+                          <div className="text-right">
+                            <p className="text-lg font-bold" data-testid={`total-${service.serviceName}`}>
+                              {service.total.toLocaleString()}
+                            </p>
+                            <p className="text-xs text-muted-foreground" data-testid={`last24h-${service.serviceName}`}>
+                              {service.last24h.toLocaleString()} in 24h
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            })}
           </div>
         </div>
       </CardContent>
