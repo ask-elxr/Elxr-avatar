@@ -1,34 +1,58 @@
-import { Memory } from 'mem0ai/oss';
 import { Pinecone } from '@pinecone-database/pinecone';
-import { logger } from './logger';
-import { wrapServiceCall } from './circuitBreaker';
+import OpenAI from 'openai';
+import { logger } from './logger.js';
+import { wrapServiceCall } from './circuitBreaker.js';
+import { v4 as uuidv4 } from 'uuid';
 
-interface MemoryMessage {
-  role: 'user' | 'assistant';
-  content: string;
+// Memory types
+export enum MemoryType {
+  SUMMARY = 'summary',
+  NOTE = 'note',
+  PREFERENCE = 'preference'
 }
 
-interface MemoryMetadata {
-  category?: string;
-  avatarId?: string;
-  sessionId?: string;
-  [key: string]: any;
-}
-
-interface MemorySearchResult {
+// Memory record stored in Pinecone
+export interface MemoryRecord {
   id: string;
-  memory: string;
+  userId: string;
+  type: MemoryType;
+  content: string;
+  metadata: {
+    avatarId?: string;
+    sessionId?: string;
+    category?: string;
+    tags?: string[];
+    [key: string]: any;
+  };
+  createdAt: number;
+  updatedAt: number;
+}
+
+// Search result from Pinecone
+export interface MemorySearchResult {
+  id: string;
+  content: string;
+  type: MemoryType;
+  userId: string;
+  metadata: Record<string, any>;
   score: number;
-  metadata?: MemoryMetadata;
-  created_at?: string;
-  updated_at?: string;
+  createdAt: number;
+}
+
+interface MemoryResponse {
+  success: boolean;
+  memories?: MemorySearchResult[];
+  memory?: MemoryRecord;
+  count?: number;
+  error?: string;
 }
 
 class MemoryService {
-  private memory: Memory | null = null;
   private pineconeClient: Pinecone | null = null;
+  private openaiClient: OpenAI | null = null;
   private isInitialized = false;
   private readonly indexName = 'ask-elxr';
+  private readonly memoryNamespacePrefix = 'memory-';
 
   constructor() {
     this.initialize();
@@ -40,102 +64,126 @@ class MemoryService {
       const openaiKey = process.env.OPENAI_API_KEY;
 
       if (!apiKey || !openaiKey) {
-        logger.warn({ service: 'mem0' }, 'Pinecone or OpenAI API key not found. Memory service will not be available.');
+        logger.warn(
+          { service: 'memory' },
+          'Pinecone or OpenAI API key not found. Memory service will not be available.',
+        );
         return;
       }
 
       this.pineconeClient = new Pinecone({ apiKey });
-
-      // Use simplified in-memory configuration for now
-      // Full Pinecone integration can be enabled when needed
-      this.memory = new Memory({
-        version: 'v1.1',
-        
-        embedder: {
-          provider: 'openai',
-          config: {
-            apiKey: openaiKey,
-            model: 'text-embedding-3-small'
-          }
-        },
-        
-        vectorStore: {
-          provider: 'memory',
-          config: {
-            collectionName: 'user-memories',
-            dimension: 1536
-          }
-        },
-        
-        llm: {
-          provider: 'openai',
-          config: {
-            apiKey: openaiKey,
-            model: 'gpt-4o-mini'
-          }
-        },
-        
-        historyDbPath: './data/memory.db'
-      });
+      this.openaiClient = new OpenAI({ apiKey: openaiKey });
 
       this.isInitialized = true;
-      logger.info({ service: 'mem0' }, 'Memory service initialized successfully (in-memory mode)');
+      logger.info(
+        { service: 'memory' },
+        'Memory service initialized successfully with Pinecone persistence',
+      );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorStack = error instanceof Error ? error.stack : undefined;
-      logger.error({ 
-        service: 'mem0', 
-        error: errorMessage,
-        stack: errorStack
-      }, 'Failed to initialize Memory service');
+      logger.error(
+        {
+          service: 'memory',
+          error: errorMessage,
+          stack: errorStack,
+        },
+        'Failed to initialize Memory service',
+      );
       this.isInitialized = false;
     }
   }
 
   isAvailable(): boolean {
-    return this.isInitialized && this.memory !== null;
+    return this.isInitialized && this.pineconeClient !== null && this.openaiClient !== null;
+  }
+
+  private getUserNamespace(userId: string): string {
+    return `${this.memoryNamespacePrefix}${userId}`;
+  }
+
+  private async generateEmbedding(text: string): Promise<number[]> {
+    const generateEmbeddingWithBreaker = wrapServiceCall(
+      async (content: string) => {
+        const response = await this.openaiClient!.embeddings.create({
+          model: 'text-embedding-3-small',
+          input: content,
+        });
+        return response.data[0].embedding;
+      },
+      'openai-embeddings',
+      {
+        timeout: 30000,
+        errorThresholdPercentage: 50,
+        resetTimeout: 30000,
+      },
+    );
+
+    return await generateEmbeddingWithBreaker.execute(text);
   }
 
   async addMemory(
-    messages: MemoryMessage | MemoryMessage[] | string,
+    content: string,
     userId: string,
-    metadata?: MemoryMetadata
-  ): Promise<{ success: boolean; memories?: any[]; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+    type: MemoryType,
+    metadata: Record<string, any> = {},
+  ): Promise<MemoryResponse> {
     try {
-      const addMemoryWithBreaker = wrapServiceCall(
-        async (msgs: any, uid: string, meta?: any) => {
-          return await this.memory!.add(msgs, { 
-            userId: uid,
-            metadata: meta 
-          });
-        },
-        'mem0-add',
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
+
+      const recordId = uuidv4();
+      const now = Date.now();
+
+      // Generate embedding for the content
+      const embedding = await this.generateEmbedding(content);
+
+      const record: MemoryRecord = {
+        id: recordId,
+        userId,
+        type,
+        content,
+        metadata,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      // Store in Pinecone
+      const index = this.pineconeClient!.index(this.indexName);
+      const namespace = this.getUserNamespace(userId);
+
+      await index.namespace(namespace).upsert([
         {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
+          id: recordId,
+          values: embedding,
+          metadata: {
+            userId,
+            type,
+            content,
+            ...metadata,
+            createdAt: now,
+            updatedAt: now,
+          },
+        },
+      ]);
+
+      logger.info(
+        {
+          service: 'memory',
+          userId,
+          type,
+          recordId,
+        },
+        `Added ${type} memory for user ${userId}`,
       );
 
-      const result = await addMemoryWithBreaker.execute(messages, userId, metadata);
-      
-      logger.info({
-        service: 'mem0',
-        userId,
-        metadata,
-        messageCount: Array.isArray(messages) ? messages.length : 1
-      }, `Added memory for user ${userId}`);
-
-      return { success: true, memories: Array.isArray(result) ? result : [result] as any };
+      return { success: true, memory: record };
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to add memory');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to add memory');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to add memory',
       };
     }
   }
@@ -143,242 +191,285 @@ class MemoryService {
   async searchMemories(
     query: string,
     userId: string,
-    options?: {
+    options: {
       limit?: number;
-      namespace?: string;
-      metadata?: Record<string, any>;
-    }
-  ): Promise<{ success: boolean; memories?: MemorySearchResult[]; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+      type?: MemoryType;
+      minScore?: number;
+    } = {},
+  ): Promise<MemoryResponse> {
     try {
-      const searchMemoryWithBreaker = wrapServiceCall(
-        async (q: string, uid: string, opts?: any) => {
-          return await this.memory!.search(q, {
-            userId: uid,
-            limit: opts?.limit || 5,
-            ...opts
-          });
-        },
-        'mem0-search',
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
+
+      const { limit = 10, type, minScore = 0.7 } = options;
+
+      // Generate embedding for query
+      const embedding = await this.generateEmbedding(query);
+
+      // Search in Pinecone
+      const index = this.pineconeClient!.index(this.indexName);
+      const namespace = this.getUserNamespace(userId);
+
+      const filter: Record<string, any> = { userId };
+      if (type) {
+        filter.type = type;
+      }
+
+      const queryResponse = await index.namespace(namespace).query({
+        vector: embedding,
+        topK: limit,
+        filter,
+        includeMetadata: true,
+      });
+
+      const memories: MemorySearchResult[] = queryResponse.matches
+        .filter((match) => match.score && match.score >= minScore)
+        .map((match) => ({
+          id: match.id,
+          content: (match.metadata?.content as string) || '',
+          type: (match.metadata?.type as MemoryType) || MemoryType.NOTE,
+          userId: (match.metadata?.userId as string) || userId,
+          metadata: match.metadata || {},
+          score: match.score || 0,
+          createdAt: (match.metadata?.createdAt as number) || Date.now(),
+        }));
+
+      logger.info(
         {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
+          service: 'memory',
+          userId,
+          query,
+          resultCount: memories.length,
+        },
+        `Searched memories for user ${userId}`,
       );
 
-      const results = await searchMemoryWithBreaker.execute(query, userId, options);
-      const memoriesArray = Array.isArray(results) ? results : (results ? [results] : []);
-      
-      logger.info({
-        service: 'mem0',
-        userId,
-        query,
-        resultCount: memoriesArray.length
-      }, `Searched memories for user ${userId}`);
-
-      return { success: true, memories: memoriesArray as MemorySearchResult[] };
+      return { success: true, memories };
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to search memories');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to search memories');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to search memories',
       };
     }
   }
 
-  async getAllMemories(
-    userId: string
-  ): Promise<{ success: boolean; memories?: MemorySearchResult[]; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+  async getAllMemories(userId: string, type?: MemoryType): Promise<MemoryResponse> {
     try {
-      const getAllWithBreaker = wrapServiceCall(
-        async (uid: string) => {
-          return await this.memory!.getAll({ userId: uid });
-        },
-        'mem0-get-all',
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
+
+      // Create a broad query vector (average of all dimensions)
+      const broadVector = new Array(1536).fill(0.1);
+
+      const index = this.pineconeClient!.index(this.indexName);
+      const namespace = this.getUserNamespace(userId);
+
+      const filter: Record<string, any> = { userId };
+      if (type) {
+        filter.type = type;
+      }
+
+      const queryResponse = await index.namespace(namespace).query({
+        vector: broadVector,
+        topK: 1000, // Get all memories
+        filter,
+        includeMetadata: true,
+      });
+
+      const memories: MemorySearchResult[] = queryResponse.matches.map((match) => ({
+        id: match.id,
+        content: (match.metadata?.content as string) || '',
+        type: (match.metadata?.type as MemoryType) || MemoryType.NOTE,
+        userId: (match.metadata?.userId as string) || userId,
+        metadata: match.metadata || {},
+        score: match.score || 0,
+        createdAt: (match.metadata?.createdAt as number) || Date.now(),
+      }));
+
+      // Sort by creation date (newest first)
+      memories.sort((a, b) => b.createdAt - a.createdAt);
+
+      logger.info(
         {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
+          service: 'memory',
+          userId,
+          count: memories.length,
+        },
+        `Retrieved all memories for user ${userId}`,
       );
 
-      const memories = await getAllWithBreaker.execute(userId);
-      const memoriesArray = Array.isArray(memories) ? memories : (memories ? [memories] : []);
-      
-      logger.info({
-        service: 'mem0',
-        userId,
-        count: memoriesArray.length
-      }, `Retrieved all memories for user ${userId}`);
-
-      return { success: true, memories: memoriesArray as MemorySearchResult[] };
+      return { success: true, memories, count: memories.length };
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to get all memories');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to get all memories');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get all memories',
       };
     }
   }
 
   async updateMemory(
     memoryId: string,
-    data: string
-  ): Promise<{ success: boolean; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+    userId: string,
+    content: string,
+    metadata: Record<string, any> = {},
+  ): Promise<MemoryResponse> {
     try {
-      const updateWithBreaker = wrapServiceCall(
-        async (mid: string, d: string) => {
-          return await this.memory!.update(mid, d);
-        },
-        'mem0-update',
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
+
+      const now = Date.now();
+
+      // Generate new embedding
+      const embedding = await this.generateEmbedding(content);
+
+      // Update in Pinecone
+      const index = this.pineconeClient!.index(this.indexName);
+      const namespace = this.getUserNamespace(userId);
+
+      await index.namespace(namespace).upsert([
         {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
+          id: memoryId,
+          values: embedding,
+          metadata: {
+            ...metadata,
+            content,
+            updatedAt: now,
+          },
+        },
+      ]);
+
+      logger.info(
+        {
+          service: 'memory',
+          userId,
+          memoryId,
+        },
+        `Updated memory ${memoryId} for user ${userId}`,
       );
 
-      await updateWithBreaker.execute(memoryId, data);
-      
-      logger.info({ service: 'mem0', memoryId }, `Updated memory ${memoryId}`);
       return { success: true };
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to update memory');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to update memory');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to update memory',
       };
     }
   }
 
-  async deleteMemory(
-    memoryId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+  async deleteMemory(memoryId: string, userId: string): Promise<MemoryResponse> {
     try {
-      const deleteWithBreaker = wrapServiceCall(
-        async (mid: string) => {
-          return await this.memory!.delete(mid);
-        },
-        'mem0-delete',
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
+
+      const index = this.pineconeClient!.index(this.indexName);
+      const namespace = this.getUserNamespace(userId);
+
+      await index.namespace(namespace).deleteOne(memoryId);
+
+      logger.info(
         {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
+          service: 'memory',
+          userId,
+          memoryId,
+        },
+        `Deleted memory ${memoryId} for user ${userId}`,
       );
 
-      await deleteWithBreaker.execute(memoryId);
-      
-      logger.info({ service: 'mem0', memoryId }, `Deleted memory ${memoryId}`);
       return { success: true };
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to delete memory');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to delete memory');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete memory',
       };
     }
   }
 
-  async deleteAllMemories(
-    userId: string
-  ): Promise<{ success: boolean; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+  async deleteAllMemories(userId: string): Promise<MemoryResponse> {
     try {
-      const deleteAllWithBreaker = wrapServiceCall(
-        async (uid: string) => {
-          return await this.memory!.deleteAll({ userId: uid });
-        },
-        'mem0-delete-all',
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
+
+      const index = this.pineconeClient!.index(this.indexName);
+      const namespace = this.getUserNamespace(userId);
+
+      // Delete the entire namespace
+      await index.namespace(namespace).deleteAll();
+
+      logger.info(
         {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
+          service: 'memory',
+          userId,
+        },
+        `Deleted all memories for user ${userId}`,
       );
 
-      await deleteAllWithBreaker.execute(userId);
-      
-      logger.info({ service: 'mem0', userId }, `Deleted all memories for user ${userId}`);
       return { success: true };
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to delete all memories');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to delete all memories');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to delete all memories',
       };
     }
   }
 
-  async getMemoryHistory(
-    memoryId: string
-  ): Promise<{ success: boolean; history?: any[]; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
+  async generateConversationSummary(
+    messages: Array<{ role: string; content: string }>,
+    userId: string,
+    sessionMetadata: Record<string, any> = {},
+  ): Promise<MemoryResponse> {
     try {
-      const historyWithBreaker = wrapServiceCall(
-        async (mid: string) => {
-          return await this.memory!.history(mid);
-        },
-        'mem0-history',
-        {
-          timeout: 30000,
-          errorThresholdPercentage: 50,
-          resetTimeout: 30000
-        }
-      );
+      if (!this.isAvailable()) {
+        return { success: false, error: 'Memory service not available' };
+      }
 
-      const history = await historyWithBreaker.execute(memoryId);
-      
-      return { success: true, history: history || [] };
+      // Use OpenAI to generate a summary
+      const conversationText = messages
+        .map((m) => `${m.role}: ${m.content}`)
+        .join('\n');
+
+      const completion = await this.openaiClient!.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a helpful assistant that creates concise summaries of conversations. Focus on key topics, user preferences mentioned, and important insights. Keep it under 200 words.',
+          },
+          {
+            role: 'user',
+            content: `Please summarize this conversation:\n\n${conversationText}`,
+          },
+        ],
+        temperature: 0.3,
+      });
+
+      const summary = completion.choices[0]?.message?.content || '';
+
+      // Store as a summary memory
+      return await this.addMemory(summary, userId, MemoryType.SUMMARY, {
+        ...sessionMetadata,
+        messageCount: messages.length,
+        generatedAt: Date.now(),
+      });
     } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to get memory history');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
-    }
-  }
-
-  async reset(): Promise<{ success: boolean; error?: string }> {
-    if (!this.isAvailable()) {
-      return { success: false, error: 'Memory service not available' };
-    }
-
-    try {
-      await this.memory!.reset();
-      logger.warn({ service: 'mem0' }, 'Memory service reset - all memories cleared');
-      return { success: true };
-    } catch (error) {
-      logger.error({ service: 'mem0', error }, 'Failed to reset memory service');
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      logger.error({ service: 'memory', error }, 'Failed to generate conversation summary');
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Failed to generate conversation summary',
       };
     }
   }
 }
 
 export const memoryService = new MemoryService();
-export type { MemoryMessage, MemoryMetadata, MemorySearchResult };

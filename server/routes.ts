@@ -534,28 +534,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/memory/add", async (req: any, res) => {
     const log = logger.child({ service: "memory", operation: "add" });
     try {
-      const { messages, userId, metadata } = req.body;
+      const { content, userId, type, metadata } = req.body;
 
       if (!userId) {
         return res.status(400).json({ error: "userId is required" });
       }
 
-      if (!messages) {
-        return res.status(400).json({ error: "messages is required" });
+      if (!content) {
+        return res.status(400).json({ error: "content is required" });
+      }
+
+      if (!type) {
+        return res.status(400).json({ error: "type is required (summary, note, preference)" });
       }
 
       if (!memoryService.isAvailable()) {
         return res.status(503).json({ error: "Memory service not available" });
       }
 
-      const result = await memoryService.addMemory(messages, userId, metadata);
+      const result = await memoryService.addMemory(content, userId, type, metadata || {});
 
       if (!result.success) {
         log.error({ error: result.error }, "Failed to add memory");
         return res.status(500).json({ error: result.error });
       }
 
-      log.info({ userId }, "Memory added successfully");
+      log.info({ userId, type }, "Memory added successfully");
       res.json(result);
     } catch (error: any) {
       log.error({ error: error.message }, "Error adding memory");
@@ -566,7 +570,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/memory/search", async (req: any, res) => {
     const log = logger.child({ service: "memory", operation: "search" });
     try {
-      const { query, userId, limit, metadata } = req.body;
+      const { query, userId, limit, type, minScore } = req.body;
 
       if (!userId) {
         return res.status(400).json({ error: "userId is required" });
@@ -582,7 +586,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await memoryService.searchMemories(query, userId, {
         limit,
-        metadata,
+        type,
+        minScore,
       });
 
       if (!result.success) {
@@ -602,6 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "memory", operation: "getAll" });
     try {
       const userId = req.query.userId as string;
+      const type = req.query.type as string | undefined;
 
       if (!userId) {
         return res.status(400).json({ error: "userId is required" });
@@ -611,14 +617,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(503).json({ error: "Memory service not available" });
       }
 
-      const result = await memoryService.getAllMemories(userId);
+      const result = await memoryService.getAllMemories(userId, type as any);
 
       if (!result.success) {
         log.error({ error: result.error }, "Failed to get all memories");
         return res.status(500).json({ error: result.error });
       }
 
-      log.info({ userId, count: result.memories?.length || 0 }, "All memories retrieved successfully");
+      log.info({ userId, count: result.count || 0 }, "All memories retrieved successfully");
       res.json(result);
     } catch (error: any) {
       log.error({ error: error.message }, "Error getting all memories");
@@ -630,17 +636,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "memory", operation: "update" });
     try {
       const { id } = req.params;
-      const { data } = req.body;
+      const { userId, content, metadata } = req.body;
 
-      if (!data) {
-        return res.status(400).json({ error: "data is required" });
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!content) {
+        return res.status(400).json({ error: "content is required" });
       }
 
       if (!memoryService.isAvailable()) {
         return res.status(503).json({ error: "Memory service not available" });
       }
 
-      const result = await memoryService.updateMemory(id, data);
+      const result = await memoryService.updateMemory(id, userId, content, metadata || {});
 
       if (!result.success) {
         log.error({ error: result.error, memoryId: id }, "Failed to update memory");
@@ -659,12 +669,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "memory", operation: "delete" });
     try {
       const { id } = req.params;
+      const { userId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
 
       if (!memoryService.isAvailable()) {
         return res.status(503).json({ error: "Memory service not available" });
       }
 
-      const result = await memoryService.deleteMemory(id);
+      const result = await memoryService.deleteMemory(id, userId);
 
       if (!result.success) {
         log.error({ error: result.error, memoryId: id }, "Failed to delete memory");
@@ -703,27 +718,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/memory/history/:id", async (req: any, res) => {
-    const log = logger.child({ service: "memory", operation: "history" });
+  app.post("/api/memory/summarize", async (req: any, res) => {
+    const log = logger.child({ service: "memory", operation: "summarize" });
     try {
-      const { id } = req.params;
+      const { messages, userId, metadata } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: "messages array is required" });
+      }
 
       if (!memoryService.isAvailable()) {
         return res.status(503).json({ error: "Memory service not available" });
       }
 
-      const result = await memoryService.getMemoryHistory(id);
+      const result = await memoryService.generateConversationSummary(messages, userId, metadata || {});
 
       if (!result.success) {
-        log.error({ error: result.error, memoryId: id }, "Failed to get memory history");
+        log.error({ error: result.error }, "Failed to generate conversation summary");
         return res.status(500).json({ error: result.error });
       }
 
-      log.info({ memoryId: id }, "Memory history retrieved successfully");
+      log.info({ userId }, "Conversation summary generated successfully");
       res.json(result);
     } catch (error: any) {
-      log.error({ error: error.message }, "Error getting memory history");
-      res.status(500).json({ error: "Failed to get memory history" });
+      log.error({ error: error.message }, "Error generating conversation summary");
+      res.status(500).json({ error: "Failed to generate conversation summary" });
     }
   });
 
