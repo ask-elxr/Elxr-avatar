@@ -165,49 +165,67 @@ export function SessionStats() {
         <div className="space-y-6">
           {/* Current Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-gradient-to-br from-indigo-500/10 to-violet-500/5 border border-indigo-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-md">
-                  <Activity className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">Active Sessions</span>
-              </div>
-              <p className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent" data-testid="stat-active-sessions">
-                {current.totalActiveSessions}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Max 2 per user enforced
-              </p>
+            {/* Active Sessions Card */}
+            <div className="relative group">
+              <div className="absolute -inset-[1px] bg-gradient-to-r from-indigo-500 via-violet-500 to-indigo-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+              <Card className="relative glass border-indigo-500/30 shadow-xl shadow-indigo-500/10 group-hover:shadow-2xl group-hover:shadow-indigo-500/20 transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-md shadow-lg shadow-indigo-500/30 animate-pulse-slow">
+                      <Activity className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-medium bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-400 bg-clip-text text-transparent animate-gradient-text">Active Sessions</span>
+                  </div>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-indigo-500 to-violet-500 bg-clip-text text-transparent" data-testid="stat-active-sessions">
+                    {current.totalActiveSessions}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Max 2 per user enforced
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="p-4 rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/5 border border-violet-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-md">
-                  <Users className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">Total Sessions</span>
-              </div>
-              <p className="text-3xl font-bold bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent" data-testid="stat-total-sessions">
-                {totalHistoricalSessions}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Last 1000 tracked
-              </p>
+            {/* Total Sessions Card */}
+            <div className="relative group">
+              <div className="absolute -inset-[1px] bg-gradient-to-r from-violet-500 via-purple-500 to-violet-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+              <Card className="relative glass border-violet-500/30 shadow-xl shadow-violet-500/10 group-hover:shadow-2xl group-hover:shadow-violet-500/20 transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-gradient-to-br from-violet-500 to-purple-500 rounded-md shadow-lg shadow-violet-500/30 animate-pulse-slow">
+                      <Users className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-medium bg-gradient-to-r from-violet-400 via-purple-400 to-violet-400 bg-clip-text text-transparent animate-gradient-text">Total Sessions</span>
+                  </div>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-violet-500 to-purple-500 bg-clip-text text-transparent" data-testid="stat-total-sessions">
+                    {totalHistoricalSessions}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last 1000 tracked
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
-            <div className="p-4 rounded-lg bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md">
-                  <Clock className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-muted-foreground">Avg Duration</span>
-              </div>
-              <p className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent" data-testid="stat-avg-duration">
-                {avgSessionDuration}s
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                90s timeout configured
-              </p>
+            {/* Average Duration Card */}
+            <div className="relative group">
+              <div className="absolute -inset-[1px] bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+              <Card className="relative glass border-purple-500/30 shadow-xl shadow-purple-500/10 group-hover:shadow-2xl group-hover:shadow-purple-500/20 transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md shadow-lg shadow-purple-500/30 animate-pulse-slow">
+                      <Clock className="w-4 h-4 text-white" />
+                    </div>
+                    <span className="text-sm font-medium bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient-text">Avg Duration</span>
+                  </div>
+                  <p className="text-3xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent" data-testid="stat-avg-duration">
+                    {avgSessionDuration}s
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    90s timeout configured
+                  </p>
+                </CardContent>
+              </Card>
             </div>
           </div>
 
@@ -215,67 +233,85 @@ export function SessionStats() {
           {totalHistoricalSessions > 0 && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pie Chart - Session Distribution */}
-              <div className="flex flex-col">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-indigo-500" />
-                  Session Distribution by Avatar
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ percentage }) => `${percentage}%`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pieChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => value.toLocaleString()}
-                      contentStyle={{
-                        background: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+              <div className="relative group">
+                <div className="absolute -inset-[1px] bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+                <Card className="relative glass border-indigo-500/30 shadow-xl shadow-indigo-500/10 group-hover:shadow-2xl group-hover:shadow-indigo-500/20 transition-all duration-300">
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <div className="p-1.5 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-md shadow-lg shadow-indigo-500/30">
+                        <TrendingUp className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent animate-gradient-text">
+                        Session Distribution
+                      </span>
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={pieChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ percentage }) => `${percentage}%`}
+                          outerRadius={100}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {pieChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip 
+                          formatter={(value: number) => value.toLocaleString()}
+                          contentStyle={{
+                            background: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Bar Chart - Average Duration */}
-              <div className="flex flex-col">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-violet-500" />
-                  Average Session Duration (seconds)
-                </h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={historicalChartData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: 12 }}
-                      angle={-45}
-                      textAnchor="end"
-                      height={80}
-                    />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip 
-                      contentStyle={{
-                        background: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px'
-                      }}
-                    />
-                    <Bar dataKey="avgDuration" fill="hsl(271, 81%, 56%)" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+              <div className="relative group">
+                <div className="absolute -inset-[1px] bg-gradient-to-r from-violet-500 via-pink-500 to-violet-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+                <Card className="relative glass border-violet-500/30 shadow-xl shadow-violet-500/10 group-hover:shadow-2xl group-hover:shadow-violet-500/20 transition-all duration-300">
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <div className="p-1.5 bg-gradient-to-br from-violet-500 to-pink-500 rounded-md shadow-lg shadow-violet-500/30">
+                        <Clock className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="bg-gradient-to-r from-violet-500 via-pink-500 to-violet-500 bg-clip-text text-transparent animate-gradient-text">
+                        Average Duration
+                      </span>
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={historicalChartData}>
+                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip 
+                          contentStyle={{
+                            background: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar dataKey="avgDuration" fill="hsl(271, 81%, 56%)" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           )}
@@ -381,25 +417,30 @@ export function SessionStats() {
           )}
 
           {/* Credit Savings Summary */}
-          <div className="p-4 rounded-lg bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md">
-                <TrendingUp className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-green-600 dark:text-green-400 mb-2">
-                  Credit-Saving Features Active
-                </h4>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>✓ Audio-only mode as default (massive HeyGen credit savings)</li>
-                  <li>✓ 90-second inactivity timeout (silent end, ~300 chars saved)</li>
-                  <li>✓ No automatic greetings or farewells (reduces AI token usage)</li>
-                  <li>✓ 2-session concurrent limit per user</li>
-                  <li>✓ 30-second avatar switch cooldown</li>
-                  <li>✓ Session cleanup on all exit paths (tab close, timeout, disconnect)</li>
-                </ul>
-              </div>
-            </div>
+          <div className="relative group">
+            <div className="absolute -inset-[1px] bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
+            <Card className="relative glass border-green-500/30 shadow-xl shadow-green-500/10 group-hover:shadow-2xl group-hover:shadow-green-500/20 transition-all duration-300">
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-gradient-to-br from-green-500 to-emerald-500 rounded-md shadow-lg shadow-green-500/30 animate-pulse-slow">
+                    <TrendingUp className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold mb-2 bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 bg-clip-text text-transparent animate-gradient-text">
+                      Credit-Saving Features Active
+                    </h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>✓ Audio-only mode as default (massive HeyGen credit savings)</li>
+                      <li>✓ 90-second inactivity timeout (silent end, ~300 chars saved)</li>
+                      <li>✓ No automatic greetings or farewells (reduces AI token usage)</li>
+                      <li>✓ 2-session concurrent limit per user</li>
+                      <li>✓ 30-second avatar switch cooldown</li>
+                      <li>✓ Session cleanup on all exit paths (tab close, timeout, disconnect)</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </CardContent>
