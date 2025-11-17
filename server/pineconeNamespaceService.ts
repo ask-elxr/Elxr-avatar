@@ -108,10 +108,10 @@ class PineconeNamespaceService {
         log.error({ error: error.message }, 'Failed to log API call');
       });
 
-      // Query across all namespaces and combine results
-      const allResults: any[] = [];
+      // Query across all namespaces in parallel and combine results
+      log.debug(`Querying ${namespacesToQuery.length} namespaces in parallel`);
       
-      for (const namespace of namespacesToQuery) {
+      const namespaceQueries = namespacesToQuery.map(async (namespace) => {
         try {
           log.debug({ namespace }, `Querying namespace: ${namespace}`);
           
@@ -138,9 +138,10 @@ class PineconeNamespaceService {
               `Found ${queryResponse.matches.length} results in ${namespace}`);
             
             // Extract text from metadata and format results
+            const results = [];
             for (const match of queryResponse.matches) {
               if (match.metadata && match.metadata.text) {
-                allResults.push({
+                results.push({
                   text: match.metadata.text as string,
                   score: match.score || 0,
                   metadata: {
@@ -150,14 +151,22 @@ class PineconeNamespaceService {
                 });
               }
             }
+            return results;
           } else {
             log.debug({ namespace }, `No results in ${namespace}`);
+            return [];
           }
         } catch (error: any) {
           log.error({ namespace, error: error.message }, `Error querying namespace ${namespace}`);
-          // Continue with other namespaces
+          return [];
         }
-      }
+      });
+
+      // Wait for all queries to complete in parallel
+      const namespaceResults = await Promise.all(namespaceQueries);
+      
+      // Flatten all results into single array
+      const allResults = namespaceResults.flat();
 
       if (allResults.length === 0) {
         log.info('No results from any namespace');

@@ -11,7 +11,7 @@ export const defaultAvatars: AvatarProfile[] = [
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
     voiceRate: "1.0",
-    pineconeNamespaces: ["default"],
+    pineconeNamespaces: ["default", "PSYCHEDELICS", "SPIRITUALITY", "SCIENCE"],
     personalityPrompt: `You are Mark Kohl, an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor. You provide knowledgeable, direct answers grounded in science, spirituality, and real-world experience.
 
 YOUR CORE MISSION:
@@ -62,7 +62,7 @@ Remember: Be clear, be useful, be respectful. Quality over cleverness.`,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
     voiceRate: "1.0",
-    pineconeNamespaces: ["willie-gault"],
+    pineconeNamespaces: ["willie-gault", "WORK", "MOVEMENT"],
     personalityPrompt: `You are Willie Gault, a former NFL wide receiver, Olympic bobsledder, and fitness expert. You bring a unique perspective combining elite athletic performance, Olympic experience, and professional sports knowledge.
 
 YOUR CORE MISSION:
@@ -106,7 +106,7 @@ Remember: Be inspiring, be authentic, be helpful.`,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
     voiceRate: "1.0",
-    pineconeNamespaces: ["june"],
+    pineconeNamespaces: ["june", "MIND", "GRIEF", "TRANSITIONS"],
     personalityPrompt: `I'm are June, a compassionate mental health and mindfulness expert. You help people navigate their inner landscape with warmth, wisdom, and practical guidance.
 
 YOUR CORE MISSION:
@@ -150,7 +150,7 @@ Remember: Be compassionate, be practical, be present.`,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "21m00Tcm4TlvDq8ikWAM",
     voiceRate: "1.0",
-    pineconeNamespaces: ["ann"],
+    pineconeNamespaces: ["ann", "BODY", "NUTRITION", "MOVEMENT", "SLEEP"],
     personalityPrompt: `You are Ann, a body wellness and physical health expert. You help people develop sustainable relationships with movement, nutrition, and physical vitality.
 
 YOUR CORE MISSION:
@@ -194,7 +194,7 @@ Remember: Be encouraging, be sustainable, be body-positive.`,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
     voiceRate: "1.0",
-    pineconeNamespaces: ["shawn"],
+    pineconeNamespaces: ["shawn", "WORK", "LIFE", "TRANSITIONS", "MIDLIFE"],
     personalityPrompt: `You are Shawn, a conscious leadership and performance integration expert. You help leaders develop awareness, authenticity, and sustainable high performance.
 
 YOUR CORE MISSION:
@@ -237,7 +237,7 @@ Remember: Be wise, be authentic, be sustainable.`,
     heygenKnowledgeId: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
     voiceRate: "1.0",
-    pineconeNamespaces: ["thad"],
+    pineconeNamespaces: ["thad", "WORK", "LIFE", "LONGEVITY"],
     personalityPrompt: `You are Thad, a financial resilience and purposeful wealth expert. You help people build healthy relationships with money and create financial wellness aligned with their values.
 
 YOUR CORE MISSION:
