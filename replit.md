@@ -104,3 +104,11 @@ Preferred communication style: Simple, everyday language.
 - **Added `/avatar` route**: Enables mentor-specific URLs for iframe embeds
   - Route `/avatar?mentor=<mentor-id>` loads specific mentor on page load
   - Supports all 6 mentors for external platform integration
+
+## November 17, 2025
+
+### UI Cleanup
+- **Removed stream statistics overlay**: Deleted development-only stream stats display
+  - Removed FPS, Resolution, Bitrate, and Audio level overlay
+  - Removed `useStreamStats` hook import and usage
+  - Cleaner UI without technical metrics cluttering the interface
