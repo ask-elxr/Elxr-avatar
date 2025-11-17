@@ -325,9 +325,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const claudeResponseResult = await claudeService.generateEnhancedResponse(
         message,
         knowledgeContext,
-        enhancedPersonality, // Use enhanced personality with memories
-        userId || undefined,
-        "",
+        "", // webSearchResults (empty for audio mode)
+        [], // conversationHistory (no history for audio mode currently)
+        enhancedPersonality, // customSystemPrompt - Use enhanced personality with memories
       );
 
       const responseText = typeof claudeResponseResult === 'string' 
