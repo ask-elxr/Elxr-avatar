@@ -244,18 +244,18 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               <SelectContent>
                 {PINECONE_CATEGORIES.map((category) => (
                   <SelectItem key={category} value={category}>
-                    <div className="flex flex-col">
-                      <span className="font-medium">{category}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {CATEGORY_DESCRIPTIONS[category]}
-                      </span>
-                    </div>
+                    {category}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {selectedCategory && (
+              <p className="text-xs text-muted-foreground mt-1">
+                <span className="font-medium">{selectedCategory}:</span> {CATEGORY_DESCRIPTIONS[selectedCategory]}
+              </p>
+            )}
             <p className="text-xs text-muted-foreground">
-              Documents will be saved to the "{selectedCategory}" namespace and accessible to avatars configured for this category.
+              Documents will be saved to this category namespace and accessible to all avatars configured for it.
             </p>
           </div>
 
