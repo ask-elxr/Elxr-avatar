@@ -540,6 +540,7 @@ export function useAvatarSession({
               message,
               userId: memoryEnabled ? userId : undefined,
               avatarId: currentAvatarIdRef.current,
+              memoryEnabled, // Pass memory toggle flag
             }),
             signal: controller.signal,
           });
@@ -609,6 +610,7 @@ export function useAvatarSession({
             message,
             userId: memoryEnabled ? userId : undefined,
             avatarId: currentAvatarIdRef.current,
+            memoryEnabled, // Pass memory toggle flag
           }),
           signal: controller.signal,
         });

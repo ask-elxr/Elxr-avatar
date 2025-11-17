@@ -33,7 +33,7 @@ import { getAvatarById } from "../shared/avatarConfig.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
-import { memoryService } from "./memoryService.js";
+import { memoryService, MemoryType } from "./memoryService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -243,6 +243,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionManager.updateActivityByUserId(userId);
       }
 
+      // Get memory toggle preference from request
+      const { memoryEnabled = false } = req.body;
+
       // Get avatar configuration
       const avatarConfig = getAvatarById(avatarId);
       if (!avatarConfig) {
@@ -256,6 +259,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info({ avatarId, messageLength: message.length }, "Processing audio chat message");
 
+      // Retrieve relevant memories if memory is enabled
+      let memoryContext = "";
+      if (memoryEnabled && userId && memoryService.isAvailable()) {
+        try {
+          const memoryResult = await memoryService.searchMemories(message, userId, { limit: 5 });
+          if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
+            memoryContext =
+              "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
+              memoryResult.memories.map((m) => `- ${m.content}`).join("\n");
+            log.info({ userId, memoryCount: memoryResult.memories.length }, 'Retrieved relevant memories for audio conversation');
+          }
+        } catch (memError) {
+          log.error({ error: memError }, "Error fetching memories");
+          // Continue without memories if there's an error
+        }
+      }
+
       // Step 1: Get Claude response with knowledge base context
       const currentDate = new Date().toLocaleDateString("en-US", {
         month: "long",
@@ -265,6 +285,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const personalityWithDate = `${avatarConfig.personalityPrompt.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
         .replace(/⚠️ CRITICAL SYSTEM CONFIGURATION:/, `⚠️ CRITICAL SYSTEM CONFIGURATION:\n- Today's date: ${currentDate}`);
+
+      // Enhanced personality prompt with memory context
+      const enhancedPersonality = memoryContext
+        ? `${personalityWithDate}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
+        : personalityWithDate;
 
       // Get knowledge base context
       const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
@@ -295,11 +320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate Claude response
+      // Generate Claude response with enhanced personality
       const claudeResponseResult = await claudeService.generateEnhancedResponse(
         message,
         knowledgeContext,
-        personalityWithDate,
+        enhancedPersonality, // Use enhanced personality with memories
         userId || undefined,
         "",
       );
@@ -347,6 +372,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }).catch((error) => {
         log.error({ error: error.message }, 'Failed to log ElevenLabs API call');
       });
+
+      // Store conversation in memory if enabled
+      if (memoryEnabled && userId && memoryService.isAvailable()) {
+        try {
+          const conversationText = `User asked: "${message}"\nAssistant responded: "${responseText}"`;
+          const memoryResult = await memoryService.addMemory(
+            conversationText,
+            userId,
+            MemoryType.NOTE,
+            {
+              timestamp: new Date().toISOString(),
+              hasKnowledgeBase: !!knowledgeContext,
+              avatarId,
+              audioOnly: true,
+            }
+          );
+          if (memoryResult.success) {
+            log.info({ userId, memory: memoryResult.memory?.id }, 'Stored audio conversation in memory');
+          }
+        } catch (memError) {
+          log.error({ error: memError }, 'Error storing memory');
+          // Continue even if memory storage fails
+        }
+      }
 
       // Return audio
       res.setHeader("Content-Type", "audio/mpeg");
@@ -669,16 +718,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "memory", operation: "delete" });
     try {
       const { id } = req.params;
-      const { userId } = req.body;
+      
+      // Get userId from authenticated session if available, or allow temp_ prefixed IDs
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
 
       if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
+        return res.status(401).json({ error: "User not authenticated" });
       }
 
       if (!memoryService.isAvailable()) {
         return res.status(503).json({ error: "Memory service not available" });
       }
 
+      // The deleteMemory function scopes deletion to the user's namespace
+      // This prevents cross-user deletion even if someone knows the memory ID
       const result = await memoryService.deleteMemory(id, userId);
 
       if (!result.success) {
@@ -686,7 +742,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: result.error });
       }
 
-      log.info({ memoryId: id }, "Memory deleted successfully");
+      log.info({ memoryId: id, userId }, "Memory deleted successfully");
       res.json(result);
     } catch (error: any) {
       log.error({ error: error.message }, "Error deleting memory");
@@ -1171,6 +1227,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         avatarPersonality,
         useWebSearch = false,
         avatarId = "mark-kohl",
+        memoryEnabled = false, // Extract memory toggle flag
       } = req.body;
 
       // Get userId from authenticated session if available, or allow temp_ prefixed IDs for anonymous users
@@ -1188,18 +1245,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionManager.updateActivityByUserId(userId);
       }
 
-      let mem0Context = "";
-      if (userId) {
+      let memoryContext = "";
+      if (memoryEnabled && userId && memoryService.isAvailable()) {
         try {
-          const { mem0Service } = await import("./mem0Service.js");
-          const memories = await mem0Service.searchMemories(userId, message, 3);
-          if (memories && memories.length > 0) {
-            mem0Context =
+          const memoryResult = await memoryService.searchMemories(message, userId, { limit: 5 });
+          if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
+            memoryContext =
               "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
-              memories.map((m) => `- ${m.memory}`).join("\n");
+              memoryResult.memories.map((m) => `- ${m.content}`).join("\n");
+            logger.info(
+              { userId, memoryCount: memoryResult.memories.length },
+              'Retrieved relevant memories for avatar conversation'
+            );
           }
         } catch (memError) {
-          console.error("Error fetching Mem0 memories:", memError);
+          logger.error({ error: memError }, "Error fetching memories");
           // Continue without memories if there's an error
         }
       }
@@ -1223,9 +1283,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const personalityPrompt = avatarPersonality || personalityWithDate;
 
-      // Enhanced personality prompt with Mem0 context
-      const enhancedPersonality = mem0Context
-        ? `${personalityPrompt}\n\n${mem0Context}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
+      // Enhanced personality prompt with memory context
+      const enhancedPersonality = memoryContext
+        ? `${personalityPrompt}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
         : personalityPrompt;
 
       // Get knowledge base context from Pinecone using avatar-specific namespaces + user's personal knowledge sources
@@ -1306,18 +1366,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           "I'm here to help, but I don't have specific information about that topic right now.";
       }
 
-      if (userId) {
+      // Store conversation in memory if enabled
+      if (memoryEnabled && userId && memoryService.isAvailable()) {
         try {
-          const { mem0Service } = await import('./mem0Service.js');
           // Store both the user's message and the AI's response
           const conversationText = `User asked: "${message}"\nAssistant responded: "${aiResponse}"`;
-          await mem0Service.addMemory(userId, conversationText, {
-            timestamp: new Date().toISOString(),
-            hasKnowledgeBase: !!knowledgeContext,
-            hasWebSearch: !!webSearchResults
-          });
+          const memoryResult = await memoryService.addMemory(
+            conversationText,
+            userId,
+            MemoryType.NOTE,
+            {
+              timestamp: new Date().toISOString(),
+              hasKnowledgeBase: !!knowledgeContext,
+              hasWebSearch: !!webSearchResults,
+              avatarId,
+            }
+          );
+          if (memoryResult.success) {
+            logger.info({ userId, memory: memoryResult.memory?.id }, 'Stored avatar conversation in memory');
+          }
         } catch (memError) {
-          console.error('Error storing Mem0 memory:', memError);
+          logger.error({ error: memError }, 'Error storing memory');
           // Continue even if memory storage fails
         }
       }
@@ -1329,7 +1398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         personalityUsed: personalityPrompt,
         usedWebSearch: !!webSearchResults,
         usedClaude: claudeService.isAvailable(),
-        hasMemories: !!mem0Context,
+        hasMemories: !!memoryContext,
       });
     } catch (error) {
       console.error("Error getting avatar response:", error);
@@ -2210,12 +2279,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           conversationHistory = [],
           useWebSearch = false,
           maxTokens = 2000,
+          memoryEnabled = false,
+          userId,
         } = req.body;
 
         if (!message) {
           return res.status(400).json({
             error: "Message is required",
           });
+        }
+
+        // Retrieve relevant memories if memory is enabled
+        let relevantMemories = "";
+        if (memoryEnabled && userId && memoryService.isAvailable()) {
+          const memoryResult = await memoryService.searchMemories(message, userId, { limit: 5 });
+          if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
+            relevantMemories = memoryResult.memories
+              .map((m, i) => `[Memory ${i + 1}]: ${m.content}`)
+              .join('\n');
+            logger.info(
+              { userId, memoryCount: memoryResult.memories.length },
+              'Retrieved relevant memories for conversation'
+            );
+          }
         }
 
         // Get conversation context from knowledge base
@@ -2235,6 +2321,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
+        // Enhance context with memories
+        let enhancedContext = context;
+        if (relevantMemories) {
+          enhancedContext = `Previous Conversations and Preferences:\n${relevantMemories}\n\nKnowledge Base:\n${context}`;
+        }
+
         let aiResponse: string;
 
         // Use Claude Sonnet if available, otherwise fallback to basic context response
@@ -2242,26 +2334,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (webSearchResults) {
             aiResponse = await claudeService.generateEnhancedResponse(
               message,
-              context,
+              enhancedContext,
               webSearchResults,
               conversationHistory,
             );
           } else {
             aiResponse = await claudeService.generateResponse(
               message,
-              context,
+              enhancedContext,
               conversationHistory,
             );
           }
         } else {
           // Fallback response when Claude is not available
-          const contextInfo = context
-            ? `Based on the knowledge base: ${context.substring(0, 500)}...`
+          const contextInfo = enhancedContext
+            ? `Based on the knowledge base: ${enhancedContext.substring(0, 500)}...`
             : "";
           const webInfo = webSearchResults
             ? `\n\nCurrent information: ${webSearchResults.substring(0, 300)}...`
             : "";
           aiResponse = `${contextInfo}${webInfo}\n\nI can provide information from the knowledge base${webSearchResults ? " and current web results" : ""}, but for advanced AI conversation capabilities, Claude Sonnet integration is needed.`;
+        }
+
+        // Store conversation in memory if enabled
+        if (memoryEnabled && userId && memoryService.isAvailable()) {
+          const conversationText = `User: ${message}\nAssistant: ${aiResponse}`;
+          const memoryResult = await memoryService.addMemory(
+            conversationText,
+            userId,
+            MemoryType.NOTE,
+            {
+              timestamp: new Date().toISOString(),
+              hasWebSearch: !!webSearchResults,
+              hasContext: !!context,
+            }
+          );
+          if (memoryResult.success) {
+            logger.info({ userId, memory: memoryResult.memory?.id }, 'Stored conversation in memory');
+          }
         }
 
         // Store conversation in Pinecone if it has good context

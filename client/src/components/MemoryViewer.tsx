@@ -42,10 +42,11 @@ export function MemoryViewer({ userId, onClose }: MemoryViewerProps) {
   // Delete memory mutation
   const deleteMutation = useMutation({
     mutationFn: async (memoryId: string) => {
+      // Backend gets userId from authenticated session for security
       const response = await fetch(`/api/memory/${memoryId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
+        body: JSON.stringify({ userId }), // For temp_ IDs; session userId used otherwise
       });
       if (!response.ok) throw new Error('Failed to delete memory');
       return response.json();
