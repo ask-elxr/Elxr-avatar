@@ -254,6 +254,22 @@ export function useAvatarSession({
     const activeAvatarId = avatarId || currentAvatarIdRef.current;
     currentAvatarIdRef.current = activeAvatarId;
 
+    // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
+    try {
+      await fetch("/api/session/end-all", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+        }),
+      });
+    } catch (error) {
+      console.warn("Failed to end previous sessions:", error);
+      // Continue anyway - this is just cleanup
+    }
+
     // Register session with server (for both audio and video modes)
     try {
       const response = await fetch("/api/session/start", {
