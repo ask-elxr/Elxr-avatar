@@ -15,6 +15,8 @@ const CACHE_NAMESPACE = 'pubmed-cache';
 const CACHE_INDEX = 'ask-elxr';
 const CACHE_EXPIRY_DAYS = 7;
 
+const OFFLINE_MODE = process.env.OFFLINE_MODE?.toLowerCase() === 'true';
+
 export interface PubMedArticle {
   pmid: string;
   title: string;
@@ -803,3 +805,132 @@ export async function searchAndFetchPubMed(
 export const isAvailable = (): boolean => {
   return !searchCircuitBreaker.opened && !fetchCircuitBreaker.opened;
 };
+
+export async function searchHybrid(
+  query: string,
+  maxResults = 10,
+  generateSummary = false
+): Promise<{ articles: PubMedArticle[]; formattedText: string; totalCount: number; summary?: PubMedSummary | null; fromCache?: boolean; source?: string }> {
+  logger.info(
+    { service: 'pubmed', operation: 'searchHybrid', query, maxResults, offlineMode: OFFLINE_MODE },
+    'Starting hybrid PubMed search'
+  );
+
+  const offlineArticles: PubMedArticle[] = [];
+  const onlineArticles: PubMedArticle[] = [];
+  let offlineCount = 0;
+  let onlineCount = 0;
+  let fromCache = false;
+  let summary: PubMedSummary | null = null;
+
+  try {
+    const { searchOfflineArticles } = await import('./offlinePubMedService.js');
+    const offlineResults = await searchOfflineArticles(query, maxResults * 2);
+    
+    offlineArticles.push(...offlineResults);
+    offlineCount = offlineResults.length;
+    
+    logger.info(
+      { service: 'pubmed', operation: 'searchHybrid', offlineCount },
+      'Offline search completed'
+    );
+  } catch (error: any) {
+    logger.warn(
+      { service: 'pubmed', operation: 'searchHybrid', error: error.message },
+      'Offline search failed or unavailable'
+    );
+  }
+
+  if (!OFFLINE_MODE) {
+    try {
+      const onlineResults = await searchAndFetchPubMed(query, maxResults, false);
+      
+      onlineArticles.push(...onlineResults.articles);
+      onlineCount = onlineResults.totalCount;
+      fromCache = onlineResults.fromCache || false;
+      
+      if (generateSummary && onlineResults.summary) {
+        summary = onlineResults.summary;
+      }
+      
+      logger.info(
+        { service: 'pubmed', operation: 'searchHybrid', onlineCount, fromCache },
+        'Online search completed'
+      );
+    } catch (error: any) {
+      logger.warn(
+        { service: 'pubmed', operation: 'searchHybrid', error: error.message },
+        'Online search failed'
+      );
+    }
+  } else {
+    logger.info(
+      { service: 'pubmed', operation: 'searchHybrid' },
+      'Online search skipped (OFFLINE_MODE enabled)'
+    );
+  }
+
+  const pmidMap = new Map<string, PubMedArticle>();
+  
+  for (const article of onlineArticles) {
+    pmidMap.set(article.pmid, article);
+  }
+  
+  for (const article of offlineArticles) {
+    if (!pmidMap.has(article.pmid)) {
+      pmidMap.set(article.pmid, article);
+    }
+  }
+
+  const parseYear = (dateStr: string): number => {
+    const yearMatch = dateStr.match(/(\d{4})/);
+    return yearMatch ? parseInt(yearMatch[1], 10) : 0;
+  };
+
+  let combinedArticles = Array.from(pmidMap.values());
+  
+  combinedArticles.sort((a, b) => {
+    const yearA = parseYear(a.pubDate);
+    const yearB = parseYear(b.pubDate);
+    return yearB - yearA;
+  });
+
+  combinedArticles = combinedArticles.slice(0, maxResults);
+
+  if (generateSummary && !summary && combinedArticles.length > 0) {
+    summary = await summarizeResults(combinedArticles, query);
+  }
+
+  const formattedText = formatPubMedResults(combinedArticles);
+  
+  const sourceInfo = OFFLINE_MODE 
+    ? 'offline database only' 
+    : offlineCount > 0 && onlineCount > 0
+      ? `hybrid (${offlineCount} offline + ${onlineCount} online, ${pmidMap.size - combinedArticles.length} duplicates removed)`
+      : offlineCount > 0
+        ? 'offline database only'
+        : 'online API only';
+
+  logger.info(
+    { 
+      service: 'pubmed', 
+      operation: 'searchHybrid',
+      offlineCount,
+      onlineCount,
+      totalUnique: pmidMap.size,
+      returned: combinedArticles.length,
+      source: sourceInfo,
+      hasSummary: !!summary
+    },
+    'Hybrid search completed'
+  );
+
+  return {
+    articles: combinedArticles,
+    formattedText,
+    totalCount: pmidMap.size,
+    summary,
+    fromCache: fromCache && offlineCount === 0,
+    source: sourceInfo,
+  };
+}
