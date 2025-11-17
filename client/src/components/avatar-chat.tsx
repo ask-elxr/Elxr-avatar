@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Maximize2, Minimize2, Pause, Play, Send, Users, Brain, Database } from "lucide-react";
+import { X, Maximize2, Minimize2, Pause, Play, Send, Users, Brain, Database, Menu, ChevronLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
@@ -36,6 +36,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [inputMessage, setInputMessage] = useState("");
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
   const [showMemoryViewer, setShowMemoryViewer] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -456,77 +457,136 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   return (
     <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
-      {/* Control Panel - Top Left (Always Visible) */}
-      <div className="absolute z-50 top-3 left-3 md:top-4 md:left-4 lg:top-6 lg:left-6 flex flex-col gap-2">
-        {/* Audio Only Toggle */}
-        <div className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3 rounded-lg">
-          <Checkbox
-            id="audio-only"
-            checked={audioOnly}
-            onCheckedChange={handleAudioOnlyToggle}
-            className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-            data-testid="checkbox-audio-only"
-          />
-          <label
-            htmlFor="audio-only"
-            className="text-white text-sm md:text-base font-medium cursor-pointer select-none"
-          >
-            Audio Only
-          </label>
-        </div>
+      {/* Sidebar Toggle Button - Top Left */}
+      <Button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="absolute z-[60] top-3 left-3 md:top-4 md:left-4 lg:top-6 lg:left-6 bg-black/50 hover:bg-black/70 text-white rounded-lg backdrop-blur-sm p-2 md:p-3"
+        data-testid="button-toggle-sidebar"
+        title={sidebarOpen ? "Close menu" : "Open menu"}
+      >
+        {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+      </Button>
 
-        {/* Memory Toggle */}
-        <div className="flex items-center gap-2 md:gap-3 bg-black/50 backdrop-blur-sm px-3 py-2 md:px-4 md:py-3 rounded-lg">
-          <Checkbox
-            id="memory-enabled"
-            checked={memoryEnabled}
-            onCheckedChange={handleMemoryToggle}
-            className="border-white data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
-            data-testid="checkbox-memory-enabled"
-          />
-          <label
-            htmlFor="memory-enabled"
-            className="text-white text-sm md:text-base font-medium cursor-pointer select-none flex items-center gap-1"
-          >
-            <Brain className="w-4 h-4" />
-            Memory
-          </label>
-          {memoryEnabled && (
-            <span className="ml-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" title="Memory active" />
-          )}
-        </div>
+      {/* Left Sidebar Menu */}
+      <div 
+        className={`absolute z-50 top-0 left-0 h-full w-72 md:w-80 glass-strong border-r border-white/10 transform transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="flex flex-col h-full p-6">
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse glow-primary" />
+              Settings
+            </h2>
+            <Button
+              onClick={() => setSidebarOpen(false)}
+              variant="ghost"
+              size="sm"
+              className="text-white/70 hover:text-white"
+              data-testid="button-close-sidebar"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+          </div>
 
-        {/* View Memories Button */}
-        <Button
-          onClick={() => setShowMemoryViewer(true)}
-          className="bg-black/50 hover:bg-black/70 text-white rounded-lg backdrop-blur-sm flex items-center gap-2 justify-center !h-auto !min-h-[44px] px-3 py-2 md:px-4 md:py-3"
-          data-testid="button-view-memories"
-          title="View stored memories"
-        >
-          <Database className="w-4 h-4 md:w-5 md:h-5" />
-          <span className="text-sm md:text-base font-medium">Memories</span>
-        </Button>
+          {/* Sidebar Content */}
+          <div className="flex-1 space-y-4">
+            {/* Audio Only Toggle */}
+            <div className="glass p-4 rounded-lg border border-white/10 card-hover">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="audio-only-sidebar"
+                  className="text-white text-base font-medium cursor-pointer select-none flex-1"
+                >
+                  Audio Only Mode
+                </label>
+                <Checkbox
+                  id="audio-only-sidebar"
+                  checked={audioOnly}
+                  onCheckedChange={handleAudioOnlyToggle}
+                  className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                  data-testid="checkbox-audio-only"
+                />
+              </div>
+              <p className="text-white/60 text-sm mt-2">
+                Switch to audio-only for lower bandwidth usage
+              </p>
+            </div>
+
+            {/* Memory Toggle */}
+            <div className="glass p-4 rounded-lg border border-white/10 card-hover">
+              <div className="flex items-center justify-between">
+                <label
+                  htmlFor="memory-enabled-sidebar"
+                  className="text-white text-base font-medium cursor-pointer select-none flex items-center gap-2 flex-1"
+                >
+                  <Brain className="w-5 h-5 text-purple-400" />
+                  Conversation Memory
+                  {memoryEnabled && (
+                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse glow-primary" title="Memory active" />
+                  )}
+                </label>
+                <Checkbox
+                  id="memory-enabled-sidebar"
+                  checked={memoryEnabled}
+                  onCheckedChange={handleMemoryToggle}
+                  className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
+                  data-testid="checkbox-memory-enabled"
+                />
+              </div>
+              <p className="text-white/60 text-sm mt-2">
+                Remember conversations across sessions using AI memory
+              </p>
+            </div>
+
+            {/* View Memories Button */}
+            <Button
+              onClick={() => {
+                setShowMemoryViewer(true);
+                setSidebarOpen(false);
+              }}
+              className="w-full bg-gradient-primary hover:opacity-90 text-white rounded-lg flex items-center gap-3 justify-center !h-auto py-4 glow-primary"
+              data-testid="button-view-memories"
+              title="View stored memories"
+            >
+              <Database className="w-5 h-5" />
+              <span className="text-base font-semibold">View Memories</span>
+            </Button>
+          </div>
+
+          {/* Sidebar Footer */}
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <p className="text-white/50 text-xs text-center">
+              Settings apply in real-time
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Fullscreen Button - Top Left (Below Controls) */}
+      {/* Overlay when sidebar is open */}
+      {sidebarOpen && (
+        <div 
+          className="absolute inset-0 bg-black/50 z-40 backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+          data-testid="sidebar-overlay"
+        />
+      )}
+
+      {/* Fullscreen Button - Top Left (Below Sidebar Toggle) */}
       {sessionActive && (
         <Button
           onClick={toggleFullscreen}
-          className="absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3 lg:px-3 lg:py-2 top-44 left-3 md:top-52 md:left-4 lg:top-56 lg:left-6"
+          className="absolute z-50 bg-black/50 hover:bg-black/70 text-white rounded-lg backdrop-blur-sm flex items-center gap-2 !h-auto !min-h-[44px] p-2 md:p-3 top-16 left-3 md:top-20 md:left-4 lg:top-20 lg:left-6"
           data-testid="button-fullscreen-toggle"
           title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
         >
           {isFullscreen ? (
-            <>
-              <Minimize2 className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-              <span className="hidden md:inline text-sm font-medium">Exit</span>
-            </>
+            <Minimize2 className="w-5 h-5" aria-hidden="true" />
           ) : (
-            <>
-              <Maximize2 className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-              <span className="hidden md:inline text-sm font-medium">Fullscreen</span>
-            </>
+            <Maximize2 className="w-5 h-5" aria-hidden="true" />
           )}
         </Button>
       )}
