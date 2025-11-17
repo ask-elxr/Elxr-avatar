@@ -183,9 +183,9 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
         {!avatarStarted ? (
           <div className="text-center">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-4">AI Avatar with 4-Source Intelligence</h1>
-              <p className="text-gray-300 mb-2">Dual Pinecone Assistants + Google Search + Claude Sonnet 4</p>
-              <p className="text-gray-400 text-sm">ask-elxr & knowledge-base-assistant</p>
+              <h1 className="text-4xl font-bold text-white mb-4">AI Avatar with 3-Source Intelligence</h1>
+              <p className="text-gray-300 mb-2">Pinecone Knowledge Base + Google Search + Claude Sonnet 4</p>
+              <p className="text-gray-400 text-sm">ask-elxr</p>
             </div>
             <Button
               onClick={startSession}
