@@ -68,7 +68,9 @@ export class HeyGenDriver implements SessionDriver {
     await avatar.createStartAvatar({
       quality: this.config.audioOnly ? AvatarQuality.Low : AvatarQuality.High,
       avatarName: this.config.avatarConfig.heygenAvatarId,
-      knowledgeBase: this.config.avatarConfig.heygenKnowledgeId || undefined,
+      // ❌ CRITICAL: DO NOT pass knowledgeBase - HeyGen's built-in AI bypasses our Claude Sonnet 4.5 backend!
+      // When knowledgeBase is set, HeyGen uses its own AI with its own personality instead of routing through our backend
+      // knowledgeBase: this.config.avatarConfig.heygenKnowledgeId || undefined,
       voice: this.config.avatarConfig.heygenVoiceId
         ? {
             voiceId: this.config.avatarConfig.heygenVoiceId,
