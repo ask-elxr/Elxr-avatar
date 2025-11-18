@@ -83,6 +83,12 @@ export class HeyGenDriver implements SessionDriver {
       disableIdleTimeout: true,
     });
 
+    // ❌ DO NOT call startVoiceChat() - this enables HeyGen's built-in AI which auto-responds!
+    // We want HeyGen ONLY for video rendering, not for AI responses
+    // Voice input will be handled manually through USER_TALKING_MESSAGE events
+    // Then we send the text to our Claude backend and manually call avatar.speak()
+    
+    /* REMOVED - This was causing HeyGen's AI to respond instead of Claude:
     try {
       console.log("Starting voice chat...");
       await avatar.startVoiceChat();
@@ -93,6 +99,7 @@ export class HeyGenDriver implements SessionDriver {
       // Voice chat failed but avatar can still work with text input
       // Don't throw error - allow text-only fallback
     }
+    */
   }
 
   async stop(): Promise<void> {
