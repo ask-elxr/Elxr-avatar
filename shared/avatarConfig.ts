@@ -12,6 +12,7 @@ export const defaultAvatars: AvatarProfile[] = [
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
     voiceRate: "1.0",
     pineconeNamespaces: [
+      "MARK_KOHL",
       "ADDICTION",
       "MIND",
       "BODY",
