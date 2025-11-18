@@ -1320,8 +1320,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // NOTE: This endpoint is intentionally NOT protected by isAuthenticated
   // to allow both authenticated and anonymous users to use the avatar
-  // Rate limiting applied: 1 request per user per minute
-  app.post("/api/avatar/response", rateLimitMiddleware(1, 60000), async (req: any, res) => {
+  // Rate limiting applied: 20 requests per user per minute for natural conversation flow
+  app.post("/api/avatar/response", rateLimitMiddleware(20, 60000), async (req: any, res) => {
     try {
       const {
         message,
