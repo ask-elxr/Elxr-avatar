@@ -616,7 +616,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               });
             }
           }}
-          className="absolute z-50 left-1/2 -translate-x-1/2 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg border border-purple-500 flex items-center gap-2 !h-auto !min-h-[44px] top-3 p-2 md:top-4 md:p-3 lg:top-6 lg:px-4 lg:py-2"
+          className="absolute z-50 left-1/2 -translate-x-1/2 bg-gray-800 hover:bg-gray-700 text-white rounded-full shadow-lg border border-gray-600 flex items-center gap-2 !h-auto !min-h-[44px] top-3 p-2 md:top-4 md:p-3 lg:top-6 lg:px-4 lg:py-2"
           data-testid="button-pause-toggle"
           title={isPaused ? "Resume chat" : "Pause chat"}
           aria-label={isPaused ? "Resume chat" : "Pause chat"}
@@ -639,7 +639,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {sessionActive && (
         <Button
           onClick={() => setShowAvatarSwitcher(true)}
-          className="absolute z-50 bg-purple-600 hover:bg-purple-700 text-white rounded-full shadow-lg border border-purple-500 flex items-center gap-2 !h-auto !min-h-[44px] top-16 right-3 p-2 md:top-20 md:right-4 md:p-3 lg:top-6 lg:right-40 lg:px-4 lg:py-2"
+          className="absolute z-50 bg-gray-800 hover:bg-gray-700 text-white rounded-full shadow-lg border border-gray-600 flex items-center gap-2 !h-auto !min-h-[44px] top-16 right-3 p-2 md:top-20 md:right-4 md:p-3 lg:top-6 lg:right-40 lg:px-4 lg:py-2"
           disabled={switchingAvatar}
           data-testid="button-open-avatar-switcher"
           title="Switch AI Guide"
@@ -654,7 +654,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {sessionActive && (
         <Button
           onClick={endChat}
-          className="absolute z-50 bg-purple-700 hover:bg-purple-800 text-white rounded-full shadow-lg border border-purple-600 flex items-center gap-2 !h-auto !min-h-[44px] top-3 right-3 p-2 md:top-4 md:right-4 md:p-3 lg:top-6 lg:right-6 lg:px-4 lg:py-2"
+          className="absolute z-50 bg-gray-800 hover:bg-gray-700 text-white rounded-full shadow-lg border border-gray-600 flex items-center gap-2 !h-auto !min-h-[44px] top-3 right-3 p-2 md:top-4 md:right-4 md:p-3 lg:top-6 lg:right-6 lg:px-4 lg:py-2"
           data-testid="button-end-chat"
           title="End chat and restart"
           aria-label="End chat and restart"
