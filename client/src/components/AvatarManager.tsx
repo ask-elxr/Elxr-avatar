@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { Pencil, Trash2, Plus, X } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
+import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 
 export function AvatarManager() {
   const { toast } = useToast();
@@ -176,6 +178,21 @@ export function AvatarManager() {
       ...formData,
       pineconeNamespaces: (formData.pineconeNamespaces || []).filter((ns) => ns !== namespace),
     });
+  };
+
+  const handleToggleCategory = (category: string) => {
+    const currentNamespaces = formData.pineconeNamespaces || [];
+    if (currentNamespaces.includes(category)) {
+      setFormData({
+        ...formData,
+        pineconeNamespaces: currentNamespaces.filter((ns) => ns !== category),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        pineconeNamespaces: [...currentNamespaces, category],
+      });
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -411,41 +428,68 @@ export function AvatarManager() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="namespace">Pinecone Namespaces</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="namespace"
-                  value={namespaceInput}
-                  onChange={(e) => setNamespaceInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddNamespace())}
-                  placeholder="e.g., mark-kohl"
-                  data-testid="input-namespace"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleAddNamespace}
-                  data-testid="button-add-namespace"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label>Knowledge Categories *</Label>
+                <span className="text-sm text-muted-foreground">
+                  {(formData.pineconeNamespaces || []).length} selected
+                </span>
               </div>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {(formData.pineconeNamespaces || []).map((ns) => (
-                  <Badge key={ns} variant="secondary" className="flex items-center gap-1">
-                    {ns}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveNamespace(ns)}
-                      className="ml-1 hover:text-destructive"
-                      data-testid={`button-remove-namespace-${ns}`}
+              <p className="text-xs text-muted-foreground">
+                Select which topic categories this avatar can answer questions about
+              </p>
+              <div className="grid grid-cols-2 gap-3 p-4 border rounded-lg bg-muted/30">
+                {PINECONE_CATEGORIES.map((category) => (
+                  <div key={category} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`category-${category}`}
+                      checked={(formData.pineconeNamespaces || []).includes(category)}
+                      onCheckedChange={() => handleToggleCategory(category)}
+                      data-testid={`checkbox-category-${category}`}
+                    />
+                    <Label
+                      htmlFor={`category-${category}`}
+                      className="text-sm font-normal cursor-pointer"
                     >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
+                      {category}
+                    </Label>
+                  </div>
                 ))}
               </div>
+              {(formData.pineconeNamespaces || []).length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {(formData.pineconeNamespaces || []).map((ns) => (
+                    <Badge key={ns} variant="secondary" className="text-xs">
+                      {ns}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              
+              {/* Optional: Manual namespace input for custom namespaces */}
+              <details className="text-sm">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  Add custom namespace (advanced)
+                </summary>
+                <div className="flex gap-2 mt-2">
+                  <Input
+                    id="namespace"
+                    value={namespaceInput}
+                    onChange={(e) => setNamespaceInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAddNamespace())}
+                    placeholder="e.g., custom-namespace"
+                    data-testid="input-namespace"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddNamespace}
+                    data-testid="button-add-namespace"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </details>
             </div>
 
             <div className="flex items-center space-x-2">
