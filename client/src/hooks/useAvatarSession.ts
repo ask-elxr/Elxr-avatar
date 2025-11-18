@@ -312,20 +312,9 @@ export function useAvatarSession({
             if (transcript && transcript !== lastTranscriptRef.current) {
               lastTranscriptRef.current = transcript;
               
-              // Wait for session to be fully active before processing
-              // This prevents race condition where voice starts before session is ready
-              const maxWait = 3000; // 3 seconds max wait
-              const startTime = Date.now();
-              while (!sessionActive && Date.now() - startTime < maxWait) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-              }
-              
-              if (sessionActive) {
-                // Send transcribed text to Claude backend (same flow as typed messages)
-                await handleSubmitMessage(transcript);
-              } else {
-                console.warn("⚠️ Session not ready yet, skipping voice input:", transcript);
-              }
+              // Send transcribed text to Claude backend (same flow as typed messages)
+              // handleSubmitMessage already checks if session is active internally
+              await handleSubmitMessage(transcript);
             } else if (transcript === lastTranscriptRef.current) {
               console.log("⏭️ Skipping duplicate transcript");
             }
