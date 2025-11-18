@@ -677,11 +677,6 @@ export function useAvatarSession({
       console.warn("Empty message, skipping");
       return;
     }
-    
-    if (!sessionActive) {
-      console.error("Session not active! Cannot process message.");
-      return;
-    }
 
     // Clear idle timeout immediately to prevent mid-conversation shutdowns
     clearIdleTimeout();
