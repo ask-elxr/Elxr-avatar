@@ -1,6 +1,6 @@
 # Overview
 
-This project is a full-stack AI avatar chat platform that integrates HeyGen's streaming avatar technology with Claude Sonnet 4.5 AI and real-time Google web search. It features a React frontend and a Node.js/Express backend, enabling intelligent conversations with a Mark Kohl-personality-driven avatar. The avatar utilizes a Pinecone knowledge base and current web information for informed responses, supporting multi-mentor configurations and personal knowledge base integration. Key features include comprehensive HeyGen credit tracking, configurable thresholds, automatic circuit breaking, and per-user rate limiting to manage costs.
+This project is a full-stack AI avatar chat platform that integrates HeyGen's streaming avatar technology for video/audio rendering with Claude Sonnet 4.5 AI for all text generation and intelligence. The system features a React frontend and a Node.js/Express backend, enabling intelligent conversations with personality-driven avatars (Mark Kohl, Willie Gault, June, Ann, Shawn, Thad). Voice input uses browser Web Speech API for transcription, ensuring all AI responses come exclusively from Claude Sonnet 4.5. The avatar utilizes a Pinecone knowledge base and current web information for informed responses, supporting multi-mentor configurations and personal knowledge base integration. Key features include comprehensive HeyGen credit tracking, configurable thresholds, automatic circuit breaking, and per-user rate limiting to manage costs.
 
 # User Preferences
 
@@ -14,6 +14,11 @@ Preferred communication style: Simple, everyday language.
 - **State Management**: TanStack Query for server state, React hooks for local state.
 - **Optimization**: React lazy loading, tree-shaking, and static avatar photo loading for bandwidth savings.
 - **Avatar Session Management**: Custom hooks for lifecycle and inactivity.
+- **Voice Input**: Browser Web Speech API for continuous voice transcription (Chrome, Edge, Safari 14.1+)
+  - Replaces HeyGen's built-in voice chat to maintain full control over AI responses
+  - Automatic deduplication to prevent duplicate message processing
+  - Graceful fallback to text-only mode if browser doesn't support Speech API
+  - Clean teardown with intentional-stop guards to prevent memory leaks
 
 ## Backend
 - **Framework**: Express.js for RESTful APIs.

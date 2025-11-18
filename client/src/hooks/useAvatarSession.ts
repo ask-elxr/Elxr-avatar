@@ -69,6 +69,9 @@ export function useAvatarSession({
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<any>(null); // Web Speech API for voice input
+  const lastTranscriptRef = useRef<string>(""); // For deduplication
+  const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -266,17 +269,74 @@ export function useAvatarSession({
         // Stop the test stream
         stream.getTracks().forEach(track => track.stop());
         
-        // ❌ CRITICAL: DO NOT call startVoiceChat() - this enables HeyGen's AI to auto-respond!
-        // Voice transcription still works through USER_TALKING_MESSAGE events
-        // We'll catch the text and send it to Claude, then manually call avatar.speak()
+        // ✅ Use browser's Web Speech API instead of HeyGen's voice chat
+        // This gives us voice→text without HeyGen's auto-response AI
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
         
-        /* REMOVED - This was enabling HeyGen's AI instead of Claude:
-        console.log("Starting voice chat to enable microphone...");
-        await avatar.startVoiceChat();
-        console.log("✅ Voice chat enabled - you can now talk to the avatar!");
-        */
-        
-        console.log("✅ Microphone ready - will use Claude Sonnet 4.5 for all responses");
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+          
+          // Reset state for new session
+          recognitionIntentionalStopRef.current = false;
+          lastTranscriptRef.current = "";
+          
+          recognition.onresult = async (event: any) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.trim();
+            console.log("🎤 Voice input (Web Speech API):", transcript);
+            
+            // Deduplicate: Web Speech API can emit same transcript multiple times
+            if (transcript && transcript !== lastTranscriptRef.current) {
+              lastTranscriptRef.current = transcript;
+              
+              // Send transcribed text to Claude backend (same flow as typed messages)
+              await handleSubmitMessage(transcript);
+            } else if (transcript === lastTranscriptRef.current) {
+              console.log("⏭️ Skipping duplicate transcript");
+            }
+          };
+          
+          recognition.onerror = (event: any) => {
+            // Handle errors gracefully
+            if (event.error === 'no-speech') {
+              console.log("No speech detected, continuing...");
+            } else if (event.error === 'aborted') {
+              console.log("Speech recognition aborted");
+            } else {
+              console.error("Speech recognition error:", event.error);
+            }
+          };
+          
+          recognition.onend = () => {
+            // ✅ CRITICAL: Only auto-restart if NOT intentionally stopped
+            // This prevents race condition during session teardown
+            if (!recognitionIntentionalStopRef.current && recognitionRef.current === recognition) {
+              try {
+                recognition.start();
+                console.log("🔄 Voice recognition restarted");
+              } catch (e) {
+                console.warn("Could not restart speech recognition:", e);
+              }
+            } else {
+              console.log("✅ Voice recognition ended (intentional stop)");
+            }
+          };
+          
+          try {
+            recognition.start();
+            recognitionRef.current = recognition;
+            console.log("✅ Voice recognition started - will use Claude Sonnet 4.5 for all responses");
+          } catch (error) {
+            console.error("Failed to start speech recognition:", error);
+            recognitionRef.current = null;
+          }
+        } else {
+          console.warn("⚠️ Web Speech API not available in this browser");
+          console.warn("Voice input requires Chrome, Edge, or Safari 14.1+");
+          console.log("✅ Text input available - will use Claude Sonnet 4.5 for responses");
+        }
       } catch (voiceError) {
         console.error("❌ Voice chat failed:", voiceError);
         console.warn("Microphone not available - you can still type messages");
@@ -405,6 +465,18 @@ export function useAvatarSession({
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    
+    // Stop speech recognition - set flag FIRST to prevent auto-restart  
+    if (recognitionRef.current) {
+      try {
+        recognitionIntentionalStopRef.current = true; // ✅ CRITICAL: Set BEFORE stop()
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        console.log("✅ Voice recognition stopped");
+      } catch (error) {
+        console.warn("Error stopping speech recognition:", error);
+      }
+    }
 
     if (avatarRef.current) {
       try {
@@ -447,6 +519,18 @@ export function useAvatarSession({
 
     // Clear idle timeout
     clearIdleTimeout();
+    
+    // Stop speech recognition - set flag FIRST to prevent auto-restart
+    if (recognitionRef.current) {
+      try {
+        recognitionIntentionalStopRef.current = true; // ✅ CRITICAL: Set BEFORE stop()
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        console.log("✅ Voice recognition stopped");
+      } catch (error) {
+        console.warn("Error stopping speech recognition:", error);
+      }
+    }
 
     if (avatarRef.current) {
       intentionalStopRef.current = true;
