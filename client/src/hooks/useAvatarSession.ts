@@ -244,7 +244,8 @@ export function useAvatarSession({
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
-        knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
+        // ❌ CRITICAL: DO NOT pass knowledgeBase - this enables HeyGen's built-in AI!
+        // knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
         voice: avatarConfig.heygenVoiceId ? {
           voiceId: avatarConfig.heygenVoiceId,
           rate: parseFloat(avatarConfig.voiceRate || "1.0"),
@@ -265,10 +266,17 @@ export function useAvatarSession({
         // Stop the test stream
         stream.getTracks().forEach(track => track.stop());
         
-        // Now start voice chat with HeyGen
+        // ❌ CRITICAL: DO NOT call startVoiceChat() - this enables HeyGen's AI to auto-respond!
+        // Voice transcription still works through USER_TALKING_MESSAGE events
+        // We'll catch the text and send it to Claude, then manually call avatar.speak()
+        
+        /* REMOVED - This was enabling HeyGen's AI instead of Claude:
         console.log("Starting voice chat to enable microphone...");
         await avatar.startVoiceChat();
         console.log("✅ Voice chat enabled - you can now talk to the avatar!");
+        */
+        
+        console.log("✅ Microphone ready - will use Claude Sonnet 4.5 for all responses");
       } catch (voiceError) {
         console.error("❌ Voice chat failed:", voiceError);
         console.warn("Microphone not available - you can still type messages");
