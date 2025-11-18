@@ -50,10 +50,15 @@ export default function Admin() {
       const response = await fetch('/api/pinecone/stats');
       const data = await response.json();
       if (data.success) {
-        setPineconeStats(data.stats);
+        // Save the full response with documents and pinecone stats
+        setPineconeStats({
+          documents: data.documents,
+          pinecone: data.pinecone,
+          stats: data.stats, // Legacy field for backwards compat
+        });
       }
     } catch (error) {
-      console.error('Error fetching Pinecone stats:', error);
+      console.error('Error fetching stats:', error);
     }
   };
 
@@ -292,24 +297,59 @@ export default function Admin() {
               <div className="space-y-4">
                 {pineconeStats ? (
                   <>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Vector Database</span>
-                      <Badge variant="outline">
-                        {pineconeStats.totalRecordCount || 0} documents
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Dimensions</span>
-                      <Badge variant="outline">
-                        {pineconeStats.dimension || 0}D
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">Index Fullness</span>
-                      <Badge variant="outline">
-                        {((pineconeStats.indexFullness || 0) * 100).toFixed(2)}%
-                      </Badge>
-                    </div>
+                    {/* Database Documents */}
+                    {pineconeStats.documents && (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Uploaded Documents</span>
+                          <Badge variant="default">
+                            {pineconeStats.documents.total || 0} files
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Total Chunks</span>
+                          <Badge variant="outline">
+                            {pineconeStats.documents.totalChunks || 0}
+                          </Badge>
+                        </div>
+                        {pineconeStats.documents.byStatus && pineconeStats.documents.byStatus.length > 0 && (
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Status</span>
+                            <div className="flex gap-1 flex-wrap justify-end">
+                              {pineconeStats.documents.byStatus.map((s: any) => (
+                                <Badge key={s.status} variant="secondary" className="text-xs">
+                                  {s.status}: {s.count}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Pinecone Vector Database */}
+                    {pineconeStats.pinecone && (
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">Vector Database</span>
+                          <Badge variant="outline">
+                            {pineconeStats.pinecone.totalRecordCount || 0} vectors
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm font-medium">Dimensions</span>
+                          <Badge variant="outline">
+                            {pineconeStats.pinecone.dimension || 0}D
+                          </Badge>
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm font-medium">Index Fullness</span>
+                          <Badge variant="outline">
+                            {((pineconeStats.pinecone.indexFullness || 0) * 100).toFixed(2)}%
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-sm text-muted-foreground">
@@ -320,7 +360,7 @@ export default function Admin() {
                   onClick={fetchPineconeStats} 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
+                  className="w-full mt-4"
                   data-testid="button-refresh-stats"
                 >
                   <Database className="w-4 h-4 mr-2" />

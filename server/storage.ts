@@ -32,6 +32,12 @@ export interface IStorage {
   getAllDocuments(): Promise<Document[]>;
   getDocument(id: string): Promise<Document | undefined>;
   getUserDocuments(userId: string): Promise<Document[]>;
+  getDocumentStats(): Promise<{
+    total: number;
+    byStatus: { status: string; count: number }[];
+    byType: { type: string; count: number }[];
+    totalChunks: number;
+  }>;
   createDocument(data: {
     userId: string;
     filename: string;
@@ -121,6 +127,48 @@ export class DatabaseStorage implements IStorage {
   async getDocument(id: string): Promise<Document | undefined> {
     const [document] = await db.select().from(documents).where(eq(documents.id, id));
     return document;
+  }
+
+  async getDocumentStats(): Promise<{
+    total: number;
+    byStatus: { status: string; count: number }[];
+    byType: { type: string; count: number }[];
+    totalChunks: number;
+  }> {
+    const allDocs = await db.select().from(documents);
+    
+    const total = allDocs.length;
+    
+    const byStatus = allDocs.reduce((acc, doc) => {
+      const status = doc.status || 'unknown';
+      const existing = acc.find(s => s.status === status);
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ status, count: 1 });
+      }
+      return acc;
+    }, [] as { status: string; count: number }[]);
+    
+    const byType = allDocs.reduce((acc, doc) => {
+      const type = doc.fileType || 'unknown';
+      const existing = acc.find(t => t.type === type);
+      if (existing) {
+        existing.count++;
+      } else {
+        acc.push({ type, count: 1 });
+      }
+      return acc;
+    }, [] as { type: string; count: number }[]);
+    
+    const totalChunks = allDocs.reduce((sum, doc) => sum + (doc.chunksCount || 0), 0);
+    
+    return {
+      total,
+      byStatus,
+      byType,
+      totalChunks,
+    };
   }
 
   async getUserDocuments(userId: string): Promise<Document[]> {

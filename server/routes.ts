@@ -826,16 +826,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const targetIndex = indexName as PineconeIndexName | undefined;
 
-      const stats = await pineconeService.getStats(targetIndex);
+      // Get Pinecone stats
+      const pineconeStats = await pineconeService.getStats(targetIndex);
+      
+      // Get database document stats
+      const documentStats = await storage.getDocumentStats();
+
       res.json({
         success: true,
-        stats,
+        pinecone: pineconeStats,
+        documents: documentStats,
         indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
+        // Legacy field for backwards compatibility
+        stats: pineconeStats,
       });
     } catch (error) {
-      console.error("Error getting Pinecone stats:", error);
+      console.error("Error getting stats:", error);
       res.status(500).json({
-        error: "Failed to get Pinecone stats",
+        error: "Failed to get statistics",
       });
     }
   });
