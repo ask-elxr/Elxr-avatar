@@ -217,12 +217,33 @@ export function useAvatarSession({
         isSpeakingRef.current = true;
         setIsSpeakingState(true);
         clearIdleTimeout();
+        
+        // 🎤 Pause voice recognition while avatar is speaking to prevent feedback loop
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+            console.log("🔇 Voice recognition paused (avatar speaking)");
+          } catch (e) {
+            // Ignore errors if already stopped
+          }
+        }
       });
 
       avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
         isSpeakingRef.current = false;
         setIsSpeakingState(false);
         startIdleTimeout(); // Start 30s countdown after avatar stops talking
+        
+        // 🎤 Resume voice recognition after avatar finishes speaking
+        if (recognitionRef.current && !recognitionIntentionalStopRef.current) {
+          try {
+            recognitionRef.current.start();
+            console.log("🔊 Voice recognition resumed (avatar finished)");
+          } catch (e) {
+            // Ignore errors if already running
+            console.warn("Could not resume voice recognition:", e);
+          }
+        }
       });
 
       // Listen for user voice input
@@ -322,15 +343,17 @@ export function useAvatarSession({
           };
           
           recognition.onend = () => {
-            // ✅ CRITICAL: Only auto-restart if NOT intentionally stopped
-            // This prevents race condition during session teardown
-            if (!recognitionIntentionalStopRef.current && recognitionRef.current === recognition) {
+            // ✅ CRITICAL: Only auto-restart if NOT intentionally stopped AND avatar is NOT speaking
+            // Avatar speaking pause is handled by AVATAR_STOP_TALKING event
+            if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && recognitionRef.current === recognition) {
               try {
                 recognition.start();
                 console.log("🔄 Voice recognition restarted");
               } catch (e) {
                 console.warn("Could not restart speech recognition:", e);
               }
+            } else if (isSpeakingRef.current) {
+              console.log("⏸️ Voice recognition paused (waiting for avatar to finish)");
             } else {
               console.log("✅ Voice recognition ended (intentional stop)");
             }
