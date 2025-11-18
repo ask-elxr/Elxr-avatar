@@ -1,6 +1,6 @@
 # Overview
 
-This project is a full-stack AI avatar chat platform that integrates HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. It features a React frontend and a Node.js/Express backend, enabling intelligent conversations with a Mark Kohl-personality-driven avatar. The avatar utilizes a Pinecone knowledge base and current web information for informed responses, supporting multi-mentor configurations and personal knowledge base integration. Key features include comprehensive HeyGen credit tracking, configurable thresholds, automatic circuit breaking, and per-user rate limiting to manage costs.
+This project is a full-stack AI avatar chat platform that integrates HeyGen's streaming avatar technology with Claude Sonnet 4.5 AI and real-time Google web search. It features a React frontend and a Node.js/Express backend, enabling intelligent conversations with a Mark Kohl-personality-driven avatar. The avatar utilizes a Pinecone knowledge base and current web information for informed responses, supporting multi-mentor configurations and personal knowledge base integration. Key features include comprehensive HeyGen credit tracking, configurable thresholds, automatic circuit breaking, and per-user rate limiting to manage costs.
 
 # User Preferences
 
@@ -38,7 +38,7 @@ Preferred communication style: Simple, everyday language.
 
 ## Core Features
 - **AI Avatar**: HeyGen Streaming SDK for real-time video interaction.
-- **AI Model**: Claude Sonnet 4 (`claude-sonnet-4-20250514`) for reasoning.
+- **AI Model**: Claude Sonnet 4.5 (`claude-sonnet-4-5`) for world-class reasoning, coding, and autonomous task execution.
 - **Knowledge Retrieval**: Pinecone knowledge base (ask-elxr), integrated Google Web Search with topic-based namespace mapping, and PubMed research integration for medical/scientific literature.
 - **Personality Integration**: Mark Kohl personality (customizable per mentor) via system prompts.
 - **Conversation Management**: Enhanced token limits, timeout handling, inactivity detection, pause/resume, current date awareness.
@@ -70,7 +70,7 @@ Preferred communication style: Simple, everyday language.
     * Smart caching with vector similarity (95% threshold, 7-day TTL in 'pubmed-cache' namespace)
     * Cost optimization with embedding reuse (50% OpenAI cost reduction on cache misses)
     * Performance: 3x faster on cache hits (1619ms → 532ms)
-    * AI-powered summarization: Claude Sonnet 4 generates comprehensive summaries (~15s for 3-4 articles)
+    * AI-powered summarization: Claude Sonnet 4.5 generates comprehensive summaries (~15s for 3-4 articles)
       - Main findings with PMID citations
       - Common themes across studies
       - Controversies and debates

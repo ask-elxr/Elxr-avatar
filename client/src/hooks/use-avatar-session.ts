@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { heygenService } from "@/services/heygen-service";
 
 interface Message {
-  type: 'user' | 'avatar';
+  type: "user" | "avatar";
   text: string;
   timestamp: string;
 }
@@ -14,17 +14,17 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
   const [sessionActive, setSessionActive] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [error, setError] = useState<string | null>(null);
-  
+
   const avatarRef = useRef<any>(null);
 
-  const addMessage = useCallback((type: 'user' | 'avatar', text: string) => {
-    const timestamp = new Date().toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: false
+  const addMessage = useCallback((type: "user" | "avatar", text: string) => {
+    const timestamp = new Date().toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
     });
-    
-    setMessages(prev => [...prev, { type, text, timestamp }]);
+
+    setMessages((prev) => [...prev, { type, text, timestamp }]);
   }, []);
 
   const startSession = useCallback(async () => {
@@ -33,8 +33,10 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
 
     try {
       // Import HeyGen SDK events dynamically
-      const { StreamingEvents, TaskType } = await import('@heygen/streaming-avatar');
-      
+      const { StreamingEvents, TaskType } = await import(
+        "@heygen/streaming-avatar"
+      );
+
       const { avatar, sessionInfo } = await heygenService.initializeAvatar();
       avatarRef.current = avatar;
 
@@ -57,7 +59,7 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
         setIsConnected(false);
         setSessionActive(false);
-        setError('Stream disconnected unexpectedly');
+        setError("Stream disconnected unexpectedly");
       });
 
       setIsLoading(false);
@@ -67,16 +69,15 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
       // Send initial greeting
       setTimeout(() => {
         avatar.speak({
-          text: "Hello! I'm your AI assistant. How can I help you today?",
-          task_type: TaskType.TALK
+          text: "Hello! How can I help you today?",
+          task_type: TaskType.TALK,
         });
-        addMessage('avatar', "Hello! I'm your AI assistant. How can I help you today?");
+        addMessage("avatar", "Hello! How can I help you today?");
       }, 1000);
-
     } catch (err) {
       setIsLoading(false);
-      setError(err instanceof Error ? err.message : 'Failed to start session');
-      console.error('Session start error:', err);
+      setError(err instanceof Error ? err.message : "Failed to start session");
+      console.error("Session start error:", err);
     }
   }, [videoRef, addMessage]);
 
@@ -87,7 +88,7 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
         avatarRef.current = null;
       }
     } catch (err) {
-      console.error('Error ending session:', err);
+      console.error("Error ending session:", err);
     } finally {
       setIsConnected(false);
       setSessionActive(false);
@@ -97,24 +98,27 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
     }
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
-    if (!avatarRef.current || !sessionActive) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!avatarRef.current || !sessionActive) return;
 
-    try {
-      // Import TaskType dynamically
-      const { TaskType } = await import('@heygen/streaming-avatar');
-      
-      addMessage('user', text);
-      
-      await avatarRef.current.speak({
-        text: text,
-        task_type: TaskType.TALK
-      });
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError('Failed to send message');
-    }
-  }, [sessionActive, addMessage]);
+      try {
+        // Import TaskType dynamically
+        const { TaskType } = await import("@heygen/streaming-avatar");
+
+        addMessage("user", text);
+
+        await avatarRef.current.speak({
+          text: text,
+          task_type: TaskType.TALK,
+        });
+      } catch (err) {
+        console.error("Error sending message:", err);
+        setError("Failed to send message");
+      }
+    },
+    [sessionActive, addMessage],
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -134,6 +138,6 @@ export function useAvatarSession(videoRef: React.RefObject<HTMLVideoElement>) {
     error,
     startSession,
     endSession,
-    sendMessage
+    sendMessage,
   };
 }
