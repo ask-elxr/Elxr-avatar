@@ -1,4 +1,4 @@
-````import type { Express } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { pineconeService, PineconeIndexName } from "./pinecone.js";
 import { documentProcessor } from "./documentProcessor.js";
@@ -54,6 +54,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!response.ok) {
         const errorText = await response.text();
         
+        // Log detailed error information
+        logger.error({
+          service: 'heygen',
+          operation: 'create_token',
+          httpStatus: response.status,
+          statusText: response.statusText,
+          errorBody: errorText,
+          url: response.url,
+        }, 'HeyGen API request failed');
 
         throw new Error(
           `HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`,
@@ -217,7 +226,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...tokenData,
       });
     } catch (error: any) {
-      log.error({ error: error.message }, "Error creating HeyGen token");
+      log.error({
+        errorMessage: error.message,
+        errorStack: error.stack,
+        errorName: error.name,
+        fullError: error.toString(),
+      }, "Error creating HeyGen token");
       res.status(500).json({
         error: "Failed to create HeyGen access token",
       });
@@ -3286,4 +3300,3 @@ export async function seedDefaultAvatars(): Promise<void> {
     // Don't throw - allow server to start even if seeding fails
   }
 }
-````
