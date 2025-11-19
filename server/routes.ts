@@ -1,4 +1,4 @@
-import type { Express } from "express";
+````import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { pineconeService, PineconeIndexName } from "./pinecone.js";
 import { documentProcessor } from "./documentProcessor.js";
@@ -53,6 +53,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (!response.ok) {
         const errorText = await response.text();
+        
+
         throw new Error(
           `HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`,
         );
@@ -3284,3 +3286,4 @@ export async function seedDefaultAvatars(): Promise<void> {
     // Don't throw - allow server to start even if seeding fails
   }
 }
+````
