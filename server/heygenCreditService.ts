@@ -74,8 +74,12 @@ class HeygenCreditService {
     const log = logger.child({ service: 'heygen-credit', operation });
 
     try {
+      // Convert temp user IDs to null to avoid FK constraint violations
+      // Temp users (temp_*) are client-side anonymous sessions never persisted to users table
+      const persistedUserId = userId?.startsWith('temp_') ? null : userId;
+
       await storage.logHeygenCredit({
-        userId,
+        userId: persistedUserId,
         operation,
         creditsUsed,
         successful,
