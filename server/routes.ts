@@ -925,6 +925,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ======================================================================
+  // AVATAR ROUTES - Moved to server/routes/avatars.ts
+  // ======================================================================
+  // Commented out - now handled by avatarRouter in server/routes/avatars.ts
+  
+  /*
   // Get avatar response with Claude Sonnet 4 + Google Search + Knowledge Base + Mem0 Memory
   app.get("/api/avatar/config/:avatarId", async (req, res) => {
     try {
@@ -1074,6 +1080,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: "Failed to delete avatar" });
     }
   });
+  */
 
   // Personal Knowledge Base Management Routes
   
