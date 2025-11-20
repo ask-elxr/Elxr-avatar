@@ -1,4 +1,7 @@
-import { AvatarProfile } from "./schema";
+import { AvatarProfile } from "../shared/schema.js";
+
+// Re-export AvatarProfile for use in other modules
+export type { AvatarProfile };
 
 export const defaultAvatars: AvatarProfile[] = [
   {

@@ -10,7 +10,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { defaultAvatars } from '../shared/avatarConfig';
+import { defaultAvatars } from '../config/avatars.config.js';
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',

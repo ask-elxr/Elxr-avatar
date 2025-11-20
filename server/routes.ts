@@ -29,7 +29,7 @@ import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
 import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
-import { getAvatarById } from "../shared/avatarConfig.js";
+import { getAvatarById } from "../config/avatars.config.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
