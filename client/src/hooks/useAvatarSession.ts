@@ -779,7 +779,8 @@ export function useAvatarSession({
             await startHeyGenSession(currentAvatarIdRef.current);
           } catch (error) {
             console.error("Failed to start HeyGen session:", error);
-            return;
+            // ⚠️ DON'T return early - still send message to Claude!
+            // HeyGen is just for video rendering, Claude generates the response
           }
         }
         
