@@ -941,7 +941,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Fallback to default avatars if not found in DB
       if (!avatarConfig) {
-        const { getAvatarById } = await import("@shared/avatarConfig");
+        const { getAvatarById } = await import("../config/avatars.config.js");
         avatarConfig = getAvatarById(avatarId);
       }
       
@@ -965,7 +965,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Fallback to default avatars if database is empty
-      const { getActiveAvatars } = await import("@shared/avatarConfig");
+      const { getActiveAvatars } = await import("../config/avatars.config.js");
       const avatars = getActiveAvatars();
       res.json(avatars);
     } catch (error: any) {
@@ -1444,7 +1444,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (async () => {
           const kbStart = Date.now();
           try {
-            const { getAvatarById } = await import("@shared/avatarConfig");
+            const { getAvatarById } = await import("../config/avatars.config.js");
             const avatarConfig = getAvatarById(avatarId);
             if (!avatarConfig) throw new Error("Avatar not found");
 
@@ -3289,7 +3289,7 @@ export async function seedDefaultAvatars(): Promise<void> {
     const existingAvatars = await storage.listAvatars(false);
     
     if (existingAvatars.length === 0) {
-      const { defaultAvatars } = await import("@shared/avatarConfig");
+      const { defaultAvatars } = await import("../config/avatars.config.js");
       
       logger.info("Seeding database with default avatars...");
       
