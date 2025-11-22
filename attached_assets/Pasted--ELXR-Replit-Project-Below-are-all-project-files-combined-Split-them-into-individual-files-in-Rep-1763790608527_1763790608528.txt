@@ -1,0 +1,225 @@
+# ELXR Replit Project
+
+Below are all project files combined. Split them into individual files in Replit.
+
+--- FILE: package.json ---
+{
+  "name": "elxr-avatars",
+  "version": "1.0.0",
+  "main": "server/index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "node --loader ts-node/esm server/index.ts"
+  },
+  "dependencies": {
+    "@livekit/server-sdk": "^1.6.2",
+    "@livekit/cloud-client": "^0.4.1",
+    "@anthropic-ai/sdk": "^0.18.0",
+    "@pinecone-database/pinecone": "^2.1.0",
+    "axios": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.1.0",
+    "express": "^4.18.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.0",
+    "wrtc": "^0.4.7"
+  }
+}
+
+--- FILE: .env.example ---
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
+LIVEKIT_URL=
+HEYGEN_API_KEY=
+ELEVEN_API_KEY=
+ANTHROPIC_API_KEY=
+OPENAI_API_KEY=
+PINECONE_API_KEY=
+PINECONE_INDEX=
+AVATAR_ID=mark_kohl
+DATABASE_URL=
+
+--- FILE: server/index.ts ---
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import { startAvatarBot } from "./livekitBot.js";
+
+const app = express();
+app.use(express.json());
+app.use(cors());
+
+app.post("/session", async (req, res) => {
+  const { roomName, token } = req.body;
+  await startAvatarBot(roomName, token);
+  res.json({ status: "bot connected" });
+});
+
+const PORT = 3000;
+app.listen(PORT, () => console.log(`ELXR server on ${PORT}`));
+
+--- FILE: server/livekitBot.ts ---
+import { connect, RoomEvent, LocalVideoTrack, LocalAudioTrack } from "livekit-client";
+import { processUserAudio } from "./pipeline.js";
+
+export async function startAvatarBot(roomName, token) {
+  const room = await connect(process.env.LIVEKIT_URL, token);
+  console.log("Avatar bot connected.");
+
+  room.on(RoomEvent.TrackSubscribed, async (track, pub, participant) => {
+    if (participant.identity === "user") {
+      processUserAudio(track, room);
+    }
+  });
+
+  return room;
+}
+
+--- FILE: server/pipeline.ts ---
+import { transcribeAudio } from "./stt.js";
+import { runAvatarBrain } from "./llm.js";
+import { ttsToPcm } from "./tts.js";
+import { createHeyGenConnection, sendAudioToHeyGen } from "./heygenRealtime.js";
+import { LocalVideoTrack, LocalAudioTrack } from "livekit-client";
+
+export async function processUserAudio(userTrack, room) {
+  const chunks = [];
+
+  userTrack.on("data", (d) => chunks.push(d));
+
+  userTrack.on("ended", async () => {
+    const buffer = Buffer.concat(chunks);
+    const text = await transcribeAudio(buffer);
+    const reply = await runAvatarBrain(text);
+    const pcmAudio = await ttsToPcm(reply);
+
+    const pc = await createHeyGenConnection(process.env.AVATAR_ID, (stream) => {
+      const vid = new LocalVideoTrack(stream.getVideoTracks()[0]);
+      room.localParticipant.publishTrack(vid);
+    });
+
+    sendAudioToHeyGen(pc, pcmAudio);
+  });
+}
+
+--- FILE: server/heygenRealtime.ts ---
+import wrtc from "wrtc";
+import axios from "axios";
+
+export async function createHeyGenConnection(avatarId, onVideo) {
+  const pc = new wrtc.RTCPeerConnection({
+    iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }]
+  });
+
+  pc.ontrack = (event) => {
+    if (event.track.kind === "video") onVideo(event.streams[0]);
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+
+  const res = await axios.post(
+    "https://api.heygen.com/v1/realtime/avatars/offer",
+    { avatar_id: avatarId, sdp: offer.sdp },
+    { headers: { "X-Api-Key": process.env.HEYGEN_API_KEY } }
+  );
+
+  await pc.setRemoteDescription({ type: "answer", sdp: res.data.sdp });
+  return pc;
+}
+
+export function sendAudioToHeyGen(pc, pcmBuffer) {
+  const track = pc.addTransceiver("audio", { direction: "sendonly" }).sender;
+  track.replaceTrack(pcmBuffer);
+}
+
+--- FILE: server/stt.ts ---
+export async function transcribeAudio(buf) {
+  return "transcribed placeholder";
+}
+
+--- FILE: server/llm.ts ---
+import Anthropic from "@anthropic-ai/sdk";
+import { getRelevantChunks } from "./pinecone.js";
+import { storeMemory } from "./memory.js";
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+export async function runAvatarBrain(text) {
+  const chunks = await getRelevantChunks(text, process.env.AVATAR_ID);
+
+  const prompt = `You are ${process.env.AVATAR_ID}. Use context to answer.\n${chunks.join("\n")}`;
+
+  const response = await anthropic.messages.create({
+    model: "claude-3-5-sonnet-latest",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 200
+  });
+
+  const reply = response.content[0].text;
+  await storeMemory("demo_user", text, reply);
+  return reply;
+}
+
+--- FILE: server/tts.ts ---
+import axios from "axios";
+
+export async function ttsToPcm(text) {
+  const r = await axios.post(
+    "https://api.elevenlabs.io/v1/text-to-speech/VOICE_ID",
+    { text },
+    { headers: { "xi-api-key": process.env.ELEVEN_API_KEY } }
+  );
+  return Buffer.from(r.data.audio_base64, "base64");
+}
+
+--- FILE: server/pinecone.ts ---
+import { Pinecone } from "@pinecone-database/pinecone";
+import axios from "axios";
+
+const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+const index = pc.index(process.env.PINECONE_INDEX);
+
+export async function embed(text) {
+  const r = await axios.post(
+    "https://api.openai.com/v1/embeddings",
+    { input: text, model: "text-embedding-3-large" },
+    { headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }
+  );
+  return r.data.data[0].embedding;
+}
+
+export async function getRelevantChunks(query, avatar) {
+  const vector = await embed(query);
+  const res = await index.namespace(avatar).query({ topK: 5, vector, includeMetadata: true });
+  return res.matches.map((m) => m.metadata.text);
+}
+
+--- FILE: server/memory.ts ---
+import { embed } from "./pinecone.js";
+import { Pinecone } from "@pinecone-database/pinecone";
+
+const pc = new Pinecone({ apiKey: process.env.PINECONE_API_KEY });
+const index = pc.index(process.env.PINECONE_INDEX);
+
+export async function storeMemory(userId, input, reply) {
+  const summary = `User:${input} | Avatar:${reply}`;
+  const vec = await embed(summary);
+
+  await index.namespace(`user_${userId}`).upsert([
+    { id: `${Date.now()}`, values: vec, metadata: { text: summary } }
+  ]);
+}
+
+--- FILE: client/index.html ---
+<!DOCTYPE html>
+<html>
+  <body>
+    <video id="avatar-video" autoplay playsinline></video>
+    <script src="client.js"></script>
+  </body>
+</html>
+
+--- FILE: client/client.js ---
+// This file initializes LiveKit in browser
+console.log("Client placeholder. Implement LiveKit subscribe here.");
