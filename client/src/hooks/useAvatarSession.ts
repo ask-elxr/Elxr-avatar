@@ -283,102 +283,18 @@ export function useAvatarSession({
         disableIdleTimeout: true,
       });
 
-      // Enable voice recognition for hands-free interaction
+      // ✅ Enable HeyGen's voice chat for proper echo cancellation
+      // This gives us microphone with echo cancellation (no feedback loop!)
+      // Voice input will come through USER_TALKING_MESSAGE events
+      // We still use Claude for responses (knowledgeBase is disabled)
       try {
-        // First, explicitly request microphone permission WITH ECHO CANCELLATION
-        console.log("Requesting microphone permission...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          }
+        await avatar.startVoiceChat({
+          isInputAudioMuted: false, // Microphone is active
         });
-        console.log("✅ Microphone permission granted with echo cancellation");
-        
-        // Stop the test stream
-        stream.getTracks().forEach(track => track.stop());
-        
-        // ✅ Use browser's Web Speech API instead of HeyGen's voice chat
-        // This gives us voice→text without HeyGen's auto-response AI
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        
-        if (SpeechRecognition) {
-          const recognition = new SpeechRecognition();
-          recognition.continuous = true;
-          recognition.interimResults = false;
-          recognition.lang = 'en-US';
-          
-          // Reset state for new session
-          recognitionIntentionalStopRef.current = false;
-          lastTranscriptRef.current = "";
-          
-          recognition.onresult = async (event: any) => {
-            const transcript = event.results[event.results.length - 1][0].transcript.trim();
-            console.log("🎤 Voice input (Web Speech API):", transcript);
-            
-            // Deduplicate: Web Speech API can emit same transcript multiple times
-            if (transcript && transcript !== lastTranscriptRef.current) {
-              lastTranscriptRef.current = transcript;
-              
-              // Send transcribed text to Claude backend (same flow as typed messages)
-              // handleSubmitMessage already checks if session is active internally
-              await handleSubmitMessage(transcript);
-            } else if (transcript === lastTranscriptRef.current) {
-              console.log("⏭️ Skipping duplicate transcript");
-            }
-          };
-          
-          recognition.onerror = (event: any) => {
-            // Handle errors gracefully
-            if (event.error === 'no-speech') {
-              console.log("No speech detected, continuing...");
-            } else if (event.error === 'aborted') {
-              console.log("Speech recognition aborted");
-            } else {
-              console.error("Speech recognition error:", event.error);
-            }
-          };
-          
-          recognition.onend = () => {
-            // ✅ CRITICAL: Only auto-restart if NOT intentionally stopped AND avatar is NOT speaking
-            // Avatar speaking pause is handled by AVATAR_STOP_TALKING event
-            if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && recognitionRef.current === recognition) {
-              try {
-                recognition.start();
-                console.log("🔄 Voice recognition restarted");
-              } catch (e) {
-                console.warn("Could not restart speech recognition:", e);
-              }
-            } else if (isSpeakingRef.current) {
-              console.log("⏸️ Voice recognition paused (waiting for avatar to finish)");
-            } else {
-              console.log("✅ Voice recognition ended (intentional stop)");
-            }
-          };
-          
-          try {
-            recognition.start();
-            recognitionRef.current = recognition;
-            console.log("✅ Voice recognition started - will use Claude Sonnet 4.5 for all responses");
-          } catch (error) {
-            console.error("Failed to start speech recognition:", error);
-            recognitionRef.current = null;
-          }
-        } else {
-          console.warn("⚠️ Web Speech API not available in this browser");
-          console.warn("Voice input requires Chrome, Edge, or Safari 14.1+");
-          console.log("✅ Text input available - will use Claude Sonnet 4.5 for responses");
-        }
+        console.log("✅ Voice chat enabled via HeyGen SDK with echo cancellation - using Claude for responses");
       } catch (voiceError) {
         console.error("❌ Voice chat failed:", voiceError);
-        console.warn("Microphone not available - you can still type messages");
-        
-        // Show user-friendly message
-        if (voiceError instanceof DOMException && voiceError.name === 'NotAllowedError') {
-          console.error("Microphone permission denied by user. Please allow microphone access in your browser settings.");
-        }
-        // Don't throw - allow text-only fallback
+        console.warn("Continuing with text-only mode");
       }
 
       console.log("HeyGen session started successfully");
