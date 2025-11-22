@@ -270,9 +270,11 @@ export function useAvatarSession({
         },
         language: "en",
         disableIdleTimeout: true,
-        // ❌ CRITICAL: Explicitly disable HeyGen's AI - we use Claude instead
-        knowledgeBase: undefined, // No knowledge base = no HeyGen AI
-        knowledgeId: undefined, // No knowledge ID = no auto-responses
+        // ❌ CRITICAL: Disable ALL HeyGen AI features - we use Claude instead
+        knowledgeBase: undefined, // No knowledge base
+        knowledgeId: undefined, // No knowledge ID
+        useSilencePrompt: false, // Don't auto-respond to silence
+        enablePushToTalk: false, // Disable push-to-talk mode
       });
 
       // ❌ DISABLED: HeyGen's voice chat causes echo loop with Claude
@@ -818,10 +820,10 @@ export function useAvatarSession({
           
           await avatarRef.current.speak({
             text: claudeResponse,
-            task_type: TaskType.TALK,
+            task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
           });
           
-          console.log("✅ HeyGen speak() called with above text");
+          console.log("✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)");
         }
       }
     } catch (error) {
