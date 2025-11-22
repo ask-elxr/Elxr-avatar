@@ -7,6 +7,22 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 
 ## Recent Changes (November 2024)
 
+### Latest Updates (November 22, 2024)
+- **✅ Fixed HeyGen TaskType**: Changed from `TaskType.TALK` to `TaskType.REPEAT` - TALK mode was using HeyGen's GPT-4o mini AI instead of speaking Claude's exact text
+- **✅ Conversation Memory Implemented**: 
+  - All conversations now saved to database (conversations table)
+  - Avatar remembers conversation history across sessions (last 20 messages)
+  - History passed to Claude for context-aware responses
+  - Works for both authenticated users and anonymous users (temp_ IDs)
+  - Error handling ensures database failures don't crash responses
+- **✅ Fixed Avatar IDs**: All avatars now use their correct HeyGen avatar IDs
+  - Willie Gault: `a9d3346d94594c5f9ca522f6d0469038`
+  - June: `Katya_Chair_Sitting_public`
+  - Ann: `Ann_Therapist_public`
+  - Thad: `b115a2af9a9b41f3b69d589d6f26ecef`
+  - Mark Kohl: `e16db57e57824a0e90b661ad528d3994`
+  - Shawn: `a9d3346d94594c5f9ca522f6d0469038`
+
 ### Code Restructuring
 - **Created new directory structure**: `config/`, `server/services/`, `server/routes/`
 - **Moved avatar configuration**: `shared/avatarConfig.ts` → `config/avatars.config.ts`
@@ -19,14 +35,14 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
   - `server/routes/avatars.ts` - Avatar CRUD and configuration endpoints
 
 ### HeyGen Video System
-- **Multi-avatar support**: Mark Kohl, Willie Gault, Fitness Coach, and more
+- **Multi-avatar support**: Mark Kohl, Willie Gault, June, Ann, Shawn, Thad
 - **Per-avatar features**:
   - Dedicated Pinecone knowledge base namespaces
-  - Custom HeyGen avatar IDs
+  - Custom HeyGen avatar IDs (now all correctly configured)
   - Configurable session time limits
   - Unique personalities and expertise areas
-- **Real-time video conversations**: HeyGen handles both video and audio
-- **AI Integration**: Claude + RAG (Pinecone, PubMed, Wikipedia) + Mem0 memory
+- **Real-time video conversations**: HeyGen renders video/audio, Claude provides intelligence
+- **AI Integration**: Claude Sonnet 4.5 + RAG (Pinecone, PubMed, Wikipedia) + persistent conversation memory
 
 ## Architecture
 
@@ -52,7 +68,7 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 - **Schema**: `shared/schema.ts`
 - **Tables**:
   - `avatar_profiles` - Avatar configurations with DB overrides
-  - `conversations` - Chat history
+  - `conversations` - **NEW**: Persistent chat history (user & assistant messages with avatarId, role)
   - `documents` - Uploaded documents metadata
   - `knowledge_base_sources` - User knowledge sources (Notion, etc.)
   - `api_calls` - Usage tracking
