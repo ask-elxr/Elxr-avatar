@@ -48,6 +48,7 @@ export function AvatarManager() {
     voiceRate: "1.0",
     personalityPrompt: "",
     pineconeNamespaces: [],
+    usePubMed: false,
     isActive: true,
   });
 
@@ -134,6 +135,7 @@ export function AvatarManager() {
       voiceRate: "1.0",
       personalityPrompt: "",
       pineconeNamespaces: [],
+      usePubMed: false,
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -152,6 +154,7 @@ export function AvatarManager() {
       voiceRate: avatar.voiceRate || "1.0",
       personalityPrompt: avatar.personalityPrompt,
       pineconeNamespaces: avatar.pineconeNamespaces,
+      usePubMed: avatar.usePubMed || false,
       isActive: avatar.isActive,
     });
     setIsDialogOpen(true);
@@ -490,6 +493,16 @@ export function AvatarManager() {
                   </Button>
                 </div>
               </details>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="usePubMed"
+                checked={formData.usePubMed}
+                onCheckedChange={(checked) => setFormData({ ...formData, usePubMed: checked })}
+                data-testid="switch-use-pubmed"
+              />
+              <Label htmlFor="usePubMed">Always use PubMed research</Label>
             </div>
 
             <div className="flex items-center space-x-2">
