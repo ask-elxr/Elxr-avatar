@@ -1,0 +1,72 @@
+HeyGen's Webhook Events
+Receive real-time notifications for avatar video events
+
+Webhook events are how HeyGen notifies your endpoints when a variety of interactions or events happen, including when avatar video processing succeeds or fails. Webhook events are sent by HeyGen as POST requests to your webhook endpoint.
+
+Getting Started
+List Available Webhooks Events
+To view all available webhook event types, refer to the List Available Webhook Events API.
+
+These events typically include:
+
+avatar_video.success - triggered when a video generation completes successfully
+avatar_video.fail- triggered when a video fails to generate
+avatar_video_gif.successand.fail- similar to avatar_video events, but for GIF output
+video_translate.success - triggered when a translated video is ready
+video_translate.fail - triggered when video translation fails
+personalized_video- triggered when a personalized video is generated
+instant_avatar.success - triggered when an Instant Avatar is successfully created
+instant_avatar.fail - triggered when Instant Avatar creation fails
+photo_avatar_generation.success - triggered when a photo avatar is generated successfully
+photo_avatar_generation.fail – triggered when photo avatar generation fails
+photo_avatar_train.success - triggered when photo avatar training completes successfully
+photo_avatar_train.fail - triggered when photo avatar training fails
+photo_avatar_add_motion.success - triggered when motion is successfully added to a photo avatar
+photo_avatar_add_motion.fail - triggered when motion addition to a photo avatar fails
+proofread_creation.success - triggered when a proofreading task completes successfully
+proofread_creation.fail - triggered when a proofreading task fails
+live_avatar.success - triggered when a live avatar session completes successfully
+live_avatar.fail – triggered when a live avatar session fails
+HeyGen sends these webhook events to your configured endpoint based on your subscriptions. You will only receive events that you have subscribed to.
+
+Payloads Your Endpoint Will Receive
+Your endpoint will receive payloads in the following formats when subscribed webhook events are triggered.
+
+You can click the tabs below to view example payloads for different event types:
+
+avatar_video.success
+avatar_video.fail
+video_translate.success
+video_translate.fail
+personalized_video
+
+{
+  "event_type": "avatar_video.success",
+  "event_data": {
+    "video_id": "<video_id>",
+    "url": "<video_url>",
+    "gif_download_url": "<gif_url>",
+    "video_share_page_url": "<share_page_url>",
+    "folder_id": "<folder_id>",
+    "callback_id": "<callback_id>"
+  }
+}
+📘
+Note:
+
+avatar_video_gifpayload is the same asavatar_video.
+The examples above show the most common webhook payloads. Additional events follow a similar structure. You can view sample payloads for each event directly in your webhook logs or via test callbacks.
+Register a Webhook Endpoint
+Use Add a Webhook Endpoint API to register your endpoint which is used to process HeyGen events. Specify the list of events you want to subscribe to. When registering, you also need to specify url.
+
+📘
+Our webhook validation performs an OPTIONS request to your endpoint with a 1-second timeout, so ensure your server responds quickly and accepts OPTIONS requests, even if your main functionality uses different HTTP methods.
+
+List Registered Webhook Endpoints
+You can use the List Webhook Endpoints endpoint to list your registered endpoints. The response includes details of each registered webhook endpoint such as its url, events, and endpoint_id.
+
+Update a Registered Webhook Endpoint
+Use Update a Webhook Endpoint to update the information of a registered endpoint. Ensure you include both endpoint_id and urlin the request body when updating a webhook endpoint.
+
+📘
+If the url is omitted, the API currently returns the existing resource unchanged instead of generating an error.
