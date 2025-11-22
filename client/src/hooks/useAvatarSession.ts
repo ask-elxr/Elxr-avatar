@@ -175,9 +175,15 @@ export function useAvatarSession({
       return;
     }
     
-    // If session is active, allow restart (for idle timeout recovery)
+    // ✅ CRITICAL: Prevent multiple sessions from starting
     if (avatarRef.current && heygenSessionActive) {
-      console.log("HeyGen session already active");
+      console.log("⏭️ HeyGen session already active - skipping restart");
+      return;
+    }
+    
+    // ✅ Prevent session start during loading
+    if (isLoading) {
+      console.log("⏭️ Session already loading - skipping restart");
       return;
     }
     
@@ -702,8 +708,8 @@ export function useAvatarSession({
           }
         }
       } else {
-        // Video mode: Start HeyGen session on first message if not already started
-        if (!heygenSessionActive) {
+        // Video mode: Start HeyGen session ONLY on first message if not already started
+        if (!heygenSessionActive && !avatarRef.current) {
           try {
             await startHeyGenSession(currentAvatarIdRef.current);
           } catch (error) {
