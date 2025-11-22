@@ -249,30 +249,20 @@ export function useAvatarSession({
         }, 1000); // 1 second delay
       });
 
-      // Listen for user voice input
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event: any) => {
-        const userMessage = event?.detail?.message || event?.message || event;
-        if (userMessage && typeof userMessage === 'string' && userMessage.trim()) {
-          console.log("🎤 Voice input received:", userMessage);
-          console.log("Session active:", sessionActive, "HeyGen active:", heygenSessionActive);
-          
-          // Process the voice message just like typed messages
-          try {
-            await handleSubmitMessage(userMessage);
-            console.log("✅ Voice message processed successfully");
-          } catch (error) {
-            console.error("❌ Error processing voice message:", error);
-          }
-        } else {
-          console.warn("Voice event received but no valid message:", event);
-        }
-      });
+      // ❌ REMOVED: Don't intercept USER_TALKING_MESSAGE when using HeyGen's knowledge base
+      // When knowledgeBase is enabled, HeyGen's AI responds directly (instant, no external API)
+      // This matches their native embed behavior - simple, fast, no echo issues
+      
+      // If you want to use Claude instead, you would:
+      // 1. Remove knowledgeBase from avatar config
+      // 2. Re-enable this listener to send voice input to Claude
+      // 3. Accept 3-5 second latency per response
 
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
-        // ❌ CRITICAL: DO NOT pass knowledgeBase - this enables HeyGen's built-in AI!
-        // knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
+        // ✅ Enable HeyGen's knowledge base for instant responses (matches their native embed)
+        knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
         voice: avatarConfig.heygenVoiceId ? {
           voiceId: avatarConfig.heygenVoiceId,
           rate: parseFloat(avatarConfig.voiceRate || "1.0"),
