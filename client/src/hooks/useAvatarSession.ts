@@ -774,10 +774,26 @@ export function useAvatarSession({
           isSpeakingRef.current = true;
           setIsSpeakingState(true);
           
+          // ✅ MUTE microphone while avatar speaks to prevent echo
+          try {
+            await avatarRef.current.startVoiceChat({ isInputAudioMuted: true });
+            console.log("🔇 Microphone muted - avatar speaking");
+          } catch (e) {
+            console.warn("Could not mute microphone:", e);
+          }
+          
           await avatarRef.current.speak({
             text: claudeResponse,
             task_type: TaskType.TALK,
           });
+          
+          // ✅ UNMUTE microphone after avatar finishes
+          try {
+            await avatarRef.current.startVoiceChat({ isInputAudioMuted: false });
+            console.log("🎤 Microphone unmuted - avatar finished");
+          } catch (e) {
+            console.warn("Could not unmute microphone:", e);
+          }
         }
       }
     } catch (error) {

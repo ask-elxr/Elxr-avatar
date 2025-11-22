@@ -1,0 +1,1210 @@
+ket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+injected.js:37 [vite] server connection lost. Polling for restart...
+@heygen_streaming-avatar.js?v=6113e542:28562 WebSocket is already in CLOSING or CLOSED state.
+scriptProcessor.onaudioprocess @ @heygen_streaming-avatar.js?v=6113e542:28562Understand this error
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/heygen/token 502 (Bad Gateway)
+apply @ injected.js:214
+fetchAccessToken @ useAvatarSession.ts:41
+(anonymous) @ useAvatarSession.ts:130
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:545
+(anonymous) @ useAvatarSession.ts:185
+StreamingAvatar2.emit @ @heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:28853
+emit @ @heygen_streaming-avatar.js?v=6113e542:11062
+emit @ @heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ @heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ @heygen_streaming-avatar.js?v=6113e542:25059
+emit @ @heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ @heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ @heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ @heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ @heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/heygen/token 502 (Bad Gateway)
+apply @ injected.js:214
+fetchAccessToken @ useAvatarSession.ts:41
+(anonymous) @ useAvatarSession.ts:130
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:545
+(anonymous) @ useAvatarSession.ts:185
+StreamingAvatar2.emit @ @heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:28853
+emit @ @heygen_streaming-avatar.js?v=6113e542:11062
+emit @ @heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ @heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ @heygen_streaming-avatar.js?v=6113e542:25059
+emit @ @heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ @heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ @heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ @heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ @heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+injected.js:37 Error starting HeyGen session: Error: Failed to fetch access token
+    at fetchAccessToken (useAvatarSession.ts:56:13)
+    at async useAvatarSession.ts:130:36
+    at async useAvatarSession.ts:545:13
+    at async EventTarget.<anonymous> (useAvatarSession.ts:185:13)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:220
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:545
+(anonymous) @ useAvatarSession.ts:185
+StreamingAvatar2.emit @ @heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:28853
+emit @ @heygen_streaming-avatar.js?v=6113e542:11062
+emit @ @heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ @heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ @heygen_streaming-avatar.js?v=6113e542:25059
+emit @ @heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ @heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ @heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ @heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ @heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+injected.js:37 Failed to start HeyGen session: Error: Failed to fetch access token
+    at fetchAccessToken (useAvatarSession.ts:56:13)
+    at async useAvatarSession.ts:130:36
+    at async useAvatarSession.ts:545:13
+    at async EventTarget.<anonymous> (useAvatarSession.ts:185:13)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:547
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:185
+StreamingAvatar2.emit @ @heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:28853
+emit @ @heygen_streaming-avatar.js?v=6113e542:11062
+emit @ @heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ @heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ @heygen_streaming-avatar.js?v=6113e542:25059
+emit @ @heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ @heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ @heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ @heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ @heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+injected.js:37 ✅ Voice message processed successfully
+injected.js:37 Error starting HeyGen session: Error: Failed to fetch access token
+    at fetchAccessToken (useAvatarSession.ts:56:13)
+    at async useAvatarSession.ts:130:36
+    at async useAvatarSession.ts:545:13
+    at async EventTarget.<anonymous> (useAvatarSession.ts:185:13)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:220
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:545
+(anonymous) @ useAvatarSession.ts:185
+StreamingAvatar2.emit @ @heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:28853
+emit @ @heygen_streaming-avatar.js?v=6113e542:11062
+emit @ @heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ @heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ @heygen_streaming-avatar.js?v=6113e542:25059
+emit @ @heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ @heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ @heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ @heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ @heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+injected.js:37 Failed to start HeyGen session: Error: Failed to fetch access token
+    at fetchAccessToken (useAvatarSession.ts:56:13)
+    at async useAvatarSession.ts:130:36
+    at async useAvatarSession.ts:545:13
+    at async EventTarget.<anonymous> (useAvatarSession.ts:185:13)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:547
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:185
+StreamingAvatar2.emit @ @heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:28853
+emit @ @heygen_streaming-avatar.js?v=6113e542:11062
+emit @ @heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ @heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ @heygen_streaming-avatar.js?v=6113e542:25059
+emit @ @heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ @heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ @heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ @heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ @heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+injected.js:37 ✅ Voice message processed successfully
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/avatar/config/thad 502 (Bad Gateway)
+apply @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:125
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Error starting HeyGen session: Error: Failed to fetch avatar configuration
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:127:15
+    at async 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545:13
+    at async EventTarget.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185:13)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:220
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Failed to start HeyGen session: Error: Failed to fetch avatar configuration
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:127:15
+    at async 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545:13
+    at async EventTarget.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185:13)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:547
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 ✅ Voice message processed successfully
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'd85de2e2-c7e7-11f0-8462-da41c3c508e5', roomID: 'RM_7qEDH3xokwtq', participant: 'client', pID: 'PA_Td8jH9hLSzgY'}
+75fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Error starting HeyGen session: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:125:42
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545:19
+    at EventTarget.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185:19)
+    at StreamingAvatar2.emit (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208:24)
+    at _Room.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853:23)
+    at _Room.emit (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062:7)
+    at _Room.emit (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341:18)
+    at _Room.handleUserPacket (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080:12)
+    at RTCEngine.handleDataPacket (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059:14)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:220
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'd85de2e2-c7e7-11f0-8462-da41c3c508e5', roomID: 'RM_7qEDH3xokwtq', participant: 'client', pID: 'PA_Td8jH9hLSzgY'}
+75fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Failed to start HeyGen session: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:125:42
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545:19
+    at EventTarget.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185:19)
+    at StreamingAvatar2.emit (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208:24)
+    at _Room.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853:23)
+    at _Room.emit (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062:7)
+    at _Room.emit (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341:18)
+    at _Room.handleUserPacket (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080:12)
+    at RTCEngine.handleDataPacket (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059:14)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:547
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+45fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Error starting HeyGen session: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29174:26)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+    at Object.next (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27127:14)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27114:67
+    at new Promise (<anonymous>)
+    at __awaiter2 (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27096:10)
+    at StreamingAvatar2.request (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29168:14)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28942:27)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:220
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:545
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Failed to start HeyGen session: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29174:26)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+    at Object.next (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27127:14)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27114:67
+    at new Promise (<anonymous>)
+    at __awaiter2 (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27096:10)
+    at StreamingAvatar2.request (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29168:14)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28942:27)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:547
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+25fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 ✅ Voice message processed successfully
+35fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Failed to start HeyGen session: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29174:26)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+    at Object.next (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27127:14)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27114:67
+    at new Promise (<anonymous>)
+    at __awaiter2 (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27096:10)
+    at StreamingAvatar2.request (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29168:14)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28942:27)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:547
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:185
+StreamingAvatar2.emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29208
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28853
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11062
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:26341
+handleUserPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25080
+handleDataPacket @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:25059
+emit @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:11066
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19890
+fulfilled @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10919
+Promise.then
+step @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10932
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10934
+__awaiter @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:10916
+RTCEngine.handleDataMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:19868Understand this error
+85fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 ✅ Voice message processed successfully
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'dd1d8b9e-c7e7-11f0-82f1-e67ce4893235', roomID: 'RM_WJosyP6mm5H8', participant: 'client', pID: 'PA_mqxarzSWcWHe'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'dd1d8b9e-c7e7-11f0-82f1-e67ce4893235', roomID: 'RM_WJosyP6mm5H8', participant: 'client', pID: 'PA_mqxarzSWcWHe'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'e992351d-c7e7-11f0-8462-da41c3c508e5', roomID: 'RM_JPmmuRBiae4r', participant: 'client', pID: 'PA_bkTE7DmBa2Qq'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'e992351d-c7e7-11f0-8462-da41c3c508e5', roomID: 'RM_JPmmuRBiae4r', participant: 'client', pID: 'PA_bkTE7DmBa2Qq'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'e9f96292-c7e7-11f0-8af9-46434e8d04b7', roomID: 'RM_X3YofGM4nNfi', participant: 'client', pID: 'PA_aujRH6qTEfUS'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'e9f96292-c7e7-11f0-8af9-46434e8d04b7', roomID: 'RM_X3YofGM4nNfi', participant: 'client', pID: 'PA_aujRH6qTEfUS'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'e99640fc-c7e7-11f0-8462-da41c3c508e5', roomID: 'RM_6n2zhCJ8CVhZ', participant: 'client', pID: 'PA_72uJDdnNxqk2'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'e99640fc-c7e7-11f0-8462-da41c3c508e5', roomID: 'RM_6n2zhCJ8CVhZ', participant: 'client', pID: 'PA_72uJDdnNxqk2'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'ea2c4b32-c7e7-11f0-82f1-e67ce4893235', roomID: 'RM_zYoaMJqS4fmF', participant: 'client', pID: 'PA_XqVZNTPayEXL'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'ea2c4b32-c7e7-11f0-82f1-e67ce4893235', roomID: 'RM_zYoaMJqS4fmF', participant: 'client', pID: 'PA_XqVZNTPayEXL'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'f0e75d03-c7e7-11f0-9189-c60a7dc638c2', roomID: 'RM_FMX4QzgLXL4c', participant: 'client', pID: 'PA_dmAFcsmF4sbE'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'f0e75d03-c7e7-11f0-9189-c60a7dc638c2', roomID: 'RM_FMX4QzgLXL4c', participant: 'client', pID: 'PA_dmAFcsmF4sbE'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'f158072b-c7e7-11f0-9189-c60a7dc638c2', roomID: 'RM_6h368WNtYBr8', participant: 'client', pID: 'PA_CTK7gShjnkvh'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'f158072b-c7e7-11f0-9189-c60a7dc638c2', roomID: 'RM_6h368WNtYBr8', participant: 'client', pID: 'PA_CTK7gShjnkvh'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Page leave detected, disconnecting {room: 'f151393e-c7e7-11f0-b8ee-b22a9052d172', roomID: 'RM_nfdJoNaRYfdo', participant: 'client', pID: 'PA_22pHariBuXpS'}
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'f151393e-c7e7-11f0-b8ee-b22a9052d172', roomID: 'RM_nfdJoNaRYfdo', participant: 'client', pID: 'PA_22pHariBuXpS'}
+ed1e693c96a75807.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this error
+ed1e693c96a75807.js:2 Unrecognized feature: 'ambient-light-sensor'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'battery'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'layout-animations'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'legacy-image-formats'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'navigation-override'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'oversized-images'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'publickey-credentials'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'speaker-selection'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'unoptimized-images'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'unsized-media'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'pointer-lock'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2Understand this error
+ed1e693c96a75807.js:2 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2Understand this error
+ed1e693c96a75807.js:2 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2Understand this error
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.Understand this error
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'battery'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'layout-animations'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'legacy-image-formats'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'navigation-override'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'oversized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'publickey-credentials'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'speaker-selection'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'unoptimized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Unrecognized feature: 'unsized-media'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Ar80%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warning
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ a0df91602a414c03.js:2
+setTimeout
+(anonymous) @ a0df91602a414c03.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10Understand this error
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ a0df91602a414c03.js:2
+setTimeout
+(anonymous) @ a0df91602a414c03.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10Understand this error
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763845458881%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
