@@ -125,18 +125,27 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments, avatar
     logger.info(f"Max video duration: {config['max_video_duration_minutes']} minutes")
     
     async with aiohttp.ClientSession() as session:
-        # Initialize services
-        stt = DeepgramSTTService(api_key=os.getenv("DEEPGRAM_API_KEY"))
+        # Initialize services with required API keys
+        deepgram_key = os.getenv("DEEPGRAM_API_KEY", "")
+        cartesia_key = os.getenv("CARTESIA_API_KEY", "")
+        google_key = os.getenv("GOOGLE_API_KEY", "")
+        heygen_key = os.getenv("HEYGEN_API_KEY", "")
+        
+        if not all([deepgram_key, cartesia_key, google_key, heygen_key]):
+            logger.error("Missing required API keys")
+            raise ValueError("Required API keys not set")
+        
+        stt = DeepgramSTTService(api_key=deepgram_key)
         
         tts = CartesiaTTSService(
-            api_key=os.getenv("CARTESIA_API_KEY"),
+            api_key=cartesia_key,
             voice_id=config["voice_id"],  # Avatar-specific voice
         )
         
-        llm = GoogleLLMService(api_key=os.getenv("GOOGLE_API_KEY"))
+        llm = GoogleLLMService(api_key=google_key)
         
         heyGen = HeyGenVideoService(
-            api_key=os.getenv("HEYGEN_API_KEY"),
+            api_key=heygen_key,
             session=session,
             session_request=NewSessionRequest(
                 avatar_id=config["heygen_avatar_id"],
@@ -149,10 +158,7 @@ async def run_bot(transport: BaseTransport, runner_args: RunnerArguments, avatar
         switcher = VideoToAudioSwitcher(max_duration_minutes=config["max_video_duration_minutes"])
         
         # System message with personality and database context
-        messages = [
-            {
-                "role": "system",
-                "content": f"""{config['personality']}
+        system_message = f"""{config['personality']}
 
 Your knowledge base includes: {', '.join(config['pinecone_namespaces'])}
 
@@ -161,11 +167,11 @@ Important:
 - Be succinct and conversational
 - Respond naturally based on your personality
 - After {config['max_video_duration_minutes']} minutes, the video will switch to audio-only to save resources
-""",
-            },
-        ]
+"""
         
-        context = LLMContext(messages)
+        # Initialize context with properly typed messages
+        context = LLMContext()
+        context.add_system_message(system_message)
         context_aggregator = LLMContextAggregatorPair(context)
         
         # Build pipeline
@@ -213,10 +219,7 @@ Important:
                 )
             
             # Greeting message
-            messages.append({
-                "role": "system",
-                "content": "Start by saying 'Hello' and introduce yourself briefly.",
-            })
+            context.add_system_message("Start by saying 'Hello' and introduce yourself briefly.")
             await task.queue_frames([LLMRunFrame()])
         
         @transport.event_handler("on_client_disconnected")

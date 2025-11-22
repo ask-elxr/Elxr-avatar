@@ -1,124 +1,183 @@
-# Overview
+# Multi-Avatar AI Chat System
 
-This project is a full-stack AI avatar chat platform that integrates HeyGen's streaming avatar technology for video/audio rendering with Claude Sonnet 4.5 AI for all text generation and intelligence. The system features a React frontend and a Node.js/Express backend, enabling intelligent conversations with personality-driven avatars (Mark Kohl, Willie Gault, June, Ann, Shawn, Thad). Voice input uses browser Web Speech API for transcription, ensuring all AI responses come exclusively from Claude Sonnet 4.5. The avatar utilizes a Pinecone knowledge base and current web information for informed responses, supporting multi-mentor configurations and personal knowledge base integration. Key features include comprehensive HeyGen credit tracking, configurable thresholds, automatic circuit breaking, and per-user rate limiting to manage costs.
+## Overview
+A sophisticated AI chat platform featuring HeyGen video avatars with real-time voice conversations, knowledge retrieval from multiple sources (Pinecone, PubMed, Wikipedia, Notion), persistent memory (Mem0), and comprehensive admin management.
 
-# User Preferences
+**Current Status**: Successfully restructured codebase with modular architecture. Implemented Pipecat integration for multi-avatar conversational AI with automatic video-to-audio switching.
 
-Preferred communication style: Simple, everyday language.
+## Recent Changes (November 2024)
 
-# System Architecture
+### Code Restructuring
+- **Created new directory structure**: `config/`, `server/services/`, `server/routes/`
+- **Moved avatar configuration**: `shared/avatarConfig.ts` → `config/avatars.config.ts`
+- **Created service facades**:
+  - `server/services/avatars.ts` - Avatar management with proper DB/default merging
+  - `server/services/rag.ts` - Claude + Pinecone + search integration
+  - `server/services/memory.ts` - Mem0 wrapper
+  - `server/services/auth.ts` - Replit authentication wrapper
+- **Extracted routes**:
+  - `server/routes/avatars.ts` - Avatar CRUD and configuration endpoints
+  - `server/routes/pipecat.ts` - Pipecat session management
 
-## Frontend
-- **Framework**: React with TypeScript, using Vite.
-- **UI/UX**: `shadcn/ui` on Radix UI with Tailwind CSS for responsive design.
-- **State Management**: TanStack Query for server state, React hooks for local state.
-- **Optimization**: React lazy loading, tree-shaking, and static avatar photo loading for bandwidth savings.
-- **Avatar Session Management**: Custom hooks for lifecycle and inactivity.
-- **Voice Input**: Browser Web Speech API for continuous voice transcription (Chrome, Edge, Safari 14.1+)
-  - Replaces HeyGen's built-in voice chat to maintain full control over AI responses
-  - Automatic deduplication to prevent duplicate message processing
-  - Graceful fallback to text-only mode if browser doesn't support Speech API
-  - Clean teardown with intentional-stop guards to prevent memory leaks
+### Pipecat Integration (NEW)
+- **Multi-avatar support**: Mark Kohl, Willie Gault, Fitness Coach (expandable)
+- **Per-avatar features**:
+  - Dedicated Pinecone knowledge base namespaces
+  - Custom voice profiles (Cartesia TTS)
+  - Configurable video duration limits
+  - Unique personalities and expertise areas
+- **Automatic video-to-audio switching**: After 5 minutes (configurable), switches to audio-only mode to save HeyGen credits while preserving voice quality
+- **Real-time voice**: Deepgram STT + Cartesia TTS + Google Gemini LLM
+- **Python service**: `server/pipecat_bot.py` handles WebRTC transport and avatar orchestration
 
-## Backend
-- **Framework**: Express.js for RESTful APIs.
-- **Database ORM**: Drizzle ORM for PostgreSQL.
-- **Background Processing**: BullMQ and Redis for asynchronous document processing (chunking, embedding, Pinecone storage).
-- **API Security**: Credential-based requests with CORS, per-user rate limiting (1 request/minute for HeyGen/avatar endpoints).
-- **Reliability**: Circuit breakers (Opossum) for external APIs, Pino for structured logging, Prometheus for metrics.
-- **Cost Control**: HeyGen credit tracking with balance checks, configurable thresholds, automatic blocking on credit exhaustion.
-- **Memory System**: Mem0 OSS for persistent conversation memory with OpenAI embeddings and in-memory vector storage.
+## Architecture
 
-## Data Storage
-- **Primary Database**: PostgreSQL (Neon Database service) for persistent data and session storage.
-- **Vector Database**: Pinecone for conversation embeddings and knowledge bases (supports multiple namespaces per mentor/user).
-- **ORM**: Drizzle ORM for type-safe operations.
-- **Caching**: 
-  - Knowledge base: Intelligent normalized Pinecone query cache with TTL and LRU eviction
-  - PubMed queries: Vector similarity-based cache in 'pubmed-cache' namespace with 7-day TTL, 95% similarity threshold, and embedding reuse optimization
+### Frontend (React + TypeScript)
+- **Location**: `client/src/`
+- **Key Features**:
+  - Avatar selection interface
+  - HeyGen video streaming
+  - Voice recognition (Web Speech API)
+  - Real-time chat with memory
+  - Document upload & processing
+  - Admin dashboard
 
-## Authentication & Authorization
-- **Authentication**: Session-based, server-side authentication stored in PostgreSQL.
-- **User Management**: Username/password authentication with secure storage, supports anonymous users with temporary IDs.
+### Backend (Express + TypeScript + Python)
+- **Location**: `server/`
+- **Key Components**:
+  - **Routes**: Modular route handlers in `server/routes/`
+  - **Services**: Business logic facades in `server/services/`
+  - **Config**: Centralized configuration in `config/`
+  - **Python**: Pipecat bot service for conversational AI
 
-## Core Features
-- **AI Avatar**: HeyGen Streaming SDK for real-time video interaction.
-- **AI Model**: Claude Sonnet 4.5 (`claude-sonnet-4-5`) for world-class reasoning, coding, and autonomous task execution.
-- **Knowledge Retrieval**: Pinecone knowledge base (ask-elxr), integrated Google Web Search with topic-based namespace mapping, and PubMed research integration for medical/scientific literature.
-- **Personality Integration**: Mark Kohl personality (customizable per mentor) via system prompts.
-- **Conversation Management**: Enhanced token limits, timeout handling, inactivity detection, pause/resume, current date awareness.
-- **Multi-Assistant Architecture**: Per-mentor configurations with dedicated Pinecone namespaces and categories.
-- **Personal Knowledge Bases**: Supports user-connected Notion/Obsidian knowledge sources with isolated Pinecone namespaces.
-- **Document Management System**: Complete PDF and video upload system with category-based knowledge organization:
-  - **PDF Processing**: Text extraction using pdf-parse, intelligent chunking, and embedding generation
-  - **Video Transcription**: OpenAI Whisper API for audio/video transcription (MP4, MOV, WebM, MP3, WAV, M4A)
-  - **Category-Based Storage**: Documents stored in shared Pinecone category namespaces (ADDICTION, MIND, BODY, SEXUALITY, TRANSITIONS, SPIRITUALITY, SCIENCE, PSYCHEDELICS, NUTRITION, LIFE, LONGEVITY, GRIEF, MIDLIFE, MOVEMENT, WORK, SLEEP, OTHER)
-  - **Avatar Integration**: Avatars automatically access documents in their configured category namespaces during conversations
-  - **User Tracking**: Full audit trail maintained - each document tracks the uploading user while being stored in shared category namespaces
-  - **Background Processing**: Asynchronous processing with status tracking (processing, completed, failed)
-  - **Document Viewer**: Real-time status updates with metadata (chunks, text length, processing status)
-  - **Drag-and-Drop UI**: Modern upload interface with category selector, file validation, and progress tracking
-- **API Cost Tracking**: Tracks external API usage with admin dashboard.
-- **Avatar Management System**: Database-driven configuration and CRUD operations for avatar profiles via admin panel.
-- **Credit Monitoring**: Comprehensive HeyGen credit tracking with pre-call balance checks, configurable thresholds, and automatic blocking.
-- **Persistent Memory**: Mem0 OSS for conversation persistence and user preference tracking.
-- **PubMed Integration**: Hybrid medical/scientific literature search with intelligent online/offline fallback:
-  - **Hybrid Search System**:
-    * Automatically checks offline Pinecone database first ('pubmed-offline' namespace)
-    * Falls back to live NCBI E-utilities API if configured
-    * Combines and deduplicates results by PMID
-    * Prioritizes recent papers (sorted by publication year)
-    * Configurable via OFFLINE_MODE environment variable
-    * Seamless integration with avatar chat responses
-  - **Online Mode** (NCBI E-utilities API):
-    * NCBI-compliant rate limiting (3 req/sec)
-    * Smart caching with vector similarity (95% threshold, 7-day TTL in 'pubmed-cache' namespace)
-    * Cost optimization with embedding reuse (50% OpenAI cost reduction on cache misses)
-    * Performance: 3x faster on cache hits (1619ms → 532ms)
-    * AI-powered summarization: Claude Sonnet 4.5 generates comprehensive summaries (~15s for 3-4 articles)
-      - Main findings with PMID citations
-      - Common themes across studies
-      - Controversies and debates
-      - Relevance explanation
-      - Integrated synthesis
-      - Cache integration for instant retrieval
-  - **Offline Mode** (Annual PubMed XML Dumps):
-    * Memory-efficient streaming XML parser using node-xml-stream
-    * Processes multi-GB compressed .xml.gz files without memory exhaustion
-    * Batch processing (1000 articles per batch) with promise chain serialization
-    * Resumable imports with progress tracking and checkpoint recovery
-    * Stores articles in 'pubmed-offline' Pinecone namespace
-    * Counter-based promise tracking ensures no dropped articles
-    * Handles ~36M articles from PubMed baseline (1219 files)
-    * Vector similarity search for offline article retrieval
-    * No API rate limits, fully local operation after import
-    * Set OFFLINE_MODE=true to use only offline database
+### Database (PostgreSQL + Drizzle ORM)
+- **Schema**: `shared/schema.ts`
+- **Tables**:
+  - `avatar_profiles` - Avatar configurations with DB overrides
+  - `conversations` - Chat history
+  - `documents` - Uploaded documents metadata
+  - `knowledge_base_sources` - User knowledge sources (Notion, etc.)
+  - `api_calls` - Usage tracking
 
-# External Dependencies
+## Avatar System
 
-## Core Services
-- **HeyGen Streaming Avatar API**: Real-time AI avatar video streaming.
-- **Neon Database**: Managed PostgreSQL hosting.
-- **Pinecone Vector Database**: Vector storage for embeddings.
-- **Claude Sonnet 4**: AI model.
-- **Google Web Search**: Real-time web information retrieval.
-- **NCBI E-utilities (PubMed)**: Medical and scientific literature search and retrieval.
-- **Redis**: Used by BullMQ for background job queuing.
-- **ElevenLabs**: Text-to-speech for audio-only mode.
-- **Mem0 OSS**: AI memory layer for conversation persistence and user preferences.
+### Avatar Service (server/services/avatars.ts)
+**Field-level merging**: DB values override defaults using `!== undefined` checks
+- Handles deactivation: DB `isActive: false` suppresses default avatars
+- Handles partial overrides: Only undefined DB fields fallback to defaults
+- Handles blank values: DB null/empty string/false overrides defaults
 
-## Frontend Libraries
-- **React**: UI framework.
-- **shadcn/ui & Radix UI**: Component libraries.
-- **Tailwind CSS**: Styling.
-- **TanStack React Query**: Server state management.
-- **Wouter**: Client-side routing.
+**Key Functions**:
+- `getAvatarById(id)` - Merges DB override with default base
+- `getActiveAvatars()` - Returns all active avatars (DB + defaults, filtered by isActive)
+- `getAllAvatars()` - Returns all avatars including inactive (for admin)
 
-## Backend Dependencies
-- **Express.js**: Web application framework.
-- **Drizzle ORM**: PostgreSQL ORM.
-- **BullMQ**: Job queue.
-- **Pino**: Structured logging.
-- **Opossum**: Circuit breaker implementation.
-- **Axios**: HTTP client for external API calls.
-- **xml2js**: XML parser for PubMed API responses.
+### Pipecat Multi-Avatar Configuration
+**Location**: `server/pipecat_bot.py`
+
+**Current Avatars**:
+1. **Mark Kohl** (`mark-kohl`)
+   - Expertise: Mycology, filmmaking, kundalini
+   - Knowledge: `mark-kohl`, `general-knowledge`
+   - Voice: Cartesia `00967b2f-88a6-4a31-8153-110a92134b9f`
+   - Video limit: 5 minutes
+
+2. **Willie Gault** (`willie-gault`)
+   - Expertise: Olympic athletics, NFL, business
+   - Knowledge: `willie-gault`, `sports-knowledge`
+   - Voice: Cartesia `a0e99841-438c-4a64-b679-ae501e7d6091`
+   - Video limit: 5 minutes
+
+3. **Fitness Coach** (`fitness-coach`)
+   - Expertise: Health, fitness, wellness
+   - Knowledge: `fitness-knowledge`, `health-tips`
+   - Voice: Cartesia `b7d50908-b17c-442d-ad8d-810c63997ed9`
+   - Video limit: 3 minutes
+
+## API Endpoints
+
+### Avatar Management
+- `GET /api/avatars` - List active avatars
+- `GET /api/avatar/config/:id` - Get avatar configuration
+- `GET /api/admin/avatars` - List all avatars (admin, requires auth)
+- `POST /api/admin/avatars` - Create new avatar (admin, requires auth)
+- `PUT /api/admin/avatars/:id` - Update avatar (admin, requires auth)
+- `DELETE /api/admin/avatars/:id` - Soft delete avatar (admin, requires auth)
+
+### Pipecat Sessions
+- `GET /api/pipecat/avatars` - List available Pipecat avatars
+- `GET /api/pipecat/avatars/:id` - Get specific avatar config
+- `POST /api/pipecat/session/start` - Start Pipecat session with avatar
+- `GET /api/pipecat/session/status/:sessionId` - Get session status
+- `PUT /api/pipecat/avatars/:id` - Update avatar config (admin)
+
+### Chat & Memory
+- `POST /api/avatar/response` - Get AI response (Claude + RAG + Memory + PubMed)
+- `GET /api/memory/users/:userId` - Get user memories
+- `POST /api/memory/users/:userId` - Add memory
+- `DELETE /api/memory/users/:userId/memories/:memoryId` - Delete memory
+
+## Environment Variables
+
+### Required
+- `HEYGEN_API_KEY` - HeyGen video avatar service
+- `ANTHROPIC_API_KEY` - Claude AI (main LLM)
+- `GOOGLE_API_KEY` - Google Gemini (Pipecat LLM)
+- `DEEPGRAM_API_KEY` - Speech-to-text (Pipecat)
+- `CARTESIA_API_KEY` - Text-to-speech (Pipecat)
+
+### Optional
+- `PINECONE_API_KEY` - Vector database for knowledge retrieval
+- `OPENAI_API_KEY` - OpenAI embeddings for Pinecone
+- `MEM0_API_KEY` - Persistent memory service
+- `GOOGLE_SEARCH_API_KEY` + `GOOGLE_SEARCH_ENGINE_ID` - Web search
+- `ELEVENLABS_API_KEY` - Alternative TTS (currently disabled)
+- `REDIS_URL` - Background job queue (Upstash)
+
+### Database (Auto-configured)
+- `DATABASE_URL` - PostgreSQL connection string
+- `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
+
+## User Preferences
+- **Architecture**: Modular code organization with separate config/, services/, routes/
+- **Avatar Merging**: DB overrides take absolute precedence (including null, false, empty string)
+- **Service Facades**: Thin wrappers that re-export existing functionality
+- **Route Extraction**: Incremental migration from monolithic routes.ts to feature-focused modules
+
+## Project Structure
+```
+├── config/
+│   └── avatars.config.ts          # Avatar configurations (moved from shared/)
+├── server/
+│   ├── routes/
+│   │   ├── avatars.ts             # Avatar CRUD endpoints
+│   │   └── pipecat.ts             # Pipecat session endpoints
+│   ├── services/
+│   │   ├── avatars.ts             # Avatar business logic
+│   │   ├── rag.ts                 # RAG service facade
+│   │   ├── memory.ts              # Memory service facade
+│   │   └── auth.ts                # Auth service facade
+│   ├── pipecat_bot.py             # Pipecat multi-avatar bot (Python)
+│   ├── routes.ts                  # Legacy routes (being extracted)
+│   ├── storage.ts                 # Database interface
+│   └── index.ts                   # Server entry point
+├── client/src/
+│   ├── pages/                     # React pages
+│   ├── components/                # React components
+│   └── App.tsx                    # Main React app
+└── shared/
+    └── schema.ts                  # Database schema & types
+```
+
+## Development
+- **Start**: `npm run dev` (auto-configured workflow)
+- **Database**: Auto-seeded with default avatars on first run
+- **Port**: 5000 (both API and frontend via Vite)
+
+## Next Steps
+- [ ] Integrate Pipecat sessions with frontend UI
+- [ ] Add per-avatar Pinecone namespace switching
+- [ ] Implement session tracking with Redis
+- [ ] Add more avatar personalities
+- [ ] Complete route extraction (chat, memory, documents, knowledge)
+- [ ] Add comprehensive testing
