@@ -22,6 +22,13 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
   - Thad: `b115a2af9a9b41f3b69d589d6f26ecef`
   - Mark Kohl: `e16db57e57824a0e90b661ad528d3994`
   - Shawn: `a9d3346d94594c5f9ca522f6d0469038`
+- **✅ Per-Avatar PubMed Toggle**: 
+  - Added `usePubMed` boolean field to avatar configuration
+  - Avatars can now have PubMed always enabled for their specialty
+  - Mark Kohl: `usePubMed: true` (health/psychedelics/science research)
+  - Ann: `usePubMed: true` (body wellness/nutrition research)
+  - Other avatars: `usePubMed: false` (PubMed triggered by keywords only)
+  - PubMed triggers if: explicit command OR research keywords OR avatar has `usePubMed: true`
 
 ### Code Restructuring
 - **Created new directory structure**: `config/`, `server/services/`, `server/routes/`
@@ -41,6 +48,7 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
   - Custom HeyGen avatar IDs (now all correctly configured)
   - Configurable session time limits
   - Unique personalities and expertise areas
+  - **Per-avatar PubMed toggle**: Health/science avatars can have PubMed always enabled
 - **Real-time video conversations**: HeyGen renders video/audio, Claude provides intelligence
 - **AI Integration**: Claude Sonnet 4.5 + RAG (Pinecone, PubMed, Wikipedia) + persistent conversation memory
 
@@ -91,19 +99,34 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 
 **Current Avatars**:
 1. **Mark Kohl** (`mark-kohl`)
-   - Expertise: Mycology, filmmaking, kundalini
-   - Knowledge: `mark-kohl`, `general-knowledge`
-   - HeyGen Avatar: `Shawn_Therapist_public`
+   - Expertise: Mycology, psychedelics, kundalini
+   - PubMed: **Always enabled** (health/science research)
+   - HeyGen Avatar: `e16db57e57824a0e90b661ad528d3994`
 
 2. **Willie Gault** (`willie-gault`)
    - Expertise: Olympic athletics, NFL, business
-   - Knowledge: `willie-gault`, `sports-knowledge`
-   - HeyGen Avatar: `Wayne_20240711`
+   - PubMed: Keyword-triggered only
+   - HeyGen Avatar: `a9d3346d94594c5f9ca522f6d0469038`
 
-3. **Fitness Coach** (`fitness-coach`)
-   - Expertise: Health, fitness, wellness
-   - Knowledge: `fitness-knowledge`, `health-tips`
-   - HeyGen Avatar: `josh_lite3_20230714`
+3. **June** (`june`)
+   - Expertise: Mental health, mindfulness
+   - PubMed: Keyword-triggered only
+   - HeyGen Avatar: `Katya_Chair_Sitting_public`
+
+4. **Ann** (`ann`)
+   - Expertise: Body wellness, nutrition
+   - PubMed: **Always enabled** (health/nutrition research)
+   - HeyGen Avatar: `Ann_Therapist_public`
+
+5. **Shawn** (`shawn`)
+   - Expertise: Leadership, performance
+   - PubMed: Keyword-triggered only
+   - HeyGen Avatar: `a9d3346d94594c5f9ca522f6d0469038`
+
+6. **Thad** (`thad`)
+   - Expertise: Financial wellness
+   - PubMed: Keyword-triggered only
+   - HeyGen Avatar: `b115a2af9a9b41f3b69d589d6f26ecef`
 
 ## API Endpoints
 
