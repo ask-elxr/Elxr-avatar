@@ -27,7 +27,9 @@ export const authSessions = pgTable(
 
 export const conversations = pgTable("conversations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id),
+  userId: varchar("user_id"), // No FK - allows temp_ IDs for anonymous users
+  avatarId: varchar("avatar_id"), // Which avatar they're talking to
+  role: varchar("role").notNull(), // 'user' or 'assistant'
   text: text("text").notNull(),
   embedding: jsonb("embedding"), // Store embeddings as JSON
   metadata: jsonb("metadata"), // Store additional metadata
@@ -84,6 +86,8 @@ export const upsertUserSchema = createInsertSchema(users).pick({
 
 export const insertConversationSchema = createInsertSchema(conversations).pick({
   userId: true,
+  avatarId: true,
+  role: true,
   text: true,
   embedding: true,
   metadata: true,

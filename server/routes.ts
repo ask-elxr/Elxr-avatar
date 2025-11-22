@@ -1370,6 +1370,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionManager.updateActivityByUserId(userId);
       }
 
+      // Retrieve conversation history from database (last 20 messages for context)
+      let dbConversationHistory: any[] = [];
+      if (userId) {
+        try {
+          const conversationRecords = await storage.getConversationHistory(userId, avatarId, 20);
+          dbConversationHistory = conversationRecords.map(conv => ({
+            message: conv.text,
+            isUser: conv.role === 'user',
+          }));
+          logger.info({ userId, avatarId, historyLength: dbConversationHistory.length }, 'Retrieved conversation history');
+        } catch (error) {
+          logger.error({ error, userId, avatarId }, 'Error retrieving conversation history');
+          // Continue without history - don't fail the request
+        }
+      }
+
+      // Save user message to database
+      if (userId) {
+        try {
+          await storage.saveConversation({
+            userId,
+            avatarId,
+            role: 'user',
+            text: message,
+          });
+        } catch (error) {
+          logger.error({ error, userId, avatarId }, 'Error saving user message to database');
+          // Continue even if save fails - don't fail the request
+        }
+      }
+
       // Start performance timing
       const perfStart = Date.now();
       const perfTimings: Record<string, number> = {};
@@ -1564,12 +1595,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const webSearchResults = ""; // Web search disabled for speed
 
       if (claudeService.isAvailable()) {
-        const enhancedConversationHistory = conversationHistory.map(
-          (msg: any) => ({
-            message: msg.message,
-            isUser: msg.isUser,
-          }),
-        );
+        // Use database conversation history for context-aware responses
+        const enhancedConversationHistory = dbConversationHistory.length > 0 
+          ? dbConversationHistory 
+          : conversationHistory.map((msg: any) => ({
+              message: msg.message,
+              isUser: msg.isUser,
+            }));
 
         aiResponse = await claudeService.generateResponse(
           message,
@@ -1585,6 +1617,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       perfTimings.claude = Date.now() - claudeStart;
+
+      // Save avatar response to database
+      if (userId) {
+        try {
+          await storage.saveConversation({
+            userId,
+            avatarId,
+            role: 'assistant',
+            text: aiResponse,
+          });
+          logger.info({ userId, avatarId }, 'Saved avatar response to database');
+        } catch (error) {
+          logger.error({ error, userId, avatarId }, 'Error saving avatar response to database');
+          // Continue even if save fails - don't fail the request
+        }
+      }
 
       // Store conversation in memory if enabled
       if (memoryEnabled && userId && memoryService.isAvailable()) {

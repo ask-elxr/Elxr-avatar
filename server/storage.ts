@@ -5,6 +5,7 @@ import {
   apiCalls,
   heygenCreditUsage,
   knowledgeBaseSources,
+  conversations,
   type User,
   type UpsertUser,
   type Document,
@@ -17,6 +18,8 @@ import {
   type KnowledgeBaseSource,
   type InsertKnowledgeBaseSource,
   type UpdateKnowledgeBaseSource,
+  type Conversation,
+  type InsertConversation,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, gte, sql as drizzleSql, and, desc } from "drizzle-orm";
@@ -88,6 +91,10 @@ export interface IStorage {
   createKnowledgeSource(data: InsertKnowledgeBaseSource): Promise<KnowledgeBaseSource>;
   updateKnowledgeSource(id: string, userId: string, data: UpdateKnowledgeBaseSource): Promise<KnowledgeBaseSource | undefined>;
   deleteKnowledgeSource(id: string, userId: string): Promise<void>;
+  
+  // Conversation history operations
+  saveConversation(data: InsertConversation): Promise<Conversation>;
+  getConversationHistory(userId: string, avatarId?: string, limit?: number): Promise<Conversation[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -486,6 +493,32 @@ export class DatabaseStorage implements IStorage {
         eq(knowledgeBaseSources.id, id),
         eq(knowledgeBaseSources.userId, userId)
       ));
+  }
+
+  // Conversation history operations
+  async saveConversation(data: InsertConversation): Promise<Conversation> {
+    const [conversation] = await db
+      .insert(conversations)
+      .values(data)
+      .returning();
+    return conversation;
+  }
+
+  async getConversationHistory(userId: string, avatarId?: string, limit: number = 20): Promise<Conversation[]> {
+    const query = db
+      .select()
+      .from(conversations)
+      .where(
+        avatarId 
+          ? and(eq(conversations.userId, userId), eq(conversations.avatarId, avatarId))
+          : eq(conversations.userId, userId)
+      )
+      .orderBy(desc(conversations.createdAt))
+      .limit(limit);
+    
+    const history = await query;
+    // Return in chronological order (oldest first) for Claude context
+    return history.reverse();
   }
 }
 
