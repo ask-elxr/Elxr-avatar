@@ -139,6 +139,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   voiceRate: text("voice_rate").default("1.0"),
   personalityPrompt: text("personality_prompt").notNull(),
   pineconeNamespaces: text("pinecone_namespaces").array().notNull().default(sql`ARRAY[]::text[]`),
+  usePubMed: boolean("use_pubmed").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
