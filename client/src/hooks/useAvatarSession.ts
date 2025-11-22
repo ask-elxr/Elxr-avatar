@@ -249,20 +249,34 @@ export function useAvatarSession({
         }, 1000); // 1 second delay
       });
 
-      // ❌ REMOVED: Don't intercept USER_TALKING_MESSAGE when using HeyGen's knowledge base
-      // When knowledgeBase is enabled, HeyGen's AI responds directly (instant, no external API)
-      // This matches their native embed behavior - simple, fast, no echo issues
-      
-      // If you want to use Claude instead, you would:
-      // 1. Remove knowledgeBase from avatar config
-      // 2. Re-enable this listener to send voice input to Claude
-      // 3. Accept 3-5 second latency per response
+      // Listen for user voice input from HeyGen's voice chat
+      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event: any) => {
+        const userMessage = event?.detail?.message || event?.message || event;
+        
+        // ✅ CRITICAL: Don't process if avatar is currently speaking (prevents echo loop)
+        if (isSpeakingRef.current) {
+          console.log("⏭️ Ignoring voice input - avatar is speaking");
+          return;
+        }
+        
+        if (userMessage && typeof userMessage === 'string' && userMessage.trim()) {
+          console.log("🎤 Voice input received:", userMessage);
+          
+          // Process the voice message through Claude + Pinecone
+          try {
+            await handleSubmitMessage(userMessage);
+            console.log("✅ Voice message processed successfully");
+          } catch (error) {
+            console.error("❌ Error processing voice message:", error);
+          }
+        }
+      });
 
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
-        // ✅ Enable HeyGen's knowledge base for instant responses (matches their native embed)
-        knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
+        // ❌ Disabled: Using Claude + Pinecone instead of HeyGen's knowledge base
+        // knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
         voice: avatarConfig.heygenVoiceId ? {
           voiceId: avatarConfig.heygenVoiceId,
           rate: parseFloat(avatarConfig.voiceRate || "1.0"),
