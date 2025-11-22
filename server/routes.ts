@@ -1365,6 +1365,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message is required" });
       }
 
+      // Get avatar configuration early to check usePubMed setting
+      const avatarConfig = getAvatarById(avatarId);
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
       // Update session activity to prevent premature cleanup
       if (userId) {
         sessionManager.updateActivityByUserId(userId);
@@ -1416,6 +1422,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isResearchQuestion = researchKeywords.some(keyword => 
         message.toLowerCase().includes(keyword.toLowerCase())
       );
+      
+      // Check if avatar has PubMed enabled
+      const avatarUsePubMed = avatarConfig.usePubMed || false;
 
       // PARALLEL DATA FETCHING: Launch all enrichment operations concurrently
       const [memoryResultSettled, pubmedResultSettled, knowledgeResultSettled] = await Promise.allSettled([
@@ -1439,7 +1448,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 2. PubMed research
         (async () => {
           const pubmedStart = Date.now();
-          if (!pubmedCommandMatch && !isResearchQuestion) {
+          // Trigger PubMed if: explicit command, research question, OR avatar has usePubMed enabled
+          if (!pubmedCommandMatch && !isResearchQuestion && !avatarUsePubMed) {
             return null;
           }
           try {
@@ -1475,10 +1485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         (async () => {
           const kbStart = Date.now();
           try {
-            const { getAvatarById } = await import("../config/avatars.config.js");
-            const avatarConfig = getAvatarById(avatarId);
-            if (!avatarConfig) throw new Error("Avatar not found");
-
+            // Use avatarConfig from outer scope (already loaded above)
             let allNamespaces = [...avatarConfig.pineconeNamespaces];
             
             // Add user's knowledge sources and documents
@@ -1502,11 +1509,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             perfTimings.knowledge = Date.now() - kbStart;
             
             const context = knowledgeResults.length > 0 ? knowledgeResults[0].text : "";
-            return { context, namespaces: allNamespaces.length, avatarConfig };
+            return { context, namespaces: allNamespaces.length };
           } catch (error) {
             perfTimings.knowledge = Date.now() - kbStart;
             logger.error({ error }, 'Error fetching knowledge base');
-            return { context: "", namespaces: 0, avatarConfig: null };
+            return { context: "", namespaces: 0 };
           }
         })()
       ]);
@@ -1514,13 +1521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract results from settled promises
       const memoryResult = memoryResultSettled.status === 'fulfilled' ? memoryResultSettled.value : { success: false, memories: [] };
       const pubmedResult = pubmedResultSettled.status === 'fulfilled' ? pubmedResultSettled.value : null;
-      const knowledgeResult = knowledgeResultSettled.status === 'fulfilled' ? knowledgeResultSettled.value : { context: "", namespaces: 0, avatarConfig: null };
-
-      // Get avatar config from knowledge result
-      const avatarConfig = knowledgeResult.avatarConfig;
-      if (!avatarConfig) {
-        return res.status(404).json({ error: "Avatar not found" });
-      }
+      const knowledgeResult = knowledgeResultSettled.status === 'fulfilled' ? knowledgeResultSettled.value : { context: "", namespaces: 0 };
 
       // Build memory context
       let memoryContext = "";
