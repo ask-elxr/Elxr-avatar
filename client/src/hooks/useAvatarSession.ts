@@ -277,8 +277,64 @@ export function useAvatarSession({
       // ❌ DISABLED: HeyGen's voice chat causes echo loop with Claude
       // HeyGen's voice chat is designed ONLY for their built-in AI
       // When using Claude, the avatar hears itself and creates infinite loop
-      // Solution: Use Web Speech API for voice input (managed in avatar-chat component)
+      // Solution: Use Web Speech API for voice input (separate from HeyGen video)
       console.log("✅ HeyGen video ready - voice input via Web Speech API, responses via Claude");
+
+      // ✅ Initialize Web Speech API for voice input
+      try {
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+        
+        if (SpeechRecognition) {
+          const recognition = new SpeechRecognition();
+          recognition.continuous = true;
+          recognition.interimResults = false;
+          recognition.lang = 'en-US';
+          
+          recognition.onresult = (event: any) => {
+            const transcript = event.results[event.results.length - 1][0].transcript.trim();
+            
+            // Deduplicate (Web Speech can fire same result multiple times)
+            if (transcript && transcript !== lastTranscriptRef.current) {
+              lastTranscriptRef.current = transcript;
+              console.log("🎤 Voice input:", transcript);
+              
+              // Only process if avatar isn't speaking
+              if (!isSpeakingRef.current) {
+                handleSubmitMessage(transcript);
+              } else {
+                console.log("⏭️ Ignoring voice input - avatar is speaking");
+              }
+            }
+          };
+          
+          recognition.onerror = (event: any) => {
+            if (event.error !== 'no-speech' && event.error !== 'aborted') {
+              console.error("🎤 Speech recognition error:", event.error);
+            }
+          };
+          
+          recognition.onend = () => {
+            // Auto-restart unless intentionally stopped
+            if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
+              try {
+                recognition.start();
+                console.log("🔄 Voice recognition auto-restarted");
+              } catch (e) {
+                // Already running
+              }
+            }
+          };
+          
+          recognitionRef.current = recognition;
+          recognitionIntentionalStopRef.current = false;
+          recognition.start();
+          console.log("✅ Web Speech API started for voice input");
+        } else {
+          console.warn("⚠️ Web Speech API not supported in this browser");
+        }
+      } catch (error) {
+        console.error("❌ Error initializing Web Speech API:", error);
+      }
 
       console.log("HeyGen session started successfully");
       setHeygenSessionActive(true);
