@@ -262,8 +262,6 @@ export function useAvatarSession({
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
-        // ❌ Disabled: Using Claude + Pinecone instead of HeyGen's knowledge base
-        // knowledgeBase: avatarConfig.heygenKnowledgeId || undefined,
         voice: avatarConfig.heygenVoiceId ? {
           voiceId: avatarConfig.heygenVoiceId,
           rate: parseFloat(avatarConfig.voiceRate || "1.0"),
@@ -272,6 +270,9 @@ export function useAvatarSession({
         },
         language: "en",
         disableIdleTimeout: true,
+        // ❌ CRITICAL: Explicitly disable HeyGen's AI - we use Claude instead
+        knowledgeBase: undefined, // No knowledge base = no HeyGen AI
+        knowledgeId: undefined, // No knowledge ID = no auto-responses
       });
 
       // ❌ DISABLED: HeyGen's voice chat causes echo loop with Claude
