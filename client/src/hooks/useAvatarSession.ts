@@ -810,11 +810,18 @@ export function useAvatarSession({
           setIsSpeakingState(true);
           
           // ✅ Avatar speaks Claude's response
-          console.log("🗣️ Avatar speaking Claude response:", claudeResponse.substring(0, 80));
+          console.log("🗣️ SENDING TO HEYGEN - Full Claude response:");
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          console.log(claudeResponse);
+          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+          console.log("Text length:", claudeResponse.length, "characters");
+          
           await avatarRef.current.speak({
             text: claudeResponse,
             task_type: TaskType.TALK,
           });
+          
+          console.log("✅ HeyGen speak() called with above text");
         }
       }
     } catch (error) {
