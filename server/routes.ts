@@ -1502,7 +1502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
             if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
               perfTimings.knowledge = Date.now() - kbStart;
-              return { context: "", namespaces: 0, avatarConfig };
+              return { context: "", namespaces: 0 };
             }
 
             const knowledgeResults = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
