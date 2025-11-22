@@ -255,28 +255,9 @@ export function useAvatarSession({
         }, 1000); // 1 second delay
       });
 
-      // Listen for user voice input from HeyGen's voice chat
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (event: any) => {
-        const userMessage = event?.detail?.message || event?.message || event;
-        
-        // ✅ CRITICAL: Don't process if avatar is currently speaking (prevents echo loop)
-        if (isSpeakingRef.current) {
-          console.log("⏭️ Ignoring voice input - avatar is speaking");
-          return;
-        }
-        
-        if (userMessage && typeof userMessage === 'string' && userMessage.trim()) {
-          console.log("🎤 Voice input received:", userMessage);
-          
-          // Process the voice message through Claude + Pinecone
-          try {
-            await handleSubmitMessage(userMessage);
-            console.log("✅ Voice message processed successfully");
-          } catch (error) {
-            console.error("❌ Error processing voice message:", error);
-          }
-        }
-      });
+      // ❌ DISABLED: USER_TALKING_MESSAGE listener removed
+      // This event only works with HeyGen's voice chat which causes echo loops
+      // Voice input now handled by Web Speech API in the component
 
       await avatar.createStartAvatar({
         quality: AvatarQuality.High,
@@ -293,19 +274,11 @@ export function useAvatarSession({
         disableIdleTimeout: true,
       });
 
-      // ✅ Enable HeyGen's voice chat for proper echo cancellation
-      // This gives us microphone with echo cancellation (no feedback loop!)
-      // Voice input will come through USER_TALKING_MESSAGE events
-      // We still use Claude for responses (knowledgeBase is disabled)
-      try {
-        await avatar.startVoiceChat({
-          isInputAudioMuted: false, // Microphone is active
-        });
-        console.log("✅ Voice chat enabled via HeyGen SDK with echo cancellation - using Claude for responses");
-      } catch (voiceError) {
-        console.error("❌ Voice chat failed:", voiceError);
-        console.warn("Continuing with text-only mode");
-      }
+      // ❌ DISABLED: HeyGen's voice chat causes echo loop with Claude
+      // HeyGen's voice chat is designed ONLY for their built-in AI
+      // When using Claude, the avatar hears itself and creates infinite loop
+      // Solution: Use Web Speech API for voice input (managed in avatar-chat component)
+      console.log("✅ HeyGen video ready - voice input via Web Speech API, responses via Claude");
 
       console.log("HeyGen session started successfully");
       setHeygenSessionActive(true);
@@ -770,32 +743,16 @@ export function useAvatarSession({
 
         // Video mode: Use HeyGen avatar
         if (avatarRef.current) {
-          // ✅ STEP 1: MUTE microphone BEFORE avatar speaks to prevent echo
-          try {
-            await avatarRef.current.startVoiceChat({ isInputAudioMuted: true });
-            console.log("🔇 Microphone muted - preparing to speak");
-          } catch (e) {
-            console.warn("Could not mute microphone:", e);
-          }
-          
-          // ✅ STEP 2: Set speaking flag to prevent echo
+          // ✅ Set speaking flag to pause Web Speech recognition
           isSpeakingRef.current = true;
           setIsSpeakingState(true);
           
-          // ✅ STEP 3: Avatar speaks Claude's response
-          console.log("🗣️ Avatar speaking Claude's text:", claudeResponse.substring(0, 50) + "...");
+          // ✅ Avatar speaks Claude's response
+          console.log("🗣️ Avatar speaking Claude response:", claudeResponse.substring(0, 80));
           await avatarRef.current.speak({
             text: claudeResponse,
             task_type: TaskType.TALK,
           });
-          
-          // ✅ STEP 4: UNMUTE microphone after avatar finishes
-          try {
-            await avatarRef.current.startVoiceChat({ isInputAudioMuted: false });
-            console.log("🎤 Microphone unmuted - avatar finished");
-          } catch (e) {
-            console.warn("Could not unmute microphone:", e);
-          }
         }
       }
     } catch (error) {
