@@ -764,6 +764,10 @@ export function useAvatarSession({
 
         // Video mode: Use HeyGen avatar
         if (avatarRef.current) {
+          // ✅ CRITICAL: Set speaking flag BEFORE calling speak() to prevent echo
+          isSpeakingRef.current = true;
+          setIsSpeakingState(true);
+          
           await avatarRef.current.speak({
             text: claudeResponse,
             task_type: TaskType.TALK,
