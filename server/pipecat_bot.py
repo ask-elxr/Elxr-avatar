@@ -86,10 +86,11 @@ class VideoToAudioSwitcher:
         self.max_duration = timedelta(minutes=max_duration_minutes)
         self.start_time = datetime.now()
         self.video_enabled = True
+        self.has_switched = False
         
     def should_switch_to_audio(self) -> bool:
         """Check if we should switch to audio-only mode."""
-        if not self.video_enabled:
+        if not self.video_enabled or self.has_switched:
             return False
         
         elapsed = datetime.now() - self.start_time
@@ -98,11 +99,20 @@ class VideoToAudioSwitcher:
             return True
         return False
     
-    def switch_to_audio_only(self, pipeline: Pipeline, heygen_service: HeyGenVideoService):
-        """Switch pipeline to audio-only mode."""
+    async def switch_to_audio_only(self, task: PipelineTask, heygen_service: HeyGenVideoService):
+        """Switch pipeline to audio-only mode by stopping HeyGen service."""
+        if self.has_switched:
+            return
+            
         self.video_enabled = False
-        # Remove HeyGen from pipeline (keeps voice via TTS)
-        logger.info("Switched to audio-only mode - video disabled, voice preserved")
+        self.has_switched = True
+        
+        # Stop the HeyGen video service
+        try:
+            await heygen_service.stop()
+            logger.info("✓ Switched to audio-only mode - HeyGen stopped, Cartesia TTS continues")
+        except Exception as e:
+            logger.error(f"Error stopping HeyGen service: {e}")
 
 
 async def run_bot(transport: BaseTransport, runner_args: RunnerArguments, avatar_id: str = "mark-kohl"):
@@ -233,9 +243,8 @@ Important:
                 await asyncio.sleep(30)  # Check every 30 seconds
                 
                 if switcher.should_switch_to_audio():
-                    switcher.switch_to_audio_only(pipeline, heyGen)
-                    # Rebuild pipeline without video
-                    logger.info("Rebuilding pipeline for audio-only mode")
+                    await switcher.switch_to_audio_only(task, heyGen)
+                    logger.info("✓ Video-to-audio transition complete - credits saved")
                     break
         
         # Start monitoring task
