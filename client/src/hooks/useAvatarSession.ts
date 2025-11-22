@@ -234,16 +234,19 @@ export function useAvatarSession({
         setIsSpeakingState(false);
         startIdleTimeout(); // Start 30s countdown after avatar stops talking
         
-        // 🎤 Resume voice recognition after avatar finishes speaking
-        if (recognitionRef.current && !recognitionIntentionalStopRef.current) {
-          try {
-            recognitionRef.current.start();
-            console.log("🔊 Voice recognition resumed (avatar finished)");
-          } catch (e) {
-            // Ignore errors if already running
-            console.warn("Could not resume voice recognition:", e);
+        // 🎤 Resume voice recognition after a brief delay to prevent echo
+        // Delay allows audio to fully stop before listening again
+        setTimeout(() => {
+          if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
+            try {
+              recognitionRef.current.start();
+              console.log("🔊 Voice recognition resumed (avatar finished)");
+            } catch (e) {
+              // Ignore errors if already running
+              console.warn("Could not resume voice recognition:", e);
+            }
           }
-        }
+        }, 1000); // 1 second delay
       });
 
       // Listen for user voice input
@@ -282,10 +285,16 @@ export function useAvatarSession({
 
       // Enable voice recognition for hands-free interaction
       try {
-        // First, explicitly request microphone permission
+        // First, explicitly request microphone permission WITH ECHO CANCELLATION
         console.log("Requesting microphone permission...");
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log("✅ Microphone permission granted");
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        });
+        console.log("✅ Microphone permission granted with echo cancellation");
         
         // Stop the test stream
         stream.getTracks().forEach(track => track.stop());

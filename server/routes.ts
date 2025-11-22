@@ -125,8 +125,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // HeyGen API token endpoint for Streaming SDK with rate limiting (5 requests per user per minute to allow avatar switching)
-  app.post("/api/heygen/token", rateLimitMiddleware(5, 60000), async (req, res) => {
+  // HeyGen API token endpoint for Streaming SDK with rate limiting (15 requests per user per minute for conversation flow)
+  app.post("/api/heygen/token", rateLimitMiddleware(15, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen", operation: "createToken" });
 
     try {
