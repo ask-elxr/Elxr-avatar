@@ -45,7 +45,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           method: "POST",
           headers: {
-            "Authorization": `Bearer ${apiKey}`,
+            "x-api-key": apiKey,
             "Content-Type": "application/json",
           },
         },
