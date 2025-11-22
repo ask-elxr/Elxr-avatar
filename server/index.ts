@@ -1,7 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes, seedDefaultAvatars } from "./routes";
 import { avatarRouter } from "./routes/avatars.js";
-import { pipecatRouter } from "./routes/pipecat.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 
@@ -94,7 +93,6 @@ app.use((req, res, next) => {
   
   // Register modular routes
   app.use("/api", avatarRouter);
-  app.use("/api/pipecat", pipecatRouter);
   
   // Seed default avatars if database is empty
   await seedDefaultAvatars();

@@ -3,7 +3,7 @@
 ## Overview
 A sophisticated AI chat platform featuring HeyGen video avatars with real-time voice conversations, knowledge retrieval from multiple sources (Pinecone, PubMed, Wikipedia, Notion), persistent memory (Mem0), and comprehensive admin management.
 
-**Current Status**: Successfully restructured codebase with modular architecture. Implemented Pipecat integration for multi-avatar conversational AI with automatic video-to-audio switching.
+**Current Status**: Successfully restructured codebase with modular architecture. Focused on HeyGen video avatar system with Claude AI and RAG integration.
 
 ## Recent Changes (November 2024)
 
@@ -17,18 +17,16 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
   - `server/services/auth.ts` - Replit authentication wrapper
 - **Extracted routes**:
   - `server/routes/avatars.ts` - Avatar CRUD and configuration endpoints
-  - `server/routes/pipecat.ts` - Pipecat session management
 
-### Pipecat Integration (NEW)
-- **Multi-avatar support**: Mark Kohl, Willie Gault, Fitness Coach (expandable)
+### HeyGen Video System
+- **Multi-avatar support**: Mark Kohl, Willie Gault, Fitness Coach, and more
 - **Per-avatar features**:
   - Dedicated Pinecone knowledge base namespaces
-  - Custom voice profiles (Cartesia TTS)
-  - Configurable video duration limits
+  - Custom HeyGen avatar IDs
+  - Configurable session time limits
   - Unique personalities and expertise areas
-- **Automatic video-to-audio switching**: After 5 minutes (configurable), switches to audio-only mode to save HeyGen credits while preserving voice quality
-- **Real-time voice**: Deepgram STT + Cartesia TTS + Google Gemini LLM
-- **Python service**: `server/pipecat_bot.py` handles WebRTC transport and avatar orchestration
+- **Real-time video conversations**: HeyGen handles both video and audio
+- **AI Integration**: Claude + RAG (Pinecone, PubMed, Wikipedia) + Mem0 memory
 
 ## Architecture
 
@@ -72,27 +70,24 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 - `getActiveAvatars()` - Returns all active avatars (DB + defaults, filtered by isActive)
 - `getAllAvatars()` - Returns all avatars including inactive (for admin)
 
-### Pipecat Multi-Avatar Configuration
-**Location**: `server/pipecat_bot.py`
+### Default Avatar Configuration
+**Location**: `config/avatars.config.ts`
 
 **Current Avatars**:
 1. **Mark Kohl** (`mark-kohl`)
    - Expertise: Mycology, filmmaking, kundalini
    - Knowledge: `mark-kohl`, `general-knowledge`
-   - Voice: Cartesia `00967b2f-88a6-4a31-8153-110a92134b9f`
-   - Video limit: 5 minutes
+   - HeyGen Avatar: `Shawn_Therapist_public`
 
 2. **Willie Gault** (`willie-gault`)
    - Expertise: Olympic athletics, NFL, business
    - Knowledge: `willie-gault`, `sports-knowledge`
-   - Voice: Cartesia `a0e99841-438c-4a64-b679-ae501e7d6091`
-   - Video limit: 5 minutes
+   - HeyGen Avatar: `Wayne_20240711`
 
 3. **Fitness Coach** (`fitness-coach`)
    - Expertise: Health, fitness, wellness
    - Knowledge: `fitness-knowledge`, `health-tips`
-   - Voice: Cartesia `b7d50908-b17c-442d-ad8d-810c63997ed9`
-   - Video limit: 3 minutes
+   - HeyGen Avatar: `josh_lite3_20230714`
 
 ## API Endpoints
 
@@ -104,12 +99,11 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 - `PUT /api/admin/avatars/:id` - Update avatar (admin, requires auth)
 - `DELETE /api/admin/avatars/:id` - Soft delete avatar (admin, requires auth)
 
-### Pipecat Sessions
-- `GET /api/pipecat/avatars` - List available Pipecat avatars
-- `GET /api/pipecat/avatars/:id` - Get specific avatar config
-- `POST /api/pipecat/session/start` - Start Pipecat session with avatar
-- `GET /api/pipecat/session/status/:sessionId` - Get session status
-- `PUT /api/pipecat/avatars/:id` - Update avatar config (admin)
+### HeyGen Sessions
+- `POST /api/heygen/token` - Create HeyGen streaming token
+- `POST /api/session/start` - Start HeyGen session
+- `POST /api/session/end` - End HeyGen session
+- `POST /api/session/end-all` - End all user sessions
 
 ### Chat & Memory
 - `POST /api/avatar/response` - Get AI response (Claude + RAG + Memory + PubMed)
@@ -122,9 +116,6 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 ### Required
 - `HEYGEN_API_KEY` - HeyGen video avatar service
 - `ANTHROPIC_API_KEY` - Claude AI (main LLM)
-- `GOOGLE_API_KEY` - Google Gemini (Pipecat LLM)
-- `DEEPGRAM_API_KEY` - Speech-to-text (Pipecat)
-- `CARTESIA_API_KEY` - Text-to-speech (Pipecat)
 
 ### Optional
 - `PINECONE_API_KEY` - Vector database for knowledge retrieval
@@ -175,9 +166,10 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 - **Port**: 5000 (both API and frontend via Vite)
 
 ## Next Steps
-- [ ] Integrate Pipecat sessions with frontend UI
+- [ ] Optimize HeyGen session management
 - [ ] Add per-avatar Pinecone namespace switching
 - [ ] Implement session tracking with Redis
 - [ ] Add more avatar personalities
 - [ ] Complete route extraction (chat, memory, documents, knowledge)
 - [ ] Add comprehensive testing
+- [ ] Implement credit usage monitoring and alerts
