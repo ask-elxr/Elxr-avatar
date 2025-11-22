@@ -1,0 +1,1076 @@
+injected.js:37 Unknown DataChannel error on lossy {room: 'c0294903-c7e9-11f0-9189-c60a7dc638c2', roomID: 'RM_6YoeycHzi4Lo', participant: 'client', pID: 'PA_qKSHYT6DwbqP', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Unknown DataChannel error on reliable {room: 'c0294903-c7e9-11f0-9189-c60a7dc638c2', roomID: 'RM_6YoeycHzi4Lo', participant: 'client', pID: 'PA_qKSHYT6DwbqP', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Stream disconnected - intentionalStop flag: true
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Stream ready: MediaStream {id: '9b9c38b2-190c-481e-b1f6-24c8acac8d3e', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+@heygen_streaming-avatar.js?v=6113e542:29040 WebSocket connection to 'wss://api.heygen.com/v1/ws/streaming.chat?session_id=da659925-c7e9-11f0-9189-c60a7dc638c2&session_token=eyJ0b2tlbiI6IjU1ZGQyMjdiYjI5ODQ1NDRhMDJiYmIxYmE0NmZiNzEzIiwidG9rZW5fdHlwZSI6InNhX2Zyb21fcmVndWxhciIsImNyZWF0ZWRfYXQiOjE3NjM4NDY3NjR9&silence_response=false&push_to_talk=false' failed: WebSocket is closed before the connection is established.
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:29040
+step @ @heygen_streaming-avatar.js?v=6113e542:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=6113e542:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=6113e542:27096
+StreamingAvatar2.stopAvatar @ @heygen_streaming-avatar.js?v=6113e542:29034
+(anonymous) @ useAvatarSession.ts:469
+endChat @ avatar-chat.tsx:350
+callCallback2 @ chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6113e542:5449Understand this warning
+injected.js:37 Error starting HeyGen session: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:287
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:372
+await in (anonymous)
+handleAvatarSwitch @ avatar-chat.tsx:416
+await in handleAvatarSwitch
+handleSwitch @ AvatarSwitcher.tsx:59
+callCallback2 @ chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6113e542:5449Understand this error
+injected.js:37 Error starting HeyGen in video mode: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:374
+await in (anonymous)
+handleAvatarSwitch @ avatar-chat.tsx:416
+await in handleAvatarSwitch
+handleSwitch @ AvatarSwitcher.tsx:59
+callCallback2 @ chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6113e542:5449Understand this error
+injected.js:37 Error switching avatar: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+(anonymous) @ injected.js:37
+handleAvatarSwitch @ avatar-chat.tsx:425
+await in handleAvatarSwitch
+handleSwitch @ AvatarSwitcher.tsx:59
+callCallback2 @ chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6113e542:5449Understand this error
+injected.js:37 Unknown DataChannel error on lossy {room: 'da659925-c7e9-11f0-9189-c60a7dc638c2', roomID: 'RM_pp23hapg8u42', participant: 'client', pID: 'PA_hU6UQeoZSZ9V', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Unknown DataChannel error on reliable {room: 'da659925-c7e9-11f0-9189-c60a7dc638c2', roomID: 'RM_pp23hapg8u42', participant: 'client', pID: 'PA_hU6UQeoZSZ9V', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Stream disconnected - intentionalStop flag: true
+injected.js:37 Start button clicked - initiating session manually
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Stream ready: MediaStream {id: '51106811-325c-476f-bf20-03f387a24e0f', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Unknown DataChannel error on lossy {room: 'e45d9456-c7e9-11f0-8462-da41c3c508e5', roomID: 'RM_p5WVWATm2d7C', participant: 'client', pID: 'PA_VPDiQdrjtMZJ', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Unknown DataChannel error on reliable {room: 'e45d9456-c7e9-11f0-8462-da41c3c508e5', roomID: 'RM_p5WVWATm2d7C', participant: 'client', pID: 'PA_VPDiQdrjtMZJ', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Stream disconnected - intentionalStop flag: true
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 [vite] server connection lost. Polling for restart...
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:602  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/index.css?t=1763846808606&v=ZThYwmAzAfKGYUvLnFy-A net::ERR_ABORTED 502 (Bad Gateway)
+importUpdatedModule @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:602
+fetchUpdate @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:211
+queueUpdate @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:186
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:642
+handleMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:640
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:550Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 [hmr] Failed to reload /src/index.css?v=ZThYwmAzAfKGYUvLnFy-A. This could be due to syntax errors or importing non-existent modules. (see errors above)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+warnFailedUpdate @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:176
+fetchUpdate @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:213
+await in fetchUpdate
+queueUpdate @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:186
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:642
+handleMessage @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:640
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@vite/client:550Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Error starting HeyGen session: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29174:26)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+    at Object.next (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27127:14)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27114:67
+    at new Promise (<anonymous>)
+    at __awaiter2 (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27096:10)
+    at StreamingAvatar2.request (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29168:14)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28969:27)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:199
+await in (anonymous)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:266
+await in (anonymous)
+handleAvatarSwitch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/avatar-chat.tsx:332
+await in handleAvatarSwitch
+handleSwitch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/AvatarSwitcher.tsx:63
+callCallback2 @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5449Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Error starting HeyGen in video mode: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29174:26)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+    at Object.next (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27127:14)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27114:67
+    at new Promise (<anonymous>)
+    at __awaiter2 (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27096:10)
+    at StreamingAvatar2.request (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29168:14)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28969:27)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts:268
+await in (anonymous)
+handleAvatarSwitch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/avatar-chat.tsx:332
+await in handleAvatarSwitch
+handleSwitch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/AvatarSwitcher.tsx:63
+callCallback2 @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5449Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 Error switching avatar: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29174:26)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+    at Object.next (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27127:14)
+    at 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27114:67
+    at new Promise (<anonymous>)
+    at __awaiter2 (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27096:10)
+    at StreamingAvatar2.request (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:29168:14)
+    at StreamingAvatar2.<anonymous> (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:28969:27)
+    at step (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@heygen_streaming-avatar.js?v=6113e542:27175:17)
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37
+handleAvatarSwitch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/avatar-chat.tsx:339
+await in handleAvatarSwitch
+handleSwitch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/AvatarSwitcher.tsx:63
+callCallback2 @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3674
+invokeGuardedCallbackDev @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3699
+invokeGuardedCallback @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3733
+invokeGuardedCallbackAndCatchFirstError @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3736
+executeDispatch @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7014
+processDispatchQueueItemsInOrder @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7034
+processDispatchQueue @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7043
+dispatchEventsForPlugins @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7051
+(anonymous) @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7174
+batchedUpdates$1 @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:18913
+batchedUpdates @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:3579
+dispatchEventForPluginEventSystem @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5478
+dispatchEvent @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5472
+dispatchDiscreteEvent @ 5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=6113e542:5449Understand this error
+ed1e693c96a75807.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this error
+ed1e693c96a75807.js:2 Unrecognized feature: 'ambient-light-sensor'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'battery'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'layout-animations'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'legacy-image-formats'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'navigation-override'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'oversized-images'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'publickey-credentials'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'speaker-selection'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'unoptimized-images'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'unsized-media'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Unrecognized feature: 'pointer-lock'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2Understand this warning
+ed1e693c96a75807.js:2 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2Understand this error
+ed1e693c96a75807.js:2 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2Understand this error
+ed1e693c96a75807.js:2 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.Understand this error
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'battery'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'layout-animations'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'legacy-image-formats'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'navigation-override'.Understand this warning
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'oversized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'publickey-credentials'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'speaker-selection'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'unoptimized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Unrecognized feature: 'unsized-media'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arc9%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warning
+injected.js:37 Start button clicked - initiating session manually
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer started for first time
+injected.js:37 Stream ready: MediaStream {id: 'a999f099-c16c-42d7-a232-0f849a2c4d20', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🎤 Voice input: Hello
+injected.js:37 📝 handleSubmitMessage called with: {message: 'Hello', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468371900.gbmy70dx4og
+injected.js:37 Claude response received: Hey there! I'm Mark Kohl. What can I help you with today?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ Avatar speaking Claude response: Hey there! I'm Mark Kohl. What can I help you with today?
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Voice input: How
+injected.js:37 📝 handleSubmitMessage called with: {message: 'How', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468611540.3jmktwxwczg
+injected.js:37 🎤 Voice input: How can
+injected.js:37 📝 handleSubmitMessage called with: {message: 'How can', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468611560.k8q3h1fdbi
+injected.js:37 🎤 Voice input: How can I
+injected.js:37 📝 handleSubmitMessage called with: {message: 'How can I', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468613540.9z2o8c8bsja
+injected.js:37 🎤 Voice input: How can I call
+injected.js:37 📝 handleSubmitMessage called with: {message: 'How can I call', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468615650.zdneyxrj7xe
+injected.js:37 🎤 Voice input: How can I call you
+injected.js:37 📝 handleSubmitMessage called with: {message: 'How can I call you', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468616540.6an0lkcexy5
+injected.js:37 Claude response received: I'm Mark Kohl. You can call me Mark.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ Avatar speaking Claude response: I'm Mark Kohl. You can call me Mark.
+
+Would you like me to go deeper on any part
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Voice input: I'm
+injected.js:37 📝 handleSubmitMessage called with: {message: "I'm", sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468918760.tlkoxckxib
+injected.js:37 🎤 Voice input: I'm not
+injected.js:37 📝 handleSubmitMessage called with: {message: "I'm not", sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468920820.xmbpyk9ussm
+injected.js:37 🎤 Voice input: I'm not Mark
+injected.js:37 📝 handleSubmitMessage called with: {message: "I'm not Mark", sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17638468922750.m8s820wson
+injected.js:37 Claude response received: You're absolutely right - you're not Mark. I'm Mark Kohl.
+
+I'm an independent mycological researcher, filmmaker, and Kundalini instructor. I work with mushrooms, consciousness exploration, and helping people understand these topics through film and teaching.
+
+What brought you here today? Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ Avatar speaking Claude response: You're absolutely right - you're not Mark. I'm Mark Kohl.
+
+I'm an independent my
+injected.js:37 🔇 Voice recognition paused (avatar speaking)

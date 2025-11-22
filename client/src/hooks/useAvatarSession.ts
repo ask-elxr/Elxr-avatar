@@ -287,16 +287,21 @@ export function useAvatarSession({
         if (SpeechRecognition) {
           const recognition = new SpeechRecognition();
           recognition.continuous = true;
-          recognition.interimResults = false;
+          recognition.interimResults = false; // Only get final results
           recognition.lang = 'en-US';
+          recognition.maxAlternatives = 1; // Only get best match
           
           recognition.onresult = (event: any) => {
-            const transcript = event.results[event.results.length - 1][0].transcript.trim();
+            // Only process final results (not interim)
+            const result = event.results[event.results.length - 1];
+            if (!result.isFinal) return;
+            
+            const transcript = result[0].transcript.trim();
             
             // Deduplicate (Web Speech can fire same result multiple times)
             if (transcript && transcript !== lastTranscriptRef.current) {
               lastTranscriptRef.current = transcript;
-              console.log("🎤 Voice input:", transcript);
+              console.log("🎤 Voice input (final):", transcript);
               
               // Only process if avatar isn't speaking
               if (!isSpeakingRef.current) {
