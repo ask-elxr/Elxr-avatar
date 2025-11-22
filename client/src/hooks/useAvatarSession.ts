@@ -770,24 +770,26 @@ export function useAvatarSession({
 
         // Video mode: Use HeyGen avatar
         if (avatarRef.current) {
-          // ✅ CRITICAL: Set speaking flag BEFORE calling speak() to prevent echo
-          isSpeakingRef.current = true;
-          setIsSpeakingState(true);
-          
-          // ✅ MUTE microphone while avatar speaks to prevent echo
+          // ✅ STEP 1: MUTE microphone BEFORE avatar speaks to prevent echo
           try {
             await avatarRef.current.startVoiceChat({ isInputAudioMuted: true });
-            console.log("🔇 Microphone muted - avatar speaking");
+            console.log("🔇 Microphone muted - preparing to speak");
           } catch (e) {
             console.warn("Could not mute microphone:", e);
           }
           
+          // ✅ STEP 2: Set speaking flag to prevent echo
+          isSpeakingRef.current = true;
+          setIsSpeakingState(true);
+          
+          // ✅ STEP 3: Avatar speaks Claude's response
+          console.log("🗣️ Avatar speaking Claude's text:", claudeResponse.substring(0, 50) + "...");
           await avatarRef.current.speak({
             text: claudeResponse,
             task_type: TaskType.TALK,
           });
           
-          // ✅ UNMUTE microphone after avatar finishes
+          // ✅ STEP 4: UNMUTE microphone after avatar finishes
           try {
             await avatarRef.current.startVoiceChat({ isInputAudioMuted: false });
             console.log("🎤 Microphone unmuted - avatar finished");
