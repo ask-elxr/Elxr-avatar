@@ -163,9 +163,9 @@ export function useAvatarSession({
     // Only start idle timeout in video mode when not paused
     if (!audioOnlyRef.current && !isPaused) {
       idleTimeoutRef.current = setTimeout(() => {
-        console.log("30s idle timeout - stopping HeyGen session to save credits");
+        console.log("3min idle timeout - stopping HeyGen session to save credits");
         stopHeyGenSession();
-      }, 30000); // 30 seconds
+      }, 180000); // 3 minutes - allows for longer avatar responses without disconnect
     }
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
@@ -212,11 +212,21 @@ export function useAvatarSession({
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
         console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
+        
+        // If disconnect was unintentional (network error, HeyGen issue), show reconnect button
+        const wasUnintentional = !intentionalStopRef.current;
+        
         intentionalStopRef.current = false;
         isSpeakingRef.current = false;
         avatarRef.current = null; // Clear ref immediately to allow restart
         setHeygenSessionActive(false);
         clearIdleTimeout();
+        
+        // Show reconnect button for unexpected disconnections
+        if (wasUnintentional) {
+          console.log("⚠️ Unexpected disconnect - showing reconnect button");
+          setShowReconnect(true);
+        }
       });
 
       avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
