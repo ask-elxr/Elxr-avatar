@@ -78,9 +78,20 @@ export class ClaudeService {
         }
       }
       
-      // Add current query with context - FORCE Claude to use the knowledge base
+      // Detect if user wants detailed information
+      const detailedKeywords = [
+        'tell me more', 'explain', 'detailed', 'elaborate', 'why', 'how does',
+        'what are the steps', 'walk me through', 'in detail', 'break down',
+        'full story', 'complete', 'everything about', 'all about', 'describe'
+      ];
+      const wantsDetailedResponse = detailedKeywords.some(keyword => 
+        query.toLowerCase().includes(keyword)
+      );
+
+      // Build message based on whether user wants detailed or concise response
       const currentMessage = context 
-        ? `CRITICAL: You have extensive verified knowledge below. Use it fully to give a DEEP, detailed, insightful response.
+        ? wantsDetailedResponse
+          ? `You have verified knowledge below. Use it to give a thorough, detailed response.
 
 KNOWLEDGE BASE CONTENT:
 ${context}
@@ -90,13 +101,24 @@ ${context}
 User question: ${query}
 
 RESPONSE REQUIREMENTS:
-- Draw from the specific details, examples, and insights in the knowledge above
-- Go DEEP - don't skim the surface
+- Draw from specific details, examples, and insights in the knowledge above
+- Provide comprehensive information with nuance
 - Use actual quotes, examples, and specifics from the context
-- Weave in relevant stories, experiences, or details
-- Make it conversational but rich with substance
-- If the knowledge base has nuanced points, include them
-- Do NOT give generic responses - this is your chance to share real expertise`
+- Make it conversational but rich with substance`
+          : `You have verified knowledge below. Use it to give a CLEAR, CONCISE response (2-3 sentences max unless necessary).
+
+KNOWLEDGE BASE CONTENT:
+${context}
+
+---
+
+User question: ${query}
+
+RESPONSE REQUIREMENTS:
+- Be BRIEF and to the point - think "elevator pitch" not "lecture"
+- Only include the most essential information
+- Keep it conversational and natural
+- Save detailed explanations for when the user asks for more`
         : query;
         
       messages.push({
@@ -107,11 +129,13 @@ RESPONSE REQUIREMENTS:
       const systemPrompt = customSystemPrompt || `You are an intelligent AI assistant with access to a comprehensive knowledge base. 
         
         Guidelines:
+        - DEFAULT: Keep responses SHORT and CLEAR (2-3 sentences) - be conversational, not verbose
+        - Only give detailed responses when the user explicitly asks for more information
         - Use the provided context to give accurate, helpful responses
         - If information isn't in the context, say so clearly
-        - Be conversational and engaging
+        - Be conversational and engaging, but CONCISE
         - Maintain context from the conversation history
-        - Provide specific, actionable answers when possible`;
+        - Think "helpful friend" not "encyclopedia"`;
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
