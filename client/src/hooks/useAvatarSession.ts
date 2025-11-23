@@ -807,21 +807,8 @@ export function useAvatarSession({
 
         // Video mode: Use HeyGen avatar
         if (avatarRef.current) {
-          // ✅ Set speaking flag to pause Web Speech recognition
-          isSpeakingRef.current = true;
-          setIsSpeakingState(true);
-          
-          // 🔇 CRITICAL: Stop voice recognition BEFORE avatar speaks to prevent audio feedback loop
-          if (recognitionRef.current) {
-            try {
-              recognitionRef.current.stop();
-              console.log("🔇 Voice recognition paused (avatar speaking)");
-            } catch (e) {
-              // Ignore errors if already stopped
-            }
-          }
-          
           // ✅ Avatar speaks Claude's response
+          // Note: Voice recognition will be paused by AVATAR_START_TALKING event
           console.log("🗣️ SENDING TO HEYGEN - Full Claude response:");
           console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
           console.log(claudeResponse);
