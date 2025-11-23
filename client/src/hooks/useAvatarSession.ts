@@ -811,6 +811,16 @@ export function useAvatarSession({
           isSpeakingRef.current = true;
           setIsSpeakingState(true);
           
+          // 🔇 CRITICAL: Stop voice recognition BEFORE avatar speaks to prevent audio feedback loop
+          if (recognitionRef.current) {
+            try {
+              recognitionRef.current.stop();
+              console.log("🔇 Voice recognition paused (avatar speaking)");
+            } catch (e) {
+              // Ignore errors if already stopped
+            }
+          }
+          
           // ✅ Avatar speaks Claude's response
           console.log("🗣️ SENDING TO HEYGEN - Full Claude response:");
           console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
