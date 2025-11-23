@@ -248,7 +248,8 @@ export function useAvatarSession({
       avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
         isSpeakingRef.current = false;
         setIsSpeakingState(false);
-        startIdleTimeout(); // Start 30s countdown after avatar stops talking
+        // ✅ DON'T start idle timeout here - let the 5-minute inactivity timer handle session cleanup
+        // This allows users to think, speak, or pause without premature disconnection
         
         // 🎤 Resume voice recognition after a brief delay to prevent echo
         // Delay allows audio to fully stop before listening again
