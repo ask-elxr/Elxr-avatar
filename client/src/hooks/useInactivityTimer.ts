@@ -69,12 +69,12 @@ export function useInactivityTimer({
 
     hasAskedAnythingElseRef.current = false;
 
-    // Auto-end session after 90 seconds (1.5 minutes) of silence to save credits
+    // Auto-end session after 5 minutes of silence to save credits
     // No farewell message - just show reconnect button
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 90 seconds elapsed, ending session to save credits");
+      console.log("Inactivity timeout triggered - 5 minutes elapsed, ending session to save credits");
       onEndSessionShowReconnect();
-    }, 90000);
+    }, 300000); // 5 minutes = 300,000ms
   }, [avatarRef, speakingIntervalRef, onEndSessionShowReconnect]);
 
   useEffect(() => {
