@@ -115,7 +115,7 @@ RESPONSE REQUIREMENTS:
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 350,
+        max_tokens: 4096, // ✅ Increased from 350 to allow full, detailed responses
         messages: messages,
         system: systemPrompt
       });
@@ -253,7 +253,7 @@ ABSOLUTE RULES:
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 350,
+        max_tokens: 4096, // ✅ Increased from 350 to allow full, detailed responses
         messages: messages,
         system: systemPrompt
       });
