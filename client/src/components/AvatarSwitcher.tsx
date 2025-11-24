@@ -31,6 +31,15 @@ export function AvatarSwitcher({
   const [loading, setLoading] = useState(true);
   const [selectedAvatarId, setSelectedAvatarId] = useState(currentAvatarId);
 
+  // Avatar GIF mapping (same as avatar-select page)
+  const avatarGifs: Record<string, string> = {
+    'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
+    'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
+    'june': '/attached_assets/June-low_1763964686548.gif',
+    'thad': '/attached_assets/Thad_1763963906199.gif',
+    'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
+  };
+
   useEffect(() => {
     setSelectedAvatarId(currentAvatarId);
   }, [currentAvatarId]);
@@ -64,29 +73,27 @@ export function AvatarSwitcher({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] md:max-h-[80vh] overflow-y-auto bg-gradient-to-br from-background via-background to-purple-500/5">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-black border-gray-800">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg md:text-xl lg:text-2xl pr-8">
-            <div className="p-1.5 md:p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
-              <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-6 lg:h-6 text-white" />
+          <DialogTitle className="flex items-center gap-2 text-2xl md:text-3xl pr-8 font-satoshi text-white">
+            <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
+              <Users className="w-5 h-5 md:w-6 md:h-6 text-white" />
             </div>
-            <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-              Switch AI Guide
-            </span>
+            Switch AI Guide
           </DialogTitle>
-          <DialogDescription className="pr-8 text-sm md:text-base">
+          <DialogDescription className="pr-8 text-base text-gray-400 font-satoshi">
             Choose a different AI personality to continue your conversation.
             {disabled && " (Please wait 30 seconds between avatar switches)"}
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-8 md:py-12">
+          <div className="flex items-center justify-center py-12">
             <LoadingSpinner size="sm" />
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 my-3 md:my-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6 my-4">
               {avatars.map((avatar) => (
                 <Card
                   key={avatar.id}
@@ -95,72 +102,82 @@ export function AvatarSwitcher({
                     disabled
                       ? "opacity-50 cursor-not-allowed"
                       : selectedAvatarId === avatar.id
-                      ? "border-purple-600 border-2 bg-purple-950/20 shadow-lg shadow-purple-500/20"
-                      : "border-gray-300 dark:border-gray-700 hover:border-purple-500 hover:shadow-md"
-                  } ${avatar.id === currentAvatarId ? "ring-2 ring-green-500/50" : ""}`}
+                      ? "border-purple-600 border-2 bg-purple-950/20"
+                      : "border-gray-700 hover:border-purple-500 bg-gray-900/50"
+                  }`}
                   data-testid={`avatar-option-${avatar.id}`}
                 >
-                  <CardHeader className="p-3 md:p-4 lg:p-6">
-                    <div className="flex items-start gap-3">
-                      {/* Avatar Thumbnail */}
-                      <div className="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                        {avatar.profileImageUrl ? (
+                  <CardHeader className="p-4 md:p-5 lg:p-6">
+                    <div className="flex flex-col gap-4">
+                      {/* Avatar Image/GIF - Full Width */}
+                      <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center relative">
+                        {avatarGifs[avatar.id] ? (
+                          <img 
+                            src={avatarGifs[avatar.id]} 
+                            alt={avatar.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : avatar.profileImageUrl ? (
                           <img 
                             src={avatar.profileImageUrl} 
                             alt={avatar.name}
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-semibold text-lg md:text-xl">
+                          <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-4xl font-satoshi">
                             {avatar.name.charAt(0)}
+                          </div>
+                        )}
+                        
+                        {/* Current Badge */}
+                        {avatar.id === currentAvatarId && (
+                          <div className="absolute top-2 right-2">
+                            <span className="text-xs px-2 py-1 bg-green-500 text-white rounded-full font-satoshi font-medium">
+                              Current
+                            </span>
                           </div>
                         )}
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="text-base md:text-lg mb-1 flex items-center gap-1.5 md:gap-2">
-                          {avatar.name}
-                          {avatar.id === currentAvatarId && (
-                            <span className="text-xs px-1.5 py-0.5 md:px-2 md:py-1 bg-green-500/20 text-green-600 dark:text-green-400 rounded-full border border-green-500/30">
-                              Current
-                            </span>
-                          )}
-                        </CardTitle>
-                        <CardDescription className="text-sm md:text-base line-clamp-2">
-                          {avatar.description}
-                        </CardDescription>
-                      </div>
-
-                      {/* Selection Check Mark */}
-                      {selectedAvatarId === avatar.id && (
-                        <div className="flex-shrink-0">
-                          <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
-                            <Check className="w-3 h-3 md:w-4 md:h-4 text-white" />
-                          </div>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2">
+                            {avatar.name}
+                          </CardTitle>
+                          <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi">
+                            {avatar.description}
+                          </CardDescription>
                         </div>
-                      )}
+
+                        {/* Selection Check Mark */}
+                        {selectedAvatarId === avatar.id && (
+                          <div className="flex-shrink-0 ml-3">
+                            <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center">
+                              <Check className="w-4 h-4 text-white" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                 </Card>
               ))}
             </div>
 
-            <div className="flex items-center justify-end gap-2 md:gap-3 mt-3 md:mt-4">
+            <div className="flex items-center justify-end gap-3 mt-4">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => onOpenChange(false)}
                 data-testid="button-cancel-switch"
-                className="text-sm md:text-base"
+                className="text-base font-satoshi border-gray-700 text-gray-300 hover:bg-gray-800"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSwitch}
-                size="sm"
                 disabled={disabled || selectedAvatarId === currentAvatarId || !selectedAvatarId}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm md:text-base"
+                className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold px-8 py-2 text-base font-satoshi rounded-full shadow-2xl transition-all duration-300 hover:scale-105 disabled:opacity-50"
                 data-testid="button-confirm-switch"
               >
                 {selectedAvatarId === currentAvatarId ? "Already Selected" : "Switch Avatar"}
