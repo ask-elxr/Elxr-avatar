@@ -129,5 +129,14 @@ export async function getAllAvatars(): Promise<AvatarProfile[]> {
   }
 }
 
+/**
+ * Get avatars that can generate videos (have valid HeyGen avatar IDs)
+ */
+export async function getVideoCapableAvatars(): Promise<AvatarProfile[]> {
+  const allAvatars = await getActiveAvatars();
+  // Only return avatars that have a HeyGen avatar ID configured
+  return allAvatars.filter(avatar => avatar.heygenAvatarId);
+}
+
 // Re-export types and constants for convenience
 export { defaultAvatars, type AvatarProfile };

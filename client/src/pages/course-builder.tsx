@@ -33,9 +33,9 @@ export default function CourseBuilderPage() {
   const [avatarId, setAvatarId] = useState("");
   const [lessons, setLessons] = useState<LessonWithVideo[]>([]);
 
-  // Fetch avatars
+  // Fetch avatars that can generate videos (have valid HeyGen IDs)
   const { data: avatars } = useQuery({
-    queryKey: ["/api/avatars"],
+    queryKey: ["/api/avatars/video-capable"],
   });
 
   // Fetch course if editing

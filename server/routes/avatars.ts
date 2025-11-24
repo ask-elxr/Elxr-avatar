@@ -3,7 +3,7 @@ import type { Request, Response } from 'express';
 import { logger } from '../logger.js';
 import { storage } from '../storage.js';
 import { isAuthenticated } from '../replitAuth.js';
-import { getActiveAvatars, getAvatarById, getAllAvatars } from '../services/avatars.js';
+import { getActiveAvatars, getAvatarById, getAllAvatars, getVideoCapableAvatars } from '../services/avatars.js';
 import { insertAvatarProfileSchema, updateAvatarProfileSchema } from '@shared/schema';
 
 export const avatarRouter = Router();
@@ -40,6 +40,20 @@ avatarRouter.get("/avatars", async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error({ error: error.message }, "Error fetching avatars");
     res.status(500).json({ error: "Failed to fetch avatars" });
+  }
+});
+
+/**
+ * List avatars capable of video generation (have valid HeyGen IDs)
+ * @route GET /api/avatars/video-capable
+ */
+avatarRouter.get("/avatars/video-capable", async (req: Request, res: Response) => {
+  try {
+    const avatars = await getVideoCapableAvatars();
+    res.json(avatars);
+  } catch (error: any) {
+    logger.error({ error: error.message }, "Error fetching video-capable avatars");
+    res.status(500).json({ error: "Failed to fetch video-capable avatars" });
   }
 });
 
