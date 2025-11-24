@@ -347,7 +347,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
         {/* Reconnect Screen */}
         {showReconnect && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/50 z-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black z-20">
             {audioOnly && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
             <Button
               onClick={async () => {
