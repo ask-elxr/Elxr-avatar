@@ -76,6 +76,7 @@ export function useAvatarSession({
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
   const recognitionRunningRef = useRef(false); // Track if recognition is currently running
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Loading timeout reference
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -302,6 +303,13 @@ export function useAvatarSession({
           videoRef.current.srcObject = event.detail;
           videoRef.current.play().catch(console.error);
         }
+        
+        // Clear loading state and timeout as soon as stream is ready
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+        setIsLoading(false);
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
@@ -406,12 +414,19 @@ export function useAvatarSession({
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
     
-    // ✅ Safety timeout: Auto-clear loading state after 10 seconds
-    const loadingTimeout = setTimeout(() => {
+    // Clear any existing loading timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    
+    // ✅ Safety timeout: Auto-clear loading state after 30 seconds
+    // HeyGen initialization can take 15-20 seconds, so we give it plenty of time
+    loadingTimeoutRef.current = setTimeout(() => {
       console.warn("⚠️ Loading timeout reached - auto-clearing loading state");
       setIsLoading(false);
       setShowReconnect(true);
-    }, 10000);
+      loadingTimeoutRef.current = null;
+    }, 30000);
     
     const { audioOnly = false, avatarId } = options || {};
     audioOnlyRef.current = audioOnly;
@@ -462,7 +477,10 @@ export function useAvatarSession({
       sessionIdRef.current = data.sessionId;
     } catch (error: any) {
       console.error("Error registering session:", error);
-      clearTimeout(loadingTimeout);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
       setIsLoading(false);
       throw error;
     }
@@ -496,16 +514,26 @@ export function useAvatarSession({
     if (!audioOnly) {
       try {
         await startHeyGenSession(activeAvatarId);
-        clearTimeout(loadingTimeout);
+        // Loading state cleared by STREAM_READY event
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
       } catch (error) {
         console.error("Error starting HeyGen in video mode:", error);
-        clearTimeout(loadingTimeout);
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
         setIsLoading(false);
         throw error;
       }
     } else {
       // Audio mode: HeyGen will start on first message (lazy loading)
-      clearTimeout(loadingTimeout);
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
       setIsLoading(false);
     }
     
