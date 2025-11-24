@@ -208,11 +208,18 @@ export default function CourseBuilderPage() {
   };
 
   const handleUpdateLesson = (lessonId: string, field: string, value: any) => {
-    const lesson = lessons.find((l) => l.id === lessonId);
-    if (lesson) {
-      const updatedData = { [field]: value };
-      updateLessonMutation.mutate({ id: lessonId, data: updatedData });
-    }
+    // Update local state immediately for responsive UI
+    setLessons((prevLessons) =>
+      prevLessons.map((l) =>
+        l.id === lessonId ? { ...l, [field]: value } : l
+      )
+    );
+  };
+
+  // Debounced save to backend
+  const saveLesson = (lessonId: string, field: string, value: any) => {
+    const updatedData = { [field]: value };
+    updateLessonMutation.mutate({ id: lessonId, data: updatedData });
   };
 
   const handleDeleteLesson = (lessonId: string) => {
@@ -410,6 +417,9 @@ export default function CourseBuilderPage() {
                                 onChange={(e) =>
                                   handleUpdateLesson(lesson.id, "title", e.target.value)
                                 }
+                                onBlur={(e) =>
+                                  saveLesson(lesson.id, "title", e.target.value)
+                                }
                                 className="bg-gray-900 border-gray-600 text-white font-satoshi"
                               />
                             </div>
@@ -421,6 +431,9 @@ export default function CourseBuilderPage() {
                                 value={lesson.script}
                                 onChange={(e) =>
                                   handleUpdateLesson(lesson.id, "script", e.target.value)
+                                }
+                                onBlur={(e) =>
+                                  saveLesson(lesson.id, "script", e.target.value)
                                 }
                                 placeholder="Enter the lesson script..."
                                 className="bg-gray-900 border-gray-600 text-white font-satoshi min-h-[120px]"
