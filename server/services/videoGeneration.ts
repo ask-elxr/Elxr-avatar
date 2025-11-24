@@ -197,13 +197,16 @@ export class VideoGenerationService {
 
         if (status === "completed" && video_url) {
           // Update generated video record
+          // Convert duration to integer (HeyGen returns decimal like 14.5)
+          const durationInt = duration ? Math.round(duration) : null;
+          
           await db
             .update(generatedVideos)
             .set({
               status: "completed",
               videoUrl: video_url,
               thumbnailUrl: thumbnail_url,
-              duration,
+              duration: durationInt,
               generatedAt: new Date(),
             })
             .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
