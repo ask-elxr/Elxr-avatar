@@ -240,7 +240,7 @@ export type KnowledgeBaseSource = typeof knowledgeBaseSources.$inferSelect;
 // Course creation system
 export const courses = pgTable("courses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id).notNull(),
+  userId: varchar("user_id").notNull(), // Removed foreign key to support anonymous users
   title: text("title").notNull(),
   description: text("description"),
   avatarId: varchar("avatar_id").references(() => avatarProfiles.id).notNull(),
