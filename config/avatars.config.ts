@@ -152,7 +152,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     heygenAvatarId: "Katya_Chair_Sitting_public",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
-    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
+    elevenlabsVoiceId: "0S1rhLzIdFVPtcYQqXG4",
     voiceRate: "1.0",
     pineconeNamespaces: ["june", "MIND", "GRIEF", "TRANSITIONS"],
     personalityPrompt: `🚨 YOUR NAME IS JUNE 🚨
