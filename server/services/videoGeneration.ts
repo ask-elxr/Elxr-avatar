@@ -77,8 +77,8 @@ export class VideoGenerationService {
         .from(avatarProfiles)
         .where(eq(avatarProfiles.id, course.avatarId));
 
-      if (!avatar || !avatar.heygenAvatarId) {
-        throw new Error("Avatar HeyGen ID not configured");
+      if (!avatar || !avatar.heygenVideoAvatarId) {
+        throw new Error("Avatar video generation ID not configured");
       }
 
       // Create video generation request
@@ -96,7 +96,7 @@ export class VideoGenerationService {
           {
             character: {
               type: "avatar",
-              avatar_id: avatar.heygenAvatarId,
+              avatar_id: avatar.heygenVideoAvatarId, // Use Instant Avatar ID for video generation
               avatar_style: "normal",
             },
             voice: voiceConfig,

@@ -134,6 +134,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   description: text("description").notNull(),
   profileImageUrl: text("profile_image_url"),
   heygenAvatarId: text("heygen_avatar_id"),
+  heygenVideoAvatarId: text("heygen_video_avatar_id"), // Separate ID for video generation (Instant Avatars)
   heygenVoiceId: text("heygen_voice_id"),
   heygenKnowledgeId: text("heygen_knowledge_id"),
   elevenlabsVoiceId: text("elevenlabs_voice_id"),

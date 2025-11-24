@@ -43,6 +43,7 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     // Exception: profileImageUrl falls back to default if null OR undefined
     profileImageUrl: (dbAvatar.profileImageUrl !== undefined && dbAvatar.profileImageUrl !== null) ? dbAvatar.profileImageUrl : defaultAvatar.profileImageUrl,
     heygenAvatarId: dbAvatar.heygenAvatarId !== undefined ? dbAvatar.heygenAvatarId : defaultAvatar.heygenAvatarId,
+    heygenVideoAvatarId: dbAvatar.heygenVideoAvatarId !== undefined ? dbAvatar.heygenVideoAvatarId : defaultAvatar.heygenVideoAvatarId,
     heygenVoiceId: dbAvatar.heygenVoiceId !== undefined ? dbAvatar.heygenVoiceId : defaultAvatar.heygenVoiceId,
     heygenKnowledgeId: dbAvatar.heygenKnowledgeId !== undefined ? dbAvatar.heygenKnowledgeId : defaultAvatar.heygenKnowledgeId,
     elevenlabsVoiceId: dbAvatar.elevenlabsVoiceId !== undefined ? dbAvatar.elevenlabsVoiceId : defaultAvatar.elevenlabsVoiceId,
@@ -130,17 +131,15 @@ export async function getAllAvatars(): Promise<AvatarProfile[]> {
 }
 
 /**
- * Get avatars that can generate videos (have valid HeyGen avatar IDs)
- * IMPORTANT: Only "_public" suffix avatars work for video generation
- * Custom avatars work for interactive streaming but NOT for video generation
+ * Get avatars that can generate videos (have valid video avatar IDs)
+ * Uses heygenVideoAvatarId field which contains Instant Avatar IDs for video generation
  */
 export async function getVideoCapableAvatars(): Promise<AvatarProfile[]> {
   const allAvatars = await getActiveAvatars();
-  // Only return avatars with HeyGen IDs that end with "_public"
-  // These are the named avatars accessible for VIDEO GENERATION with this HeyGen subscription
-  // Note: Custom avatars work for streaming but NOT for video generation
+  // Return avatars that have a valid video avatar ID
+  // This includes both Instant Avatars and public avatars
   return allAvatars.filter(avatar => 
-    avatar.heygenAvatarId && avatar.heygenAvatarId.endsWith('_public')
+    avatar.heygenVideoAvatarId && avatar.heygenVideoAvatarId.trim().length > 0
   );
 }
 
