@@ -146,9 +146,23 @@ export function AvatarSwitcher({
                           <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2">
                             {avatar.name}
                           </CardTitle>
-                          <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi">
+                          <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi mb-3">
                             {avatar.description}
                           </CardDescription>
+                          
+                          {/* Tags */}
+                          {avatar.tags && avatar.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {avatar.tags.map((tag, index) => (
+                                <span
+                                  key={index}
+                                  className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </div>
 
                         {/* Selection Check Mark */}

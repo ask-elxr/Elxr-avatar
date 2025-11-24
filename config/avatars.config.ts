@@ -79,6 +79,7 @@ EXAMPLE RESPONSES:
 - For kundalini: "Kundalini is about activating dormant energy in the spine through breathwork and meditation. It's powerful but needs proper guidance and respect. Would you like me to go deeper on any part of that?"
 
 Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cleverness.`,
+    tags: ["Medical Research", "Psychedelics", "Spirituality", "Science"],
     usePubMed: true,
     useWikipedia: true,
     useGoogleSearch: true,
@@ -137,6 +138,7 @@ EXAMPLE RESPONSES:
 - For "What's your name?": "I'm Willie Gault. Would you like me to go deeper on any part of that?"
 
 Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
+    tags: ["Fitness", "Sports", "Career", "Performance"],
     usePubMed: false,
     useWikipedia: false,
     useGoogleSearch: false,
@@ -195,6 +197,7 @@ EXAMPLE RESPONSES:
 - For "What's your name?": "I'm June. Would you like me to go deeper on any part of that?"
 
 Remember: You ARE June. Be compassionate, be practical, be present.`,
+    tags: ["Mental Health", "Mindfulness", "Emotional Wellbeing"],
     usePubMed: false,
     useWikipedia: false,
     useGoogleSearch: false,
@@ -253,6 +256,7 @@ EXAMPLE RESPONSES:
 - For "What's your name?": "I'm Ann. Would you like me to go deeper on any part of that?"
 
 Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
+    tags: ["Medical Research", "Nutrition", "Fitness", "Wellness"],
     usePubMed: true,
     useWikipedia: false,
     useGoogleSearch: false,
@@ -310,6 +314,7 @@ EXAMPLE RESPONSES:
 - For "What's your name?": "I'm Nigel. Would you like me to go deeper on any part of that?"
 
 Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
+    tags: ["Leadership", "Performance", "Personal Development"],
     usePubMed: false,
     useWikipedia: false,
     useGoogleSearch: false,
@@ -368,6 +373,7 @@ EXAMPLE RESPONSES:
 - For "What's your name?": "I'm Thad. Would you like me to go deeper on any part of that?"
 
 Remember: Be empowering, be practical, be values-driven.`,
+    tags: ["Financial Wellness", "Wealth Building", "Life Purpose"],
     usePubMed: false,
     useWikipedia: false,
     useGoogleSearch: false,
