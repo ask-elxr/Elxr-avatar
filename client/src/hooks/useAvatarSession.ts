@@ -552,6 +552,13 @@ export function useAvatarSession({
       console.log("Video element cleared on timeout");
     }
 
+    // Stop current audio if playing
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+      console.log("Audio playback stopped");
+    }
+
     setSessionActive(false);
     setIsLoading(true);
     setShowReconnect(true);
@@ -654,6 +661,13 @@ export function useAvatarSession({
       if (videoRef.current) {
         videoRef.current.srcObject = null;
         console.log("Video element cleared");
+      }
+
+      // Stop current audio if playing
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+        console.log("Audio playback stopped on pause");
       }
 
       setSessionActive(false);
