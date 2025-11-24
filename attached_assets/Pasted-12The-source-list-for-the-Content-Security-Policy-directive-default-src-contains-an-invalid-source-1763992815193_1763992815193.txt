@@ -1,0 +1,147 @@
+12The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+12The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+12The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+AvatarChat-Mark-REmix:1 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+AvatarChat-Mark-REmix:1 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+AvatarChat-Mark-REmix:1 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+1d175b218ac613db.js:2 [Coframe] Replit Enterprise watcher loaded
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/session_result/:1  Failed to load resource: the server responded with a status of 403 ()
+1d175b218ac613db.js:2 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+1d175b218ac613db.js:2 Download the Apollo DevTools for a better development experience: https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm
+3e434e8127b12542.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/replit-icons.woff
+1d175b218ac613db.js:2 [LaunchDarkly] LaunchDarkly client initialized
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ed1e693c96a75807.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'ambient-light-sensor'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'battery'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'layout-animations'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'legacy-image-formats'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'navigation-override'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'oversized-images'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'publickey-credentials'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'speaker-selection'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unoptimized-images'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unsized-media'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'pointer-lock'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+z @ ed1e693c96a75807.js:2
+recaptcha__en.js:362 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/s/roboto/v18/KFOmCnqEu92Fr1Mu4mxK.woff2
+recaptcha__en.js:362 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://fonts.gstatic.com/s/roboto/v18/KFOlCnqEu92Fr1MmEU9fBBc4.woff2
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar38%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer started for first time
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 ⚠️ Loading timeout reached - auto-clearing loading state
+(anonymous) @ injected.js:37
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ⏭️ Voice recognition already active
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 ⚠️ Loading timeout reached - auto-clearing loading state
+(anonymous) @ injected.js:37
+injected.js:37 Stream ready: MediaStream
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ⏭️ Voice recognition already active
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Stream ready: MediaStream
+injected.js:37 AbortError: The play() request was interrupted by a new load request. https://goo.gl/LdLk22
+(anonymous) @ injected.js:37
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: Object
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17639927814400.zoq739okpq
+injected.js:37 ⚠️ Loading timeout reached - auto-clearing loading state
+(anonymous) @ injected.js:37
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey! Good to connect with you.
+
+What's on your mind today? Whether it's financial resilience, money mindset, or building purposeful wealth, I'm here to help.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey! Good to connect with you.
+
+What's on your mind today? Whether it's financial resilience, money mindset, or building purposeful wealth, I'm here to help.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 210 characters
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 Stream ready: MediaStream {id: '249a5598-6983-485d-8df6-5a8c335819b2', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Could not resume voice recognition: InvalidStateError: Failed to execute 'start' on 'SpeechRecognition': recognition has already started.
+    at useAvatarSession.ts:349:38

@@ -74,6 +74,7 @@ export function useAvatarSession({
   const recognitionRef = useRef<any>(null); // Web Speech API for voice input
   const lastTranscriptRef = useRef<string>(""); // For deduplication
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
+  const recognitionRunningRef = useRef(false); // Track if recognition is currently running
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
@@ -197,15 +198,18 @@ export function useAvatarSession({
       };
       
       recognition.onend = () => {
+        recognitionRunningRef.current = false;
         // Auto-restart unless intentionally stopped or avatar is speaking
         // Use ref instead of state to get current value in closure
         if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
           try {
             setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
             recognition.start();
+            recognitionRunningRef.current = true;
             console.log("🔄 Voice recognition auto-restarted");
           } catch (e) {
             // Already running or permission denied
+            recognitionRunningRef.current = false;
             setMicrophoneStatus('stopped');
           }
         } else {
@@ -218,6 +222,7 @@ export function useAvatarSession({
       
       setMicrophoneStatus('listening'); // Set immediately before first start
       recognition.start();
+      recognitionRunningRef.current = true;
       console.log("✅ Web Speech API started for voice input");
     } catch (error) {
       console.error("❌ Error initializing Web Speech API:", error);
@@ -324,12 +329,14 @@ export function useAvatarSession({
         clearIdleTimeout();
         
         // 🎤 Pause voice recognition while avatar is speaking to prevent feedback loop
-        if (recognitionRef.current) {
+        if (recognitionRef.current && recognitionRunningRef.current) {
           try {
             recognitionRef.current.stop();
+            recognitionRunningRef.current = false;
             console.log("🔇 Voice recognition paused (avatar speaking)");
           } catch (e) {
             // Ignore errors if already stopped
+            recognitionRunningRef.current = false;
           }
         }
       });
@@ -343,14 +350,15 @@ export function useAvatarSession({
         // 🎤 Resume voice recognition after a brief delay to prevent echo
         // Delay allows audio to fully stop before listening again
         setTimeout(() => {
-          if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
+          if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current && !recognitionRunningRef.current) {
             try {
               setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
               recognitionRef.current.start();
+              recognitionRunningRef.current = true;
               console.log("🔊 Voice recognition resumed (avatar finished)");
             } catch (e) {
-              // Ignore errors if already running
-              console.warn("Could not resume voice recognition:", e);
+              // Ignore errors if already running - this can happen if onend auto-restart already started it
+              recognitionRunningRef.current = false;
               setMicrophoneStatus('stopped');
             }
           }
@@ -522,6 +530,7 @@ export function useAvatarSession({
     
     // Stop speech recognition - set flag FIRST to prevent auto-restart  
     recognitionIntentionalStopRef.current = true;
+    recognitionRunningRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -595,6 +604,7 @@ export function useAvatarSession({
     
     // Stop speech recognition - set flag FIRST to prevent auto-restart
     recognitionIntentionalStopRef.current = true;
+    recognitionRunningRef.current = false;
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
