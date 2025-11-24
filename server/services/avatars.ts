@@ -131,14 +131,14 @@ export async function getAllAvatars(): Promise<AvatarProfile[]> {
 
 /**
  * Get avatars that can generate videos (have valid HeyGen avatar IDs)
- * Only avatars with "_public" suffix work with the current HeyGen account
+ * All avatars with valid HeyGen IDs work for video generation (both custom and public)
  */
 export async function getVideoCapableAvatars(): Promise<AvatarProfile[]> {
   const allAvatars = await getActiveAvatars();
-  // Only return avatars with HeyGen IDs that end with "_public"
-  // These are the named avatars accessible with this HeyGen subscription
+  // Return all avatars with valid HeyGen avatar IDs
+  // Both custom avatars and public avatars work for video generation
   return allAvatars.filter(avatar => 
-    avatar.heygenAvatarId && avatar.heygenAvatarId.endsWith('_public')
+    avatar.heygenAvatarId && avatar.heygenAvatarId.trim().length > 0
   );
 }
 
