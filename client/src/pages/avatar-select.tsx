@@ -107,8 +107,8 @@ export default function AvatarSelect() {
                   </div>
 
                   {/* Content */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                  <div className="relative">
+                    <div>
                       <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2">
                         {avatar.name}
                       </CardTitle>
@@ -133,10 +133,8 @@ export default function AvatarSelect() {
 
                     {/* Selection Check Mark */}
                     {selectedAvatarId === avatar.id && (
-                      <div className="flex-shrink-0 ml-3">
-                        <div className="w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
+                      <div className="absolute top-0 right-0 w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center">
+                        <Check className="w-4 h-4 text-white" />
                       </div>
                     )}
                   </div>
