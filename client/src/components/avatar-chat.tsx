@@ -264,7 +264,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {sessionActive && (
           <>
             {/* Top Controls Bar */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent z-10">
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent z-30">
               <div className="flex items-center gap-2">
                 <Button
                   onClick={() => togglePause()}
@@ -325,14 +325,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
             {/* Microphone Status */}
             {microphoneStatus === 'listening' && (
-              <div className="absolute top-20 right-4 flex items-center gap-2 bg-green-500/20 border border-green-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-10">
+              <div className="absolute top-20 right-4 flex items-center gap-2 bg-green-500/20 border border-green-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
                 <Mic className="w-4 h-4 text-green-400 animate-pulse" />
                 <span className="text-sm text-green-400 font-medium">Listening</span>
               </div>
             )}
             
             {microphoneStatus === 'permission-denied' && (
-              <div className="absolute top-20 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-10">
+              <div className="absolute top-20 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
                 <MicOff className="w-4 h-4 text-red-400" />
                 <span className="text-sm text-red-400 font-medium">Mic blocked</span>
               </div>

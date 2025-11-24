@@ -397,6 +397,14 @@ export function useAvatarSession({
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
+    
+    // ✅ Safety timeout: Auto-clear loading state after 10 seconds
+    const loadingTimeout = setTimeout(() => {
+      console.warn("⚠️ Loading timeout reached - auto-clearing loading state");
+      setIsLoading(false);
+      setShowReconnect(true);
+    }, 10000);
+    
     const { audioOnly = false, avatarId } = options || {};
     audioOnlyRef.current = audioOnly;
     
@@ -446,6 +454,7 @@ export function useAvatarSession({
       sessionIdRef.current = data.sessionId;
     } catch (error: any) {
       console.error("Error registering session:", error);
+      clearTimeout(loadingTimeout);
       setIsLoading(false);
       throw error;
     }
@@ -479,13 +488,16 @@ export function useAvatarSession({
     if (!audioOnly) {
       try {
         await startHeyGenSession(activeAvatarId);
+        clearTimeout(loadingTimeout);
       } catch (error) {
         console.error("Error starting HeyGen in video mode:", error);
+        clearTimeout(loadingTimeout);
         setIsLoading(false);
         throw error;
       }
     } else {
       // Audio mode: HeyGen will start on first message (lazy loading)
+      clearTimeout(loadingTimeout);
       setIsLoading(false);
     }
     
