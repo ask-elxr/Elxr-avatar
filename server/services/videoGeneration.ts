@@ -187,8 +187,9 @@ export class VideoGenerationService {
       try {
         attempts++;
 
+        // HeyGen status endpoint is v1, not v2
         const response = await axios.get<HeyGenVideoStatusResponse>(
-          `${HEYGEN_BASE_URL}/video/${heygenVideoId}`,
+          `https://api.heygen.com/v1/video_status.get?video_id=${heygenVideoId}`,
           { headers: this.headers }
         );
 
