@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, Video } from "lucide-react";
 import { useLocation } from "wouter";
 import type { AvatarProfile } from "@shared/schema";
 
@@ -61,12 +61,23 @@ export default function AvatarSelect() {
     <div className="min-h-screen bg-black flex items-center justify-center p-3 md:p-4 lg:p-6">
       <div className="max-w-6xl w-full">
         <div className="text-center mb-8 md:mb-10 lg:mb-12">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4 font-satoshi">
-            Choose Your AI Guide
-          </h1>
-          <p className="text-gray-400 text-sm md:text-base lg:text-lg font-satoshi">
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white font-satoshi">
+              Choose Your AI Guide
+            </h1>
+          </div>
+          <p className="text-gray-400 text-sm md:text-base lg:text-lg font-satoshi mb-4">
             Select an expert to help you on your journey
           </p>
+          <Button
+            onClick={() => setLocation('/courses')}
+            variant="outline"
+            className="bg-purple-600 hover:bg-purple-700 text-white border-purple-600 font-satoshi"
+            data-testid="button-create-course"
+          >
+            <Video className="w-4 h-4 mr-2" />
+            Create Video Course
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6 mb-6 md:mb-8">
