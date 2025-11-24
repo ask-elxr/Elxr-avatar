@@ -173,8 +173,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
-  const handleAudioOnlyToggle = (checked: boolean) => {
+  const handleAudioOnlyToggle = async (checked: boolean) => {
     setAudioOnly(checked);
+    
+    // If session is active, restart with new mode
+    if (sessionActive) {
+      try {
+        await endSession();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await startSession({ audioOnly: checked, avatarId: selectedAvatarId });
+      } catch (error) {
+        console.error("Error switching audio mode:", error);
+      }
+    }
+    
     toast({
       title: checked ? "Audio Mode Enabled" : "Video Mode Enabled",
       description: checked
