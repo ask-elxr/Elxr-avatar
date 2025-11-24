@@ -101,13 +101,13 @@ export default function Credits() {
 
   const getStatusBadge = (status: string) => {
     const badges = {
-      ok: { bg: 'bg-green-950/30', text: 'text-green-400', border: 'border-green-600/30', label: '✓ Healthy' },
-      warning: { bg: 'bg-yellow-950/30', text: 'text-yellow-400', border: 'border-yellow-600/30', label: '⚠ Warning' },
-      critical: { bg: 'bg-red-950/30', text: 'text-red-400', border: 'border-red-600/30', label: '✖ Critical' },
+      ok: { bg: 'bg-green-100 dark:bg-green-900/20', text: 'text-green-700 dark:text-green-300', border: 'border-green-200 dark:border-green-800', label: 'Healthy' },
+      warning: { bg: 'bg-yellow-100 dark:bg-yellow-900/20', text: 'text-yellow-700 dark:text-yellow-300', border: 'border-yellow-200 dark:border-yellow-800', label: 'Warning' },
+      critical: { bg: 'bg-red-100 dark:bg-red-900/20', text: 'text-red-700 dark:text-red-300', border: 'border-red-200 dark:border-red-800', label: 'Critical' },
     };
     const badge = badges[status as keyof typeof badges] || badges.ok;
     return (
-      <div className={`px-3 py-1 rounded-full text-sm font-medium border ${badge.bg} ${badge.text} ${badge.border}`}>
+      <div className={`px-3 py-1 rounded-md text-xs font-medium border ${badge.bg} ${badge.text} ${badge.border}`}>
         {badge.label}
       </div>
     );
@@ -115,23 +115,23 @@ export default function Credits() {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Credit Monitoring</h1>
-          <p className="text-muted-foreground">
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold mb-2 text-foreground">Credit Monitoring</h1>
+          <p className="text-sm text-muted-foreground">
             Track and monitor API credit usage across all services
           </p>
         </div>
 
         {/* Overview Cards */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {/* HeyGen */}
-          <Card className="border-blue-600/30">
-            <CardHeader>
+          <Card>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-blue-400" />
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <DollarSign className="w-4 h-4 text-muted-foreground" />
                   HeyGen
                 </CardTitle>
                 {heygenStats && getStatusBadge(heygenStats.status)}
@@ -140,22 +140,22 @@ export default function Credits() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Used</p>
-                  <p className="text-2xl font-bold text-blue-400">{heygenStats?.totalUsed.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Used</p>
+                  <p className="text-xl font-semibold text-foreground">{heygenStats?.totalUsed.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Remaining</p>
-                  <p className="text-2xl font-bold text-green-400">{heygenStats?.remaining.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Remaining</p>
+                  <p className="text-xl font-semibold text-foreground">{heygenStats?.remaining.toLocaleString()}</p>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
-                  <span>{heygenStats ? ((heygenStats.totalUsed / heygenStats.limit) * 100).toFixed(1) : 0}%</span>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Usage</span>
+                  <span className="font-medium">{heygenStats ? ((heygenStats.totalUsed / heygenStats.limit) * 100).toFixed(1) : 0}%</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-1.5">
                   <div 
-                    className="h-2 rounded-full bg-blue-500 transition-all"
+                    className="h-1.5 rounded-full bg-primary transition-all"
                     style={{ width: `${heygenStats ? Math.min((heygenStats.totalUsed / heygenStats.limit) * 100, 100) : 0}%` }}
                   />
                 </div>
@@ -164,11 +164,11 @@ export default function Credits() {
           </Card>
 
           {/* Claude */}
-          <Card className="border-orange-600/30">
-            <CardHeader>
+          <Card>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-orange-400" />
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-muted-foreground" />
                   Claude AI
                 </CardTitle>
                 {getStatusBadge(claudeStats.status)}
@@ -177,22 +177,22 @@ export default function Credits() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Used</p>
-                  <p className="text-2xl font-bold text-orange-400">{claudeStats.totalUsed.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Used</p>
+                  <p className="text-xl font-semibold text-foreground">{claudeStats.totalUsed.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Remaining</p>
-                  <p className="text-2xl font-bold text-green-400">{claudeStats.remaining.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Remaining</p>
+                  <p className="text-xl font-semibold text-foreground">{claudeStats.remaining.toLocaleString()}</p>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
-                  <span>{((claudeStats.totalUsed / claudeStats.limit) * 100).toFixed(1)}%</span>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Usage</span>
+                  <span className="font-medium">{((claudeStats.totalUsed / claudeStats.limit) * 100).toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-1.5">
                   <div 
-                    className="h-2 rounded-full bg-orange-500 transition-all"
+                    className="h-1.5 rounded-full bg-primary transition-all"
                     style={{ width: `${Math.min((claudeStats.totalUsed / claudeStats.limit) * 100, 100)}%` }}
                   />
                 </div>
@@ -201,11 +201,11 @@ export default function Credits() {
           </Card>
 
           {/* ElevenLabs */}
-          <Card className="border-pink-600/30">
-            <CardHeader>
+          <Card>
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-pink-400" />
+                <CardTitle className="text-base font-semibold flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-muted-foreground" />
                   ElevenLabs
                 </CardTitle>
                 {getStatusBadge(elevenlabsStats.status)}
@@ -214,22 +214,22 @@ export default function Credits() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Used</p>
-                  <p className="text-2xl font-bold text-pink-400">{elevenlabsStats.totalUsed.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Used</p>
+                  <p className="text-xl font-semibold text-foreground">{elevenlabsStats.totalUsed.toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Remaining</p>
-                  <p className="text-2xl font-bold text-green-400">{elevenlabsStats.remaining.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Remaining</p>
+                  <p className="text-xl font-semibold text-foreground">{elevenlabsStats.remaining.toLocaleString()}</p>
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>Progress</span>
-                  <span>{((elevenlabsStats.totalUsed / elevenlabsStats.limit) * 100).toFixed(1)}%</span>
+                <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                  <span>Usage</span>
+                  <span className="font-medium">{((elevenlabsStats.totalUsed / elevenlabsStats.limit) * 100).toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-800 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-1.5">
                   <div 
-                    className="h-2 rounded-full bg-pink-500 transition-all"
+                    className="h-1.5 rounded-full bg-primary transition-all"
                     style={{ width: `${Math.min((elevenlabsStats.totalUsed / elevenlabsStats.limit) * 100, 100)}%` }}
                   />
                 </div>
@@ -240,9 +240,9 @@ export default function Credits() {
 
         {/* Service Comparison Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle>Service Comparison</CardTitle>
-            <CardDescription>Compare credit usage across all services</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Service Comparison</CardTitle>
+            <CardDescription className="text-sm">Compare credit usage across all services</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -267,11 +267,11 @@ export default function Credits() {
         </Card>
 
         {/* Usage Distribution */}
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-3">
           {/* HeyGen Pie Chart */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">HeyGen Distribution</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">HeyGen Distribution</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -312,8 +312,8 @@ export default function Credits() {
 
           {/* Claude Pie Chart */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Claude Distribution</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Claude Distribution</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -354,8 +354,8 @@ export default function Credits() {
 
           {/* ElevenLabs Pie Chart */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">ElevenLabs Distribution</CardTitle>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">ElevenLabs Distribution</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -397,9 +397,9 @@ export default function Credits() {
 
         {/* Usage Trends */}
         <Card>
-          <CardHeader>
-            <CardTitle>Usage Trends</CardTitle>
-            <CardDescription>Recent credit usage across all services</CardDescription>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Usage Trends</CardTitle>
+            <CardDescription className="text-sm">Recent credit usage across all services</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
@@ -426,16 +426,16 @@ export default function Credits() {
 
         {/* Alert Information */}
         {heygenStats && heygenStats.status !== 'ok' && (
-          <Card className="border-yellow-600/50 bg-yellow-950/10">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2 text-yellow-400">
-                <AlertCircle className="w-5 h-5" />
+          <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-950/20">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
+                <AlertCircle className="w-4 h-4" />
                 Credit Alert
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">
-                HeyGen credits are running low. Current status: <strong>{heygenStats.status}</strong>. 
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+                HeyGen credits are running low. Current status: <strong className="font-semibold">{heygenStats.status}</strong>. 
                 Only {heygenStats.remaining.toLocaleString()} credits remaining out of {heygenStats.limit.toLocaleString()}.
               </p>
             </CardContent>
