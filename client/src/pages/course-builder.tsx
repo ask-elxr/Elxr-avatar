@@ -57,7 +57,8 @@ export default function CourseBuilderPage() {
   // Create course mutation
   const createCourseMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("/api/courses", "POST", data);
+      const response = await apiRequest("/api/courses", "POST", data);
+      return response.json();
     },
     onSuccess: (newCourse: Course) => {
       toast({
@@ -79,7 +80,8 @@ export default function CourseBuilderPage() {
   // Update course mutation
   const updateCourseMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/courses/${courseId}`, "PUT", data);
+      const response = await apiRequest(`/api/courses/${courseId}`, "PUT", data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -101,7 +103,8 @@ export default function CourseBuilderPage() {
   // Add lesson mutation
   const addLessonMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest(`/api/courses/${courseId}/lessons`, "POST", data);
+      const response = await apiRequest(`/api/courses/${courseId}/lessons`, "POST", data);
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -122,7 +125,8 @@ export default function CourseBuilderPage() {
   // Update lesson mutation
   const updateLessonMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest(`/api/courses/lessons/${id}`, "PUT", data);
+      const response = await apiRequest(`/api/courses/lessons/${id}`, "PUT", data);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
@@ -132,7 +136,8 @@ export default function CourseBuilderPage() {
   // Delete lesson mutation
   const deleteLessonMutation = useMutation({
     mutationFn: async (lessonId: string) => {
-      return apiRequest(`/api/courses/lessons/${lessonId}`, "DELETE", {});
+      const response = await apiRequest(`/api/courses/lessons/${lessonId}`, "DELETE", {});
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -219,7 +224,8 @@ export default function CourseBuilderPage() {
   // Generate video mutation
   const generateVideoMutation = useMutation({
     mutationFn: async (lessonId: string) => {
-      return apiRequest(`/api/courses/lessons/${lessonId}/generate-video`, "POST", {});
+      const response = await apiRequest(`/api/courses/lessons/${lessonId}/generate-video`, "POST", {});
+      return response.json();
     },
     onSuccess: () => {
       toast({
