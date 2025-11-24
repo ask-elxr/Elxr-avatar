@@ -3,14 +3,15 @@ import { AvatarManager } from "@/components/AvatarManager";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, DollarSign, TrendingUp } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, DollarSign, TrendingUp, CreditCard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import Credits from "@/pages/Credits";
 
-type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'settings';
+type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'credits' | 'settings';
 
 export default function Admin() {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
@@ -35,7 +36,16 @@ export default function Admin() {
     enabled: isAuthenticated,
   });
 
-  const { data: creditStats } = useQuery({
+  const { data: creditStats } = useQuery<{
+    limit: number;
+    totalUsed: number;
+    remaining: number;
+    last24h: number;
+    last7d: number;
+    warningThreshold: number;
+    criticalThreshold: number;
+    status: 'ok' | 'warning' | 'critical';
+  }>({
     queryKey: ['/api/heygen/credits'],
     enabled: isAuthenticated,
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -138,6 +148,16 @@ export default function Admin() {
           </Button>
           
           <Button
+            variant={currentView === 'credits' ? 'default' : 'ghost'}
+            className="w-full justify-start"
+            onClick={() => setCurrentView('credits')}
+            data-testid="nav-credits"
+          >
+            <CreditCard className="w-4 h-4 mr-3" />
+            Credits
+          </Button>
+          
+          <Button
             variant={currentView === 'settings' ? 'default' : 'ghost'}
             className="w-full justify-start"
             onClick={() => setCurrentView('settings')}
@@ -186,6 +206,7 @@ export default function Admin() {
               {currentView === 'avatars' && 'Manage AI avatar personalities and configurations'}
               {currentView === 'knowledge' && 'Upload and manage knowledge base documents'}
               {currentView === 'courses' && 'Manage video courses and generated content'}
+              {currentView === 'credits' && 'Monitor API credit usage across all services'}
               {currentView === 'settings' && 'Configure system settings and preferences'}
             </p>
           </div>
@@ -591,6 +612,9 @@ export default function Admin() {
               }}
             />
           )}
+
+          {/* Credits View */}
+          {currentView === 'credits' && <Credits />}
 
           {/* Settings View */}
           {currentView === 'settings' && (
