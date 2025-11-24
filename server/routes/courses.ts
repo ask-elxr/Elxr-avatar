@@ -42,7 +42,39 @@ coursesRouter.get("/", async (req: Request, res: Response) => {
       .where(eq(courses.userId, userId))
       .orderBy(desc(courses.createdAt));
 
-    res.json(userCourses);
+    // Fetch lessons and videos for each course
+    const coursesWithLessons = await Promise.all(
+      userCourses.map(async (course) => {
+        // Get all lessons for this course
+        const courseLessons = await db
+          .select()
+          .from(lessons)
+          .where(eq(lessons.courseId, course.id))
+          .orderBy(lessons.order);
+
+        // Get video generation status for each lesson
+        const lessonsWithVideos = await Promise.all(
+          courseLessons.map(async (lesson) => {
+            const [video] = await db
+              .select()
+              .from(generatedVideos)
+              .where(eq(generatedVideos.lessonId, lesson.id));
+
+            return {
+              ...lesson,
+              video: video || null,
+            };
+          })
+        );
+
+        return {
+          ...course,
+          lessons: lessonsWithVideos,
+        };
+      })
+    );
+
+    res.json(coursesWithLessons);
   } catch (error) {
     console.error("Error fetching courses:", error);
     res.status(500).json({ error: "Failed to fetch courses" });
