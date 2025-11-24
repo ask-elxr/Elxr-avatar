@@ -113,14 +113,18 @@ export class VideoGenerationService {
       };
 
       // Call HeyGen API to generate video
+      console.log("📹 Sending request to HeyGen:", JSON.stringify(videoRequest, null, 2));
+      
       const response = await axios.post<HeyGenVideoResponse>(
         `${HEYGEN_BASE_URL}/video/generate`,
         videoRequest,
         { headers: this.headers }
       );
 
+      console.log("✅ HeyGen response:", JSON.stringify(response.data, null, 2));
+
       if (response.data.error) {
-        throw new Error(response.data.error);
+        throw new Error(JSON.stringify(response.data.error));
       }
 
       const videoId = response.data.data.video_id;
@@ -149,20 +153,26 @@ export class VideoGenerationService {
         videoId,
       };
     } catch (error: any) {
-      console.error("Error generating video:", error);
+      console.error("❌ Error generating video:", error.message);
+      
+      // Log the detailed error response from HeyGen
+      if (error.response?.data) {
+        console.error("🔴 HeyGen API error details:", JSON.stringify(error.response.data, null, 2));
+      }
 
       // Update lesson status to failed
+      const errorMsg = error.response?.data?.error || error.message;
       await db
         .update(lessons)
         .set({
           status: "failed",
-          errorMessage: error.message,
+          errorMessage: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg),
         })
         .where(eq(lessons.id, lessonId));
 
       return {
         success: false,
-        error: error.message,
+        error: typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg),
       };
     }
   }
