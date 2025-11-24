@@ -40,9 +40,12 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 
 #### Video Course System
 - **Workflow**: Users create courses, add lessons with scripts, and generate videos via HeyGen API integration.
-- **Available instructors**: Ann and June (public avatars with production video access).
-- **Video Generation Service (`server/services/videoGeneration.ts`)**: Manages HeyGen API calls for video creation, including async polling for completion status.
-- **Note**: Instant Avatars (Mark, Willie, Nigel, Thad) only support test videos with watermarks, not production videos on current HeyGen plan.
+- **All 6 avatars available**: Mark, Willie, Nigel, Thad, Ann, and June can create video courses.
+- **Video Modes**:
+  - **Test Videos (watermarked)**: Mark, Willie, Nigel, Thad generate test videos with HeyGen watermark
+  - **Production Videos**: Ann and June generate watermark-free production videos
+- **Auto-detection**: System automatically uses test mode for Instant Avatars and production mode for public avatars
+- **Video Generation Service (`server/services/videoGeneration.ts`)**: Manages HeyGen API calls for video creation, including async polling for completion status and automatic test/production mode selection.
 
 #### Technical Implementations
 - **AI Integration**: Uses Claude Sonnet 4.5 as the primary LLM, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and persistent conversation memory.

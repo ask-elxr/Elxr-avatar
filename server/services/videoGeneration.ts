@@ -81,6 +81,12 @@ export class VideoGenerationService {
         throw new Error("Avatar video generation ID not configured");
       }
 
+      // Determine if this should be a test video (watermarked)
+      // Instant Avatars (custom avatars) require test: true on current HeyGen plan
+      // Public avatars (Ann, June) support production videos (test: false)
+      const isInstantAvatar = !avatar.heygenVideoAvatarId.includes("_public");
+      const useTestMode = isInstantAvatar; // Use test mode for Instant Avatars
+
       // Create video generation request
       // Use configured voice or default to Sara - Cheerful (English female voice)
       const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
@@ -106,7 +112,7 @@ export class VideoGenerationService {
           width: 1920,
           height: 1080,
         },
-        test: false, // Set to true for watermarked test videos
+        test: useTestMode, // Use test mode for Instant Avatars, production for public avatars
         caption: false,
         title: lesson.title,
       };
@@ -135,6 +141,7 @@ export class VideoGenerationService {
           lessonId,
           heygenVideoId: videoId,
           status: "generating",
+          testVideo: useTestMode, // Track whether this is a test video
         })
         .returning();
 

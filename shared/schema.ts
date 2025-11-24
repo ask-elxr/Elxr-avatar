@@ -274,6 +274,7 @@ export const generatedVideos = pgTable("generated_videos", {
   thumbnailUrl: text("thumbnail_url"),
   duration: integer("duration"), // Actual video duration in seconds
   status: varchar("status").notNull().default("queued"), // queued, generating, completed, failed
+  testVideo: boolean("test_video").default(false), // Whether this is a watermarked test video
   errorMessage: text("error_message"),
   metadata: jsonb("metadata"), // Additional video metadata from HeyGen
   createdAt: timestamp("created_at").defaultNow().notNull(),
