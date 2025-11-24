@@ -3,7 +3,7 @@ import { AvatarManager } from "@/components/AvatarManager";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, DollarSign, TrendingUp, CreditCard } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
@@ -34,21 +34,6 @@ export default function Admin() {
   const { data: coursesData } = useQuery({
     queryKey: ['/api/courses'],
     enabled: isAuthenticated,
-  });
-
-  const { data: creditStats } = useQuery<{
-    limit: number;
-    totalUsed: number;
-    remaining: number;
-    last24h: number;
-    last7d: number;
-    warningThreshold: number;
-    criticalThreshold: number;
-    status: 'ok' | 'warning' | 'critical';
-  }>({
-    queryKey: ['/api/heygen/credits'],
-    enabled: isAuthenticated,
-    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   useEffect(() => {
@@ -214,101 +199,6 @@ export default function Admin() {
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <>
-              {/* HeyGen Credits Card - Full Width */}
-              {creditStats && (
-                <Card className="mb-6">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <DollarSign className="w-5 h-5" />
-                          HeyGen Credits
-                        </CardTitle>
-                        <CardDescription>Monitor your HeyGen API credit usage</CardDescription>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        creditStats.status === 'ok' 
-                          ? 'bg-green-950/30 text-green-400 border border-green-600/30'
-                          : creditStats.status === 'warning'
-                          ? 'bg-yellow-950/30 text-yellow-400 border border-yellow-600/30'
-                          : 'bg-red-950/30 text-red-400 border border-red-600/30'
-                      }`}>
-                        {creditStats.status === 'ok' ? '✓ Healthy' : creditStats.status === 'warning' ? '⚠ Warning' : '✖ Critical'}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid gap-6 md:grid-cols-4">
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Total Limit</p>
-                        <p className="text-2xl font-bold">{creditStats.limit?.toLocaleString()}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Used</p>
-                        <p className="text-2xl font-bold text-primary">{creditStats.totalUsed?.toLocaleString()}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Remaining</p>
-                        <p className="text-2xl font-bold text-green-500">{creditStats.remaining?.toLocaleString()}</p>
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm text-muted-foreground">Usage %</p>
-                        <p className="text-2xl font-bold">
-                          {((creditStats.totalUsed / creditStats.limit) * 100).toFixed(1)}%
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                        <span>Usage Progress</span>
-                        <span>{creditStats.totalUsed?.toLocaleString()} / {creditStats.limit?.toLocaleString()}</span>
-                      </div>
-                      <div className="w-full bg-gray-800 rounded-full h-2">
-                        <div 
-                          className={`h-2 rounded-full transition-all ${
-                            creditStats.status === 'ok' 
-                              ? 'bg-green-500'
-                              : creditStats.status === 'warning'
-                              ? 'bg-yellow-500'
-                              : 'bg-red-500'
-                          }`}
-                          style={{ width: `${Math.min((creditStats.totalUsed / creditStats.limit) * 100, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-3 mt-6 pt-6 border-t">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-blue-950/30 border border-blue-600/30 flex items-center justify-center">
-                          <TrendingUp className="w-5 h-5 text-blue-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Last 24h</p>
-                          <p className="text-lg font-semibold">{creditStats.last24h?.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-purple-950/30 border border-purple-600/30 flex items-center justify-center">
-                          <TrendingUp className="w-5 h-5 text-purple-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Last 7 days</p>
-                          <p className="text-lg font-semibold">{creditStats.last7d?.toLocaleString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-orange-950/30 border border-orange-600/30 flex items-center justify-center">
-                          <DollarSign className="w-5 h-5 text-orange-400" />
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Critical Threshold</p>
-                          <p className="text-lg font-semibold">{creditStats.criticalThreshold}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
               <div className="grid gap-6 md:grid-cols-3 mb-8">
                 {/* Avatars Card */}
                 <Card>
