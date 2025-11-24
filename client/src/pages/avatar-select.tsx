@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Video } from "lucide-react";
+import { Check } from "lucide-react";
 import { useLocation } from "wouter";
 import type { AvatarProfile } from "@shared/schema";
 
@@ -66,18 +66,9 @@ export default function AvatarSelect() {
               Choose Your AI Guide
             </h1>
           </div>
-          <p className="text-gray-400 text-sm md:text-base lg:text-lg font-satoshi mb-4">
+          <p className="text-gray-400 text-sm md:text-base lg:text-lg font-satoshi">
             Select an expert to help you on your journey
           </p>
-          <Button
-            onClick={() => setLocation('/courses')}
-            variant="outline"
-            className="bg-purple-600 hover:bg-purple-700 text-white border-purple-600 font-satoshi"
-            data-testid="button-create-course"
-          >
-            <Video className="w-4 h-4 mr-2" />
-            Create Video Course
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6 mb-6 md:mb-8">
