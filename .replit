@@ -72,3 +72,8 @@ externalPort = 4200
 [[ports]]
 localPort = 46653
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+HEYGEN_CREDIT_LIMIT = "100000"
