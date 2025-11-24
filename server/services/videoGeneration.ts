@@ -82,15 +82,14 @@ export class VideoGenerationService {
       }
 
       // Create video generation request
+      // Use configured voice or default to Sara - Cheerful (English female voice)
+      const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
+      
       const voiceConfig: any = {
         type: "text",
         input_text: lesson.script.slice(0, 5000), // Max 5000 chars
+        voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
       };
-
-      // Only add voice_id if it's configured (HeyGen will use avatar's default voice otherwise)
-      if (avatar.heygenVoiceId) {
-        voiceConfig.voice_id = avatar.heygenVoiceId;
-      }
 
       const videoRequest = {
         video_inputs: [
