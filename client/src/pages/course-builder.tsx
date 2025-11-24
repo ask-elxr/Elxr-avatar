@@ -42,6 +42,13 @@ export default function CourseBuilderPage() {
   const { data: course, isLoading: loadingCourse } = useQuery<CourseWithLessons>({
     queryKey: ["/api/courses", courseId],
     enabled: isEditing,
+    refetchInterval: (data) => {
+      // Poll every 5 seconds if any lesson is generating
+      const hasGenerating = data?.lessons?.some(
+        (l) => l.status === "generating" || l.video?.status === "generating"
+      );
+      return hasGenerating ? 5000 : false;
+    },
   });
 
   // Populate form when course data loads
@@ -263,6 +270,9 @@ export default function CourseBuilderPage() {
     generateVideoMutation.mutate(lessonId);
   };
 
+  // Track generation start times for progress calculation
+  const [generationStartTimes, setGenerationStartTimes] = useState<Record<string, number>>({});
+
   const getVideoStatusDisplay = (lesson: LessonWithVideo) => {
     const videoStatus = lesson.video?.status || lesson.status;
     
@@ -271,9 +281,26 @@ export default function CourseBuilderPage() {
         return { text: "Video Ready", color: "text-green-400", icon: Play };
       case "generating":
       case "processing":
-        return { text: "Generating...", color: "text-yellow-400", icon: Loader2 };
+        // Track start time for this lesson
+        if (!generationStartTimes[lesson.id]) {
+          setGenerationStartTimes(prev => ({ ...prev, [lesson.id]: Date.now() }));
+        }
+        
+        const startTime = generationStartTimes[lesson.id] || Date.now();
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(elapsedSeconds / 60);
+        const seconds = elapsedSeconds % 60;
+        const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        
+        return { 
+          text: `Generating... ${timeStr}`, 
+          color: "text-yellow-400", 
+          icon: Loader2,
+          subtitle: "Avg: 2-5 min | Checking every 5 sec"
+        };
       case "failed":
-        return { text: "Failed", color: "text-red-400", icon: null };
+        const errorMsg = lesson.errorMessage || "Unknown error";
+        return { text: "Failed", color: "text-red-400", icon: null, subtitle: errorMsg };
       default:
         return { text: "No Video", color: "text-gray-400", icon: null };
     }
@@ -442,24 +469,34 @@ export default function CourseBuilderPage() {
 
                             {/* Video Generation Status and Button */}
                             <div className="flex items-center justify-between pt-2 border-t border-gray-700">
-                              <div className="flex items-center gap-2">
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  {(() => {
+                                    const status = getVideoStatusDisplay(lesson);
+                                    const Icon = status.icon;
+                                    return (
+                                      <>
+                                        {Icon && (
+                                          <Icon
+                                            className={`w-4 h-4 ${status.color} ${
+                                              status.text.startsWith("Generating") ? "animate-spin" : ""
+                                            }`}
+                                          />
+                                        )}
+                                        <span className={`text-sm font-satoshi ${status.color}`}>
+                                          {status.text}
+                                        </span>
+                                      </>
+                                    );
+                                  })()}
+                                </div>
                                 {(() => {
                                   const status = getVideoStatusDisplay(lesson);
-                                  const Icon = status.icon;
-                                  return (
-                                    <>
-                                      {Icon && (
-                                        <Icon
-                                          className={`w-4 h-4 ${status.color} ${
-                                            status.text === "Generating..." ? "animate-spin" : ""
-                                          }`}
-                                        />
-                                      )}
-                                      <span className={`text-sm font-satoshi ${status.color}`}>
-                                        {status.text}
-                                      </span>
-                                    </>
-                                  );
+                                  return status.subtitle ? (
+                                    <span className="text-xs font-satoshi text-gray-500">
+                                      {status.subtitle}
+                                    </span>
+                                  ) : null;
                                 })()}
                               </div>
 
