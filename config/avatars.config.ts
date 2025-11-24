@@ -9,7 +9,7 @@ export const defaultAvatars: AvatarProfile[] = [
     name: "Mark Kohl",
     description:
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
-    profileImageUrl: "/attached_assets/Mark%20Kohl_1763954297863.png",
+    profileImageUrl: "/attached_assets/Mark%20Kohl_1763955293782.png",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
@@ -206,7 +206,7 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
     name: "Ann",
     description:
       "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
-    profileImageUrl: "/attached_assets/Katya_1763954328483.png",
+    profileImageUrl: "/attached_assets/Ann_1763955328534.png",
     heygenAvatarId: "Ann_Therapist_public",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
