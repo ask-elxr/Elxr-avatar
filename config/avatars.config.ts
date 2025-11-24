@@ -9,7 +9,7 @@ export const defaultAvatars: AvatarProfile[] = [
     name: "Mark Kohl",
     description:
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
-    profileImageUrl: "/attached_assets/Mark Kohl_1763954297863.png",
+    profileImageUrl: "/attached_assets/Mark%20Kohl_1763954297863.png",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
