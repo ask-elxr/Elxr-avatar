@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { LoadingSpinner } from "@/components/loading-spinner";
 
 const Home = lazy(() => import("@/pages/home"));
 const Admin = lazy(() => import("@/pages/admin"));
@@ -16,7 +17,7 @@ function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-black">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" data-testid="loading-spinner"></div>
+        <LoadingSpinner size="md" />
         <p className="text-purple-400 font-satoshi" data-testid="loading-text">Loading...</p>
       </div>
     </div>
