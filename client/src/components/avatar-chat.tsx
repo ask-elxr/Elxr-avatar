@@ -238,7 +238,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             autoPlay
             playsInline
             className="w-full h-full object-cover"
-            style={{ display: audioOnly ? 'none' : 'block' }}
+            style={{ display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block' }}
             data-testid="avatar-video"
           />
           
