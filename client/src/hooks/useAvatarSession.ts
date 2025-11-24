@@ -265,20 +265,14 @@ export function useAvatarSession({
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
   const startHeyGenSession = useCallback(async (activeAvatarId: string) => {
-    // Skip if audio-only or already loading
-    if (audioOnlyRef.current || isLoading) {
+    // Skip if audio-only
+    if (audioOnlyRef.current) {
       return;
     }
     
     // ✅ CRITICAL: Prevent multiple sessions from starting
     if (avatarRef.current && heygenSessionActive) {
       console.log("⏭️ HeyGen session already active - skipping restart");
-      return;
-    }
-    
-    // ✅ Prevent session start during loading
-    if (isLoading) {
-      console.log("⏭️ Session already loading - skipping restart");
       return;
     }
     
