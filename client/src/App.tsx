@@ -14,7 +14,6 @@ const Account = lazy(() => import("@/pages/Account"));
 const KnowledgeBase = lazy(() => import("@/pages/KnowledgeBase"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const Courses = lazy(() => import("@/pages/courses"));
-const CourseBuilder = lazy(() => import("@/pages/course-builder"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function LoadingFallback() {
@@ -39,8 +38,6 @@ function Router() {
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
         <Route path="/courses" component={Courses} />
-        <Route path="/course-builder" component={CourseBuilder} />
-        <Route path="/course-builder/:id" component={CourseBuilder} />
         <Route path="/admin" component={Admin} />
         <Route path="/account" component={Account} />
         <Route component={NotFound} />

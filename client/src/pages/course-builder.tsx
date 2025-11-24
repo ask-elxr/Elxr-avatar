@@ -20,11 +20,18 @@ interface CourseWithLessons extends Course {
   lessons?: LessonWithVideo[];
 }
 
-export default function CourseBuilderPage() {
+interface CourseBuilderPageProps {
+  isEmbedded?: boolean;
+  courseId?: string | null;
+  onBack?: () => void;
+}
+
+export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
+  const { isEmbedded = false, courseId: propCourseId, onBack } = props;
   const [, params] = useRoute("/course-builder/:id");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const courseId = params?.id;
+  const courseId = isEmbedded ? propCourseId : params?.id;
   const isEditing = !!courseId;
 
   // Form state
@@ -42,10 +49,11 @@ export default function CourseBuilderPage() {
   const { data: course, isLoading: loadingCourse } = useQuery<CourseWithLessons>({
     queryKey: ["/api/courses", courseId],
     enabled: isEditing,
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       // Poll every 5 seconds if any lesson is generating
+      const data = query.state.data as CourseWithLessons | undefined;
       const hasGenerating = data?.lessons?.some(
-        (l) => l.status === "generating" || l.video?.status === "generating"
+        (l: any) => l.status === "generating" || l.video?.status === "generating"
       );
       return hasGenerating ? 5000 : false;
     },
@@ -73,7 +81,11 @@ export default function CourseBuilderPage() {
         description: "Your course has been created successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-      setLocation(`/course-builder/${newCourse.id}`);
+      if (isEmbedded && onBack) {
+        onBack();
+      } else {
+        setLocation(`/course-builder/${newCourse.id}`);
+      }
     },
     onError: () => {
       toast({
@@ -322,7 +334,13 @@ export default function CourseBuilderPage() {
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
-              onClick={() => setLocation("/courses")}
+              onClick={() => {
+                if (isEmbedded && onBack) {
+                  onBack();
+                } else {
+                  setLocation("/courses");
+                }
+              }}
               className="text-gray-400 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -387,7 +405,7 @@ export default function CourseBuilderPage() {
                   <SelectValue placeholder="Select an avatar" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700">
-                  {avatars?.map((avatar: any) => (
+                  {Array.isArray(avatars) && avatars.map((avatar: any) => (
                     <SelectItem
                       key={avatar.id}
                       value={avatar.id}

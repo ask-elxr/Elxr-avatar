@@ -1,5 +1,6 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
+import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play } from "lucide-react";
@@ -13,6 +14,8 @@ type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'settings';
 
 export default function Admin() {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
+  const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
+  const [showCourseBuilder, setShowCourseBuilder] = useState(false);
   const { toast } = useToast();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
@@ -336,19 +339,23 @@ export default function Admin() {
           )}
 
           {/* Courses View */}
-          {currentView === 'courses' && (
+          {currentView === 'courses' && !showCourseBuilder && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className="text-2xl font-bold">Video Courses</h3>
                   <p className="text-muted-foreground">Manage all video courses and lessons</p>
                 </div>
-                <Link href="/course-builder">
-                  <Button data-testid="button-create-course">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create New Course
-                  </Button>
-                </Link>
+                <Button 
+                  onClick={() => {
+                    setEditingCourseId(null);
+                    setShowCourseBuilder(true);
+                  }}
+                  data-testid="button-create-course"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create New Course
+                </Button>
               </div>
 
               {Array.isArray(coursesData) && coursesData.length > 0 ? (
@@ -373,11 +380,17 @@ export default function Admin() {
                               </span>
                             </div>
                           </div>
-                          <Link href={`/course-builder/${course.id}`}>
-                            <Button variant="outline" size="sm" data-testid={`button-edit-course-${course.id}`}>
-                              Edit Course
-                            </Button>
-                          </Link>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setEditingCourseId(course.id);
+                              setShowCourseBuilder(true);
+                            }}
+                            data-testid={`button-edit-course-${course.id}`}
+                          >
+                            Edit Course
+                          </Button>
                         </div>
                       </CardHeader>
                       <CardContent className="p-6">
@@ -450,16 +463,32 @@ export default function Admin() {
                     <p className="text-muted-foreground mb-6">
                       Create your first video course to get started
                     </p>
-                    <Link href="/course-builder">
-                      <Button data-testid="button-create-first-course">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Course
-                      </Button>
-                    </Link>
+                    <Button 
+                      onClick={() => {
+                        setEditingCourseId(null);
+                        setShowCourseBuilder(true);
+                      }}
+                      data-testid="button-create-first-course"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Course
+                    </Button>
                   </CardContent>
                 </Card>
               )}
             </div>
+          )}
+
+          {/* Course Builder View */}
+          {currentView === 'courses' && showCourseBuilder && (
+            <CourseBuilderPage 
+              isEmbedded 
+              courseId={editingCourseId} 
+              onBack={() => {
+                setShowCourseBuilder(false);
+                setEditingCourseId(null);
+              }}
+            />
           )}
 
           {/* Settings View */}
