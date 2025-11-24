@@ -82,6 +82,16 @@ export class VideoGenerationService {
       }
 
       // Create video generation request
+      const voiceConfig: any = {
+        type: "text",
+        input_text: lesson.script.slice(0, 5000), // Max 5000 chars
+      };
+
+      // Only add voice_id if it's configured (HeyGen will use avatar's default voice otherwise)
+      if (avatar.heygenVoiceId) {
+        voiceConfig.voice_id = avatar.heygenVoiceId;
+      }
+
       const videoRequest = {
         video_inputs: [
           {
@@ -90,11 +100,7 @@ export class VideoGenerationService {
               avatar_id: avatar.heygenAvatarId,
               avatar_style: "normal",
             },
-            voice: {
-              type: "text",
-              input_text: lesson.script.slice(0, 5000), // Max 5000 chars
-              voice_id: avatar.heygenVoiceId || "default",
-            },
+            voice: voiceConfig,
           },
         ],
         dimension: {
