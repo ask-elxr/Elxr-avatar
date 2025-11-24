@@ -554,10 +554,20 @@ export function useAvatarSession({
 
     // Stop current audio if playing
     if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-      console.log("Audio playback stopped");
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = '';
+        currentAudioRef.current.load();
+        currentAudioRef.current = null;
+        console.log("Audio playback stopped");
+      } catch (e) {
+        console.warn("Error stopping audio:", e);
+        currentAudioRef.current = null;
+      }
     }
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
 
     setSessionActive(false);
     setIsLoading(true);
@@ -603,9 +613,19 @@ export function useAvatarSession({
 
     // Stop current audio if playing
     if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = '';
+        currentAudioRef.current.load();
+        currentAudioRef.current = null;
+      } catch (e) {
+        console.warn("Error stopping audio:", e);
+        currentAudioRef.current = null;
+      }
     }
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
 
     setSessionActive(false);
     setHeygenSessionActive(false);
@@ -665,10 +685,20 @@ export function useAvatarSession({
 
       // Stop current audio if playing
       if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-        console.log("Audio playback stopped on pause");
+        try {
+          currentAudioRef.current.pause();
+          currentAudioRef.current.currentTime = 0;
+          currentAudioRef.current.src = '';
+          currentAudioRef.current.load();
+          currentAudioRef.current = null;
+          console.log("Audio playback stopped on pause");
+        } catch (e) {
+          console.warn("Error stopping audio on pause:", e);
+          currentAudioRef.current = null;
+        }
       }
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false);
 
       setSessionActive(false);
       setIsPaused(true);
@@ -914,6 +944,25 @@ export function useAvatarSession({
     }
   }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout]);
 
+  const stopAudio = useCallback(() => {
+    // Emergency stop for audio playback
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = '';
+        currentAudioRef.current.load();
+        currentAudioRef.current = null;
+        console.log("🛑 Audio force stopped");
+      } catch (e) {
+        console.warn("Error force stopping audio:", e);
+        currentAudioRef.current = null;
+      }
+    }
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
+  }, []);
+
   return {
     sessionActive,
     heygenSessionActive,
@@ -934,5 +983,6 @@ export function useAvatarSession({
     speakingIntervalRef,
     hasAskedAnythingElseRef,
     handleSubmitMessage,
+    stopAudio,
   };
 }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
@@ -83,7 +83,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     avatarRef,
     hasAskedAnythingElseRef,
     speakingIntervalRef,
-    handleSubmitMessage: originalHandleSubmitMessage
+    handleSubmitMessage: originalHandleSubmitMessage,
+    stopAudio
   } = useAvatarSession({
     videoRef,
     userId,
@@ -292,6 +293,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
+                
+                {/* Emergency Stop Button for Audio-Only Mode */}
+                {isSpeaking && audioOnly && (
+                  <Button
+                    onClick={() => {
+                      stopAudio();
+                      toast({
+                        title: "Audio Stopped",
+                        description: "Playback stopped",
+                      });
+                    }}
+                    className="bg-amber-500/80 hover:bg-amber-600 text-white"
+                    size="sm"
+                    data-testid="button-stop-audio"
+                  >
+                    <VolumeX className="w-4 h-4" />
+                  </Button>
+                )}
                 
                 <Button
                   onClick={endChat}
