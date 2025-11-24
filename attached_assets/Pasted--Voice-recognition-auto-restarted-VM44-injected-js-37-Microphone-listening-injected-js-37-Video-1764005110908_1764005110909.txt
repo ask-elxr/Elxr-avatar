@@ -1,0 +1,101 @@
+🔄 Voice recognition auto-restarted
+VM44 injected.js:37 🎤 Microphone listening
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer started for first time
+injected.js:37 🎤 Microphone listening
+injected.js:214  POST https://api.heygen.com/v1/streaming.new 400 (Bad Request)
+apply @ injected.js:214
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:29174
+step @ @heygen_streaming-avatar.js?v=d5c83742:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=d5c83742:27096
+StreamingAvatar2.request @ @heygen_streaming-avatar.js?v=d5c83742:29168
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:28942
+step @ @heygen_streaming-avatar.js?v=d5c83742:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=d5c83742:27096
+StreamingAvatar2.newSession @ @heygen_streaming-avatar.js?v=d5c83742:28939
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:28814
+step @ @heygen_streaming-avatar.js?v=d5c83742:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=d5c83742:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=d5c83742:27096
+StreamingAvatar2.createStartAvatar @ @heygen_streaming-avatar.js?v=d5c83742:28809
+(anonymous) @ useAvatarSession.ts:380
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:516
+await in (anonymous)
+onClick @ avatar-chat.tsx:350
+callCallback2 @ chunk-RPCDYKBN.js?v=d5c83742:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d5c83742:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d5c83742:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d5c83742:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d5c83742:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d5c83742:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d5c83742:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d5c83742:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d5c83742:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d5c83742:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d5c83742:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d5c83742:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d5c83742:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d5c83742:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d5c83742:5449
+injected.js:37 Error starting HeyGen session: APIError: API request failed with status 400
+    at new APIError2 (@heygen_streaming-avatar.js?v=d5c83742:28744:26)
+    at StreamingAvatar2.<anonymous> (@heygen_streaming-avatar.js?v=d5c83742:29188:21)
+    at step (@heygen_streaming-avatar.js?v=d5c83742:27175:17)
+    at Object.next (@heygen_streaming-avatar.js?v=d5c83742:27127:14)
+    at fulfilled (@heygen_streaming-avatar.js?v=d5c83742:27099:24)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:408
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:516
+await in (anonymous)
+onClick @ avatar-chat.tsx:350
+callCallback2 @ chunk-RPCDYKBN.js?v=d5c83742:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d5c83742:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d5c83742:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d5c83742:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d5c83742:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d5c83742:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d5c83742:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d5c83742:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d5c83742:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d5c83742:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d5c83742:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d5c83742:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d5c83742:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d5c83742:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d5c83742:5449
+injected.js:37 Error starting HeyGen in video mode: APIError: API request failed with status 400
+    at new APIError2 (@heygen_streaming-avatar.js?v=d5c83742:28744:26)
+    at StreamingAvatar2.<anonymous> (@heygen_streaming-avatar.js?v=d5c83742:29188:21)
+    at step (@heygen_streaming-avatar.js?v=d5c83742:27175:17)
+    at Object.next (@heygen_streaming-avatar.js?v=d5c83742:27127:14)
+    at fulfilled (@heygen_streaming-avatar.js?v=d5c83742:27099:24)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:523
+await in (anonymous)
+onClick @ avatar-chat.tsx:350
+callCallback2 @ chunk-RPCDYKBN.js?v=d5c83742:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d5c83742:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d5c83742:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d5c83742:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d5c83742:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d5c83742:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d5c83742:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d5c83742:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d5c83742:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d5c83742:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d5c83742:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d5c83742:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d5c83742:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d5c83742:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d5c83742:5449
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening

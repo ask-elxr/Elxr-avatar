@@ -10,7 +10,7 @@ export const defaultAvatars: AvatarProfile[] = [
     description:
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
     profileImageUrl: "/attached_assets/Mark%20Kohl_1763955293782.png",
-    heygenAvatarId: "e16db57e57824a0e90b661ad528d3994",
+    heygenAvatarId: "Andrew_public_pro3_20230614", // Alex in Jacket - Interactive streaming avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
@@ -92,7 +92,7 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
     description:
       "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
     profileImageUrl: "/attached_assets/Willie Gault_1763954309539.png",
-    heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038",
+    heygenAvatarId: "Aditya_public_1", // Aditya in Blue blazer - Interactive streaming avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
@@ -269,7 +269,7 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     description:
       "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
     profileImageUrl: "/attached_assets/Nigel_1763954340501.png",
-    heygenAvatarId: "b570e1e91cdc4d52931a9a124c0e3f3f",
+    heygenAvatarId: "Adrian_public_2_20240312", // Adrian in Blue Suit - Interactive streaming avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
@@ -327,7 +327,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     description:
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
     profileImageUrl: "/attached_assets/Thad_1763954316719.png",
-    heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef",
+    heygenAvatarId: "Albert_public_1", // Albert in Blue suit - Interactive streaming avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
