@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { AvatarChat } from "@/components/avatar-chat";
 import { Disclaimer } from "@/components/disclaimer";
+import { useLocation } from "wouter";
 
 export default function Home() {
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
   const [userId, setUserId] = useState<string>('');
-  const [avatarId, setAvatarId] = useState<string>('mark-kohl');
+  const [avatarId, setAvatarId] = useState<string>('');
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     // Check if disclaimer was already accepted
@@ -27,8 +29,11 @@ export default function Home() {
     const avatarParam = urlParams.get('avatar');
     if (avatarParam) {
       setAvatarId(avatarParam);
+    } else {
+      // No avatar selected - redirect to avatar selection
+      setLocation('/avatar-select');
     }
-  }, []);
+  }, [setLocation]);
 
   const handleAcceptDisclaimer = (rememberConversations: boolean) => {
     localStorage.setItem('disclaimer-accepted', 'true');
@@ -39,6 +44,15 @@ export default function Home() {
   // Show disclaimer first
   if (!disclaimerAccepted) {
     return <Disclaimer onAccept={handleAcceptDisclaimer} />;
+  }
+
+  // If no avatar selected yet, show loading (will redirect)
+  if (!avatarId) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-black">
+        <div className="text-white text-lg font-satoshi">Loading...</div>
+      </div>
+    );
   }
 
   // Show avatar chat with placeholder user ID and selected avatar

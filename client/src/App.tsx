@@ -6,6 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
+const Landing = lazy(() => import("@/pages/landing"));
+const AvatarSelect = lazy(() => import("@/pages/avatar-select"));
 const Home = lazy(() => import("@/pages/home"));
 const Admin = lazy(() => import("@/pages/admin"));
 const Account = lazy(() => import("@/pages/Account"));
@@ -29,6 +31,8 @@ function Router() {
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/landing" component={Landing} />
+        <Route path="/avatar-select" component={AvatarSelect} />
         <Route path="/avatar" component={Home} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
