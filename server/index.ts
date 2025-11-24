@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes, seedDefaultAvatars } from "./routes";
 import { avatarRouter } from "./routes/avatars.js";
+import { coursesRouter } from "./routes/courses.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 
@@ -96,6 +97,7 @@ app.use('/attached_assets', express.static('attached_assets'));
   
   // Register modular routes
   app.use("/api", avatarRouter);
+  app.use("/api/courses", coursesRouter);
   
   // Seed default avatars if database is empty
   await seedDefaultAvatars();

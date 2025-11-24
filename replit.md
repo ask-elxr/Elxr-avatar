@@ -3,11 +3,27 @@
 ## Overview
 A sophisticated AI chat platform featuring HeyGen video avatars with real-time voice conversations, knowledge retrieval from multiple sources (Pinecone, PubMed, Wikipedia, Notion), persistent memory (Mem0), and comprehensive admin management.
 
-**Current Status**: Successfully restructured codebase with modular architecture. Focused on HeyGen video avatar system with Claude AI and RAG integration.
+**Current Status**: Successfully restructured codebase with modular architecture. Focused on HeyGen video avatar system with Claude AI and RAG integration. **NEW**: Video course creation system with HeyGen video generation.
 
 ## Recent Changes (November 2024)
 
-### Latest Updates (November 23, 2024)
+### Latest Updates (November 24, 2024)
+- **✅ Video Course Creation System**:
+  - Complete course builder UI for creating structured courses with AI avatars
+  - Database schema: `courses`, `lessons`, `generated_videos` tables
+  - HeyGen video generation API integration for lesson scripts
+  - Course library page to view and manage courses
+  - Video generation with real-time status tracking (pending, generating, completed, failed)
+  - Video playback and download functionality
+  - Persistent anonymous user sessions (fixed temp userId bug)
+  - Routes: `/courses` (library), `/course-builder` (create/edit), `/course-builder/:id` (edit existing)
+  - API endpoints: Course CRUD, lesson CRUD, video generation
+- **✅ Avatar Tagging System**:
+  - Added `tags` field to avatar profiles (text array)
+  - Tags displayed as purple badges on avatar selection and switcher
+  - All avatars tagged with their specialties (e.g., "Medical Research", "Psychedelics", "Fitness")
+
+### Updates (November 23, 2024)
 - **✅ Wikipedia & Google Search Toggles**:
   - Added per-avatar `useWikipedia` and `useGoogleSearch` boolean fields to schema
   - Mark Kohl: All research sources enabled (PubMed, Wikipedia, Google Search)
@@ -106,7 +122,10 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 - **Schema**: `shared/schema.ts`
 - **Tables**:
   - `avatar_profiles` - Avatar configurations with DB overrides
-  - `conversations` - **NEW**: Persistent chat history (user & assistant messages with avatarId, role)
+  - `conversations` - Persistent chat history (user & assistant messages with avatarId, role)
+  - `courses` - **NEW**: Video course metadata (title, description, avatarId, status)
+  - `lessons` - **NEW**: Course lessons (title, script, order, status)
+  - `generated_videos` - **NEW**: HeyGen video generation tracking (videoUrl, status, heygenVideoId)
   - `documents` - Uploaded documents metadata
   - `knowledge_base_sources` - User knowledge sources (Notion, etc.)
   - `api_calls` - Usage tracking
@@ -158,7 +177,40 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
    - Research: Keyword-triggered only
    - HeyGen Avatar: `b115a2af9a9b41f3b69d589d6f26ecef`
 
+## Video Course System
+
+### Course Creation Workflow
+1. **Create Course**: User creates course with title, description, and avatar instructor
+2. **Add Lessons**: Add multiple lessons with scripts (what the avatar will say)
+3. **Generate Videos**: Click "Generate Video" for each lesson
+4. **HeyGen Processing**: Backend calls HeyGen API, polls for completion (async)
+5. **Video Ready**: When completed, video URL available for playback/download
+
+### Video Generation Service (server/services/videoGeneration.ts)
+- Integrates with HeyGen Video Generation API v2
+- Takes lesson script (max 5000 chars), generates video with avatar speaking
+- Async polling for video completion (checks every 5 seconds, max 10 minutes)
+- Updates lesson and video status in real-time
+- Supports video regeneration for existing lessons
+
+### Course Routes (server/routes/courses.ts)
+- Middleware ensures persistent anonymous user sessions
+- All course operations scoped to userId from session
+- Video generation triggers background polling task
+
 ## API Endpoints
+
+### Course Management
+- `GET /api/courses` - List all user courses
+- `GET /api/courses/:id` - Get course with lessons and video status
+- `POST /api/courses` - Create new course
+- `PUT /api/courses/:id` - Update course
+- `DELETE /api/courses/:id` - Delete course
+- `POST /api/courses/:courseId/lessons` - Add lesson to course
+- `PUT /api/courses/lessons/:id` - Update lesson
+- `DELETE /api/courses/lessons/:id` - Delete lesson
+- `POST /api/courses/lessons/:id/generate-video` - Generate video for lesson
+- `GET /api/courses/lessons/:id/video-status` - Get video generation status
 
 ### Avatar Management
 - `GET /api/avatars` - List active avatars

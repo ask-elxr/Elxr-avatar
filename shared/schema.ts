@@ -236,3 +236,111 @@ export const updateKnowledgeBaseSourceSchema = createInsertSchema(knowledgeBaseS
 export type InsertKnowledgeBaseSource = z.infer<typeof insertKnowledgeBaseSourceSchema>;
 export type UpdateKnowledgeBaseSource = z.infer<typeof updateKnowledgeBaseSourceSchema>;
 export type KnowledgeBaseSource = typeof knowledgeBaseSources.$inferSelect;
+
+// Course creation system
+export const courses = pgTable("courses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  avatarId: varchar("avatar_id").references(() => avatarProfiles.id).notNull(),
+  status: varchar("status").notNull().default("draft"), // draft, generating, completed, failed
+  thumbnailUrl: text("thumbnail_url"),
+  totalLessons: integer("total_lessons").default(0),
+  totalDuration: integer("total_duration").default(0), // Total duration in seconds
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const lessons = pgTable("lessons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  courseId: varchar("course_id").references(() => courses.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  script: text("script").notNull(), // The text the avatar will speak
+  order: integer("order").notNull(), // Lesson order in the course
+  duration: integer("duration"), // Estimated duration in seconds
+  status: varchar("status").notNull().default("pending"), // pending, generating, completed, failed
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const generatedVideos = pgTable("generated_videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  lessonId: varchar("lesson_id").references(() => lessons.id, { onDelete: "cascade" }).notNull(),
+  heygenVideoId: text("heygen_video_id"), // HeyGen's video generation ID
+  videoUrl: text("video_url"), // URL to the generated video
+  thumbnailUrl: text("thumbnail_url"),
+  duration: integer("duration"), // Actual video duration in seconds
+  status: varchar("status").notNull().default("queued"), // queued, generating, completed, failed
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"), // Additional video metadata from HeyGen
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  generatedAt: timestamp("generated_at"),
+});
+
+export const insertCourseSchema = createInsertSchema(courses).pick({
+  userId: true,
+  title: true,
+  description: true,
+  avatarId: true,
+  thumbnailUrl: true,
+});
+
+export const updateCourseSchema = createInsertSchema(courses).pick({
+  title: true,
+  description: true,
+  avatarId: true,
+  status: true,
+  thumbnailUrl: true,
+  totalLessons: true,
+  totalDuration: true,
+}).partial();
+
+export const insertLessonSchema = createInsertSchema(lessons).pick({
+  courseId: true,
+  title: true,
+  script: true,
+  order: true,
+  duration: true,
+});
+
+export const updateLessonSchema = createInsertSchema(lessons).pick({
+  title: true,
+  script: true,
+  order: true,
+  duration: true,
+  status: true,
+  errorMessage: true,
+}).partial();
+
+export const insertGeneratedVideoSchema = createInsertSchema(generatedVideos).pick({
+  lessonId: true,
+  heygenVideoId: true,
+  videoUrl: true,
+  thumbnailUrl: true,
+  duration: true,
+  status: true,
+  metadata: true,
+});
+
+export const updateGeneratedVideoSchema = createInsertSchema(generatedVideos).pick({
+  heygenVideoId: true,
+  videoUrl: true,
+  thumbnailUrl: true,
+  duration: true,
+  status: true,
+  errorMessage: true,
+  metadata: true,
+  generatedAt: true,
+}).partial();
+
+export type InsertCourse = z.infer<typeof insertCourseSchema>;
+export type UpdateCourse = z.infer<typeof updateCourseSchema>;
+export type Course = typeof courses.$inferSelect;
+export type InsertLesson = z.infer<typeof insertLessonSchema>;
+export type UpdateLesson = z.infer<typeof updateLessonSchema>;
+export type Lesson = typeof lessons.$inferSelect;
+export type InsertGeneratedVideo = z.infer<typeof insertGeneratedVideoSchema>;
+export type UpdateGeneratedVideo = z.infer<typeof updateGeneratedVideoSchema>;
+export type GeneratedVideo = typeof generatedVideos.$inferSelect;
