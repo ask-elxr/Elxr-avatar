@@ -35,6 +35,7 @@ import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
 import { memoryService, MemoryType } from "./memoryService.js";
 import * as pubmedService from "./pubmedService.js";
+import { googleDriveService } from "./googleDriveService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -596,6 +597,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get conversation history (no auth required to support temp_ users)
+  app.get("/api/conversations/history/:userId/:avatarId", async (req, res) => {
+    try {
+      const { userId, avatarId } = req.params;
+      const limit = parseInt(req.query.limit as string) || 50;
+
+      if (!userId || !avatarId) {
+        return res.status(400).json({
+          error: "userId and avatarId are required",
+        });
+      }
+
+      const history = await storage.getConversationHistory(userId, avatarId, limit);
+
+      res.json({
+        success: true,
+        conversations: history,
+      });
+    } catch (error) {
+      console.error("Error fetching conversation history:", error);
+      res.status(500).json({
+        error: "Failed to fetch conversation history",
+      });
+    }
+  });
+
   // Memory API routes
   app.post("/api/memory/add", async (req: any, res) => {
     const log = logger.child({ service: "memory", operation: "add" });
@@ -1082,6 +1109,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   */
 
+  // Admin Pinecone namespace migration endpoint
+  app.post("/api/admin/pinecone/migrate-namespace", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: "pinecone", operation: "migrateNamespace" });
+    
+    try {
+      const { sourceNamespace, targetNamespace, deleteSource = false, indexName } = req.body;
+      
+      if (!sourceNamespace || !targetNamespace) {
+        return res.status(400).json({ 
+          error: "sourceNamespace and targetNamespace are required" 
+        });
+      }
+
+      log.info({ sourceNamespace, targetNamespace, deleteSource, indexName }, "Starting namespace migration");
+      
+      const result = await pineconeService.migrateNamespace(
+        sourceNamespace,
+        targetNamespace,
+        indexName || PineconeIndexName.AVATAR_CHAT,
+        deleteSource
+      );
+      
+      log.info({ result }, "Namespace migration completed successfully");
+      res.json(result);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error migrating namespace");
+      res.status(500).json({ error: "Failed to migrate namespace", message: error.message });
+    }
+  });
+
   // Personal Knowledge Base Management Routes
   
   // List all knowledge base sources for authenticated user
@@ -1423,11 +1480,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message.toLowerCase().includes(keyword.toLowerCase())
       );
       
-      // Check if avatar has PubMed enabled
+      // Check if avatar has toggles enabled
       const avatarUsePubMed = avatarConfig.usePubMed || false;
+      const avatarUseWikipedia = avatarConfig.useWikipedia || false;
+      const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
 
       // PARALLEL DATA FETCHING: Launch all enrichment operations concurrently
-      const [memoryResultSettled, pubmedResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+      const [memoryResultSettled, pubmedResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         // 1. Memory search
         (async () => {
           const memStart = Date.now();
@@ -1481,7 +1540,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         })(),
 
-        // 3. Knowledge base (Pinecone + user sources)
+        // 3. Wikipedia search
+        (async () => {
+          const wikiStart = Date.now();
+          if (!avatarUseWikipedia) {
+            return null;
+          }
+          try {
+            const { wikipediaService } = await import("./wikipediaService.js");
+            if (!wikipediaService || !wikipediaService.isAvailable()) {
+              perfTimings.wikipedia = Date.now() - wikiStart;
+              return null;
+            }
+            
+            logger.info({ userId, query: message }, 'Searching Wikipedia for avatar response');
+            
+            // Wikipedia service doesn't have a search function yet, so we'll skip for now
+            // TODO: Implement Wikipedia search function
+            perfTimings.wikipedia = Date.now() - wikiStart;
+            return null;
+          } catch (error: any) {
+            perfTimings.wikipedia = Date.now() - wikiStart;
+            logger.error({ error: error.message }, 'Error fetching Wikipedia results');
+            return null;
+          }
+        })(),
+
+        // 4. Google Search
+        (async () => {
+          const googleStart = Date.now();
+          if (!avatarUseGoogleSearch) {
+            return null;
+          }
+          try {
+            if (!googleSearchService || !googleSearchService.isAvailable()) {
+              perfTimings.googleSearch = Date.now() - googleStart;
+              return null;
+            }
+            
+            logger.info({ userId, query: message }, 'Searching Google for avatar response');
+            
+            const searchResults = await googleSearchService.search(message, 3);
+            perfTimings.googleSearch = Date.now() - googleStart;
+            
+            if (searchResults) {
+              logger.info({ userId, resultsLength: searchResults.length }, 'Google search results retrieved');
+              return searchResults;
+            }
+            return null;
+          } catch (error: any) {
+            perfTimings.googleSearch = Date.now() - googleStart;
+            logger.error({ error: error.message }, 'Error fetching Google search results');
+            return null;
+          }
+        })(),
+
+        // 5. Knowledge base (Pinecone + user sources)
         (async () => {
           const kbStart = Date.now();
           try {
@@ -1521,6 +1635,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract results from settled promises
       const memoryResult = memoryResultSettled.status === 'fulfilled' ? memoryResultSettled.value : { success: false, memories: [] };
       const pubmedResult = pubmedResultSettled.status === 'fulfilled' ? pubmedResultSettled.value : null;
+      const wikipediaResult = wikipediaResultSettled.status === 'fulfilled' ? wikipediaResultSettled.value : null;
+      const googleSearchResult = googleSearchResultSettled.status === 'fulfilled' ? googleSearchResultSettled.value : null;
       const knowledgeResult = knowledgeResultSettled.status === 'fulfilled' ? knowledgeResultSettled.value : { context: "", namespaces: 0 };
 
       // Build memory context
@@ -1560,6 +1676,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       }
 
+      // Build Wikipedia context
+      let wikipediaContext = "";
+      if (wikipediaResult) {
+        wikipediaContext = `\n\nWIKIPEDIA INFORMATION:\n${wikipediaResult}`;
+        logger.info({ userId }, 'Wikipedia results retrieved');
+      }
+
+      // Build Google Search context
+      let googleSearchContext = "";
+      if (googleSearchResult) {
+        googleSearchContext = `\n\nWEB SEARCH RESULTS:\n${googleSearchResult}`;
+        logger.info({ userId }, 'Google search results retrieved');
+      }
+
       // Get knowledge context
       const knowledgeContext = knowledgeResult.context;
       if (knowledgeContext && knowledgeResult.namespaces > 0) {
@@ -1587,13 +1717,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (pubmedContext) {
         enhancedPersonality += `\n\n${pubmedContext}\n\nYou have access to peer-reviewed medical research. Incorporate these findings naturally in your response. Cite specific papers when relevant using "According to a ${pubmedMetadata?.fromCache ? 'recent study' : 'study'} by [authors]..." format. You can mention PMID numbers for credibility.`;
       }
+      
+      if (wikipediaContext) {
+        enhancedPersonality += `\n\n${wikipediaContext}\n\nYou have access to Wikipedia information. Incorporate these facts naturally in your response when relevant.`;
+      }
+      
+      if (googleSearchContext) {
+        enhancedPersonality += `\n\n${googleSearchContext}\n\nYou have access to web search results. Use this current information to enhance your response when relevant.`;
+      }
 
       // Generate response using Claude Sonnet 4 with all context
       perfTimings.dataFetch = Date.now() - perfStart;
       const claudeStart = Date.now();
       
       let aiResponse: string;
-      const webSearchResults = ""; // Web search disabled for speed
 
       if (claudeService.isAvailable()) {
         // Use database conversation history for context-aware responses
@@ -1647,7 +1784,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             {
               timestamp: new Date().toISOString(),
               hasKnowledgeBase: !!knowledgeContext,
-              hasWebSearch: !!webSearchResults,
+              hasWikipedia: !!wikipediaContext,
+              hasGoogleSearch: !!googleSearchContext,
               hasPubMedResearch: !!pubmedContext,
               avatarId,
             }
@@ -1671,6 +1809,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         perfTimings,
         hasMemories: !!memoryContext,
         hasPubMed: !!pubmedContext,
+        hasWikipedia: !!wikipediaContext,
+        hasGoogleSearch: !!googleSearchContext,
         hasKnowledge: !!knowledgeContext
       }, 'Avatar response performance metrics');
 
@@ -1679,7 +1819,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message,
         knowledgeResponse: aiResponse,
         personalityUsed: personalityPrompt,
-        usedWebSearch: !!webSearchResults,
+        usedWikipedia: avatarUseWikipedia && !!wikipediaContext,
+        usedGoogleSearch: avatarUseGoogleSearch && !!googleSearchContext,
         usedClaude: claudeService.isAvailable(),
         hasMemories: !!memoryContext,
         pubmedResearch: pubmedMetadata ? {
@@ -1892,6 +2033,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error getting job status:", error);
       res.status(500).json({
         error: "Failed to get job status",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Google Drive integration endpoints
+  app.get("/api/google-drive/status", isAuthenticated, async (req: any, res) => {
+    try {
+      const isConnected = await googleDriveService.isConnected();
+      res.json({ connected: isConnected });
+    } catch (error) {
+      res.json({ connected: false });
+    }
+  });
+
+  app.get("/api/google-drive/folders", isAuthenticated, async (req: any, res) => {
+    try {
+      const { pageToken } = req.query;
+      const result = await googleDriveService.listSharedFolders(pageToken as string | undefined);
+      res.json(result);
+    } catch (error) {
+      console.error("Error listing Google Drive folders:", error);
+      res.status(500).json({
+        error: "Failed to list Google Drive folders",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.get("/api/google-drive/folder/:folderId", isAuthenticated, async (req: any, res) => {
+    try {
+      const { folderId } = req.params;
+      const { pageToken } = req.query;
+      const result = await googleDriveService.listFolderContents(folderId, pageToken as string | undefined);
+      res.json(result);
+    } catch (error) {
+      console.error("Error listing folder contents:", error);
+      res.status(500).json({
+        error: "Failed to list folder contents",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  app.post("/api/google-drive/upload-to-pinecone", isAuthenticated, async (req: any, res) => {
+    const userId = req.user.claims.sub;
+    try {
+      const { fileId, fileName, indexName, namespace } = req.body;
+
+      if (!fileId || !fileName) {
+        return res.status(400).json({
+          error: "Missing required fields: fileId, fileName",
+        });
+      }
+
+      // Download file from Google Drive
+      const { buffer, mimeType, fileName: processedFileName } = await googleDriveService.downloadFile(fileId);
+
+      // Save to temporary file
+      const tempDir = "uploads";
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const tempPath = path.join(tempDir, `gdrive_${Date.now()}_${processedFileName}`);
+      fs.writeFileSync(tempPath, buffer);
+
+      try {
+        const documentId = `doc_gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const metadata = { userId, indexName, namespace, source: 'google-drive' };
+
+        // Process document directly
+        const result = await documentProcessor.processDocument(
+          tempPath,
+          mimeType,
+          documentId,
+          metadata,
+        );
+
+        // Clean up temp file
+        fs.unlinkSync(tempPath);
+
+        res.json({
+          success: true,
+          documentId,
+          fileName: processedFileName,
+          result,
+          message: "File uploaded from Google Drive and processed successfully",
+        });
+      } catch (processingError) {
+        // Clean up temp file on error
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+        throw processingError;
+      }
+    } catch (error) {
+      console.error("Error uploading from Google Drive:", error);
+      res.status(500).json({
+        error: "Failed to upload file from Google Drive",
         details: error instanceof Error ? error.message : "Unknown error",
       });
     }

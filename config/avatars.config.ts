@@ -9,6 +9,7 @@ export const defaultAvatars: AvatarProfile[] = [
     name: "Mark Kohl",
     description:
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
+    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=MarkKohl&backgroundColor=b6e3f4",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
@@ -79,6 +80,8 @@ EXAMPLE RESPONSES:
 
 Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cleverness.`,
     usePubMed: true,
+    useWikipedia: true,
+    useGoogleSearch: true,
     isActive: true,
     createdAt: new Date(),
   },
@@ -87,6 +90,7 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
     name: "Willie Gault",
     description:
       "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
+    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=WillieGault&backgroundColor=ffdfbf",
     heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
@@ -134,6 +138,8 @@ EXAMPLE RESPONSES:
 
 Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
     createdAt: new Date(),
   },
@@ -142,6 +148,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     name: "June",
     description:
       "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
+    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=June&backgroundColor=ffd5dc",
     heygenAvatarId: "Katya_Chair_Sitting_public",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
@@ -189,6 +196,8 @@ EXAMPLE RESPONSES:
 
 Remember: You ARE June. Be compassionate, be practical, be present.`,
     usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
     createdAt: new Date(),
   },
@@ -197,6 +206,7 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
     name: "Ann",
     description:
       "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
+    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ann&backgroundColor=c0aede",
     heygenAvatarId: "Ann_Therapist_public",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
@@ -244,6 +254,8 @@ EXAMPLE RESPONSES:
 
 Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     usePubMed: true,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
     createdAt: new Date(),
   },
@@ -252,6 +264,7 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     name: "Nigel",
     description:
       "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
+    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Nigel&backgroundColor=d1d4f9",
     heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
@@ -298,6 +311,8 @@ EXAMPLE RESPONSES:
 
 Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
     createdAt: new Date(),
   },
@@ -306,6 +321,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     name: "Thad",
     description:
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
+    profileImageUrl: "https://api.dicebear.com/7.x/avataaars/svg?seed=Thad&backgroundColor=b1e5fc",
     heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef",
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
@@ -353,6 +369,8 @@ EXAMPLE RESPONSES:
 
 Remember: Be empowering, be practical, be values-driven.`,
     usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
     createdAt: new Date(),
   },

@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag, FolderOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PINECONE_CATEGORIES, CATEGORY_DESCRIPTIONS, type PineconeCategory } from "@shared/pineconeCategories";
+import { GoogleDrivePicker } from "./GoogleDrivePicker";
 
 interface UploadResult {
   success: boolean;
@@ -222,21 +223,12 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Upload className="w-5 h-5" />
-          Upload Documents & Videos
-        </CardTitle>
-        <CardDescription>
-          Upload documents (PDF, DOCX, TXT) or video/audio files (MP4, MP3, WAV, M4A) to add knowledge to your AI avatars
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Category Selector */}
+    <div className="space-y-6">
+      {/* Category Selector - Shared across all upload methods */}
+      <Card className="glass-strong border-white/10">
+        <CardContent className="pt-6">
           <div className="space-y-2">
-            <Label htmlFor="category" className="flex items-center gap-2">
+            <Label htmlFor="category" className="flex items-center gap-2 text-white">
               <Tag className="w-4 h-4" />
               Knowledge Category
             </Label>
@@ -246,23 +238,60 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value as PineconeCategory)}
               disabled={isUploading}
-              className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full items-center justify-between rounded-md border border-white/20 bg-black/40 text-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {PINECONE_CATEGORIES.map((category) => (
-                <option key={category} value={category}>
+                <option key={category} value={category} className="bg-black text-white">
                   {category}
                 </option>
               ))}
             </select>
             <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/70">
                 <span className="font-medium">{selectedCategory}:</span> {CATEGORY_DESCRIPTIONS[selectedCategory]}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-white/50">
                 Documents will be saved to this category namespace and accessible to all avatars configured for it.
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Upload Methods Tabs */}
+      <Tabs defaultValue="local" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 glass p-1">
+          <TabsTrigger 
+            value="local" 
+            className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+            data-testid="tab-local-upload"
+          >
+            <Upload className="w-4 h-4" />
+            Local Files
+          </TabsTrigger>
+          <TabsTrigger 
+            value="google-drive" 
+            className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+            data-testid="tab-google-drive"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Google Drive
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="local" className="space-y-4 mt-6">
+          <Card className="glass-strong border-white/10">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-white">
+                <Upload className="w-5 h-5" />
+                Upload Local Files
+              </CardTitle>
+              <CardDescription className="text-white/70">
+                Upload documents (PDF, DOCX, TXT) or video/audio files (MP4, MP3, WAV, M4A) from your device
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
 
           {/* Drag and drop area */}
           <div
@@ -397,8 +426,18 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               <span>{uploadProgress}</span>
             </div>
           )}
-        </div>
-      </CardContent>
-    </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="google-drive" className="space-y-4 mt-6">
+          <GoogleDrivePicker 
+            selectedCategory={selectedCategory} 
+            onUploadComplete={onUploadComplete} 
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

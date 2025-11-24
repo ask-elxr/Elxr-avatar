@@ -132,6 +132,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
+  profileImageUrl: text("profile_image_url"),
   heygenAvatarId: text("heygen_avatar_id"),
   heygenVoiceId: text("heygen_voice_id"),
   heygenKnowledgeId: text("heygen_knowledge_id"),
@@ -140,6 +141,8 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   personalityPrompt: text("personality_prompt").notNull(),
   pineconeNamespaces: text("pinecone_namespaces").array().notNull().default(sql`ARRAY[]::text[]`),
   usePubMed: boolean("use_pubmed").default(false).notNull(),
+  useWikipedia: boolean("use_wikipedia").default(false).notNull(),
+  useGoogleSearch: boolean("use_google_search").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

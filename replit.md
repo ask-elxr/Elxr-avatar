@@ -7,7 +7,34 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 
 ## Recent Changes (November 2024)
 
-### Latest Updates (November 22, 2024)
+### Latest Updates (November 23, 2024)
+- **✅ Wikipedia & Google Search Toggles**:
+  - Added per-avatar `useWikipedia` and `useGoogleSearch` boolean fields to schema
+  - Mark Kohl: All research sources enabled (PubMed, Wikipedia, Google Search)
+  - Ann: PubMed enabled only (nutrition research)
+  - Other avatars: Default to keyword-triggered research only
+  - Parallel fetching for Wikipedia and Google Search in `/api/avatar/response` endpoint
+  - Results integrated into Claude context with proper error handling
+- **✅ Voice Recognition Reliability Fixes**:
+  - Fixed critical bug where voice recognition stopped working after HeyGen session started
+  - Implemented independent voice recognition using Web Speech API (decoupled from HeyGen video)
+  - Uses `sessionActiveRef` instead of state to avoid closure stale values in auto-restart logic
+  - Auto-restart now works reliably after `onend` event and when avatar stops talking
+- **✅ Microphone Status UI**:
+  - Added real-time microphone status indicator with color-coded feedback
+  - Green pulsing badge: "Listening" (actively recording voice)
+  - Amber badge: "Voice unavailable" (Web Speech API not supported - mobile browsers)
+  - Red badge: "Mic blocked" (permission denied - user needs to allow microphone)
+  - Status updates synchronously before every `recognition.start()` call to prevent UI flicker
+- **✅ Mobile Compatibility**:
+  - Text input always available as fallback on all devices
+  - Clear "Voice unavailable" message shown when Web Speech API not supported
+  - Graceful degradation ensures chat works even without voice recognition
+- **✅ Teardown Consistency**:
+  - Both `endSession` functions consistently reset microphone status to 'stopped'
+  - Guarantees correct UI state after session cleanup, even if recognition never initialized
+
+### Previous Updates (November 22, 2024)
 - **✅ Fixed HeyGen TaskType**: Changed from `TaskType.TALK` to `TaskType.REPEAT` - TALK mode was using HeyGen's GPT-4o mini AI instead of speaking Claude's exact text
 - **✅ Conversation Memory Implemented**: 
   - All conversations now saved to database (conversations table)
@@ -22,13 +49,16 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
   - Thad: `b115a2af9a9b41f3b69d589d6f26ecef`
   - Mark Kohl: `e16db57e57824a0e90b661ad528d3994`
   - Shawn: `a9d3346d94594c5f9ca522f6d0469038`
-- **✅ Per-Avatar PubMed Toggle**: 
-  - Added `usePubMed` boolean field to avatar configuration
-  - Avatars can now have PubMed always enabled for their specialty
-  - Mark Kohl: `usePubMed: true` (health/psychedelics/science research)
-  - Ann: `usePubMed: true` (body wellness/nutrition research)
-  - Other avatars: `usePubMed: false` (PubMed triggered by keywords only)
-  - PubMed triggers if: explicit command OR research keywords OR avatar has `usePubMed: true`
+- **✅ Per-Avatar Research Source Toggles**: 
+  - Added `usePubMed`, `useWikipedia`, `useGoogleSearch` boolean fields to avatar configuration
+  - Avatars can now have specific research sources always enabled for their specialty
+  - **Mark Kohl**: All enabled (health/psychedelics/science research)
+    - `usePubMed: true`, `useWikipedia: true`, `useGoogleSearch: true`
+  - **Ann**: PubMed only (body wellness/nutrition research)
+    - `usePubMed: true`, `useWikipedia: false`, `useGoogleSearch: false`
+  - **Other avatars**: Keyword-triggered only
+    - `usePubMed: false`, `useWikipedia: false`, `useGoogleSearch: false`
+  - Research triggers if: explicit command OR research keywords OR avatar has toggle enabled
 
 ### Code Restructuring
 - **Created new directory structure**: `config/`, `server/services/`, `server/routes/`
@@ -48,7 +78,7 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
   - Custom HeyGen avatar IDs (now all correctly configured)
   - Configurable session time limits
   - Unique personalities and expertise areas
-  - **Per-avatar PubMed toggle**: Health/science avatars can have PubMed always enabled
+  - **Per-avatar research toggles**: PubMed, Wikipedia, Google Search individually configurable
 - **Real-time video conversations**: HeyGen renders video/audio, Claude provides intelligence
 - **AI Integration**: Claude Sonnet 4.5 + RAG (Pinecone, PubMed, Wikipedia) + persistent conversation memory
 
@@ -100,32 +130,32 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 **Current Avatars**:
 1. **Mark Kohl** (`mark-kohl`)
    - Expertise: Mycology, psychedelics, kundalini
-   - PubMed: **Always enabled** (health/science research)
+   - Research: **All enabled** - PubMed, Wikipedia, Google Search (health/science research)
    - HeyGen Avatar: `e16db57e57824a0e90b661ad528d3994`
 
 2. **Willie Gault** (`willie-gault`)
    - Expertise: Olympic athletics, NFL, business
-   - PubMed: Keyword-triggered only
+   - Research: Keyword-triggered only
    - HeyGen Avatar: `a9d3346d94594c5f9ca522f6d0469038`
 
 3. **June** (`june`)
    - Expertise: Mental health, mindfulness
-   - PubMed: Keyword-triggered only
+   - Research: Keyword-triggered only
    - HeyGen Avatar: `Katya_Chair_Sitting_public`
 
 4. **Ann** (`ann`)
    - Expertise: Body wellness, nutrition
-   - PubMed: **Always enabled** (health/nutrition research)
+   - Research: **PubMed enabled** (health/nutrition research)
    - HeyGen Avatar: `Ann_Therapist_public`
 
 5. **Shawn** (`shawn`)
    - Expertise: Leadership, performance
-   - PubMed: Keyword-triggered only
+   - Research: Keyword-triggered only
    - HeyGen Avatar: `a9d3346d94594c5f9ca522f6d0469038`
 
 6. **Thad** (`thad`)
    - Expertise: Financial wellness
-   - PubMed: Keyword-triggered only
+   - Research: Keyword-triggered only
    - HeyGen Avatar: `b115a2af9a9b41f3b69d589d6f26ecef`
 
 ## API Endpoints
@@ -145,7 +175,7 @@ A sophisticated AI chat platform featuring HeyGen video avatars with real-time v
 - `POST /api/session/end-all` - End all user sessions
 
 ### Chat & Memory
-- `POST /api/avatar/response` - Get AI response (Claude + RAG + Memory + PubMed)
+- `POST /api/avatar/response` - Get AI response (Claude + RAG + Memory + PubMed + Wikipedia + Google Search)
 - `GET /api/memory/users/:userId` - Get user memories
 - `POST /api/memory/users/:userId` - Add memory
 - `DELETE /api/memory/users/:userId/memories/:memoryId` - Delete memory

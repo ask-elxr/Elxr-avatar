@@ -32,6 +32,7 @@ interface AvatarSessionReturn {
   togglePause: () => Promise<void>;
   isPaused: boolean;
   isSpeaking: boolean;
+  microphoneStatus: 'listening' | 'stopped' | 'not-supported' | 'permission-denied';
   avatarRef: React.MutableRefObject<StreamingAvatar | null>;
   intentionalStopRef: React.MutableRefObject<boolean>;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
@@ -55,6 +56,7 @@ export function useAvatarSession({
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
+  const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied'>('stopped');
 
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const intentionalStopRef = useRef(false);
@@ -72,11 +74,17 @@ export function useAvatarSession({
   const recognitionRef = useRef<any>(null); // Web Speech API for voice input
   const lastTranscriptRef = useRef<string>(""); // For deduplication
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
+  const sessionActiveRef = useRef(false); // Track session active state for voice recognition
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
     currentAvatarIdRef.current = selectedAvatarId;
   }, [selectedAvatarId]);
+
+  // Sync sessionActiveRef with sessionActive state
+  useEffect(() => {
+    sessionActiveRef.current = sessionActive;
+  }, [sessionActive]);
 
   const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
@@ -129,6 +137,93 @@ export function useAvatarSession({
       idleTimeoutRef.current = null;
     }
   }, []);
+
+  const startVoiceRecognition = useCallback(() => {
+    // Skip if already initialized
+    if (recognitionRef.current) {
+      console.log("⏭️ Voice recognition already active");
+      return;
+    }
+
+    // ✅ Initialize Web Speech API for voice input
+    try {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      if (!SpeechRecognition) {
+        console.warn("⚠️ Web Speech API not supported in this browser - use text input instead");
+        setMicrophoneStatus('not-supported');
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false; // Only get final results
+      recognition.lang = 'en-US';
+      recognition.maxAlternatives = 1; // Only get best match
+      
+      recognition.onstart = () => {
+        setMicrophoneStatus('listening');
+        console.log("🎤 Microphone listening");
+      };
+      
+      recognition.onresult = (event: any) => {
+        // Only process final results (not interim)
+        const result = event.results[event.results.length - 1];
+        if (!result.isFinal) return;
+        
+        const transcript = result[0].transcript.trim();
+        
+        // Deduplicate (Web Speech can fire same result multiple times)
+        if (transcript && transcript !== lastTranscriptRef.current) {
+          lastTranscriptRef.current = transcript;
+          console.log("🎤 Voice input (final):", transcript);
+          
+          // Only process if avatar isn't speaking
+          if (!isSpeakingRef.current) {
+            handleSubmitMessage(transcript);
+          } else {
+            console.log("⏭️ Ignoring voice input - avatar is speaking");
+          }
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        if (event.error === 'not-allowed') {
+          console.error("🎤 Microphone permission denied - use text input instead");
+          setMicrophoneStatus('permission-denied');
+        } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.error("🎤 Speech recognition error:", event.error);
+        }
+      };
+      
+      recognition.onend = () => {
+        // Auto-restart unless intentionally stopped or avatar is speaking
+        // Use ref instead of state to get current value in closure
+        if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
+          try {
+            setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
+            recognition.start();
+            console.log("🔄 Voice recognition auto-restarted");
+          } catch (e) {
+            // Already running or permission denied
+            setMicrophoneStatus('stopped');
+          }
+        } else {
+          setMicrophoneStatus('stopped');
+        }
+      };
+      
+      recognitionRef.current = recognition;
+      recognitionIntentionalStopRef.current = false;
+      
+      setMicrophoneStatus('listening'); // Set immediately before first start
+      recognition.start();
+      console.log("✅ Web Speech API started for voice input");
+    } catch (error) {
+      console.error("❌ Error initializing Web Speech API:", error);
+      setMicrophoneStatus('not-supported');
+    }
+  }, []); // No dependencies needed - uses refs for current values
 
   const stopHeyGenSession = useCallback(async () => {
     if (!avatarRef.current || !heygenSessionActive) return;
@@ -256,11 +351,13 @@ export function useAvatarSession({
         setTimeout(() => {
           if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
             try {
+              setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
               recognitionRef.current.start();
               console.log("🔊 Voice recognition resumed (avatar finished)");
             } catch (e) {
               // Ignore errors if already running
               console.warn("Could not resume voice recognition:", e);
+              setMicrophoneStatus('stopped');
             }
           }
         }, 1000); // 1 second delay
@@ -293,67 +390,6 @@ export function useAvatarSession({
       // When using Claude, the avatar hears itself and creates infinite loop
       // Solution: Use Web Speech API for voice input (separate from HeyGen video)
       console.log("✅ HeyGen video ready - voice input via Web Speech API, responses via Claude");
-
-      // ✅ Initialize Web Speech API for voice input
-      try {
-        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-        
-        if (SpeechRecognition) {
-          const recognition = new SpeechRecognition();
-          recognition.continuous = true;
-          recognition.interimResults = false; // Only get final results
-          recognition.lang = 'en-US';
-          recognition.maxAlternatives = 1; // Only get best match
-          
-          recognition.onresult = (event: any) => {
-            // Only process final results (not interim)
-            const result = event.results[event.results.length - 1];
-            if (!result.isFinal) return;
-            
-            const transcript = result[0].transcript.trim();
-            
-            // Deduplicate (Web Speech can fire same result multiple times)
-            if (transcript && transcript !== lastTranscriptRef.current) {
-              lastTranscriptRef.current = transcript;
-              console.log("🎤 Voice input (final):", transcript);
-              
-              // Only process if avatar isn't speaking
-              if (!isSpeakingRef.current) {
-                handleSubmitMessage(transcript);
-              } else {
-                console.log("⏭️ Ignoring voice input - avatar is speaking");
-              }
-            }
-          };
-          
-          recognition.onerror = (event: any) => {
-            if (event.error !== 'no-speech' && event.error !== 'aborted') {
-              console.error("🎤 Speech recognition error:", event.error);
-            }
-          };
-          
-          recognition.onend = () => {
-            // Auto-restart unless intentionally stopped
-            if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
-              try {
-                recognition.start();
-                console.log("🔄 Voice recognition auto-restarted");
-              } catch (e) {
-                // Already running
-              }
-            }
-          };
-          
-          recognitionRef.current = recognition;
-          recognitionIntentionalStopRef.current = false;
-          recognition.start();
-          console.log("✅ Web Speech API started for voice input");
-        } else {
-          console.warn("⚠️ Web Speech API not supported in this browser");
-        }
-      } catch (error) {
-        console.error("❌ Error initializing Web Speech API:", error);
-      }
 
       console.log("HeyGen session started successfully");
       setHeygenSessionActive(true);
@@ -441,6 +477,10 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true);
     
+    // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
+    // This allows users to speak even before video loads or in audio-only mode
+    startVoiceRecognition();
+    
     // Start HeyGen immediately in video mode for instant avatar appearance
     if (!audioOnly) {
       try {
@@ -464,6 +504,7 @@ export function useAvatarSession({
     onSessionActiveChange,
     onResetInactivityTimer,
     startHeyGenSession,
+    startVoiceRecognition,
   ]);
 
   const endSessionShowReconnect = useCallback(async () => {
@@ -474,9 +515,9 @@ export function useAvatarSession({
     }
     
     // Stop speech recognition - set flag FIRST to prevent auto-restart  
+    recognitionIntentionalStopRef.current = true;
     if (recognitionRef.current) {
       try {
-        recognitionIntentionalStopRef.current = true; // ✅ CRITICAL: Set BEFORE stop()
         recognitionRef.current.stop();
         recognitionRef.current = null;
         console.log("✅ Voice recognition stopped");
@@ -484,6 +525,8 @@ export function useAvatarSession({
         console.warn("Error stopping speech recognition:", error);
       }
     }
+    // Always reset microphone status to stopped, even if recognition was never initialized
+    setMicrophoneStatus('stopped');
 
     if (avatarRef.current) {
       try {
@@ -528,9 +571,9 @@ export function useAvatarSession({
     clearIdleTimeout();
     
     // Stop speech recognition - set flag FIRST to prevent auto-restart
+    recognitionIntentionalStopRef.current = true;
     if (recognitionRef.current) {
       try {
-        recognitionIntentionalStopRef.current = true; // ✅ CRITICAL: Set BEFORE stop()
         recognitionRef.current.stop();
         recognitionRef.current = null;
         console.log("✅ Voice recognition stopped");
@@ -538,6 +581,8 @@ export function useAvatarSession({
         console.warn("Error stopping speech recognition:", error);
       }
     }
+    // Always reset microphone status to stopped, even if recognition was never initialized
+    setMicrophoneStatus('stopped');
 
     if (avatarRef.current) {
       intentionalStopRef.current = true;
@@ -867,6 +912,7 @@ export function useAvatarSession({
     togglePause,
     isPaused,
     isSpeaking: isSpeakingState,
+    microphoneStatus,
     avatarRef,
     intentionalStopRef,
     abortControllerRef,

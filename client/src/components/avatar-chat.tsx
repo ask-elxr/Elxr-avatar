@@ -2,69 +2,51 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Maximize2, Minimize2, Pause, Play, Send, Users, Brain, Database, Menu, ChevronLeft } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
-import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
-import { MemoryViewer } from "@/components/MemoryViewer";
+import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface AvatarChatProps {
   userId: string;
   avatarId?: string;
 }
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+}
+
 export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // UI-only state
-  const [isMobile, setIsMobile] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [showExpandedFingers, setShowExpandedFingers] = useState(false);
-  const [hasUsedFullscreen, setHasUsedFullscreen] = useState(false);
-  const [showUnpinchAnimation, setShowUnpinchAnimation] = useState(false);
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
-  const [audioOnly, setAudioOnly] = useState(false); // Default to video mode
+  const [audioOnly, setAudioOnly] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   const [showAvatarSwitcher, setShowAvatarSwitcher] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [inputMessage, setInputMessage] = useState("");
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
-  const [showMemoryViewer, setShowMemoryViewer] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const unpinchTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const { toast } = useToast();
   
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
-  
-  // Fetch current avatar name for display
-  const [currentAvatarName, setCurrentAvatarName] = useState("");
-  
-  useEffect(() => {
-    const fetchAvatarName = async () => {
-      try {
-        const response = await fetch(`/api/avatar/config/${selectedAvatarId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentAvatarName(data.name || "");
-        }
-      } catch (error) {
-        console.error("Error fetching avatar name:", error);
-      }
-    };
-    fetchAvatarName();
-  }, [selectedAvatarId]);
   
   // Memory preference from localStorage
   useEffect(() => {
@@ -97,10 +79,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     togglePause,
     isPaused,
     isSpeaking: isSpeakingFromHook,
+    microphoneStatus,
     avatarRef,
     hasAskedAnythingElseRef,
     speakingIntervalRef,
-    handleSubmitMessage
+    handleSubmitMessage: originalHandleSubmitMessage
   } = useAvatarSession({
     videoRef,
     userId,
@@ -114,11 +97,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setIsSpeaking(isSpeakingFromHook);
   }, [isSpeakingFromHook]);
   
-  // Reset Start button when session ends (but not during reconnect, initial state, or avatar switching)
+  // Reset Start button when session ends
   const prevSessionActiveRef = useRef(sessionActive);
   useEffect(() => {
-    // Only reset when transitioning from active to inactive (true → false)
-    // And NOT during avatar switching
     if (prevSessionActiveRef.current && !sessionActive && !showReconnect && !switchingAvatar) {
       setShowChatButton(true);
     }
@@ -126,7 +107,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }, [sessionActive, showReconnect, switchingAvatar]);
   
   // Hook 2: Inactivity timer management
-  const { resetInactivityTimer, clearAllTimers } = useInactivityTimer({
+  const { resetInactivityTimer } = useInactivityTimer({
     sessionActive,
     isPaused,
     avatarRef,
@@ -137,694 +118,324 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   
   // Bridge the actual function to the ref
   resetTimerRef.current = resetInactivityTimer;
-  
-  // No auto-start - user must click Start button to avoid burning credits
-  
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      clearAllTimers();
-    };
-  }, [clearAllTimers]);
 
-  // Mobile detection effect - mobile (<768px), tablet/desktop (>=768px)
+  // Auto-scroll chat to bottom
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768); // Mobile only, tablets get desktop layout
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      if (event.reason?.name === 'AbortError' || event.reason?.message?.includes('aborted')) {
-        event.preventDefault();
-        console.log("Abort error suppressed - this is expected when cancelling requests");
-      }
-    };
-    
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    
-    return () => {
-      window.removeEventListener('resize', checkMobile);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, []);
-
-  // Show unpinch animation on mobile after session starts
-  useEffect(() => {
-    if (isMobile && sessionActive && !isLoading) {
-      console.log("Session active on mobile - showing unpinch animation for 5 seconds");
-      setShowUnpinchAnimation(true);
-      
-      const timer = setTimeout(() => {
-        console.log("Hiding unpinch animation");
-        setShowUnpinchAnimation(false);
-      }, 5000);
-      
-      return () => clearTimeout(timer);
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [isMobile, sessionActive, isLoading]);
+  }, [chatHistory]);
 
-  // Fullscreen change listeners
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!(
-        document.fullscreenElement || 
-        (document as any).webkitFullscreenElement ||
-        (videoRef.current as any)?.webkitDisplayingFullscreen
-      );
-      
-      console.log("Fullscreen change detected:", isCurrentlyFullscreen);
-      setIsFullscreen(isCurrentlyFullscreen);
-      
-      if (isCurrentlyFullscreen) {
-        console.log("Entering fullscreen - showing unpinch animation");
-        setHasUsedFullscreen(true);
-        setShowUnpinchAnimation(true);
-        
-        if (unpinchTimerRef.current) {
-          clearTimeout(unpinchTimerRef.current);
-        }
-        
-        unpinchTimerRef.current = setTimeout(() => {
-          console.log("Hiding unpinch animation after 5 seconds");
-          setShowUnpinchAnimation(false);
-        }, 5000);
-      } else {
-        console.log("Exiting fullscreen - hiding unpinch animation");
-        setShowUnpinchAnimation(false);
-        if (unpinchTimerRef.current) {
-          clearTimeout(unpinchTimerRef.current);
-        }
-      }
-    };
-
-    const handleWebkitBeginFullscreen = () => {
-      console.log("Webkit begin fullscreen - showing unpinch animation");
-      setIsFullscreen(true);
-      setHasUsedFullscreen(true);
-      setShowUnpinchAnimation(true);
-      
-      if (unpinchTimerRef.current) {
-        clearTimeout(unpinchTimerRef.current);
-      }
-      
-      unpinchTimerRef.current = setTimeout(() => {
-        console.log("Hiding unpinch animation after 5 seconds (webkit)");
-        setShowUnpinchAnimation(false);
-      }, 5000);
-    };
-
-    const handleWebkitEndFullscreen = () => {
-      console.log("Webkit end fullscreen");
-      setIsFullscreen(false);
-      setShowUnpinchAnimation(false);
-      if (unpinchTimerRef.current) {
-        clearTimeout(unpinchTimerRef.current);
-      }
-    };
-
-    const handlePresentationModeChanged = (e: any) => {
-      const mode = (e.target as any)?.webkitPresentationMode;
-      console.log("Presentation mode changed:", mode);
-      
-      if (mode === 'fullscreen') {
-        console.log("iOS fullscreen detected - showing unpinch animation");
-        setIsFullscreen(true);
-        setHasUsedFullscreen(true);
-        setShowUnpinchAnimation(true);
-        
-        if (unpinchTimerRef.current) {
-          clearTimeout(unpinchTimerRef.current);
-        }
-        
-        unpinchTimerRef.current = setTimeout(() => {
-          console.log("Hiding unpinch animation after 5 seconds (iOS)");
-          setShowUnpinchAnimation(false);
-        }, 5000);
-      } else {
-        console.log("iOS exiting fullscreen");
-        setIsFullscreen(false);
-        setShowUnpinchAnimation(false);
-        if (unpinchTimerRef.current) {
-          clearTimeout(unpinchTimerRef.current);
-        }
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    
-    if (videoRef.current) {
-      videoRef.current.addEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
-      videoRef.current.addEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
-      videoRef.current.addEventListener('webkitpresentationmodechanged', handlePresentationModeChanged);
-    }
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('webkitbeginfullscreen', handleWebkitBeginFullscreen);
-        videoRef.current.removeEventListener('webkitendfullscreen', handleWebkitEndFullscreen);
-        videoRef.current.removeEventListener('webkitpresentationmodechanged', handlePresentationModeChanged);
-      }
-    };
-  }, []);
-
-  // Animate unpinch graphic
-  useEffect(() => {
-    if (isMobile && sessionActive && showUnpinchAnimation) {
-      const interval = setInterval(() => {
-        setShowExpandedFingers(prev => !prev);
-      }, 800);
-      
-      return () => clearInterval(interval);
-    }
-  }, [isMobile, sessionActive, showUnpinchAnimation]);
-
-  // Ensure video is visible when not in audio-only mode
-  useEffect(() => {
-    if (!audioOnly && videoRef.current) {
-      videoRef.current.style.display = 'block';
-      videoRef.current.style.visibility = 'visible';
-      videoRef.current.style.opacity = '1';
-    }
-  }, [audioOnly]);
-
-  // UI handler functions
-  const toggleFullscreen = async () => {
+  // Fetch conversation history from database
+  const fetchConversationHistory = async () => {
     try {
-      if (isMobile && videoRef.current) {
-        const videoElement = videoRef.current as any;
-        
-        videoElement.removeAttribute('playsinline');
-        
-        if (videoElement.webkitEnterFullscreen) {
-          videoElement.webkitEnterFullscreen();
-        } else if (videoElement.webkitRequestFullscreen) {
-          await videoElement.webkitRequestFullscreen();
-        } else if (videoElement.requestFullscreen) {
-          await videoElement.requestFullscreen();
-        }
-        
-        setTimeout(() => {
-          videoElement.setAttribute('playsinline', '');
-        }, 500);
-      } else {
-        if (!document.fullscreenElement) {
-          await containerRef.current?.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
+      const response = await fetch(`/api/conversations/history/${userId}/${selectedAvatarId}?limit=50`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.conversations) {
+          const formattedHistory: ChatMessage[] = data.conversations.map((conv: any) => ({
+            id: conv.id,
+            role: conv.role,
+            content: conv.text,
+            timestamp: new Date(conv.createdAt)
+          }));
+          setChatHistory(formattedHistory);
         }
       }
     } catch (error) {
-      console.error('Error toggling fullscreen:', error);
-      if (isMobile && videoRef.current) {
-        (videoRef.current as any).setAttribute('playsinline', '');
-      }
+      console.error('Error fetching conversation history:', error);
     }
   };
 
-  const endChat = () => endSession();
+  // Load conversation history when session starts
+  useEffect(() => {
+    if (sessionActive && userId && selectedAvatarId) {
+      fetchConversationHistory();
+      
+      // Poll for updates every 2 seconds while session is active
+      pollIntervalRef.current = setInterval(fetchConversationHistory, 2000);
+      
+      return () => {
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+        }
+      };
+    }
+  }, [sessionActive, userId, selectedAvatarId]);
 
-  const handleAudioOnlyToggle = async (checked: boolean) => {
-    const newAudioOnly = checked as boolean;
-    const previousAudioOnly = audioOnly;
+  // Wrapped handleSubmitMessage that adds to chat history
+  const handleSubmitMessage = async (message: string) => {
+    // Send to AI
+    await originalHandleSubmitMessage(message);
     
-    // If session is active, restart it with new mode
-    if (sessionActive) {
-      try {
-        await endSession(); // End current session and wait for cleanup
-        
-        // Only update state after successful cleanup
-        setAudioOnly(newAudioOnly);
-        
-        // Restart with new setting
-        await startSession({ audioOnly: newAudioOnly, avatarId: selectedAvatarId });
-      } catch (error) {
-        console.error("Error toggling audio-only mode:", error);
-        // Revert state on error
-        setAudioOnly(previousAudioOnly);
-        
-        toast({
-          title: "Mode Switch Failed",
-          description: "Failed to switch mode. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } else {
-      // No active session, just update state
-      setAudioOnly(newAudioOnly);
-    }
+    // Poll immediately after sending to get updated history
+    setTimeout(fetchConversationHistory, 500);
   };
 
-  const handleAvatarConfirm = () => {
-    setShowAvatarSelector(false);
+  const handleAudioOnlyToggle = (checked: boolean) => {
+    setAudioOnly(checked);
+    toast({
+      title: checked ? "Audio Mode Enabled" : "Video Mode Enabled",
+      description: checked
+        ? "Switched to audio-only mode for lower bandwidth"
+        : "Switched to video mode",
+    });
   };
 
   const handleAvatarSwitch = async (newAvatarId: string) => {
-    if (newAvatarId === selectedAvatarId) {
-      return;
-    }
-
     setSwitchingAvatar(true);
+    setSelectedAvatarId(newAvatarId);
+    setShowAvatarSwitcher(false);
     
     try {
-      // End current session
-      if (sessionActive) {
-        await endSession();
-      }
-
-      // End ALL server sessions for this user to clean up any lingering sessions
-      await fetch("/api/session/end-all", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ userId }),
-      });
-
-      // Small delay to ensure cleanup
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Update selected avatar
-      setSelectedAvatarId(newAvatarId);
-
-      // Start new session with new avatar
+      await endSession();
+      await new Promise(resolve => setTimeout(resolve, 500));
       await startSession({ audioOnly, avatarId: newAvatarId });
       
-      // Success - close dialog and show toast
-      setShowAvatarSwitcher(false);
       toast({
         title: "Avatar Switched",
-        description: "Your conversation continues with a new AI guide.",
+        description: "Successfully switched to new AI guide",
       });
     } catch (error: any) {
-      console.error("Error switching avatar:", error);
-      
-      // Keep dialog open and show error
-      if (error.message?.includes("wait") || error.message?.includes("Maximum")) {
-        toast({
-          title: "Please Wait",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Switch Failed",
-          description: "Failed to switch avatar. Please try again.",
-          variant: "destructive",
-        });
-      }
-      
-      // Don't close dialog on error - let user try again
+      toast({
+        variant: "destructive",
+        title: "Switch failed",
+        description: error.message || "Failed to switch avatar",
+      });
     } finally {
       setSwitchingAvatar(false);
     }
+  };
+
+  const endChat = async () => {
+    await endSession();
+    setChatHistory([]); // Clear chat history on end
   };
 
   if (showAvatarSelector) {
     return (
       <AvatarSelector
         selectedAvatarId={selectedAvatarId}
-        onSelect={setSelectedAvatarId}
-        onConfirm={handleAvatarConfirm}
+        onSelect={(id: string) => {
+          setSelectedAvatarId(id);
+        }}
+        onConfirm={() => {
+          setShowAvatarSelector(false);
+        }}
       />
     );
   }
 
   return (
-    <div ref={containerRef} className="w-full h-screen relative overflow-hidden bg-black">
-      {/* Animated Gradient Background - Only show when session is NOT active */}
-      {!sessionActive && (
-        <>
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 via-black to-cyan-900/20 animate-gradient-shift" />
-          <div className="absolute inset-0 dot-pattern opacity-30" />
+    <div className="relative w-full h-screen bg-black overflow-hidden">
+      {/* Full Screen Avatar Video */}
+      <div className="relative w-full h-screen bg-black">
+        {/* Video Element */}
+        <div className="w-full h-full flex items-center justify-center">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            className="w-full h-full object-cover"
+            style={{ display: audioOnly ? 'none' : 'block' }}
+            data-testid="avatar-video"
+          />
           
-          {/* Floating Gradient Orbs */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-float-delayed" />
-        </>
-      )}
-      {/* Sidebar Toggle Button - Top Left */}
-      <Button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="absolute z-[60] top-3 left-3 md:top-4 md:left-4 lg:top-6 lg:left-6 bg-black/90 hover:bg-black text-white rounded-lg shadow-2xl shadow-black/50 border-2 border-white/20 p-2 md:p-3 transition-all duration-300"
-        data-testid="button-toggle-sidebar"
-        title={sidebarOpen ? "Close menu" : "Open menu"}
-      >
-        {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-      </Button>
+          {audioOnly && (
+            <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} />
+          )}
+        </div>
 
-      {/* Left Sidebar Menu */}
-      <div 
-        className={`absolute z-50 top-0 left-0 h-full w-72 md:w-80 glass-strong border-r border-white/10 transform transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex flex-col h-full p-6">
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse glow-primary" />
-              Settings
-            </h2>
+        {/* Overlay Controls */}
+        {sessionActive && (
+          <>
+            {/* Top Controls Bar */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent z-10">
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => togglePause()}
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                  size="sm"
+                  data-testid="button-pause-toggle"
+                >
+                  {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                </Button>
+                
+                <Button
+                  onClick={() => setShowAvatarSwitcher(true)}
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                  size="sm"
+                  data-testid="button-switch-avatar"
+                >
+                  Switch Avatar
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                  size="sm"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+                
+                <Button
+                  onClick={endChat}
+                  className="bg-red-500/80 hover:bg-red-600 text-white"
+                  size="sm"
+                  data-testid="button-end-chat"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Microphone Status */}
+            {microphoneStatus === 'listening' && (
+              <div className="absolute top-20 right-4 flex items-center gap-2 bg-green-500/20 border border-green-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-10">
+                <Mic className="w-4 h-4 text-green-400 animate-pulse" />
+                <span className="text-sm text-green-400 font-medium">Listening</span>
+              </div>
+            )}
+            
+            {microphoneStatus === 'permission-denied' && (
+              <div className="absolute top-20 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-10">
+                <MicOff className="w-4 h-4 text-red-400" />
+                <span className="text-sm text-red-400 font-medium">Mic blocked</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Start Button */}
+        {showChatButton && !showAvatarSelector && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
             <Button
-              onClick={() => setSidebarOpen(false)}
-              variant="ghost"
-              size="sm"
-              className="text-white/70 hover:text-white"
-              data-testid="button-close-sidebar"
+              onClick={async () => {
+                setShowChatButton(false);
+                try {
+                  await startSession({ audioOnly, avatarId: selectedAvatarId });
+                } catch (error: any) {
+                  setShowChatButton(true);
+                  toast({
+                    variant: "destructive",
+                    title: "Cannot start session",
+                    description: error.message || "Failed to start session",
+                  });
+                }
+              }}
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
+              data-testid="button-start-session"
             >
-              <ChevronLeft className="w-5 h-5" />
+              Start Chat
             </Button>
           </div>
+        )}
 
-          {/* Sidebar Content */}
-          <div className="flex-1 space-y-4">
-            {/* Audio Only Toggle */}
-            <div className="glass p-4 rounded-lg border border-white/10 card-hover">
+        {/* Loading Overlay */}
+        {isLoading && !showReconnect && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+            {audioOnly ? (
+              <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
+            ) : (
+              <LoadingSpinner size="md" />
+            )}
+          </div>
+        )}
+
+        {/* Reconnect Screen */}
+        {showReconnect && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black/50 z-20">
+            {audioOnly && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
+            <Button
+              onClick={async () => {
+                try {
+                  await reconnect();
+                } catch (error: any) {
+                  toast({
+                    variant: "destructive",
+                    title: "Cannot reconnect",
+                    description: error.message || "Failed to reconnect",
+                  });
+                }
+              }}
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-3 font-semibold rounded-full shadow-lg"
+              data-testid="button-reconnect"
+            >
+              Reconnect
+            </Button>
+          </div>
+        )}
+
+        {/* Settings Panel */}
+        {showSettings && sessionActive && (
+          <div className="absolute top-16 right-4 bg-black/90 backdrop-blur-lg border border-white/20 rounded-lg p-4 w-72 z-10">
+            <h3 className="text-white font-semibold mb-4">Settings</h3>
+            
+            <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="audio-only-sidebar"
-                  className="text-white text-base font-medium cursor-pointer select-none flex-1"
-                >
+                <label htmlFor="audio-only" className="text-white text-sm">
                   Audio Only Mode
                 </label>
                 <Checkbox
-                  id="audio-only-sidebar"
+                  id="audio-only"
                   checked={audioOnly}
                   onCheckedChange={handleAudioOnlyToggle}
-                  className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-                  data-testid="checkbox-audio-only"
+                  className="border-white data-[state=checked]:bg-primary"
                 />
               </div>
-              <p className="text-white/60 text-sm mt-2">
-                Switch to audio-only for lower bandwidth usage
-              </p>
-            </div>
 
-            {/* Memory Toggle */}
-            <div className="glass p-4 rounded-lg border border-white/10 card-hover">
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="memory-enabled-sidebar"
-                  className="text-white text-base font-medium cursor-pointer select-none flex items-center gap-2 flex-1"
-                >
-                  <Brain className="w-5 h-5 text-purple-400" />
+                <label htmlFor="memory" className="text-white text-sm">
                   Conversation Memory
-                  {memoryEnabled && (
-                    <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse glow-primary" title="Memory active" />
-                  )}
                 </label>
                 <Checkbox
-                  id="memory-enabled-sidebar"
+                  id="memory"
                   checked={memoryEnabled}
                   onCheckedChange={handleMemoryToggle}
-                  className="border-white data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
-                  data-testid="checkbox-memory-enabled"
+                  className="border-white data-[state=checked]:bg-primary"
                 />
               </div>
-              <p className="text-white/60 text-sm mt-2">
-                Remember conversations across sessions using AI memory
-              </p>
             </div>
-
-            {/* View Memories Button */}
-            <Button
-              onClick={() => {
-                setShowMemoryViewer(true);
-                setSidebarOpen(false);
-              }}
-              className="w-full bg-gradient-primary hover:opacity-90 text-white rounded-lg flex items-center gap-3 justify-center !h-auto py-4 glow-primary"
-              data-testid="button-view-memories"
-              title="View stored memories"
-            >
-              <Database className="w-5 h-5" />
-              <span className="text-base font-semibold">View Memories</span>
-            </Button>
           </div>
-
-          {/* Sidebar Footer */}
-          <div className="mt-6 pt-4 border-t border-white/10">
-            <p className="text-white/50 text-xs text-center">
-              Settings apply in real-time
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Overlay when sidebar is open */}
-      {sidebarOpen && (
-        <div 
-          className="absolute inset-0 bg-black/50 z-40 backdrop-blur-sm"
-          onClick={() => setSidebarOpen(false)}
-          data-testid="sidebar-overlay"
-        />
-      )}
-
-      {/* Fullscreen Button - Top Left (Below Sidebar Toggle) */}
-      {sessionActive && (
-        <Button
-          onClick={toggleFullscreen}
-          className="absolute z-50 bg-black/90 hover:bg-black text-white rounded-lg shadow-2xl shadow-black/50 border-2 border-white/20 flex items-center gap-2 !h-auto !min-h-[44px] p-2 md:p-3 top-16 left-3 md:top-20 md:left-4 lg:top-20 lg:left-6 transition-all duration-300"
-          data-testid="button-fullscreen-toggle"
-          title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-          aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-        >
-          {isFullscreen ? (
-            <Minimize2 className="w-5 h-5" aria-hidden="true" />
-          ) : (
-            <Maximize2 className="w-5 h-5" aria-hidden="true" />
-          )}
-        </Button>
-      )}
-
-      {/* Pause/Resume Button - Top Center */}
-      {sessionActive && (
-        <Button
-          onClick={async () => {
-            try {
-              await togglePause();
-            } catch (error: any) {
-              toast({
-                variant: "destructive",
-                title: isPaused ? "Cannot resume" : "Cannot pause",
-                description: error.message || `Failed to ${isPaused ? "resume" : "pause"} session. Please try again.`,
-              });
-            }
-          }}
-          className="absolute z-50 left-1/2 -translate-x-1/2 bg-black/90 hover:bg-purple-900/90 text-white rounded-full shadow-2xl shadow-black/50 border-2 border-purple-400/40 flex items-center gap-2 !h-auto !min-h-[44px] top-3 p-2 md:top-4 md:p-3 lg:top-6 lg:px-4 lg:py-2 transition-all duration-300"
-          data-testid="button-pause-toggle"
-          title={isPaused ? "Resume chat" : "Pause chat"}
-          aria-label={isPaused ? "Resume chat" : "Pause chat"}
-        >
-          {isPaused ? (
-            <>
-              <Play className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
-              <span className="hidden md:inline text-sm font-medium">Resume</span>
-            </>
-          ) : (
-            <>
-              <Pause className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
-              <span className="hidden md:inline text-sm font-medium">Pause</span>
-            </>
-          )}
-        </Button>
-      )}
-
-      {/* Avatar Switcher Button - Top Right (Next to End Chat) */}
-      {sessionActive && (
-        <Button
-          onClick={() => setShowAvatarSwitcher(true)}
-          className="absolute z-50 bg-black/90 hover:bg-cyan-900/90 text-white rounded-full shadow-2xl shadow-black/50 border-2 border-cyan-400/40 flex items-center gap-2 !h-auto !min-h-[44px] top-16 right-3 p-2 md:top-20 md:right-4 md:p-3 lg:top-6 lg:right-40 lg:px-4 lg:py-2 transition-all duration-300"
-          disabled={switchingAvatar}
-          data-testid="button-open-avatar-switcher"
-          title="Switch AI Guide"
-          aria-label="Switch AI Guide"
-        >
-          <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
-          <span className="hidden md:inline text-sm font-medium">Switch</span>
-        </Button>
-      )}
-
-      {/* End Chat Button - Top Right */}
-      {sessionActive && (
-        <Button
-          onClick={endChat}
-          className="absolute z-50 bg-black/90 hover:bg-red-900/90 text-white rounded-full shadow-2xl shadow-black/50 border-2 border-red-400/40 flex items-center gap-2 !h-auto !min-h-[44px] top-3 right-3 p-2 md:top-4 md:right-4 md:p-3 lg:top-6 lg:right-6 lg:px-4 lg:py-2 transition-all duration-300"
-          data-testid="button-end-chat"
-          title="End chat and restart"
-          aria-label="End chat and restart"
-        >
-          <X className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" aria-hidden="true" />
-          <span className="hidden md:inline text-sm font-medium">End Chat</span>
-        </Button>
-      )}
-
-      {/* Start Button - Full overlay in audio mode, positioned over video in video mode */}
-      {showChatButton && !showAvatarSelector && (
-        <div className={`absolute inset-0 z-50 flex items-center justify-center ${audioOnly ? 'bg-black' : 'pointer-events-none'}`}>
-          <Button
-            onClick={async () => {
-              console.log("Start button clicked - initiating session manually");
-              setShowChatButton(false);
-              try {
-                await startSession({ audioOnly, avatarId: selectedAvatarId });
-              } catch (error: any) {
-                setShowChatButton(true); // Restore button so user can retry
-                toast({
-                  variant: "destructive",
-                  title: "Cannot start session",
-                  description: error.message || "Failed to start session. Please try again.",
-                });
-              }
-            }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 md:px-12 md:py-4 text-base md:text-lg font-semibold rounded-full shadow-lg pointer-events-auto"
-            data-testid="button-start-session"
-          >
-            Start Chat
-          </Button>
-        </div>
-      )}
-
-      {/* Loading Overlay - Full screen in audio mode, unobtrusive spinner in video mode */}
-      {isLoading && !showReconnect && (
-        audioOnly ? (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black">
-            <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
-          </div>
-        ) : (
-          <div className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none">
-            <div className="w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" data-testid="loading-spinner" />
-          </div>
-        )
-      )}
-
-      {/* Reconnect Screen - Full overlay in audio mode, floating button in video mode */}
-      {showReconnect && (
-        <div className={`absolute inset-0 z-50 flex flex-col items-center justify-center gap-6 md:gap-8 ${audioOnly ? 'bg-black' : 'pointer-events-none'}`}>
-          {audioOnly && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
-          <Button
-            onClick={async () => {
-              try {
-                await reconnect();
-              } catch (error: any) {
-                toast({
-                  variant: "destructive",
-                  title: "Cannot reconnect",
-                  description: error.message || "Failed to reconnect. Please try again.",
-                });
-              }
-            }}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2.5 md:px-10 md:py-3 text-sm md:text-base font-semibold rounded-full shadow-lg pointer-events-auto"
-            data-testid="button-reconnect"
-          >
-            Reconnect
-          </Button>
-        </div>
-      )}
-
-      {/* Unpinch Graphic - Mobile/Tablet only */}
-      {isMobile && sessionActive && (
-        <div className={`absolute left-1/2 transform -translate-x-1/2 z-40 pointer-events-none transition-opacity duration-500 ${
-          showUnpinchAnimation ? 'opacity-90' : 'opacity-0'
-        }`}
-        style={{ top: '55%' }}>
-          <div className="flex flex-col items-center gap-2 md:gap-3">
-            <img 
-              src={showExpandedFingers ? unpinchGraphic2 : unpinchGraphic1} 
-              alt="Expand for fullscreen" 
-              className="w-12 h-12 md:w-16 md:h-16 transition-opacity duration-300"
-              data-testid="unpinch-graphic"
-            />
-            <p className="text-white text-sm md:text-base font-medium text-center drop-shadow-lg">
-              Click full screen<br/>then expand
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Avatar Video Stream */}
-      <div className="w-full h-full flex items-center justify-center bg-black">
-        {/* HeyGen avatar video stream */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          className="w-full h-full object-cover"
-          style={{ display: audioOnly ? 'none' : 'block' }}
-          data-testid="avatar-video"
-        />
-        
-        {/* Audio-only display */}
-        {audioOnly && (
-          <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} />
         )}
-      </div>
 
-      {/* Text Input - Bottom Center */}
-      {sessionActive && !isPaused && (
-        <div className="absolute bottom-3 md:bottom-4 left-1/2 -translate-x-1/2 z-50 w-full max-w-2xl px-3 md:px-4">
-          <div className="relative group">
-            {/* Animated gradient border */}
-            <div className="absolute -inset-[2px] bg-gradient-to-r from-purple-500 via-cyan-500 to-purple-500 rounded-full opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
-            
+        {/* Chat Input Overlay (Bottom) */}
+        {sessionActive && (
+          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent z-10">
             <form 
               onSubmit={(e: FormEvent) => {
                 e.preventDefault();
-                if (inputMessage.trim()) {
+                if (inputMessage.trim() && !isPaused) {
                   handleSubmitMessage(inputMessage);
                   setInputMessage("");
                 }
               }}
-              className="relative flex items-center gap-1.5 md:gap-2 glass-strong rounded-full p-1.5 md:p-2 border-purple-500/30 shadow-xl shadow-purple-500/20"
+              className="flex items-center gap-2 max-w-4xl mx-auto"
             >
               <Input
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 bg-transparent border-0 text-white placeholder:text-gray-400 text-sm md:text-base h-9 md:h-10 focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="flex-1 bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
                 data-testid="input-message"
                 disabled={!sessionActive || isPaused}
               />
-              <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full opacity-75 blur group-hover:opacity-100 transition-opacity animate-pulse-slow" />
-                <Button
-                  type="submit"
-                  disabled={!inputMessage.trim() || !sessionActive || isPaused}
-                  className="relative bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 text-white rounded-full flex items-center gap-2 !h-auto !min-h-[44px] p-3 md:px-4 md:py-3 shadow-lg shadow-purple-500/30 transition-all duration-300 disabled:opacity-50"
-                  data-testid="button-send-message"
-                  aria-label="Send message"
-                >
-                  <Send className="w-4 h-4 md:w-5 md:h-5" aria-hidden="true" />
-                  <span className="hidden md:inline text-sm font-medium">Send</span>
-                </Button>
-              </div>
+              <Button
+                type="submit"
+                disabled={!inputMessage.trim() || !sessionActive || isPaused}
+                className="bg-primary hover:bg-primary/90 text-white"
+                data-testid="button-send-message"
+              >
+                <Send className="w-4 h-4" />
+              </Button>
             </form>
           </div>
-        </div>
-      )}
-
-      {/* Current Avatar Indicator - Bottom Left */}
-      {sessionActive && currentAvatarName && (
-        <div className="absolute z-40 bottom-16 left-3 md:bottom-20 md:left-4 lg:bottom-6 lg:left-6">
-          <div className="relative group">
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 rounded-lg opacity-60 blur-sm group-hover:opacity-100 transition-opacity animate-gradient-xy" />
-            <div className="relative glass-strong text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg border-green-500/30 shadow-lg shadow-green-500/20">
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full animate-pulse shadow-lg shadow-green-500/50" />
-                <span className="text-sm md:text-base font-medium bg-gradient-to-r from-green-400 via-emerald-400 to-green-400 bg-clip-text text-transparent animate-gradient-text">
-                  {currentAvatarName}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Avatar Switcher Dialog */}
       <AvatarSwitcher
@@ -834,14 +445,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         onSwitch={handleAvatarSwitch}
         disabled={switchingAvatar}
       />
-
-      {/* Memory Viewer Dialog */}
-      {showMemoryViewer && (
-        <MemoryViewer
-          userId={userId}
-          onClose={() => setShowMemoryViewer(false)}
-        />
-      )}
     </div>
   );
 }

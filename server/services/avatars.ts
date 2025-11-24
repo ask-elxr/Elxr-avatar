@@ -40,6 +40,8 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     ...dbAvatar,
     // DB values take absolute precedence (including null, empty string, false)
     // Only fallback to default if DB value is undefined
+    // Exception: profileImageUrl falls back to default if null OR undefined
+    profileImageUrl: (dbAvatar.profileImageUrl !== undefined && dbAvatar.profileImageUrl !== null) ? dbAvatar.profileImageUrl : defaultAvatar.profileImageUrl,
     heygenAvatarId: dbAvatar.heygenAvatarId !== undefined ? dbAvatar.heygenAvatarId : defaultAvatar.heygenAvatarId,
     heygenVoiceId: dbAvatar.heygenVoiceId !== undefined ? dbAvatar.heygenVoiceId : defaultAvatar.heygenVoiceId,
     heygenKnowledgeId: dbAvatar.heygenKnowledgeId !== undefined ? dbAvatar.heygenKnowledgeId : defaultAvatar.heygenKnowledgeId,

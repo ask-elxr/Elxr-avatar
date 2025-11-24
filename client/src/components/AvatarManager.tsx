@@ -128,6 +128,7 @@ export function AvatarManager() {
       id: "",
       name: "",
       description: "",
+      profileImageUrl: null,
       heygenAvatarId: null,
       heygenVoiceId: null,
       heygenKnowledgeId: null,
@@ -147,6 +148,7 @@ export function AvatarManager() {
       id: avatar.id,
       name: avatar.name,
       description: avatar.description,
+      profileImageUrl: avatar.profileImageUrl || null,
       heygenAvatarId: avatar.heygenAvatarId,
       heygenVoiceId: avatar.heygenVoiceId,
       heygenKnowledgeId: avatar.heygenKnowledgeId,
@@ -227,6 +229,7 @@ export function AvatarManager() {
       name: formData.name.trim(),
       description: formData.description.trim(),
       personalityPrompt: formData.personalityPrompt.trim(),
+      profileImageUrl: formData.profileImageUrl?.trim() || null,
       heygenAvatarId: formData.heygenAvatarId?.trim() || null,
       heygenVoiceId: formData.heygenVoiceId?.trim() || null,
       heygenKnowledgeId: formData.heygenKnowledgeId?.trim() || null,
@@ -274,6 +277,7 @@ export function AvatarManager() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-16">Avatar</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Status</TableHead>
@@ -283,6 +287,21 @@ export function AvatarManager() {
             <TableBody>
               {avatars?.map((avatar) => (
                 <TableRow key={avatar.id}>
+                  <TableCell>
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                      {avatar.profileImageUrl ? (
+                        <img 
+                          src={avatar.profileImageUrl} 
+                          alt={avatar.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center text-xs font-medium text-primary">
+                          {avatar.name.charAt(0)}
+                        </div>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell className="font-medium">{avatar.name}</TableCell>
                   <TableCell className="max-w-md truncate">{avatar.description}</TableCell>
                   <TableCell>
@@ -368,6 +387,20 @@ export function AvatarManager() {
                 required
                 data-testid="input-avatar-description"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="profileImageUrl">Profile Image URL</Label>
+              <Input
+                id="profileImageUrl"
+                value={formData.profileImageUrl || ""}
+                onChange={(e) => setFormData({ ...formData, profileImageUrl: e.target.value || null })}
+                placeholder="https://example.com/avatar.jpg"
+                data-testid="input-profile-image-url"
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional. Provide a URL to an avatar image (jpg, png, svg)
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

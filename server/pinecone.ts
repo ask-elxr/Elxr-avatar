@@ -197,6 +197,90 @@ class PineconeService {
       throw error;
     }
   }
+
+  async migrateNamespace(
+    sourceNamespace: string, 
+    targetNamespace: string, 
+    indexName: PineconeIndexName = this.defaultIndexName,
+    deleteSource: boolean = false
+  ) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      console.log(`Starting migration from "${sourceNamespace}" to "${targetNamespace}" in index "${indexName}"`);
+      
+      const index = await this.initializeIndex(indexName);
+      const sourceNs = index.namespace(sourceNamespace);
+      const targetNs = index.namespace(targetNamespace);
+
+      let migratedCount = 0;
+      let paginationToken: string | undefined = undefined;
+      const batchSize = 100;
+
+      // List all vector IDs in the source namespace using pagination
+      do {
+        const listResponse = await sourceNs.listPaginated({
+          limit: batchSize,
+          paginationToken
+        });
+
+        if (listResponse.vectors && listResponse.vectors.length > 0) {
+          const vectorIds = listResponse.vectors.map(v => v.id).filter((id): id is string => id !== undefined);
+          
+          // Fetch the full vectors with metadata and values
+          const fetchResponse = await sourceNs.fetch(vectorIds);
+          
+          if (fetchResponse.records) {
+            // Prepare vectors for upsert, filtering out any records missing values
+            const vectorsToUpsert = Object.entries(fetchResponse.records)
+              .filter(([_, record]) => record.values && record.values.length > 0)
+              .map(([id, record]) => ({
+                id,
+                values: record.values,
+                metadata: record.metadata
+              }));
+
+            const skippedCount = vectorIds.length - vectorsToUpsert.length;
+            if (skippedCount > 0) {
+              console.warn(`Skipped ${skippedCount} vectors with missing values`);
+            }
+
+            if (vectorsToUpsert.length > 0) {
+              // Upsert to target namespace
+              await targetNs.upsert(vectorsToUpsert);
+              migratedCount += vectorsToUpsert.length;
+              
+              console.log(`Migrated ${vectorsToUpsert.length} vectors (total: ${migratedCount})`);
+
+              // Delete from source if requested (only delete IDs that were actually upserted)
+              if (deleteSource) {
+                const upsertedIds = vectorsToUpsert.map(v => v.id);
+                await sourceNs.deleteMany({ ids: upsertedIds });
+                console.log(`Deleted ${upsertedIds.length} vectors from source namespace`);
+              }
+            }
+          }
+        }
+
+        paginationToken = listResponse.pagination?.next;
+      } while (paginationToken);
+
+      console.log(`Migration complete: ${migratedCount} vectors migrated from "${sourceNamespace}" to "${targetNamespace}"`);
+      
+      return {
+        success: true,
+        migratedCount,
+        sourceNamespace,
+        targetNamespace,
+        deletedSource: deleteSource
+      };
+    } catch (error) {
+      console.error(`Error migrating namespace from "${sourceNamespace}" to "${targetNamespace}":`, error);
+      throw error;
+    }
+  }
 }
 
 export const pineconeService = new PineconeService();

@@ -61,13 +61,31 @@ export function AvatarSelector({ selectedAvatarId, onSelect, onConfirm }: Avatar
               data-testid={`card-avatar-${avatar.id}`}
             >
               <CardHeader className="p-4 md:p-5 lg:p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-white text-base md:text-lg lg:text-xl mb-1.5 md:mb-2">{avatar.name}</CardTitle>
-                    <CardDescription className="text-gray-400 text-xs md:text-sm">{avatar.description}</CardDescription>
+                <div className="flex items-start gap-3 md:gap-4">
+                  {/* Avatar Thumbnail */}
+                  <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                    {avatar.profileImageUrl ? (
+                      <img 
+                        src={avatar.profileImageUrl} 
+                        alt={avatar.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-semibold text-xl md:text-2xl">
+                        {avatar.name.charAt(0)}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-white text-base md:text-lg lg:text-xl mb-1.5 md:mb-2">{avatar.name}</CardTitle>
+                    <CardDescription className="text-gray-400 text-xs md:text-sm line-clamp-2">{avatar.description}</CardDescription>
+                  </div>
+
+                  {/* Selection Check Mark */}
                   {selectedAvatarId === avatar.id && (
-                    <div className="ml-2 md:ml-3 flex-shrink-0">
+                    <div className="flex-shrink-0">
                       <div className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-purple-600 flex items-center justify-center">
                         <Check className="w-4 h-4 md:w-5 md:h-5 text-white" />
                       </div>
