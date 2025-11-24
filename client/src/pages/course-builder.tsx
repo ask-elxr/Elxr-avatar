@@ -500,8 +500,35 @@ export default function CourseBuilderPage() {
                                 })()}
                               </div>
 
+                              {/* Video Thumbnail */}
+                              {lesson.video?.thumbnailUrl && (
+                                <div className="my-3">
+                                  <div className="relative group">
+                                    <img 
+                                      src={lesson.video.thumbnailUrl}
+                                      alt={lesson.title}
+                                      className="w-full h-40 object-cover rounded border border-purple-600/30"
+                                    />
+                                    {lesson.video?.videoUrl && (
+                                      <Button
+                                        size="sm"
+                                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-green-600/90 hover:bg-green-600 border-2 border-white opacity-90 hover:opacity-100 transition-opacity"
+                                        onClick={() => window.open(lesson.video.videoUrl, "_blank")}
+                                      >
+                                        <Play className="w-6 h-6 text-white fill-white" />
+                                      </Button>
+                                    )}
+                                    {lesson.video?.duration && (
+                                      <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                                        {lesson.video.duration}s
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
                               <div className="flex gap-2">
-                                {lesson.video?.videoUrl && (
+                                {lesson.video?.videoUrl && !lesson.video?.thumbnailUrl && (
                                   <Button
                                     size="sm"
                                     variant="outline"

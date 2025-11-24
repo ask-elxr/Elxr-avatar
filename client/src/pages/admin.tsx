@@ -2,14 +2,14 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 
-type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'settings';
+type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'settings';
 
 export default function Admin() {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
@@ -24,6 +24,11 @@ export default function Admin() {
 
   const { data: statsData } = useQuery({
     queryKey: ['/api/pinecone/stats'],
+    enabled: isAuthenticated,
+  });
+
+  const { data: coursesData } = useQuery({
+    queryKey: ['/api/courses'],
     enabled: isAuthenticated,
   });
 
@@ -114,6 +119,16 @@ export default function Admin() {
           </Button>
           
           <Button
+            variant={currentView === 'courses' ? 'default' : 'ghost'}
+            className="w-full justify-start"
+            onClick={() => setCurrentView('courses')}
+            data-testid="nav-courses"
+          >
+            <Video className="w-4 h-4 mr-3" />
+            Video Courses
+          </Button>
+          
+          <Button
             variant={currentView === 'settings' ? 'default' : 'ghost'}
             className="w-full justify-start"
             onClick={() => setCurrentView('settings')}
@@ -161,6 +176,7 @@ export default function Admin() {
               {currentView === 'dashboard' && 'Track your progress, avatars & activity here'}
               {currentView === 'avatars' && 'Manage AI avatar personalities and configurations'}
               {currentView === 'knowledge' && 'Upload and manage knowledge base documents'}
+              {currentView === 'courses' && 'Manage video courses and generated content'}
               {currentView === 'settings' && 'Configure system settings and preferences'}
             </p>
           </div>
@@ -317,6 +333,133 @@ export default function Admin() {
                 <DocumentUpload />
               </CardContent>
             </Card>
+          )}
+
+          {/* Courses View */}
+          {currentView === 'courses' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-2xl font-bold">Video Courses</h3>
+                  <p className="text-muted-foreground">Manage all video courses and lessons</p>
+                </div>
+                <Link href="/course-builder">
+                  <Button data-testid="button-create-course">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create New Course
+                  </Button>
+                </Link>
+              </div>
+
+              {Array.isArray(coursesData) && coursesData.length > 0 ? (
+                <div className="grid gap-6">
+                  {coursesData.map((course: any) => (
+                    <Card key={course.id} className="overflow-hidden">
+                      <CardHeader className="border-b bg-card/50">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <CardTitle className="text-xl">{course.title}</CardTitle>
+                            <CardDescription className="mt-1">
+                              {course.description || 'No description'}
+                            </CardDescription>
+                            <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Video className="w-4 h-4" />
+                                {course.lessons?.length || 0} lessons
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Users className="w-4 h-4" />
+                                Instructor: {course.avatarId || 'None'}
+                              </span>
+                            </div>
+                          </div>
+                          <Link href={`/course-builder/${course.id}`}>
+                            <Button variant="outline" size="sm" data-testid={`button-edit-course-${course.id}`}>
+                              Edit Course
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-6">
+                        {course.lessons && course.lessons.length > 0 ? (
+                          <div className="space-y-4">
+                            {course.lessons.map((lesson: any) => (
+                              <div 
+                                key={lesson.id}
+                                className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/30 transition-colors"
+                              >
+                                {lesson.video?.thumbnailUrl && (
+                                  <img 
+                                    src={lesson.video.thumbnailUrl}
+                                    alt={lesson.title}
+                                    className="w-32 h-20 object-cover rounded border"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold">{lesson.title}</h4>
+                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                    {lesson.script || 'No script'}
+                                  </p>
+                                  <div className="flex items-center gap-3 mt-2">
+                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                      lesson.status === 'completed' 
+                                        ? 'bg-green-950/30 text-green-400 border border-green-600/30'
+                                        : lesson.status === 'generating'
+                                        ? 'bg-blue-950/30 text-blue-400 border border-blue-600/30'
+                                        : lesson.status === 'failed'
+                                        ? 'bg-red-950/30 text-red-400 border border-red-600/30'
+                                        : 'bg-gray-950/30 text-gray-400 border border-gray-600/30'
+                                    }`}>
+                                      {lesson.status}
+                                    </span>
+                                    {lesson.video?.duration && (
+                                      <span className="text-xs text-muted-foreground">
+                                        {lesson.video.duration}s
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {lesson.video?.videoUrl && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => window.open(lesson.video.videoUrl, "_blank")}
+                                    data-testid={`button-play-video-${lesson.id}`}
+                                  >
+                                    <Play className="w-4 h-4 mr-1" />
+                                    Play
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-muted-foreground py-8">
+                            No lessons in this course yet
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Video className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
+                    <p className="text-muted-foreground mb-6">
+                      Create your first video course to get started
+                    </p>
+                    <Link href="/course-builder">
+                      <Button data-testid="button-create-first-course">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Course
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           )}
 
           {/* Settings View */}
