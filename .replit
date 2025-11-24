@@ -76,4 +76,4 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-HEYGEN_CREDIT_LIMIT = "100000"
+HEYGEN_CREDIT_LIMIT = "1000"
