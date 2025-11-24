@@ -46,6 +46,7 @@ export default function AvatarSelect() {
     'june': '/attached_assets/June-low_1763964686548.gif',
     'thad': '/attached_assets/Thad_1763963906199.gif',
     'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
+    'ann': '/attached_assets/Ann_1763966361095.gif',
   };
 
   if (loading) {
