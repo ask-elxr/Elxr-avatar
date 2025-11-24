@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import loadingVideo from "@assets/elxr_Transparent-DarkBg_1763948937554.mov";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
@@ -8,9 +7,9 @@ interface LoadingSpinnerProps {
 
 export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) {
   const sizeClasses = {
-    sm: "w-16 h-16",
-    md: "w-24 h-24",
-    lg: "w-32 h-32"
+    sm: "w-8 h-8",
+    md: "w-12 h-12",
+    lg: "w-16 h-16"
   };
 
   return (
@@ -24,17 +23,10 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
       aria-hidden="true"
       role="presentation"
     >
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="w-full h-full object-contain"
-        aria-hidden="true"
-      >
-        <source src={loadingVideo} type="video/mp4" />
-        <source src={loadingVideo} type="video/quicktime" />
-      </video>
+      <div className="relative w-full h-full">
+        <div className="absolute inset-0 rounded-full border-4 border-purple-200 dark:border-purple-900/30"></div>
+        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-purple-600 dark:border-t-purple-400 animate-spin"></div>
+      </div>
     </div>
   );
 }
