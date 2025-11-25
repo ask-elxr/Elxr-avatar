@@ -309,10 +309,11 @@ export default function Credits() {
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
+                      borderRadius: '8px'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    formatter={(value: number, name: string) => [value.toLocaleString(), name]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -360,10 +361,11 @@ export default function Credits() {
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
+                      borderRadius: '8px'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    formatter={(value: number, name: string) => [value.toLocaleString(), name]}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -411,10 +413,11 @@ export default function Credits() {
                     contentStyle={{ 
                       backgroundColor: 'hsl(var(--card))', 
                       border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))'
+                      borderRadius: '8px'
                     }}
+                    labelStyle={{ color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
+                    formatter={(value: number, name: string) => [value.toLocaleString(), name]}
                   />
                 </PieChart>
               </ResponsiveContainer>
