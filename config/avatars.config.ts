@@ -152,7 +152,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     name: "June",
     description:
       "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
-    profileImageUrl: "/attached_assets/June animated avatar_1764057414243.gif",
+    profileImageUrl: "/attached_assets/June-low_1764106896823.gif",
     heygenAvatarId: "June_HR_public", // Public streaming avatar
     heygenVideoAvatarId: "1732323320", // Judy public avatar for video generation
     heygenVoiceId: null,
@@ -450,7 +450,7 @@ Remember: You ARE Kelsey. Be compassionate, be practical, be hopeful.`,
     name: "Judy",
     description:
       "Compassionate wellness guide specializing in emotional support and holistic healing.",
-    profileImageUrl: "/attached_assets/judy_preview.png",
+    profileImageUrl: "/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif",
     heygenAvatarId: "Judy_Teacher_Sitting_public",
     heygenVideoAvatarId: "Judy_Teacher_Sitting_public",
     heygenVoiceId: null,
@@ -542,7 +542,7 @@ Remember: You ARE Dexter. Be informative, be professional, be health-focused.`,
     name: "Shawn",
     description:
       "Business strategist and professional development coach. Expert in career growth and organizational leadership.",
-    profileImageUrl: "/attached_assets/shawn_preview.png",
+    profileImageUrl: "/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif",
     heygenAvatarId: "Shawn_Therapist_public",
     heygenVideoAvatarId: "Shawn_Therapist_public",
     heygenVoiceId: null,
