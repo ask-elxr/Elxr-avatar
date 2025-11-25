@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import { pineconeService } from './pinecone.js';
-import { pineconeAssistant } from './mcpAssistant.js';
 import { latencyCache } from './cache.js';
 import { wrapServiceCall } from './circuitBreaker.js';
 import { logger } from './logger.js';
@@ -299,24 +298,7 @@ class DocumentProcessor {
         }));
       }
 
-      // Try to use Pinecone Assistant first (your MCP assistant)
-      if (pineconeAssistant.isAvailable()) {
-        try {
-          logger.debug({ query: query.substring(0, 50), topK }, 'Trying Pinecone Assistant');
-          const assistantResults = await pineconeAssistant.retrieveContext(query, topK);
-          
-          if (assistantResults && assistantResults.length > 0) {
-            logger.debug({ resultCount: assistantResults.length }, 'Pinecone Assistant found results');
-            // Cache the results
-            latencyCache.setSearchResults(query, assistantResults);
-            return assistantResults;
-          }
-        } catch (error) {
-          console.log('Pinecone Assistant failed, falling back to vector search:', error);
-        }
-      }
-
-      // Fallback to direct vector search if assistant is not available
+      // Direct vector search using namespace service (more cost-effective than Pinecone Assistants)
       // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       

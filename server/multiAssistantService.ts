@@ -3,7 +3,6 @@ import { logger } from './logger.js';
 export interface MentorConfig {
   name: string;
   pineconeNamespace: string;
-  assistantId: string;
   category?: string;
   heygenAvatarId?: string;
   heygenSceneId?: string;
@@ -15,7 +14,6 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   "mark-kohl": {
     name: "Mark Kohl",
     pineconeNamespace: "default",
-    assistantId: "ask-elxr",
     category: "psychedelics",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
@@ -25,7 +23,6 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   "willie-gault": {
     name: "Willie Gault",
     pineconeNamespace: "willie-gault",
-    assistantId: "ask-elxr",
     category: "work",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
@@ -35,7 +32,6 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   june: {
     name: "June",
     pineconeNamespace: "june",
-    assistantId: "ask-elxr",
     category: "mind",
     heygenAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c",
     heygenSceneId: "3b7f24e3906d417db21cd1eddcd52f4c",
@@ -45,7 +41,6 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   ann: {
     name: "Ann",
     pineconeNamespace: "ann",
-    assistantId: "ask-elxr",
     category: "body",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
@@ -55,7 +50,6 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   shawn: {
     name: "Shawn",
     pineconeNamespace: "shawn",
-    assistantId: "ask-elxr",
     category: "leadership",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
@@ -65,7 +59,6 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   thad: {
     name: "Thad",
     pineconeNamespace: "thad",
-    assistantId: "ask-elxr",
     category: "finance",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
@@ -110,15 +103,6 @@ class MultiAssistantService {
     return config.pineconeNamespace;
   }
 
-  getAssistantId(mentorId: string): string {
-    const config = this.getMentorConfig(mentorId);
-    if (!config) {
-      logger.warn({ mentorId }, 'Using default ask-elxr assistant');
-      return "ask-elxr";
-    }
-    return config.assistantId;
-  }
-
   listMentors(): MentorConfig[] {
     return Object.values(mentorConfigs);
   }
@@ -130,7 +114,6 @@ class MultiAssistantService {
       voiceRate: string;
     };
     audioOnly: boolean;
-    assistantId: string;
   } | null {
     const config = this.getMentorConfig(mentorId);
     if (!config) {
@@ -144,7 +127,6 @@ class MultiAssistantService {
         voiceRate: "1.0",
       },
       audioOnly: config.audioOnly || false,
-      assistantId: config.assistantId,
     };
   }
 
