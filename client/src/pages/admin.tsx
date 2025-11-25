@@ -15,6 +15,15 @@ import Analytics from "@/pages/Analytics";
 
 type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'analytics' | 'credits' | 'settings';
 
+const avatarGifs: Record<string, string> = {
+  'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
+  'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
+  'june': '/attached_assets/June-low_1763964686548.gif',
+  'thad': '/attached_assets/Thad_1763963906199.gif',
+  'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
+  'ann': '/attached_assets/Ann_1763966361095.gif',
+};
+
 export default function Admin() {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
@@ -304,8 +313,24 @@ export default function Admin() {
                         className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-semibold">
-                            {avatar.name.charAt(0)}
+                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex-shrink-0">
+                            {avatarGifs[avatar.id] ? (
+                              <img 
+                                src={avatarGifs[avatar.id]} 
+                                alt={avatar.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : avatar.profileImageUrl ? (
+                              <img 
+                                src={avatar.profileImageUrl} 
+                                alt={avatar.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-lg">
+                                {avatar.name.charAt(0)}
+                              </div>
+                            )}
                           </div>
                           <div>
                             <h4 className="font-semibold">{avatar.name}</h4>
