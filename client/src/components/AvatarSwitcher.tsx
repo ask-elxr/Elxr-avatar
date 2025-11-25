@@ -39,6 +39,10 @@ export function AvatarSwitcher({
     'thad': '/attached_assets/Thad_1763963906199.gif',
     'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
     'ann': '/attached_assets/Ann_1763966361095.gif',
+    'kelsey': '/attached_assets/June animated avatar_1764057414243.gif',
+    'judy': '/attached_assets/June animated avatar_1764057414243.gif',
+    'dexter': '/attached_assets/Thad_1763963906199.gif',
+    'shawn': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
   };
 
   useEffect(() => {
