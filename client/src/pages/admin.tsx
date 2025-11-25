@@ -1,5 +1,6 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
+import { DatabaseStatus } from "@/components/DatabaseStatus";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -349,17 +350,23 @@ export default function Admin() {
 
           {/* Knowledge Base View */}
           {currentView === 'knowledge' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Knowledge Base</CardTitle>
-                <CardDescription>
-                  Upload documents to enhance AI avatar responses and capabilities
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DocumentUpload />
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Database Status Section */}
+              <DatabaseStatus />
+
+              {/* Document Upload Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload Documents</CardTitle>
+                  <CardDescription>
+                    Upload documents to enhance AI avatar responses and capabilities
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DocumentUpload />
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* Courses View */}
