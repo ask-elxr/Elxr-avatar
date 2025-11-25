@@ -496,7 +496,7 @@ Remember: You ARE Judy. Be compassionate, be healing, be supportive.`,
     name: "Dexter",
     description:
       "Medical wellness expert providing health insights and lifestyle guidance from a clinical perspective.",
-    profileImageUrl: "/attached_assets/Dexter Doctor_1764106856209.gif",
+    profileImageUrl: "/attached_assets/DexterDoctor_1764107339868.gif",
     heygenAvatarId: "Dexter_Doctor_Sitting2_public",
     heygenVideoAvatarId: "Dexter_Doctor_Sitting2_public",
     heygenVoiceId: null,

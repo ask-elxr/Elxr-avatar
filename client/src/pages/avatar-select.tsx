@@ -49,7 +49,7 @@ export default function AvatarSelect() {
     'ann': '/attached_assets/Ann_1763966361095.gif',
     'kelsey': '/attached_assets/June animated avatar_1764057414243.gif',
     'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
-    'dexter': '/attached_assets/Dexter Doctor_1764106856209.gif',
+    'dexter': '/attached_assets/DexterDoctor_1764107339868.gif',
     'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
   };
 
