@@ -294,9 +294,16 @@ export default function Credits() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
+                    activeIndex={undefined}
+                    activeShape={{
+                      fill: undefined,
+                      stroke: 'hsl(var(--foreground))',
+                      strokeWidth: 2,
+                      filter: 'brightness(1.1)'
+                    }}
                   >
-                    <Cell fill={COLORS.used} />
-                    <Cell fill={COLORS.remaining} />
+                    <Cell fill={COLORS.used} stroke="transparent" />
+                    <Cell fill={COLORS.remaining} stroke="transparent" />
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
@@ -305,6 +312,7 @@ export default function Credits() {
                       borderRadius: '8px',
                       color: 'hsl(var(--foreground))'
                     }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -337,9 +345,16 @@ export default function Credits() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
+                    activeIndex={undefined}
+                    activeShape={{
+                      fill: undefined,
+                      stroke: 'hsl(var(--foreground))',
+                      strokeWidth: 2,
+                      filter: 'brightness(1.1)'
+                    }}
                   >
-                    <Cell fill={COLORS.claude} />
-                    <Cell fill={COLORS.remaining} />
+                    <Cell fill={COLORS.claude} stroke="transparent" />
+                    <Cell fill={COLORS.remaining} stroke="transparent" />
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
@@ -348,6 +363,7 @@ export default function Credits() {
                       borderRadius: '8px',
                       color: 'hsl(var(--foreground))'
                     }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -380,9 +396,16 @@ export default function Credits() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
+                    activeIndex={undefined}
+                    activeShape={{
+                      fill: undefined,
+                      stroke: 'hsl(var(--foreground))',
+                      strokeWidth: 2,
+                      filter: 'brightness(1.1)'
+                    }}
                   >
-                    <Cell fill={COLORS.elevenlabs} />
-                    <Cell fill={COLORS.remaining} />
+                    <Cell fill={COLORS.elevenlabs} stroke="transparent" />
+                    <Cell fill={COLORS.remaining} stroke="transparent" />
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
@@ -391,6 +414,7 @@ export default function Credits() {
                       borderRadius: '8px',
                       color: 'hsl(var(--foreground))'
                     }}
+                    itemStyle={{ color: 'hsl(var(--foreground))' }}
                   />
                 </PieChart>
               </ResponsiveContainer>
