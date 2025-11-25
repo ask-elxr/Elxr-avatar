@@ -43,7 +43,7 @@ export default function AvatarSelect() {
   const avatarGifs: Record<string, string> = {
     'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
     'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
-    'june': '/attached_assets/June_1764056299495.png',
+    'june': '/attached_assets/June animated avatar_1764057414243.gif',
     'thad': '/attached_assets/Thad_1763963906199.gif',
     'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
     'ann': '/attached_assets/Ann_1763966361095.gif',
