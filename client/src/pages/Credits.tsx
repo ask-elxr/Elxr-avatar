@@ -246,10 +246,19 @@ export default function Credits() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={comparisonData}>
+              <BarChart data={comparisonData} margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="name" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
+                <XAxis dataKey="name" stroke="#9ca3af" tick={{ fontSize: 12 }} />
+                <YAxis 
+                  stroke="#9ca3af" 
+                  width={60}
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => {
+                    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                    if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                    return value.toString();
+                  }}
+                />
                 <Tooltip 
                   contentStyle={{ 
                     backgroundColor: '#1f2937', 
@@ -257,6 +266,7 @@ export default function Credits() {
                     borderRadius: '8px',
                     color: '#f9fafb'
                   }}
+                  formatter={(value: number) => value.toLocaleString()}
                 />
                 <Legend />
                 <Bar dataKey="used" fill={COLORS.used} name="Used Credits" />
