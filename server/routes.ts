@@ -1943,7 +1943,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Configure multer for file uploads
-  const upload = multer({ dest: "uploads/" });
+  const upload = multer({ 
+    dest: "uploads/",
+    limits: {
+      fileSize: 25 * 1024 * 1024 // 25MB limit for regular uploads
+    }
+  });
+  
+  // Configure multer for large ZIP file uploads (up to 100MB)
+  const uploadLargeZip = multer({
+    dest: "uploads/",
+    limits: {
+      fileSize: 100 * 1024 * 1024 // 100MB limit for ZIP files
+    }
+  });
   const objectStorageService = new ObjectStorageService();
 
   // Import document queue for background processing
@@ -2756,11 +2769,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Upload and process ZIP file containing documents
+  // Upload and process ZIP file containing documents (extended timeout for large files)
   app.post(
     "/api/documents/upload-zip",
     isAuthenticated,
-    upload.single("file"),
+    (req: any, res: any, next: any) => {
+      // Extend timeout to 5 minutes for large ZIP file processing
+      req.setTimeout(300000);
+      res.setTimeout(300000);
+      next();
+    },
+    uploadLargeZip.single("file"),
     async (req: any, res) => {
       const log = logger.child({ service: "document", operation: "uploadZIP" });
       

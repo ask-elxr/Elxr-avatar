@@ -1,9 +1,24 @@
 // Performance optimizations and monitoring for latency reduction
 import { Request, Response, NextFunction } from 'express';
 
+// Routes that need extended timeouts (file uploads, long processing)
+const extendedTimeoutRoutes = [
+  '/api/documents/upload-zip',
+  '/api/documents/upload-pdf',
+  '/api/documents/upload-docx',
+  '/api/documents/upload-txt',
+  '/api/google-drive/upload-to-pinecone'
+];
+
 // Request timeout middleware
 export function timeoutMiddleware(timeoutMs: number = 10000) {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Skip timeout for routes that need extended processing time
+    if (extendedTimeoutRoutes.some(route => req.path.startsWith(route))) {
+      next();
+      return;
+    }
+    
     // Set response timeout
     const timeout = setTimeout(() => {
       if (!res.headersSent) {
