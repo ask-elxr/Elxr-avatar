@@ -152,7 +152,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     name: "June",
     description:
       "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
-    profileImageUrl: "/attached_assets/June_1763954321708.png",
+    profileImageUrl: "/attached_assets/June_1764056299495.png",
     heygenAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c", // Custom LiveAvatar for streaming
     heygenVideoAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c", // Instant Avatar for video generation
     heygenVoiceId: null,
