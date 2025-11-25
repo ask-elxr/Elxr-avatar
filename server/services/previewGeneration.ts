@@ -72,14 +72,25 @@ export class PreviewGenerationService {
 
       const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8";
 
+      // Determine if this is a talking photo or regular avatar
+      // Talking photos have UUIDs without underscores, public avatars have underscores
+      const isTalkingPhoto = !heygenAvatarId.includes("_") && heygenAvatarId.length === 32;
+
+      const character = isTalkingPhoto 
+        ? {
+            type: "talking_photo" as const,
+            talking_photo_id: heygenAvatarId,
+          }
+        : {
+            type: "avatar" as const,
+            avatar_id: heygenAvatarId,
+            avatar_style: "normal",
+          };
+
       const videoRequest = {
         video_inputs: [
           {
-            character: {
-              type: "avatar",
-              avatar_id: heygenAvatarId,
-              avatar_style: "normal",
-            },
+            character,
             voice: {
               type: "text",
               input_text: greetingScript,
