@@ -18,19 +18,39 @@ type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'analytics'
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
   'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
-  'june': '/attached_assets/June animated avatar_1764057414243.gif',
+  'june': '/attached_assets/June-low_1764106896823.gif',
   'thad': '/attached_assets/Thad_1763963906199.gif',
   'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
   'ann': '/attached_assets/Ann_1763966361095.gif',
+  'kelsey': '/attached_assets/June animated avatar_1764057414243.gif',
+  'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
+  'dexter': '/attached_assets/DexterDoctor_1764107339868.gif',
+  'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
 };
 
 export default function Admin() {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [showCourseBuilder, setShowCourseBuilder] = useState(false);
+  const [preSelectedAvatarId, setPreSelectedAvatarId] = useState<string | null>(null);
   const { toast } = useToast();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+
+  // Handle URL query parameters for deep linking to courses view
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view');
+    const avatarId = urlParams.get('avatarId');
+    
+    if (view === 'courses') {
+      setCurrentView('courses');
+      if (avatarId) {
+        setPreSelectedAvatarId(avatarId);
+        setShowCourseBuilder(true);
+      }
+    }
+  }, []);
 
   const { data: avatarsData } = useQuery({
     queryKey: ['/api/admin/avatars'],
@@ -539,10 +559,12 @@ export default function Admin() {
           {currentView === 'courses' && showCourseBuilder && (
             <CourseBuilderPage 
               isEmbedded 
-              courseId={editingCourseId} 
+              courseId={editingCourseId}
+              preSelectedAvatarId={preSelectedAvatarId}
               onBack={() => {
                 setShowCourseBuilder(false);
                 setEditingCourseId(null);
+                setPreSelectedAvatarId(null);
               }}
             />
           )}

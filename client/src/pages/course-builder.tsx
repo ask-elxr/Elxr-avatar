@@ -23,11 +23,12 @@ interface CourseWithLessons extends Course {
 interface CourseBuilderPageProps {
   isEmbedded?: boolean;
   courseId?: string | null;
+  preSelectedAvatarId?: string | null;
   onBack?: () => void;
 }
 
 export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
-  const { isEmbedded = false, courseId: propCourseId, onBack } = props;
+  const { isEmbedded = false, courseId: propCourseId, preSelectedAvatarId, onBack } = props;
   const [, params] = useRoute("/course-builder/:id");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -68,6 +69,13 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
       setLessons(course.lessons || []);
     }
   }, [course]);
+
+  // Pre-select avatar when preSelectedAvatarId is provided
+  useEffect(() => {
+    if (preSelectedAvatarId && !isEditing) {
+      setAvatarId(preSelectedAvatarId);
+    }
+  }, [preSelectedAvatarId, isEditing]);
 
   // Create course mutation
   const createCourseMutation = useMutation({

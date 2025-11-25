@@ -25,13 +25,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, X } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Video } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
+import { useLocation } from "wouter";
 
 export function AvatarManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState<AvatarProfile | null>(null);
   const [namespaceInput, setNamespaceInput] = useState("");
@@ -401,6 +403,33 @@ export function AvatarManager() {
               <p className="text-xs text-muted-foreground">
                 Optional. Provide a URL to an avatar image (jpg, png, svg)
               </p>
+              
+              {/* Profile Image Preview and Create Videos Button */}
+              {formData.profileImageUrl && (
+                <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-muted/30">
+                  <img 
+                    src={formData.profileImageUrl} 
+                    alt={formData.name || "Avatar preview"}
+                    className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"
+                  />
+                  {editingAvatar && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        setIsDialogOpen(false);
+                        setLocation(`/admin?view=courses&avatarId=${editingAvatar.id}`);
+                      }}
+                      data-testid="button-create-videos"
+                    >
+                      <Video className="w-4 h-4" />
+                      Create Custom Videos
+                    </Button>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
