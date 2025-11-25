@@ -253,7 +253,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             className="w-full h-full object-cover"
             style={{ 
               display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block',
-              transform: selectedAvatarId === 'kelsey' ? 'scale(0.85)' : 'none'
+              objectPosition: selectedAvatarId === 'kelsey' ? 'center 30%' : 'center'
             }}
             data-testid="avatar-video"
           />
