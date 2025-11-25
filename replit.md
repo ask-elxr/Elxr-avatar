@@ -50,6 +50,7 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 
 #### Technical Implementations
 - **AI Integration**: Uses Claude Sonnet 4.5 as the primary LLM, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and persistent conversation memory.
+- **Pinecone Knowledge Retrieval**: Uses direct namespace-based vector queries via `pineconeNamespaceService.ts` (cost-effective approach). The `ask-elxr` index stores all avatar knowledge organized by category namespaces (ADDICTION, MIND, BODY, etc.).
 - **Real-time Voice Conversations**: Achieved through HeyGen for video/audio synthesis and Web Speech API for voice recognition.
 - **Persistent Memory**: Implemented via Mem0, storing conversation history for context-aware responses.
 - **Anonymous Sessions**: Supports persistent anonymous user sessions for course management and other features.
