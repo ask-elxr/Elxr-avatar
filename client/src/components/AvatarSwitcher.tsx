@@ -39,7 +39,7 @@ export function AvatarSwitcher({
     'thad': '/attached_assets/Thad_1763963906199.gif',
     'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
     'ann': '/attached_assets/Ann_1763966361095.gif',
-    'kelsey': '/attached_assets/Kelsey_1764110982.gif',
+    'kelsey': '/attached_assets/Kelsey_1764111279103.gif',
     'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
     'dexter': '/attached_assets/DexterDoctor_1764107339868.gif',
     'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
