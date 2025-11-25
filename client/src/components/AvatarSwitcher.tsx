@@ -41,7 +41,7 @@ export function AvatarSwitcher({
     'ann': '/attached_assets/Ann_1763966361095.gif',
     'kelsey': '/attached_assets/Kelsey_1764111279103.gif',
     'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
-    'dexter': '/attached_assets/DexterDoctor_1764111523619.gif',
+    'dexter': '/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif',
     'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
   };
 
