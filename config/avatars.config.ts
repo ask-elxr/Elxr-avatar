@@ -9,7 +9,7 @@ export const defaultAvatars: AvatarProfile[] = [
     name: "Mark Kohl",
     description:
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
-    profileImageUrl: "/attached_assets/Mark%20Kohl_1763955293782.png",
+    profileImageUrl: "/attached_assets/MArk-kohl-loop_1763964600000.gif",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994", // Custom LiveAvatar for streaming
     heygenVideoAvatarId: "b495d0ea153844beb5df8c4d51d67bc1", // Instant Avatar for video generation
     heygenVoiceId: null,
@@ -92,7 +92,7 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
     name: "Willie Gault",
     description:
       "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
-    profileImageUrl: "/attached_assets/Willie Gault_1763954309539.png",
+    profileImageUrl: "/attached_assets/Willie gault gif-low_1763964813725.gif",
     heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Custom LiveAvatar for streaming
     heygenVideoAvatarId: "57d0eb901fe84211b92b0a9d91f2e5c0", // Instant Avatar for video generation
     heygenVoiceId: null,
@@ -212,7 +212,7 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
     name: "Ann",
     description:
       "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
-    profileImageUrl: "/attached_assets/Ann_1763955328534.png",
+    profileImageUrl: "/attached_assets/Ann_1763966361095.gif",
     heygenAvatarId: "Ann_Therapist_public", // Public streaming avatar
     heygenVideoAvatarId: "1732832799", // Sophia public avatar for video generation
     heygenVoiceId: null,
@@ -272,7 +272,7 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     name: "Nigel",
     description:
       "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
-    profileImageUrl: "/attached_assets/Nigel_1763954340501.png",
+    profileImageUrl: "/attached_assets/Nigel-Loop-avatar_1763964600000.gif",
     heygenAvatarId: "dabc0a0497d64d85bb1e815ad547c128", // Custom LiveAvatar for streaming
     heygenVideoAvatarId: "1732829459", // Shawn sitting behind desk public avatar
     heygenVoiceId: null,
@@ -331,7 +331,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     name: "Thad",
     description:
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
-    profileImageUrl: "/attached_assets/Thad_1763954316719.png",
+    profileImageUrl: "/attached_assets/Thad_1763963906199.gif",
     heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Custom LiveAvatar for streaming
     heygenVideoAvatarId: "1732323365", // Doctor Dexter sitting pose public avatar
     heygenVoiceId: null,
