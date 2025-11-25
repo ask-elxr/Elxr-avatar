@@ -250,11 +250,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-full"
-            style={{ 
-              display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block',
-              objectFit: selectedAvatarId === 'kelsey' ? 'contain' : 'cover'
-            }}
+            className="w-full h-full object-cover"
+            style={{ display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block' }}
             data-testid="avatar-video"
           />
           
