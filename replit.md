@@ -31,10 +31,16 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
     - `courses`, `lessons`, `generated_videos`: Support the video course creation system.
 
 #### Avatar System
-- **Multi-avatar support**: Includes Mark Kohl, Willie Gault, June, Ann, Nigel, and Thad, each with unique expertise and configurable settings.
+- **Multi-avatar support**: Includes Mark Kohl, Willie Gault, June, Ann, Nigel, Thad, and Kelsey, each with unique expertise and configurable settings (7 total active avatars).
 - **Dual Avatar System**: Each avatar has two HeyGen IDs:
   - `heygenAvatarId`: LiveAvatar ID for real-time streaming chat
-  - `heygenVideoAvatarId`: Instant Avatar ID for video course generation
+  - `heygenVideoAvatarId`: Instant/Public Avatar ID for video course generation
+- **Updated Video Avatar IDs** (as of Nov 2025):
+  - Ann: `1732832799` (Sophia public avatar)
+  - June: `1732323320` (Judy public avatar)
+  - Thad: `1732323365` (Doctor Dexter sitting pose)
+  - Nigel: `1732829459` (Shawn sitting behind desk)
+  - Kelsey: `June_HR_public` (uses June's animated style)
 - **Per-avatar features**: Dedicated Pinecone knowledge base namespaces, configurable session limits, unique personalities, and per-avatar research source toggles (PubMed, Wikipedia, Google Search).
 - **Avatar Service (`server/services/avatars.ts`)**: Handles field-level merging where database values override defaults and manages active/inactive avatars.
 
