@@ -5,6 +5,7 @@ import { storage } from '../storage.js';
 import { isAuthenticated } from '../replitAuth.js';
 import { getActiveAvatars, getAvatarById, getAllAvatars, getVideoCapableAvatars } from '../services/avatars.js';
 import { insertAvatarProfileSchema, updateAvatarProfileSchema } from '@shared/schema';
+import { previewGenerationService } from '../services/previewGeneration.js';
 
 export const avatarRouter = Router();
 
@@ -187,5 +188,62 @@ avatarRouter.delete("/admin/avatars/:id", isAuthenticated, async (req: any, res:
   } catch (error: any) {
     logger.error({ error: error.message }, "Error deleting avatar");
     res.status(500).json({ error: "Failed to delete avatar" });
+  }
+});
+
+/**
+ * Generate preview GIF for a specific avatar using HeyGen
+ * @route POST /api/admin/avatars/:id/generate-preview
+ * @access Authenticated users
+ */
+avatarRouter.post("/admin/avatars/:id/generate-preview", isAuthenticated, async (req: any, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    logger.info({ avatarId: id }, "Starting preview generation for avatar");
+    
+    const result = await previewGenerationService.generatePreviewForAvatar(id);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        avatarId: result.avatarId,
+        gifPath: result.gifPath,
+        message: "Preview GIF generated successfully",
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: result.error || "Failed to generate preview",
+      });
+    }
+  } catch (error: any) {
+    logger.error({ error: error.message, avatarId: req.params.id }, "Error generating avatar preview");
+    res.status(500).json({ error: "Failed to generate avatar preview" });
+  }
+});
+
+/**
+ * Generate preview GIFs for all avatars that need them
+ * @route POST /api/admin/avatars/generate-all-previews
+ * @access Authenticated users
+ */
+avatarRouter.post("/admin/avatars/generate-all-previews", isAuthenticated, async (req: any, res: Response) => {
+  try {
+    logger.info("Starting preview generation for all missing avatars");
+    
+    const results = await previewGenerationService.generateAllMissingPreviews();
+    
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    
+    res.json({
+      success: true,
+      message: `Generated ${successful.length} previews, ${failed.length} failed`,
+      results,
+    });
+  } catch (error: any) {
+    logger.error({ error: error.message }, "Error generating all previews");
+    res.status(500).json({ error: "Failed to generate previews" });
   }
 });
