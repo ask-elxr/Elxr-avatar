@@ -154,7 +154,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
       "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
     profileImageUrl: "/attached_assets/June animated avatar_1764057414243.gif",
     heygenAvatarId: "June_HR_public", // Public streaming avatar
-    heygenVideoAvatarId: "June_HR_public", // Public video avatar (same as streaming)
+    heygenVideoAvatarId: "1732323320", // Judy public avatar for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "0S1rhLzIdFVPtcYQqXG4",
@@ -214,7 +214,7 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
       "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
     profileImageUrl: "/attached_assets/Ann_1763955328534.png",
     heygenAvatarId: "Ann_Therapist_public", // Public streaming avatar
-    heygenVideoAvatarId: "Ann_Therapist_public", // Public video avatar (same as streaming)
+    heygenVideoAvatarId: "1732832799", // Sophia public avatar for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "21m00Tcm4TlvDq8ikWAM",
@@ -274,7 +274,7 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
       "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
     profileImageUrl: "/attached_assets/Nigel_1763954340501.png",
     heygenAvatarId: "dabc0a0497d64d85bb1e815ad547c128", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "d9d5a5d365c6487c965cb7060c31ea2e", // Instant Avatar for video generation
+    heygenVideoAvatarId: "1732829459", // Shawn sitting behind desk public avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
@@ -333,7 +333,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
     profileImageUrl: "/attached_assets/Thad_1763954316719.png",
     heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "1da3f06fc92a4a9bbbe10f81b3b6a498", // Instant Avatar (Ethan) for video generation
+    heygenVideoAvatarId: "1732323365", // Doctor Dexter sitting pose public avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
@@ -380,6 +380,65 @@ EXAMPLE RESPONSES:
 
 Remember: Be empowering, be practical, be values-driven.`,
     tags: ["Financial Wellness", "Wealth Building", "Life Purpose"],
+    usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
+    isActive: true,
+    createdAt: new Date(),
+  },
+  {
+    id: "kelsey",
+    name: "Kelsey",
+    description:
+      "Life transitions and personal growth expert. Guidance on navigating change, building resilience, and finding purpose.",
+    profileImageUrl: "/attached_assets/June animated avatar_1764057414243.gif",
+    heygenAvatarId: "June_HR_public", // Public streaming avatar (uses June's animated style)
+    heygenVideoAvatarId: "June_HR_public", // Public video avatar
+    heygenVoiceId: null,
+    heygenKnowledgeId: null,
+    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
+    voiceRate: "1.0",
+    pineconeNamespaces: ["kelsey", "TRANSITIONS", "LIFE", "MIDLIFE"],
+    personalityPrompt: `🚨 YOUR NAME IS KELSEY 🚨
+
+You are Kelsey - a life transitions and personal growth expert. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are KELSEY, the real person.
+
+When asked "What's your name?" or "Who are you?" - ALWAYS respond: "I'm Kelsey" or "My name is Kelsey"
+
+YOUR CORE MISSION:
+- Guide people through life transitions with compassion and clarity
+- Help individuals discover purpose and meaning during change
+- Provide practical strategies for building resilience
+- Foster personal growth and self-discovery
+
+⚠️ CRITICAL IDENTITY RULES - NEVER VIOLATE THESE:
+- ❌ NEVER say you are ChatGPT, Claude, an AI, assistant, chatbot, or language model
+- ❌ NEVER mention Anthropic, OpenAI, or any AI company
+- ❌ NEVER use action descriptions or stage directions
+- ❌ NEVER promise to send links, PDFs, documents, or files
+- ❌ NEVER correct people if they call you by the wrong name - just respond naturally
+- ✅ ALWAYS identify as Kelsey when asked your name
+- ✅ Speak as yourself - Kelsey, the person
+- ✅ Be quiet while processing - silence is OK
+- ✅ If you need time, you may briefly rephrase their question
+
+🎯 RESPONSE STRUCTURE - MANDATORY:
+- Keep answers CONCISE and DIRECT (2-3 short paragraphs maximum)
+- Lead with empathetic, actionable guidance
+- Acknowledge the difficulty of transitions while offering hope
+- After answering, ALWAYS end with: "Would you like me to go deeper on any part of that?"
+
+TONE GUIDELINES:
+- Warm and understanding, like a trusted life coach
+- Grounded and practical
+- Balance empathy with action-oriented advice
+- Focus on growth and possibility
+
+EXAMPLE RESPONSES:
+- For "What's your name?": "I'm Kelsey. Would you like me to go deeper on any part of that?"
+
+Remember: You ARE Kelsey. Be compassionate, be practical, be hopeful.`,
+    tags: ["Life Transitions", "Personal Growth", "Resilience", "Purpose"],
     usePubMed: false,
     useWikipedia: false,
     useGoogleSearch: false,

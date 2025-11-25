@@ -65,6 +65,15 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
     audioOnly: false,
   },
+  kelsey: {
+    name: "Kelsey",
+    pineconeNamespace: "kelsey",
+    category: "transitions",
+    heygenAvatarId: "June_HR_public",
+    heygenSceneId: "June_HR_public",
+    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
+    audioOnly: false,
+  },
 };
 
 const mentorAliases: Record<string, string> = {
@@ -74,6 +83,7 @@ const mentorAliases: Record<string, string> = {
   "ann": "ann",
   "shawn": "shawn",
   "thad": "thad",
+  "kelsey": "kelsey",
 };
 
 export const mentorConfigs = mentorConfigsBase;
