@@ -72,9 +72,18 @@ export class PreviewGenerationService {
 
       const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8";
 
-      // Determine if this is a talking photo or regular avatar
-      // Talking photos have UUIDs without underscores, public avatars have underscores
-      const isTalkingPhoto = !heygenAvatarId.includes("_") && heygenAvatarId.length === 32;
+      // Known talking photo avatar IDs - these use a different API format than regular avatars
+      // Talking photos are created from static images and require type: "talking_photo"
+      const KNOWN_TALKING_PHOTOS = [
+        "84f913285ac944188a35ce5b58ceb861", // Kelsey
+        "5cd4e0726301493d9fed969a2464162c", // Kelsey (alternate)
+        "1da3f06fc92a4a9bbbe10f81b3b6a498", // Cozy Bookstore Sage
+        "a618fb75f718477781a208eddcb6538f", // Librarian
+        "0fb714a20699440890fa92175cc56cf8", // Serene Sunset Sage
+      ];
+      
+      // Check if this is a talking photo by explicit lookup
+      const isTalkingPhoto = KNOWN_TALKING_PHOTOS.includes(heygenAvatarId);
 
       const character = isTalkingPhoto 
         ? {
