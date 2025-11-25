@@ -3,15 +3,16 @@ import { AvatarManager } from "@/components/AvatarManager";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import Credits from "@/pages/Credits";
+import Analytics from "@/pages/Analytics";
 
-type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'credits' | 'settings';
+type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'analytics' | 'credits' | 'settings';
 
 export default function Admin() {
   const [currentView, setCurrentView] = useState<AdminView>('dashboard');
@@ -133,6 +134,16 @@ export default function Admin() {
           </Button>
           
           <Button
+            variant={currentView === 'analytics' ? 'default' : 'ghost'}
+            className="w-full justify-start"
+            onClick={() => setCurrentView('analytics')}
+            data-testid="nav-analytics"
+          >
+            <BarChart3 className="w-4 h-4 mr-3" />
+            Analytics
+          </Button>
+          
+          <Button
             variant={currentView === 'credits' ? 'default' : 'ghost'}
             className="w-full justify-start"
             onClick={() => setCurrentView('credits')}
@@ -191,6 +202,7 @@ export default function Admin() {
               {currentView === 'avatars' && 'Manage AI avatar personalities and configurations'}
               {currentView === 'knowledge' && 'Upload and manage knowledge base documents'}
               {currentView === 'courses' && 'Manage video courses and generated content'}
+              {currentView === 'analytics' && 'Analyze user trends and avatar interaction patterns'}
               {currentView === 'credits' && 'Monitor API credit usage across all services'}
               {currentView === 'settings' && 'Configure system settings and preferences'}
             </p>
@@ -502,6 +514,9 @@ export default function Admin() {
               }}
             />
           )}
+
+          {/* Analytics View */}
+          {currentView === 'analytics' && <Analytics />}
 
           {/* Credits View */}
           {currentView === 'credits' && <Credits />}

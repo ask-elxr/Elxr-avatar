@@ -95,6 +95,16 @@ export interface IStorage {
   // Conversation history operations
   saveConversation(data: InsertConversation): Promise<Conversation>;
   getConversationHistory(userId: string, avatarId?: string, limit?: number): Promise<Conversation[]>;
+  
+  // Analytics operations
+  getAvatarInteractionStats(): Promise<any[]>;
+  getConversationMetrics(): Promise<{
+    totalConversations: number;
+    totalUsers: number;
+    avgMessagesPerUser: number;
+  }>;
+  getTopUserMessages(limit: number): Promise<{ topic: string; count: number; percentage: number }[]>;
+  getEngagementTrend(days: number): Promise<{ date: string; messages: number }[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -519,6 +529,90 @@ export class DatabaseStorage implements IStorage {
     const history = await query;
     // Return in chronological order (oldest first) for Claude context
     return history.reverse();
+  }
+
+  // Analytics operations
+  async getAvatarInteractionStats(): Promise<any[]> {
+    const result = await db.execute(drizzleSql`
+      SELECT 
+        avatar_id,
+        COUNT(*) as total_messages,
+        COUNT(DISTINCT user_id) as unique_users,
+        MIN(created_at) as first_interaction,
+        MAX(created_at) as last_interaction
+      FROM conversations
+      WHERE avatar_id IS NOT NULL
+      GROUP BY avatar_id
+      ORDER BY total_messages DESC
+    `);
+    return result.rows;
+  }
+
+  async getConversationMetrics(): Promise<{
+    totalConversations: number;
+    totalUsers: number;
+    avgMessagesPerUser: number;
+  }> {
+    const result = await db.execute(drizzleSql`
+      SELECT 
+        COUNT(*) as total_conversations,
+        COUNT(DISTINCT user_id) as total_users
+      FROM conversations
+    `);
+    
+    const row: any = result.rows[0];
+    const totalConversations = parseInt(row.total_conversations) || 0;
+    const totalUsers = parseInt(row.total_users) || 1;
+    
+    return {
+      totalConversations,
+      totalUsers,
+      avgMessagesPerUser: totalConversations / totalUsers,
+    };
+  }
+
+  async getTopUserMessages(limit: number): Promise<{ topic: string; count: number; percentage: number }[]> {
+    const result = await db.execute(drizzleSql`
+      SELECT 
+        text as topic,
+        COUNT(*) as count
+      FROM conversations
+      WHERE role = 'user' AND created_at >= NOW() - INTERVAL '30 days'
+      GROUP BY text
+      ORDER BY count DESC
+      LIMIT ${limit}
+    `);
+    
+    const totalResult = await db.execute(drizzleSql`
+      SELECT COUNT(*) as total
+      FROM conversations
+      WHERE role = 'user' AND created_at >= NOW() - INTERVAL '30 days'
+    `);
+    
+    const total = parseInt((totalResult.rows[0] as any).total) || 1;
+    
+    return result.rows.map((row: any) => ({
+      topic: row.topic,
+      count: parseInt(row.count),
+      percentage: (parseInt(row.count) / total) * 100,
+    }));
+  }
+
+  async getEngagementTrend(days: number): Promise<{ date: string; messages: number }[]> {
+    const result = await db.execute(drizzleSql`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*) as messages
+      FROM conversations
+      WHERE created_at >= NOW() - INTERVAL '${drizzleSql.raw(days.toString())} days'
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `);
+    
+    return result.rows.map((row: any) => ({
+      date: new Date(row.date).toLocaleDateString(),
+      messages: parseInt(row.messages),
+    }));
   }
 }
 

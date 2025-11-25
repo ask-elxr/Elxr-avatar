@@ -905,6 +905,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Analytics overview endpoint - user trends and avatar interactions
+  app.get("/api/analytics/overview", async (req, res) => {
+    const log = logger.child({ service: "analytics", operation: "getOverview" });
+    
+    try {
+      log.info("Getting analytics overview");
+
+      // Get avatar interaction stats
+      const avatarStats = await storage.getAvatarInteractionStats();
+      
+      // Get overall conversation metrics
+      const conversationMetrics = await storage.getConversationMetrics();
+      
+      // Get top user messages (common topics)
+      const topUserMessages = await storage.getTopUserMessages(10);
+      
+      // Get engagement trend for the last 7 days
+      const engagementTrend = await storage.getEngagementTrend(7);
+
+      const avatarNameMap: Record<string, string> = {
+        'mark-kohl': 'Mark Kohl',
+        'willie-gault': 'Willie Gault',
+        'june': 'June',
+        'ann': 'Ann',
+        'nigel': 'Nigel',
+        'thad': 'Thad',
+      };
+
+      // Format avatar stats with friendly names
+      const formattedAvatarStats = avatarStats.map((stat: any) => ({
+        avatarId: stat.avatar_id,
+        avatarName: avatarNameMap[stat.avatar_id] || stat.avatar_id,
+        totalMessages: parseInt(stat.total_messages),
+        uniqueUsers: parseInt(stat.unique_users),
+        firstInteraction: stat.first_interaction,
+        lastInteraction: stat.last_interaction,
+      }));
+
+      res.json({
+        avatarStats: formattedAvatarStats,
+        totalConversations: conversationMetrics.totalConversations,
+        totalUsers: conversationMetrics.totalUsers,
+        avgMessagesPerUser: conversationMetrics.avgMessagesPerUser,
+        topUserMessages,
+        engagementTrend,
+      });
+
+      log.info({ statsCount: formattedAvatarStats.length }, "Analytics overview retrieved");
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting analytics overview");
+      res.status(500).json({
+        error: "Failed to get analytics overview",
+        details: error.message,
+      });
+    }
+  });
+
   // Prometheus metrics endpoint - for monitoring and alerting
   app.get("/metrics", async (req, res) => {
     try {
