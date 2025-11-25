@@ -251,7 +251,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             autoPlay
             playsInline
             className="w-full h-full object-cover"
-            style={{ display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block' }}
+            style={{ 
+              display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block',
+              transform: selectedAvatarId === 'kelsey' ? 'scale(0.85)' : 'none'
+            }}
             data-testid="avatar-video"
           />
           
