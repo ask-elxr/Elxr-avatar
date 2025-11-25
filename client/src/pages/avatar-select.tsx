@@ -47,7 +47,7 @@ export default function AvatarSelect() {
     'thad': '/attached_assets/Thad_1763963906199.gif',
     'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
     'ann': '/attached_assets/Ann_1763966361095.gif',
-    'kelsey': '/attached_assets/June animated avatar_1764057414243.gif',
+    'kelsey': '/attached_assets/kelsey_preview.png',
     'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
     'dexter': '/attached_assets/DexterDoctor_1764107339868.gif',
     'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',

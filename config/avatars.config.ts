@@ -391,9 +391,9 @@ Remember: Be empowering, be practical, be values-driven.`,
     name: "Kelsey",
     description:
       "Life transitions and personal growth expert. Guidance on navigating change, building resilience, and finding purpose.",
-    profileImageUrl: "/attached_assets/June animated avatar_1764057414243.gif",
-    heygenAvatarId: "June_HR_public", // Public streaming avatar (uses June's animated style)
-    heygenVideoAvatarId: "June_HR_public", // Public video avatar
+    profileImageUrl: "/attached_assets/kelsey_preview.png",
+    heygenAvatarId: "Katya_CasualLook_public", // Katya public streaming avatar
+    heygenVideoAvatarId: "Katya_CasualLook_public", // Katya public video avatar
     heygenVoiceId: null,
     heygenKnowledgeId: null,
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
