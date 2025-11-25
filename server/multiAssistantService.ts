@@ -50,9 +50,9 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
   shawn: {
     name: "Shawn",
     pineconeNamespace: "shawn",
-    category: "leadership",
-    heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-    heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
+    category: "business",
+    heygenAvatarId: "1732829459",
+    heygenSceneId: "1732829459",
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
     audioOnly: false,
   },
@@ -74,6 +74,24 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
     audioOnly: false,
   },
+  judy: {
+    name: "Judy",
+    pineconeNamespace: "judy",
+    category: "wellness",
+    heygenAvatarId: "1732323320",
+    heygenSceneId: "1732323320",
+    elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
+    audioOnly: false,
+  },
+  dexter: {
+    name: "Dexter",
+    pineconeNamespace: "dexter",
+    category: "medical",
+    heygenAvatarId: "1732323365",
+    heygenSceneId: "1732323365",
+    elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
+    audioOnly: false,
+  },
 };
 
 const mentorAliases: Record<string, string> = {
@@ -84,6 +102,8 @@ const mentorAliases: Record<string, string> = {
   "shawn": "shawn",
   "thad": "thad",
   "kelsey": "kelsey",
+  "judy": "judy",
+  "dexter": "dexter",
 };
 
 export const mentorConfigs = mentorConfigsBase;
