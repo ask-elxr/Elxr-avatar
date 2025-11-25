@@ -168,6 +168,74 @@ export class GoogleDriveService {
       return false;
     }
   }
+
+  // List all files recursively in a folder (with optional depth limit)
+  async listAllFilesRecursive(folderId: string, maxDepth: number = 3, currentDepth: number = 0): Promise<any[]> {
+    if (currentDepth >= maxDepth) {
+      return [];
+    }
+
+    const allFiles: any[] = [];
+    let pageToken: string | undefined;
+
+    do {
+      const result = await this.listFolderContents(folderId, pageToken);
+      
+      for (const file of result.files) {
+        if (!file.id) continue;
+        
+        if (file.mimeType === 'application/vnd.google-apps.folder') {
+          // Recursively get files from subfolders
+          const subFiles = await this.listAllFilesRecursive(file.id, maxDepth, currentDepth + 1);
+          allFiles.push(...subFiles.map(f => ({ ...f, parentFolder: file.name || 'Unknown' })));
+        } else {
+          allFiles.push({ ...file, parentFolder: undefined });
+        }
+      }
+
+      pageToken = result.nextPageToken || undefined;
+    } while (pageToken);
+
+    return allFiles;
+  }
+
+  // Get all folders with their file counts
+  async getFolderStats(): Promise<{ folderId: string; folderName: string; fileCount: number; supportedFiles: number }[]> {
+    const stats: { folderId: string; folderName: string; fileCount: number; supportedFiles: number }[] = [];
+    const supportedMimeTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.google-apps.document' // Google Docs (will be exported as PDF)
+    ];
+
+    try {
+      const { folders } = await this.listSharedFolders();
+      
+      for (const folder of folders) {
+        if (!folder.id) continue;
+        
+        const files = await this.listAllFilesRecursive(folder.id, 2);
+        const supportedFiles = files.filter(f => 
+          supportedMimeTypes.includes(f.mimeType) || 
+          f.name?.endsWith('.pdf') || 
+          f.name?.endsWith('.docx') || 
+          f.name?.endsWith('.txt')
+        );
+        
+        stats.push({
+          folderId: folder.id,
+          folderName: folder.name || 'Unknown',
+          fileCount: files.length,
+          supportedFiles: supportedFiles.length
+        });
+      }
+    } catch (error: any) {
+      this.log.error({ error: error.message }, 'Failed to get folder stats');
+    }
+
+    return stats;
+  }
 }
 
 export const googleDriveService = new GoogleDriveService();

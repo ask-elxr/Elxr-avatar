@@ -7,7 +7,9 @@ const extendedTimeoutRoutes = [
   '/api/documents/upload-pdf',
   '/api/documents/upload-docx',
   '/api/documents/upload-txt',
-  '/api/google-drive/upload-to-pinecone'
+  '/api/google-drive/upload-to-pinecone',
+  '/api/google-drive/batch-upload',
+  '/api/google-drive/folder-stats'
 ];
 
 // Request timeout middleware

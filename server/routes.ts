@@ -2208,6 +2208,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get Google Drive folder stats with file counts
+  app.get("/api/google-drive/folder-stats", isAuthenticated, async (req: any, res) => {
+    try {
+      const stats = await googleDriveService.getFolderStats();
+      res.json({ success: true, stats });
+    } catch (error) {
+      console.error("Error getting folder stats:", error);
+      res.status(500).json({
+        error: "Failed to get folder stats",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Batch upload files from a Google Drive folder to Pinecone
+  app.post("/api/google-drive/batch-upload", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: "google-drive", operation: "batchUpload" });
+    const userId = req.user.claims.sub;
+    
+    try {
+      const { folderId, namespace, fileFilter } = req.body;
+
+      if (!folderId || !namespace) {
+        return res.status(400).json({
+          error: "Missing required fields: folderId, namespace",
+        });
+      }
+
+      log.info({ folderId, namespace, fileFilter }, "Starting batch upload from Google Drive");
+
+      // Get all files from the folder
+      const allFiles = await googleDriveService.listAllFilesRecursive(folderId, 3);
+      
+      // Filter to only supported file types
+      const supportedMimeTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'application/vnd.google-apps.document'
+      ];
+      
+      let filesToProcess = allFiles.filter(f => 
+        supportedMimeTypes.includes(f.mimeType) || 
+        f.name?.endsWith('.pdf') || 
+        f.name?.endsWith('.docx') || 
+        f.name?.endsWith('.txt')
+      );
+
+      // Apply additional file filter if provided (by name pattern)
+      if (fileFilter) {
+        const filterPattern = new RegExp(fileFilter, 'i');
+        filesToProcess = filesToProcess.filter(f => filterPattern.test(f.name || ''));
+      }
+
+      log.info({ totalFiles: allFiles.length, filteredFiles: filesToProcess.length }, "Files filtered for processing");
+
+      if (filesToProcess.length === 0) {
+        return res.json({
+          success: true,
+          message: "No supported files found in the folder",
+          stats: {
+            total: 0,
+            processed: 0,
+            successful: 0,
+            failed: 0,
+            successRate: 0
+          },
+          files: []
+        });
+      }
+
+      // Process files with rate limiting to avoid overwhelming the API
+      const results: { fileName: string; status: string; error?: string }[] = [];
+      let successful = 0;
+      let failed = 0;
+
+      for (const file of filesToProcess) {
+        try {
+          log.info({ fileId: file.id, fileName: file.name }, "Processing file");
+          
+          // Download file from Google Drive
+          const { buffer, mimeType, fileName: processedFileName } = await googleDriveService.downloadFile(file.id);
+
+          // Save to temporary file
+          const tempDir = "uploads";
+          if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+          }
+          
+          const tempPath = path.join(tempDir, `gdrive_batch_${Date.now()}_${processedFileName}`);
+          fs.writeFileSync(tempPath, buffer);
+
+          try {
+            const documentId = `doc_gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const metadata = { userId, namespace, source: 'google-drive-batch', parentFolder: file.parentFolder };
+
+            // Process document
+            await documentProcessor.processDocument(
+              tempPath,
+              mimeType,
+              documentId,
+              metadata,
+            );
+
+            // Clean up temp file
+            fs.unlinkSync(tempPath);
+
+            results.push({ fileName: file.name || 'Unknown', status: 'success' });
+            successful++;
+            log.info({ fileName: file.name }, "File processed successfully");
+          } catch (processingError: any) {
+            // Clean up temp file on error
+            if (fs.existsSync(tempPath)) {
+              fs.unlinkSync(tempPath);
+            }
+            results.push({ fileName: file.name || 'Unknown', status: 'failed', error: processingError.message });
+            failed++;
+            log.error({ fileName: file.name, error: processingError.message }, "File processing failed");
+          }
+
+          // Add small delay between files to avoid rate limiting
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (downloadError: any) {
+          results.push({ fileName: file.name || 'Unknown', status: 'failed', error: downloadError.message });
+          failed++;
+          log.error({ fileName: file.name, error: downloadError.message }, "File download failed");
+        }
+      }
+
+      const successRate = filesToProcess.length > 0 
+        ? Math.round((successful / filesToProcess.length) * 100) 
+        : 0;
+
+      log.info({ 
+        total: filesToProcess.length, 
+        successful, 
+        failed, 
+        successRate 
+      }, "Batch upload completed");
+
+      res.json({
+        success: true,
+        message: `Batch upload completed. ${successful}/${filesToProcess.length} files processed successfully.`,
+        stats: {
+          total: filesToProcess.length,
+          processed: successful + failed,
+          successful,
+          failed,
+          successRate: `${successRate}%`
+        },
+        files: results
+      });
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : 'Unknown error' }, "Batch upload failed");
+      res.status(500).json({
+        error: "Failed to batch upload from Google Drive",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   // Document upload and processing endpoints (protected)
   app.post(
     "/api/documents/upload",
