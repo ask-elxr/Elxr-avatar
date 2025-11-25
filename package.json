@@ -111,6 +111,7 @@
     "unzipper": "^0.12.3",
     "uuid": "^13.0.0",
     "vaul": "^1.1.2",
+    "vite-plugin-static-copy": "^3.1.4",
     "vitest": "^4.0.8",
     "wouter": "^3.3.5",
     "ws": "^8.18.0",
