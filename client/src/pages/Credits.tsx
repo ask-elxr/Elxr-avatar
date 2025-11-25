@@ -92,11 +92,11 @@ export default function Credits() {
   ];
 
   const COLORS = {
-    used: '#8b5cf6',
-    remaining: '#10b981',
-    heygen: '#3b82f6',
-    claude: '#f59e0b',
-    elevenlabs: '#ec4899',
+    used: '#64748b',
+    remaining: '#06b6d4',
+    heygen: '#0ea5e9',
+    claude: '#8b5cf6',
+    elevenlabs: '#14b8a6',
   };
 
   const getStatusBadge = (status: string) => {
@@ -247,10 +247,10 @@ export default function Credits() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={comparisonData} margin={{ left: 20, right: 20, top: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="name" stroke="#9ca3af" tick={{ fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:stroke-slate-700" opacity={0.3} />
+                <XAxis dataKey="name" stroke="#64748b" tick={{ fontSize: 12 }} />
                 <YAxis 
-                  stroke="#9ca3af" 
+                  stroke="#64748b" 
                   width={60}
                   tick={{ fontSize: 12 }}
                   tickFormatter={(value) => {
@@ -261,10 +261,10 @@ export default function Credits() {
                 />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
-                    color: '#f9fafb'
+                    color: 'hsl(var(--foreground))'
                   }}
                   formatter={(value: number) => value.toLocaleString()}
                 />
@@ -300,9 +300,10 @@ export default function Credits() {
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '8px'
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
                   />
                 </PieChart>
@@ -342,9 +343,10 @@ export default function Credits() {
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '8px'
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
                   />
                 </PieChart>
@@ -384,9 +386,10 @@ export default function Credits() {
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1f2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '8px'
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
                   />
                 </PieChart>
@@ -414,21 +417,21 @@ export default function Credits() {
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={usageTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis dataKey="period" stroke="#9ca3af" />
-                <YAxis stroke="#9ca3af" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                <XAxis dataKey="period" stroke="#64748b" tick={{ fontSize: 12 }} />
+                <YAxis stroke="#64748b" tick={{ fontSize: 12 }} />
                 <Tooltip 
                   contentStyle={{ 
-                    backgroundColor: '#1f2937', 
-                    border: '1px solid #374151',
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
                     borderRadius: '8px',
-                    color: '#f9fafb'
+                    color: 'hsl(var(--foreground))'
                   }}
                 />
                 <Legend />
-                <Line type="monotone" dataKey="HeyGen" stroke={COLORS.heygen} strokeWidth={2} />
-                <Line type="monotone" dataKey="Claude" stroke={COLORS.claude} strokeWidth={2} />
-                <Line type="monotone" dataKey="ElevenLabs" stroke={COLORS.elevenlabs} strokeWidth={2} />
+                <Line type="monotone" dataKey="HeyGen" stroke={COLORS.heygen} strokeWidth={2.5} />
+                <Line type="monotone" dataKey="Claude" stroke={COLORS.claude} strokeWidth={2.5} />
+                <Line type="monotone" dataKey="ElevenLabs" stroke={COLORS.elevenlabs} strokeWidth={2.5} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

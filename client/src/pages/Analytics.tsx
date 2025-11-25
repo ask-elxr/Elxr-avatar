@@ -41,7 +41,7 @@ export default function Analytics() {
     );
   }
 
-  const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#6366f1'];
+  const COLORS = ['#0ea5e9', '#8b5cf6', '#14b8a6', '#64748b', '#06b6d4', '#6366f1'];
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -123,21 +123,21 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.avatarStats}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="avatarName" stroke="#9ca3af" tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#9ca3af" />
+                <BarChart data={analytics.avatarStats} margin={{ left: 10, right: 10, top: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                  <XAxis dataKey="avatarName" stroke="#64748b" tick={{ fontSize: 12 }} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: '1px solid #374151',
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
-                      color: '#f9fafb'
+                      color: 'hsl(var(--foreground))'
                     }}
                   />
                   <Legend />
-                  <Bar dataKey="totalMessages" fill="#8b5cf6" name="Total Messages" />
-                  <Bar dataKey="uniqueUsers" fill="#3b82f6" name="Unique Users" />
+                  <Bar dataKey="totalMessages" fill="#0ea5e9" name="Total Messages" />
+                  <Bar dataKey="uniqueUsers" fill="#8b5cf6" name="Unique Users" />
                 </BarChart>
               </ResponsiveContainer>
             </CardContent>
@@ -169,9 +169,10 @@ export default function Analytics() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: '1px solid #374151',
-                      borderRadius: '8px'
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px',
+                      color: 'hsl(var(--foreground))'
                     }}
                   />
                 </PieChart>
@@ -279,19 +280,19 @@ export default function Analytics() {
             <CardContent>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={analytics.engagementTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="date" stroke="#9ca3af" tick={{ fontSize: 12 }} />
-                  <YAxis stroke="#9ca3af" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                  <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 12 }} />
+                  <YAxis stroke="#64748b" tick={{ fontSize: 12 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1f2937',
-                      border: '1px solid #374151',
+                      backgroundColor: 'hsl(var(--card))',
+                      border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
-                      color: '#f9fafb'
+                      color: 'hsl(var(--foreground))'
                     }}
                   />
                   <Legend />
-                  <Line type="monotone" dataKey="messages" stroke="#8b5cf6" strokeWidth={2} name="Messages" />
+                  <Line type="monotone" dataKey="messages" stroke="#0ea5e9" strokeWidth={2.5} name="Messages" />
                 </LineChart>
               </ResponsiveContainer>
             </CardContent>
