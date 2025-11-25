@@ -2756,6 +2756,250 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Upload and process ZIP file containing documents
+  app.post(
+    "/api/documents/upload-zip",
+    isAuthenticated,
+    upload.single("file"),
+    async (req: any, res) => {
+      const log = logger.child({ service: "document", operation: "uploadZIP" });
+      
+      try {
+        const userId = req.user.claims.sub;
+
+        if (!req.file) {
+          return res.status(400).json({ error: "No file uploaded" });
+        }
+
+        const { isAvailable, processPDFDocument, processDOCXDocument, processTXTDocument } = await import("./documentService.js");
+        
+        if (!isAvailable()) {
+          return res.status(503).json({ 
+            error: "Document service not available. Check OpenAI and Pinecone configuration." 
+          });
+        }
+
+        const { originalname, mimetype, size, path: tempPath } = req.file;
+        const category = req.body.category || "OTHER";
+
+        // Validate ZIP file
+        if (mimetype !== "application/zip" && mimetype !== "application/x-zip-compressed" && !originalname.endsWith('.zip')) {
+          fs.unlinkSync(tempPath);
+          return res.status(400).json({ error: "Only ZIP files are supported" });
+        }
+
+        log.info({ filename: originalname, userId, category, size }, "Processing ZIP file");
+
+        // Import unzipper
+        const unzipper = await import("unzipper");
+        const path = await import("path");
+        
+        // Security limits
+        const MAX_FILES = 50; // Maximum files to extract
+        const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB per file
+        const MAX_TOTAL_SIZE = 100 * 1024 * 1024; // 100MB total extracted
+        
+        // Create temp directory for extraction with unique ID
+        const extractId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const extractDir = path.join('/tmp', `zip_extract_${extractId}`);
+        if (!fs.existsSync(extractDir)) {
+          fs.mkdirSync(extractDir, { recursive: true });
+        }
+
+        // Extract ZIP file
+        const directory = await unzipper.Open.file(tempPath);
+        const extractedFiles: { name: string; path: string; type: string }[] = [];
+        
+        let totalSize = 0;
+        let fileCount = 0;
+        
+        for (const file of directory.files) {
+          // Security: Check file count limit
+          if (fileCount >= MAX_FILES) {
+            log.warn({ maxFiles: MAX_FILES }, "ZIP file contains too many files, stopping extraction");
+            break;
+          }
+          
+          // Skip directories and hidden files
+          if (file.type === 'Directory' || file.path.startsWith('__MACOSX') || file.path.includes('/.')) {
+            continue;
+          }
+          
+          // Security: Get safe filename (removes path traversal attempts)
+          const rawName = path.basename(file.path);
+          // Additional security: remove any remaining path separators and sanitize
+          const safeName = rawName.replace(/[\/\\]/g, '_').replace(/\.\./g, '_');
+          
+          if (!safeName || safeName.startsWith('.')) {
+            continue;
+          }
+          
+          const ext = path.extname(safeName).toLowerCase();
+          const supportedTypes = ['.pdf', '.docx', '.txt'];
+          
+          if (!supportedTypes.includes(ext)) {
+            continue;
+          }
+
+          // Security: Check file size before extraction
+          if (file.uncompressedSize && file.uncompressedSize > MAX_FILE_SIZE) {
+            log.warn({ filename: safeName, size: file.uncompressedSize }, "File too large, skipping");
+            continue;
+          }
+          
+          // Security: Check total size limit
+          if (totalSize + (file.uncompressedSize || 0) > MAX_TOTAL_SIZE) {
+            log.warn({ totalSize, maxTotal: MAX_TOTAL_SIZE }, "Total extracted size limit reached, stopping");
+            break;
+          }
+
+          // Generate unique filename to prevent overwrites
+          const uniqueName = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}_${safeName}`;
+          const extractPath = path.join(extractDir, uniqueName);
+          
+          // Verify extraction path is within extract directory (prevent path traversal)
+          const resolvedPath = path.resolve(extractPath);
+          const resolvedDir = path.resolve(extractDir);
+          if (!resolvedPath.startsWith(resolvedDir)) {
+            log.warn({ filename: safeName }, "Path traversal attempt detected, skipping file");
+            continue;
+          }
+          
+          // Extract file
+          const content = await file.buffer();
+          
+          // Verify actual size matches expected
+          if (content.length > MAX_FILE_SIZE) {
+            log.warn({ filename: safeName, actualSize: content.length }, "Extracted file too large, skipping");
+            continue;
+          }
+          
+          fs.writeFileSync(extractPath, content);
+          totalSize += content.length;
+          fileCount++;
+          
+          extractedFiles.push({
+            name: safeName, // Use original safe name for display
+            path: extractPath,
+            type: ext.replace('.', '')
+          });
+        }
+
+        if (extractedFiles.length === 0) {
+          // Clean up
+          fs.unlinkSync(tempPath);
+          fs.rmSync(extractDir, { recursive: true, force: true });
+          return res.status(400).json({ 
+            error: "No supported documents found in ZIP file. Supports: PDF, DOCX, TXT" 
+          });
+        }
+
+        log.info({ extractedCount: extractedFiles.length }, "Files extracted from ZIP");
+
+        // Process each file
+        const results: { filename: string; status: string; documentId?: string; error?: string }[] = [];
+        
+        for (const extractedFile of extractedFiles) {
+          const documentId = `${extractedFile.type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          
+          try {
+            // Create database record
+            const document = await storage.createDocument({
+              userId,
+              filename: extractedFile.name,
+              fileType: extractedFile.type,
+              fileSize: fs.statSync(extractedFile.path).size.toString(),
+              pineconeNamespace: category,
+              objectPath: extractedFile.path,
+            });
+
+            // Process based on file type
+            let processPromise: Promise<any>;
+            
+            if (extractedFile.type === 'pdf') {
+              processPromise = processPDFDocument(extractedFile.path, extractedFile.name, category, documentId, userId);
+            } else if (extractedFile.type === 'docx') {
+              processPromise = processDOCXDocument(extractedFile.path, extractedFile.name, category, documentId, userId);
+            } else {
+              processPromise = processTXTDocument(extractedFile.path, extractedFile.name, category, documentId, userId);
+            }
+
+            // Process in background
+            processPromise
+              .then(async (metadata: any) => {
+                await storage.updateDocumentStatus(
+                  document.id,
+                  "completed",
+                  metadata.totalChunks,
+                  metadata.textLength
+                );
+                log.info({ documentId, filename: extractedFile.name }, "Document from ZIP processed successfully");
+                if (fs.existsSync(extractedFile.path)) {
+                  fs.unlinkSync(extractedFile.path);
+                }
+              })
+              .catch(async (error: any) => {
+                await storage.updateDocumentStatus(document.id, "failed");
+                log.error({ documentId, filename: extractedFile.name, error: error.message }, "Document from ZIP processing failed");
+                if (fs.existsSync(extractedFile.path)) {
+                  fs.unlinkSync(extractedFile.path);
+                }
+              });
+
+            results.push({
+              filename: extractedFile.name,
+              status: "processing",
+              documentId: document.id
+            });
+          } catch (fileError: any) {
+            log.error({ filename: extractedFile.name, error: fileError.message }, "Failed to process file from ZIP");
+            results.push({
+              filename: extractedFile.name,
+              status: "failed",
+              error: fileError.message
+            });
+            if (fs.existsSync(extractedFile.path)) {
+              fs.unlinkSync(extractedFile.path);
+            }
+          }
+        }
+
+        // Clean up original ZIP file
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+
+        // Schedule extraction directory cleanup after processing
+        setTimeout(() => {
+          if (fs.existsSync(extractDir)) {
+            fs.rmSync(extractDir, { recursive: true, force: true });
+          }
+        }, 60000); // Clean up after 1 minute
+
+        const successCount = results.filter(r => r.status === "processing").length;
+        const failedCount = results.filter(r => r.status === "failed").length;
+
+        res.json({
+          success: true,
+          filename: originalname,
+          fileType: "zip",
+          status: "processing",
+          message: `ZIP upload complete. ${successCount} file(s) processing, ${failedCount} failed.`,
+          extractedFiles: results
+        });
+      } catch (error: any) {
+        log.error({ error: error.message }, "Error uploading ZIP");
+        if (req.file?.path && fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        res.status(500).json({
+          error: "Failed to upload ZIP",
+          details: error.message,
+        });
+      }
+    }
+  );
+
   // Get user's uploaded documents
   app.get("/api/documents/user/:userId", isAuthenticated, async (req: any, res) => {
     const log = logger.child({ service: "document", operation: "getUserDocuments" });

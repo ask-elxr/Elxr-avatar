@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag, FolderOpen } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag, FolderOpen, Archive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PINECONE_CATEGORIES, CATEGORY_DESCRIPTIONS, type PineconeCategory } from "@shared/pineconeCategories";
@@ -73,16 +73,17 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
       const isPDF = file.type === 'application/pdf';
       const isDOCX = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx');
       const isTXT = file.type === 'text/plain' || file.name.endsWith('.txt');
+      const isZIP = file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip');
       const isVideo = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'].includes(file.type);
       const isAudio = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/webm'].includes(file.type);
 
-      if (!isPDF && !isDOCX && !isTXT && !isVideo && !isAudio) {
+      if (!isPDF && !isDOCX && !isTXT && !isZIP && !isVideo && !isAudio) {
         invalidFiles.push(`${file.name} (invalid type)`);
         return;
       }
 
-      // Check file size (max 100MB for videos/audio, 25MB for documents)
-      const maxSize = isVideo || isAudio ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+      // Check file size (max 100MB for videos/audio/zip, 25MB for documents)
+      const maxSize = isVideo || isAudio || isZIP ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
       if (file.size > maxSize) {
         invalidFiles.push(`${file.name} (too large)`);
         return;
@@ -146,11 +147,13 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
         const isPDF = fileStatus.file.type === 'application/pdf';
         const isDOCX = fileStatus.file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileStatus.file.name.endsWith('.docx');
         const isTXT = fileStatus.file.type === 'text/plain' || fileStatus.file.name.endsWith('.txt');
+        const isZIP = fileStatus.file.type === 'application/zip' || fileStatus.file.type === 'application/x-zip-compressed' || fileStatus.file.name.endsWith('.zip');
         
         let endpoint = '/api/documents/upload-video'; // default for video/audio
         if (isPDF) endpoint = '/api/documents/upload-pdf';
         else if (isDOCX) endpoint = '/api/documents/upload-docx';
         else if (isTXT) endpoint = '/api/documents/upload-txt';
+        else if (isZIP) endpoint = '/api/documents/upload-zip';
 
         setUploadProgress(`Processing ${i + 1} of ${selectedFiles.length}: ${fileStatus.file.name}`);
 
@@ -219,6 +222,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   const getFileIcon = (file: File) => {
     if (file.type === 'application/pdf') return <FileText className="w-8 h-8 text-red-500" />;
     if (file.type.startsWith('video/')) return <Video className="w-8 h-8 text-purple-500" />;
+    if (file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip')) return <Archive className="w-8 h-8 text-amber-500" />;
     return <FileUp className="w-8 h-8 text-blue-500" />;
   };
 
@@ -287,7 +291,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
                 Upload Local Files
               </CardTitle>
               <CardDescription className="text-white/70">
-                Upload documents (PDF, DOCX, TXT) or video/audio files (MP4, MP3, WAV, M4A) from your device
+                Upload documents (PDF, DOCX, TXT, ZIP) or video/audio files (MP4, MP3, WAV, M4A) from your device
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -313,10 +317,10 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
                   Drop files here or click to browse
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Supports PDF, DOCX, TXT, MP4, MOV, WebM, MP3, WAV, M4A (multiple files)
+                  Supports PDF, DOCX, TXT, ZIP, MP4, MOV, WebM, MP3, WAV, M4A (multiple files)
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Max size: 25MB for documents, 100MB for videos/audio
+                  Max size: 25MB for documents, 100MB for videos/audio/ZIP
                 </p>
               </div>
             </div>
@@ -325,7 +329,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.docx,.txt,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a"
+            accept=".pdf,.docx,.txt,.zip,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a"
             onChange={handleFileSelect}
             className="hidden"
             disabled={isUploading}
