@@ -245,16 +245,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {/* Full Screen Avatar Video */}
       <div className="relative w-full h-screen bg-black">
         {/* Video Element */}
-        <div className="w-full h-full flex items-center justify-center bg-[#6b7c8a]">
+        <div className="w-full h-full flex items-center justify-center">
           <video
             ref={videoRef}
             autoPlay
             playsInline
-            className="w-full h-full"
-            style={{ 
-              display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block',
-              objectFit: selectedAvatarId === 'kelsey' ? 'contain' : 'cover'
-            }}
+            className="w-full h-full object-cover"
+            style={{ display: (audioOnly || isLoading || showReconnect) ? 'none' : 'block' }}
             data-testid="avatar-video"
           />
           
