@@ -2,6 +2,62 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageSquare, TrendingUp, Activity, BarChart3 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell } from "recharts";
+import { useRef, useEffect, useState } from "react";
+
+function MarqueeText({ text }: { text: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
+
+  useEffect(() => {
+    const checkOverflow = () => {
+      if (containerRef.current && textRef.current) {
+        const isOverflowing = textRef.current.scrollWidth > containerRef.current.clientWidth;
+        setShouldScroll(isOverflowing);
+      }
+    };
+    
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [text]);
+
+  return (
+    <div 
+      ref={containerRef} 
+      className="overflow-hidden relative max-w-[70%]"
+      title={text}
+    >
+      <span
+        ref={textRef}
+        className={`text-sm font-medium whitespace-nowrap inline-block ${
+          shouldScroll ? 'animate-marquee' : ''
+        }`}
+        style={{
+          animation: shouldScroll ? 'marquee 8s linear infinite' : 'none',
+        }}
+      >
+        {text}
+      </span>
+      <style>{`
+        @keyframes marquee {
+          0% {
+            transform: translateX(0%);
+          }
+          10% {
+            transform: translateX(0%);
+          }
+          90% {
+            transform: translateX(calc(-100% + 100px));
+          }
+          100% {
+            transform: translateX(calc(-100% + 100px));
+          }
+        }
+      `}</style>
+    </div>
+  );
+}
 
 interface AvatarStats {
   avatarId: string;
@@ -248,9 +304,7 @@ export default function Analytics() {
                   <div key={index} className="flex items-center gap-3">
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex justify-between items-center mb-1 gap-2">
-                        <span className="text-sm font-medium truncate block max-w-[70%]" title={topic.topic}>
-                          {topic.topic}
-                        </span>
+                        <MarqueeText text={topic.topic} />
                         <span className="text-xs text-muted-foreground flex-shrink-0">
                           {topic.percentage.toFixed(1)}%
                         </span>
