@@ -85,17 +85,17 @@ export default function AvatarSelect() {
             <Card
               key={avatar.id}
               onClick={() => setSelectedAvatarId(avatar.id)}
-              className={`cursor-pointer transition-all duration-200 ${
+              className={`cursor-pointer transition-all duration-200 flex flex-col h-full ${
                 selectedAvatarId === avatar.id
                   ? "border-purple-600 border-2 bg-purple-950/20"
                   : "border-gray-700 hover:border-purple-500 bg-gray-900/50"
               }`}
               data-testid={`card-avatar-${avatar.id}`}
             >
-              <CardHeader className="p-4 md:p-5 lg:p-6">
-                <div className="flex flex-col gap-4">
+              <CardHeader className="p-4 md:p-5 lg:p-6 flex-1 flex flex-col">
+                <div className="flex flex-col h-full">
                   {/* Avatar Image/GIF - Full Width */}
-                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
                     {avatarGifs[avatar.id] ? (
                       <img 
                         src={avatarGifs[avatar.id]} 
@@ -115,39 +115,42 @@ export default function AvatarSelect() {
                     )}
                   </div>
 
-                  {/* Content */}
-                  <div className="relative">
-                    <div className="pr-10">
+                  {/* Content - Fixed structure for alignment */}
+                  <div className="relative flex-1 flex flex-col">
+                    <div className="pr-10 flex-1 flex flex-col">
+                      {/* Name */}
                       <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2">
                         {avatar.name}
                       </CardTitle>
-                      <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi mb-3">
+                      
+                      {/* Description - Fixed height with line clamp */}
+                      <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi mb-3 line-clamp-3 min-h-[3.5rem]">
                         {avatar.description}
                       </CardDescription>
                       
-                      {/* Tags */}
-                      {avatar.tags && avatar.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mb-4">
-                          {avatar.tags.map((tag, index) => (
-                            <span
-                              key={index}
-                              className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                      {/* Tags - Fixed height area */}
+                      <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
+                        {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
+                          <span
+                            key={index}
+                            className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi h-fit"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
 
-                      {/* Start Chat Button */}
-                      <Button
-                        onClick={(e) => handleStartChat(avatar.id, e)}
-                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-purple-500/20"
-                        data-testid={`button-chat-${avatar.id}`}
-                      >
-                        <MessageCircle className="w-4 h-4 mr-2" />
-                        Start Chat
-                      </Button>
+                      {/* Start Chat Button - Always at bottom */}
+                      <div className="mt-auto">
+                        <Button
+                          onClick={(e) => handleStartChat(avatar.id, e)}
+                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-purple-500/20"
+                          data-testid={`button-chat-${avatar.id}`}
+                        >
+                          <MessageCircle className="w-4 h-4 mr-2" />
+                          Start Chat
+                        </Button>
+                      </div>
                     </div>
 
                     {/* Selection Check Mark */}
