@@ -81,11 +81,9 @@ export class VideoGenerationService {
         throw new Error("Avatar video generation ID not configured");
       }
 
-      // Determine if this should be a test video (watermarked)
-      // Instant Avatars (custom avatars) require test: true on current HeyGen plan
-      // Public avatars (Ann, June) support production videos (test: false)
-      const isInstantAvatar = !avatar.heygenVideoAvatarId.includes("_public");
-      const useTestMode = isInstantAvatar; // Use test mode for Instant Avatars
+      // Production mode - no test limits on paid HeyGen plan
+      // All avatars (public and custom) use production mode for watermark-free videos
+      const useTestMode = false;
 
       // Create video generation request
       // Use configured voice or default to Sara - Cheerful (English female voice)
