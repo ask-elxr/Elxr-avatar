@@ -62,6 +62,22 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 - **Video Generation Service (`server/services/videoGeneration.ts`)**: Manages HeyGen API calls for video creation, including async polling for completion status and automatic test/production mode selection.
 - **Course Builder**: Integrated within the admin panel under "Video Courses" section. Features "Generate with AI" button for each lesson script.
 
+#### Chat Video-on-Demand System
+- **Feature**: Users can request videos during chat conversations by asking phrases like "make me a video about..." or "create a clip explaining..."
+- **Intent Detection**: Uses regex patterns with fallback Claude AI classification for robust detection (`server/services/intent.ts`)
+- **ChatVideoService (`server/services/chatVideo.ts`)**: Orchestrates video generation from chat:
+  - Extracts topic from user request
+  - Retrieves knowledge from avatar's Pinecone namespace
+  - Generates script using Claude AI (optimized for spoken delivery)
+  - Creates video via HeyGen API asynchronously
+  - Status flow: pending → generating → completed/failed
+- **Database Table**: `chat_generated_videos` tracks generation state, status, timestamps (createdAt, updatedAt, completedAt)
+- **Frontend Integration**: Pending video notifications overlay on chat, toast alerts for completed videos with playback option
+- **API Endpoints**:
+  - `GET /api/courses/chat-videos` - List user's generated videos
+  - `GET /api/courses/chat-videos/pending` - Get pending/generating videos for notification polling
+  - `GET /api/courses/chat-videos/:videoId` - Get specific video details
+
 #### Technical Implementations
 - **AI Integration**: Uses Claude Sonnet 4.5 as the primary LLM, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and persistent conversation memory.
 - **Pinecone Knowledge Retrieval**: Uses direct namespace-based vector queries via `pineconeNamespaceService.ts` (cost-effective approach). The `ask-elxr` index stores all avatar knowledge organized by category namespaces (ADDICTION, MIND, BODY, etc.).
