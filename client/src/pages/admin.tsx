@@ -149,7 +149,7 @@ export default function Admin() {
   );
 
   return (
-    <div className="flex min-h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div 
@@ -161,7 +161,7 @@ export default function Admin() {
       {/* Sidebar */}
       <aside 
         className={`
-          fixed md:sticky top-0 z-50 h-screen
+          fixed md:relative z-50 h-full
           border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
           transition-all duration-300 ease-in-out
           ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-16'}
@@ -226,7 +226,7 @@ export default function Admin() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 overflow-auto transition-all duration-300">
+      <main className="flex-1 min-w-0 h-full overflow-y-auto transition-all duration-300">
         {/* Mobile Header with Menu Button */}
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
           <div className="flex items-center gap-3">
