@@ -8,12 +8,18 @@ function MarqueeText({ text }: { text: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
+  const [scrollDistance, setScrollDistance] = useState(0);
 
   useEffect(() => {
     const checkOverflow = () => {
       if (containerRef.current && textRef.current) {
-        const isOverflowing = textRef.current.scrollWidth > containerRef.current.clientWidth;
+        const containerWidth = containerRef.current.clientWidth;
+        const textWidth = textRef.current.scrollWidth;
+        const isOverflowing = textWidth > containerWidth;
         setShouldScroll(isOverflowing);
+        if (isOverflowing) {
+          setScrollDistance(textWidth - containerWidth + 20);
+        }
       }
     };
     
@@ -28,30 +34,28 @@ function MarqueeText({ text }: { text: string }) {
       className="overflow-hidden relative max-w-[70%]"
       title={text}
     >
-      <span
-        ref={textRef}
-        className={`text-sm font-medium whitespace-nowrap inline-block ${
-          shouldScroll ? 'animate-marquee' : ''
-        }`}
-        style={{
-          animation: shouldScroll ? 'marquee 8s linear infinite' : 'none',
-        }}
-      >
-        {text}
-      </span>
+      <div className="flex">
+        <span
+          ref={textRef}
+          className="text-sm font-medium whitespace-nowrap"
+          style={{
+            animation: shouldScroll ? `marquee-scroll 6s ease-in-out infinite` : 'none',
+            ['--scroll-distance' as string]: `-${scrollDistance}px`,
+          }}
+        >
+          {text}
+        </span>
+      </div>
       <style>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0%);
+        @keyframes marquee-scroll {
+          0%, 15% {
+            transform: translateX(0);
           }
-          10% {
-            transform: translateX(0%);
+          45%, 55% {
+            transform: translateX(var(--scroll-distance));
           }
-          90% {
-            transform: translateX(calc(-100% + 100px));
-          }
-          100% {
-            transform: translateX(calc(-100% + 100px));
+          85%, 100% {
+            transform: translateX(0);
           }
         }
       `}</style>
