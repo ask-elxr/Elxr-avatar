@@ -243,22 +243,26 @@ export default function Analytics() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-3 overflow-hidden">
                 {analytics.topUserMessages.map((topic, index) => (
-                  <div key={index} className="flex items-center gap-4">
-                    <div className="flex-1">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm font-medium truncate">{topic.topic}</span>
-                        <span className="text-xs text-muted-foreground ml-2">{topic.percentage.toFixed(1)}%</span>
+                  <div key={index} className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0 overflow-hidden">
+                      <div className="flex justify-between items-center mb-1 gap-2">
+                        <span className="text-sm font-medium truncate block max-w-[70%]" title={topic.topic}>
+                          {topic.topic}
+                        </span>
+                        <span className="text-xs text-muted-foreground flex-shrink-0">
+                          {topic.percentage.toFixed(1)}%
+                        </span>
                       </div>
                       <div className="w-full bg-muted rounded-full h-2">
                         <div
-                          className="h-2 rounded-full bg-primary"
-                          style={{ width: `${topic.percentage}%` }}
+                          className="h-2 rounded-full bg-primary transition-all duration-300"
+                          style={{ width: `${Math.min(topic.percentage * 10, 100)}%` }}
                         />
                       </div>
                     </div>
-                    <span className="text-sm font-semibold text-muted-foreground min-w-[3rem] text-right">
+                    <span className="text-sm font-semibold text-muted-foreground flex-shrink-0 min-w-[2.5rem] text-right">
                       {topic.count}x
                     </span>
                   </div>
