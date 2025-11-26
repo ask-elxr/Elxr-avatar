@@ -11,7 +11,7 @@ export const defaultAvatars: AvatarProfile[] = [
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
     profileImageUrl: "/attached_assets/MArk-kohl-loop_1763964600000.gif",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "e16db57e57824a0e90b661ad528d3994", // Same as streaming - works for both
+    heygenVideoAvatarId: "0fb714a20699440890fa92175cc56cf8", // Video Avatar ID for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
@@ -94,7 +94,7 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
       "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
     profileImageUrl: "/attached_assets/Willie gault gif-low_1763964813725.gif",
     heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Same as streaming - works for both
+    heygenVideoAvatarId: "57d0eb901fe84211b92b0a9d91f2e5c0", // Video Avatar ID for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
@@ -333,7 +333,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
     profileImageUrl: "/attached_assets/Thad_1763963906199.gif",
     heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Same as streaming - works for both
+    heygenVideoAvatarId: "1da3f06fc92a4a9bbbe10f81b3b6a498", // Video Avatar ID for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
@@ -393,7 +393,7 @@ Remember: Be empowering, be practical, be values-driven.`,
       "Life transitions and personal growth expert. Guidance on navigating change, building resilience, and finding purpose.",
     profileImageUrl: "/attached_assets/kelsey_preview.png",
     heygenAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c", // Custom Kelsey avatar for streaming
-    heygenVideoAvatarId: "Anna_public_20240108", // Anna public avatar for video generation
+    heygenVideoAvatarId: "84f913285ac944188a35ce5b58ceb861", // Video Avatar ID for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null,
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
