@@ -459,13 +459,14 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-black text-white p-3 sm:p-6">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 sm:gap-4">
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => {
                 if (isEmbedded && onBack) {
                   onBack();
@@ -473,15 +474,15 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                   setLocation("/courses");
                 }
               }}
-              className="text-gray-400 hover:text-white"
+              className="text-gray-400 hover:text-white flex-shrink-0"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
-            <div>
-              <h1 className="text-4xl font-satoshi font-bold">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-4xl font-satoshi font-bold truncate">
                 {isEditing ? "Edit Course" : "Create Course"}
               </h1>
-              <p className="text-gray-400 font-satoshi mt-1">
+              <p className="text-gray-400 font-satoshi mt-1 text-sm sm:text-base">
                 Build structured lessons with AI avatar instructors
               </p>
             </div>
@@ -489,7 +490,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
           <Button
             onClick={handleSaveCourse}
             disabled={createCourseMutation.isPending || updateCourseMutation.isPending}
-            className="bg-purple-600 hover:bg-purple-700 font-satoshi"
+            className="bg-purple-600 hover:bg-purple-700 font-satoshi w-full sm:w-auto"
           >
             <Save className="w-4 h-4 mr-2" />
             {isEditing ? "Save Changes" : "Create Course"}
@@ -555,36 +556,36 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
         {/* Lessons Section */}
         {isEditing && (
           <Card className="bg-gray-900 border-gray-800">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-white font-satoshi">Lessons</CardTitle>
+            <CardHeader className="px-3 sm:px-6">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="text-white font-satoshi text-lg sm:text-xl">Lessons</CardTitle>
                 <Button
                   onClick={handleAddLesson}
                   disabled={addLessonMutation.isPending}
                   size="sm"
-                  className="bg-purple-600 hover:bg-purple-700 font-satoshi"
+                  className="bg-purple-600 hover:bg-purple-700 font-satoshi text-xs sm:text-sm flex-shrink-0"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Lesson
+                  <Plus className="w-4 h-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Add Lesson</span>
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               {!lessons || lessons.length === 0 ? (
                 <div className="text-center py-12 text-gray-400 font-satoshi">
                   <Video className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No lessons yet. Click "Add Lesson" to get started.</p>
+                  <p className="text-sm sm:text-base">No lessons yet. Click the + button to get started.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {lessons.map((lesson, index) => (
-                    <Card key={lesson.id} className="bg-gray-800 border-gray-700">
-                      <CardContent className="pt-6">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-shrink-0 mt-2">
+                    <Card key={lesson.id} className="bg-gray-800 border-gray-700 relative">
+                      <CardContent className="p-3 sm:pt-6 sm:px-6">
+                        <div className="flex items-start gap-2 sm:gap-4 pr-8 sm:pr-0">
+                          <div className="hidden sm:block flex-shrink-0 mt-2">
                             <GripVertical className="w-5 h-5 text-gray-600" />
                           </div>
-                          <div className="flex-1 space-y-3">
+                          <div className="flex-1 min-w-0 space-y-3">
                             <div>
                               <Label className="text-gray-300 font-satoshi text-sm">
                                 Lesson {index + 1} Title
@@ -601,15 +602,15 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                               />
                             </div>
                             <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <Label className="text-gray-300 font-satoshi text-sm">
-                                  Script (What the avatar will say)
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1">
+                                <Label className="text-gray-300 font-satoshi text-xs sm:text-sm">
+                                  Script
                                 </Label>
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/30 gap-1.5 h-7 px-2"
+                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/30 gap-1.5 h-7 px-2 self-start sm:self-auto"
                                   onClick={() => openScriptGenDialog(lesson.id, lesson.title)}
                                   disabled={generatingScriptFor === lesson.id}
                                   data-testid={`button-generate-script-${lesson.id}`}
@@ -641,7 +642,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                             </div>
 
                             {/* Video Generation Status and Button */}
-                            <div className="flex items-center justify-between pt-2 border-t border-gray-700">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-700">
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-2">
                                   {(() => {
@@ -656,7 +657,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                                             }`}
                                           />
                                         )}
-                                        <span className={`text-sm font-satoshi ${status.color}`}>
+                                        <span className={`text-xs sm:text-sm font-satoshi ${status.color}`}>
                                           {status.text}
                                         </span>
                                       </>
@@ -675,20 +676,20 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
 
                               {/* Video Thumbnail */}
                               {lesson.video?.thumbnailUrl && (
-                                <div className="my-3">
+                                <div className="my-2 sm:my-3 w-full sm:w-auto">
                                   <div className="relative group">
                                     <img 
                                       src={lesson.video.thumbnailUrl}
                                       alt={lesson.title}
-                                      className="w-full h-40 object-cover rounded border border-purple-600/30"
+                                      className="w-full sm:w-48 h-32 sm:h-40 object-cover rounded border border-purple-600/30"
                                     />
                                     {lesson.video?.videoUrl && (
                                       <Button
                                         size="sm"
-                                        className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-green-600/90 hover:bg-green-600 border-2 border-white opacity-90 hover:opacity-100 transition-opacity"
+                                        className="absolute inset-0 m-auto w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-green-600/90 hover:bg-green-600 border-2 border-white opacity-90 hover:opacity-100 transition-opacity"
                                         onClick={() => window.open(lesson.video.videoUrl, "_blank")}
                                       >
-                                        <Play className="w-6 h-6 text-white fill-white" />
+                                        <Play className="w-5 h-5 sm:w-6 sm:h-6 text-white fill-white" />
                                       </Button>
                                     )}
                                     {lesson.video?.duration && (
@@ -700,13 +701,13 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                                 </div>
                               )}
 
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-wrap">
                                 {lesson.video?.videoUrl && !lesson.video?.thumbnailUrl && (
                                   <Button
                                     size="sm"
                                     variant="outline"
                                     onClick={() => window.open(lesson.video.videoUrl, "_blank")}
-                                    className="bg-green-950/20 border-green-600 text-green-400 hover:bg-green-950/40 font-satoshi"
+                                    className="bg-green-950/20 border-green-600 text-green-400 hover:bg-green-950/40 font-satoshi text-xs sm:text-sm"
                                   >
                                     <Play className="w-3 h-3 mr-1" />
                                     Play
@@ -720,15 +721,15 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                                     lesson.status === "generating" ||
                                     lesson.video?.status === "generating"
                                   }
-                                  className="bg-purple-600 hover:bg-purple-700 font-satoshi"
+                                  className="bg-purple-600 hover:bg-purple-700 font-satoshi text-xs sm:text-sm"
                                 >
                                   <Video className="w-3 h-3 mr-1" />
                                   {lesson.status === "generating" ||
                                   lesson.video?.status === "generating"
-                                    ? "Generating..."
+                                    ? "..."
                                     : lesson.video?.videoUrl
                                     ? "Regenerate"
-                                    : "Generate Video"}
+                                    : "Generate"}
                                 </Button>
                               </div>
                             </div>
@@ -737,7 +738,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteLesson(lesson.id)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-950/20"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-950/20 flex-shrink-0 absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -754,14 +755,14 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
 
       {/* AI Script Generation Dialog */}
       <Dialog open={scriptGenDialog.open} onOpenChange={(open) => setScriptGenDialog(prev => ({ ...prev, open }))}>
-        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-[95vw] sm:max-w-lg mx-auto">
           <DialogHeader>
-            <DialogTitle className="font-satoshi flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
+            <DialogTitle className="font-satoshi flex items-center gap-2 text-base sm:text-lg">
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
               Generate Script with AI
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Generate a lesson script using the avatar's knowledge base from Pinecone.
+            <DialogDescription className="text-gray-400 text-sm">
+              Generate a lesson script using the avatar's knowledge base.
             </DialogDescription>
           </DialogHeader>
           
