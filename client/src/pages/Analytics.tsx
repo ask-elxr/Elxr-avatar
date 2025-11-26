@@ -114,7 +114,7 @@ export default function Analytics() {
         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           <Card>
             <CardHeader className="pb-3 px-3 sm:px-6">
-              <CardTitle className="text-sm sm:text-base font-semibold flex items-center gap-2">
+              <CardTitle className="text-sm sm:text-base lg:text-lg font-semibold flex items-center gap-2">
                 <BarChart3 className="w-4 h-4" />
                 Avatar Interaction Rankings
               </CardTitle>
@@ -123,33 +123,35 @@ export default function Analytics() {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={analytics.avatarStats} margin={{ left: 0, right: 10, top: 5, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
-                  <XAxis 
-                    dataKey="avatarName" 
-                    stroke="#64748b" 
-                    tick={{ fontSize: 10 }} 
-                    angle={-45}
-                    textAnchor="end"
-                    interval={0}
-                    height={60}
-                  />
-                  <YAxis stroke="#64748b" tick={{ fontSize: 10 }} width={35} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))',
-                      fontSize: '12px'
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="totalMessages" fill="#0ea5e9" name="Messages" />
-                  <Bar dataKey="uniqueUsers" fill="#8b5cf6" name="Users" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="h-[280px] sm:h-[320px] lg:h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.avatarStats} margin={{ left: 0, right: 10, top: 5, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                    <XAxis 
+                      dataKey="avatarName" 
+                      stroke="#64748b" 
+                      tick={{ fontSize: 10 }} 
+                      angle={-45}
+                      textAnchor="end"
+                      interval={0}
+                      height={60}
+                    />
+                    <YAxis stroke="#64748b" tick={{ fontSize: 10 }} width={35} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))',
+                        fontSize: '12px'
+                      }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                    <Bar dataKey="totalMessages" fill="#0ea5e9" name="Messages" />
+                    <Bar dataKey="uniqueUsers" fill="#8b5cf6" name="Users" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
