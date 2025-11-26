@@ -166,16 +166,6 @@ export default function AvatarSelect() {
           ))}
         </div>
 
-        <div className="text-center">
-          <Button
-            onClick={handleConfirm}
-            disabled={!selectedAvatarId}
-            className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white font-bold px-10 py-5 md:px-12 md:py-6 text-base md:text-lg font-satoshi rounded-full shadow-2xl transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="button-start-chat"
-          >
-            Start Chat
-          </Button>
-        </div>
       </div>
     </div>
   );
