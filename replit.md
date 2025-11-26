@@ -49,13 +49,18 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 
 #### Video Course System
 - **Workflow**: Users create courses, add lessons with scripts, and generate videos via HeyGen API integration.
-- **All 6 avatars available**: Mark, Willie, Nigel, Thad, Ann, and June can create video courses.
+- **AI Script Generation**: Each lesson can have its script auto-generated using:
+  - Avatar's Pinecone knowledge base (namespace-specific retrieval)
+  - Claude AI for natural spoken content generation
+  - Configurable target duration (30s to 3 minutes)
+  - API: `POST /api/courses/generate-script` with `{avatarId, courseId, topic, lessonTitle, targetDuration}`
+- **All avatars available for video courses**: Mark, Willie, Nigel, Thad, Ann, June, Kelsey, Judy, Dexter, Shawn.
 - **Video Modes**:
-  - **Test Videos (watermarked)**: Mark, Willie, Nigel, Thad generate test videos with HeyGen watermark
-  - **Production Videos**: Ann and June generate watermark-free production videos
+  - **Test Videos (watermarked)**: Instant Avatars generate test videos with HeyGen watermark
+  - **Production Videos**: Public avatars generate watermark-free production videos
 - **Auto-detection**: System automatically uses test mode for Instant Avatars and production mode for public avatars
 - **Video Generation Service (`server/services/videoGeneration.ts`)**: Manages HeyGen API calls for video creation, including async polling for completion status and automatic test/production mode selection.
-- **Course Builder**: Integrated within the admin panel under "Video Courses" section. No separate route needed.
+- **Course Builder**: Integrated within the admin panel under "Video Courses" section. Features "Generate with AI" button for each lesson script.
 
 #### Technical Implementations
 - **AI Integration**: Uses Claude Sonnet 4.5 as the primary LLM, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and persistent conversation memory.

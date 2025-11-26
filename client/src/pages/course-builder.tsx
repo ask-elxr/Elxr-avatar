@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Course, Lesson, InsertLesson } from "@shared/schema";
@@ -293,6 +294,108 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   // Track generation start times for progress calculation
   const [generationStartTimes, setGenerationStartTimes] = useState<Record<string, number>>({});
 
+  // AI Script Generation state
+  const [scriptGenDialog, setScriptGenDialog] = useState<{
+    open: boolean;
+    lessonId: string;
+    lessonTitle: string;
+    topic: string;
+    duration: number;
+  }>({
+    open: false,
+    lessonId: '',
+    lessonTitle: '',
+    topic: '',
+    duration: 60
+  });
+  const [generatingScriptFor, setGeneratingScriptFor] = useState<string | null>(null);
+
+  // Generate script mutation
+  const generateScriptMutation = useMutation({
+    mutationFn: async (data: { lessonId: string; lessonTitle: string; topic: string; targetDuration: number }) => {
+      const response = await apiRequest("/api/courses/generate-script", "POST", {
+        avatarId,
+        courseId,
+        topic: data.topic,
+        lessonTitle: data.lessonTitle,
+        targetDuration: data.targetDuration
+      });
+      
+      // Check for HTTP errors
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+        throw new Error(errorData.error || `Request failed with status ${response.status}`);
+      }
+      
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || 'Script generation failed');
+      }
+      
+      return { ...result, lessonId: data.lessonId };
+    },
+    onSuccess: (result) => {
+      // Update the lesson script locally
+      handleUpdateLesson(result.lessonId, 'script', result.script);
+      // Save to backend
+      updateLessonMutation.mutate({ id: result.lessonId, data: { script: result.script } });
+      
+      toast({
+        title: "Script generated!",
+        description: `Created ${result.metadata?.estimatedDuration || 60}s script using ${result.sources?.pinecone || 0} knowledge sources.`,
+      });
+      setGeneratingScriptFor(null);
+      setScriptGenDialog(prev => ({ ...prev, open: false }));
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Script generation failed",
+        description: error.message || "Could not generate script. Please try again.",
+        variant: "destructive",
+      });
+      setGeneratingScriptFor(null);
+      setScriptGenDialog(prev => ({ ...prev, open: false }));
+    },
+  });
+
+  const openScriptGenDialog = (lessonId: string, lessonTitle: string) => {
+    setScriptGenDialog({
+      open: true,
+      lessonId,
+      lessonTitle,
+      topic: lessonTitle || '',
+      duration: 60
+    });
+  };
+
+  const handleGenerateScript = () => {
+    if (!scriptGenDialog.topic.trim()) {
+      toast({
+        title: "Topic required",
+        description: "Please enter a topic for the script.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!avatarId) {
+      toast({
+        title: "Avatar required",
+        description: "Please select an avatar instructor first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingScriptFor(scriptGenDialog.lessonId);
+    generateScriptMutation.mutate({
+      lessonId: scriptGenDialog.lessonId,
+      lessonTitle: scriptGenDialog.lessonTitle,
+      topic: scriptGenDialog.topic,
+      targetDuration: scriptGenDialog.duration
+    });
+  };
+
   const getVideoStatusDisplay = (lesson: LessonWithVideo) => {
     const videoStatus = lesson.video?.status || lesson.status;
     
@@ -477,9 +580,32 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                               />
                             </div>
                             <div>
-                              <Label className="text-gray-300 font-satoshi text-sm">
-                                Script (What the avatar will say)
-                              </Label>
+                              <div className="flex items-center justify-between mb-1">
+                                <Label className="text-gray-300 font-satoshi text-sm">
+                                  Script (What the avatar will say)
+                                </Label>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/30 gap-1.5 h-7 px-2"
+                                  onClick={() => openScriptGenDialog(lesson.id, lesson.title)}
+                                  disabled={generatingScriptFor === lesson.id}
+                                  data-testid={`button-generate-script-${lesson.id}`}
+                                >
+                                  {generatingScriptFor === lesson.id ? (
+                                    <>
+                                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                      <span className="text-xs">Generating...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Sparkles className="w-3.5 h-3.5" />
+                                      <span className="text-xs">Generate with AI</span>
+                                    </>
+                                  )}
+                                </Button>
+                              </div>
                               <Textarea
                                 value={lesson.script}
                                 onChange={(e) =>
@@ -488,7 +614,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                                 onBlur={(e) =>
                                   saveLesson(lesson.id, "script", e.target.value)
                                 }
-                                placeholder="Enter the lesson script..."
+                                placeholder="Enter the lesson script or click 'Generate with AI' to create one..."
                                 className="bg-gray-900 border-gray-600 text-white font-satoshi min-h-[120px]"
                               />
                             </div>
@@ -604,6 +730,84 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
           </Card>
         )}
       </div>
+
+      {/* AI Script Generation Dialog */}
+      <Dialog open={scriptGenDialog.open} onOpenChange={(open) => setScriptGenDialog(prev => ({ ...prev, open }))}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="font-satoshi flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              Generate Script with AI
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Generate a lesson script using the avatar's knowledge base from Pinecone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label className="text-gray-300">Topic / Subject</Label>
+              <Input
+                value={scriptGenDialog.topic}
+                onChange={(e) => setScriptGenDialog(prev => ({ ...prev, topic: e.target.value }))}
+                placeholder="e.g., Benefits of meditation for stress relief"
+                className="bg-gray-800 border-gray-600 text-white"
+                data-testid="input-script-topic"
+              />
+              <p className="text-xs text-gray-500">
+                Be specific - this helps the AI find relevant knowledge from the database.
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-gray-300">Target Duration (seconds)</Label>
+              <Select 
+                value={String(scriptGenDialog.duration)} 
+                onValueChange={(val) => setScriptGenDialog(prev => ({ ...prev, duration: parseInt(val) }))}
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="30" className="text-white">30 seconds (~75 words)</SelectItem>
+                  <SelectItem value="60" className="text-white">60 seconds (~150 words)</SelectItem>
+                  <SelectItem value="90" className="text-white">90 seconds (~225 words)</SelectItem>
+                  <SelectItem value="120" className="text-white">2 minutes (~300 words)</SelectItem>
+                  <SelectItem value="180" className="text-white">3 minutes (~450 words)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setScriptGenDialog(prev => ({ ...prev, open: false }))}
+              className="text-gray-400 hover:text-white"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleGenerateScript}
+              disabled={generateScriptMutation.isPending || !scriptGenDialog.topic.trim()}
+              className="bg-purple-600 hover:bg-purple-700 gap-2"
+              data-testid="button-confirm-generate-script"
+            >
+              {generateScriptMutation.isPending ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate Script
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

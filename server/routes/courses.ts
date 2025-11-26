@@ -391,3 +391,72 @@ coursesRouter.get("/lessons/:id/video-status", async (req: Request, res: Respons
     res.status(500).json({ error: "Failed to get video status" });
   }
 });
+
+// Generate AI script for a lesson using avatar's knowledge base
+coursesRouter.post("/generate-script", async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId;
+    const { avatarId, courseId, topic, lessonTitle, targetDuration, additionalContext } = req.body;
+
+    if (!avatarId || !topic || !lessonTitle) {
+      return res.status(400).json({ 
+        error: "Missing required fields: avatarId, topic, and lessonTitle are required" 
+      });
+    }
+
+    // Authorization: If courseId is provided, verify the user owns the course
+    if (courseId) {
+      const [course] = await db
+        .select()
+        .from(courses)
+        .where(and(eq(courses.id, courseId), eq(courses.userId, userId)));
+
+      if (!course) {
+        return res.status(403).json({ error: "Unauthorized - you don't have access to this course" });
+      }
+
+      // Verify the course uses the requested avatar
+      if (course.avatarId !== avatarId) {
+        return res.status(400).json({ error: "Avatar does not match the course instructor" });
+      }
+    }
+
+    // Import avatar service and RAG service
+    const { getAvatarById } = await import("../services/avatars.js");
+    const { generateLessonScript } = await import("../services/rag.js");
+
+    // Get avatar configuration
+    const avatar = await getAvatarById(avatarId);
+    if (!avatar) {
+      return res.status(404).json({ error: "Avatar not found" });
+    }
+
+    // Verify the avatar is active
+    if (!avatar.isActive) {
+      return res.status(400).json({ error: "Avatar is not active" });
+    }
+
+    // Generate script using avatar's knowledge base
+    const result = await generateLessonScript({
+      avatarId,
+      topic,
+      lessonTitle,
+      pineconeNamespaces: avatar.pineconeNamespaces || [],
+      personalityPrompt: avatar.personalityPrompt,
+      targetDuration: targetDuration || 60,
+      additionalContext: additionalContext || ''
+    });
+
+    res.json({
+      success: true,
+      script: result.script,
+      sources: result.sources,
+      metadata: result.metadata
+    });
+  } catch (error: any) {
+    console.error("Error generating script:", error);
+    res.status(500).json({ 
+      error: error.message || "Failed to generate script" 
+    });
+  }
+});
