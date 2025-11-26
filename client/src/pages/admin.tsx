@@ -4,7 +4,7 @@ import { DatabaseStatus } from "@/components/DatabaseStatus";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
@@ -33,11 +33,11 @@ export default function Admin() {
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [showCourseBuilder, setShowCourseBuilder] = useState(false);
   const [preSelectedAvatarId, setPreSelectedAvatarId] = useState<string | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { toast } = useToast();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Handle URL query parameters for deep linking to courses view
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const view = urlParams.get('view');
@@ -50,6 +50,18 @@ export default function Admin() {
         setShowCourseBuilder(true);
       }
     }
+  }, []);
+
+  // Auto-collapse sidebar on mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setSidebarOpen(false);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const { data: avatarsData } = useQuery({
@@ -112,122 +124,127 @@ export default function Admin() {
   const totalDocuments = (statsData as any)?.success ? ((statsData as any).documents?.total || 0) : 0;
   const totalVectors = (statsData as any)?.success ? ((statsData as any).pinecone?.totalRecordCount || 0) : 0;
 
+  const NavButton = ({ view, icon: Icon, label }: { view: AdminView; icon: any; label: string }) => (
+    <Button
+      variant={currentView === view ? 'default' : 'ghost'}
+      className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+      onClick={() => {
+        setCurrentView(view);
+        if (window.innerWidth < 768) setSidebarOpen(false);
+      }}
+      data-testid={`nav-${view}`}
+      title={!sidebarOpen ? label : undefined}
+    >
+      <Icon className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+      <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+        {label}
+      </span>
+    </Button>
+  );
+
   return (
     <div className="flex min-h-screen bg-background">
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 border-r bg-card/50 backdrop-blur-sm flex flex-col">
-        <div className="p-6 border-b">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-            Admin Panel
-          </h1>
+      <aside 
+        className={`
+          fixed md:relative z-50 h-screen
+          border-r bg-card/95 backdrop-blur-sm flex flex-col
+          transition-all duration-300 ease-in-out
+          ${sidebarOpen ? 'w-64 translate-x-0' : 'w-16 -translate-x-full md:translate-x-0'}
+        `}
+      >
+        <div className={`p-4 border-b flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
+          {sidebarOpen && (
+            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent transition-opacity duration-300">
+              Admin Panel
+            </h1>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex-shrink-0"
+            data-testid="button-toggle-sidebar"
+          >
+            {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
         </div>
         
-        <nav className="flex-1 p-4 space-y-2">
-          <Button
-            variant={currentView === 'dashboard' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('dashboard')}
-            data-testid="nav-dashboard"
-          >
-            <LayoutDashboard className="w-4 h-4 mr-3" />
-            Dashboard
-          </Button>
-          
-          <Button
-            variant={currentView === 'avatars' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('avatars')}
-            data-testid="nav-avatars"
-          >
-            <Users className="w-4 h-4 mr-3" />
-            Avatars
-          </Button>
-          
-          <Button
-            variant={currentView === 'knowledge' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('knowledge')}
-            data-testid="nav-knowledge"
-          >
-            <FileText className="w-4 h-4 mr-3" />
-            Knowledge Base
-          </Button>
-          
-          <Button
-            variant={currentView === 'courses' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('courses')}
-            data-testid="nav-courses"
-          >
-            <Video className="w-4 h-4 mr-3" />
-            Video Courses
-          </Button>
-          
-          <Button
-            variant={currentView === 'analytics' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('analytics')}
-            data-testid="nav-analytics"
-          >
-            <BarChart3 className="w-4 h-4 mr-3" />
-            Analytics
-          </Button>
-          
-          <Button
-            variant={currentView === 'credits' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('credits')}
-            data-testid="nav-credits"
-          >
-            <CreditCard className="w-4 h-4 mr-3" />
-            Credits
-          </Button>
-          
-          <Button
-            variant={currentView === 'settings' ? 'default' : 'ghost'}
-            className="w-full justify-start"
-            onClick={() => setCurrentView('settings')}
-            data-testid="nav-settings"
-          >
-            <Settings className="w-4 h-4 mr-3" />
-            Settings
-          </Button>
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+          <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <NavButton view="avatars" icon={Users} label="Avatars" />
+          <NavButton view="knowledge" icon={FileText} label="Knowledge Base" />
+          <NavButton view="courses" icon={Video} label="Video Courses" />
+          <NavButton view="analytics" icon={BarChart3} label="Analytics" />
+          <NavButton view="credits" icon={CreditCard} label="Credits" />
+          <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
 
-        <div className="p-4 border-t space-y-2">
+        <div className="p-2 border-t space-y-1">
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
             onClick={() => setLocation('/')}
             data-testid="nav-home"
+            title={!sidebarOpen ? "Back to Home" : undefined}
           >
-            <Home className="w-4 h-4 mr-3" />
-            Back to Home
+            <Home className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+              Back to Home
+            </span>
           </Button>
           
           <Button
             variant="ghost"
-            className="w-full justify-start text-destructive hover:text-destructive"
+            className={`w-full justify-start text-destructive hover:text-destructive transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
             asChild
             data-testid="nav-logout"
+            title={!sidebarOpen ? "Logout" : undefined}
           >
             <a href="/api/logout">
-              <LogOut className="w-4 h-4 mr-3" />
-              Logout
+              <LogOut className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+              <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+                Logout
+              </span>
             </a>
           </Button>
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-8">
+      <main className={`flex-1 overflow-auto transition-all duration-300 ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}`}>
+        {/* Mobile Header with Menu Button */}
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              data-testid="button-open-sidebar-mobile"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+              Admin Panel
+            </h1>
+          </div>
+        </div>
+
+        <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2">
+          <div className="mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">
               Welcome, <span className="text-primary">{user?.firstName || user?.email || 'Admin'}</span>
             </h2>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {currentView === 'dashboard' && 'Track your progress, avatars & activity here'}
               {currentView === 'avatars' && 'Manage AI avatar personalities and configurations'}
               {currentView === 'knowledge' && 'Upload and manage knowledge base documents'}
@@ -241,25 +258,25 @@ export default function Admin() {
           {/* Dashboard View */}
           {currentView === 'dashboard' && (
             <>
-              <div className="grid gap-6 md:grid-cols-3 mb-8">
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
                 {/* Avatars Card */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Avatars</CardTitle>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Avatars</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 sm:p-6 pt-0">
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
                         {Array.isArray(avatarsData) && avatarsData.slice(0, 3).map((avatar: any) => (
                           <div 
                             key={avatar.id} 
-                            className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-semibold text-sm"
+                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
                           >
                             {avatar.name.charAt(0)}
                           </div>
                         ))}
                         {totalAvatars > 3 && (
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-xs sm:text-sm text-muted-foreground">
                             +{totalAvatars - 3}
                           </div>
                         )}
@@ -279,18 +296,18 @@ export default function Admin() {
 
                 {/* Resources Card */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Resources</CardTitle>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Resources</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 sm:p-6 pt-0">
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Documents</span>
-                        <span className="text-2xl font-bold">{totalDocuments}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">Documents</span>
+                        <span className="text-xl sm:text-2xl font-bold">{totalDocuments}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-muted-foreground">Vectors</span>
-                        <span className="text-2xl font-bold">{totalVectors}</span>
+                        <span className="text-xs sm:text-sm text-muted-foreground">Vectors</span>
+                        <span className="text-xl sm:text-2xl font-bold">{totalVectors}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -298,14 +315,14 @@ export default function Admin() {
 
                 {/* Status Card */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">Status</CardTitle>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-base sm:text-lg">Status</CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="p-4 sm:p-6 pt-0">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span className="text-sm">All Systems Operational</span>
+                        <span className="text-xs sm:text-sm">All Systems Operational</span>
                       </div>
                       <Button 
                         variant="outline" 
@@ -321,19 +338,19 @@ export default function Admin() {
 
               {/* Avatars Table */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Active Avatars</CardTitle>
-                  <CardDescription>Manage your AI avatar personalities</CardDescription>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg">Active Avatars</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Manage your AI avatar personalities</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                   <div className="space-y-3">
                     {Array.isArray(avatarsData) && avatarsData.filter((a: any) => a.isActive).map((avatar: any) => (
                       <div 
                         key={avatar.id}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                        className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors gap-3"
                       >
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex-shrink-0">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex-shrink-0">
                             {avatarGifs[avatar.id] ? (
                               <img 
                                 src={avatarGifs[avatar.id]} 
@@ -347,22 +364,22 @@ export default function Admin() {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-lg">
+                              <div className="w-full h-full flex items-center justify-center text-white font-semibold text-base sm:text-lg">
                                 {avatar.name.charAt(0)}
                               </div>
                             )}
                           </div>
-                          <div>
-                            <h4 className="font-semibold">{avatar.name}</h4>
-                            <p className="text-sm text-muted-foreground line-clamp-1">
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-semibold text-sm sm:text-base">{avatar.name}</h4>
+                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
                               {avatar.description}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 justify-between sm:justify-end">
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span className="text-sm text-green-600 dark:text-green-400">Active</span>
+                            <span className="text-xs sm:text-sm text-green-600 dark:text-green-400">Active</span>
                           </div>
                           <Link href={`/?avatar=${avatar.id}`}>
                             <Button size="sm" variant="outline" data-testid={`button-chat-${avatar.id}`}>
@@ -381,13 +398,13 @@ export default function Admin() {
           {/* Avatars View */}
           {currentView === 'avatars' && (
             <Card>
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <CardTitle>Avatar Management</CardTitle>
                 <CardDescription>
                   Create and manage AI avatar personalities with unique configurations
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <AvatarManager />
               </CardContent>
             </Card>
@@ -395,19 +412,16 @@ export default function Admin() {
 
           {/* Knowledge Base View */}
           {currentView === 'knowledge' && (
-            <div className="space-y-6">
-              {/* Database Status Section */}
+            <div className="space-y-4 sm:space-y-6">
               <DatabaseStatus />
-
-              {/* Document Upload Section */}
               <Card>
-                <CardHeader>
+                <CardHeader className="p-4 sm:p-6">
                   <CardTitle>Upload Documents</CardTitle>
                   <CardDescription>
                     Upload documents to enhance AI avatar responses and capabilities
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 sm:p-6 pt-0">
                   <DocumentUpload />
                 </CardContent>
               </Card>
@@ -416,17 +430,18 @@ export default function Admin() {
 
           {/* Courses View */}
           {currentView === 'courses' && !showCourseBuilder && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
+            <div className="space-y-4 sm:space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <h3 className="text-2xl font-bold">Video Courses</h3>
-                  <p className="text-muted-foreground">Manage all video courses and lessons</p>
+                  <h3 className="text-xl sm:text-2xl font-bold">Video Courses</h3>
+                  <p className="text-sm text-muted-foreground">Manage all video courses and lessons</p>
                 </div>
                 <Button 
                   onClick={() => {
                     setEditingCourseId(null);
                     setShowCourseBuilder(true);
                   }}
+                  className="w-full sm:w-auto"
                   data-testid="button-create-course"
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -435,23 +450,23 @@ export default function Admin() {
               </div>
 
               {Array.isArray(coursesData) && coursesData.length > 0 ? (
-                <div className="grid gap-6">
+                <div className="grid gap-4 sm:gap-6">
                   {coursesData.map((course: any) => (
                     <Card key={course.id} className="overflow-hidden">
-                      <CardHeader className="border-b bg-card/50">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <CardTitle className="text-xl">{course.title}</CardTitle>
-                            <CardDescription className="mt-1">
+                      <CardHeader className="border-b bg-card/50 p-4 sm:p-6">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                          <div className="flex-1 min-w-0">
+                            <CardTitle className="text-lg sm:text-xl">{course.title}</CardTitle>
+                            <CardDescription className="mt-1 text-xs sm:text-sm">
                               {course.description || 'No description'}
                             </CardDescription>
-                            <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-3 text-xs sm:text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
-                                <Video className="w-4 h-4" />
+                                <Video className="w-3 h-3 sm:w-4 sm:h-4" />
                                 {course.lessons?.length || 0} lessons
                               </span>
                               <span className="flex items-center gap-1">
-                                <Users className="w-4 h-4" />
+                                <Users className="w-3 h-3 sm:w-4 sm:h-4" />
                                 Instructor: {course.avatarId || 'None'}
                               </span>
                             </div>
@@ -463,30 +478,31 @@ export default function Admin() {
                               setEditingCourseId(course.id);
                               setShowCourseBuilder(true);
                             }}
+                            className="w-full sm:w-auto"
                             data-testid={`button-edit-course-${course.id}`}
                           >
                             Edit Course
                           </Button>
                         </div>
                       </CardHeader>
-                      <CardContent className="p-6">
+                      <CardContent className="p-4 sm:p-6">
                         {course.lessons && course.lessons.length > 0 ? (
-                          <div className="space-y-4">
+                          <div className="space-y-3 sm:space-y-4">
                             {course.lessons.map((lesson: any) => (
                               <div 
                                 key={lesson.id}
-                                className="flex items-start gap-4 p-4 border rounded-lg hover:bg-accent/30 transition-colors"
+                                className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-3 sm:p-4 border rounded-lg hover:bg-accent/30 transition-colors"
                               >
                                 {lesson.video?.thumbnailUrl && (
                                   <img 
                                     src={lesson.video.thumbnailUrl}
                                     alt={lesson.title}
-                                    className="w-32 h-20 object-cover rounded border"
+                                    className="w-full sm:w-32 h-32 sm:h-20 object-cover rounded border"
                                   />
                                 )}
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold">{lesson.title}</h4>
-                                  <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                                  <h4 className="font-semibold text-sm sm:text-base">{lesson.title}</h4>
+                                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mt-1">
                                     {lesson.script || 'No script'}
                                   </p>
                                   <div className="flex items-center gap-3 mt-2">
@@ -513,6 +529,7 @@ export default function Admin() {
                                     size="sm"
                                     variant="outline"
                                     onClick={() => window.open(lesson.video.videoUrl, "_blank")}
+                                    className="w-full sm:w-auto"
                                     data-testid={`button-play-video-${lesson.id}`}
                                   >
                                     <Play className="w-4 h-4 mr-1" />
@@ -523,7 +540,7 @@ export default function Admin() {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-center text-muted-foreground py-8">
+                          <p className="text-center text-muted-foreground py-6 sm:py-8 text-sm">
                             No lessons in this course yet
                           </p>
                         )}
@@ -533,10 +550,10 @@ export default function Admin() {
                 </div>
               ) : (
                 <Card>
-                  <CardContent className="py-12 text-center">
-                    <Video className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">No courses yet</h3>
-                    <p className="text-muted-foreground mb-6">
+                  <CardContent className="py-8 sm:py-12 text-center">
+                    <Video className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">No courses yet</h3>
+                    <p className="text-sm text-muted-foreground mb-6">
                       Create your first video course to get started
                     </p>
                     <Button 
@@ -578,15 +595,15 @@ export default function Admin() {
           {/* Settings View */}
           {currentView === 'settings' && (
             <Card>
-              <CardHeader>
+              <CardHeader className="p-4 sm:p-6">
                 <CardTitle>Settings</CardTitle>
                 <CardDescription>
                   Configure system preferences and account settings
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-3">
                     <div>
                       <h4 className="font-medium">Account</h4>
                       <p className="text-sm text-muted-foreground">
@@ -594,13 +611,13 @@ export default function Admin() {
                       </p>
                     </div>
                     <Link href="/account">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto">
                         Manage Account
                       </Button>
                     </Link>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 border rounded-lg gap-3">
                     <div>
                       <h4 className="font-medium">System Status</h4>
                       <p className="text-sm text-muted-foreground">
