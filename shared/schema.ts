@@ -346,3 +346,44 @@ export type Lesson = typeof lessons.$inferSelect;
 export type InsertGeneratedVideo = z.infer<typeof insertGeneratedVideoSchema>;
 export type UpdateGeneratedVideo = z.infer<typeof updateGeneratedVideoSchema>;
 export type GeneratedVideo = typeof generatedVideos.$inferSelect;
+
+export const chatGeneratedVideos = pgTable("chat_generated_videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  avatarId: varchar("avatar_id").references(() => avatarProfiles.id).notNull(),
+  requestText: text("request_text").notNull(),
+  topic: text("topic").notNull(),
+  script: text("script"),
+  status: varchar("status").notNull().default("pending"),
+  heygenVideoId: text("heygen_video_id"),
+  videoUrl: text("video_url"),
+  thumbnailUrl: text("thumbnail_url"),
+  duration: integer("duration"),
+  errorMessage: text("error_message"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  generatedAt: timestamp("generated_at"),
+});
+
+export const insertChatGeneratedVideoSchema = createInsertSchema(chatGeneratedVideos).pick({
+  userId: true,
+  avatarId: true,
+  requestText: true,
+  topic: true,
+});
+
+export const updateChatGeneratedVideoSchema = createInsertSchema(chatGeneratedVideos).pick({
+  script: true,
+  status: true,
+  heygenVideoId: true,
+  videoUrl: true,
+  thumbnailUrl: true,
+  duration: true,
+  errorMessage: true,
+  metadata: true,
+  generatedAt: true,
+}).partial();
+
+export type InsertChatGeneratedVideo = z.infer<typeof insertChatGeneratedVideoSchema>;
+export type UpdateChatGeneratedVideo = z.infer<typeof updateChatGeneratedVideoSchema>;
+export type ChatGeneratedVideo = typeof chatGeneratedVideos.$inferSelect;
