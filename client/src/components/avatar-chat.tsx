@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
@@ -11,6 +11,19 @@ import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
 import { LoadingSpinner } from "@/components/loading-spinner";
+
+interface ChatGeneratedVideo {
+  id: string;
+  userId: string;
+  avatarId: string;
+  topic: string;
+  status: 'pending' | 'generating' | 'completed' | 'failed';
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+}
 
 interface AvatarChatProps {
   userId: string;
@@ -37,8 +50,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [pendingVideos, setPendingVideos] = useState<ChatGeneratedVideo[]>([]);
+  const [completedVideo, setCompletedVideo] = useState<ChatGeneratedVideo | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const previousPendingIdsRef = useRef<Set<string>>(new Set());
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -164,6 +181,76 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       };
     }
   }, [sessionActive, userId, selectedAvatarId]);
+
+  // Poll for pending video notifications
+  const fetchPendingVideos = async () => {
+    try {
+      const response = await fetch('/api/courses/chat-videos/pending');
+      if (response.ok) {
+        const videos: ChatGeneratedVideo[] = await response.json();
+        
+        // Update pending videos state (status is already filtered by API)
+        setPendingVideos(videos.filter(v => 
+          v.status === 'pending' || v.status === 'generating'
+        ));
+
+        // Update ref with current pending IDs
+        const currentPendingIds = new Set(videos.map(v => v.id));
+        previousPendingIdsRef.current = currentPendingIds;
+      }
+    } catch (error) {
+      console.error('Error fetching pending videos:', error);
+    }
+  };
+
+  // Check for completed videos separately
+  const checkForCompletedVideos = async () => {
+    try {
+      const response = await fetch('/api/courses/chat-videos?status=completed');
+      if (response.ok) {
+        const videos: ChatGeneratedVideo[] = await response.json();
+        
+        // Find recently completed videos (within last 60 seconds based on completedAt)
+        const recentlyCompleted = videos.find(v => {
+          if (!v.completedAt) return false;
+          const completedTime = new Date(v.completedAt).getTime();
+          const now = Date.now();
+          return now - completedTime < 60000; // 60 seconds
+        });
+        
+        if (recentlyCompleted && !completedVideo) {
+          setCompletedVideo(recentlyCompleted);
+          toast({
+            title: "Video Ready!",
+            description: `Your video about "${recentlyCompleted.topic}" is ready to view.`,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error checking completed videos:', error);
+    }
+  };
+
+  // Poll for pending videos when session is active
+  useEffect(() => {
+    if (sessionActive && userId) {
+      fetchPendingVideos();
+      checkForCompletedVideos();
+      
+      // Poll every 5 seconds for video status
+      videoPollIntervalRef.current = setInterval(() => {
+        fetchPendingVideos();
+        checkForCompletedVideos();
+      }, 5000);
+      
+      return () => {
+        if (videoPollIntervalRef.current) {
+          clearInterval(videoPollIntervalRef.current);
+          videoPollIntervalRef.current = null;
+        }
+      };
+    }
+  }, [sessionActive, userId]);
 
   // Wrapped handleSubmitMessage that adds to chat history
   const handleSubmitMessage = async (message: string) => {
@@ -335,6 +422,63 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               <div className="absolute top-20 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
                 <MicOff className="w-4 h-4 text-red-400" />
                 <span className="text-sm text-red-400 font-medium">Mic blocked</span>
+              </div>
+            )}
+
+            {/* Pending Video Notification */}
+            {pendingVideos.length > 0 && (
+              <div className="absolute top-20 left-4 flex flex-col gap-2 z-30">
+                {pendingVideos.map((video) => (
+                  <div 
+                    key={video.id} 
+                    className="flex items-center gap-2 bg-blue-500/20 border border-blue-500/40 px-3 py-2 rounded-lg backdrop-blur-sm"
+                    data-testid={`video-generating-${video.id}`}
+                  >
+                    <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                    <div className="flex flex-col">
+                      <span className="text-xs text-blue-400 font-medium">
+                        {video.status === 'pending' ? 'Starting video...' : 'Generating video...'}
+                      </span>
+                      <span className="text-xs text-blue-300/80 truncate max-w-[150px]">
+                        {video.topic}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Completed Video Notification */}
+            {completedVideo && (
+              <div className="absolute top-32 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-green-500/20 border border-green-500/40 rounded-lg backdrop-blur-sm p-4 z-30">
+                <div className="flex items-start gap-3">
+                  <Film className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-green-300">Video Ready!</h4>
+                    <p className="text-xs text-green-300/80 mt-1 truncate">
+                      {completedVideo.topic}
+                    </p>
+                    <div className="flex items-center gap-2 mt-3">
+                      {completedVideo.videoUrl && (
+                        <a
+                          href={completedVideo.videoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs bg-green-500/30 hover:bg-green-500/40 text-green-300 px-3 py-1.5 rounded-md transition-colors"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          Watch Video
+                        </a>
+                      )}
+                      <button
+                        onClick={() => setCompletedVideo(null)}
+                        className="text-xs text-green-400/60 hover:text-green-400 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </>

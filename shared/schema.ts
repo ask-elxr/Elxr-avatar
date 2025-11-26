@@ -362,7 +362,8 @@ export const chatGeneratedVideos = pgTable("chat_generated_videos", {
   errorMessage: text("error_message"),
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  generatedAt: timestamp("generated_at"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  completedAt: timestamp("completed_at"),
 });
 
 export const insertChatGeneratedVideoSchema = createInsertSchema(chatGeneratedVideos).pick({
@@ -381,7 +382,8 @@ export const updateChatGeneratedVideoSchema = createInsertSchema(chatGeneratedVi
   duration: true,
   errorMessage: true,
   metadata: true,
-  generatedAt: true,
+  updatedAt: true,
+  completedAt: true,
 }).partial();
 
 export type InsertChatGeneratedVideo = z.infer<typeof insertChatGeneratedVideoSchema>;

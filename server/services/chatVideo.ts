@@ -97,7 +97,7 @@ export class ChatVideoService {
     try {
       await db
         .update(chatGeneratedVideos)
-        .set({ status: "generating_script" })
+        .set({ status: "generating", updatedAt: new Date() })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
 
       const recentConversations = await db
@@ -144,7 +144,8 @@ ${memoryContext}
         .update(chatGeneratedVideos)
         .set({ 
           script: scriptResult.script,
-          status: "generating_video" 
+          status: "generating",
+          updatedAt: new Date()
         })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
 
@@ -203,7 +204,8 @@ ${memoryContext}
         .update(chatGeneratedVideos)
         .set({ 
           heygenVideoId,
-          status: "processing" 
+          status: "generating",
+          updatedAt: new Date()
         })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
 
@@ -217,6 +219,7 @@ ${memoryContext}
         .set({
           status: "failed",
           errorMessage: error.message,
+          updatedAt: new Date(),
         })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
     }
@@ -245,6 +248,7 @@ ${memoryContext}
 
         if (status === "completed" && video_url) {
           const durationInt = duration ? Math.round(duration) : null;
+          const now = new Date();
           
           await db
             .update(chatGeneratedVideos)
@@ -253,7 +257,8 @@ ${memoryContext}
               videoUrl: video_url,
               thumbnailUrl: thumbnail_url,
               duration: durationInt,
-              generatedAt: new Date(),
+              updatedAt: now,
+              completedAt: now,
             })
             .where(eq(chatGeneratedVideos.id, videoRecordId));
 
@@ -279,6 +284,7 @@ ${memoryContext}
             .set({
               status: "failed",
               errorMessage: error || "Video generation failed",
+              updatedAt: new Date(),
             })
             .where(eq(chatGeneratedVideos.id, videoRecordId));
 
@@ -303,6 +309,7 @@ ${memoryContext}
             .set({
               status: "failed",
               errorMessage: "Video generation timed out",
+              updatedAt: new Date(),
             })
             .where(eq(chatGeneratedVideos.id, videoRecordId));
 

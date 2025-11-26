@@ -541,8 +541,7 @@ coursesRouter.get("/chat-videos/pending", async (req: Request, res: Response) =>
         eq(chatGeneratedVideos.userId, userId),
         or(
           eq(chatGeneratedVideos.status, "pending"),
-          eq(chatGeneratedVideos.status, "generating"),
-          eq(chatGeneratedVideos.status, "script_ready")
+          eq(chatGeneratedVideos.status, "generating")
         )
       ))
       .orderBy(desc(chatGeneratedVideos.createdAt));
