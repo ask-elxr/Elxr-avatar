@@ -5,6 +5,7 @@ import { coursesRouter } from "./routes/courses.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 import path from "path";
+import fs from "fs";
 
 const app = express();
 
@@ -90,9 +91,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve attached_assets as static files with absolute path for production compatibility
-const attachedAssetsPath = path.resolve(process.cwd(), 'attached_assets');
+// Serve attached_assets as static files - check multiple locations for production compatibility
+const productionAssetsPath = path.resolve(import.meta.dirname, '..', 'attached_assets');
+const devAssetsPath = path.resolve(process.cwd(), 'attached_assets');
+const attachedAssetsPath = fs.existsSync(productionAssetsPath) ? productionAssetsPath : devAssetsPath;
 app.use('/attached_assets', express.static(attachedAssetsPath));
+console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
 
 (async () => {
   const server = await registerRoutes(app);
