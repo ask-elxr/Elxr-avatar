@@ -5,9 +5,9 @@ import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import Credits from "@/pages/Credits";
@@ -37,9 +37,11 @@ export default function Admin() {
   const { toast } = useToast();
   const { user, isLoading, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
 
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+  // Handle URL parameters for navigation
+  const handleUrlParams = useCallback(() => {
+    const urlParams = new URLSearchParams(searchString);
     const view = urlParams.get('view');
     const avatarId = urlParams.get('avatarId');
     
@@ -50,7 +52,11 @@ export default function Admin() {
         setShowCourseBuilder(true);
       }
     }
-  }, []);
+  }, [searchString]);
+
+  useEffect(() => {
+    handleUrlParams();
+  }, [handleUrlParams]);
 
   // Auto-collapse sidebar on mobile
   useEffect(() => {
