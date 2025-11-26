@@ -20,12 +20,17 @@ import { chatVideoService } from "../services/chatVideo";
 export const coursesRouter = Router();
 
 // Middleware to ensure every request has a userId in session
+// Prioritize authenticated user ID from Replit Auth, fallback to session userId
 coursesRouter.use((req: Request, res: Response, next: NextFunction) => {
   if (!req.session) {
     req.session = {} as any;
   }
   
-  if (!req.session.userId) {
+  // Check for authenticated user from Replit Auth
+  const user = (req as any).user;
+  if (user?.claims?.sub) {
+    req.session.userId = user.claims.sub;
+  } else if (!req.session.userId) {
     // Generate a persistent temp userId for anonymous users
     req.session.userId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   }

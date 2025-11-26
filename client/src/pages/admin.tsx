@@ -95,6 +95,12 @@ export default function Admin() {
     },
   });
 
+  const { data: chatVideosData } = useQuery({
+    queryKey: ['/api/courses/chat-videos'],
+    enabled: isAuthenticated,
+    refetchInterval: 10000,
+  });
+
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
@@ -447,6 +453,78 @@ export default function Admin() {
           {/* Courses View */}
           {currentView === 'courses' && !showCourseBuilder && (
             <div className="space-y-4 sm:space-y-6">
+              {/* Chat-Generated Videos Section */}
+              {Array.isArray(chatVideosData) && chatVideosData.length > 0 && (
+                <Card className="border-purple-600/30">
+                  <CardHeader className="p-4 sm:p-6 border-b bg-purple-950/20">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                      <div>
+                        <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                          <Video className="w-5 h-5 text-purple-400" />
+                          My Videos
+                        </CardTitle>
+                        <CardDescription className="mt-1 text-xs sm:text-sm">
+                          Videos generated during chat conversations
+                        </CardDescription>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {chatVideosData.filter((v: any) => v.status === 'completed').length} completed
+                      </span>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {chatVideosData.map((video: any) => (
+                        <div 
+                          key={video.id}
+                          className="border rounded-lg overflow-hidden hover:border-purple-600/50 transition-colors"
+                          data-testid={`chat-video-card-${video.id}`}
+                        >
+                          {video.thumbnailUrl && (
+                            <img 
+                              src={video.thumbnailUrl}
+                              alt={video.topic}
+                              className="w-full h-32 object-cover"
+                            />
+                          )}
+                          <div className="p-3 space-y-2">
+                            <h4 className="font-semibold text-sm line-clamp-2">{video.topic}</h4>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                video.status === 'completed' 
+                                  ? 'bg-green-950/30 text-green-400 border border-green-600/30'
+                                  : video.status === 'generating'
+                                  ? 'bg-blue-950/30 text-blue-400 border border-blue-600/30 animate-pulse'
+                                  : video.status === 'pending'
+                                  ? 'bg-yellow-950/30 text-yellow-400 border border-yellow-600/30'
+                                  : 'bg-red-950/30 text-red-400 border border-red-600/30'
+                              }`}>
+                                {video.status}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {video.avatarId}
+                              </span>
+                            </div>
+                            {video.videoUrl && video.status === 'completed' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => window.open(video.videoUrl, "_blank")}
+                                className="w-full mt-2"
+                                data-testid={`button-play-chat-video-${video.id}`}
+                              >
+                                <Play className="w-4 h-4 mr-1" />
+                                Play Video
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                   <h3 className="text-xl sm:text-2xl font-bold">Video Courses</h3>
