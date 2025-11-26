@@ -83,6 +83,115 @@ coursesRouter.get("/", async (req: Request, res: Response) => {
   }
 });
 
+// ===== CHAT VIDEO ENDPOINTS =====
+// NOTE: These must be defined BEFORE /:id to avoid "chat-videos" being matched as a course ID
+
+// Get pending/generating videos (for notification polling)
+coursesRouter.get("/chat-videos/pending", async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId;
+
+    const pendingVideos = await db
+      .select()
+      .from(chatGeneratedVideos)
+      .where(and(
+        eq(chatGeneratedVideos.userId, userId),
+        or(
+          eq(chatGeneratedVideos.status, "pending"),
+          eq(chatGeneratedVideos.status, "generating")
+        )
+      ))
+      .orderBy(desc(chatGeneratedVideos.createdAt));
+
+    res.json(pendingVideos);
+  } catch (error) {
+    console.error("Error fetching pending videos:", error);
+    res.status(500).json({ error: "Failed to fetch pending videos" });
+  }
+});
+
+// Get all chat-generated videos for a user
+coursesRouter.get("/chat-videos", async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId;
+    const { status, avatarId } = req.query;
+
+    const videos = await db
+      .select()
+      .from(chatGeneratedVideos)
+      .where(eq(chatGeneratedVideos.userId, userId))
+      .orderBy(desc(chatGeneratedVideos.createdAt));
+
+    // Filter by status and avatarId if provided
+    let filtered = videos;
+    if (status) {
+      filtered = filtered.filter(v => v.status === status);
+    }
+    if (avatarId) {
+      filtered = filtered.filter(v => v.avatarId === avatarId);
+    }
+
+    res.json(filtered);
+  } catch (error) {
+    console.error("Error fetching chat videos:", error);
+    res.status(500).json({ error: "Failed to fetch videos" });
+  }
+});
+
+// Get status of a specific chat-generated video
+coursesRouter.get("/chat-videos/:videoId", async (req: Request, res: Response) => {
+  try {
+    const { videoId } = req.params;
+    const userId = req.session.userId;
+
+    const [video] = await db
+      .select()
+      .from(chatGeneratedVideos)
+      .where(and(
+        eq(chatGeneratedVideos.id, videoId),
+        eq(chatGeneratedVideos.userId, userId)
+      ));
+
+    if (!video) {
+      return res.status(404).json({ error: "Video not found" });
+    }
+
+    res.json(video);
+  } catch (error) {
+    console.error("Error fetching chat video:", error);
+    res.status(500).json({ error: "Failed to fetch video" });
+  }
+});
+
+// Delete a chat-generated video
+coursesRouter.delete("/chat-videos/:videoId", async (req: Request, res: Response) => {
+  try {
+    const { videoId } = req.params;
+    const userId = req.session.userId;
+
+    const [video] = await db
+      .select()
+      .from(chatGeneratedVideos)
+      .where(and(
+        eq(chatGeneratedVideos.id, videoId),
+        eq(chatGeneratedVideos.userId, userId)
+      ));
+
+    if (!video) {
+      return res.status(404).json({ error: "Video not found" });
+    }
+
+    await db
+      .delete(chatGeneratedVideos)
+      .where(eq(chatGeneratedVideos.id, videoId));
+
+    res.json({ success: true, message: "Video deleted" });
+  } catch (error) {
+    console.error("Error deleting chat video:", error);
+    res.status(500).json({ error: "Failed to delete video" });
+  }
+});
+
 // Get a specific course with all lessons
 coursesRouter.get("/:id", async (req: Request, res: Response) => {
   try {
@@ -469,116 +578,5 @@ coursesRouter.post("/generate-script", async (req: Request, res: Response) => {
     res.status(500).json({ 
       error: error.message || "Failed to generate script" 
     });
-  }
-});
-
-// ===== CHAT VIDEO ENDPOINTS =====
-
-// Get pending/generating videos (for notification polling)
-// NOTE: Must be defined BEFORE /chat-videos/:videoId to avoid "pending" being matched as videoId
-coursesRouter.get("/chat-videos/pending", async (req: Request, res: Response) => {
-  try {
-    const userId = req.session.userId;
-
-    const pendingVideos = await db
-      .select()
-      .from(chatGeneratedVideos)
-      .where(and(
-        eq(chatGeneratedVideos.userId, userId),
-        or(
-          eq(chatGeneratedVideos.status, "pending"),
-          eq(chatGeneratedVideos.status, "generating")
-        )
-      ))
-      .orderBy(desc(chatGeneratedVideos.createdAt));
-
-    res.json(pendingVideos);
-  } catch (error) {
-    console.error("Error fetching pending videos:", error);
-    res.status(500).json({ error: "Failed to fetch pending videos" });
-  }
-});
-
-// Get all chat-generated videos for a user
-coursesRouter.get("/chat-videos", async (req: Request, res: Response) => {
-  try {
-    const userId = req.session.userId;
-    const { status, avatarId } = req.query;
-
-    let query = db
-      .select()
-      .from(chatGeneratedVideos)
-      .where(eq(chatGeneratedVideos.userId, userId))
-      .orderBy(desc(chatGeneratedVideos.createdAt));
-
-    const videos = await query;
-
-    // Filter by status and avatarId if provided
-    let filtered = videos;
-    if (status) {
-      filtered = filtered.filter(v => v.status === status);
-    }
-    if (avatarId) {
-      filtered = filtered.filter(v => v.avatarId === avatarId);
-    }
-
-    res.json(filtered);
-  } catch (error) {
-    console.error("Error fetching chat videos:", error);
-    res.status(500).json({ error: "Failed to fetch videos" });
-  }
-});
-
-// Get status of a specific chat-generated video
-coursesRouter.get("/chat-videos/:videoId", async (req: Request, res: Response) => {
-  try {
-    const { videoId } = req.params;
-    const userId = req.session.userId;
-
-    const [video] = await db
-      .select()
-      .from(chatGeneratedVideos)
-      .where(and(
-        eq(chatGeneratedVideos.id, videoId),
-        eq(chatGeneratedVideos.userId, userId)
-      ));
-
-    if (!video) {
-      return res.status(404).json({ error: "Video not found" });
-    }
-
-    res.json(video);
-  } catch (error) {
-    console.error("Error fetching chat video:", error);
-    res.status(500).json({ error: "Failed to fetch video" });
-  }
-});
-
-// Delete a chat-generated video
-coursesRouter.delete("/chat-videos/:videoId", async (req: Request, res: Response) => {
-  try {
-    const { videoId } = req.params;
-    const userId = req.session.userId;
-
-    const [video] = await db
-      .select()
-      .from(chatGeneratedVideos)
-      .where(and(
-        eq(chatGeneratedVideos.id, videoId),
-        eq(chatGeneratedVideos.userId, userId)
-      ));
-
-    if (!video) {
-      return res.status(404).json({ error: "Video not found" });
-    }
-
-    await db
-      .delete(chatGeneratedVideos)
-      .where(eq(chatGeneratedVideos.id, videoId));
-
-    res.json({ success: true, message: "Video deleted" });
-  } catch (error) {
-    console.error("Error deleting chat video:", error);
-    res.status(500).json({ error: "Failed to delete video" });
   }
 });
