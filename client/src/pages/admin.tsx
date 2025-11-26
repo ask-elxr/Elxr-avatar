@@ -161,10 +161,10 @@ export default function Admin() {
       {/* Sidebar */}
       <aside 
         className={`
-          fixed md:relative z-50 h-screen
+          fixed z-50 h-screen
           border-r bg-card/95 backdrop-blur-sm flex flex-col
           transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'w-64 translate-x-0' : 'w-16 -translate-x-full md:translate-x-0'}
+          ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:relative md:w-16'}
         `}
       >
         <div className={`p-4 border-b flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
@@ -226,7 +226,7 @@ export default function Admin() {
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 overflow-auto transition-all duration-300 ${sidebarOpen ? 'md:ml-0' : 'md:ml-0'}`}>
+      <main className="flex-1 overflow-auto transition-all duration-300 w-full md:w-auto">
         {/* Mobile Header with Menu Button */}
         <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
           <div className="flex items-center gap-3">
