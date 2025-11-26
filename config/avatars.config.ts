@@ -392,8 +392,8 @@ Remember: Be empowering, be practical, be values-driven.`,
     description:
       "Life transitions and personal growth expert. Guidance on navigating change, building resilience, and finding purpose.",
     profileImageUrl: "/attached_assets/kelsey_preview.png",
-    heygenAvatarId: "Annie_Office_Sitting_Front_2_public", // Annie office sitting - professional setting
-    heygenVideoAvatarId: "Annie_Office_Sitting_Front_2_public", // Annie office sitting for video
+    heygenAvatarId: "Anna_public_20240108", // Anna - interactive streaming compatible
+    heygenVideoAvatarId: "Annie_Office_Sitting_Front_2_public", // Annie office sitting for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null,
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
