@@ -366,6 +366,15 @@ coursesRouter.post("/lessons/:id/generate-video", async (req: Request, res: Resp
     const result = await videoGenerationService.generateVideoForLesson(lessonId);
 
     if (!result.success) {
+      // Check for HeyGen trial limit error
+      const errorStr = result.error || "";
+      if (errorStr.includes("trial_video_limit_exceeded") || errorStr.includes("daily api trial limit")) {
+        return res.status(429).json({ 
+          error: "Daily video limit reached",
+          code: "HEYGEN_TRIAL_LIMIT",
+          message: "You've reached HeyGen's daily limit of 5 test videos. This limit resets at midnight UTC. You can still generate videos using production avatars (Dexter, Ann, June, etc.) which don't have this limitation."
+        });
+      }
       return res.status(500).json({ error: result.error || "Failed to start video generation" });
     }
 

@@ -260,7 +260,17 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   const generateVideoMutation = useMutation({
     mutationFn: async (lessonId: string) => {
       const response = await apiRequest(`/api/courses/lessons/${lessonId}/generate-video`, "POST", {});
-      return response.json();
+      const data = await response.json();
+      
+      // Check for HeyGen trial limit error
+      if (!response.ok) {
+        if (data.code === "HEYGEN_TRIAL_LIMIT" || response.status === 429) {
+          throw new Error("HEYGEN_TRIAL_LIMIT:" + (data.message || "Daily video limit reached"));
+        }
+        throw new Error(data.error || "Failed to start video generation");
+      }
+      
+      return data;
     },
     onSuccess: () => {
       toast({
@@ -270,11 +280,22 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
       queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to start video generation.",
-        variant: "destructive",
-      });
+      const errorMsg = error.message || "";
+      
+      // Check for HeyGen trial limit error
+      if (errorMsg.includes("HEYGEN_TRIAL_LIMIT")) {
+        toast({
+          title: "Daily Video Limit Reached",
+          description: "You've reached HeyGen's daily limit of 5 test videos. This resets at midnight UTC. Try using production avatars like Dexter, Ann, or June which don't have this limitation.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: errorMsg || "Failed to start video generation.",
+          variant: "destructive",
+        });
+      }
     },
   });
 
