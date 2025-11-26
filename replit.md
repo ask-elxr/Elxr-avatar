@@ -72,7 +72,13 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - Creates video via HeyGen API asynchronously
   - Status flow: pending → generating → completed/failed
 - **Database Table**: `chat_generated_videos` tracks generation state, status, timestamps (createdAt, updatedAt, completedAt)
-- **Frontend Integration**: Pending video notifications overlay on chat, toast alerts for completed videos with playback option
+- **Global Notification System** (`client/src/hooks/useChatVideoNotifications.ts`):
+  - Runs app-wide (mounted in App.tsx) to detect completed videos even after chat is closed
+  - Polls every 5 seconds for video status changes
+  - Uses user-scoped localStorage to track seen notifications (prevents duplicates)
+  - Detects both newly completed videos (status transition) and recent completions on page load (within 10 minutes)
+  - Works for both authenticated users and anonymous sessions
+- **Frontend Integration**: Pending video notifications overlay on chat, global toast alerts for completed videos
 - **API Endpoints**:
   - `GET /api/courses/chat-videos` - List user's generated videos
   - `GET /api/courses/chat-videos/pending` - Get pending/generating videos for notification polling
