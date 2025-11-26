@@ -29,6 +29,7 @@ import { Pencil, Trash2, Plus, X, Video } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 import { useLocation } from "wouter";
+import { MarqueeText } from "@/components/MarqueeText";
 
 export function AvatarManager() {
   const { toast } = useToast();
@@ -305,7 +306,9 @@ export function AvatarManager() {
                     </div>
                   </TableCell>
                   <TableCell className="font-medium">{avatar.name}</TableCell>
-                  <TableCell className="max-w-md truncate">{avatar.description}</TableCell>
+                  <TableCell className="max-w-xs">
+                    <MarqueeText text={avatar.description} className="text-sm text-muted-foreground" />
+                  </TableCell>
                   <TableCell>
                     <Badge variant={avatar.isActive ? "default" : "secondary"}>
                       {avatar.isActive ? "Active" : "Inactive"}

@@ -2,66 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useQuery } from "@tanstack/react-query";
 import { Users, MessageSquare, TrendingUp, Activity, BarChart3 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell } from "recharts";
-import { useRef, useEffect, useState } from "react";
-
-function MarqueeText({ text }: { text: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const textRef = useRef<HTMLSpanElement>(null);
-  const [shouldScroll, setShouldScroll] = useState(false);
-  const [scrollDistance, setScrollDistance] = useState(0);
-
-  useEffect(() => {
-    const checkOverflow = () => {
-      if (containerRef.current && textRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
-        const textWidth = textRef.current.scrollWidth;
-        const isOverflowing = textWidth > containerWidth;
-        setShouldScroll(isOverflowing);
-        if (isOverflowing) {
-          setScrollDistance(textWidth - containerWidth + 20);
-        }
-      }
-    };
-    
-    checkOverflow();
-    window.addEventListener('resize', checkOverflow);
-    return () => window.removeEventListener('resize', checkOverflow);
-  }, [text]);
-
-  return (
-    <div 
-      ref={containerRef} 
-      className="overflow-hidden relative max-w-[70%]"
-      title={text}
-    >
-      <div className="flex">
-        <span
-          ref={textRef}
-          className="text-sm font-medium whitespace-nowrap"
-          style={{
-            animation: shouldScroll ? `marquee-scroll 6s ease-in-out infinite` : 'none',
-            ['--scroll-distance' as string]: `-${scrollDistance}px`,
-          }}
-        >
-          {text}
-        </span>
-      </div>
-      <style>{`
-        @keyframes marquee-scroll {
-          0%, 15% {
-            transform: translateX(0);
-          }
-          45%, 55% {
-            transform: translateX(var(--scroll-distance));
-          }
-          85%, 100% {
-            transform: translateX(0);
-          }
-        }
-      `}</style>
-    </div>
-  );
-}
+import { MarqueeText } from "@/components/MarqueeText";
 
 interface AvatarStats {
   avatarId: string;
@@ -308,7 +249,7 @@ export default function Analytics() {
                   <div key={index} className="flex items-center gap-3">
                     <div className="flex-1 min-w-0 overflow-hidden">
                       <div className="flex justify-between items-center mb-1 gap-2">
-                        <MarqueeText text={topic.topic} />
+                        <MarqueeText text={topic.topic} className="text-sm font-medium" maxWidth="70%" />
                         <span className="text-xs text-muted-foreground flex-shrink-0">
                           {topic.percentage.toFixed(1)}%
                         </span>
