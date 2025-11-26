@@ -11,7 +11,7 @@ export const defaultAvatars: AvatarProfile[] = [
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
     profileImageUrl: "/attached_assets/MArk-kohl-loop_1763964600000.gif",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "b495d0ea153844beb5df8c4d51d67bc1", // Instant Avatar for video generation
+    heygenVideoAvatarId: "e16db57e57824a0e90b661ad528d3994", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
@@ -94,7 +94,7 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
       "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
     profileImageUrl: "/attached_assets/Willie gault gif-low_1763964813725.gif",
     heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "57d0eb901fe84211b92b0a9d91f2e5c0", // Instant Avatar for video generation
+    heygenVideoAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
@@ -154,7 +154,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
       "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
     profileImageUrl: "/attached_assets/June-low_1764106896823.gif",
     heygenAvatarId: "June_HR_public", // Public streaming avatar
-    heygenVideoAvatarId: "1732323320", // Judy public avatar for video generation
+    heygenVideoAvatarId: "June_HR_public", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "0S1rhLzIdFVPtcYQqXG4",
@@ -214,7 +214,7 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
       "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
     profileImageUrl: "/attached_assets/Ann_1763966361095.gif",
     heygenAvatarId: "Ann_Therapist_public", // Public streaming avatar
-    heygenVideoAvatarId: "1732832799", // Sophia public avatar for video generation
+    heygenVideoAvatarId: "Ann_Therapist_public", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "21m00Tcm4TlvDq8ikWAM",
@@ -333,7 +333,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
     profileImageUrl: "/attached_assets/Thad_1763963906199.gif",
     heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "1732323365", // Doctor Dexter sitting pose public avatar
+    heygenVideoAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
