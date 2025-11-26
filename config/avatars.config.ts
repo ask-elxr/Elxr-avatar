@@ -273,8 +273,8 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     description:
       "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
     profileImageUrl: "/attached_assets/Nigel-Loop-avatar_1763964600000.gif",
-    heygenAvatarId: "dabc0a0497d64d85bb1e815ad547c128", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "1732829459", // Shawn sitting behind desk public avatar
+    heygenAvatarId: "2bc688a56d3949d3a49aab4a44efab49", // Custom Nigel avatar for streaming
+    heygenVideoAvatarId: "2bc688a56d3949d3a49aab4a44efab49", // Custom Nigel avatar for video
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
