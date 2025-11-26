@@ -979,6 +979,16 @@ export function useAvatarSession({
         // Expected - request was cancelled
       } else {
         console.error("Error sending message:", error);
+        
+        // Check for HeyGen 401 Unauthorized error - session expired
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+          console.log("🔄 HeyGen session expired (401) - triggering reconnection...");
+          // Show reconnect button instead of auto-reconnecting to give user control
+          setShowReconnect(true);
+          setHeygenSessionActive(false);
+          avatarRef.current = null;
+        }
       }
     } finally {
       // Clear abort controller only if it's still the one we created

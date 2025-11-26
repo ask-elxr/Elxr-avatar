@@ -474,28 +474,28 @@ coursesRouter.post("/generate-script", async (req: Request, res: Response) => {
 
 // ===== CHAT VIDEO ENDPOINTS =====
 
-// Get status of a specific chat-generated video
-coursesRouter.get("/chat-videos/:videoId", async (req: Request, res: Response) => {
+// Get pending/generating videos (for notification polling)
+// NOTE: Must be defined BEFORE /chat-videos/:videoId to avoid "pending" being matched as videoId
+coursesRouter.get("/chat-videos/pending", async (req: Request, res: Response) => {
   try {
-    const { videoId } = req.params;
     const userId = req.session.userId;
 
-    const [video] = await db
+    const pendingVideos = await db
       .select()
       .from(chatGeneratedVideos)
       .where(and(
-        eq(chatGeneratedVideos.id, videoId),
-        eq(chatGeneratedVideos.userId, userId)
-      ));
+        eq(chatGeneratedVideos.userId, userId),
+        or(
+          eq(chatGeneratedVideos.status, "pending"),
+          eq(chatGeneratedVideos.status, "generating")
+        )
+      ))
+      .orderBy(desc(chatGeneratedVideos.createdAt));
 
-    if (!video) {
-      return res.status(404).json({ error: "Video not found" });
-    }
-
-    res.json(video);
+    res.json(pendingVideos);
   } catch (error) {
-    console.error("Error fetching chat video:", error);
-    res.status(500).json({ error: "Failed to fetch video" });
+    console.error("Error fetching pending videos:", error);
+    res.status(500).json({ error: "Failed to fetch pending videos" });
   }
 });
 
@@ -529,27 +529,28 @@ coursesRouter.get("/chat-videos", async (req: Request, res: Response) => {
   }
 });
 
-// Get pending/generating videos (for notification polling)
-coursesRouter.get("/chat-videos/pending", async (req: Request, res: Response) => {
+// Get status of a specific chat-generated video
+coursesRouter.get("/chat-videos/:videoId", async (req: Request, res: Response) => {
   try {
+    const { videoId } = req.params;
     const userId = req.session.userId;
 
-    const pendingVideos = await db
+    const [video] = await db
       .select()
       .from(chatGeneratedVideos)
       .where(and(
-        eq(chatGeneratedVideos.userId, userId),
-        or(
-          eq(chatGeneratedVideos.status, "pending"),
-          eq(chatGeneratedVideos.status, "generating")
-        )
-      ))
-      .orderBy(desc(chatGeneratedVideos.createdAt));
+        eq(chatGeneratedVideos.id, videoId),
+        eq(chatGeneratedVideos.userId, userId)
+      ));
 
-    res.json(pendingVideos);
+    if (!video) {
+      return res.status(404).json({ error: "Video not found" });
+    }
+
+    res.json(video);
   } catch (error) {
-    console.error("Error fetching pending videos:", error);
-    res.status(500).json({ error: "Failed to fetch pending videos" });
+    console.error("Error fetching chat video:", error);
+    res.status(500).json({ error: "Failed to fetch video" });
   }
 });
 
