@@ -36,6 +36,8 @@ import { heygenCreditService } from "./heygenCreditService.js";
 import { memoryService, MemoryType } from "./memoryService.js";
 import * as pubmedService from "./pubmedService.js";
 import { googleDriveService } from "./googleDriveService.js";
+import { detectVideoIntent, generateVideoAcknowledgment } from "./services/intent.js";
+import { chatVideoService } from "./services/chatVideo.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -1482,6 +1484,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avatarConfig = getAvatarById(avatarId);
       if (!avatarConfig) {
         return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      // Check for video request intent
+      const videoIntent = await detectVideoIntent(message);
+      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
+        const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
+        
+        // Start video generation in background
+        const videoResult = await chatVideoService.createVideoFromChat({
+          userId,
+          avatarId,
+          requestText: message,
+          topic: topic || "the requested topic",
+        });
+
+        if (videoResult.success) {
+          const acknowledgment = generateVideoAcknowledgment(topic, avatarConfig.name);
+          
+          // Save the acknowledgment to conversation history
+          await storage.saveConversation({
+            userId,
+            avatarId,
+            role: 'assistant',
+            text: acknowledgment,
+            metadata: {
+              type: 'video-generating',
+              videoRecordId: videoResult.videoRecordId,
+              topic,
+            },
+          });
+
+          logger.info({ userId, avatarId, topic, videoRecordId: videoResult.videoRecordId }, 'Video generation started from chat');
+
+          return res.json({
+            success: true,
+            message,
+            knowledgeResponse: acknowledgment,
+            personalityUsed: avatarConfig.personalityPrompt,
+            usedClaude: true,
+            videoGenerating: {
+              videoRecordId: videoResult.videoRecordId,
+              topic,
+            },
+          });
+        }
+        // If video creation failed, continue with normal response
+        logger.warn({ userId, avatarId, error: videoResult.error }, 'Video generation request failed, continuing with normal response');
       }
 
       // Update session activity to prevent premature cleanup

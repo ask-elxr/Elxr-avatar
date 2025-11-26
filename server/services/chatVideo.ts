@@ -136,7 +136,7 @@ ${memoryContext}
         additionalContext,
       });
 
-      if (!scriptResult.success || !scriptResult.script) {
+      if (!scriptResult.script) {
         throw new Error("Failed to generate video script");
       }
 
