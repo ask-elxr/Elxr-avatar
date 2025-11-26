@@ -276,27 +276,27 @@ export default function Admin() {
             <>
               <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 mb-6 sm:mb-8">
                 {/* Avatars Card */}
-                <Card>
+                <Card className="flex flex-col">
                   <CardHeader className="p-4 sm:p-6">
                     <CardTitle className="text-base sm:text-lg">Avatars</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 sm:p-6 pt-0">
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        {Array.isArray(avatarsData) && avatarsData.slice(0, 3).map((avatar: any) => (
-                          <div 
-                            key={avatar.id} 
-                            className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
-                          >
-                            {avatar.name.charAt(0)}
-                          </div>
-                        ))}
-                        {totalAvatars > 3 && (
-                          <div className="text-xs sm:text-sm text-muted-foreground">
-                            +{totalAvatars - 3}
-                          </div>
-                        )}
-                      </div>
+                  <CardContent className="p-4 sm:p-6 pt-0 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 mb-4">
+                      {Array.isArray(avatarsData) && avatarsData.slice(0, 3).map((avatar: any) => (
+                        <div 
+                          key={avatar.id} 
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white font-semibold text-xs sm:text-sm"
+                        >
+                          {avatar.name.charAt(0)}
+                        </div>
+                      ))}
+                      {totalAvatars > 3 && (
+                        <div className="text-xs sm:text-sm text-muted-foreground">
+                          +{totalAvatars - 3}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-auto">
                       <Button 
                         className="w-full" 
                         variant="default"
@@ -311,12 +311,12 @@ export default function Admin() {
                 </Card>
 
                 {/* Resources Card */}
-                <Card>
+                <Card className="flex flex-col">
                   <CardHeader className="p-4 sm:p-6">
                     <CardTitle className="text-base sm:text-lg">Resources</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 sm:p-6 pt-0">
-                    <div className="space-y-2">
+                  <CardContent className="p-4 sm:p-6 pt-0 flex-1 flex flex-col">
+                    <div className="space-y-2 flex-1">
                       <div className="flex justify-between items-center">
                         <span className="text-xs sm:text-sm text-muted-foreground">Documents</span>
                         <span className="text-xl sm:text-2xl font-bold">{totalDocuments}</span>
@@ -330,19 +330,19 @@ export default function Admin() {
                 </Card>
 
                 {/* Status Card */}
-                <Card>
+                <Card className="flex flex-col">
                   <CardHeader className="p-4 sm:p-6">
                     <CardTitle className="text-base sm:text-lg">Status</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 sm:p-6 pt-0">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                        <span className="text-xs sm:text-sm">All Systems Operational</span>
-                      </div>
+                  <CardContent className="p-4 sm:p-6 pt-0 flex-1 flex flex-col">
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <span className="text-xs sm:text-sm">All Systems Operational</span>
+                    </div>
+                    <div className="mt-auto">
                       <Button 
                         variant="outline" 
-                        className="w-full mt-4"
+                        className="w-full"
                         onClick={() => setCurrentView('settings')}
                       >
                         Settings
