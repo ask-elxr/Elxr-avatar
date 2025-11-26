@@ -6,6 +6,15 @@ import { eq } from "drizzle-orm";
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 
+// Talking Photo IDs - these require different API format (type: "talking_photo" instead of "avatar")
+// Identified from HeyGen API: these are in the talking_photos category, not avatars
+const TALKING_PHOTO_IDS = new Set([
+  "84f913285ac944188a35ce5b58ceb861", // Kelsey
+  "1da3f06fc92a4a9bbbe10f81b3b6a498", // Thad
+  "57d0eb901fe84211b92b0a9d91f2e5c0", // Willie
+  "ee40f646802241e1902a93b5cf05575c", // Mark Headshot
+]);
+
 interface VideoGenerationRequest {
   lessonId: string;
   script: string;
@@ -95,14 +104,27 @@ export class VideoGenerationService {
         voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
       };
 
+      // Detect if this is a Talking Photo (requires different API format)
+      const isTalkingPhoto = TALKING_PHOTO_IDS.has(avatar.heygenVideoAvatarId);
+      
+      // Build character config based on avatar type
+      const characterConfig = isTalkingPhoto
+        ? {
+            type: "talking_photo",
+            talking_photo_id: avatar.heygenVideoAvatarId,
+          }
+        : {
+            type: "avatar",
+            avatar_id: avatar.heygenVideoAvatarId,
+            avatar_style: "normal",
+          };
+
+      console.log(`📹 Avatar type: ${isTalkingPhoto ? 'TALKING_PHOTO' : 'AVATAR'} (${avatar.heygenVideoAvatarId})`);
+
       const videoRequest = {
         video_inputs: [
           {
-            character: {
-              type: "avatar",
-              avatar_id: avatar.heygenVideoAvatarId, // Use Instant Avatar ID for video generation
-              avatar_style: "normal",
-            },
+            character: characterConfig,
             voice: voiceConfig,
           },
         ],
