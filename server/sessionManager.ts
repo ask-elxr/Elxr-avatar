@@ -28,7 +28,7 @@ class SessionManager {
   
   private readonly MAX_CONCURRENT_SESSIONS_PER_USER = 2;
   private readonly AVATAR_SWITCH_COOLDOWN_MS = 1000; // 1 second - just enough to prevent accidental double-clicks
-  private readonly SESSION_TIMEOUT_MS = 120000; // 2 minutes of inactivity (aligns with frontend 90s + buffer)
+  private readonly SESSION_TIMEOUT_MS = 900000; // 15 minutes of inactivity - allows users to watch/listen without active messaging
   private readonly MAX_HISTORY_LENGTH = 1000; // Keep last 1000 completed sessions
 
   constructor() {
