@@ -51,11 +51,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [showSettings, setShowSettings] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [pendingVideos, setPendingVideos] = useState<ChatGeneratedVideo[]>([]);
-  const [completedVideo, setCompletedVideo] = useState<ChatGeneratedVideo | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const previousPendingIdsRef = useRef<Set<string>>(new Set());
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -182,65 +180,29 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
   }, [sessionActive, userId, selectedAvatarId]);
 
-  // Poll for pending video notifications
+  // Poll for pending video notifications (completion notifications handled globally in App.tsx)
   const fetchPendingVideos = async () => {
     try {
       const response = await fetch('/api/courses/chat-videos/pending');
       if (response.ok) {
         const videos: ChatGeneratedVideo[] = await response.json();
         
-        // Update pending videos state (status is already filtered by API)
         setPendingVideos(videos.filter(v => 
           v.status === 'pending' || v.status === 'generating'
         ));
-
-        // Update ref with current pending IDs
-        const currentPendingIds = new Set(videos.map(v => v.id));
-        previousPendingIdsRef.current = currentPendingIds;
       }
     } catch (error) {
       console.error('Error fetching pending videos:', error);
     }
   };
 
-  // Check for completed videos separately
-  const checkForCompletedVideos = async () => {
-    try {
-      const response = await fetch('/api/courses/chat-videos?status=completed');
-      if (response.ok) {
-        const videos: ChatGeneratedVideo[] = await response.json();
-        
-        // Find recently completed videos (within last 60 seconds based on completedAt)
-        const recentlyCompleted = videos.find(v => {
-          if (!v.completedAt) return false;
-          const completedTime = new Date(v.completedAt).getTime();
-          const now = Date.now();
-          return now - completedTime < 60000; // 60 seconds
-        });
-        
-        if (recentlyCompleted && !completedVideo) {
-          setCompletedVideo(recentlyCompleted);
-          toast({
-            title: "Video Ready!",
-            description: `Your video about "${recentlyCompleted.topic}" is ready to view.`,
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error checking completed videos:', error);
-    }
-  };
-
-  // Poll for pending videos when session is active
+  // Poll for pending videos when session is active (for UI display only)
   useEffect(() => {
     if (sessionActive && userId) {
       fetchPendingVideos();
-      checkForCompletedVideos();
       
-      // Poll every 5 seconds for video status
       videoPollIntervalRef.current = setInterval(() => {
         fetchPendingVideos();
-        checkForCompletedVideos();
       }, 5000);
       
       return () => {
@@ -448,39 +410,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
             )}
 
-            {/* Completed Video Notification */}
-            {completedVideo && (
-              <div className="absolute top-32 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 bg-green-500/20 border border-green-500/40 rounded-lg backdrop-blur-sm p-4 z-30">
-                <div className="flex items-start gap-3">
-                  <Film className="w-6 h-6 text-green-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-green-300">Video Ready!</h4>
-                    <p className="text-xs text-green-300/80 mt-1 truncate">
-                      {completedVideo.topic}
-                    </p>
-                    <div className="flex items-center gap-2 mt-3">
-                      {completedVideo.videoUrl && (
-                        <a
-                          href={completedVideo.videoUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-xs bg-green-500/30 hover:bg-green-500/40 text-green-300 px-3 py-1.5 rounded-md transition-colors"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Watch Video
-                        </a>
-                      )}
-                      <button
-                        onClick={() => setCompletedVideo(null)}
-                        className="text-xs text-green-400/60 hover:text-green-400 transition-colors"
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
           </>
         )}
 

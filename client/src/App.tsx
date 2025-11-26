@@ -5,6 +5,9 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { useAuth } from "@/hooks/useAuth";
+import { useAnonymousUser } from "@/hooks/useAnonymousUser";
+import { useChatVideoNotifications } from "@/hooks/useChatVideoNotifications";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const AvatarSelect = lazy(() => import("@/pages/avatar-select"));
@@ -27,6 +30,16 @@ function LoadingFallback() {
       </div>
     </div>
   );
+}
+
+function GlobalVideoNotifications() {
+  const { user } = useAuth();
+  const { userId: anonymousUserId } = useAnonymousUser();
+  const effectiveUserId = user?.id || anonymousUserId;
+  
+  useChatVideoNotifications(effectiveUserId);
+  
+  return null;
 }
 
 function Router() {
@@ -55,6 +68,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <GlobalVideoNotifications />
         <Router />
       </TooltipProvider>
     </QueryClientProvider>
