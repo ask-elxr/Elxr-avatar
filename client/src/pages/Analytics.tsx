@@ -161,14 +161,15 @@ export default function Analytics() {
               </CardDescription>
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={320} className="lg:!h-[360px]">
                 <PieChart>
                   <Pie
                     data={analytics.avatarStats}
                     cx="50%"
-                    cy="45%"
+                    cy="40%"
                     labelLine={false}
-                    outerRadius={70}
+                    outerRadius="35%"
+                    innerRadius="15%"
                     fill="#8884d8"
                     dataKey="totalMessages"
                   >
@@ -182,7 +183,7 @@ export default function Analytics() {
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                       color: 'hsl(var(--foreground))',
-                      fontSize: '12px'
+                      fontSize: '13px'
                     }}
                     formatter={(value: number, name: string, props: any) => [
                       `${value} messages (${((props.payload.totalMessages / analytics.avatarStats.reduce((sum, s) => sum + s.totalMessages, 0)) * 100).toFixed(0)}%)`,
@@ -193,8 +194,9 @@ export default function Analytics() {
                     layout="horizontal" 
                     verticalAlign="bottom" 
                     align="center"
-                    wrapperStyle={{ fontSize: '10px', paddingTop: '15px' }}
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
                     formatter={(value, entry: any) => entry.payload?.avatarName || value}
+                    iconSize={10}
                   />
                 </PieChart>
               </ResponsiveContainer>
