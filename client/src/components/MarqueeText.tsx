@@ -10,18 +10,16 @@ export function MarqueeText({ text, className = "", maxWidth = "100%" }: Marquee
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [shouldScroll, setShouldScroll] = useState(false);
-  const [scrollDistance, setScrollDistance] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   useEffect(() => {
     const checkOverflow = () => {
       if (containerRef.current && textRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
+        const cWidth = containerRef.current.clientWidth;
         const textWidth = textRef.current.scrollWidth;
-        const isOverflowing = textWidth > containerWidth;
+        const isOverflowing = textWidth > cWidth;
         setShouldScroll(isOverflowing);
-        if (isOverflowing) {
-          setScrollDistance(textWidth - containerWidth + 20);
-        }
+        setContainerWidth(cWidth);
       }
     };
     
@@ -36,6 +34,19 @@ export function MarqueeText({ text, className = "", maxWidth = "100%" }: Marquee
     };
   }, [text]);
 
+  if (!shouldScroll) {
+    return (
+      <div 
+        ref={containerRef} 
+        className={`overflow-hidden relative ${className}`}
+        style={{ maxWidth }}
+        title={text}
+      >
+        <span ref={textRef} className="whitespace-nowrap">{text}</span>
+      </div>
+    );
+  }
+
   return (
     <div 
       ref={containerRef} 
@@ -43,28 +54,22 @@ export function MarqueeText({ text, className = "", maxWidth = "100%" }: Marquee
       style={{ maxWidth }}
       title={text}
     >
-      <div className="flex">
-        <span
-          ref={textRef}
-          className="whitespace-nowrap"
-          style={{
-            animation: shouldScroll ? `marquee-scroll 6s ease-in-out infinite` : 'none',
-            ['--scroll-distance' as string]: `-${scrollDistance}px`,
-          }}
-        >
-          {text}
-        </span>
+      <div 
+        className="flex whitespace-nowrap animate-marquee-slow"
+        style={{
+          animation: 'marquee-continuous 15s linear infinite',
+        }}
+      >
+        <span ref={textRef} className="inline-block pr-16">{text}</span>
+        <span className="inline-block pr-16">{text}</span>
       </div>
       <style>{`
-        @keyframes marquee-scroll {
-          0%, 15% {
+        @keyframes marquee-continuous {
+          0% {
             transform: translateX(0);
           }
-          45%, 55% {
-            transform: translateX(var(--scroll-distance));
-          }
-          85%, 100% {
-            transform: translateX(0);
+          100% {
+            transform: translateX(-50%);
           }
         }
       `}</style>
