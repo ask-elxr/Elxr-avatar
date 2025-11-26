@@ -62,7 +62,7 @@ export function AvatarManager() {
   // Create avatar mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertAvatarProfile) => {
-      return await apiRequest("POST", "/api/admin/avatars", data);
+      return await apiRequest("/api/admin/avatars", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/avatars"] });
@@ -84,7 +84,7 @@ export function AvatarManager() {
   // Update avatar mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertAvatarProfile> }) => {
-      return await apiRequest("PUT", `/api/admin/avatars/${id}`, data);
+      return await apiRequest(`/api/admin/avatars/${id}`, "PUT", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/avatars"] });
@@ -106,7 +106,7 @@ export function AvatarManager() {
   // Delete avatar mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest("DELETE", `/api/admin/avatars/${id}`);
+      return await apiRequest(`/api/admin/avatars/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/avatars"] });
