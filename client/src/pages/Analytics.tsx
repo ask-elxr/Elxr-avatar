@@ -155,51 +155,53 @@ export default function Analytics() {
 
           <Card>
             <CardHeader className="pb-3 px-3 sm:px-6">
-              <CardTitle className="text-sm sm:text-base font-semibold">Avatar Distribution</CardTitle>
+              <CardTitle className="text-sm sm:text-base lg:text-lg font-semibold">Avatar Distribution</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
                 Message distribution by avatar
               </CardDescription>
             </CardHeader>
             <CardContent className="px-2 sm:px-6">
-              <ResponsiveContainer width="100%" height={320} className="lg:!h-[360px]">
-                <PieChart>
-                  <Pie
-                    data={analytics.avatarStats}
-                    cx="50%"
-                    cy="40%"
-                    labelLine={false}
-                    outerRadius="35%"
-                    innerRadius="15%"
-                    fill="#8884d8"
-                    dataKey="totalMessages"
-                  >
-                    {analytics.avatarStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
-                      color: 'hsl(var(--foreground))',
-                      fontSize: '13px'
-                    }}
-                    formatter={(value: number, name: string, props: any) => [
-                      `${value} messages (${((props.payload.totalMessages / analytics.avatarStats.reduce((sum, s) => sum + s.totalMessages, 0)) * 100).toFixed(0)}%)`,
-                      props.payload.avatarName
-                    ]}
-                  />
-                  <Legend 
-                    layout="horizontal" 
-                    verticalAlign="bottom" 
-                    align="center"
-                    wrapperStyle={{ fontSize: '12px', paddingTop: '20px' }}
-                    formatter={(value, entry: any) => entry.payload?.avatarName || value}
-                    iconSize={10}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="h-[280px] sm:h-[320px] lg:h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={analytics.avatarStats}
+                      cx="50%"
+                      cy="45%"
+                      labelLine={false}
+                      outerRadius="40%"
+                      innerRadius="20%"
+                      fill="#8884d8"
+                      dataKey="totalMessages"
+                    >
+                      {analytics.avatarStats.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                        color: 'hsl(var(--foreground))',
+                        fontSize: '14px'
+                      }}
+                      formatter={(value: number, name: string, props: any) => [
+                        `${value} messages (${((props.payload.totalMessages / analytics.avatarStats.reduce((sum, s) => sum + s.totalMessages, 0)) * 100).toFixed(0)}%)`,
+                        props.payload.avatarName
+                      ]}
+                    />
+                    <Legend 
+                      layout="horizontal" 
+                      verticalAlign="bottom" 
+                      align="center"
+                      wrapperStyle={{ fontSize: '13px', paddingTop: '15px' }}
+                      formatter={(value, entry: any) => entry.payload?.avatarName || value}
+                      iconSize={12}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
