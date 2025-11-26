@@ -83,6 +83,16 @@ export default function Admin() {
   const { data: coursesData } = useQuery({
     queryKey: ['/api/courses'],
     enabled: isAuthenticated,
+    refetchInterval: (query) => {
+      // Poll every 5 seconds if any lesson is generating
+      const data = query.state.data as any[] | undefined;
+      const hasGenerating = data?.some((course: any) => 
+        course.lessons?.some((lesson: any) => 
+          lesson.status === "generating" || lesson.video?.status === "generating"
+        )
+      );
+      return hasGenerating ? 5000 : false;
+    },
   });
 
   useEffect(() => {
