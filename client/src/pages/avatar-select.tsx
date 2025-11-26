@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
+import { Check, MessageCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import type { AvatarProfile } from "@shared/schema";
 
@@ -37,6 +37,11 @@ export default function AvatarSelect() {
     if (selectedAvatarId) {
       setLocation(`/?avatar=${selectedAvatarId}`);
     }
+  };
+
+  const handleStartChat = (avatarId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLocation(`/?avatar=${avatarId}`);
   };
 
   // Avatar GIF mapping
@@ -112,7 +117,7 @@ export default function AvatarSelect() {
 
                   {/* Content */}
                   <div className="relative">
-                    <div>
+                    <div className="pr-10">
                       <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2">
                         {avatar.name}
                       </CardTitle>
@@ -122,7 +127,7 @@ export default function AvatarSelect() {
                       
                       {/* Tags */}
                       {avatar.tags && avatar.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 mb-4">
                           {avatar.tags.map((tag, index) => (
                             <span
                               key={index}
@@ -133,6 +138,16 @@ export default function AvatarSelect() {
                           ))}
                         </div>
                       )}
+
+                      {/* Start Chat Button */}
+                      <Button
+                        onClick={(e) => handleStartChat(avatar.id, e)}
+                        className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-purple-500/20"
+                        data-testid={`button-chat-${avatar.id}`}
+                      >
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Start Chat
+                      </Button>
                     </div>
 
                     {/* Selection Check Mark */}
