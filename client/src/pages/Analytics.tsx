@@ -169,10 +169,10 @@ export default function Analytics() {
                     <Pie
                       data={analytics.avatarStats}
                       cx="50%"
-                      cy="45%"
+                      cy="42%"
                       labelLine={false}
-                      outerRadius="40%"
-                      innerRadius="20%"
+                      outerRadius={120}
+                      innerRadius={50}
                       fill="#8884d8"
                       dataKey="totalMessages"
                     >
@@ -197,7 +197,7 @@ export default function Analytics() {
                       layout="horizontal" 
                       verticalAlign="bottom" 
                       align="center"
-                      wrapperStyle={{ fontSize: '13px', paddingTop: '15px' }}
+                      wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }}
                       formatter={(value, entry: any) => entry.payload?.avatarName || value}
                       iconSize={12}
                     />
