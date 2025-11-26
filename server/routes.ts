@@ -1734,7 +1734,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             logger.error({ error }, 'Error fetching knowledge base');
             return { context: "", namespaces: 0 };
           }
-        })()
+        })(),
+
       ]);
 
       // Extract results from settled promises
@@ -1829,6 +1830,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (googleSearchContext) {
         enhancedPersonality += `\n\n${googleSearchContext}\n\nYou have access to web search results. Use this current information to enhance your response when relevant.`;
+      }
+
+      // Add video generation context so the AI knows about its capability
+      // Fetch user videos to include both pending and recently completed (prioritize current avatar)
+      let videoContext = "";
+      if (userId) {
+        try {
+          const allUserVideos = await storage.getChatGeneratedVideosByUser(userId);
+          
+          // Filter pending videos, prioritize current avatar
+          const pendingVids = allUserVideos
+            .filter(v => v.status === 'pending' || v.status === 'generating')
+            .sort((a, b) => (a.avatarId === avatarId ? -1 : 1)) // Current avatar first
+            .slice(0, 5); // Cap at 5
+          
+          // Filter recently completed videos (last 10 minutes), prioritize current avatar
+          const recentlyCompleted = allUserVideos
+            .filter(v => 
+              v.status === 'completed' && 
+              v.completedAt && 
+              (Date.now() - new Date(v.completedAt).getTime()) < 10 * 60 * 1000
+            )
+            .sort((a, b) => (a.avatarId === avatarId ? -1 : 1)) // Current avatar first
+            .slice(0, 3); // Cap at 3
+          
+          if (pendingVids.length > 0 || recentlyCompleted.length > 0) {
+            videoContext = `\n\nVIDEO GENERATION STATUS:\nYou have the ability to create videos for users when they ask.`;
+            
+            if (pendingVids.length > 0) {
+              const pendingList = pendingVids.map((v: any) => 
+                `- "${v.topic}" (${v.status === 'generating' ? 'being generated now' : 'queued'}${v.avatarId !== avatarId ? ` by ${v.avatarId}` : ''})`
+              ).join('\n');
+              videoContext += `\n\nVideos currently being generated:\n${pendingList}`;
+            }
+            
+            if (recentlyCompleted.length > 0) {
+              const completedList = recentlyCompleted.map((v: any) => 
+                `- "${v.topic}" (READY to view${v.avatarId !== avatarId ? ` - created by ${v.avatarId}` : ''})`
+              ).join('\n');
+              videoContext += `\n\nVideos recently completed:\n${completedList}`;
+            }
+            
+            videoContext += `\n\nIMPORTANT INSTRUCTIONS FOR VIDEO QUESTIONS:
+- When asked about video status: If there are pending videos, say they are being generated (takes 2-5 minutes) and will be in the Video Courses section or My Videos tab.
+- If there are recently completed videos: Tell the user their video is ready and they can find it in the Video Courses section or My Videos tab.
+- NEVER say you cannot create videos - you CAN and ARE creating them through the system.
+- Do NOT confuse video generation status with unrelated knowledge base content.`;
+          }
+        } catch (error) {
+          logger.error({ error }, 'Error building video context');
+        }
+      }
+      
+      if (videoContext) {
+        enhancedPersonality += videoContext;
       }
 
       // Generate response using Claude Sonnet 4 with all context
