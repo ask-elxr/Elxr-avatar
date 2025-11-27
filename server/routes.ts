@@ -1948,6 +1948,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       perfTimings.dataFetch = Date.now() - perfStart;
       const claudeStart = Date.now();
       
+      // CRITICAL: Combine ALL knowledge sources into a single context for Claude
+      // This ensures Claude actually sees and uses PubMed, Wikipedia, and Google Search results
+      let combinedKnowledgeContext = knowledgeContext || '';
+      
+      if (pubmedContext) {
+        combinedKnowledgeContext += pubmedContext;
+      }
+      if (wikipediaContext) {
+        combinedKnowledgeContext += wikipediaContext;
+      }
+      if (googleSearchContext) {
+        combinedKnowledgeContext += googleSearchContext;
+      }
+      
       let aiResponse: string;
 
       if (claudeService.isAvailable()) {
@@ -1961,7 +1975,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         aiResponse = await claudeService.generateResponse(
           message,
-          knowledgeContext,
+          combinedKnowledgeContext,  // Use combined context with ALL sources
           enhancedConversationHistory,
           enhancedPersonality,
         );
