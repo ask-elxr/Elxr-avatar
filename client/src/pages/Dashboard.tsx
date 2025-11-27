@@ -133,8 +133,9 @@ export default function Dashboard() {
   const currentView = useMemo((): UserView => {
     if (location.startsWith('/dashboard/chat/') && chatParams?.avatarId) return 'active-chat';
     if (location === '/dashboard/chat') return 'chat';
+    if (location === '/dashboard/courses/new/edit') return 'course-edit';
     if (location.endsWith('/edit') && courseEditParams?.courseId) return 'course-edit';
-    if (location.startsWith('/dashboard/courses/') && courseViewParams?.courseId) return 'course-view';
+    if (location.startsWith('/dashboard/courses/') && courseViewParams?.courseId && !location.endsWith('/edit')) return 'course-view';
     if (location === '/dashboard/courses') return 'courses';
     if (location === '/dashboard/videos') return 'videos';
     if (location === '/dashboard/mood') return 'mood';
@@ -145,7 +146,7 @@ export default function Dashboard() {
   }, [location, chatParams, courseViewParams, courseEditParams]);
   
   const activeChatAvatarId = chatParams?.avatarId || null;
-  const selectedCourseId = courseViewParams?.courseId || courseEditParams?.courseId || null;
+  const selectedCourseId = location === '/dashboard/courses/new/edit' ? null : (courseViewParams?.courseId || courseEditParams?.courseId || null);
 
   const { data: chatVideos, isLoading: videosLoading } = useQuery<ChatVideo[]>({
     queryKey: ['/api/courses/chat-videos'],
@@ -576,7 +577,7 @@ export default function Dashboard() {
                     </p>
                     <Button 
                       className="w-full" 
-                      onClick={() => setCurrentView('chat')}
+                      onClick={() => setLocation('/dashboard/chat')}
                       data-testid="button-start-chat"
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
@@ -609,7 +610,7 @@ export default function Dashboard() {
                       <Button 
                         className="flex-1" 
                         variant="secondary"
-                        onClick={() => setCurrentView('videos')}
+                        onClick={() => setLocation('/dashboard/videos')}
                         data-testid="button-view-videos"
                       >
                         <Video className="w-4 h-4 mr-2" />
@@ -749,7 +750,7 @@ export default function Dashboard() {
                 <>
                   {planInfo?.plan?.avatarLimit === 1 && planInfo?.selectedAvatarId && (
                     <p className="text-purple-400 text-sm mb-4 text-center">
-                      Your plan includes 1 avatar. <button onClick={() => setCurrentView('plan')} className="underline hover:text-purple-300">Upgrade to Pro</button> for unlimited access.
+                      Your plan includes 1 avatar. <button onClick={() => setLocation('/dashboard/plan')} className="underline hover:text-purple-300">Upgrade to Pro</button> for unlimited access.
                     </p>
                   )}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -836,10 +837,9 @@ export default function Dashboard() {
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         if (locked) {
-                                          setCurrentView('plan');
+                                          setLocation('/dashboard/plan');
                                         } else {
-                                          setActiveChatAvatarId(avatar.id);
-                                          setCurrentView('active-chat');
+                                          setLocation(`/dashboard/chat/${avatar.id}`);
                                         }
                                       }}
                                       className={`w-full font-semibold py-2.5 text-sm rounded-lg transition-all duration-200 shadow-lg ${
@@ -906,7 +906,7 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <Button onClick={() => setCurrentView('chat')} data-testid="button-start-chat-empty">
+                    <Button onClick={() => setLocation('/dashboard/chat')} data-testid="button-start-chat-empty">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Start Chatting
                     </Button>
@@ -1077,7 +1077,7 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <Button onClick={() => { setSelectedCourseId(null); setCurrentView('course-edit'); }} data-testid="button-create-course">
+                    <Button onClick={() => setLocation('/dashboard/courses/new/edit')} data-testid="button-create-course">
                       <Plus className="w-4 h-4 mr-2" />
                       Create Your First Course
                     </Button>
@@ -1086,7 +1086,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <div className="flex justify-end mb-6">
-                    <Button onClick={() => { setSelectedCourseId(null); setCurrentView('course-edit'); }} data-testid="button-new-course">
+                    <Button onClick={() => setLocation('/dashboard/courses/new/edit')} data-testid="button-new-course">
                       <Plus className="w-4 h-4 mr-2" />
                       New Course
                     </Button>
@@ -1096,7 +1096,7 @@ export default function Dashboard() {
                       <Card
                         key={course.id}
                         className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden flex flex-col"
-                        onClick={() => { setSelectedCourseId(course.id); setCurrentView('course-view'); }}
+                        onClick={() => setLocation(`/dashboard/courses/${course.id}`)}
                         data-testid={`card-course-${course.id}`}
                       >
                         {/* Thumbnail - use first lesson's video thumbnail or course thumbnail */}
@@ -1167,8 +1167,7 @@ export default function Dashboard() {
                               className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-white"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setSelectedCourseId(course.id);
-                                setCurrentView('course-edit');
+                                setLocation(`/dashboard/courses/${course.id}/edit`);
                               }}
                               data-testid={`button-edit-course-${course.id}`}
                             >
@@ -1724,7 +1723,7 @@ export default function Dashboard() {
               return (
                 <div className="text-center py-12">
                   <p className="text-white/60">Course not found</p>
-                  <Button onClick={() => setCurrentView('courses')} className="mt-4">
+                  <Button onClick={() => setLocation('/dashboard/courses')} className="mt-4">
                     Back to Courses
                   </Button>
                 </div>
@@ -1740,10 +1739,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <Button
                     variant="ghost"
-                    onClick={() => {
-                      setSelectedCourseId(null);
-                      setCurrentView('courses');
-                    }}
+                    onClick={() => setLocation('/dashboard/courses')}
                     className="text-white/60 hover:text-white"
                     data-testid="button-back-to-courses"
                   >
@@ -1754,7 +1750,7 @@ export default function Dashboard() {
                     variant="outline"
                     size="sm"
                     className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                    onClick={() => setCurrentView('course-edit')}
+                    onClick={() => setLocation(`/dashboard/courses/${selectedCourseId}/edit`)}
                     data-testid="button-edit-course-from-view"
                   >
                     <Settings className="w-4 h-4 mr-2" />
@@ -1808,7 +1804,7 @@ export default function Dashboard() {
                       </div>
                       <p className="text-white/60">No lessons in this course yet</p>
                       <Button
-                        onClick={() => setCurrentView('course-edit')}
+                        onClick={() => setLocation(`/dashboard/courses/${selectedCourseId}/edit`)}
                         className="mt-4"
                         data-testid="button-add-lessons"
                       >
@@ -1929,10 +1925,7 @@ export default function Dashboard() {
               <CourseBuilderPage 
                 isEmbedded={true}
                 courseId={selectedCourseId}
-                onBack={() => {
-                  setSelectedCourseId(null);
-                  setCurrentView('courses');
-                }}
+                onBack={() => setLocation('/dashboard/courses')}
               />
             </div>
           )}

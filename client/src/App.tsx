@@ -59,6 +59,7 @@ function Router() {
         <Route path="/dashboard/chat/:avatarId" component={Dashboard} />
         <Route path="/dashboard/videos" component={Dashboard} />
         <Route path="/dashboard/courses" component={Dashboard} />
+        <Route path="/dashboard/courses/new/edit" component={Dashboard} />
         <Route path="/dashboard/courses/:courseId" component={Dashboard} />
         <Route path="/dashboard/courses/:courseId/edit" component={Dashboard} />
         <Route path="/dashboard/mood" component={Dashboard} />
