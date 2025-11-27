@@ -38,6 +38,7 @@ import * as pubmedService from "./pubmedService.js";
 import { googleDriveService } from "./googleDriveService.js";
 import { detectVideoIntent, generateVideoAcknowledgment } from "./services/intent.js";
 import { chatVideoService } from "./services/chatVideo.js";
+import { subscriptionService } from "./services/subscription.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for HeyGen API
@@ -3290,11 +3291,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all users for admin purposes
+  // Get all users for admin purposes with subscription and usage stats
   app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
-      const users = await storage.getAllUsers();
-      res.json(users);
+      const stats = await subscriptionService.getAdminUserStats();
+      res.json(stats);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({

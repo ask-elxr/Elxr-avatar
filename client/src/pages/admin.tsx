@@ -124,7 +124,7 @@ export default function Admin() {
   }
 
   const { data: usersData, isLoading: usersLoading } = useQuery<AdminUserStats[]>({
-    queryKey: ['/api/subscription/admin/users'],
+    queryKey: ['/api/admin/users'],
     enabled: isAuthenticated && isAdmin,
   });
 
@@ -902,13 +902,13 @@ export default function Admin() {
                               <td className="py-3 px-2">
                                 <div className="flex flex-wrap gap-1">
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 text-xs" title="Videos">
-                                    <Video className="w-3 h-3" /> {userData.usage.videosCreated}
+                                    <Video className="w-3 h-3" /> {userData.usage?.videosCreated ?? 0}
                                   </span>
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-xs" title="Courses">
-                                    📚 {userData.usage.coursesCreated}
+                                    📚 {userData.usage?.coursesCreated ?? 0}
                                   </span>
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 text-green-300 text-xs" title="Chats">
-                                    💬 {userData.usage.chatSessionsUsed}
+                                    💬 {userData.usage?.chatSessionsUsed ?? 0}
                                   </span>
                                 </div>
                               </td>
