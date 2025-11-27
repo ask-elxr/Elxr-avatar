@@ -394,3 +394,38 @@ export const updateChatGeneratedVideoSchema = createInsertSchema(chatGeneratedVi
 export type InsertChatGeneratedVideo = z.infer<typeof insertChatGeneratedVideoSchema>;
 export type UpdateChatGeneratedVideo = z.infer<typeof updateChatGeneratedVideoSchema>;
 export type ChatGeneratedVideo = typeof chatGeneratedVideos.$inferSelect;
+
+// Mood tracking for emotional wellness
+export const moodTypeEnum = ["joyful", "calm", "energized", "anxious", "sad", "stressed", "neutral"] as const;
+export type MoodType = typeof moodTypeEnum[number];
+
+export const moodEntries = pgTable("mood_entries", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  avatarId: varchar("avatar_id").references(() => avatarProfiles.id),
+  mood: varchar("mood").notNull(), // One of moodTypeEnum values
+  intensity: integer("intensity").default(3), // 1-5 scale
+  notes: text("notes"), // Optional user notes about their mood
+  avatarResponse: text("avatar_response"), // AI-generated empathetic response
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertMoodEntrySchema = createInsertSchema(moodEntries).pick({
+  userId: true,
+  avatarId: true,
+  mood: true,
+  intensity: true,
+  notes: true,
+}).extend({
+  mood: z.enum(moodTypeEnum),
+  intensity: z.number().min(1).max(5).optional(),
+  notes: z.string().max(500).optional(),
+});
+
+export const updateMoodEntrySchema = createInsertSchema(moodEntries).pick({
+  avatarResponse: true,
+}).partial();
+
+export type InsertMoodEntry = z.infer<typeof insertMoodEntrySchema>;
+export type UpdateMoodEntry = z.infer<typeof updateMoodEntrySchema>;
+export type MoodEntry = typeof moodEntries.$inferSelect;
