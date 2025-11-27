@@ -77,6 +77,7 @@ export function useAvatarSession({
   const recognitionRunningRef = useRef(false); // Track if recognition is currently running
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Loading timeout reference
+  const recognitionStuckTimeoutRef = useRef<NodeJS.Timeout | null>(null); // iOS Safari stuck detection
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -147,6 +148,12 @@ export function useAvatarSession({
       return;
     }
 
+    // Clear any stuck timeout from previous instance
+    if (recognitionStuckTimeoutRef.current) {
+      clearTimeout(recognitionStuckTimeoutRef.current);
+      recognitionStuckTimeoutRef.current = null;
+    }
+
     // ✅ Initialize Web Speech API for voice input
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -157,18 +164,50 @@ export function useAvatarSession({
         return;
       }
 
+      // Detect iOS/Safari for special handling
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = false; // Only get final results
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1; // Only get best match
       
+      // iOS Safari stuck detection - recreate if no results for 15 seconds
+      const resetStuckTimeout = () => {
+        if (recognitionStuckTimeoutRef.current) {
+          clearTimeout(recognitionStuckTimeoutRef.current);
+        }
+        if ((isIOS || isSafari) && sessionActiveRef.current && !isSpeakingRef.current) {
+          recognitionStuckTimeoutRef.current = setTimeout(() => {
+            console.log("⚠️ iOS/Safari: Recognition appears stuck, recreating...");
+            if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
+              try {
+                recognitionRef.current.abort();
+              } catch (e) {}
+              recognitionRef.current = null;
+              recognitionRunningRef.current = false;
+              // Recreate after a brief delay
+              setTimeout(() => {
+                if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
+                  startVoiceRecognition();
+                }
+              }, 1000);
+            }
+          }, 15000); // 15 seconds stuck detection
+        }
+      };
+      
       recognition.onstart = () => {
         setMicrophoneStatus('listening');
         console.log("🎤 Microphone listening");
+        resetStuckTimeout(); // Start stuck detection
       };
       
       recognition.onresult = (event: any) => {
+        resetStuckTimeout(); // Reset stuck timeout on any result
+        
         // Only process final results (not interim)
         const result = event.results[event.results.length - 1];
         if (!result.isFinal) return;
@@ -193,6 +232,11 @@ export function useAvatarSession({
         if (event.error === 'not-allowed') {
           console.error("🎤 Microphone permission denied - use text input instead");
           setMicrophoneStatus('permission-denied');
+          // Clear stuck timeout on permission error
+          if (recognitionStuckTimeoutRef.current) {
+            clearTimeout(recognitionStuckTimeoutRef.current);
+            recognitionStuckTimeoutRef.current = null;
+          }
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
           console.error("🎤 Speech recognition error:", event.error);
         }
@@ -215,6 +259,11 @@ export function useAvatarSession({
           }
         } else {
           setMicrophoneStatus('stopped');
+          // Clear stuck timeout when stopping
+          if (recognitionStuckTimeoutRef.current) {
+            clearTimeout(recognitionStuckTimeoutRef.current);
+            recognitionStuckTimeoutRef.current = null;
+          }
         }
       };
       
@@ -355,22 +404,39 @@ export function useAvatarSession({
         // ✅ DON'T start idle timeout here - let the 5-minute inactivity timer handle session cleanup
         // This allows users to think, speak, or pause without premature disconnection
         
-        // 🎤 Resume voice recognition after a brief delay to prevent echo
-        // Delay allows audio to fully stop before listening again
+        // 🎤 Resume voice recognition after a delay to prevent echo
+        // iOS Safari needs a longer delay (3-5 seconds) due to video/audio conflicts
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const delay = (isIOS || isSafari) ? 3500 : 1000; // 3.5s for iOS/Safari, 1s for others
+        
         setTimeout(() => {
           if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current && !recognitionRunningRef.current) {
             try {
-              setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
-              recognitionRef.current.start();
-              recognitionRunningRef.current = true;
-              console.log("🔊 Voice recognition resumed (avatar finished)");
+              // On iOS/Safari, completely recreate recognition instance after video playback
+              if (isIOS || isSafari) {
+                recognitionRef.current.abort();
+                recognitionRef.current = null;
+                // Delay slightly more before recreating
+                setTimeout(() => {
+                  if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
+                    startVoiceRecognition();
+                    console.log("🔊 Voice recognition recreated for iOS/Safari (avatar finished)");
+                  }
+                }, 500);
+              } else {
+                setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
+                recognitionRef.current.start();
+                recognitionRunningRef.current = true;
+                console.log("🔊 Voice recognition resumed (avatar finished)");
+              }
             } catch (e) {
               // Ignore errors if already running - this can happen if onend auto-restart already started it
               recognitionRunningRef.current = false;
               setMicrophoneStatus('stopped');
             }
           }
-        }, 1000); // 1 second delay
+        }, delay);
       });
 
       // ❌ DISABLED: USER_TALKING_MESSAGE listener removed
