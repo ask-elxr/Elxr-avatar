@@ -1,0 +1,45 @@
+
+﻿
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Stream ready: 
+MediaStream {id: '4e93f5f5-9b58-41a4-8bfa-87c7dc796c7b', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: 
+{message: "do you remember what's our last conversation", sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642749934070.0st2tiga608e
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: 
+{message: 'hi', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642750222230.pgv0b9cm4ll
+injected.js:214 
+ POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/avatar/response 500 (Internal Server Error)
+apply	@	injected.js:214
+(anonymous)	@	useAvatarSession.ts:904
+handleSubmitMessage	@	avatar-chat.tsx:220
+onSubmit	@	avatar-chat.tsx:516
+injected.js:37 Failed to get response from API: Internal Server Error
+(anonymous)	@	injected.js:37
+(anonymous)	@	useAvatarSession.ts:922
+await in (anonymous)		
+handleSubmitMessage	@	avatar-chat.tsx:220
+onSubmit	@	avatar-chat.tsx:516
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
