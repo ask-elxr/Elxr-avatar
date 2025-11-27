@@ -429,7 +429,7 @@ export default function Dashboard() {
           <Button
             variant="ghost"
             className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
-            onClick={() => setLocation('/')}
+            onClick={() => setLocation('/chat')}
             data-testid="nav-home"
             title={!sidebarOpen ? "Back to Home" : undefined}
           >
@@ -517,7 +517,7 @@ export default function Dashboard() {
                     </p>
                     <Button 
                       className="w-full" 
-                      onClick={() => setLocation('/')}
+                      onClick={() => setLocation('/chat')}
                       data-testid="button-start-chat"
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
@@ -803,7 +803,7 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <Button onClick={() => setLocation('/')} data-testid="button-start-chat-empty">
+                    <Button onClick={() => setLocation('/chat')} data-testid="button-start-chat-empty">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Start Chatting
                     </Button>
