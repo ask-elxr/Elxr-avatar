@@ -64,8 +64,9 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
+import { AvatarChat } from "@/components/avatar-chat";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-view' | 'course-edit' | 'credits' | 'settings' | 'mood' | 'plan';
+type UserView = 'dashboard' | 'chat' | 'active-chat' | 'videos' | 'courses' | 'course-view' | 'course-edit' | 'credits' | 'settings' | 'mood' | 'plan';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -171,6 +172,17 @@ export default function Dashboard() {
   const [moodIntensity, setMoodIntensity] = useState<number>(3);
   const [moodNotes, setMoodNotes] = useState<string>("");
   const [lastMoodResponse, setLastMoodResponse] = useState<{ mood: string; response: string } | null>(null);
+  const [activeChatAvatarId, setActiveChatAvatarId] = useState<string | null>(null);
+  
+  // Generate or get user ID for chat
+  const [chatUserId] = useState(() => {
+    let storedUserId = localStorage.getItem('temp-user-id');
+    if (!storedUserId) {
+      storedUserId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('temp-user-id', storedUserId);
+    }
+    return storedUserId;
+  });
 
   const moodMutation = useMutation({
     mutationFn: async (data: { mood: MoodType; intensity: number; notes?: string; avatarId?: string }) => {
@@ -500,6 +512,7 @@ export default function Dashboard() {
             <p className="text-sm sm:text-base text-white/60">
               {currentView === 'dashboard' && 'Your personal dashboard - chat with avatars and view your videos'}
               {currentView === 'chat' && 'Choose an AI avatar to start a conversation'}
+              {currentView === 'active-chat' && 'Chat with your AI avatar'}
               {currentView === 'videos' && 'Videos generated from your chat conversations'}
               {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
               {currentView === 'course-view' && 'Watch your course videos'}
@@ -533,7 +546,7 @@ export default function Dashboard() {
                     </p>
                     <Button 
                       className="w-full" 
-                      onClick={() => setLocation('/chat')}
+                      onClick={() => setCurrentView('chat')}
                       data-testid="button-start-chat"
                     >
                       <MessageSquare className="w-4 h-4 mr-2" />
@@ -795,7 +808,8 @@ export default function Dashboard() {
                                         if (locked) {
                                           setCurrentView('plan');
                                         } else {
-                                          setLocation(`/chat?avatar=${avatar.id}`);
+                                          setActiveChatAvatarId(avatar.id);
+                                          setCurrentView('active-chat');
                                         }
                                       }}
                                       className={`w-full font-semibold py-2.5 text-sm rounded-lg transition-all duration-200 shadow-lg ${
@@ -838,6 +852,13 @@ export default function Dashboard() {
             </>
           )}
 
+          {/* Active Chat View - Embedded Chat */}
+          {currentView === 'active-chat' && activeChatAvatarId && (
+            <div className="h-[calc(100vh-200px)] min-h-[500px] rounded-lg overflow-hidden border border-white/10">
+              <AvatarChat userId={chatUserId} avatarId={activeChatAvatarId} />
+            </div>
+          )}
+
           {/* Videos View */}
           {currentView === 'videos' && (
             <>
@@ -862,7 +883,7 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <Button onClick={() => setLocation('/chat')} data-testid="button-start-chat-empty">
+                    <Button onClick={() => setCurrentView('chat')} data-testid="button-start-chat-empty">
                       <Sparkles className="w-4 h-4 mr-2" />
                       Start Chatting
                     </Button>
