@@ -190,11 +190,8 @@ export default function Dashboard() {
 
   const startTrialMutation = useMutation({
     mutationFn: async (avatarId: string) => {
-      const response = await apiRequest('/api/subscription/start-trial', {
-        method: 'POST',
-        body: JSON.stringify({ avatarId }),
-      });
-      return response;
+      const response = await apiRequest('/api/subscription/start-trial', 'POST', { avatarId });
+      return response.json();
     },
     onSuccess: () => {
       refetchPlan();
@@ -207,11 +204,8 @@ export default function Dashboard() {
 
   const selectAvatarMutation = useMutation({
     mutationFn: async (avatarId: string) => {
-      const response = await apiRequest('/api/subscription/select-avatar', {
-        method: 'POST',
-        body: JSON.stringify({ avatarId }),
-      });
-      return response;
+      const response = await apiRequest('/api/subscription/select-avatar', 'POST', { avatarId });
+      return response.json();
     },
     onSuccess: () => {
       refetchPlan();
@@ -224,11 +218,8 @@ export default function Dashboard() {
 
   const upgradePlanMutation = useMutation({
     mutationFn: async (planSlug: string) => {
-      const response = await apiRequest('/api/subscription/upgrade', {
-        method: 'POST',
-        body: JSON.stringify({ planSlug }),
-      });
-      return response;
+      const response = await apiRequest('/api/subscription/upgrade', 'POST', { planSlug });
+      return response.json();
     },
     onSuccess: () => {
       refetchPlan();
