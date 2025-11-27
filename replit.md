@@ -60,6 +60,13 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - **Production Videos**: Public avatars generate watermark-free production videos
 - **Auto-detection**: System automatically uses test mode for Instant Avatars and production mode for public avatars
 - **Video Generation Service (`server/services/videoGeneration.ts`)**: Manages HeyGen API calls for video creation, including async polling for completion status and automatic test/production mode selection.
+  - **Robust Video Status Monitoring**:
+    - 20-minute polling timeout (extended from 10 min for longer videos)
+    - Startup recovery: checks stuck "generating" videos and resumes polling or updates status
+    - Orphaned lesson detection: resets lessons stuck in "generating" with no video record to draft
+    - Background checker: runs every 2 minutes to catch videos that completed after polling timeout
+    - Active polling tracking: prevents duplicate polling for the same video
+  - **Frontend Notifications**: Toast alerts when videos complete, with status change detection
 - **Course Builder**: Integrated within the admin panel under "Video Courses" section. Features "Generate with AI" button for each lesson script.
 
 #### Chat Video-on-Demand System
