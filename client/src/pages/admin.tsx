@@ -35,7 +35,7 @@ export default function Admin() {
   const [preSelectedAvatarId, setPreSelectedAvatarId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { toast } = useToast();
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
 
@@ -111,8 +111,14 @@ export default function Admin() {
       setTimeout(() => {
         window.location.href = "/api/login";
       }, 1000);
+    } else if (!isLoading && isAuthenticated && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access the admin panel.",
+        variant: "destructive",
+      });
     }
-  }, [isAuthenticated, isLoading, toast]);
+  }, [isAuthenticated, isLoading, isAdmin, toast]);
 
   if (isLoading) {
     return (
@@ -136,6 +142,34 @@ export default function Admin() {
             <Button asChild data-testid="button-signin">
               <a href="/api/login">Sign In</a>
             </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" data-testid="access-denied">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You don't have administrator privileges to access this page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Contact an administrator if you believe you should have access.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild data-testid="button-home">
+                <Link href="/">Go to Chat</Link>
+              </Button>
+              <Button variant="outline" asChild data-testid="button-dashboard">
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

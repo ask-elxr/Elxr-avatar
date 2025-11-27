@@ -5,19 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { FileText, Upload, Home } from "lucide-react";
+import { FileText, Upload, Home, Shield } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
 export default function KnowledgeBase() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("upload");
 
   const handleUploadComplete = () => {
-    // Refresh documents list
     queryClient.invalidateQueries({ queryKey: ['/api/documents/user', user?.id] });
-    // Switch to documents tab to see the newly uploaded document
     setActiveTab("documents");
   };
 
@@ -28,6 +26,35 @@ export default function KnowledgeBase() {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
           <p className="text-purple-400">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <Shield className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
+            <CardTitle>Admin Access Required</CardTitle>
+            <CardDescription>
+              The Knowledge Base management is restricted to administrators.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center gap-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Contact an administrator if you need access to upload documents.
+            </p>
+            <div className="flex gap-2">
+              <Button variant="outline" asChild>
+                <Link href="/">Go to Chat</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/dashboard">Dashboard</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

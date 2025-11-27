@@ -16,6 +16,7 @@ const Admin = lazy(() => import("@/pages/admin"));
 const Account = lazy(() => import("@/pages/Account"));
 const KnowledgeBase = lazy(() => import("@/pages/KnowledgeBase"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
+const MyVideos = lazy(() => import("@/pages/MyVideos"));
 const Courses = lazy(() => import("@/pages/courses"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Credits = lazy(() => import("@/pages/Credits"));
@@ -51,6 +52,7 @@ function Router() {
         <Route path="/avatar-select" component={AvatarSelect} />
         <Route path="/avatar" component={Home} />
         <Route path="/dashboard" component={Dashboard} />
+        <Route path="/my-videos" component={MyVideos} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
         <Route path="/courses" component={Courses} />
         <Route path="/admin" component={Admin} />
