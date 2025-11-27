@@ -91,20 +91,25 @@ export class ClaudeService {
       // Extract research capabilities from system prompt to include in user message
       // This ensures Claude sees these capabilities even with conflicting conversation history
       let researchCapabilitiesNote = '';
-      if (customSystemPrompt) {
-        if (customSystemPrompt.includes('WEB SEARCH CAPABILITY ACTIVE') || 
-            customSystemPrompt.includes('PUBMED ACCESS ACTIVE') || 
-            customSystemPrompt.includes('WIKIPEDIA ACCESS ACTIVE')) {
-          researchCapabilitiesNote = `\n\n⚠️ IMPORTANT UPDATE: Ignore any previous statements about not having web access. For THIS response, you have ACTIVE access to research sources as shown in the knowledge content below. Confirm these capabilities if asked.`;
-        }
+      const hasWebSearch = context && context.includes('WEB SEARCH RESULTS:');
+      const hasPubMed = context && context.includes('PEER-REVIEWED RESEARCH FROM PUBMED:');
+      const hasWikipedia = context && context.includes('WIKIPEDIA INFORMATION:');
+      
+      if (hasWebSearch || hasPubMed || hasWikipedia) {
+        const sources: string[] = [];
+        if (hasWebSearch) sources.push('web search');
+        if (hasPubMed) sources.push('PubMed research');
+        if (hasWikipedia) sources.push('Wikipedia');
+        
+        researchCapabilitiesNote = `\n\n⚠️ CRITICAL INSTRUCTION: The content below includes REAL-TIME data from ${sources.join(', ')}. This is NOT "unverified" - these are actual search results you MUST use to answer the question. DO NOT say "I don't have information" when there is relevant content below. Use ALL the information provided to give a complete answer.`;
       }
 
       // Build message based on whether user wants detailed or concise response
       const currentMessage = context 
         ? wantsDetailedResponse
-          ? `You have verified knowledge below. Use it to give a thorough, detailed response.${researchCapabilitiesNote}
+          ? `You have knowledge content below that includes curated information AND live research results. Use ALL of it to give a thorough, detailed response.${researchCapabilitiesNote}
 
-KNOWLEDGE BASE CONTENT:
+AVAILABLE KNOWLEDGE (use ALL relevant content):
 ${context}
 
 ---
@@ -112,13 +117,14 @@ ${context}
 User question: ${query}
 
 RESPONSE REQUIREMENTS:
-- Draw from specific details, examples, and insights in the knowledge above
+- Use ALL relevant information from the content above, including web search results, Wikipedia, and PubMed data
+- DO NOT say you "don't have information" if relevant content exists above
+- Draw from specific details, examples, and insights
 - Provide comprehensive information with nuance
-- Use actual quotes, examples, and specifics from the context
 - Make it conversational but rich with substance`
-          : `You have verified knowledge below. Use it to give a CLEAR, CONCISE response (2-3 sentences max unless necessary).${researchCapabilitiesNote}
+          : `You have knowledge content below that includes curated information AND live research results. Use it to answer clearly.${researchCapabilitiesNote}
 
-KNOWLEDGE BASE CONTENT:
+AVAILABLE KNOWLEDGE (use ALL relevant content):
 ${context}
 
 ---
@@ -126,10 +132,10 @@ ${context}
 User question: ${query}
 
 RESPONSE REQUIREMENTS:
-- Be BRIEF and to the point - think "elevator pitch" not "lecture"
-- Only include the most essential information
-- Keep it conversational and natural
-- Save detailed explanations for when the user asks for more`
+- Use the information above to answer the question directly
+- DO NOT say you "don't have information" if relevant content exists above
+- Be BRIEF and to the point (2-3 sentences unless more is needed)
+- Keep it conversational and natural`
         : query;
         
       messages.push({

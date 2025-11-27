@@ -1,0 +1,61 @@
+✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: 'tell me about higher self in kundalini in detail', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642676057190.0rkqjhtdk8bk
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+The knowledge base I have loaded right now focuses on telomeres and DNA replication at the cellular level, plus some municipal infrastructure discussion - nothing about the higher self in kundalini practice. What I can access from web search shows there are manuals on kundalini and chakras available, including Itzhak Bentov's "Brief Tour of Higher Consciousness," but I don't have the actual content from those sources loaded.
+
+The higher self in kundalini tradition typically refers to your expanded consciousness beyond ego identification - the awakened state you access when kundalini energy rises through the chakras from the base of the spine to the crown. But I don't have detailed verified knowledge on this topic in my current resources to give you the depth you're asking for.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+The knowledge base I have loaded right now focuses on telomeres and DNA replication at the cellular level, plus some municipal infrastructure discussion - nothing about the higher self in kundalini practice. What I can access from web search shows there are manuals on kundalini and chakras available, including Itzhak Bentov's "Brief Tour of Higher Consciousness," but I don't have the actual content from those sources loaded.
+
+The higher self in kundalini tradition typically refers to your expanded consciousness beyond ego identification - the awakened state you access when kundalini energy rises through the chakras from the base of the spine to the crown. But I don't have detailed verified knowledge on this topic in my current resources to give you the depth you're asking for.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 862 characters
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 📝 handleSubmitMessage called with: {message: 'can  you tell me about 4d, 5d,6d?', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642676561580.baiytiooqak
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+I don't have information about 4D, 5D, or 6D dimensions in my current knowledge base. What's loaded right now is content about telomeres and cellular aging, plus some municipal infrastructure discussion - nothing related to dimensional theory or consciousness states.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+I don't have information about 4D, 5D, or 6D dimensions in my current knowledge base. What's loaded right now is content about telomeres and cellular aging, plus some municipal infrastructure discussion - nothing related to dimensional theory or consciousness states.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 342 characters
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
