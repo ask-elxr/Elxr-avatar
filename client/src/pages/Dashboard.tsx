@@ -450,7 +450,7 @@ export default function Dashboard() {
           </Button>
         </div>
         
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        <nav className="flex-1 p-3 space-y-2 overflow-y-auto">
           <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavButton view="chat" icon={MessageSquare} label="Avatar Chat" />
           <NavButton view="videos" icon={Video} label="My Videos" />
@@ -461,7 +461,7 @@ export default function Dashboard() {
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
 
-        <div className="p-2 border-t border-white/10 space-y-1">
+        <div className="p-3 border-t border-white/10 space-y-2">
           {isAdmin && (
             <Button
               variant="ghost"
