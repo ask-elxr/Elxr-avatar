@@ -88,10 +88,21 @@ export class ClaudeService {
         query.toLowerCase().includes(keyword)
       );
 
+      // Extract research capabilities from system prompt to include in user message
+      // This ensures Claude sees these capabilities even with conflicting conversation history
+      let researchCapabilitiesNote = '';
+      if (customSystemPrompt) {
+        if (customSystemPrompt.includes('WEB SEARCH CAPABILITY ACTIVE') || 
+            customSystemPrompt.includes('PUBMED ACCESS ACTIVE') || 
+            customSystemPrompt.includes('WIKIPEDIA ACCESS ACTIVE')) {
+          researchCapabilitiesNote = `\n\n⚠️ IMPORTANT UPDATE: Ignore any previous statements about not having web access. For THIS response, you have ACTIVE access to research sources as shown in the knowledge content below. Confirm these capabilities if asked.`;
+        }
+      }
+
       // Build message based on whether user wants detailed or concise response
       const currentMessage = context 
         ? wantsDetailedResponse
-          ? `You have verified knowledge below. Use it to give a thorough, detailed response.
+          ? `You have verified knowledge below. Use it to give a thorough, detailed response.${researchCapabilitiesNote}
 
 KNOWLEDGE BASE CONTENT:
 ${context}
@@ -105,7 +116,7 @@ RESPONSE REQUIREMENTS:
 - Provide comprehensive information with nuance
 - Use actual quotes, examples, and specifics from the context
 - Make it conversational but rich with substance`
-          : `You have verified knowledge below. Use it to give a CLEAR, CONCISE response (2-3 sentences max unless necessary).
+          : `You have verified knowledge below. Use it to give a CLEAR, CONCISE response (2-3 sentences max unless necessary).${researchCapabilitiesNote}
 
 KNOWLEDGE BASE CONTENT:
 ${context}
