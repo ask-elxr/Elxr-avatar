@@ -52,6 +52,8 @@ export function AvatarManager() {
     personalityPrompt: "",
     pineconeNamespaces: [],
     usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
   });
 
@@ -140,6 +142,8 @@ export function AvatarManager() {
       personalityPrompt: "",
       pineconeNamespaces: [],
       usePubMed: false,
+      useWikipedia: false,
+      useGoogleSearch: false,
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -160,6 +164,8 @@ export function AvatarManager() {
       personalityPrompt: avatar.personalityPrompt,
       pineconeNamespaces: avatar.pineconeNamespaces,
       usePubMed: avatar.usePubMed || false,
+      useWikipedia: avatar.useWikipedia || false,
+      useGoogleSearch: avatar.useGoogleSearch || false,
       isActive: avatar.isActive,
     });
     setIsDialogOpen(true);
@@ -560,14 +566,41 @@ export function AvatarManager() {
               </details>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="usePubMed"
-                checked={formData.usePubMed}
-                onCheckedChange={(checked) => setFormData({ ...formData, usePubMed: checked })}
-                data-testid="switch-use-pubmed"
-              />
-              <Label htmlFor="usePubMed">Always use PubMed research</Label>
+            <div className="space-y-3 p-4 border rounded-lg bg-muted/30">
+              <Label className="text-sm font-medium">Research Sources</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Enable additional knowledge sources for this avatar
+              </p>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="usePubMed"
+                  checked={formData.usePubMed}
+                  onCheckedChange={(checked) => setFormData({ ...formData, usePubMed: checked })}
+                  data-testid="switch-use-pubmed"
+                />
+                <Label htmlFor="usePubMed" className="font-normal">PubMed Research</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="useWikipedia"
+                  checked={formData.useWikipedia}
+                  onCheckedChange={(checked) => setFormData({ ...formData, useWikipedia: checked })}
+                  data-testid="switch-use-wikipedia"
+                />
+                <Label htmlFor="useWikipedia" className="font-normal">Wikipedia</Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="useGoogleSearch"
+                  checked={formData.useGoogleSearch}
+                  onCheckedChange={(checked) => setFormData({ ...formData, useGoogleSearch: checked })}
+                  data-testid="switch-use-google-search"
+                />
+                <Label htmlFor="useGoogleSearch" className="font-normal">Google Search</Label>
+              </div>
             </div>
 
             <div className="flex items-center space-x-2">
