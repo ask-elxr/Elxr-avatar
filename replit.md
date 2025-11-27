@@ -84,6 +84,19 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - `GET /api/courses/chat-videos/pending` - Get pending/generating videos for notification polling
   - `GET /api/courses/chat-videos/:videoId` - Get specific video details
 
+#### Mood Tracker System
+- **Feature**: Users can log their emotional state and receive personalized, empathetic responses from AI avatars
+- **Mood Types**: joyful, calm, energized, neutral, anxious, sad, stressed
+- **Intensity Scale**: 1-5 scale from mild to intense
+- **Database Table**: `mood_entries` stores userId, avatarId, mood, intensity, notes, avatarResponse, createdAt
+- **Claude AI Integration**: `server/services/moodResponse.ts` generates avatar-specific empathetic responses using Claude Sonnet 4.5
+- **API Endpoints**:
+  - `POST /api/mood` - Log a new mood entry with optional notes
+  - `GET /api/mood` - Get mood history with optional date range filter
+  - `GET /api/mood/stats` - Get aggregated mood statistics (distribution, streak, average intensity)
+- **Frontend**: Mood Tracker view in Dashboard with emoji-based mood selection cards, intensity slider, notes textarea, and mood history display
+- **Personalization**: Responses are tailored to the avatar's personality when an avatarId is provided
+
 #### Role-Based Access Control (RBAC)
 - **User Roles**: Two roles - `admin` and `user` (default)
 - **Backend Protection**: `requireAdmin` middleware in `server/replitAuth.ts` protects admin-only routes
