@@ -30,6 +30,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  updateUserRole(id: string, role: 'admin' | 'user'): Promise<User | undefined>;
   
   // Document operations
   getAllDocuments(): Promise<Document[]>;
@@ -133,6 +134,15 @@ export class DatabaseStorage implements IStorage {
   async getAllUsers(): Promise<User[]> {
     const allUsers = await db.select().from(users);
     return allUsers;
+  }
+
+  async updateUserRole(id: string, role: 'admin' | 'user'): Promise<User | undefined> {
+    const [user] = await db
+      .update(users)
+      .set({ role, updatedAt: new Date() })
+      .where(eq(users.id, id))
+      .returning();
+    return user;
   }
 
   // Document operations
