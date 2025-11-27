@@ -8,6 +8,14 @@ import { useQuery } from "@tanstack/react-query";
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user, isAdmin } = useAuth();
 
+  const { data: chatVideos } = useQuery({
+    queryKey: ['/api/courses/chat-videos'],
+    enabled: isAuthenticated,
+  });
+
+  const completedVideos = (chatVideos as any[])?.filter((v: any) => v.status === 'completed') || [];
+  const pendingVideos = (chatVideos as any[])?.filter((v: any) => v.status === 'pending' || v.status === 'generating') || [];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background dot-pattern flex items-center justify-center">
@@ -20,14 +28,6 @@ export default function Dashboard() {
       </div>
     );
   }
-
-  const { data: chatVideos } = useQuery({
-    queryKey: ['/api/courses/chat-videos'],
-    enabled: isAuthenticated,
-  });
-
-  const completedVideos = (chatVideos as any[])?.filter((v: any) => v.status === 'completed') || [];
-  const pendingVideos = (chatVideos as any[])?.filter((v: any) => v.status === 'pending' || v.status === 'generating') || [];
 
   return (
     <div className="min-h-screen bg-background dot-pattern">
