@@ -18,6 +18,7 @@ const KnowledgeBase = lazy(() => import("@/pages/KnowledgeBase"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
 const MyVideos = lazy(() => import("@/pages/MyVideos"));
 const Courses = lazy(() => import("@/pages/courses"));
+const CourseBuilder = lazy(() => import("@/pages/course-builder"));
 const Analytics = lazy(() => import("@/pages/Analytics"));
 const Credits = lazy(() => import("@/pages/Credits"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -55,6 +56,8 @@ function Router() {
         <Route path="/my-videos" component={MyVideos} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
         <Route path="/courses" component={Courses} />
+        <Route path="/course-builder" component={CourseBuilder} />
+        <Route path="/course-builder/:id" component={CourseBuilder} />
         <Route path="/admin" component={Admin} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/credits" component={Credits} />
