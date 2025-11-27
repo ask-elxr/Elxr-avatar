@@ -98,14 +98,29 @@ export class VideoGenerationService {
       const useTestMode = false;
 
       // Create video generation request
-      // Use configured voice or default to Sara - Cheerful (English female voice)
+      // Priority: ElevenLabs voice > HeyGen voice > Default Sara voice
       const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
       
-      const voiceConfig: any = {
-        type: "text",
-        input_text: lesson.script.slice(0, 5000), // Max 5000 chars
-        voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
-      };
+      let voiceConfig: any;
+      
+      if (avatar.elevenlabsVoiceId) {
+        // Use ElevenLabs voice if available (better quality and reliability)
+        console.log(`🎙️ Using ElevenLabs voice for ${avatar.name}: ${avatar.elevenlabsVoiceId}`);
+        voiceConfig = {
+          type: "text",
+          input_text: lesson.script.slice(0, 5000), // Max 5000 chars
+          voice_id: avatar.elevenlabsVoiceId,
+          voice_type: "elevenlabs", // Tell HeyGen to use ElevenLabs
+        };
+      } else {
+        // Fallback to HeyGen voice
+        console.log(`🎙️ Using HeyGen voice for ${avatar.name}: ${avatar.heygenVoiceId || DEFAULT_VOICE_ID}`);
+        voiceConfig = {
+          type: "text",
+          input_text: lesson.script.slice(0, 5000), // Max 5000 chars
+          voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
+        };
+      }
 
       // Detect if this is a Talking Photo (requires different API format)
       const isTalkingPhoto = TALKING_PHOTO_IDS.has(avatar.heygenVideoAvatarId);

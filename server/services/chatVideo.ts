@@ -152,11 +152,27 @@ ${memoryContext}
 
       const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8";
       
-      const voiceConfig = {
-        type: "text",
-        input_text: scriptResult.script.slice(0, 5000),
-        voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
-      };
+      // Priority: ElevenLabs voice > HeyGen voice > Default Sara voice
+      let voiceConfig: any;
+      
+      if (avatar.elevenlabsVoiceId) {
+        // Use ElevenLabs voice if available (better quality and reliability)
+        console.log(`🎙️ Using ElevenLabs voice for ${avatar.name}: ${avatar.elevenlabsVoiceId}`);
+        voiceConfig = {
+          type: "text",
+          input_text: scriptResult.script.slice(0, 5000),
+          voice_id: avatar.elevenlabsVoiceId,
+          voice_type: "elevenlabs",
+        };
+      } else {
+        // Fallback to HeyGen voice
+        console.log(`🎙️ Using HeyGen voice for ${avatar.name}: ${avatar.heygenVoiceId || DEFAULT_VOICE_ID}`);
+        voiceConfig = {
+          type: "text",
+          input_text: scriptResult.script.slice(0, 5000),
+          voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
+        };
+      }
 
       const isTalkingPhoto = TALKING_PHOTO_IDS.has(avatar.heygenVideoAvatarId);
       
