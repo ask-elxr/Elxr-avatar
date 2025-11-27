@@ -34,8 +34,17 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
-import type { AvatarProfile, Course, ChatGeneratedVideo } from "@shared/schema";
+import type { AvatarProfile, Course, ChatGeneratedVideo, Lesson, GeneratedVideo } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
+
+// Extended type for courses with lessons and video data from API
+interface LessonWithVideo extends Lesson {
+  video: GeneratedVideo | null;
+}
+
+interface CourseWithLessons extends Course {
+  lessons: LessonWithVideo[];
+}
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -99,7 +108,7 @@ export default function Dashboard() {
     queryKey: ['/api/avatars'],
   });
 
-  const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({
+  const { data: courses, isLoading: coursesLoading } = useQuery<CourseWithLessons[]>({
     queryKey: ['/api/courses'],
     enabled: isAuthenticated,
   });
@@ -865,21 +874,27 @@ export default function Dashboard() {
                         onClick={() => { setSelectedCourseId(course.id); setCurrentView('course-edit'); }}
                         data-testid={`card-course-${course.id}`}
                       >
-                        {/* Thumbnail */}
+                        {/* Thumbnail - use first lesson's video thumbnail or course thumbnail */}
                         <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20 overflow-hidden">
-                          {course.thumbnailUrl ? (
-                            <img 
-                              src={course.thumbnailUrl} 
-                              alt={course.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <div className="w-16 h-16 rounded-full bg-gradient-primary/30 flex items-center justify-center">
-                                <BookOpen className="w-8 h-8 text-purple-400" />
+                          {(() => {
+                            // Get thumbnail from first completed lesson's video, or fallback to course thumbnail
+                            const firstVideoThumbnail = course.lessons?.find(l => l.video?.thumbnailUrl)?.video?.thumbnailUrl;
+                            const thumbnailUrl = course.thumbnailUrl || firstVideoThumbnail;
+                            
+                            return thumbnailUrl ? (
+                              <img 
+                                src={thumbnailUrl} 
+                                alt={course.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <div className="w-16 h-16 rounded-full bg-gradient-primary/30 flex items-center justify-center">
+                                  <BookOpen className="w-8 h-8 text-purple-400" />
+                                </div>
                               </div>
-                            </div>
-                          )}
+                            );
+                          })()}
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                             <Play className="w-12 h-12 text-white" />
                           </div>
