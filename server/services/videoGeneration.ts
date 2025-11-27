@@ -15,7 +15,7 @@ const TALKING_PHOTO_IDS = new Set([
   "84f913285ac944188a35ce5b58ceb861", // Kelsey
   "1da3f06fc92a4a9bbbe10f81b3b6a498", // Thad
   "57d0eb901fe84211b92b0a9d91f2e5c0", // Willie
-  "ee40f646802241e1902a93b5cf05575c", // Mark Headshot
+  // Note: Mark now uses his full avatar ID (e16db57e57824a0e90b661ad528d3994) for videos
 ]);
 
 interface VideoGenerationRequest {
