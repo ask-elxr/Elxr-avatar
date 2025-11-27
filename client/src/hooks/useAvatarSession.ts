@@ -949,7 +949,7 @@ export function useAvatarSession({
           }
         }, 180000);
 
-        // Video mode: Use HeyGen avatar
+        // Video mode: Use HeyGen avatar with auto-reconnect on 401
         if (avatarRef.current) {
           // ✅ Avatar speaks Claude's response
           // Note: Voice recognition will be paused by AVATAR_START_TALKING event
@@ -959,12 +959,57 @@ export function useAvatarSession({
           console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
           console.log("Text length:", claudeResponse.length, "characters");
           
-          await avatarRef.current.speak({
-            text: claudeResponse,
-            task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
-          });
+          // Helper function to speak with retry on 401
+          const speakWithRetry = async (retryCount = 0): Promise<void> => {
+            try {
+              if (!avatarRef.current) {
+                throw new Error("Avatar not available");
+              }
+              await avatarRef.current.speak({
+                text: claudeResponse,
+                task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
+              });
+              console.log("✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)");
+            } catch (speakError) {
+              const errorMsg = speakError instanceof Error ? speakError.message : String(speakError);
+              
+              // Check for 401 Unauthorized - session expired
+              if ((errorMsg.includes("401") || errorMsg.includes("Unauthorized")) && retryCount < 1) {
+                console.log("🔄 HeyGen session expired (401) - auto-reconnecting...");
+                
+                // Clear old session
+                setHeygenSessionActive(false);
+                if (avatarRef.current) {
+                  try {
+                    await avatarRef.current.stopAvatar().catch(() => {});
+                  } catch (e) {
+                    // Ignore errors when stopping expired session
+                  }
+                }
+                avatarRef.current = null;
+                
+                // Restart HeyGen session
+                try {
+                  await startHeyGenSession(currentAvatarIdRef.current);
+                  console.log("✅ HeyGen session restarted - retrying speak...");
+                  
+                  // Wait a moment for session to stabilize
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  
+                  // Retry speak
+                  await speakWithRetry(retryCount + 1);
+                } catch (reconnectError) {
+                  console.error("❌ Failed to reconnect HeyGen session:", reconnectError);
+                  setShowReconnect(true);
+                }
+              } else {
+                // Non-401 error or already retried - rethrow
+                throw speakError;
+              }
+            }
+          };
           
-          console.log("✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)");
+          await speakWithRetry();
         }
       }
     } catch (error) {
@@ -980,11 +1025,10 @@ export function useAvatarSession({
       } else {
         console.error("Error sending message:", error);
         
-        // Check for HeyGen 401 Unauthorized error - session expired
+        // Check for HeyGen 401 Unauthorized error - session expired (fallback if speakWithRetry failed)
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
-          console.log("🔄 HeyGen session expired (401) - triggering reconnection...");
-          // Show reconnect button instead of auto-reconnecting to give user control
+          console.log("🔄 HeyGen session expired (401) - showing reconnect button...");
           setShowReconnect(true);
           setHeygenSessionActive(false);
           avatarRef.current = null;

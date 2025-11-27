@@ -1,0 +1,73 @@
+purposeful wealth, I'm here to help.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey! Good to hear from you.
+
+What's on your mind today? Whether it's bouncing back from setbacks, building financial resilience, or working toward purposeful wealth, I'm here to help.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 236 characters
+injected.js:214  POST https://api.heygen.com/v1/streaming.task 401 (Unauthorized)
+apply @ injected.js:214
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:29174
+step @ @heygen_streaming-avatar.js?v=63887651:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=63887651:27096
+StreamingAvatar2.request @ @heygen_streaming-avatar.js?v=63887651:29168
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:28997
+step @ @heygen_streaming-avatar.js?v=63887651:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=63887651:27096
+StreamingAvatar2.speak @ @heygen_streaming-avatar.js?v=63887651:28976
+(anonymous) @ useAvatarSession.ts:962
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 Error sending message: APIError: API request failed with status 401
+    at new APIError2 (@heygen_streaming-avatar.js?v=63887651:28744:26)
+    at StreamingAvatar2.<anonymous> (@heygen_streaming-avatar.js?v=63887651:29188:21)
+    at step (@heygen_streaming-avatar.js?v=63887651:27175:17)
+    at Object.next (@heygen_streaming-avatar.js?v=63887651:27127:14)
+    at fulfilled (@heygen_streaming-avatar.js?v=63887651:27099:24)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:981
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 🔄 HeyGen session expired (401) - triggering reconnection...
