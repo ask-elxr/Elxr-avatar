@@ -28,13 +28,20 @@ import {
   Trash2,
   DollarSign,
   TrendingUp,
-  Activity
+  Activity,
+  Heart,
+  Smile,
+  Frown,
+  Meh,
+  Zap,
+  Sun,
+  CloudRain
 } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
-import type { AvatarProfile, Course, ChatGeneratedVideo, Lesson, GeneratedVideo } from "@shared/schema";
+import type { AvatarProfile, Course, ChatGeneratedVideo, Lesson, GeneratedVideo, MoodEntry, MoodType, moodTypeEnum } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 
 // Extended type for courses with lessons and video data from API
@@ -49,10 +56,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 import CourseBuilderPage from "./course-builder";
+import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
+import { useMutation } from "@tanstack/react-query";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-edit' | 'credits' | 'settings';
+type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-edit' | 'credits' | 'settings' | 'mood';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -113,6 +123,11 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  const { data: moodEntries, isLoading: moodLoading, refetch: refetchMood } = useQuery<MoodEntry[]>({
+    queryKey: ['/api/mood'],
+    enabled: isAuthenticated,
+  });
+
   const { data: heygenStats, isLoading: creditsLoading } = useQuery<CreditStats>({
     queryKey: ['/api/heygen/credits'],
     enabled: isAuthenticated,
@@ -124,6 +139,32 @@ export default function Dashboard() {
   const [selectedVideo, setSelectedVideo] = useState<ChatVideo | null>(null);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  
+  const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
+  const [moodIntensity, setMoodIntensity] = useState<number>(3);
+  const [moodNotes, setMoodNotes] = useState<string>("");
+  const [lastMoodResponse, setLastMoodResponse] = useState<{ mood: string; response: string } | null>(null);
+
+  const moodMutation = useMutation({
+    mutationFn: async (data: { mood: MoodType; intensity: number; notes?: string; avatarId?: string }) => {
+      const response = await apiRequest('/api/mood', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      return response;
+    },
+    onSuccess: (data: MoodEntry) => {
+      setLastMoodResponse({ mood: data.mood, response: data.avatarResponse || "" });
+      setSelectedMood(null);
+      setMoodIntensity(3);
+      setMoodNotes("");
+      queryClient.invalidateQueries({ queryKey: ['/api/mood'] });
+      toast({ title: "Mood logged!", description: "Your emotional wellness has been recorded." });
+    },
+    onError: () => {
+      toast({ title: "Error", description: "Failed to log your mood. Please try again.", variant: "destructive" });
+    }
+  });
 
   const completedVideos = chatVideos?.filter((v) => v.status === 'completed') || [];
   const pendingVideos = chatVideos?.filter((v) => v.status === 'pending' || v.status === 'generating') || [];
@@ -287,6 +328,7 @@ export default function Dashboard() {
           <NavButton view="chat" icon={MessageSquare} label="Avatar Chat" />
           <NavButton view="videos" icon={Video} label="My Videos" />
           <NavButton view="courses" icon={BookOpen} label="Video Courses" />
+          <NavButton view="mood" icon={Heart} label="Mood Tracker" />
           <NavButton view="credits" icon={CreditCard} label="Credits" />
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
@@ -369,6 +411,7 @@ export default function Dashboard() {
               {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
               {currentView === 'course-edit' && 'Edit your video course'}
               {currentView === 'credits' && 'Track your API credit usage across services'}
+              {currentView === 'mood' && 'Track your emotional wellness and get personalized support'}
               {currentView === 'settings' && 'Manage your account settings'}
             </p>
           </div>
@@ -1168,6 +1211,198 @@ export default function Dashboard() {
                   setCurrentView('courses');
                 }}
               />
+            </div>
+          )}
+
+          {/* Mood Tracker View */}
+          {currentView === 'mood' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Log Your Mood */}
+              <Card className="glass-strong border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Heart className="w-5 h-5 text-pink-400" />
+                    How are you feeling?
+                  </CardTitle>
+                  <CardDescription className="text-white/60">
+                    Select your current emotional state
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Mood Selection Cards */}
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    {[
+                      { mood: 'joyful' as MoodType, emoji: '😊', label: 'Joyful', color: 'from-yellow-500/20 to-orange-500/20 border-yellow-500/30' },
+                      { mood: 'calm' as MoodType, emoji: '😌', label: 'Calm', color: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30' },
+                      { mood: 'energized' as MoodType, emoji: '⚡', label: 'Energized', color: 'from-purple-500/20 to-pink-500/20 border-purple-500/30' },
+                      { mood: 'neutral' as MoodType, emoji: '😐', label: 'Neutral', color: 'from-gray-500/20 to-slate-500/20 border-gray-500/30' },
+                      { mood: 'anxious' as MoodType, emoji: '😰', label: 'Anxious', color: 'from-amber-500/20 to-red-500/20 border-amber-500/30' },
+                      { mood: 'sad' as MoodType, emoji: '😢', label: 'Sad', color: 'from-indigo-500/20 to-blue-500/20 border-indigo-500/30' },
+                      { mood: 'stressed' as MoodType, emoji: '😫', label: 'Stressed', color: 'from-red-500/20 to-orange-500/20 border-red-500/30' },
+                    ].map(({ mood, emoji, label, color }) => (
+                      <button
+                        key={mood}
+                        onClick={() => setSelectedMood(mood)}
+                        className={`p-4 rounded-xl border transition-all duration-200 bg-gradient-to-br ${color} ${
+                          selectedMood === mood 
+                            ? 'ring-2 ring-purple-400 scale-105' 
+                            : 'hover:scale-102 hover:brightness-110'
+                        }`}
+                        data-testid={`button-mood-${mood}`}
+                      >
+                        <div className="text-3xl mb-1">{emoji}</div>
+                        <div className="text-xs text-white/80 font-medium">{label}</div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Intensity Slider */}
+                  {selectedMood && (
+                    <div className="space-y-3 animate-in fade-in duration-300">
+                      <label className="text-sm font-medium text-white/80">
+                        Intensity: <span className="text-purple-400">{moodIntensity}/5</span>
+                      </label>
+                      <Slider
+                        value={[moodIntensity]}
+                        onValueChange={(value) => setMoodIntensity(value[0])}
+                        min={1}
+                        max={5}
+                        step={1}
+                        className="w-full"
+                        data-testid="slider-mood-intensity"
+                      />
+                      <div className="flex justify-between text-xs text-white/50">
+                        <span>Mild</span>
+                        <span>Moderate</span>
+                        <span>Intense</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  {selectedMood && (
+                    <div className="space-y-2 animate-in fade-in duration-300">
+                      <label className="text-sm font-medium text-white/80">
+                        Add a note (optional)
+                      </label>
+                      <Textarea
+                        placeholder="What's on your mind?"
+                        value={moodNotes}
+                        onChange={(e) => setMoodNotes(e.target.value)}
+                        className="glass border-white/20 text-white placeholder:text-white/40 resize-none"
+                        rows={3}
+                        maxLength={500}
+                        data-testid="textarea-mood-notes"
+                      />
+                      <p className="text-xs text-white/40 text-right">{moodNotes.length}/500</p>
+                    </div>
+                  )}
+
+                  {/* Submit Button */}
+                  {selectedMood && (
+                    <Button
+                      onClick={() => moodMutation.mutate({ mood: selectedMood, intensity: moodIntensity, notes: moodNotes || undefined })}
+                      disabled={moodMutation.isPending}
+                      className="w-full bg-gradient-primary hover:opacity-90 transition-opacity"
+                      data-testid="button-log-mood"
+                    >
+                      {moodMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Logging your mood...
+                        </>
+                      ) : (
+                        <>
+                          <Heart className="w-4 h-4 mr-2" />
+                          Log My Mood
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Avatar Response */}
+                  {lastMoodResponse && (
+                    <div className="mt-4 p-4 rounded-xl glass border border-purple-500/30 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center shrink-0">
+                          <Sparkles className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-300 mb-1">Your wellness guide says:</p>
+                          <p className="text-white/90 text-sm leading-relaxed">{lastMoodResponse.response}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Mood History */}
+              <Card className="glass-strong border-purple-500/20">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-cyan-400" />
+                    Your Mood History
+                  </CardTitle>
+                  <CardDescription className="text-white/60">
+                    Recent emotional wellness logs
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {moodLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                    </div>
+                  ) : !moodEntries || moodEntries.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                        <Heart className="w-8 h-8 text-purple-400" />
+                      </div>
+                      <p className="text-white/60 text-sm">No mood entries yet</p>
+                      <p className="text-white/40 text-xs mt-1">Log your first mood to start tracking</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                      {moodEntries.slice(0, 10).map((entry) => {
+                        const moodEmojis: Record<string, string> = {
+                          joyful: '😊', calm: '😌', energized: '⚡', neutral: '😐',
+                          anxious: '😰', sad: '😢', stressed: '😫'
+                        };
+                        return (
+                          <div
+                            key={entry.id}
+                            className="p-3 rounded-lg glass border border-white/10 hover:border-purple-500/30 transition-colors"
+                            data-testid={`mood-entry-${entry.id}`}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-2xl">{moodEmojis[entry.mood] || '😐'}</span>
+                                <div>
+                                  <span className="text-sm font-medium text-white capitalize">{entry.mood}</span>
+                                  <span className="text-xs text-white/40 ml-2">
+                                    Intensity: {entry.intensity}/5
+                                  </span>
+                                </div>
+                              </div>
+                              <span className="text-xs text-white/40">
+                                {formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}
+                              </span>
+                            </div>
+                            {entry.notes && (
+                              <p className="text-xs text-white/60 mb-2 line-clamp-2">{entry.notes}</p>
+                            )}
+                            {entry.avatarResponse && (
+                              <div className="text-xs text-purple-300/80 italic line-clamp-2 border-t border-white/10 pt-2 mt-2">
+                                "{entry.avatarResponse}"
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           )}
 
