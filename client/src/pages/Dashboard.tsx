@@ -19,14 +19,29 @@ import {
   Play,
   Shield,
   Users,
-  Database
+  Database,
+  Check
 } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
+import type { AvatarProfile } from "@shared/schema";
 
-type UserView = 'dashboard' | 'videos' | 'settings';
+type UserView = 'dashboard' | 'chat' | 'videos' | 'settings';
+
+const avatarGifs: Record<string, string> = {
+  'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
+  'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
+  'june': '/attached_assets/June-low_1764106896823.gif',
+  'thad': '/attached_assets/Thad_1763963906199.gif',
+  'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
+  'ann': '/attached_assets/Ann_1763966361095.gif',
+  'kelsey': '/attached_assets/Kelsey_1764111279103.gif',
+  'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
+  'dexter': '/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif',
+  'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
+};
 
 interface ChatVideo {
   id: number;
@@ -54,6 +69,12 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  const { data: avatars, isLoading: avatarsLoading } = useQuery<AvatarProfile[]>({
+    queryKey: ['/api/avatars'],
+  });
+
+  const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
+
   const completedVideos = chatVideos?.filter((v) => v.status === 'completed') || [];
   const pendingVideos = chatVideos?.filter((v) => v.status === 'pending' || v.status === 'generating') || [];
   const failedVideos = chatVideos?.filter((v) => v.status === 'failed') || [];
@@ -61,7 +82,7 @@ export default function Dashboard() {
   const handleUrlParams = useCallback(() => {
     const urlParams = new URLSearchParams(searchString);
     const view = urlParams.get('view');
-    if (view === 'videos' || view === 'settings') {
+    if (view === 'videos' || view === 'settings' || view === 'chat') {
       setCurrentView(view);
     }
   }, [searchString]);
@@ -213,7 +234,7 @@ export default function Dashboard() {
         
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavButton icon={MessageSquare} label="Avatar Chat" onClick={() => setLocation('/')} isActive={false} />
+          <NavButton view="chat" icon={MessageSquare} label="Avatar Chat" />
           <NavButton view="videos" icon={Video} label="My Videos" />
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
@@ -291,6 +312,7 @@ export default function Dashboard() {
             </h2>
             <p className="text-sm sm:text-base text-white/60">
               {currentView === 'dashboard' && 'Your personal dashboard - chat with avatars and view your videos'}
+              {currentView === 'chat' && 'Choose an AI avatar to start a conversation'}
               {currentView === 'videos' && 'Videos generated from your chat conversations'}
               {currentView === 'settings' && 'Manage your account settings'}
             </p>
@@ -460,6 +482,123 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </div>
+            </>
+          )}
+
+          {/* Chat View - Avatar Selection */}
+          {currentView === 'chat' && (
+            <>
+              {avatarsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full bg-gradient-primary glow-primary flex items-center justify-center mx-auto mb-4 animate-pulse">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                    <p className="text-white/60">Loading avatars...</p>
+                  </div>
+                </div>
+              ) : !avatars || avatars.length === 0 ? (
+                <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
+                  <CardHeader className="text-center">
+                    <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <CardTitle className="text-white">No Avatars Available</CardTitle>
+                    <CardDescription className="text-white/60">
+                      There are no AI avatars configured at the moment. Please check back later.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {avatars.map((avatar) => (
+                    <Card
+                      key={avatar.id}
+                      onClick={() => setSelectedAvatarId(avatar.id)}
+                      className={`cursor-pointer transition-all duration-300 flex flex-col h-full glass-strong group card-hover ${
+                        selectedAvatarId === avatar.id
+                          ? "border-purple-500/50 ring-2 ring-purple-500/30"
+                          : "border-white/10 hover:border-purple-500/30"
+                      }`}
+                      data-testid={`card-avatar-${avatar.id}`}
+                    >
+                      <CardHeader className="p-4 md:p-5 flex-1 flex flex-col">
+                        <div className="flex flex-col h-full">
+                          {/* Avatar Image/GIF */}
+                          <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
+                            {avatarGifs[avatar.id] ? (
+                              <img 
+                                src={avatarGifs[avatar.id]} 
+                                alt={avatar.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : avatar.profileImageUrl ? (
+                              <img 
+                                src={avatar.profileImageUrl} 
+                                alt={avatar.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center text-white font-bold text-4xl">
+                                {avatar.name.charAt(0)}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Content */}
+                          <div className="relative flex-1 flex flex-col">
+                            <div className="pr-10 flex-1 flex flex-col">
+                              {/* Name */}
+                              <CardTitle className="text-white text-lg md:text-xl mb-2">
+                                {avatar.name}
+                              </CardTitle>
+                              
+                              {/* Description */}
+                              <CardDescription className="text-white/60 text-xs md:text-sm mb-3 line-clamp-3 min-h-[3.5rem]">
+                                {avatar.description}
+                              </CardDescription>
+                              
+                              {/* Tags */}
+                              <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
+                                {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
+                                  <span
+                                    key={index}
+                                    className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+
+                              {/* Start Chat Button */}
+                              <div className="mt-auto">
+                                <Button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLocation(`/?avatar=${avatar.id}`);
+                                  }}
+                                  className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold py-2.5 text-sm rounded-lg transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-purple-500/20"
+                                  data-testid={`button-chat-${avatar.id}`}
+                                >
+                                  <MessageSquare className="w-4 h-4 mr-2" />
+                                  Start Chat
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Selection Check Mark */}
+                            {selectedAvatarId === avatar.id && (
+                              <div className="absolute top-0 right-0 w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
+                                <Check className="w-4 h-4 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardHeader>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </>
           )}
 
