@@ -424,7 +424,7 @@ export const subscriptionPlans = pgTable("subscription_plans", {
   description: text("description"),
   priceMonthly: integer("price_monthly").notNull().default(0), // Price in cents
   durationHours: integer("duration_hours"), // For free trial (1 hour)
-  avatarLimit: integer("avatar_limit").notNull().default(1), // 1 for free/basic, null for unlimited (pro)
+  avatarLimit: integer("avatar_limit"), // 1 for free/basic, null for unlimited (pro)
   videoLimit: integer("video_limit"), // Monthly video limit (null = unlimited)
   courseLimit: integer("course_limit"), // Monthly course limit (null = unlimited)
   courseLessonLimit: integer("course_lesson_limit"), // Max lessons per course

@@ -60,6 +60,7 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import CourseBuilderPage from "./course-builder";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
 
 type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-view' | 'course-edit' | 'credits' | 'settings' | 'mood' | 'plan';
@@ -1209,7 +1210,7 @@ export default function Dashboard() {
                         return (
                           <Card 
                             key={plan.id} 
-                            className={`glass-strong border transition-all duration-300 ${
+                            className={`glass-strong border transition-all duration-300 flex flex-col h-full ${
                               isCurrent ? 'border-purple-500/50 ring-2 ring-purple-500/20' :
                               isPro ? 'border-cyan-500/30 hover:border-cyan-500/50' :
                               'border-white/10 hover:border-white/20'
@@ -1233,7 +1234,7 @@ export default function Dashboard() {
                                 <span className="text-white/60">/month</span>
                               </div>
                             </CardHeader>
-                            <CardContent className="space-y-4">
+                            <CardContent className="space-y-4 flex-1 flex flex-col">
                               <ul className="space-y-2 text-sm">
                                 <li className="flex items-center gap-2 text-white/80">
                                   <Check className="w-4 h-4 text-green-400" />
@@ -1260,33 +1261,48 @@ export default function Dashboard() {
                               </ul>
                               
                               {!isCurrent && plan.slug !== 'free' && (
-                                <Button 
-                                  className={`w-full ${isPro ? 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600' : ''}`}
-                                  onClick={() => upgradePlanMutation.mutate(plan.slug)}
-                                  disabled={upgradePlanMutation.isPending}
-                                  data-testid={`button-upgrade-${plan.slug}`}
-                                >
-                                  {upgradePlanMutation.isPending ? (
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                  ) : null}
-                                  {plan.priceMonthly > (planInfo?.plan?.priceMonthly || 0) ? 'Upgrade' : 'Switch'} to {plan.name}
-                                </Button>
+                                <div className="mt-auto">
+                                  <Button 
+                                    className={`w-full ${isPro ? 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600' : ''}`}
+                                    onClick={() => upgradePlanMutation.mutate(plan.slug)}
+                                    disabled={upgradePlanMutation.isPending}
+                                    data-testid={`button-upgrade-${plan.slug}`}
+                                  >
+                                    {upgradePlanMutation.isPending ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : null}
+                                    {plan.priceMonthly > (planInfo?.plan?.priceMonthly || 0) ? 'Upgrade' : 'Switch'} to {plan.name}
+                                  </Button>
+                                </div>
+                              )}
+
+                              {isCurrent && (
+                                <div className="mt-auto">
+                                  <Badge className="w-full justify-center py-2 bg-purple-500/20 text-purple-300 border border-purple-500/30">
+                                    Your Current Plan
+                                  </Badge>
+                                </div>
                               )}
 
                               {plan.slug === 'free' && !planInfo?.subscription && (
-                                <div className="space-y-2">
+                                <div className="space-y-2 mt-auto">
                                   <p className="text-xs text-white/60 text-center">Select an avatar to start your trial:</p>
-                                  <select 
-                                    className="w-full p-2 rounded bg-white/10 border border-white/20 text-white text-sm"
-                                    value={selectedAvatarId}
-                                    onChange={(e) => setSelectedAvatarId(e.target.value)}
-                                    data-testid="select-trial-avatar"
-                                  >
-                                    <option value="">Choose an avatar...</option>
-                                    {avatars?.filter(a => a.isActive).map(avatar => (
-                                      <option key={avatar.id} value={avatar.id}>{avatar.name}</option>
-                                    ))}
-                                  </select>
+                                  <Select value={selectedAvatarId} onValueChange={setSelectedAvatarId}>
+                                    <SelectTrigger className="w-full bg-white/10 border-white/20 text-white" data-testid="select-trial-avatar">
+                                      <SelectValue placeholder="Choose an avatar..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-gray-900 border-white/20">
+                                      {avatars?.filter(a => a.isActive).map(avatar => (
+                                        <SelectItem 
+                                          key={avatar.id} 
+                                          value={avatar.id}
+                                          className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                                        >
+                                          {avatar.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                   <Button 
                                     className="w-full"
                                     onClick={() => selectedAvatarId && startTrialMutation.mutate(selectedAvatarId)}

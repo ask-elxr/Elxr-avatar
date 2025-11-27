@@ -48,10 +48,10 @@ function Router() {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
-        <Route path="/" component={Home} />
+        <Route path="/" component={Dashboard} />
         <Route path="/landing" component={Landing} />
         <Route path="/avatar-select" component={AvatarSelect} />
-        <Route path="/avatar" component={Home} />
+        <Route path="/chat" component={Home} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/my-videos" component={MyVideos} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
