@@ -35,7 +35,9 @@ import {
   Meh,
   Zap,
   Sun,
-  CloudRain
+  CloudRain,
+  Lock,
+  Crown
 } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -233,6 +235,32 @@ export default function Dashboard() {
   const completedVideos = chatVideos?.filter((v) => v.status === 'completed') || [];
   const pendingVideos = chatVideos?.filter((v) => v.status === 'pending' || v.status === 'generating') || [];
   const failedVideos = chatVideos?.filter((v) => v.status === 'failed') || [];
+
+  // Check if an avatar is locked based on subscription
+  const isAvatarLocked = (avatarId: string): boolean => {
+    // No subscription = no access (should start trial first)
+    if (!planInfo?.subscription) {
+      return true;
+    }
+    
+    // Expired subscription = all locked
+    if (planInfo.isExpired) {
+      return true;
+    }
+    
+    // Pro plan (null avatarLimit) = unlimited access
+    if (planInfo.plan?.avatarLimit === null) {
+      return false;
+    }
+    
+    // Free trial or Basic plan with 1 avatar limit
+    if (planInfo.plan?.avatarLimit === 1) {
+      // Only the selected avatar is unlocked
+      return avatarId !== planInfo.selectedAvatarId;
+    }
+    
+    return false;
+  };
 
   const handleUrlParams = useCallback(() => {
     const urlParams = new URLSearchParams(searchString);
@@ -675,94 +703,137 @@ export default function Dashboard() {
                   </CardHeader>
                 </Card>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                  {avatars.map((avatar) => (
-                    <Card
-                      key={avatar.id}
-                      onClick={() => setSelectedAvatarId(avatar.id)}
-                      className={`cursor-pointer transition-all duration-300 flex flex-col h-full glass-strong group card-hover ${
-                        selectedAvatarId === avatar.id
-                          ? "border-purple-500/50 ring-2 ring-purple-500/30"
-                          : "border-white/10 hover:border-purple-500/30"
-                      }`}
-                      data-testid={`card-avatar-${avatar.id}`}
-                    >
-                      <CardHeader className="p-4 md:p-5 flex-1 flex flex-col">
-                        <div className="flex flex-col h-full">
-                          {/* Avatar Image/GIF */}
-                          <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
-                            {avatarGifs[avatar.id] ? (
-                              <img 
-                                src={avatarGifs[avatar.id]} 
-                                alt={avatar.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : avatar.profileImageUrl ? (
-                              <img 
-                                src={avatar.profileImageUrl} 
-                                alt={avatar.name}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center text-white font-bold text-4xl">
-                                {avatar.name.charAt(0)}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Content */}
-                          <div className="relative flex-1 flex flex-col">
-                            <div className="pr-10 flex-1 flex flex-col">
-                              {/* Name */}
-                              <CardTitle className="text-white text-lg md:text-xl mb-2">
-                                {avatar.name}
-                              </CardTitle>
-                              
-                              {/* Description */}
-                              <CardDescription className="text-white/60 text-xs md:text-sm mb-3 line-clamp-3 min-h-[3.5rem]">
-                                {avatar.description}
-                              </CardDescription>
-                              
-                              {/* Tags */}
-                              <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
-                                {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
-                                  <span
-                                    key={index}
-                                    className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
-                                  >
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-
-                              {/* Start Chat Button */}
-                              <div className="mt-auto">
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setLocation(`/?avatar=${avatar.id}`);
-                                  }}
-                                  className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white font-semibold py-2.5 text-sm rounded-lg transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-purple-500/20"
-                                  data-testid={`button-chat-${avatar.id}`}
-                                >
-                                  <MessageSquare className="w-4 h-4 mr-2" />
-                                  Start Chat
-                                </Button>
+                <>
+                  {planInfo?.plan?.avatarLimit === 1 && planInfo?.selectedAvatarId && (
+                    <p className="text-purple-400 text-sm mb-4 text-center">
+                      Your plan includes 1 avatar. <button onClick={() => setCurrentView('plan')} className="underline hover:text-purple-300">Upgrade to Pro</button> for unlimited access.
+                    </p>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    {avatars.map((avatar) => {
+                      const locked = isAvatarLocked(avatar.id);
+                      const isSelectedAvatar = planInfo?.selectedAvatarId === avatar.id;
+                      
+                      return (
+                        <Card
+                          key={avatar.id}
+                          onClick={() => !locked && setSelectedAvatarId(avatar.id)}
+                          className={`transition-all duration-300 flex flex-col h-full glass-strong group relative ${
+                            locked
+                              ? "opacity-60 cursor-not-allowed border-gray-700"
+                              : selectedAvatarId === avatar.id
+                                ? "cursor-pointer border-purple-500/50 ring-2 ring-purple-500/30 card-hover"
+                                : "cursor-pointer border-white/10 hover:border-purple-500/30 card-hover"
+                          }`}
+                          data-testid={`card-avatar-${avatar.id}`}
+                        >
+                          {locked && (
+                            <div className="absolute inset-0 bg-black/50 z-10 rounded-lg flex items-center justify-center">
+                              <div className="text-center">
+                                <Lock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                                <p className="text-gray-400 text-sm">Upgrade to unlock</p>
                               </div>
                             </div>
-
-                            {/* Selection Check Mark */}
-                            {selectedAvatarId === avatar.id && (
-                              <div className="absolute top-0 right-0 w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
-                                <Check className="w-4 h-4 text-white" />
+                          )}
+                          
+                          <CardHeader className="p-4 md:p-5 flex-1 flex flex-col">
+                            <div className="flex flex-col h-full">
+                              {/* Avatar Image/GIF */}
+                              <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
+                                {avatarGifs[avatar.id] ? (
+                                  <img 
+                                    src={avatarGifs[avatar.id]} 
+                                    alt={avatar.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : avatar.profileImageUrl ? (
+                                  <img 
+                                    src={avatar.profileImageUrl} 
+                                    alt={avatar.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-purple-600 to-cyan-600 flex items-center justify-center text-white font-bold text-4xl">
+                                    {avatar.name.charAt(0)}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardHeader>
-                    </Card>
-                  ))}
-                </div>
+
+                              {/* Content */}
+                              <div className="relative flex-1 flex flex-col">
+                                <div className="pr-10 flex-1 flex flex-col">
+                                  {/* Name */}
+                                  <CardTitle className="text-white text-lg md:text-xl mb-2 flex items-center gap-2">
+                                    {avatar.name}
+                                    {isSelectedAvatar && (
+                                      <Crown className="w-4 h-4 text-yellow-400" />
+                                    )}
+                                  </CardTitle>
+                                  
+                                  {/* Description */}
+                                  <CardDescription className="text-white/60 text-xs md:text-sm mb-3 line-clamp-3 min-h-[3.5rem]">
+                                    {avatar.description}
+                                  </CardDescription>
+                                  
+                                  {/* Tags */}
+                                  <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
+                                    {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
+                                      <span
+                                        key={index}
+                                        className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+
+                                  {/* Start Chat Button */}
+                                  <div className="mt-auto">
+                                    <Button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (locked) {
+                                          setCurrentView('plan');
+                                        } else {
+                                          setLocation(`/chat?avatar=${avatar.id}`);
+                                        }
+                                      }}
+                                      className={`w-full font-semibold py-2.5 text-sm rounded-lg transition-all duration-200 shadow-lg ${
+                                        locked 
+                                          ? "bg-gray-700 hover:bg-gray-600 text-gray-300 shadow-none z-20 relative"
+                                          : "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white hover:scale-[1.02] shadow-purple-500/20"
+                                      }`}
+                                      data-testid={`button-chat-${avatar.id}`}
+                                    >
+                                      {locked ? (
+                                        <>
+                                          <Lock className="w-4 h-4 mr-2" />
+                                          Upgrade to Unlock
+                                        </>
+                                      ) : (
+                                        <>
+                                          <MessageSquare className="w-4 h-4 mr-2" />
+                                          Start Chat
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
+                                </div>
+
+                                {/* Selection Check Mark */}
+                                {selectedAvatarId === avatar.id && !locked && (
+                                  <div className="absolute top-0 right-0 w-7 h-7 rounded-full bg-gradient-primary flex items-center justify-center glow-primary">
+                                    <Check className="w-4 h-4 text-white" />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </CardHeader>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </>
           )}
