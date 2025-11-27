@@ -1,0 +1,132 @@
+🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Stream ready: MediaStream {id: '803aee21-7af6-4fb7-a9c6-6ed201178153', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: 'tell me about time in all dimetions', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642671428550.aut38r3cfnb
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+I don't have information about time across different dimensions in my knowledge base. What I do have is biological time - specifically how telomeres at the tips of your chromosomes act like a cellular clock. Every time your DNA copies itself, the telomeres get shorter because the copying enzyme can't replicate the very end it's sitting on. That shortening is essentially your cells aging at the molecular level.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+I don't have information about time across different dimensions in my knowledge base. What I do have is biological time - specifically how telomeres at the tips of your chromosomes act like a cellular clock. Every time your DNA copies itself, the telomeres get shorter because the copying enzyme can't replicate the very end it's sitting on. That shortening is essentially your cells aging at the molecular level.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 488 characters
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+injected.js:37 📝 handleSubmitMessage called with: {message: '"What are the latest findings on meditation and brain health?', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642671748300.f4kohngkqiv
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+Recent studies from 2025 show some interesting findings: praying the rosary offers mental health benefits comparable to modern meditation techniques, humming for just 5 minutes increases nitric oxide which improves blood flow to the brain, and regular silence practice enhances mental clarity and supports long-term brain health. The common thread is that simple, repetitive practices that quiet the mind have measurable effects on brain function and emotional well-being.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+Recent studies from 2025 show some interesting findings: praying the rosary offers mental health benefits comparable to modern meditation techniques, humming for just 5 minutes increases nitric oxide which improves blood flow to the brain, and regular silence practice enhances mental clarity and supports long-term brain health. The common thread is that simple, repetitive practices that quiet the mind have measurable effects on brain function and emotional well-being.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 547 characters
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+injected.js:37 📝 handleSubmitMessage called with: {message: 'Tell me about current research on sleep optimization', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642671942550.rte4e6v5yv
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+Recent 2025 research shows hitting snooze actually disrupts your sleep cycles - you're just getting fragmented light sleep between alarms. The best approach is waking up consistently at the same time and optimizing your overall sleep quality rather than trying to squeeze out extra minutes. Studies are also looking at ashwagandha for improving sleep efficiency and total sleep time, though more research is needed on optimal dosing.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+Recent 2025 research shows hitting snooze actually disrupts your sleep cycles - you're just getting fragmented light sleep between alarms. The best approach is waking up consistently at the same time and optimizing your overall sleep quality rather than trying to squeeze out extra minutes. Studies are also looking at ashwagandha for improving sleep efficiency and total sleep time, though more research is needed on optimal dosing.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 508 characters
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: "what's the 4d in meditaion?", sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642672551580.u07bgxdtu7
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+I don't have information about "4D in meditation" in my knowledge base. The research I have access to shows 4D printing technologies for materials science, but nothing connecting 4D concepts to meditation practice. If you're asking about dimensional awareness or states of consciousness in meditation, that's not something I have loaded right now.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+I don't have information about "4D in meditation" in my knowledge base. The research I have access to shows 4D printing technologies for materials science, but nothing connecting 4D concepts to meditation practice. If you're asking about dimensional awareness or states of consciousness in meditation, that's not something I have loaded right now.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 422 characters
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech

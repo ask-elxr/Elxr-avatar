@@ -197,6 +197,87 @@ class WikipediaService {
   }
 
   /**
+   * Search Wikipedia and return summary of the most relevant article
+   * Used for avatar responses to provide Wikipedia context
+   */
+  async searchAndSummarize(query: string): Promise<string | null> {
+    const log = logger.child({
+      service: 'wikipedia',
+      operation: 'searchAndSummarize',
+      query
+    });
+
+    if (!this.isAvailable()) {
+      log.warn('Wikipedia service not available');
+      return null;
+    }
+
+    try {
+      log.debug('Searching Wikipedia');
+      const startTime = Date.now();
+
+      // Step 1: Search Wikipedia for relevant articles
+      const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=3&format=json&origin=*`;
+      const searchResponse = await fetch(searchUrl);
+      
+      if (!searchResponse.ok) {
+        log.error({ status: searchResponse.status }, 'Wikipedia search API error');
+        return null;
+      }
+
+      const searchData = await searchResponse.json();
+      const searchResults = searchData.query?.search || [];
+      
+      if (searchResults.length === 0) {
+        log.debug('No Wikipedia search results found');
+        return null;
+      }
+
+      // Step 2: Get summaries for top results
+      const summaries: string[] = [];
+      for (const result of searchResults.slice(0, 2)) {
+        try {
+          const article = await this.fetchWikipediaArticle(result.title);
+          if (article.extract && article.extract.length > 50) {
+            summaries.push(`**${article.title}**: ${article.extract}`);
+          }
+        } catch (error) {
+          log.debug({ title: result.title }, 'Could not fetch article summary');
+        }
+      }
+
+      const duration = Date.now() - startTime;
+      
+      if (summaries.length === 0) {
+        log.debug({ duration }, 'No usable Wikipedia summaries found');
+        return null;
+      }
+
+      const result = summaries.join('\n\n');
+      log.info({ 
+        duration, 
+        articlesFound: summaries.length,
+        resultLength: result.length 
+      }, 'Wikipedia search completed');
+
+      // Log API call
+      storage.logApiCall({
+        serviceName: 'wikipedia',
+        endpoint: 'searchAndSummarize',
+        userId: null,
+        responseTimeMs: duration,
+      }).catch((error) => {
+        log.error({ error: error.message }, 'Failed to log API call');
+      });
+
+      return result;
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Error searching Wikipedia');
+      return null;
+    }
+  }
+
+  /**
    * Sync Wikipedia article to Pinecone namespace
    * This is the main method that orchestrates fetching, embedding, and storing
    */

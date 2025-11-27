@@ -1702,10 +1702,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             logger.info({ userId, query: message }, 'Searching Wikipedia for avatar response');
             
-            // Wikipedia service doesn't have a search function yet, so we'll skip for now
-            // TODO: Implement Wikipedia search function
+            // Use the new searchAndSummarize function
+            const wikiResult = await wikipediaService.searchAndSummarize(message);
             perfTimings.wikipedia = Date.now() - wikiStart;
-            return null;
+            
+            if (wikiResult) {
+              logger.info({ userId, resultLength: wikiResult.length }, 'Wikipedia results retrieved');
+            }
+            return wikiResult;
           } catch (error: any) {
             perfTimings.wikipedia = Date.now() - wikiStart;
             logger.error({ error: error.message }, 'Error fetching Wikipedia results');
