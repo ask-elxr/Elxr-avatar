@@ -440,7 +440,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
         {/* Loading Overlay */}
         {isLoading && !showReconnect && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+          <div className="absolute inset-0 flex items-center justify-center bg-black z-20">
             {audioOnly ? (
               <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
             ) : (
