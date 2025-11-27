@@ -55,6 +55,16 @@ function Router() {
         <Route path="/avatar-select" component={AvatarSelect} />
         <Route path="/chat" component={Home} />
         <Route path="/dashboard" component={Dashboard} />
+        <Route path="/dashboard/chat" component={Dashboard} />
+        <Route path="/dashboard/chat/:avatarId" component={Dashboard} />
+        <Route path="/dashboard/videos" component={Dashboard} />
+        <Route path="/dashboard/courses" component={Dashboard} />
+        <Route path="/dashboard/courses/:courseId" component={Dashboard} />
+        <Route path="/dashboard/courses/:courseId/edit" component={Dashboard} />
+        <Route path="/dashboard/mood" component={Dashboard} />
+        <Route path="/dashboard/plan" component={Dashboard} />
+        <Route path="/dashboard/credits" component={Dashboard} />
+        <Route path="/dashboard/settings" component={Dashboard} />
         <Route path="/my-videos" component={MyVideos} />
         <Route path="/knowledge-base" component={KnowledgeBase} />
         <Route path="/courses" component={Courses} />

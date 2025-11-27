@@ -39,9 +39,9 @@ import {
   Lock,
   Crown
 } from "lucide-react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { formatDistanceToNow } from "date-fns";
 import type { AvatarProfile, Course, ChatGeneratedVideo, Lesson, GeneratedVideo, MoodEntry, MoodType, moodTypeEnum, SubscriptionPlan, UserSubscription, UsagePeriod } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
@@ -123,10 +123,29 @@ interface UserPlanInfo {
 
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user, isAdmin } = useAuth();
-  const [currentView, setCurrentView] = useState<UserView>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [, setLocation] = useLocation();
-  const searchString = useSearch();
+  const [location, setLocation] = useLocation();
+  
+  const [, chatParams] = useRoute("/dashboard/chat/:avatarId");
+  const [, courseViewParams] = useRoute("/dashboard/courses/:courseId");
+  const [, courseEditParams] = useRoute("/dashboard/courses/:courseId/edit");
+  
+  const currentView = useMemo((): UserView => {
+    if (location.startsWith('/dashboard/chat/') && chatParams?.avatarId) return 'active-chat';
+    if (location === '/dashboard/chat') return 'chat';
+    if (location.endsWith('/edit') && courseEditParams?.courseId) return 'course-edit';
+    if (location.startsWith('/dashboard/courses/') && courseViewParams?.courseId) return 'course-view';
+    if (location === '/dashboard/courses') return 'courses';
+    if (location === '/dashboard/videos') return 'videos';
+    if (location === '/dashboard/mood') return 'mood';
+    if (location === '/dashboard/plan') return 'plan';
+    if (location === '/dashboard/credits') return 'credits';
+    if (location === '/dashboard/settings') return 'settings';
+    return 'dashboard';
+  }, [location, chatParams, courseViewParams, courseEditParams]);
+  
+  const activeChatAvatarId = chatParams?.avatarId || null;
+  const selectedCourseId = courseViewParams?.courseId || courseEditParams?.courseId || null;
 
   const { data: chatVideos, isLoading: videosLoading } = useQuery<ChatVideo[]>({
     queryKey: ['/api/courses/chat-videos'],
@@ -166,13 +185,11 @@ export default function Dashboard() {
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
   const [selectedVideo, setSelectedVideo] = useState<ChatVideo | null>(null);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [moodIntensity, setMoodIntensity] = useState<number>(3);
   const [moodNotes, setMoodNotes] = useState<string>("");
   const [lastMoodResponse, setLastMoodResponse] = useState<{ mood: string; response: string } | null>(null);
-  const [activeChatAvatarId, setActiveChatAvatarId] = useState<string | null>(null);
   
   // Generate or get user ID for chat
   const [chatUserId] = useState(() => {
@@ -274,18 +291,6 @@ export default function Dashboard() {
     return false;
   };
 
-  const handleUrlParams = useCallback(() => {
-    const urlParams = new URLSearchParams(searchString);
-    const view = urlParams.get('view');
-    if (view === 'videos' || view === 'settings' || view === 'chat' || view === 'courses' || view === 'credits') {
-      setCurrentView(view);
-    }
-  }, [searchString]);
-
-  useEffect(() => {
-    handleUrlParams();
-  }, [handleUrlParams]);
-
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 768) {
@@ -333,27 +338,44 @@ export default function Dashboard() {
     );
   }
 
-  const NavButton = ({ view, icon: Icon, label, onClick, isActive }: { view?: UserView; icon: any; label: string; onClick?: () => void; isActive?: boolean }) => (
-    <Button
-      variant={isActive !== undefined ? (isActive ? 'default' : 'ghost') : (view && currentView === view ? 'default' : 'ghost')}
-      className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
-      onClick={() => {
-        if (onClick) {
-          onClick();
-        } else if (view) {
-          setCurrentView(view);
-        }
-        if (window.innerWidth < 768) setSidebarOpen(false);
-      }}
-      data-testid={`nav-${view || label.toLowerCase().replace(' ', '-')}`}
-      title={!sidebarOpen ? label : undefined}
-    >
-      <Icon className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
-      <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-        {label}
-      </span>
-    </Button>
-  );
+  const viewToPath: Record<UserView, string> = {
+    'dashboard': '/dashboard',
+    'chat': '/dashboard/chat',
+    'active-chat': '/dashboard/chat',
+    'videos': '/dashboard/videos',
+    'courses': '/dashboard/courses',
+    'course-view': '/dashboard/courses',
+    'course-edit': '/dashboard/courses',
+    'mood': '/dashboard/mood',
+    'plan': '/dashboard/plan',
+    'credits': '/dashboard/credits',
+    'settings': '/dashboard/settings',
+  };
+
+  const NavButton = ({ view, icon: Icon, label }: { view: UserView; icon: any; label: string }) => {
+    const isActive = currentView === view || 
+      (view === 'chat' && currentView === 'active-chat') ||
+      (view === 'courses' && (currentView === 'course-view' || currentView === 'course-edit'));
+    
+    return (
+      <Link href={viewToPath[view]}>
+        <Button
+          variant={isActive ? 'default' : 'ghost'}
+          className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+          onClick={() => {
+            if (window.innerWidth < 768) setSidebarOpen(false);
+          }}
+          data-testid={`nav-${view}`}
+          title={!sidebarOpen ? label : undefined}
+        >
+          <Icon className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+          <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+            {label}
+          </span>
+        </Button>
+      </Link>
+    );
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
