@@ -21,12 +21,12 @@ import {
   Users,
   Database
 } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'settings';
+type UserView = 'dashboard' | 'videos' | 'settings';
 
 interface ChatVideo {
   id: number;
@@ -47,6 +47,7 @@ export default function Dashboard() {
   const [currentView, setCurrentView] = useState<UserView>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [, setLocation] = useLocation();
+  const searchString = useSearch();
 
   const { data: chatVideos, isLoading: videosLoading } = useQuery<ChatVideo[]>({
     queryKey: ['/api/courses/chat-videos'],
@@ -56,6 +57,18 @@ export default function Dashboard() {
   const completedVideos = chatVideos?.filter((v) => v.status === 'completed') || [];
   const pendingVideos = chatVideos?.filter((v) => v.status === 'pending' || v.status === 'generating') || [];
   const failedVideos = chatVideos?.filter((v) => v.status === 'failed') || [];
+
+  const handleUrlParams = useCallback(() => {
+    const urlParams = new URLSearchParams(searchString);
+    const view = urlParams.get('view');
+    if (view === 'videos' || view === 'settings') {
+      setCurrentView(view);
+    }
+  }, [searchString]);
+
+  useEffect(() => {
+    handleUrlParams();
+  }, [handleUrlParams]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -104,19 +117,19 @@ export default function Dashboard() {
     );
   }
 
-  const NavButton = ({ view, icon: Icon, label, onClick }: { view: UserView; icon: any; label: string; onClick?: () => void }) => (
+  const NavButton = ({ view, icon: Icon, label, onClick, isActive }: { view?: UserView; icon: any; label: string; onClick?: () => void; isActive?: boolean }) => (
     <Button
-      variant={currentView === view ? 'default' : 'ghost'}
+      variant={isActive !== undefined ? (isActive ? 'default' : 'ghost') : (view && currentView === view ? 'default' : 'ghost')}
       className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
       onClick={() => {
         if (onClick) {
           onClick();
-        } else {
+        } else if (view) {
           setCurrentView(view);
         }
         if (window.innerWidth < 768) setSidebarOpen(false);
       }}
-      data-testid={`nav-${view}`}
+      data-testid={`nav-${view || label.toLowerCase().replace(' ', '-')}`}
       title={!sidebarOpen ? label : undefined}
     >
       <Icon className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
@@ -200,7 +213,7 @@ export default function Dashboard() {
         
         <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavButton view="chat" icon={MessageSquare} label="Avatar Chat" onClick={() => setLocation('/')} />
+          <NavButton icon={MessageSquare} label="Avatar Chat" onClick={() => setLocation('/')} isActive={false} />
           <NavButton view="videos" icon={Video} label="My Videos" />
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
