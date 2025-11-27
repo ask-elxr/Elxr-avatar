@@ -362,14 +362,14 @@ export default function Dashboard() {
       <Link href={viewToPath[view]}>
         <Button
           variant={isActive ? 'default' : 'ghost'}
-          className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+          className={`w-full justify-start py-3 h-auto transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
           onClick={() => {
             if (window.innerWidth < 768) setSidebarOpen(false);
           }}
           data-testid={`nav-${view}`}
           title={!sidebarOpen ? label : undefined}
         >
-          <Icon className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+          <Icon className={`w-5 h-5 ${sidebarOpen ? 'mr-3' : ''}`} />
           <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
             {label}
           </span>
@@ -465,12 +465,12 @@ export default function Dashboard() {
           {isAdmin && (
             <Button
               variant="ghost"
-              className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+              className={`w-full justify-start py-3 h-auto transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
               onClick={() => setLocation('/admin')}
               data-testid="nav-admin"
               title={!sidebarOpen ? "Admin Panel" : undefined}
             >
-              <Shield className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''} text-purple-400`} />
+              <Shield className={`w-5 h-5 ${sidebarOpen ? 'mr-3' : ''} text-purple-400`} />
               <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                 Admin Panel
               </span>
@@ -479,12 +479,12 @@ export default function Dashboard() {
           
           <Button
             variant="ghost"
-            className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+            className={`w-full justify-start py-3 h-auto transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
             onClick={() => setLocation('/chat')}
             data-testid="nav-home"
             title={!sidebarOpen ? "Back to Home" : undefined}
           >
-            <Home className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+            <Home className={`w-5 h-5 ${sidebarOpen ? 'mr-3' : ''}`} />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
               Back to Home
             </span>
@@ -492,13 +492,13 @@ export default function Dashboard() {
           
           <Button
             variant="ghost"
-            className={`w-full justify-start text-red-400 hover:text-red-300 transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+            className={`w-full justify-start py-3 h-auto text-red-400 hover:text-red-300 transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
             asChild
             data-testid="nav-logout"
             title={!sidebarOpen ? "Logout" : undefined}
           >
             <a href="/api/logout">
-              <LogOut className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+              <LogOut className={`w-5 h-5 ${sidebarOpen ? 'mr-3' : ''}`} />
               <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
                 Logout
               </span>
