@@ -23,7 +23,7 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { elevenlabsService } from "./elevenlabsService.js";
 import { wikipediaService } from "./wikipediaService.js";
-import { setupAuth, isAuthenticated } from "./replitAuth.js";
+import { setupAuth, isAuthenticated, requireAdmin } from "./replitAuth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
@@ -1168,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   */
 
   // Admin Pinecone namespace migration endpoint
-  app.post("/api/admin/pinecone/migrate-namespace", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/pinecone/migrate-namespace", isAuthenticated, requireAdmin, async (req: any, res) => {
     const log = logger.child({ service: "pinecone", operation: "migrateNamespace" });
     
     try {
@@ -1197,10 +1197,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Personal Knowledge Base Management Routes
+  // Personal Knowledge Base Management Routes (Admin only)
   
   // List all knowledge base sources for authenticated user
-  app.get("/api/knowledge-sources", isAuthenticated, async (req: any, res) => {
+  app.get("/api/knowledge-sources", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const sources = await storage.listKnowledgeSources(userId);
@@ -1212,7 +1212,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create a new knowledge base source
-  app.post("/api/knowledge-sources", isAuthenticated, async (req: any, res) => {
+  app.post("/api/knowledge-sources", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { type, name, config } = req.body;
@@ -1250,7 +1250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update a knowledge base source
-  app.put("/api/knowledge-sources/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/knowledge-sources/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id } = req.params;
@@ -1274,7 +1274,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete a knowledge base source
-  app.delete("/api/knowledge-sources/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/knowledge-sources/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id } = req.params;
@@ -1289,7 +1289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync Notion database to Pinecone namespace
-  app.post("/api/knowledge-sources/:id/sync", isAuthenticated, async (req: any, res) => {
+  app.post("/api/knowledge-sources/:id/sync", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
       const { id } = req.params;
@@ -2037,10 +2037,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "./documentQueue.js"
   );
 
-  // Get presigned URL for direct-to-storage upload (fast response)
+  // Get presigned URL for direct-to-storage upload (fast response) - Admin only
   app.get(
     "/api/documents/upload-url",
     isAuthenticated,
+    requireAdmin,
     async (req: any, res) => {
       try {
         const { filename, fileType } = req.query;
@@ -2075,8 +2076,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   );
 
-  // Enqueue document processing job (after client uploads to presigned URL)
-  app.post("/api/documents/process", isAuthenticated, async (req: any, res) => {
+  // Enqueue document processing job (after client uploads to presigned URL) - Admin only
+  app.post("/api/documents/process", isAuthenticated, requireAdmin, async (req: any, res) => {
     const userId = req.user.claims.sub;
     try {
       const {
@@ -2442,10 +2443,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Document upload and processing endpoints (protected)
+  // Document upload and processing endpoints (Admin only)
   app.post(
     "/api/documents/upload",
     isAuthenticated,
+    requireAdmin,
     upload.single("document"),
     async (req: any, res) => {
       const userId = req.user.claims.sub;
@@ -2628,10 +2630,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Upload and process PDF document
+  // Upload and process PDF document (Admin only)
   app.post(
     "/api/documents/upload-pdf",
     isAuthenticated,
+    requireAdmin,
     upload.single("file"),
     async (req: any, res) => {
       const log = logger.child({ service: "document", operation: "uploadPDF" });
@@ -2718,10 +2721,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Upload and process video document
+  // Upload and process video document (Admin only)
   app.post(
     "/api/documents/upload-video",
     isAuthenticated,
+    requireAdmin,
     upload.single("file"),
     async (req: any, res) => {
       const log = logger.child({ service: "document", operation: "uploadVideo" });
@@ -2823,10 +2827,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Upload and process DOCX document
+  // Upload and process DOCX document (Admin only)
   app.post(
     "/api/documents/upload-docx",
     isAuthenticated,
+    requireAdmin,
     upload.single("file"),
     async (req: any, res) => {
       const log = logger.child({ service: "document", operation: "uploadDOCX" });
@@ -2913,10 +2918,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Upload and process TXT document
+  // Upload and process TXT document (Admin only)
   app.post(
     "/api/documents/upload-txt",
     isAuthenticated,
+    requireAdmin,
     upload.single("file"),
     async (req: any, res) => {
       const log = logger.child({ service: "document", operation: "uploadTXT" });
@@ -3003,10 +3009,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
-  // Upload and process ZIP file containing documents (extended timeout for large files)
+  // Upload and process ZIP file containing documents (Admin only, extended timeout for large files)
   app.post(
     "/api/documents/upload-zip",
     isAuthenticated,
+    requireAdmin,
     (req: any, res: any, next: any) => {
       // Extend timeout to 5 minutes for large ZIP file processing
       req.setTimeout(300000);
@@ -3284,7 +3291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all users for admin purposes
-  app.get("/api/admin/users", async (req: any, res) => {
+  app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const users = await storage.getAllUsers();
       res.json(users);
@@ -3296,8 +3303,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user role (admin only)
+  app.put("/api/admin/users/:userId/role", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const { role } = req.body;
+      
+      if (!role || !['admin', 'user'].includes(role)) {
+        return res.status(400).json({ error: "Invalid role. Must be 'admin' or 'user'" });
+      }
+      
+      const user = await storage.updateUserRole(userId, role);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      logger.info({ userId, role }, "User role updated");
+      res.json(user);
+    } catch (error) {
+      console.error("Error updating user role:", error);
+      res.status(500).json({
+        error: "Failed to update user role",
+      });
+    }
+  });
+
   // Get API cost tracking statistics
-  app.get("/api/admin/costs", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/costs", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const stats = await storage.getCostStats();
       res.json(stats);
@@ -3310,7 +3342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get active session statistics
-  app.get("/api/admin/sessions", isAuthenticated, async (req: any, res) => {
+  app.get("/api/admin/sessions", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 1000;
       const stats = sessionManager.getSessionStats();
