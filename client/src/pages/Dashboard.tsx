@@ -861,40 +861,61 @@ export default function Dashboard() {
                     {courses.map((course) => (
                       <Card
                         key={course.id}
-                        className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover"
+                        className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden"
                         onClick={() => { setSelectedCourseId(course.id); setCurrentView('course-edit'); }}
                         data-testid={`card-course-${course.id}`}
                       >
-                        <CardHeader className="p-4 md:p-5">
-                          <div className="flex items-start justify-between mb-3">
-                            <CardTitle className="text-white text-lg line-clamp-2">
-                              {course.title}
-                            </CardTitle>
-                            <Badge className={`text-xs shrink-0 ${
-                              course.status === 'completed' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
-                              course.status === 'generating' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
-                              'bg-gray-500/20 text-gray-300 border-gray-500/30'
-                            } border`}>
+                        {/* Thumbnail */}
+                        <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20 overflow-hidden">
+                          {course.thumbnailUrl ? (
+                            <img 
+                              src={course.thumbnailUrl} 
+                              alt={course.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <div className="w-16 h-16 rounded-full bg-gradient-primary/30 flex items-center justify-center">
+                                <BookOpen className="w-8 h-8 text-purple-400" />
+                              </div>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Play className="w-12 h-12 text-white" />
+                          </div>
+                          {course.totalLessons > 0 && (
+                            <div className="absolute bottom-2 right-2 glass px-2 py-1 rounded text-xs text-white flex items-center gap-1">
+                              <Video className="w-3 h-3" />
+                              {course.totalLessons} lessons
+                            </div>
+                          )}
+                          <div className="absolute top-2 right-2">
+                            <Badge className={`text-xs ${
+                              course.status === 'completed' ? 'bg-green-500/80 text-white' :
+                              course.status === 'generating' ? 'bg-yellow-500/80 text-white' :
+                              'bg-gray-500/80 text-white'
+                            }`}>
                               {course.status}
                             </Badge>
                           </div>
-                          <CardDescription className="text-white/60 line-clamp-2">
+                        </div>
+                        <CardHeader className="p-4 md:p-5 pb-2">
+                          <CardTitle className="text-white text-lg line-clamp-2">
+                            {course.title}
+                          </CardTitle>
+                          <CardDescription className="text-white/60 line-clamp-2 mt-1">
                             {course.description || "No description"}
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="p-4 md:p-5 pt-0">
-                          <div className="space-y-2 text-sm text-white/60">
+                          <div className="flex items-center justify-between text-sm text-white/60">
                             <div className="flex items-center gap-2">
                               <User className="w-4 h-4" />
                               <span>{avatars?.find(a => a.id === course.avatarId)?.name || course.avatarId}</span>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Video className="w-4 h-4" />
-                              <span>{course.totalLessons || 0} lessons</span>
-                            </div>
                             {course.totalDuration > 0 && (
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-4 h-4" />
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
                                 <span>{Math.floor(course.totalDuration / 60)}:{(course.totalDuration % 60).toString().padStart(2, '0')}</span>
                               </div>
                             )}
