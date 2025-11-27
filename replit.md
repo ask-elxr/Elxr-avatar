@@ -84,6 +84,26 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - `GET /api/courses/chat-videos/pending` - Get pending/generating videos for notification polling
   - `GET /api/courses/chat-videos/:videoId` - Get specific video details
 
+#### Role-Based Access Control (RBAC)
+- **User Roles**: Two roles - `admin` and `user` (default)
+- **Backend Protection**: `requireAdmin` middleware in `server/replitAuth.ts` protects admin-only routes
+- **Admin-Only Features**:
+  - Document uploads (`/api/documents/upload-*`)
+  - Knowledge Base management (`/api/pinecone/*`, `/api/documents/*`)
+  - Analytics and costs (`/api/admin/costs`, `/api/admin/sessions`)
+  - User management (`/api/admin/users`, `/api/admin/users/:id/role`)
+  - Avatar configuration and course builder (via admin panel)
+- **End-User Features**:
+  - Chat with avatars (main chat interface)
+  - View and download their generated videos (`/my-videos` page)
+  - Request video generation during chat
+- **Frontend Guards**:
+  - `useAuth` hook exposes `isAdmin` property
+  - Admin page (`/admin`) shows access denied for non-admins
+  - Knowledge Base page requires admin access
+  - Dashboard shows different content based on role
+- **Role Management**: Admins can update user roles via `PUT /api/admin/users/:userId/role`
+
 #### Technical Implementations
 - **AI Integration**: Uses Claude Sonnet 4.5 as the primary LLM, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and persistent conversation memory.
 - **Pinecone Knowledge Retrieval**: Uses direct namespace-based vector queries via `pineconeNamespaceService.ts` (cost-effective approach). The `ask-elxr` index stores all avatar knowledge organized by category namespaces (ADDICTION, MIND, BODY, etc.).
