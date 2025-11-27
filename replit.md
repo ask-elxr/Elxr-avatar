@@ -46,6 +46,7 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - Shawn: `1732829459` (sitting behind desk, business strategist)
 - **Per-avatar features**: Dedicated Pinecone knowledge base namespaces, configurable session limits, unique personalities, and per-avatar research source toggles (PubMed, Wikipedia, Google Search).
 - **Avatar Service (`server/services/avatars.ts`)**: Handles field-level merging where database values override defaults and manages active/inactive avatars.
+- **Auto-Reconnection**: HeyGen WebRTC sessions automatically retry up to 3 times with exponential backoff (1s, 2s, 4s) on unexpected disconnection before showing manual reconnect button.
 
 #### Video Course System
 - **Workflow**: Users create courses, add lessons with scripts, and generate videos via HeyGen API integration.
