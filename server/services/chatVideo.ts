@@ -14,6 +14,7 @@ const TALKING_PHOTO_IDS = new Set([
   "1da3f06fc92a4a9bbbe10f81b3b6a498",
   "57d0eb901fe84211b92b0a9d91f2e5c0",
   "ee40f646802241e1902a93b5cf05575c",
+  "84d6a3a8f0d545a9900bf16176c7b7ae", // Mark Kohl - talking photo
 ]);
 
 interface HeyGenVideoResponse {
