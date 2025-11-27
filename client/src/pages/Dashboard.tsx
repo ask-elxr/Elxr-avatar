@@ -41,7 +41,7 @@ import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
-import type { AvatarProfile, Course, ChatGeneratedVideo, Lesson, GeneratedVideo, MoodEntry, MoodType, moodTypeEnum } from "@shared/schema";
+import type { AvatarProfile, Course, ChatGeneratedVideo, Lesson, GeneratedVideo, MoodEntry, MoodType, moodTypeEnum, SubscriptionPlan, UserSubscription, UsagePeriod } from "@shared/schema";
 import { Badge } from "@/components/ui/badge";
 
 // Extended type for courses with lessons and video data from API
@@ -62,7 +62,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "@tanstack/react-query";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-view' | 'course-edit' | 'credits' | 'settings' | 'mood';
+type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-view' | 'course-edit' | 'credits' | 'settings' | 'mood' | 'plan';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -102,6 +102,21 @@ interface CreditStats {
   status: 'ok' | 'warning' | 'critical';
 }
 
+interface UserPlanInfo {
+  plan: SubscriptionPlan | null;
+  subscription: UserSubscription | null;
+  usage: UsagePeriod | null;
+  isExpired: boolean;
+  canUseFeatures: boolean;
+  selectedAvatarId: string | null;
+  limits: {
+    videosRemaining: number | null;
+    coursesRemaining: number | null;
+    chatSessionsRemaining: number | null;
+    maxLessonsPerCourse: number | null;
+  };
+}
+
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user, isAdmin } = useAuth();
   const [currentView, setCurrentView] = useState<UserView>('dashboard');
@@ -134,6 +149,15 @@ export default function Dashboard() {
     refetchInterval: 30000,
   });
 
+  const { data: planInfo, isLoading: planLoading, refetch: refetchPlan } = useQuery<UserPlanInfo>({
+    queryKey: ['/api/subscription/user-plan'],
+    enabled: isAuthenticated,
+  });
+
+  const { data: allPlans } = useQuery<SubscriptionPlan[]>({
+    queryKey: ['/api/subscription/plans'],
+  });
+
   const { toast } = useToast();
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
   const [selectedVideo, setSelectedVideo] = useState<ChatVideo | null>(null);
@@ -163,6 +187,57 @@ export default function Dashboard() {
     },
     onError: () => {
       toast({ title: "Error", description: "Failed to log your mood. Please try again.", variant: "destructive" });
+    }
+  });
+
+  const startTrialMutation = useMutation({
+    mutationFn: async (avatarId: string) => {
+      const response = await apiRequest('/api/subscription/start-trial', {
+        method: 'POST',
+        body: JSON.stringify({ avatarId }),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      refetchPlan();
+      toast({ title: "Trial Started!", description: "Your 1-hour free trial has begun." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to start trial", variant: "destructive" });
+    }
+  });
+
+  const selectAvatarMutation = useMutation({
+    mutationFn: async (avatarId: string) => {
+      const response = await apiRequest('/api/subscription/select-avatar', {
+        method: 'POST',
+        body: JSON.stringify({ avatarId }),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      refetchPlan();
+      toast({ title: "Avatar Selected!", description: "You can now chat with this avatar." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to select avatar", variant: "destructive" });
+    }
+  });
+
+  const upgradePlanMutation = useMutation({
+    mutationFn: async (planSlug: string) => {
+      const response = await apiRequest('/api/subscription/upgrade', {
+        method: 'POST',
+        body: JSON.stringify({ planSlug }),
+      });
+      return response;
+    },
+    onSuccess: () => {
+      refetchPlan();
+      toast({ title: "Plan Upgraded!", description: "Your subscription has been updated." });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message || "Failed to upgrade plan", variant: "destructive" });
     }
   });
 
@@ -329,7 +404,8 @@ export default function Dashboard() {
           <NavButton view="videos" icon={Video} label="My Videos" />
           <NavButton view="courses" icon={BookOpen} label="Video Courses" />
           <NavButton view="mood" icon={Heart} label="Mood Tracker" />
-          <NavButton view="credits" icon={CreditCard} label="Credits" />
+          <NavButton view="plan" icon={CreditCard} label="My Plan" />
+          <NavButton view="credits" icon={DollarSign} label="Credits" />
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
 
@@ -411,6 +487,7 @@ export default function Dashboard() {
               {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
               {currentView === 'course-view' && 'Watch your course videos'}
               {currentView === 'course-edit' && 'Edit your video course'}
+              {currentView === 'plan' && 'Manage your subscription and view your current plan'}
               {currentView === 'credits' && 'Track your API credit usage across services'}
               {currentView === 'mood' && 'Track your emotional wellness and get personalized support'}
               {currentView === 'settings' && 'Manage your account settings'}
@@ -1002,6 +1079,268 @@ export default function Dashboard() {
                 </>
               )}
             </>
+          )}
+
+          {/* Plan View */}
+          {currentView === 'plan' && (
+            <div className="space-y-6">
+              {planLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* Current Plan Card */}
+                  <Card className="glass-strong border-purple-500/30">
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <CardTitle className="text-white text-xl flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-gradient-primary flex items-center justify-center">
+                              <CreditCard className="w-5 h-5 text-white" />
+                            </div>
+                            {planInfo?.plan?.name || "No Plan"}
+                          </CardTitle>
+                          <CardDescription className="text-white/60 mt-2">
+                            {planInfo?.plan?.description || "Start your free trial to access AI avatars"}
+                          </CardDescription>
+                        </div>
+                        <Badge className={`text-sm px-3 py-1 ${
+                          planInfo?.isExpired ? 'bg-red-500/20 text-red-300' :
+                          planInfo?.subscription?.status === 'active' ? 'bg-green-500/20 text-green-300' :
+                          planInfo?.subscription?.status === 'trial' ? 'bg-yellow-500/20 text-yellow-300' :
+                          'bg-gray-500/20 text-gray-300'
+                        }`}>
+                          {planInfo?.isExpired ? 'Expired' : 
+                           planInfo?.subscription?.status === 'trial' ? 'Trial' :
+                           planInfo?.subscription?.status || 'Inactive'}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      {/* Plan Details */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="glass p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-white">
+                            {planInfo?.plan?.priceMonthly ? `$${(planInfo.plan.priceMonthly / 100).toFixed(0)}` : 'Free'}
+                          </p>
+                          <p className="text-xs text-white/60">per month</p>
+                        </div>
+                        <div className="glass p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-white">
+                            {planInfo?.plan?.avatarLimit === null ? '∞' : planInfo?.plan?.avatarLimit || 1}
+                          </p>
+                          <p className="text-xs text-white/60">Avatar{planInfo?.plan?.avatarLimit !== 1 ? 's' : ''}</p>
+                        </div>
+                        <div className="glass p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-white">
+                            {planInfo?.limits.videosRemaining === null ? '∞' : planInfo?.limits.videosRemaining ?? 0}
+                          </p>
+                          <p className="text-xs text-white/60">Videos Left</p>
+                        </div>
+                        <div className="glass p-4 rounded-lg text-center">
+                          <p className="text-2xl font-bold text-white">
+                            {planInfo?.limits.coursesRemaining === null ? '∞' : planInfo?.limits.coursesRemaining ?? 0}
+                          </p>
+                          <p className="text-xs text-white/60">Courses Left</p>
+                        </div>
+                      </div>
+
+                      {/* Selected Avatar (for limited plans) */}
+                      {planInfo?.plan?.avatarLimit === 1 && planInfo?.selectedAvatarId && (
+                        <div className="glass p-4 rounded-lg">
+                          <p className="text-sm text-white/60 mb-2">Your Selected Avatar</p>
+                          <div className="flex items-center gap-3">
+                            {avatarGifs[planInfo.selectedAvatarId] && (
+                              <img 
+                                src={avatarGifs[planInfo.selectedAvatarId]} 
+                                alt="Selected avatar" 
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                            )}
+                            <div>
+                              <p className="text-white font-medium">
+                                {avatars?.find(a => a.id === planInfo.selectedAvatarId)?.name || planInfo.selectedAvatarId}
+                              </p>
+                              <p className="text-xs text-white/60">
+                                {planInfo.plan?.slug === 'free' ? 'Locked to this avatar during trial' : 'Your dedicated avatar'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Expiry Warning */}
+                      {planInfo?.isExpired && (
+                        <div className="glass border border-red-500/30 p-4 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-400" />
+                            <div>
+                              <p className="text-white font-medium">Your plan has expired</p>
+                              <p className="text-sm text-white/60">Upgrade to continue using all features</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Trial Timer */}
+                      {planInfo?.subscription?.status === 'trial' && planInfo?.subscription?.expiresAt && !planInfo.isExpired && (
+                        <div className="glass border border-yellow-500/30 p-4 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <Clock className="w-5 h-5 text-yellow-400" />
+                            <div>
+                              <p className="text-white font-medium">Trial ends {formatDistanceToNow(new Date(planInfo.subscription.expiresAt), { addSuffix: true })}</p>
+                              <p className="text-sm text-white/60">Upgrade now to keep access to all features</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Available Plans */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">Available Plans</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {allPlans?.map((plan) => {
+                        const isCurrent = planInfo?.plan?.id === plan.id;
+                        const isPro = plan.slug === 'pro';
+                        
+                        return (
+                          <Card 
+                            key={plan.id} 
+                            className={`glass-strong border transition-all duration-300 ${
+                              isCurrent ? 'border-purple-500/50 ring-2 ring-purple-500/20' :
+                              isPro ? 'border-cyan-500/30 hover:border-cyan-500/50' :
+                              'border-white/10 hover:border-white/20'
+                            }`}
+                            data-testid={`plan-card-${plan.slug}`}
+                          >
+                            <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <CardTitle className="text-white">{plan.name}</CardTitle>
+                                {isCurrent && (
+                                  <Badge className="bg-purple-500/20 text-purple-300">Current</Badge>
+                                )}
+                                {isPro && !isCurrent && (
+                                  <Badge className="bg-cyan-500/20 text-cyan-300">Best Value</Badge>
+                                )}
+                              </div>
+                              <div className="mt-2">
+                                <span className="text-3xl font-bold text-white">
+                                  ${(plan.priceMonthly / 100).toFixed(0)}
+                                </span>
+                                <span className="text-white/60">/month</span>
+                              </div>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                              <ul className="space-y-2 text-sm">
+                                <li className="flex items-center gap-2 text-white/80">
+                                  <Check className="w-4 h-4 text-green-400" />
+                                  {plan.avatarLimit === null ? 'All avatars unlocked' : `${plan.avatarLimit} avatar`}
+                                </li>
+                                <li className="flex items-center gap-2 text-white/80">
+                                  <Check className="w-4 h-4 text-green-400" />
+                                  {plan.videoLimit === null ? 'Unlimited videos' : `${plan.videoLimit} videos/month`}
+                                </li>
+                                <li className="flex items-center gap-2 text-white/80">
+                                  <Check className="w-4 h-4 text-green-400" />
+                                  {plan.courseLimit === null ? 'Unlimited courses' : `${plan.courseLimit} courses/month`}
+                                </li>
+                                <li className="flex items-center gap-2 text-white/80">
+                                  <Check className="w-4 h-4 text-green-400" />
+                                  {plan.chatSessionLimit === null ? 'Unlimited chat' : `${plan.chatSessionLimit} chat sessions`}
+                                </li>
+                                {plan.durationHours && (
+                                  <li className="flex items-center gap-2 text-yellow-400">
+                                    <Clock className="w-4 h-4" />
+                                    {plan.durationHours} hour trial
+                                  </li>
+                                )}
+                              </ul>
+                              
+                              {!isCurrent && plan.slug !== 'free' && (
+                                <Button 
+                                  className={`w-full ${isPro ? 'bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-600 hover:to-purple-600' : ''}`}
+                                  onClick={() => upgradePlanMutation.mutate(plan.slug)}
+                                  disabled={upgradePlanMutation.isPending}
+                                  data-testid={`button-upgrade-${plan.slug}`}
+                                >
+                                  {upgradePlanMutation.isPending ? (
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  ) : null}
+                                  {plan.priceMonthly > (planInfo?.plan?.priceMonthly || 0) ? 'Upgrade' : 'Switch'} to {plan.name}
+                                </Button>
+                              )}
+
+                              {plan.slug === 'free' && !planInfo?.subscription && (
+                                <div className="space-y-2">
+                                  <p className="text-xs text-white/60 text-center">Select an avatar to start your trial:</p>
+                                  <select 
+                                    className="w-full p-2 rounded bg-white/10 border border-white/20 text-white text-sm"
+                                    value={selectedAvatarId}
+                                    onChange={(e) => setSelectedAvatarId(e.target.value)}
+                                    data-testid="select-trial-avatar"
+                                  >
+                                    <option value="">Choose an avatar...</option>
+                                    {avatars?.filter(a => a.isActive).map(avatar => (
+                                      <option key={avatar.id} value={avatar.id}>{avatar.name}</option>
+                                    ))}
+                                  </select>
+                                  <Button 
+                                    className="w-full"
+                                    onClick={() => selectedAvatarId && startTrialMutation.mutate(selectedAvatarId)}
+                                    disabled={!selectedAvatarId || startTrialMutation.isPending}
+                                    data-testid="button-start-trial"
+                                  >
+                                    {startTrialMutation.isPending ? (
+                                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    ) : null}
+                                    Start Free Trial
+                                  </Button>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Usage This Month */}
+                  {planInfo?.usage && (
+                    <Card className="glass-strong border-white/10">
+                      <CardHeader>
+                        <CardTitle className="text-white flex items-center gap-2">
+                          <Activity className="w-5 h-5 text-purple-400" />
+                          Usage This Month
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-white">{planInfo.usage.videosCreated}</p>
+                            <p className="text-xs text-white/60">Videos Created</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-white">{planInfo.usage.coursesCreated}</p>
+                            <p className="text-xs text-white/60">Courses Created</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-white">{planInfo.usage.chatSessionsUsed}</p>
+                            <p className="text-xs text-white/60">Chat Sessions</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-2xl font-bold text-white">{planInfo.usage.moodEntriesLogged}</p>
+                            <p className="text-xs text-white/60">Mood Entries</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </>
+              )}
+            </div>
           )}
 
           {/* Credits View */}
