@@ -97,6 +97,33 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 - **Frontend**: Mood Tracker view in Dashboard with emoji-based mood selection cards, intensity slider, notes textarea, and mood history display
 - **Personalization**: Responses are tailored to the avatar's personality when an avatarId is provided
 
+#### Subscription System
+- **Three Plan Tiers**:
+  - **Free Trial**: 1-hour trial, 1 avatar, 2 courses max, 100 chat sessions
+  - **Basic Plan** ($24/month): 1 avatar, 50 videos/month, 50 courses/month, 1000 chat sessions
+  - **Pro Plan** ($49/month): Unlimited avatars, videos, courses, and chat sessions
+- **Database Tables**:
+  - `subscription_plans`: Plan definitions with limits (slug, name, priceMonthly, avatarLimit, videoLimit, etc.)
+  - `user_subscriptions`: User subscription records with status (trial/active/expired/cancelled)
+  - `usage_periods`: Monthly usage tracking (videosCreated, coursesCreated, chatSessionsUsed)
+- **Subscription Service** (`server/services/subscription.ts`):
+  - Plan management (getPlans, getPlanBySlug)
+  - Trial activation with avatar selection
+  - Usage tracking and limit enforcement
+  - Admin user stats aggregation
+- **Dashboard Plan View** (`client/src/pages/Dashboard.tsx`):
+  - Current plan display with status badge
+  - Usage meters showing remaining limits
+  - Available plans comparison with upgrade buttons
+  - Trial countdown timer
+  - Avatar selection for limited plans
+- **API Endpoints** (`server/routes/subscription.ts`):
+  - `GET /api/subscription/plans` - List all active plans
+  - `GET /api/subscription/user-plan` - Get current user's plan info
+  - `POST /api/subscription/start-trial` - Start free trial with avatar selection
+  - `POST /api/subscription/upgrade` - Upgrade to paid plan
+  - `GET /api/subscription/admin/users` - Admin: get all users with subscription/usage stats
+
 #### Role-Based Access Control (RBAC)
 - **User Roles**: Two roles - `admin` and `user` (default)
 - **Backend Protection**: `requireAdmin` middleware in `server/replitAuth.ts` protects admin-only routes
@@ -104,12 +131,17 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - Document uploads (`/api/documents/upload-*`)
   - Knowledge Base management (`/api/pinecone/*`, `/api/documents/*`)
   - Analytics and costs (`/api/admin/costs`, `/api/admin/sessions`)
-  - User management (`/api/admin/users`, `/api/admin/users/:id/role`)
+  - User management (`/api/admin/users`, `/api/admin/users/:id/role`, `/api/subscription/admin/users`)
   - Avatar configuration and course builder (via admin panel)
+- **Admin User Management View** (`client/src/pages/admin.tsx`):
+  - Summary stats: Total users, Pro users, Basic users, Active trials
+  - Users table with plan, status, role, avatar, usage metrics, join date
+  - Visual badges for plan tiers and subscription status
 - **End-User Features**:
   - Chat with avatars (main chat interface)
   - View and download their generated videos (`/my-videos` page)
   - Request video generation during chat
+  - View and manage subscription (My Plan view)
 - **Frontend Guards**:
   - `useAuth` hook exposes `isAdmin` property
   - Admin page (`/admin`) shows access denied for non-admins
