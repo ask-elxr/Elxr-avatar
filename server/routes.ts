@@ -37,6 +37,7 @@ import { memoryService, MemoryType } from "./memoryService.js";
 import * as pubmedService from "./pubmedService.js";
 import { googleDriveService } from "./googleDriveService.js";
 import { detectVideoIntent, generateVideoAcknowledgment } from "./services/intent.js";
+import { detectEndChatIntent, getFarewellResponse } from "./services/endChatIntent.js";
 import { chatVideoService } from "./services/chatVideo.js";
 import { subscriptionService } from "./services/subscription.js";
 
@@ -1485,6 +1486,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avatarConfig = getAvatarById(avatarId);
       if (!avatarConfig) {
         return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      // Check for end chat intent FIRST (before other processing)
+      const endChatIntent = detectEndChatIntent(message);
+      if (endChatIntent.isEndChatRequest && endChatIntent.confidence >= 0.85) {
+        const farewellResponse = getFarewellResponse(endChatIntent.farewellType, avatarConfig.name);
+        
+        // Save the farewell to conversation history
+        if (userId) {
+          await storage.saveConversation({
+            userId,
+            avatarId,
+            role: 'assistant',
+            text: farewellResponse,
+            metadata: { type: 'farewell', farewellType: endChatIntent.farewellType },
+          });
+        }
+
+        logger.info({ userId, avatarId, farewellType: endChatIntent.farewellType, confidence: endChatIntent.confidence }, 'End chat intent detected');
+
+        return res.json({
+          success: true,
+          message,
+          knowledgeResponse: farewellResponse,
+          personalityUsed: avatarConfig.personalityPrompt,
+          usedClaude: false,
+          endSession: true,
+          farewellType: endChatIntent.farewellType,
+        });
       }
 
       // Check for video request intent

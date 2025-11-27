@@ -927,6 +927,12 @@ export function useAvatarSession({
         const claudeResponse = data.knowledgeResponse || data.response;
         console.log("Claude response received:", claudeResponse);
 
+        // Check if this is an end session response
+        const shouldEndSession = data.endSession === true;
+        if (shouldEndSession) {
+          console.log("👋 End chat intent detected - will end session after farewell");
+        }
+
         onResetInactivityTimer?.();
         clearIdleTimeout(); // Clear idle timeout when processing new message
 
@@ -1010,6 +1016,21 @@ export function useAvatarSession({
           };
           
           await speakWithRetry();
+          
+          // If end session was requested, wait for avatar to finish speaking then end
+          if (shouldEndSession) {
+            console.log("👋 Farewell spoken - ending session in 3 seconds...");
+            setTimeout(async () => {
+              console.log("👋 Auto-ending session after farewell");
+              await endSessionShowReconnect();
+            }, 3000);
+          }
+        } else if (shouldEndSession) {
+          // Audio-only mode or no avatar - end session immediately
+          console.log("👋 Farewell delivered - ending session...");
+          setTimeout(async () => {
+            await endSessionShowReconnect();
+          }, 2000);
         }
       }
     } catch (error) {
@@ -1040,7 +1061,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout]);
+  }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect]);
 
   const stopAudio = useCallback(() => {
     // Emergency stop for audio playback
