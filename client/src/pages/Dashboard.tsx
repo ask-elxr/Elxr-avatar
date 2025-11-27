@@ -41,8 +41,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
+import CourseBuilderPage from "./course-builder";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'credits' | 'settings';
+type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-edit' | 'credits' | 'settings';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -113,6 +114,7 @@ export default function Dashboard() {
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
   const [selectedVideo, setSelectedVideo] = useState<ChatVideo | null>(null);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const completedVideos = chatVideos?.filter((v) => v.status === 'completed') || [];
   const pendingVideos = chatVideos?.filter((v) => v.status === 'pending' || v.status === 'generating') || [];
@@ -356,6 +358,7 @@ export default function Dashboard() {
               {currentView === 'chat' && 'Choose an AI avatar to start a conversation'}
               {currentView === 'videos' && 'Videos generated from your chat conversations'}
               {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
+              {currentView === 'course-edit' && 'Edit your video course'}
               {currentView === 'credits' && 'Track your API credit usage across services'}
               {currentView === 'settings' && 'Manage your account settings'}
             </p>
@@ -840,7 +843,7 @@ export default function Dashboard() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="flex justify-center">
-                    <Button onClick={() => setLocation('/course-builder')} data-testid="button-create-course">
+                    <Button onClick={() => { setSelectedCourseId(null); setCurrentView('course-edit'); }} data-testid="button-create-course">
                       <Plus className="w-4 h-4 mr-2" />
                       Create Your First Course
                     </Button>
@@ -849,7 +852,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <div className="flex justify-end mb-6">
-                    <Button onClick={() => setLocation('/course-builder')} data-testid="button-new-course">
+                    <Button onClick={() => { setSelectedCourseId(null); setCurrentView('course-edit'); }} data-testid="button-new-course">
                       <Plus className="w-4 h-4 mr-2" />
                       New Course
                     </Button>
@@ -859,7 +862,7 @@ export default function Dashboard() {
                       <Card
                         key={course.id}
                         className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover"
-                        onClick={() => setLocation(`/course-builder/${course.id}`)}
+                        onClick={() => { setSelectedCourseId(course.id); setCurrentView('course-edit'); }}
                         data-testid={`card-course-${course.id}`}
                       >
                         <CardHeader className="p-4 md:p-5">
@@ -1116,6 +1119,20 @@ export default function Dashboard() {
                 </div>
               )}
             </>
+          )}
+
+          {/* Course Edit View - Embedded Course Builder */}
+          {currentView === 'course-edit' && (
+            <div className="glass-strong border-white/10 rounded-lg overflow-hidden">
+              <CourseBuilderPage 
+                isEmbedded={true}
+                courseId={selectedCourseId}
+                onBack={() => {
+                  setSelectedCourseId(null);
+                  setCurrentView('courses');
+                }}
+              />
+            </div>
           )}
 
           {/* Settings View */}
