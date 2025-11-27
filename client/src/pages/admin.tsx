@@ -4,7 +4,7 @@ import { DatabaseStatus } from "@/components/DatabaseStatus";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation, useSearch } from "wouter";
@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import Credits from "@/pages/Credits";
 import Analytics from "@/pages/Analytics";
 
-type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'analytics' | 'credits' | 'settings';
+type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'users' | 'analytics' | 'credits' | 'settings';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -99,6 +99,33 @@ export default function Admin() {
     queryKey: ['/api/courses/chat-videos'],
     enabled: isAuthenticated,
     refetchInterval: 10000,
+  });
+
+  interface AdminUserStats {
+    id: string;
+    email: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    currentPlan: string;
+    planSlug: string | null;
+    subscriptionStatus: string | null;
+    joinedAt: string | null;
+    lastActiveAt: string | null;
+    trialStartedAt: string | null;
+    selectedAvatarId: string | null;
+    usage: {
+      videosCreated: number;
+      coursesCreated: number;
+      chatSessionsUsed: number;
+      moodEntriesLogged: number;
+      creditsUsed: number;
+    };
+  }
+
+  const { data: usersData, isLoading: usersLoading } = useQuery<AdminUserStats[]>({
+    queryKey: ['/api/subscription/admin/users'],
+    enabled: isAuthenticated && isAdmin,
   });
 
   useEffect(() => {
@@ -239,6 +266,7 @@ export default function Admin() {
           <NavButton view="avatars" icon={Users} label="Avatars" />
           <NavButton view="knowledge" icon={FileText} label="Knowledge Base" />
           <NavButton view="courses" icon={Video} label="Video Courses" />
+          <NavButton view="users" icon={UserCog} label="User Management" />
           <NavButton view="analytics" icon={BarChart3} label="Analytics" />
           <NavButton view="credits" icon={CreditCard} label="Credits" />
           <NavButton view="settings" icon={Settings} label="Settings" />
@@ -305,6 +333,7 @@ export default function Admin() {
               {currentView === 'avatars' && 'Manage AI avatar personalities and configurations'}
               {currentView === 'knowledge' && 'Upload and manage knowledge base documents'}
               {currentView === 'courses' && 'Manage video courses and generated content'}
+              {currentView === 'users' && 'Manage users, subscriptions, and track usage'}
               {currentView === 'analytics' && 'Analyze user trends and avatar interaction patterns'}
               {currentView === 'credits' && 'Monitor API credit usage across all services'}
               {currentView === 'settings' && 'Configure system settings and preferences'}
@@ -712,6 +741,199 @@ export default function Admin() {
                 setPreSelectedAvatarId(null);
               }}
             />
+          )}
+
+          {/* Users Management View */}
+          {currentView === 'users' && (
+            <div className="space-y-6">
+              {/* Summary Stats */}
+              <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-4">
+                <Card className="bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-purple-500/20">
+                        <Users className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">{usersData?.length || 0}</p>
+                        <p className="text-sm text-muted-foreground">Total Users</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-green-500/20">
+                        <Crown className="w-5 h-5 text-green-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">
+                          {usersData?.filter(u => u.planSlug === 'pro').length || 0}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Pro Users</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-blue-500/20">
+                        <CreditCard className="w-5 h-5 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">
+                          {usersData?.filter(u => u.planSlug === 'basic').length || 0}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Basic Users</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-yellow-500/10 to-transparent border-yellow-500/20">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-yellow-500/20">
+                        <Clock className="w-5 h-5 text-yellow-400" />
+                      </div>
+                      <div>
+                        <p className="text-2xl font-bold">
+                          {usersData?.filter(u => u.subscriptionStatus === 'trial').length || 0}
+                        </p>
+                        <p className="text-sm text-muted-foreground">Active Trials</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Users Table */}
+              <Card>
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCog className="w-5 h-5" />
+                    All Users
+                  </CardTitle>
+                  <CardDescription>
+                    Manage user subscriptions, roles, and view usage statistics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  {usersLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-8 h-8 animate-spin text-purple-400" />
+                    </div>
+                  ) : usersData && usersData.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">User</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Plan</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Role</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Avatar</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Usage</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Joined</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {usersData.map((userData) => (
+                            <tr key={userData.id} className="border-b hover:bg-muted/50 transition-colors">
+                              <td className="py-3 px-2">
+                                <div>
+                                  <p className="font-medium">
+                                    {userData.firstName || userData.lastName 
+                                      ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim()
+                                      : userData.email || 'Unknown'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">{userData.email}</p>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                  userData.planSlug === 'pro' ? 'bg-purple-500/20 text-purple-300' :
+                                  userData.planSlug === 'basic' ? 'bg-blue-500/20 text-blue-300' :
+                                  userData.planSlug === 'free' ? 'bg-yellow-500/20 text-yellow-300' :
+                                  'bg-gray-500/20 text-gray-300'
+                                }`}>
+                                  {userData.planSlug === 'pro' && <Crown className="w-3 h-3" />}
+                                  {userData.currentPlan}
+                                </span>
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                  userData.subscriptionStatus === 'active' ? 'bg-green-500/20 text-green-300' :
+                                  userData.subscriptionStatus === 'trial' ? 'bg-yellow-500/20 text-yellow-300' :
+                                  userData.subscriptionStatus === 'expired' ? 'bg-red-500/20 text-red-300' :
+                                  'bg-gray-500/20 text-gray-300'
+                                }`}>
+                                  {userData.subscriptionStatus === 'active' && <Check className="w-3 h-3" />}
+                                  {userData.subscriptionStatus === 'trial' && <Clock className="w-3 h-3" />}
+                                  {userData.subscriptionStatus === 'expired' && <AlertCircle className="w-3 h-3" />}
+                                  {userData.subscriptionStatus || 'None'}
+                                </span>
+                              </td>
+                              <td className="py-3 px-2">
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                  userData.role === 'admin' ? 'bg-red-500/20 text-red-300' : 'bg-gray-500/20 text-gray-300'
+                                }`}>
+                                  {userData.role === 'admin' && <Crown className="w-3 h-3" />}
+                                  {userData.role}
+                                </span>
+                              </td>
+                              <td className="py-3 px-2">
+                                {userData.selectedAvatarId ? (
+                                  <div className="flex items-center gap-2">
+                                    {avatarGifs[userData.selectedAvatarId] && (
+                                      <img 
+                                        src={avatarGifs[userData.selectedAvatarId]} 
+                                        alt="Avatar" 
+                                        className="w-6 h-6 rounded-full object-cover"
+                                      />
+                                    )}
+                                    <span className="text-xs">{userData.selectedAvatarId}</span>
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-2">
+                                <div className="flex flex-wrap gap-1">
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300 text-xs" title="Videos">
+                                    <Video className="w-3 h-3" /> {userData.usage.videosCreated}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-300 text-xs" title="Courses">
+                                    📚 {userData.usage.coursesCreated}
+                                  </span>
+                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-500/10 text-green-300 text-xs" title="Chats">
+                                    💬 {userData.usage.chatSessionsUsed}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2 text-xs text-muted-foreground">
+                                {userData.joinedAt 
+                                  ? new Date(userData.joinedAt).toLocaleDateString()
+                                  : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <Users className="w-12 h-12 text-muted-foreground mb-4" />
+                      <h3 className="font-medium text-lg">No Users Found</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Users will appear here as they sign up
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           )}
 
           {/* Analytics View */}
