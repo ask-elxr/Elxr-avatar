@@ -600,8 +600,12 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-5 overflow-y-auto">
-          <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
+        <nav className="flex-1 p-4 space-y-5 overflow-y-auto text-center">
+          <NavButton
+            view="dashboard"
+            icon={LayoutDashboard}
+            label="Dashboard"
+          />
           <NavButton view="chat" icon={MessageSquare} label="Avatar Chat" />
           <NavButton view="videos" icon={Video} label="My Videos" />
           <NavButton view="courses" icon={BookOpen} label="Video Courses" />
