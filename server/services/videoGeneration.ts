@@ -231,6 +231,11 @@ export class VideoGenerationService {
         );
 
         const { status, video_url, thumbnail_url, duration, error } = response.data.data;
+        
+        // Log every 12 attempts (every minute) or on status change
+        if (attempts === 1 || attempts % 12 === 0) {
+          console.log(`📹 Polling ${heygenVideoId}: attempt ${attempts}/240, status=${status}`);
+        }
 
         if (status === "completed" && video_url) {
           // Update generated video record
