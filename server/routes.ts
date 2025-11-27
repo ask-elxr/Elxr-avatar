@@ -1866,16 +1866,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`;
       }
       
+      // Build capabilities summary for the AI
+      const activeSources: string[] = [];
+      
       if (pubmedContext) {
-        enhancedPersonality += `\n\n${pubmedContext}\n\nYou have access to peer-reviewed medical research. Incorporate these findings naturally in your response. Cite specific papers when relevant using "According to a ${pubmedMetadata?.fromCache ? 'recent study' : 'study'} by [authors]..." format. You can mention PMID numbers for credibility.`;
+        activeSources.push('PubMed medical research');
+        enhancedPersonality += `\n\n${pubmedContext}\n\n📚 PUBMED ACCESS ACTIVE: You have successfully searched and retrieved peer-reviewed medical research from PubMed. Use these findings in your response. Cite specific papers when relevant using "According to a ${pubmedMetadata?.fromCache ? 'recent study' : 'study'} by [authors]..." format.`;
       }
       
       if (wikipediaContext) {
-        enhancedPersonality += `\n\n${wikipediaContext}\n\nYou have access to Wikipedia information. Incorporate these facts naturally in your response when relevant.`;
+        activeSources.push('Wikipedia');
+        enhancedPersonality += `\n\n${wikipediaContext}\n\n📖 WIKIPEDIA ACCESS ACTIVE: You have successfully retrieved Wikipedia information. Incorporate these facts naturally in your response.`;
       }
       
       if (googleSearchContext) {
-        enhancedPersonality += `\n\n${googleSearchContext}\n\n🌐 WEB SEARCH CAPABILITY ACTIVE: You have successfully performed a web search and retrieved current information from the internet. You DO have web search access - use these results to provide up-to-date information. When asked about your capabilities, confirm that you can access current web information.`;
+        activeSources.push('Google web search');
+        enhancedPersonality += `\n\n${googleSearchContext}\n\n🌐 WEB SEARCH CAPABILITY ACTIVE: You have successfully performed a web search and retrieved current information from the internet. Use these results to provide up-to-date information.`;
+      }
+      
+      // Add capabilities summary if any sources are active
+      if (activeSources.length > 0) {
+        enhancedPersonality += `\n\n⚡ RESEARCH CAPABILITIES CONFIRMED: You currently have access to: ${activeSources.join(', ')}. When asked about your capabilities, confirm that you CAN access these sources and you have already retrieved relevant information for this conversation.`;
       }
 
       // Add video generation context so the AI knows about its capability
