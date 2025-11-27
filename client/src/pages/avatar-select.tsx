@@ -1,15 +1,38 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle } from "lucide-react";
+import { Check, MessageCircle, Lock, Crown } from "lucide-react";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import type { AvatarProfile } from "@shared/schema";
+
+interface UserPlanInfo {
+  plan: {
+    id: string;
+    slug: string;
+    name: string;
+    avatarLimit: number | null;
+  } | null;
+  subscription: {
+    id: string;
+    status: string;
+    selectedAvatarId: string | null;
+  } | null;
+  usage: {
+    avatarsUsed: number;
+  } | null;
+  isExpired: boolean;
+}
 
 export default function AvatarSelect() {
   const [avatars, setAvatars] = useState<AvatarProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
   const [, setLocation] = useLocation();
+
+  const { data: planInfo } = useQuery<UserPlanInfo>({
+    queryKey: ['/api/subscription/user-plan'],
+  });
 
   useEffect(() => {
     const fetchAvatars = async () => {
@@ -18,8 +41,10 @@ export default function AvatarSelect() {
         if (response.ok) {
           const data = await response.json();
           setAvatars(data);
-          // Pre-select first avatar
-          if (data.length > 0) {
+          // Pre-select the user's selected avatar if they have one, otherwise first available
+          if (planInfo?.subscription?.selectedAvatarId) {
+            setSelectedAvatarId(planInfo.subscription.selectedAvatarId);
+          } else if (data.length > 0) {
             setSelectedAvatarId(data[0].id);
           }
         }
@@ -31,17 +56,49 @@ export default function AvatarSelect() {
     };
 
     fetchAvatars();
-  }, []);
+  }, [planInfo?.subscription?.selectedAvatarId]);
+
+  const isAvatarLocked = (avatarId: string): boolean => {
+    // No subscription = all locked except during trial selection
+    if (!planInfo?.subscription) {
+      return false; // Allow selection if no subscription (they'll start trial)
+    }
+    
+    // Expired subscription = all locked
+    if (planInfo.isExpired) {
+      return true;
+    }
+    
+    // Pro plan (null avatarLimit) = unlimited access
+    if (planInfo.plan?.avatarLimit === null) {
+      return false;
+    }
+    
+    // Free trial or Basic plan with 1 avatar limit
+    if (planInfo.plan?.avatarLimit === 1) {
+      // Only the selected avatar is unlocked
+      return avatarId !== planInfo.subscription.selectedAvatarId;
+    }
+    
+    return false;
+  };
 
   const handleConfirm = () => {
     if (selectedAvatarId) {
-      setLocation(`/?avatar=${selectedAvatarId}`);
+      setLocation(`/chat?avatar=${selectedAvatarId}`);
     }
   };
 
   const handleStartChat = (avatarId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setLocation(`/?avatar=${avatarId}`);
+    
+    if (isAvatarLocked(avatarId)) {
+      // Redirect to dashboard to upgrade
+      setLocation('/dashboard?view=plan');
+      return;
+    }
+    
+    setLocation(`/chat?avatar=${avatarId}`);
   };
 
   // Avatar GIF mapping
@@ -78,92 +135,128 @@ export default function AvatarSelect() {
           <p className="text-gray-400 text-sm md:text-base lg:text-lg font-satoshi">
             Select an expert to help you on your journey
           </p>
+          {planInfo?.plan?.avatarLimit === 1 && planInfo?.subscription?.selectedAvatarId && (
+            <p className="text-purple-400 text-sm mt-2 font-satoshi">
+              Your plan includes 1 avatar. <button onClick={() => setLocation('/dashboard?view=plan')} className="underline hover:text-purple-300">Upgrade to Pro</button> for unlimited access.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6 mb-6 md:mb-8">
-          {avatars.map((avatar) => (
-            <Card
-              key={avatar.id}
-              onClick={() => setSelectedAvatarId(avatar.id)}
-              className={`cursor-pointer transition-all duration-200 flex flex-col h-full ${
-                selectedAvatarId === avatar.id
-                  ? "border-purple-600 border-2 bg-purple-950/20"
-                  : "border-gray-700 hover:border-purple-500 bg-gray-900/50"
-              }`}
-              data-testid={`card-avatar-${avatar.id}`}
-            >
-              <CardHeader className="p-4 md:p-5 lg:p-6 flex-1 flex flex-col">
-                <div className="flex flex-col h-full">
-                  {/* Avatar Image/GIF - Full Width */}
-                  <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
-                    {avatarGifs[avatar.id] ? (
-                      <img 
-                        src={avatarGifs[avatar.id]} 
-                        alt={avatar.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : avatar.profileImageUrl ? (
-                      <img 
-                        src={avatar.profileImageUrl} 
-                        alt={avatar.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-4xl font-satoshi">
-                        {avatar.name.charAt(0)}
-                      </div>
-                    )}
+          {avatars.map((avatar) => {
+            const locked = isAvatarLocked(avatar.id);
+            
+            return (
+              <Card
+                key={avatar.id}
+                onClick={() => !locked && setSelectedAvatarId(avatar.id)}
+                className={`cursor-pointer transition-all duration-200 flex flex-col h-full relative ${
+                  locked 
+                    ? "border-gray-700 bg-gray-900/30 opacity-60"
+                    : selectedAvatarId === avatar.id
+                      ? "border-purple-600 border-2 bg-purple-950/20"
+                      : "border-gray-700 hover:border-purple-500 bg-gray-900/50"
+                }`}
+                data-testid={`card-avatar-${avatar.id}`}
+              >
+                {locked && (
+                  <div className="absolute inset-0 bg-black/40 z-10 rounded-lg flex items-center justify-center">
+                    <div className="text-center">
+                      <Lock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <p className="text-gray-400 text-sm font-satoshi">Upgrade to unlock</p>
+                    </div>
                   </div>
-
-                  {/* Content - Fixed structure for alignment */}
-                  <div className="relative flex-1 flex flex-col">
-                    <div className="pr-10 flex-1 flex flex-col">
-                      {/* Name */}
-                      <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2">
-                        {avatar.name}
-                      </CardTitle>
-                      
-                      {/* Description - Fixed height with line clamp */}
-                      <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi mb-3 line-clamp-3 min-h-[3.5rem]">
-                        {avatar.description}
-                      </CardDescription>
-                      
-                      {/* Tags - Fixed height area */}
-                      <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
-                        {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
-                          <span
-                            key={index}
-                            className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi h-fit"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Start Chat Button - Always at bottom */}
-                      <div className="mt-auto">
-                        <Button
-                          onClick={(e) => handleStartChat(avatar.id, e)}
-                          className="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 hover:scale-[1.02] shadow-lg shadow-purple-500/20"
-                          data-testid={`button-chat-${avatar.id}`}
-                        >
-                          <MessageCircle className="w-4 h-4 mr-2" />
-                          Start Chat
-                        </Button>
-                      </div>
+                )}
+                
+                <CardHeader className="p-4 md:p-5 lg:p-6 flex-1 flex flex-col">
+                  <div className="flex flex-col h-full">
+                    {/* Avatar Image/GIF - Full Width */}
+                    <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
+                      {avatarGifs[avatar.id] ? (
+                        <img 
+                          src={avatarGifs[avatar.id]} 
+                          alt={avatar.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : avatar.profileImageUrl ? (
+                        <img 
+                          src={avatar.profileImageUrl} 
+                          alt={avatar.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center text-white font-bold text-4xl font-satoshi">
+                          {avatar.name.charAt(0)}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Selection Check Mark */}
-                    {selectedAvatarId === avatar.id && (
-                      <div className="absolute top-0 right-0 w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center">
-                        <Check className="w-4 h-4 text-white" />
+                    {/* Content - Fixed structure for alignment */}
+                    <div className="relative flex-1 flex flex-col">
+                      <div className="pr-10 flex-1 flex flex-col">
+                        {/* Name */}
+                        <CardTitle className="text-white text-lg md:text-xl font-satoshi mb-2 flex items-center gap-2">
+                          {avatar.name}
+                          {planInfo?.subscription?.selectedAvatarId === avatar.id && (
+                            <Crown className="w-4 h-4 text-yellow-400" />
+                          )}
+                        </CardTitle>
+                        
+                        {/* Description - Fixed height with line clamp */}
+                        <CardDescription className="text-gray-400 text-xs md:text-sm font-satoshi mb-3 line-clamp-3 min-h-[3.5rem]">
+                          {avatar.description}
+                        </CardDescription>
+                        
+                        {/* Tags - Fixed height area */}
+                        <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
+                          {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
+                            <span
+                              key={index}
+                              className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi h-fit"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Start Chat Button - Always at bottom */}
+                        <div className="mt-auto">
+                          <Button
+                            onClick={(e) => handleStartChat(avatar.id, e)}
+                            className={`w-full font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 shadow-lg ${
+                              locked 
+                                ? "bg-gray-700 hover:bg-gray-600 text-gray-300 shadow-none"
+                                : "bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white hover:scale-[1.02] shadow-purple-500/20"
+                            }`}
+                            data-testid={`button-chat-${avatar.id}`}
+                          >
+                            {locked ? (
+                              <>
+                                <Lock className="w-4 h-4 mr-2" />
+                                Upgrade to Unlock
+                              </>
+                            ) : (
+                              <>
+                                <MessageCircle className="w-4 h-4 mr-2" />
+                                Start Chat
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
-                    )}
+
+                      {/* Selection Check Mark */}
+                      {selectedAvatarId === avatar.id && !locked && (
+                        <div className="absolute top-0 right-0 w-7 h-7 rounded-full bg-purple-600 flex items-center justify-center">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-            </Card>
-          ))}
+                </CardHeader>
+              </Card>
+            );
+          })}
         </div>
 
       </div>
