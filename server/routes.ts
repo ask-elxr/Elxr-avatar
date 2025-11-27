@@ -1620,6 +1620,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const avatarUsePubMed = avatarConfig.usePubMed || false;
       const avatarUseWikipedia = avatarConfig.useWikipedia || false;
       const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
+      
+      // Debug log for research source settings
+      logger.debug({
+        avatarId,
+        avatarName: avatarConfig.name,
+        researchSources: {
+          pubmed: avatarUsePubMed,
+          wikipedia: avatarUseWikipedia,
+          googleSearch: avatarUseGoogleSearch
+        }
+      }, 'Avatar research source settings loaded');
 
       // PARALLEL DATA FETCHING: Launch all enrichment operations concurrently
       const [memoryResultSettled, pubmedResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([

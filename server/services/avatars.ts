@@ -51,6 +51,10 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     pineconeNamespaces: dbAvatar.pineconeNamespaces !== undefined ? dbAvatar.pineconeNamespaces : defaultAvatar.pineconeNamespaces,
     personalityPrompt: dbAvatar.personalityPrompt !== undefined ? dbAvatar.personalityPrompt : defaultAvatar.personalityPrompt,
     isActive: dbAvatar.isActive !== undefined ? dbAvatar.isActive : defaultAvatar.isActive,
+    // Research source toggles - DB values take precedence
+    usePubMed: dbAvatar.usePubMed !== undefined ? dbAvatar.usePubMed : defaultAvatar.usePubMed,
+    useWikipedia: dbAvatar.useWikipedia !== undefined ? dbAvatar.useWikipedia : defaultAvatar.useWikipedia,
+    useGoogleSearch: dbAvatar.useGoogleSearch !== undefined ? dbAvatar.useGoogleSearch : defaultAvatar.useGoogleSearch,
   };
 }
 
