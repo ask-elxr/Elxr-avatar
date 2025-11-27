@@ -111,9 +111,10 @@ export class HeyGenDriver implements SessionDriver {
 
   async speak(text: string): Promise<void> {
     if (this.avatar) {
+      // ✅ CRITICAL: Use REPEAT (not TALK) - REPEAT just speaks our text, TALK uses HeyGen's AI
       await this.avatar.speak({
         text,
-        task_type: TaskType.TALK,
+        task_type: TaskType.REPEAT,
       });
     }
   }

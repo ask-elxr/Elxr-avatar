@@ -2,7 +2,6 @@ interface HeyGenConfig {
   apiKey: string;
   avatarId: string;
   voiceId: string;
-  knowledgeId?: string;
 }
 
 interface CreateTokenResponse {
@@ -55,7 +54,9 @@ export class HeyGenService {
       const sessionInfo = await this.streamingAvatar.createStartAvatar({
         quality: AvatarQuality.High,
         avatarName: this.config.avatarId,
-        knowledgeId: this.config.knowledgeId,
+        knowledgeBase: undefined,
+        knowledgeId: undefined,
+        useSilencePrompt: false,
         voice: {
           voiceId: this.config.voiceId,
           rate: 1.0,
@@ -89,12 +90,10 @@ export class HeyGenService {
 }
 
 // Create service instance with environment variables
+// ❌ CRITICAL: No knowledgeId - we use Pinecone + Claude instead of HeyGen's AI
 export const heygenService = new HeyGenService({
   apiKey: import.meta.env.VITE_HEYGEN_API_KEY || "",
   avatarId:
     import.meta.env.VITE_HEYGEN_AVATAR_ID || "7e01e5d4e06149c9ba3c1728fa8f03d0",
   voiceId: import.meta.env.VITE_HEYGEN_VOICE_ID || "default",
-  knowledgeId:
-    import.meta.env.VITE_HEYGEN_KNOWLEDGE_ID ||
-    "edb04cb8e7b44b6fb0cd73a3edd4bca4",
 });

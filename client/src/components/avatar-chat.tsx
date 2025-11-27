@@ -2,10 +2,11 @@ import { useState, useEffect, useRef, FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
+import { useFullscreen } from "@/hooks/useFullscreen";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
@@ -57,8 +58,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
+  const { isFullscreen, toggleFullscreen, isSupported: fullscreenSupported } = useFullscreen();
   
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
@@ -290,7 +293,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }
 
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-screen bg-black overflow-hidden">
       {/* Full Screen Avatar Video */}
       <div className="relative w-full h-screen bg-black">
         {/* Video Element */}
@@ -335,6 +338,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Fullscreen Button */}
+                {fullscreenSupported && (
+                  <Button
+                    onClick={() => toggleFullscreen(containerRef.current)}
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    size="sm"
+                    data-testid="button-fullscreen"
+                    title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                  >
+                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                  </Button>
+                )}
+                
                 <Button
                   onClick={() => setShowSettings(!showSettings)}
                   className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
