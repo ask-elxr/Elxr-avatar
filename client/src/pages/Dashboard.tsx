@@ -503,6 +503,15 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Active Chat View - Full Screen within Dashboard */}
+        {currentView === 'active-chat' && activeChatAvatarId && (
+          <div className="h-full w-full">
+            <AvatarChat userId={chatUserId} avatarId={activeChatAvatarId} />
+          </div>
+        )}
+
+        {/* Regular content with padding - hidden during active chat */}
+        {currentView !== 'active-chat' && (
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}
           <div className="mb-6 sm:mb-8">
@@ -512,7 +521,6 @@ export default function Dashboard() {
             <p className="text-sm sm:text-base text-white/60">
               {currentView === 'dashboard' && 'Your personal dashboard - chat with avatars and view your videos'}
               {currentView === 'chat' && 'Choose an AI avatar to start a conversation'}
-              {currentView === 'active-chat' && 'Chat with your AI avatar'}
               {currentView === 'videos' && 'Videos generated from your chat conversations'}
               {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
               {currentView === 'course-view' && 'Watch your course videos'}
@@ -850,13 +858,6 @@ export default function Dashboard() {
                 </>
               )}
             </>
-          )}
-
-          {/* Active Chat View - Embedded Chat */}
-          {currentView === 'active-chat' && activeChatAvatarId && (
-            <div className="h-[calc(100vh-200px)] min-h-[500px] rounded-lg overflow-hidden border border-white/10">
-              <AvatarChat userId={chatUserId} avatarId={activeChatAvatarId} />
-            </div>
           )}
 
           {/* Videos View */}
@@ -2148,6 +2149,7 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+        )}
       </main>
     </div>
   );
