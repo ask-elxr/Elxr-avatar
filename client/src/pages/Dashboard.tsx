@@ -504,19 +504,19 @@ export default function Dashboard() {
       <Link href={viewToPath[view]}>
         <Button
           variant={isActive ? "default" : "ghost"}
-          className={`w-full justify-start py-3 h-auto transition-all duration-300 ${sidebarOpen ? "" : "justify-center px-2"}`}
+          className={`w-full py-3 h-auto transition-all duration-300 flex items-center ${sidebarOpen ? "justify-start" : "justify-center"}`}
           onClick={() => {
             if (window.innerWidth < 768) setSidebarOpen(false);
           }}
           data-testid={`nav-${view}`}
           title={!sidebarOpen ? label : undefined}
         >
-          <Icon className={`w-5 h-5 ${sidebarOpen ? "mr-3" : ""}`} />
-          <span
-            className={`transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}
-          >
-            {label}
-          </span>
+          <Icon className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? "mr-3" : ""}`} />
+          {sidebarOpen && (
+            <span className="transition-all duration-300">
+              {label}
+            </span>
+          )}
         </Button>
       </Link>
     );
@@ -600,7 +600,7 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        <nav className="flex-1 p-4 space-y-5 overflow-y-auto text-center">
+        <nav className="flex-1 p-4 space-y-3 overflow-y-auto">
           <NavButton
             view="dashboard"
             icon={LayoutDashboard}
