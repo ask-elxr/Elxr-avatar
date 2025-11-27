@@ -20,15 +20,29 @@ import {
   Shield,
   Users,
   Database,
-  Check
+  Check,
+  CreditCard,
+  BookOpen,
+  Plus,
+  User,
+  Trash2,
+  DollarSign,
+  TrendingUp,
+  Activity
 } from "lucide-react";
 import { Link, useLocation, useSearch } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
-import type { AvatarProfile } from "@shared/schema";
+import type { AvatarProfile, Course, ChatGeneratedVideo } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from "recharts";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'settings';
+type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'credits' | 'settings';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -57,6 +71,17 @@ interface ChatVideo {
   completedAt: string | null;
 }
 
+interface CreditStats {
+  limit: number;
+  totalUsed: number;
+  remaining: number;
+  last24h: number;
+  last7d: number;
+  warningThreshold: number;
+  criticalThreshold: number;
+  status: 'ok' | 'warning' | 'critical';
+}
+
 export default function Dashboard() {
   const { isAuthenticated, isLoading, user, isAdmin } = useAuth();
   const [currentView, setCurrentView] = useState<UserView>('dashboard');
@@ -73,7 +98,21 @@ export default function Dashboard() {
     queryKey: ['/api/avatars'],
   });
 
+  const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({
+    queryKey: ['/api/courses'],
+    enabled: isAuthenticated,
+  });
+
+  const { data: heygenStats, isLoading: creditsLoading } = useQuery<CreditStats>({
+    queryKey: ['/api/heygen/credits'],
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+  });
+
+  const { toast } = useToast();
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("");
+  const [selectedVideo, setSelectedVideo] = useState<ChatVideo | null>(null);
+  const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
 
   const completedVideos = chatVideos?.filter((v) => v.status === 'completed') || [];
   const pendingVideos = chatVideos?.filter((v) => v.status === 'pending' || v.status === 'generating') || [];
@@ -82,7 +121,7 @@ export default function Dashboard() {
   const handleUrlParams = useCallback(() => {
     const urlParams = new URLSearchParams(searchString);
     const view = urlParams.get('view');
-    if (view === 'videos' || view === 'settings' || view === 'chat') {
+    if (view === 'videos' || view === 'settings' || view === 'chat' || view === 'courses' || view === 'credits') {
       setCurrentView(view);
     }
   }, [searchString]);
@@ -236,6 +275,8 @@ export default function Dashboard() {
           <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
           <NavButton view="chat" icon={MessageSquare} label="Avatar Chat" />
           <NavButton view="videos" icon={Video} label="My Videos" />
+          <NavButton view="courses" icon={BookOpen} label="Video Courses" />
+          <NavButton view="credits" icon={CreditCard} label="Credits" />
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
 
@@ -314,6 +355,8 @@ export default function Dashboard() {
               {currentView === 'dashboard' && 'Your personal dashboard - chat with avatars and view your videos'}
               {currentView === 'chat' && 'Choose an AI avatar to start a conversation'}
               {currentView === 'videos' && 'Videos generated from your chat conversations'}
+              {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
+              {currentView === 'credits' && 'Track your API credit usage across services'}
               {currentView === 'settings' && 'Manage your account settings'}
             </p>
           </div>
@@ -767,6 +810,308 @@ export default function Dashboard() {
                         ))}
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Courses View */}
+          {currentView === 'courses' && (
+            <>
+              {coursesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full bg-gradient-primary glow-primary flex items-center justify-center mx-auto mb-4 animate-pulse">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                    <p className="text-white/60">Loading courses...</p>
+                  </div>
+                </div>
+              ) : !courses || courses.length === 0 ? (
+                <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
+                  <CardHeader className="text-center">
+                    <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                      <BookOpen className="w-8 h-8 text-purple-400" />
+                    </div>
+                    <CardTitle className="text-white">No Courses Yet</CardTitle>
+                    <CardDescription className="text-white/60">
+                      Start creating video courses with AI avatars. Build structured lessons and generate professional videos.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="flex justify-center">
+                    <Button onClick={() => setLocation('/course-builder')} data-testid="button-create-course">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Your First Course
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <div className="flex justify-end mb-6">
+                    <Button onClick={() => setLocation('/course-builder')} data-testid="button-new-course">
+                      <Plus className="w-4 h-4 mr-2" />
+                      New Course
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    {courses.map((course) => (
+                      <Card
+                        key={course.id}
+                        className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover"
+                        onClick={() => setLocation(`/course-builder/${course.id}`)}
+                        data-testid={`card-course-${course.id}`}
+                      >
+                        <CardHeader className="p-4 md:p-5">
+                          <div className="flex items-start justify-between mb-3">
+                            <CardTitle className="text-white text-lg line-clamp-2">
+                              {course.title}
+                            </CardTitle>
+                            <Badge className={`text-xs shrink-0 ${
+                              course.status === 'completed' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                              course.status === 'generating' ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30' :
+                              'bg-gray-500/20 text-gray-300 border-gray-500/30'
+                            } border`}>
+                              {course.status}
+                            </Badge>
+                          </div>
+                          <CardDescription className="text-white/60 line-clamp-2">
+                            {course.description || "No description"}
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-4 md:p-5 pt-0">
+                          <div className="space-y-2 text-sm text-white/60">
+                            <div className="flex items-center gap-2">
+                              <User className="w-4 h-4" />
+                              <span>{avatars?.find(a => a.id === course.avatarId)?.name || course.avatarId}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Video className="w-4 h-4" />
+                              <span>{course.totalLessons || 0} lessons</span>
+                            </div>
+                            {course.totalDuration > 0 && (
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4" />
+                                <span>{Math.floor(course.totalDuration / 60)}:{(course.totalDuration % 60).toString().padStart(2, '0')}</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+
+          {/* Credits View */}
+          {currentView === 'credits' && (
+            <>
+              {creditsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-center">
+                    <div className="w-12 h-12 rounded-full bg-gradient-primary glow-primary flex items-center justify-center mx-auto mb-4 animate-pulse">
+                      <Loader2 className="w-6 h-6 text-white animate-spin" />
+                    </div>
+                    <p className="text-white/60">Loading credits...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Credit Cards */}
+                  <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3">
+                    {/* HeyGen Credits */}
+                    <Card className="glass-strong border-purple-500/20 hover:border-purple-500/40 transition-all duration-300 group">
+                      <CardHeader className="p-4 sm:p-6 pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-semibold flex items-center gap-2 text-white">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-primary flex items-center justify-center">
+                              <DollarSign className="w-4 h-4 text-white" />
+                            </div>
+                            HeyGen
+                          </CardTitle>
+                          {heygenStats && (
+                            <span className={`px-2 py-1 rounded text-xs font-medium ${
+                              heygenStats.status === 'ok' ? 'bg-green-500/20 text-green-300' :
+                              heygenStats.status === 'warning' ? 'bg-yellow-500/20 text-yellow-300' :
+                              'bg-red-500/20 text-red-300'
+                            }`}>
+                              {heygenStats.status === 'ok' ? 'Healthy' : heygenStats.status === 'warning' ? 'Warning' : 'Critical'}
+                            </span>
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-white/60 mb-1">Used</p>
+                            <p className="text-xl font-semibold text-white">{heygenStats?.totalUsed?.toLocaleString() || 0}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-white/60 mb-1">Remaining</p>
+                            <p className="text-xl font-semibold text-cyan-400">{heygenStats?.remaining?.toLocaleString() || 0}</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-white/60">
+                            <span>Usage</span>
+                            <span className="font-medium">{heygenStats ? ((heygenStats.totalUsed / heygenStats.limit) * 100).toFixed(1) : 0}%</span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div 
+                              className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-cyan-500 transition-all"
+                              style={{ width: `${heygenStats ? Math.min((heygenStats.totalUsed / heygenStats.limit) * 100, 100) : 0}%` }}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* Claude Credits (placeholder) */}
+                    <Card className="glass-strong border-cyan-500/20 hover:border-cyan-500/40 transition-all duration-300 group">
+                      <CardHeader className="p-4 sm:p-6 pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-semibold flex items-center gap-2 text-white">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-500 flex items-center justify-center">
+                              <Activity className="w-4 h-4 text-white" />
+                            </div>
+                            Claude AI
+                          </CardTitle>
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300">
+                            Healthy
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-white/60 mb-1">Used</p>
+                            <p className="text-xl font-semibold text-white">450,000</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-white/60 mb-1">Remaining</p>
+                            <p className="text-xl font-semibold text-cyan-400">550,000</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-white/60">
+                            <span>Usage</span>
+                            <span className="font-medium">45.0%</span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div 
+                              className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all"
+                              style={{ width: '45%' }}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    {/* ElevenLabs Credits (placeholder) */}
+                    <Card className="glass-strong border-green-500/20 hover:border-green-500/40 transition-all duration-300 group">
+                      <CardHeader className="p-4 sm:p-6 pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base font-semibold flex items-center gap-2 text-white">
+                            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-500 to-emerald-500 flex items-center justify-center">
+                              <TrendingUp className="w-4 h-4 text-white" />
+                            </div>
+                            ElevenLabs
+                          </CardTitle>
+                          <span className="px-2 py-1 rounded text-xs font-medium bg-green-500/20 text-green-300">
+                            Healthy
+                          </span>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs text-white/60 mb-1">Used</p>
+                            <p className="text-xl font-semibold text-white">120,000</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-white/60 mb-1">Remaining</p>
+                            <p className="text-xl font-semibold text-cyan-400">380,000</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-white/60">
+                            <span>Usage</span>
+                            <span className="font-medium">24.0%</span>
+                          </div>
+                          <div className="w-full bg-white/10 rounded-full h-2">
+                            <div 
+                              className="h-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all"
+                              style={{ width: '24%' }}
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Usage Chart */}
+                  <Card className="glass-strong border-white/10">
+                    <CardHeader className="p-4 sm:p-6 pb-3">
+                      <CardTitle className="text-base font-semibold text-white">Service Comparison</CardTitle>
+                      <CardDescription className="text-white/60">Compare credit usage across all services</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6 pt-0">
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart 
+                          data={[
+                            { name: 'HeyGen', used: heygenStats?.totalUsed || 0, remaining: heygenStats?.remaining || 0 },
+                            { name: 'Claude', used: 450000, remaining: 550000 },
+                            { name: 'ElevenLabs', used: 120000, remaining: 380000 },
+                          ]} 
+                          margin={{ left: 20, right: 20, top: 5, bottom: 5 }}
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                          <XAxis dataKey="name" stroke="rgba(255,255,255,0.5)" tick={{ fontSize: 12 }} />
+                          <YAxis 
+                            stroke="rgba(255,255,255,0.5)" 
+                            width={60}
+                            tick={{ fontSize: 12 }}
+                            tickFormatter={(value) => {
+                              if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+                              if (value >= 1000) return `${(value / 1000).toFixed(0)}k`;
+                              return value.toString();
+                            }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'rgba(0,0,0,0.8)', 
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              borderRadius: '8px',
+                              color: 'white'
+                            }}
+                            formatter={(value: number) => value.toLocaleString()}
+                          />
+                          <Legend />
+                          <Bar dataKey="used" fill="#64748b" name="Used Credits" />
+                          <Bar dataKey="remaining" fill="#06b6d4" name="Remaining Credits" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Alert if credits low */}
+                  {heygenStats && heygenStats.status !== 'ok' && (
+                    <Card className="glass-strong border-yellow-500/30 bg-yellow-500/5">
+                      <CardHeader className="p-4 sm:p-6 pb-3">
+                        <CardTitle className="text-base font-semibold flex items-center gap-2 text-yellow-300">
+                          <AlertCircle className="w-4 h-4" />
+                          Credit Alert
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4 sm:p-6 pt-0">
+                        <p className="text-sm text-yellow-200/80">
+                          HeyGen credits are running low. Current status: <strong className="font-semibold">{heygenStats.status}</strong>. 
+                          Only {heygenStats.remaining.toLocaleString()} credits remaining out of {heygenStats.limit.toLocaleString()}.
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
               )}
