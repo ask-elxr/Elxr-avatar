@@ -570,16 +570,16 @@ export default function Dashboard() {
       <aside
         className={`
           fixed md:relative z-50 h-full
-          border-r border-white/10 glass-strong flex flex-col flex-shrink-0
+          border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
           transition-all duration-300 ease-in-out
           ${sidebarOpen ? "w-64 translate-x-0" : "-translate-x-full md:translate-x-0 md:w-16"}
         `}
       >
         <div
-          className={`p-4 border-b border-white/10 flex items-center ${sidebarOpen ? "justify-between" : "justify-center"}`}
+          className={`p-4 border-b flex items-center ${sidebarOpen ? "justify-between" : "justify-center"}`}
         >
           {sidebarOpen && (
-            <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent transition-opacity duration-300">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent transition-opacity duration-300">
               My Dashboard
             </h1>
           )}
@@ -613,7 +613,7 @@ export default function Dashboard() {
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
 
-        <div className="p-2 border-t border-white/10 space-y-1">
+        <div className="p-2 border-t space-y-1">
           {isAdmin && (
             <Button
               variant="ghost"
@@ -664,7 +664,7 @@ export default function Dashboard() {
       {/* Main Content */}
       <main className="flex-1 min-w-0 h-full overflow-y-auto transition-all duration-300">
         {/* Mobile Header with Menu Button */}
-        <div className="sticky top-0 z-30 glass-strong border-b border-white/10 md:hidden p-4">
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
           <div className="flex items-center gap-3">
             <Button
               variant="ghost"
@@ -674,7 +674,7 @@ export default function Dashboard() {
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
               My Dashboard
             </h1>
           </div>
