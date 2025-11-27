@@ -78,6 +78,9 @@ export function useAvatarSession({
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Loading timeout reference
   const recognitionStuckTimeoutRef = useRef<NodeJS.Timeout | null>(null); // iOS Safari stuck detection
+  const reconnectAttemptsRef = useRef(0); // Track auto-reconnection attempts
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Auto-reconnection timer
+  const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -364,18 +367,54 @@ export function useAvatarSession({
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
         console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
         
-        // If disconnect was unintentional (network error, HeyGen issue), show reconnect button
         const wasUnintentional = !intentionalStopRef.current;
         
         intentionalStopRef.current = false;
         isSpeakingRef.current = false;
-        avatarRef.current = null; // Clear ref immediately to allow restart
+        avatarRef.current = null;
         setHeygenSessionActive(false);
         clearIdleTimeout();
         
-        // Show reconnect button for unexpected disconnections
-        if (wasUnintentional) {
-          console.log("⚠️ Unexpected disconnect - showing reconnect button");
+        if (wasUnintentional && sessionActiveRef.current) {
+          const scheduleReconnect = () => {
+            reconnectAttemptsRef.current++;
+            const attemptNum = reconnectAttemptsRef.current;
+            
+            if (attemptNum <= MAX_AUTO_RECONNECT_ATTEMPTS) {
+              const delay = Math.min(1000 * Math.pow(2, attemptNum - 1), 8000);
+              console.log(`🔄 Auto-reconnecting attempt ${attemptNum}/${MAX_AUTO_RECONNECT_ATTEMPTS} in ${delay}ms...`);
+              
+              if (reconnectTimeoutRef.current) {
+                clearTimeout(reconnectTimeoutRef.current);
+              }
+              
+              reconnectTimeoutRef.current = setTimeout(async () => {
+                try {
+                  if (sessionActiveRef.current && !avatarRef.current) {
+                    console.log(`🔄 Executing auto-reconnect attempt ${attemptNum}...`);
+                    await startHeyGenSession(currentAvatarIdRef.current);
+                    console.log("✅ Auto-reconnect successful!");
+                    reconnectAttemptsRef.current = 0;
+                  }
+                } catch (error) {
+                  console.error(`❌ Auto-reconnect attempt ${attemptNum} failed:`, error);
+                  if (reconnectAttemptsRef.current < MAX_AUTO_RECONNECT_ATTEMPTS) {
+                    scheduleReconnect();
+                  } else {
+                    console.log("⚠️ Max auto-reconnect attempts reached - showing reconnect button");
+                    setShowReconnect(true);
+                  }
+                }
+              }, delay);
+            } else {
+              console.log("⚠️ Max auto-reconnect attempts reached - showing reconnect button");
+              setShowReconnect(true);
+            }
+          };
+          
+          scheduleReconnect();
+        } else if (wasUnintentional) {
+          console.log("⚠️ Unexpected disconnect (session not active) - showing reconnect button");
           setShowReconnect(true);
         }
       });
@@ -480,7 +519,12 @@ export function useAvatarSession({
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
     
-    // Clear any existing loading timeout
+    reconnectAttemptsRef.current = 0;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
@@ -749,12 +793,17 @@ export function useAvatarSession({
   const reconnect = useCallback(async () => {
     setShowReconnect(false);
     hasStartedRef.current = false;
+    reconnectAttemptsRef.current = 0;
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     try {
       await startSession({ audioOnly: audioOnlyRef.current });
     } catch (error) {
       console.error("Error reconnecting:", error);
       setShowReconnect(true);
-      throw error; // Re-throw so component can show toast
+      throw error;
     }
   }, [startSession]);
 
@@ -1130,7 +1179,6 @@ export function useAvatarSession({
   }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect]);
 
   const stopAudio = useCallback(() => {
-    // Emergency stop for audio playback
     if (currentAudioRef.current) {
       try {
         currentAudioRef.current.pause();
@@ -1146,6 +1194,23 @@ export function useAvatarSession({
     }
     isSpeakingRef.current = false;
     setIsSpeakingState(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      if (idleTimeoutRef.current) {
+        clearTimeout(idleTimeoutRef.current);
+        idleTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   return {
