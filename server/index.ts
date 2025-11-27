@@ -3,6 +3,8 @@ import { registerRoutes, seedDefaultAvatars } from "./routes";
 import { avatarRouter } from "./routes/avatars.js";
 import { coursesRouter } from "./routes/courses.js";
 import { moodRouter } from "./routes/mood.js";
+import subscriptionRouter from "./routes/subscription.js";
+import { subscriptionService } from "./services/subscription.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 import path from "path";
@@ -106,9 +108,13 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
   app.use("/api", avatarRouter);
   app.use("/api/courses", coursesRouter);
   app.use("/api/mood", moodRouter);
+  app.use("/api/subscription", subscriptionRouter);
   
   // Seed default avatars if database is empty
   await seedDefaultAvatars();
+  
+  // Initialize subscription plans
+  await subscriptionService.initializePlans();
 
   // Clear Pinecone cache to ensure cache key normalization changes take effect
   latencyCache.invalidatePineconeCache();

@@ -15,6 +15,10 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").default("user").notNull(), // 'admin' or 'user'
+  memberstackId: varchar("memberstack_id"), // Memberstack member ID
+  currentPlanSlug: varchar("current_plan_slug").default("free"), // Quick reference to current plan
+  trialStartedAt: timestamp("trial_started_at"), // When free trial started
+  lastActiveAt: timestamp("last_active_at"), // Last activity timestamp
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -89,6 +93,15 @@ export const upsertUserSchema = createInsertSchema(users).pick({
   profileImageUrl: true,
 });
 
+export const updateUserSchema = createInsertSchema(users).pick({
+  memberstackId: true,
+  currentPlanSlug: true,
+  trialStartedAt: true,
+  lastActiveAt: true,
+  role: true,
+  updatedAt: true,
+}).partial();
+
 export const insertConversationSchema = createInsertSchema(conversations).pick({
   userId: true,
   avatarId: true,
@@ -123,6 +136,7 @@ export const insertJobSchema = createInsertSchema(jobs).pick({
 });
 
 export type UpsertUser = z.infer<typeof upsertUserSchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertConversation = z.infer<typeof insertConversationSchema>;
 export type Conversation = typeof conversations.$inferSelect;
@@ -394,6 +408,114 @@ export const updateChatGeneratedVideoSchema = createInsertSchema(chatGeneratedVi
 export type InsertChatGeneratedVideo = z.infer<typeof insertChatGeneratedVideoSchema>;
 export type UpdateChatGeneratedVideo = z.infer<typeof updateChatGeneratedVideoSchema>;
 export type ChatGeneratedVideo = typeof chatGeneratedVideos.$inferSelect;
+
+// Subscription plan types
+export const planTypeEnum = ["free", "basic", "pro"] as const;
+export type PlanType = typeof planTypeEnum[number];
+
+export const subscriptionStatusEnum = ["active", "expired", "cancelled", "trial"] as const;
+export type SubscriptionStatus = typeof subscriptionStatusEnum[number];
+
+// Subscription plans table
+export const subscriptionPlans = pgTable("subscription_plans", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar("slug").notNull().unique(), // 'free', 'basic', 'pro'
+  name: varchar("name").notNull(), // Display name
+  description: text("description"),
+  priceMonthly: integer("price_monthly").notNull().default(0), // Price in cents
+  durationHours: integer("duration_hours"), // For free trial (1 hour)
+  avatarLimit: integer("avatar_limit").notNull().default(1), // 1 for free/basic, null for unlimited (pro)
+  videoLimit: integer("video_limit"), // Monthly video limit (null = unlimited)
+  courseLimit: integer("course_limit"), // Monthly course limit (null = unlimited)
+  courseLessonLimit: integer("course_lesson_limit"), // Max lessons per course
+  chatSessionLimit: integer("chat_session_limit"), // Monthly HeyGen chat sessions (null = unlimited)
+  memberstackPlanId: varchar("memberstack_plan_id"), // Memberstack plan ID for paid plans
+  features: jsonb("features"), // Additional features as JSON
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// User subscriptions table
+export const userSubscriptions = pgTable("user_subscriptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  planId: varchar("plan_id").references(() => subscriptionPlans.id).notNull(),
+  memberstackSubscriptionId: varchar("memberstack_subscription_id"), // Memberstack subscription ID
+  status: varchar("status").notNull().default("active"), // active, expired, cancelled, trial
+  selectedAvatarId: varchar("selected_avatar_id").references(() => avatarProfiles.id), // For plans with 1 avatar limit
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // When subscription/trial expires
+  renewsAt: timestamp("renews_at"), // Next billing date for recurring
+  cancelledAt: timestamp("cancelled_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Usage tracking per billing period
+export const usagePeriods = pgTable("usage_periods", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  subscriptionId: varchar("subscription_id").references(() => userSubscriptions.id),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  videosCreated: integer("videos_created").default(0).notNull(),
+  coursesCreated: integer("courses_created").default(0).notNull(),
+  chatSessionsUsed: integer("chat_sessions_used").default(0).notNull(),
+  moodEntriesLogged: integer("mood_entries_logged").default(0).notNull(),
+  creditsUsed: integer("credits_used").default(0).notNull(), // Total HeyGen credits
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertSubscriptionPlanSchema = createInsertSchema(subscriptionPlans).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserSubscriptionSchema = createInsertSchema(userSubscriptions).pick({
+  userId: true,
+  planId: true,
+  memberstackSubscriptionId: true,
+  status: true,
+  selectedAvatarId: true,
+  expiresAt: true,
+  renewsAt: true,
+});
+
+export const updateUserSubscriptionSchema = createInsertSchema(userSubscriptions).pick({
+  planId: true,
+  status: true,
+  selectedAvatarId: true,
+  expiresAt: true,
+  renewsAt: true,
+  cancelledAt: true,
+  updatedAt: true,
+}).partial();
+
+export const insertUsagePeriodSchema = createInsertSchema(usagePeriods).pick({
+  userId: true,
+  subscriptionId: true,
+  periodStart: true,
+  periodEnd: true,
+});
+
+export const updateUsagePeriodSchema = createInsertSchema(usagePeriods).pick({
+  videosCreated: true,
+  coursesCreated: true,
+  chatSessionsUsed: true,
+  moodEntriesLogged: true,
+  creditsUsed: true,
+  updatedAt: true,
+}).partial();
+
+export type InsertSubscriptionPlan = z.infer<typeof insertSubscriptionPlanSchema>;
+export type SubscriptionPlan = typeof subscriptionPlans.$inferSelect;
+export type InsertUserSubscription = z.infer<typeof insertUserSubscriptionSchema>;
+export type UpdateUserSubscription = z.infer<typeof updateUserSubscriptionSchema>;
+export type UserSubscription = typeof userSubscriptions.$inferSelect;
+export type InsertUsagePeriod = z.infer<typeof insertUsagePeriodSchema>;
+export type UpdateUsagePeriod = z.infer<typeof updateUsagePeriodSchema>;
+export type UsagePeriod = typeof usagePeriods.$inferSelect;
 
 // Mood tracking for emotional wellness
 export const moodTypeEnum = ["joyful", "calm", "energized", "anxious", "sad", "stressed", "neutral"] as const;
