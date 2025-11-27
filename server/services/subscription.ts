@@ -54,7 +54,7 @@ class SubscriptionService {
         slug: "basic",
         name: "Basic Plan",
         description: "One avatar with generous monthly limits",
-        priceMonthly: 2400, // $24.00
+        priceMonthly: 2900, // $29.00
         durationHours: null,
         avatarLimit: 1,
         videoLimit: 50,

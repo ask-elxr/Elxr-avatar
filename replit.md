@@ -107,8 +107,8 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 #### Subscription System
 - **Three Plan Tiers**:
   - **Free Trial**: 1-hour trial, 1 avatar, 2 courses max, 100 chat sessions
-  - **Basic Plan** ($24/month): 1 avatar, 50 videos/month, 50 courses/month, 1000 chat sessions
-  - **Pro Plan** ($49/month): Unlimited avatars, videos, courses, and chat sessions
+  - **Basic Plan** ($29/month): 1 avatar, 50 videos/month, 50 courses/month, 1000 chat sessions
+  - **Full Plan** ($49/month): Unlimited avatars, videos, courses, and chat sessions
 - **Database Tables**:
   - `subscription_plans`: Plan definitions with limits (slug, name, priceMonthly, avatarLimit, videoLimit, etc.)
   - `user_subscriptions`: User subscription records with status (trial/active/expired/cancelled)
