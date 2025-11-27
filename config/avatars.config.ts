@@ -336,7 +336,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     heygenVideoAvatarId: "1da3f06fc92a4a9bbbe10f81b3b6a498", // Talking Photo ID for video generation (Thad)
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
-    elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
+    elevenlabsVoiceId: "QF9HJC7XWnue5c9W3LkY",
     voiceRate: "1.0",
     pineconeNamespaces: ["thad", "WORK", "LIFE", "LONGEVITY"],
     personalityPrompt: `🚨 YOUR NAME IS THAD 🚨
