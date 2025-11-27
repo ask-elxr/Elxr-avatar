@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -77,6 +77,44 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
       setAvatarId(preSelectedAvatarId);
     }
   }, [preSelectedAvatarId, isEditing]);
+
+  // Track previous lesson statuses to detect completion (keyed by lessonId)
+  const prevLessonStatusesRef = useRef<Record<string, string>>({});
+  
+  // Notify when videos complete
+  useEffect(() => {
+    if (!course?.lessons) return;
+    
+    const newlyCompleted: string[] = [];
+    const newStatuses: Record<string, string> = {};
+    
+    for (const lesson of course.lessons) {
+      const currentStatus = lesson.video?.status || lesson.status;
+      const prevStatus = prevLessonStatusesRef.current[lesson.id];
+      
+      // Detect transition from generating -> completed
+      if (prevStatus === "generating" && currentStatus === "completed") {
+        newlyCompleted.push(lesson.title);
+      }
+      
+      // Build new statuses map (cloned, not mutating ref)
+      newStatuses[lesson.id] = currentStatus;
+    }
+    
+    // Show toast for newly completed videos
+    if (newlyCompleted.length > 0) {
+      toast({
+        title: "Video Ready!",
+        description: newlyCompleted.length === 1 
+          ? `"${newlyCompleted[0]}" video has finished generating.`
+          : `${newlyCompleted.length} videos have finished generating.`,
+        duration: 8000,
+      });
+    }
+    
+    // Update ref with new status snapshot (replace, don't mutate)
+    prevLessonStatusesRef.current = newStatuses;
+  }, [course?.lessons, toast]);
 
   // Create course mutation
   const createCourseMutation = useMutation({

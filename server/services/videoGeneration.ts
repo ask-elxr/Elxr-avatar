@@ -392,31 +392,55 @@ export class VideoGenerationService {
         .from(generatedVideos)
         .where(eq(generatedVideos.status, "generating"));
 
-      if (stuckVideos.length === 0) {
-        console.log("📹 No stuck videos found");
-        return;
-      }
+      if (stuckVideos.length > 0) {
+        console.log(`📹 Found ${stuckVideos.length} videos in generating state, checking status...`);
 
-      console.log(`📹 Found ${stuckVideos.length} videos in generating state, checking status...`);
-
-      for (const video of stuckVideos) {
-        if (video.heygenVideoId) {
-          const result = await this.checkAndUpdateVideoStatus(video.heygenVideoId);
-          if (result.updated) {
-            console.log(`📹 Updated stuck video ${video.heygenVideoId} to ${result.status}`);
-          } else if (result.status === "pending" || result.status === "processing") {
-            // Still processing, start polling again
-            const [lesson] = await db
-              .select()
-              .from(lessons)
-              .where(eq(lessons.id, video.lessonId));
-            
-            if (lesson) {
-              console.log(`📹 Resuming polling for video ${video.heygenVideoId}`);
-              this.pollVideoStatus(video.heygenVideoId, video.lessonId);
+        for (const video of stuckVideos) {
+          if (video.heygenVideoId) {
+            const result = await this.checkAndUpdateVideoStatus(video.heygenVideoId);
+            if (result.updated) {
+              console.log(`📹 Updated stuck video ${video.heygenVideoId} to ${result.status}`);
+            } else if (result.status === "pending" || result.status === "processing") {
+              // Still processing, start polling again
+              const [lesson] = await db
+                .select()
+                .from(lessons)
+                .where(eq(lessons.id, video.lessonId));
+              
+              if (lesson) {
+                console.log(`📹 Resuming polling for video ${video.heygenVideoId}`);
+                this.pollVideoStatus(video.heygenVideoId, video.lessonId);
+              }
             }
           }
         }
+      }
+
+      // Also check for orphaned lessons (lessons stuck in generating with no video record)
+      const stuckLessons = await db
+        .select()
+        .from(lessons)
+        .where(eq(lessons.status, "generating"));
+
+      for (const lesson of stuckLessons) {
+        // Check if there's a matching video record
+        const [video] = await db
+          .select()
+          .from(generatedVideos)
+          .where(eq(generatedVideos.lessonId, lesson.id));
+
+        if (!video) {
+          // Orphaned lesson - reset to draft status
+          console.log(`📹 Found orphaned lesson ${lesson.id} (${lesson.title}) - resetting to draft`);
+          await db
+            .update(lessons)
+            .set({ status: "draft", errorMessage: "Generation was interrupted. Please try again." })
+            .where(eq(lessons.id, lesson.id));
+        }
+      }
+
+      if (stuckVideos.length === 0) {
+        console.log("📹 No stuck videos found");
       }
     } catch (error: any) {
       console.error("Error recovering stuck videos:", error.message);
