@@ -5,6 +5,7 @@ import { coursesRouter } from "./routes/courses.js";
 import { moodRouter } from "./routes/mood.js";
 import subscriptionRouter from "./routes/subscription.js";
 import { subscriptionService } from "./services/subscription.js";
+import { videoGenerationService } from "./services/videoGeneration.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 import path from "path";
@@ -115,6 +116,10 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
   
   // Initialize subscription plans
   await subscriptionService.initializePlans();
+
+  // Initialize video generation service: recover stuck videos and start background checker
+  await videoGenerationService.recoverStuckVideos();
+  videoGenerationService.startBackgroundChecker();
 
   // Clear Pinecone cache to ensure cache key normalization changes take effect
   latencyCache.invalidatePineconeCache();
