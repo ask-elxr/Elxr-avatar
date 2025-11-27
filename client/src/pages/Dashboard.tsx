@@ -1230,6 +1230,48 @@ export default function Dashboard() {
                         </div>
                       )}
 
+                      {/* Avatar Selection for Basic plan users without a selected avatar */}
+                      {planInfo?.plan?.avatarLimit === 1 && !planInfo?.selectedAvatarId && planInfo?.subscription && (
+                        <div className="glass border border-purple-500/30 p-4 rounded-lg">
+                          <div className="flex items-center gap-3 mb-4">
+                            <Users className="w-5 h-5 text-purple-400" />
+                            <div>
+                              <p className="text-white font-medium">Choose Your Avatar</p>
+                              <p className="text-sm text-white/60">Select one avatar to use with your plan</p>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <Select value={selectedAvatarId} onValueChange={setSelectedAvatarId}>
+                              <SelectTrigger className="w-full bg-white/10 border-white/20 text-white" data-testid="select-basic-avatar">
+                                <SelectValue placeholder="Choose an avatar..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-900 border-white/20">
+                                {avatars?.filter(a => a.isActive).map(avatar => (
+                                  <SelectItem 
+                                    key={avatar.id} 
+                                    value={avatar.id}
+                                    className="text-white hover:bg-white/10 focus:bg-white/10 focus:text-white"
+                                  >
+                                    {avatar.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <Button 
+                              className="w-full bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700"
+                              onClick={() => selectedAvatarId && selectAvatarMutation.mutate(selectedAvatarId)}
+                              disabled={!selectedAvatarId || selectAvatarMutation.isPending}
+                              data-testid="button-select-avatar"
+                            >
+                              {selectAvatarMutation.isPending ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : null}
+                              Select Avatar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Expiry Warning */}
                       {planInfo?.isExpired && (
                         <div className="glass border border-red-500/30 p-4 rounded-lg">
