@@ -62,7 +62,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useMutation } from "@tanstack/react-query";
 
-type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-edit' | 'credits' | 'settings' | 'mood';
+type UserView = 'dashboard' | 'chat' | 'videos' | 'courses' | 'course-view' | 'course-edit' | 'credits' | 'settings' | 'mood';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -409,6 +409,7 @@ export default function Dashboard() {
               {currentView === 'chat' && 'Choose an AI avatar to start a conversation'}
               {currentView === 'videos' && 'Videos generated from your chat conversations'}
               {currentView === 'courses' && 'Create and manage video courses with AI avatars'}
+              {currentView === 'course-view' && 'Watch your course videos'}
               {currentView === 'course-edit' && 'Edit your video course'}
               {currentView === 'credits' && 'Track your API credit usage across services'}
               {currentView === 'mood' && 'Track your emotional wellness and get personalized support'}
@@ -913,8 +914,8 @@ export default function Dashboard() {
                     {courses.map((course) => (
                       <Card
                         key={course.id}
-                        className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden"
-                        onClick={() => { setSelectedCourseId(course.id); setCurrentView('course-edit'); }}
+                        className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden flex flex-col"
+                        onClick={() => { setSelectedCourseId(course.id); setCurrentView('course-view'); }}
                         data-testid={`card-course-${course.id}`}
                       >
                         {/* Thumbnail - use first lesson's video thumbnail or course thumbnail */}
@@ -965,8 +966,8 @@ export default function Dashboard() {
                             {course.description || "No description"}
                           </CardDescription>
                         </CardHeader>
-                        <CardContent className="p-4 md:p-5 pt-0">
-                          <div className="flex items-center justify-between text-sm text-white/60">
+                        <CardContent className="p-4 md:p-5 pt-0 flex-1 flex flex-col">
+                          <div className="flex items-center justify-between text-sm text-white/60 mb-3">
                             <div className="flex items-center gap-2">
                               <User className="w-4 h-4" />
                               <span>{avatars?.find(a => a.id === course.avatarId)?.name || course.avatarId}</span>
@@ -977,6 +978,22 @@ export default function Dashboard() {
                                 <span>{Math.floor(course.totalDuration / 60)}:{(course.totalDuration % 60).toString().padStart(2, '0')}</span>
                               </div>
                             )}
+                          </div>
+                          <div className="mt-auto pt-3 border-t border-white/10">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-white"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedCourseId(course.id);
+                                setCurrentView('course-edit');
+                              }}
+                              data-testid={`button-edit-course-${course.id}`}
+                            >
+                              <Settings className="w-4 h-4 mr-2" />
+                              Edit Course
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -1199,6 +1216,212 @@ export default function Dashboard() {
               )}
             </>
           )}
+
+          {/* Course View - Show Course Videos */}
+          {currentView === 'course-view' && selectedCourseId && (() => {
+            const selectedCourse = courses?.find(c => c.id === selectedCourseId);
+            if (!selectedCourse) {
+              return (
+                <div className="text-center py-12">
+                  <p className="text-white/60">Course not found</p>
+                  <Button onClick={() => setCurrentView('courses')} className="mt-4">
+                    Back to Courses
+                  </Button>
+                </div>
+              );
+            }
+            
+            const lessonsWithVideos = selectedCourse.lessons?.filter(l => l.video?.videoUrl) || [];
+            const pendingLessons = selectedCourse.lessons?.filter(l => !l.video?.videoUrl) || [];
+            
+            return (
+              <div className="space-y-6">
+                {/* Back button and course header */}
+                <div className="flex items-center justify-between">
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectedCourseId(null);
+                      setCurrentView('courses');
+                    }}
+                    className="text-white/60 hover:text-white"
+                    data-testid="button-back-to-courses"
+                  >
+                    <ChevronLeft className="w-4 h-4 mr-1" />
+                    Back to Courses
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                    onClick={() => setCurrentView('course-edit')}
+                    data-testid="button-edit-course-from-view"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Edit Course
+                  </Button>
+                </div>
+                
+                {/* Course Info */}
+                <Card className="glass-strong border-purple-500/20">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-white text-xl">{selectedCourse.title}</CardTitle>
+                        <CardDescription className="text-white/60 mt-1">
+                          {selectedCourse.description || "No description"}
+                        </CardDescription>
+                      </div>
+                      <Badge className={`${
+                        selectedCourse.status === 'completed' ? 'bg-green-500/20 text-green-300' :
+                        selectedCourse.status === 'generating' ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {selectedCourse.status}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-4 mt-3 text-sm text-white/60">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4" />
+                        <span>{avatars?.find(a => a.id === selectedCourse.avatarId)?.name || selectedCourse.avatarId}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Video className="w-4 h-4" />
+                        <span>{selectedCourse.totalLessons || 0} lessons</span>
+                      </div>
+                      {selectedCourse.totalDuration > 0 && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4" />
+                          <span>{Math.floor(selectedCourse.totalDuration / 60)}:{(selectedCourse.totalDuration % 60).toString().padStart(2, '0')}</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardHeader>
+                </Card>
+                
+                {/* Videos Grid */}
+                {lessonsWithVideos.length === 0 && pendingLessons.length === 0 ? (
+                  <Card className="glass-strong border-white/10">
+                    <CardContent className="py-12 text-center">
+                      <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                        <Video className="w-8 h-8 text-purple-400" />
+                      </div>
+                      <p className="text-white/60">No lessons in this course yet</p>
+                      <Button
+                        onClick={() => setCurrentView('course-edit')}
+                        className="mt-4"
+                        data-testid="button-add-lessons"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Lessons
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Video className="w-5 h-5 text-purple-400" />
+                      Course Videos ({lessonsWithVideos.length})
+                    </h3>
+                    
+                    {lessonsWithVideos.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {lessonsWithVideos.map((lesson, index) => (
+                          <Card key={lesson.id} className="glass-strong border-white/10 overflow-hidden group" data-testid={`card-lesson-video-${lesson.id}`}>
+                            <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
+                              {lesson.video?.thumbnailUrl ? (
+                                <img 
+                                  src={lesson.video.thumbnailUrl} 
+                                  alt={lesson.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Video className="w-12 h-12 text-purple-400/50" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <a 
+                                  href={lesson.video?.videoUrl || '#'} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/30 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Play className="w-7 h-7 text-white ml-1" />
+                                </a>
+                              </div>
+                              <div className="absolute top-2 left-2 glass px-2 py-1 rounded text-xs text-white">
+                                Lesson {index + 1}
+                              </div>
+                              {lesson.video?.duration && (
+                                <div className="absolute bottom-2 right-2 glass px-2 py-1 rounded text-xs text-white">
+                                  {Math.floor(lesson.video.duration / 60)}:{(lesson.video.duration % 60).toString().padStart(2, '0')}
+                                </div>
+                              )}
+                            </div>
+                            <CardContent className="p-4">
+                              <h4 className="font-medium text-white truncate">{lesson.title}</h4>
+                              <div className="flex items-center justify-between mt-2">
+                                <Badge className="bg-green-500/20 text-green-300 text-xs">
+                                  <CheckCircle className="w-3 h-3 mr-1" />
+                                  Ready
+                                </Badge>
+                                <a
+                                  href={lesson.video?.videoUrl || '#'}
+                                  download
+                                  className="text-purple-400 hover:text-purple-300 transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                  data-testid={`button-download-video-${lesson.id}`}
+                                >
+                                  <Download className="w-4 h-4" />
+                                </a>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <Card className="glass-strong border-white/10">
+                        <CardContent className="py-8 text-center">
+                          <p className="text-white/60">No videos generated yet</p>
+                          <p className="text-white/40 text-sm mt-1">Go to Edit Course to generate videos</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                    
+                    {/* Pending Lessons */}
+                    {pendingLessons.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-semibold text-white/60 flex items-center gap-2 mb-4">
+                          <Clock className="w-5 h-5 text-yellow-400" />
+                          Pending Videos ({pendingLessons.length})
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {pendingLessons.map((lesson, index) => (
+                            <Card key={lesson.id} className="glass border-white/10 opacity-60" data-testid={`card-lesson-pending-${lesson.id}`}>
+                              <div className="aspect-video bg-gradient-to-br from-gray-500/20 to-slate-500/20 flex items-center justify-center">
+                                <div className="text-center">
+                                  <Loader2 className="w-8 h-8 text-white/40 mx-auto mb-2 animate-spin" />
+                                  <p className="text-xs text-white/40">Not generated</p>
+                                </div>
+                              </div>
+                              <CardContent className="p-4">
+                                <h4 className="font-medium text-white/60 truncate">{lesson.title}</h4>
+                                <Badge className="mt-2 bg-gray-500/20 text-gray-300 text-xs">
+                                  Pending
+                                </Badge>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Course Edit View - Embedded Course Builder */}
           {currentView === 'course-edit' && (
