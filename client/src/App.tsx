@@ -8,6 +8,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/hooks/useAuth";
 import { useAnonymousUser } from "@/hooks/useAnonymousUser";
 import { useChatVideoNotifications } from "@/hooks/useChatVideoNotifications";
+import { useCourseVideoNotifications } from "@/hooks/useCourseVideoNotifications";
 
 const Landing = lazy(() => import("@/pages/landing"));
 const AvatarSelect = lazy(() => import("@/pages/avatar-select"));
@@ -40,6 +41,7 @@ function GlobalVideoNotifications() {
   const effectiveUserId = user?.id || anonymousUserId;
   
   useChatVideoNotifications(effectiveUserId);
+  useCourseVideoNotifications(effectiveUserId);
   
   return null;
 }
