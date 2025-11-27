@@ -1,0 +1,1260 @@
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Stream ready: MediaStream {id: '4e93f5f5-9b58-41a4-8bfa-87c7dc796c7b', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: "do you remember what's our last conversation", sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642749934070.0st2tiga608e
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642750222230.pgv0b9cm4ll
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/avatar/response 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ useAvatarSession.ts:904
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 Failed to get response from API: Internal Server Error
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:922
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764258037630%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Unknown DataChannel error on lossy {room: 'd3a5acb1-cbce-11f0-ad64-e2d24819063c', roomID: '', participant: 'client', pID: 'PA_5TCG3qTHKFJp', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=63887651:19907
+injected.js:37 Unknown DataChannel error on reliable {room: 'd3a5acb1-cbce-11f0-ad64-e2d24819063c', roomID: '', participant: 'client', pID: 'PA_5TCG3qTHKFJp', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=63887651:19907
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 [vite] server connection lost. Polling for restart...
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos 502 (Bad Gateway)
+apply @ injected.js:214
+queryFn @ useChatVideoNotifications.ts:48
+fetchFn @ @tanstack_react-query.js?v=63887651:840
+run @ @tanstack_react-query.js?v=63887651:494
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+setInterval
+updateRefetchInterval_fn @ @tanstack_react-query.js?v=63887651:2243
+updateTimers_fn @ @tanstack_react-query.js?v=63887651:2250
+onQueryUpdate @ @tanstack_react-query.js?v=63887651:2206
+(anonymous) @ @tanstack_react-query.js?v=63887651:998
+(anonymous) @ @tanstack_react-query.js?v=63887651:997
+batch @ @tanstack_react-query.js?v=63887651:583
+dispatch_fn @ @tanstack_react-query.js?v=63887651:996
+setData @ @tanstack_react-query.js?v=63887651:696
+onSuccess @ @tanstack_react-query.js?v=63887651:897
+resolve @ @tanstack_react-query.js?v=63887651:456
+Promise.then
+run @ @tanstack_react-query.js?v=63887651:498
+start @ @tanstack_react-query.js?v=63887651:536
+fetch @ @tanstack_react-query.js?v=63887651:926
+executeFetch_fn @ @tanstack_react-query.js?v=63887651:2211
+(anonymous) @ @tanstack_react-query.js?v=63887651:2245
+injected.js:37 Page leave detected, disconnecting {room: 'd3a5acb1-cbce-11f0-ad64-e2d24819063c', roomID: 'RM_naMdnjd4GYD4', participant: 'client', pID: 'PA_5TCG3qTHKFJp'}
+injected.js:37 Error fetching conversation history: TypeError: Failed to fetch
+    at Object.apply (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:214:39)
+    at fetchConversationHistory (5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/avatar-chat.tsx:114:30)
+(anonymous) @ injected.js:37
+fetchConversationHistory @ avatar-chat.tsx:162
+setInterval
+(anonymous) @ avatar-chat.tsx:172
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=63887651:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=63887651:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=63887651:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=63887651:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=63887651:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=63887651:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=63887651:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:19328
+workLoop @ chunk-RPCDYKBN.js?v=63887651:197
+flushWork @ chunk-RPCDYKBN.js?v=63887651:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=63887651:384
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/static/devtools/injected.js:37 disconnect from room {room: 'd3a5acb1-cbce-11f0-ad64-e2d24819063c', roomID: 'RM_naMdnjd4GYD4', participant: 'client', pID: 'PA_5TCG3qTHKFJp'}
+ed1e693c96a75807.js:2 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'ambient-light-sensor'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'battery'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'layout-animations'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'legacy-image-formats'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'navigation-override'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'oversized-images'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'publickey-credentials'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'speaker-selection'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unoptimized-images'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unsized-media'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'pointer-lock'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+z @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iA @ ed1e693c96a75807.js:2
+iV @ ed1e693c96a75807.js:2
+iU @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+e @ ed1e693c96a75807.js:2
+e @ ed1e693c96a75807.js:2
+uX @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+uq @ ed1e693c96a75807.js:2
+uY @ ed1e693c96a75807.js:2
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2Fadmin&id=%3Ar1os%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer started for first time
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Stream ready: MediaStream {id: 'd5d31381-d4fa-42ab-a7df-1e6508f7d020', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi mark do you remember our last conversation?', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642751924320.xiad1ohv4zl
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey - I'm Mark Kohl.
+
+Yes, I remember. We've been discussing energy work techniques - starting with projection abilities like beams and shields, then moving into how to build physical power by combining resistance training with chi cultivation, and I gave you a 7-phase roadmap for developing these abilities progressively. You just asked me to revise that roadmap to include higher self mastery and spirit energy development, which I hadn't covered yet.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey - I'm Mark Kohl.
+
+Yes, I remember. We've been discussing energy work techniques - starting with projection abilities like beams and shields, then moving into how to build physical power by combining resistance training with chi cultivation, and I gave you a 7-phase roadmap for developing these abilities progressively. You just asked me to revise that roadmap to include higher self mastery and spirit energy development, which I hadn't covered yet.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 507 characters
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 ✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 📝 handleSubmitMessage called with: {message: "but you don't mentioned about how to develop higher self master and get spirit poiwer", sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642752247100.rd2ygjnub58
+injected.js:37 🔊 Voice recognition resumed (avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/avatar/response 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ useAvatarSession.ts:904
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 Failed to get response from API: Internal Server Error
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:922
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening

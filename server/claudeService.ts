@@ -39,7 +39,7 @@ export class ClaudeService {
         return await this.anthropic.messages.create(params);
       },
       'claude',
-      { timeout: 30000, errorThresholdPercentage: 50 }
+      { timeout: 60000, errorThresholdPercentage: 50 }
     );
   }
 
@@ -68,8 +68,11 @@ export class ClaudeService {
       // Build conversation messages
       const messages: any[] = [];
       
+      // Limit conversation history to last 10 messages to prevent timeout issues
+      const recentHistory = conversationHistory.slice(-10);
+      
       // Add conversation history
-      for (const msg of conversationHistory) {
+      for (const msg of recentHistory) {
         if (msg.message && typeof msg.message === 'string') {
           messages.push({
             role: msg.isUser ? 'user' : 'assistant',
