@@ -172,11 +172,8 @@ export default function Dashboard() {
 
   const moodMutation = useMutation({
     mutationFn: async (data: { mood: MoodType; intensity: number; notes?: string; avatarId?: string }) => {
-      const response = await apiRequest('/api/mood', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-      return response;
+      const response = await apiRequest('/api/mood', 'POST', data);
+      return response.json();
     },
     onSuccess: (data: MoodEntry) => {
       setLastMoodResponse({ mood: data.mood, response: data.avatarResponse || "" });
