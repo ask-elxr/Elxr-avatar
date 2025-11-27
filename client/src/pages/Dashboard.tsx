@@ -504,19 +504,17 @@ export default function Dashboard() {
       <Link href={viewToPath[view]}>
         <Button
           variant={isActive ? "default" : "ghost"}
-          className={`w-full py-3 h-auto transition-all duration-300 flex items-center ${sidebarOpen ? "justify-start" : "justify-center"}`}
+          className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? "" : "justify-center px-2"}`}
           onClick={() => {
             if (window.innerWidth < 768) setSidebarOpen(false);
           }}
           data-testid={`nav-${view}`}
           title={!sidebarOpen ? label : undefined}
         >
-          <Icon className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? "mr-3" : ""}`} />
-          {sidebarOpen && (
-            <span className="transition-all duration-300">
-              {label}
-            </span>
-          )}
+          <Icon className={`w-4 h-4 ${sidebarOpen ? "mr-3" : ""}`} />
+          <span className={`transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+            {label}
+          </span>
         </Button>
       </Link>
     );
@@ -600,7 +598,7 @@ export default function Dashboard() {
           </Button>
         </div>
 
-        <nav className="flex-1 p-4 flex flex-col gap-3 overflow-y-auto">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           <NavButton
             view="dashboard"
             icon={LayoutDashboard}
@@ -615,55 +613,49 @@ export default function Dashboard() {
           <NavButton view="settings" icon={Settings} label="Settings" />
         </nav>
 
-        <div className="p-4 border-t border-white/10 flex flex-col gap-3">
+        <div className="p-2 border-t border-white/10 space-y-1">
           {isAdmin && (
             <Button
               variant="ghost"
-              className={`w-full py-3 h-auto transition-all duration-300 flex items-center ${sidebarOpen ? "justify-start" : "justify-center"}`}
+              className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? "" : "justify-center px-2"}`}
               onClick={() => setLocation("/admin")}
               data-testid="nav-admin"
               title={!sidebarOpen ? "Admin Panel" : undefined}
             >
               <Shield
-                className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? "mr-3" : ""} text-purple-400`}
+                className={`w-4 h-4 ${sidebarOpen ? "mr-3" : ""} text-purple-400`}
               />
-              {sidebarOpen && (
-                <span className="transition-all duration-300">
-                  Admin Panel
-                </span>
-              )}
+              <span className={`transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+                Admin Panel
+              </span>
             </Button>
           )}
 
           <Button
             variant="ghost"
-            className={`w-full py-3 h-auto transition-all duration-300 flex items-center ${sidebarOpen ? "justify-start" : "justify-center"}`}
+            className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? "" : "justify-center px-2"}`}
             onClick={() => setLocation("/chat")}
             data-testid="nav-home"
             title={!sidebarOpen ? "Back to Home" : undefined}
           >
-            <Home className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? "mr-3" : ""}`} />
-            {sidebarOpen && (
-              <span className="transition-all duration-300">
-                Back to Home
-              </span>
-            )}
+            <Home className={`w-4 h-4 ${sidebarOpen ? "mr-3" : ""}`} />
+            <span className={`transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+              Back to Home
+            </span>
           </Button>
 
           <Button
             variant="ghost"
-            className={`w-full py-3 h-auto text-red-400 hover:text-red-300 transition-all duration-300 flex items-center ${sidebarOpen ? "justify-start" : "justify-center"}`}
+            className={`w-full justify-start text-destructive hover:text-destructive transition-all duration-300 ${sidebarOpen ? "" : "justify-center px-2"}`}
             asChild
             data-testid="nav-logout"
             title={!sidebarOpen ? "Logout" : undefined}
           >
-            <a href="/api/logout" className={`flex items-center ${sidebarOpen ? "justify-start" : "justify-center"} w-full`}>
-              <LogOut className={`w-5 h-5 flex-shrink-0 ${sidebarOpen ? "mr-3" : ""}`} />
-              {sidebarOpen && (
-                <span className="transition-all duration-300">
-                  Logout
-                </span>
-              )}
+            <a href="/api/logout">
+              <LogOut className={`w-4 h-4 ${sidebarOpen ? "mr-3" : ""}`} />
+              <span className={`transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
+                Logout
+              </span>
             </a>
           </Button>
         </div>
