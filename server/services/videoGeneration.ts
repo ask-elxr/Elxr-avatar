@@ -15,7 +15,7 @@ const TALKING_PHOTO_IDS = new Set([
   "84f913285ac944188a35ce5b58ceb861", // Kelsey
   "1da3f06fc92a4a9bbbe10f81b3b6a498", // Thad
   "57d0eb901fe84211b92b0a9d91f2e5c0", // Willie
-  // Note: Mark now uses his full avatar ID (e16db57e57824a0e90b661ad528d3994) for videos
+  "84d6a3a8f0d545a9900bf16176c7b7ae", // Mark Kohl - talking photo from HeyGen UI
 ]);
 
 interface VideoGenerationRequest {
