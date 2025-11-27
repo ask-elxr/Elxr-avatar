@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Course, ChatGeneratedVideo } from "@shared/schema";
@@ -15,6 +15,25 @@ export default function CoursesPage() {
   const { toast } = useToast();
   const [selectedVideo, setSelectedVideo] = useState<ChatGeneratedVideo | null>(null);
   const [deletingVideoId, setDeletingVideoId] = useState<string | null>(null);
+  const [hoveringVideoId, setHoveringVideoId] = useState<string | null>(null);
+  const videoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
+
+  const handleVideoHover = useCallback((videoId: string, isHovering: boolean) => {
+    const videoEl = videoRefs.current[videoId];
+    if (isHovering) {
+      setHoveringVideoId(videoId);
+      if (videoEl) {
+        videoEl.currentTime = 0;
+        videoEl.play().catch(() => {});
+      }
+    } else {
+      setHoveringVideoId(null);
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.currentTime = 0;
+      }
+    }
+  }, []);
 
   const { data: courses, isLoading: coursesLoading } = useQuery<Course[]>({
     queryKey: ["/api/courses"],
@@ -176,27 +195,58 @@ export default function CoursesPage() {
                     className="bg-gray-900 border-gray-800 hover:border-purple-600 transition-all cursor-pointer h-full group"
                     data-testid={`card-chat-video-${video.id}`}
                   >
-                    {/* Thumbnail */}
+                    {/* Video Preview - plays on hover */}
                     <div 
                       className="relative aspect-video bg-gray-800 overflow-hidden rounded-t-lg"
+                      onMouseEnter={() => video.videoUrl && handleVideoHover(video.id, true)}
+                      onMouseLeave={() => video.videoUrl && handleVideoHover(video.id, false)}
+                      onTouchStart={() => video.videoUrl && handleVideoHover(video.id, true)}
+                      onTouchEnd={() => video.videoUrl && handleVideoHover(video.id, false)}
                       onClick={() => setSelectedVideo(video)}
+                      data-testid={`video-preview-${video.id}`}
                     >
-                      {video.thumbnailUrl ? (
-                        <img 
-                          src={video.thumbnailUrl} 
-                          alt={video.topic}
-                          className="w-full h-full object-cover"
+                      {/* Video element for hover playback */}
+                      {video.videoUrl && (
+                        <video
+                          ref={(el) => { videoRefs.current[video.id] = el; }}
+                          src={video.videoUrl}
+                          muted
+                          loop
+                          playsInline
+                          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
+                            hoveringVideoId === video.id ? 'opacity-100' : 'opacity-0'
+                          }`}
+                          data-testid={`video-element-${video.id}`}
                         />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="w-12 h-12 text-gray-600" />
-                        </div>
                       )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      
+                      {/* Thumbnail - shows when not hovering */}
+                      <div className={`absolute inset-0 transition-opacity duration-300 ${
+                        hoveringVideoId === video.id ? 'opacity-0' : 'opacity-100'
+                      }`}>
+                        {video.thumbnailUrl ? (
+                          <img 
+                            src={video.thumbnailUrl} 
+                            alt={video.topic}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Video className="w-12 h-12 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Play overlay - shows when not hovering */}
+                      <div className={`absolute inset-0 bg-black/40 transition-opacity flex items-center justify-center ${
+                        hoveringVideoId === video.id ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+                      }`}>
                         <Play className="w-12 h-12 text-white" />
                       </div>
+                      
+                      {/* Duration badge */}
                       {video.duration && (
-                        <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white">
+                        <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 rounded text-xs text-white z-10">
                           {formatDuration(video.duration)}
                         </div>
                       )}
