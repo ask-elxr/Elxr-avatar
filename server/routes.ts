@@ -1835,7 +1835,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let googleSearchContext = "";
       if (googleSearchResult) {
         googleSearchContext = `\n\nWEB SEARCH RESULTS:\n${googleSearchResult}`;
-        logger.info({ userId }, 'Google search results retrieved');
+        logger.info({ 
+          userId, 
+          resultLength: googleSearchResult.length,
+          preview: googleSearchResult.substring(0, 200) 
+        }, 'Google search results retrieved');
       }
 
       // Get knowledge context
@@ -1871,7 +1875,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (googleSearchContext) {
-        enhancedPersonality += `\n\n${googleSearchContext}\n\nYou have access to web search results. Use this current information to enhance your response when relevant.`;
+        enhancedPersonality += `\n\n${googleSearchContext}\n\n🌐 WEB SEARCH CAPABILITY ACTIVE: You have successfully performed a web search and retrieved current information from the internet. You DO have web search access - use these results to provide up-to-date information. When asked about your capabilities, confirm that you can access current web information.`;
       }
 
       // Add video generation context so the AI knows about its capability
