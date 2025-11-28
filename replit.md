@@ -14,6 +14,13 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
 #### Frontend (React + TypeScript)
 - **Location**: `client/src/`
 - **Key Features**: Avatar selection, HeyGen video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
+- **Mobile Fullscreen Support** (`client/src/hooks/useFullscreen.ts`):
+  - iOS Safari: Uses `webkitEnterFullscreen`/`webkitExitFullscreen` on video element with event-driven state tracking
+  - Android Chrome: Uses standard Fullscreen API
+  - Fallback: Pseudo-fullscreen CSS mode with `position: fixed` and `100dvh` for devices without native support
+  - Safe area handling: Uses `env(safe-area-inset-*)` for notch/home indicator padding
+  - Keyboard shortcut: Press 'F' key to toggle fullscreen (desktop)
+- **Microphone Permission Flow**: Users see an "Allow Microphone" button before "Start Chat" - explicit permission request using `getUserMedia()` for better UX
 
 #### Backend (Express + TypeScript + Python)
 - **Location**: `server/`

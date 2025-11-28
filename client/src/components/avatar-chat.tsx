@@ -197,7 +197,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         // Allow fullscreen toggle anytime (not just during active session)
         if (!isTyping && fullscreenSupported && containerRef.current) {
           event.preventDefault();
-          toggleFullscreen(containerRef.current);
+          // Pass video element for iOS video fullscreen support
+          toggleFullscreen(containerRef.current, videoRef.current);
         }
       }
     };
@@ -406,10 +407,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Fullscreen Button - Video-like immersive experience */}
+                {/* Fullscreen Button - Video-like immersive experience (works on mobile too) */}
                 {fullscreenSupported && (
                   <Button
-                    onClick={() => toggleFullscreen(containerRef.current)}
+                    onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
                     className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
                     size="sm"
                     data-testid="button-fullscreen"
