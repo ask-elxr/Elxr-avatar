@@ -40,6 +40,7 @@ interface AvatarSessionReturn {
   speakingIntervalRef: React.MutableRefObject<NodeJS.Timeout | null>;
   hasAskedAnythingElseRef: React.MutableRefObject<boolean>;
   handleSubmitMessage: (message: string) => Promise<void>;
+  stopAudio: () => void;
 }
 
 export function useAvatarSession({

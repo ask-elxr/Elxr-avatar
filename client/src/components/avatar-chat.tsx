@@ -138,6 +138,28 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // Bridge the actual function to the ref
   resetTimerRef.current = resetInactivityTimer;
 
+  // Keyboard shortcut for fullscreen (F key to toggle)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only handle F key when not typing in an input
+      if (event.key === 'f' || event.key === 'F') {
+        const activeElement = document.activeElement;
+        const isTyping = activeElement?.tagName === 'INPUT' || 
+                        activeElement?.tagName === 'TEXTAREA' ||
+                        (activeElement as HTMLElement)?.isContentEditable;
+        
+        // Allow fullscreen toggle anytime (not just during active session)
+        if (!isTyping && fullscreenSupported && containerRef.current) {
+          event.preventDefault();
+          toggleFullscreen(containerRef.current);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [fullscreenSupported, toggleFullscreen]);
+
   // Auto-scroll chat to bottom
   useEffect(() => {
     if (chatContainerRef.current) {
@@ -338,14 +360,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Fullscreen Button */}
+                {/* Fullscreen Button - Video-like immersive experience */}
                 {fullscreenSupported && (
                   <Button
                     onClick={() => toggleFullscreen(containerRef.current)}
                     className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
                     size="sm"
                     data-testid="button-fullscreen"
-                    title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                    title={isFullscreen ? "Exit Fullscreen (F)" : "Fullscreen (F)"}
                   >
                     {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                   </Button>
