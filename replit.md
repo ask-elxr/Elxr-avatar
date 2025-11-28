@@ -21,6 +21,7 @@ This project is an advanced AI chat platform that integrates HeyGen video avatar
   - Safe area handling: Uses `env(safe-area-inset-*)` for notch/home indicator padding
   - Keyboard shortcut: Press 'F' key to toggle fullscreen (desktop)
 - **Microphone Permission Flow**: Users see an "Allow Microphone" button before "Start Chat" - explicit permission request using `getUserMedia()` for better UX
+- **Voice Recognition Throttling**: Auto-restart limited to 2-second minimum intervals to prevent rapid restart loops on mobile devices
 
 #### Backend (Express + TypeScript + Python)
 - **Location**: `server/`

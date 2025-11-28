@@ -81,7 +81,10 @@ export function useAvatarSession({
   const recognitionStuckTimeoutRef = useRef<NodeJS.Timeout | null>(null); // iOS Safari stuck detection
   const reconnectAttemptsRef = useRef(0); // Track auto-reconnection attempts
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Auto-reconnection timer
+  const lastRecognitionRestartRef = useRef<number>(0); // Track last restart time for throttling
+  const recognitionRestartTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Delayed restart timer
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
+  const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -248,18 +251,49 @@ export function useAvatarSession({
       
       recognition.onend = () => {
         recognitionRunningRef.current = false;
+        
+        // Clear any pending restart timeout
+        if (recognitionRestartTimeoutRef.current) {
+          clearTimeout(recognitionRestartTimeoutRef.current);
+          recognitionRestartTimeoutRef.current = null;
+        }
+        
         // Auto-restart unless intentionally stopped or avatar is speaking
         // Use ref instead of state to get current value in closure
         if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
-          try {
-            setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
-            recognition.start();
-            recognitionRunningRef.current = true;
-            console.log("🔄 Voice recognition auto-restarted");
-          } catch (e) {
-            // Already running or permission denied
-            recognitionRunningRef.current = false;
-            setMicrophoneStatus('stopped');
+          // Throttle restarts to prevent rapid loop (min 2 seconds between restarts)
+          const now = Date.now();
+          const timeSinceLastRestart = now - lastRecognitionRestartRef.current;
+          const delayNeeded = Math.max(0, MIN_RESTART_INTERVAL_MS - timeSinceLastRestart);
+          
+          if (delayNeeded > 0) {
+            // Schedule delayed restart
+            recognitionRestartTimeoutRef.current = setTimeout(() => {
+              if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current && !recognitionRunningRef.current) {
+                try {
+                  setMicrophoneStatus('listening');
+                  recognition.start();
+                  recognitionRunningRef.current = true;
+                  lastRecognitionRestartRef.current = Date.now();
+                  console.log("🔄 Voice recognition restarted (throttled)");
+                } catch (e) {
+                  recognitionRunningRef.current = false;
+                  setMicrophoneStatus('stopped');
+                }
+              }
+            }, delayNeeded);
+          } else {
+            // Restart immediately if enough time has passed
+            try {
+              setMicrophoneStatus('listening');
+              recognition.start();
+              recognitionRunningRef.current = true;
+              lastRecognitionRestartRef.current = now;
+              console.log("🔄 Voice recognition restarted");
+            } catch (e) {
+              recognitionRunningRef.current = false;
+              setMicrophoneStatus('stopped');
+            }
           }
         } else {
           setMicrophoneStatus('stopped');
@@ -273,6 +307,7 @@ export function useAvatarSession({
       
       recognitionRef.current = recognition;
       recognitionIntentionalStopRef.current = false;
+      lastRecognitionRestartRef.current = Date.now(); // Initialize last restart time
       
       setMicrophoneStatus('listening'); // Set immediately before first start
       recognition.start();
@@ -670,6 +705,11 @@ export function useAvatarSession({
     // Stop speech recognition - set flag FIRST to prevent auto-restart  
     recognitionIntentionalStopRef.current = true;
     recognitionRunningRef.current = false;
+    // Clear any pending restart timeout
+    if (recognitionRestartTimeoutRef.current) {
+      clearTimeout(recognitionRestartTimeoutRef.current);
+      recognitionRestartTimeoutRef.current = null;
+    }
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -744,6 +784,11 @@ export function useAvatarSession({
     // Stop speech recognition - set flag FIRST to prevent auto-restart
     recognitionIntentionalStopRef.current = true;
     recognitionRunningRef.current = false;
+    // Clear any pending restart timeout
+    if (recognitionRestartTimeoutRef.current) {
+      clearTimeout(recognitionRestartTimeoutRef.current);
+      recognitionRestartTimeoutRef.current = null;
+    }
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
