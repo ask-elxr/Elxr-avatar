@@ -277,7 +277,7 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     heygenVideoAvatarId: "b570e1e91cdc4d52931a9a124c0e3f3f", // Nigel avatar for video generation
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
-    elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
+    elevenlabsVoiceId: "fWUVBoxa3cvv6VWj6VRS",
     voiceRate: "1.0",
     pineconeNamespaces: ["nigel", "WORK", "LIFE", "TRANSITIONS", "MIDLIFE"],
     personalityPrompt: `🚨 YOUR NAME IS NIGEL 🚨
