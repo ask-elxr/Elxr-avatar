@@ -3,10 +3,11 @@ import { wrapServiceCall } from "./circuitBreaker.js";
 import { logger } from "./logger.js";
 import { metrics } from "./metrics.js";
 import { storage } from "./storage.js";
+import { getAvatarPhrases } from "./config/lineLibrary.js";
 
-const ACKNOWLEDGMENT_PHRASES = [
+const DEFAULT_ACKNOWLEDGMENT_PHRASES = [
   "Let me think about that...",
-  "Good question...",
+  "Good question, give me a moment...",
   "Hmm, let me consider that...",
   "Interesting, let me look into that...",
   "Give me a moment...",
@@ -17,6 +18,7 @@ class ElevenLabsService {
   private apiKey: string;
   private ttsBreaker: any;
   private acknowledgmentCache: Map<string, Buffer[]> = new Map();
+  private avatarPhraseCache: Map<string, string[]> = new Map();
 
   constructor() {
     this.apiKey = process.env.ELEVENLABS_API_KEY || "";
@@ -122,11 +124,13 @@ class ElevenLabsService {
     return !!this.apiKey && !!this.client;
   }
 
-  async preCacheAcknowledgments(voiceId: string): Promise<void> {
+  async preCacheAcknowledgments(voiceId: string, avatarId?: string): Promise<void> {
     if (!this.client) return;
     
-    if (this.acknowledgmentCache.has(voiceId)) {
-      logger.debug({ voiceId }, "Acknowledgments already cached for voice");
+    const cacheKey = avatarId ? `${voiceId}_${avatarId}` : voiceId;
+    
+    if (this.acknowledgmentCache.has(cacheKey)) {
+      logger.debug({ voiceId, avatarId }, "Acknowledgments already cached for voice/avatar");
       return;
     }
 
@@ -134,6 +138,7 @@ class ElevenLabsService {
       service: "elevenlabs",
       operation: "preCacheAcknowledgments",
       voiceId,
+      avatarId,
     });
 
     try {
@@ -141,7 +146,17 @@ class ElevenLabsService {
       const startTime = Date.now();
       const cachedBuffers: Buffer[] = [];
 
-      for (const phrase of ACKNOWLEDGMENT_PHRASES) {
+      // Get avatar-specific phrases or use defaults
+      const phrases = avatarId 
+        ? getAvatarPhrases(avatarId) 
+        : DEFAULT_ACKNOWLEDGMENT_PHRASES;
+      
+      // Cache which phrases we're using for this avatar
+      if (avatarId) {
+        this.avatarPhraseCache.set(avatarId, phrases);
+      }
+
+      for (const phrase of phrases) {
         try {
           const audioStream = await this.client.textToSpeech.convert(voiceId, {
             text: phrase,
@@ -164,24 +179,41 @@ class ElevenLabsService {
         }
       }
 
-      this.acknowledgmentCache.set(voiceId, cachedBuffers);
+      this.acknowledgmentCache.set(cacheKey, cachedBuffers);
       const duration = Date.now() - startTime;
-      log.info({ duration, phraseCount: cachedBuffers.length }, "Acknowledgments cached");
+      log.info({ duration, phraseCount: cachedBuffers.length, avatarId }, "Acknowledgments cached");
     } catch (error: any) {
       log.error({ error: error.message }, "Failed to pre-cache acknowledgments");
     }
   }
 
-  getCachedAcknowledgment(voiceId: string): Buffer | null {
-    const cached = this.acknowledgmentCache.get(voiceId);
+  getCachedAcknowledgment(voiceId: string, avatarId?: string): Buffer | null {
+    // Try avatar-specific cache first, then fall back to voice-only cache
+    const cacheKey = avatarId ? `${voiceId}_${avatarId}` : voiceId;
+    let cached = this.acknowledgmentCache.get(cacheKey);
+    
+    // Fall back to voice-only cache if avatar-specific not found
+    if (!cached && avatarId) {
+      cached = this.acknowledgmentCache.get(voiceId);
+    }
+    
     if (!cached || cached.length === 0) return null;
     const randomIndex = Math.floor(Math.random() * cached.length);
     return cached[randomIndex];
   }
 
-  hasAcknowledgmentsFor(voiceId: string): boolean {
-    return this.acknowledgmentCache.has(voiceId) && 
-           (this.acknowledgmentCache.get(voiceId)?.length ?? 0) > 0;
+  hasAcknowledgmentsFor(voiceId: string, avatarId?: string): boolean {
+    const cacheKey = avatarId ? `${voiceId}_${avatarId}` : voiceId;
+    const hasAvatarCache = this.acknowledgmentCache.has(cacheKey) && 
+           (this.acknowledgmentCache.get(cacheKey)?.length ?? 0) > 0;
+    
+    // Also check voice-only cache as fallback
+    if (!hasAvatarCache && avatarId) {
+      return this.acknowledgmentCache.has(voiceId) && 
+             (this.acknowledgmentCache.get(voiceId)?.length ?? 0) > 0;
+    }
+    
+    return hasAvatarCache;
   }
 }
 

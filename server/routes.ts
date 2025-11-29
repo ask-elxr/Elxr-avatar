@@ -494,14 +494,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "ElevenLabs service not available" });
       }
 
-      // Start caching in background (don't wait)
-      elevenlabsService.preCacheAcknowledgments(avatarConfig.elevenlabsVoiceId)
+      // Start caching in background (don't wait) - pass avatarId for avatar-specific phrases
+      elevenlabsService.preCacheAcknowledgments(avatarConfig.elevenlabsVoiceId, avatarId)
         .catch(err => log.error({ error: err.message }, "Background cache failed"));
 
       res.json({ 
         success: true, 
         message: "Acknowledgment caching started",
-        hasCached: elevenlabsService.hasAcknowledgmentsFor(avatarConfig.elevenlabsVoiceId)
+        hasCached: elevenlabsService.hasAcknowledgmentsFor(avatarConfig.elevenlabsVoiceId, avatarId)
       });
     } catch (error: any) {
       log.error({ error: error.message }, "Error starting acknowledgment cache");
@@ -521,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
 
-      const cachedAudio = elevenlabsService.getCachedAcknowledgment(avatarConfig.elevenlabsVoiceId);
+      const cachedAudio = elevenlabsService.getCachedAcknowledgment(avatarConfig.elevenlabsVoiceId, avatarId);
       if (!cachedAudio) {
         return res.status(404).json({ error: "No cached acknowledgments available" });
       }
