@@ -143,6 +143,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     endSessionShowReconnect,
     reconnect,
     togglePause,
+    switchTransportMode,
     isPaused,
     isSpeaking: isSpeakingFromHook,
     microphoneStatus,
@@ -301,36 +302,29 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     const newAudioOnly = !isVideoMode;
     const previousAudioOnly = audioOnly;
     
-    // If session is active, switch modes
+    // If session is active, switch transport layer without restarting session
     if (sessionActive) {
       setIsModeSwitching(true);
-      setAudioOnly(newAudioOnly); // Optimistically update UI
+      setAudioOnly(newAudioOnly); // Update UI immediately
       
       try {
-        await endSession();
-        await new Promise(resolve => setTimeout(resolve, 500));
-        await startSession({ audioOnly: newAudioOnly, avatarId: selectedAvatarId });
+        // Use seamless transport switching - preserves conversation context
+        await switchTransportMode(isVideoMode);
         
         toast({
           title: isVideoMode ? "Video Mode" : "Audio Mode",
           description: isVideoMode
-            ? "Switched to video mode with live avatar"
-            : "Switched to audio mode",
+            ? "Switched to video - conversation continues"
+            : "Switched to audio - conversation continues",
         });
       } catch (error) {
         console.error("Error switching mode:", error);
         // Revert to previous mode on failure
         setAudioOnly(previousAudioOnly);
-        // Try to restart previous session
-        try {
-          await startSession({ audioOnly: previousAudioOnly, avatarId: selectedAvatarId });
-        } catch (restartError) {
-          console.error("Failed to restore session:", restartError);
-        }
         toast({
           variant: "destructive",
           title: "Switch failed",
-          description: "Failed to switch mode. Session restored.",
+          description: "Failed to switch mode. Please try again.",
         });
       } finally {
         setIsModeSwitching(false);

@@ -30,6 +30,7 @@ interface AvatarSessionReturn {
   endSessionShowReconnect: () => Promise<void>;
   reconnect: () => Promise<void>;
   togglePause: () => Promise<void>;
+  switchTransportMode: (toVideoMode: boolean) => Promise<void>;
   isPaused: boolean;
   isSpeaking: boolean;
   microphoneStatus: 'listening' | 'stopped' | 'not-supported' | 'permission-denied';
@@ -322,7 +323,13 @@ export function useAvatarSession({
   const stopHeyGenSession = useCallback(async () => {
     if (!avatarRef.current || !heygenSessionActive) return;
     
-    console.log("Stopping HeyGen session - keeping UI active");
+    // Don't stop HeyGen if we're in audio mode - the session should continue
+    if (audioOnlyRef.current) {
+      console.log("In audio mode - skipping HeyGen stop (no HeyGen active)");
+      return;
+    }
+    
+    console.log("Stopping HeyGen session - keeping conversation active");
     clearIdleTimeout();
     
     try {
@@ -338,9 +345,11 @@ export function useAvatarSession({
       isSpeakingRef.current = false;
       setIsSpeakingState(false);
       
-      // End server session to actually save credits
-      await endSessionOnServer();
-      console.log("HeyGen session stopped - showing placeholder, credits saved");
+      // NOTE: Don't call endSessionOnServer() - the server session is for
+      // conversation tracking and should persist. HeyGen credits are released
+      // by stopAvatar() on the client side. This allows users to continue
+      // chatting after idle timeout (they can restart video or use audio mode).
+      console.log("HeyGen video stopped - conversation continues (audio/text still work)");
     } catch (error) {
       console.error("Error stopping HeyGen session:", error);
     }
@@ -352,8 +361,14 @@ export function useAvatarSession({
     // Only start idle timeout in video mode when not paused
     if (!audioOnlyRef.current && !isPaused) {
       idleTimeoutRef.current = setTimeout(() => {
-        console.log("3min idle timeout - stopping HeyGen session to save credits");
-        stopHeyGenSession();
+        // Double-check we're still in video mode before stopping HeyGen
+        // User might have switched to audio mode during the 3 minutes
+        if (!audioOnlyRef.current && avatarRef.current) {
+          console.log("3min idle timeout - stopping HeyGen session to save credits");
+          stopHeyGenSession();
+        } else {
+          console.log("Idle timeout fired but not in video mode - skipping");
+        }
       }, 180000); // 3 minutes - allows for longer avatar responses without disconnect
     }
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
@@ -381,7 +396,12 @@ export function useAvatarSession({
       const avatarConfig = await avatarConfigResponse.json();
 
       const { token, sessionId } = await fetchAccessToken(activeAvatarId);
-      sessionIdRef.current = sessionId;
+      // Only update sessionIdRef if we got a new one - during mode switching,
+      // we already have a valid sessionId from startSession and the token endpoint
+      // doesn't return one, so we'd overwrite with undefined
+      if (sessionId) {
+        sessionIdRef.current = sessionId;
+      }
       const avatar = new StreamingAvatar({ token });
       avatarRef.current = avatar;
 
@@ -853,6 +873,112 @@ export function useAvatarSession({
     }
   }, [startSession]);
 
+  // Switch between audio-only and video modes WITHOUT restarting the session
+  // This preserves conversation context and keeps voice recognition running
+  const switchTransportMode = useCallback(async (toVideoMode: boolean) => {
+    const newAudioOnly = !toVideoMode;
+    
+    // Skip if already in the target mode
+    if (audioOnlyRef.current === newAudioOnly) {
+      console.log("Already in target mode, skipping switch");
+      return;
+    }
+    
+    console.log(`🔄 Switching transport: ${audioOnlyRef.current ? 'Audio' : 'Video'} → ${newAudioOnly ? 'Audio' : 'Video'}`);
+    
+    // CRITICAL: Clear any pending idle timeout to prevent it from firing in audio mode
+    // and calling stopHeyGenSession which would clear sessionIdRef
+    clearIdleTimeout();
+    
+    // CRITICAL: Update mode ref FIRST so all guards work correctly
+    const wasAudioOnly = audioOnlyRef.current;
+    audioOnlyRef.current = newAudioOnly;
+    
+    // Stop any current playback first
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current = null;
+        isSpeakingRef.current = false;
+        setIsSpeakingState(false);
+        console.log("Stopped audio playback for mode switch");
+      } catch (e) {
+        console.warn("Error stopping audio:", e);
+      }
+    }
+    
+    // If switching FROM video TO audio, stop HeyGen client (releases credits automatically)
+    // Keep server session alive for conversation continuity
+    if (!wasAudioOnly && newAudioOnly) {
+      // Always clear HeyGen state when switching to audio, even if avatar seems inactive
+      try {
+        intentionalStopRef.current = true;
+        
+        // Stop avatar if it exists
+        if (avatarRef.current) {
+          await avatarRef.current.stopAvatar().catch((e) => {
+            console.warn("Error stopping avatar:", e);
+          });
+        }
+        
+        // ALWAYS clear these state values to ensure clean audio mode
+        avatarRef.current = null;
+        setHeygenSessionActive(false);
+        isSpeakingRef.current = false;
+        setIsSpeakingState(false);
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = null;
+          videoRef.current.style.display = 'none';
+          videoRef.current.style.visibility = 'hidden';
+        }
+        
+        // NOTE: Don't call endSessionOnServer() - that clears sessionIdRef
+        // which breaks subsequent requests. The server session is for
+        // conversation tracking, not HeyGen billing (that's handled by stopAvatar)
+        
+        console.log("✅ HeyGen stopped - switched to audio mode (session preserved, avatarRef cleared)");
+      } catch (error) {
+        console.error("Error stopping HeyGen for mode switch:", error);
+        // Revert mode on failure but still try to clean up state
+        audioOnlyRef.current = wasAudioOnly;
+        avatarRef.current = null;
+        setHeygenSessionActive(false);
+        throw error;
+      }
+    }
+    
+    // If switching FROM audio TO video, start HeyGen
+    if (!newAudioOnly) {
+      if (videoRef.current) {
+        videoRef.current.style.display = 'block';
+        videoRef.current.style.visibility = 'visible';
+        videoRef.current.style.opacity = '1';
+      }
+      
+      try {
+        setIsLoading(true);
+        await startHeyGenSession(currentAvatarIdRef.current);
+        setIsLoading(false);
+        console.log("✅ HeyGen started - switched to video mode");
+      } catch (error) {
+        console.error("Error starting HeyGen for mode switch:", error);
+        setIsLoading(false);
+        // Revert to audio mode on failure
+        audioOnlyRef.current = true;
+        if (videoRef.current) {
+          videoRef.current.style.display = 'none';
+          videoRef.current.style.visibility = 'hidden';
+        }
+        throw error;
+      }
+    }
+    
+    // Voice recognition continues running throughout - no restart needed
+    console.log("🎤 Voice recognition remains active during mode switch");
+  }, [videoRef, startHeyGenSession, clearIdleTimeout]);
+
   const togglePause = useCallback(async () => {
     if (isPaused) {
       setIsPaused(false);
@@ -1269,6 +1395,7 @@ export function useAvatarSession({
     endSessionShowReconnect,
     reconnect,
     togglePause,
+    switchTransportMode,
     isPaused,
     isSpeaking: isSpeakingState,
     microphoneStatus,
