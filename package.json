@@ -74,6 +74,7 @@
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
     "express-session": "^1.18.2",
+    "form-data": "^4.0.5",
     "framer-motion": "^11.13.1",
     "googleapis": "^166.0.0",
     "happy-dom": "^20.0.10",
