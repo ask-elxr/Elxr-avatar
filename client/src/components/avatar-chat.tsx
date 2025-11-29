@@ -11,6 +11,7 @@ import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
+import { AudioVideoToggle } from "@/components/AudioVideoToggle";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface ChatGeneratedVideo {
@@ -42,7 +43,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // UI-only state
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
-  const [audioOnly, setAudioOnly] = useState(false);
+  const [audioOnly, setAudioOnly] = useState(true); // Default to audio mode
+  const [isModeSwitching, setIsModeSwitching] = useState(false);
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean | null>(null);
   const [requestingMicPermission, setRequestingMicPermission] = useState(false);
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
@@ -295,26 +297,48 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
-  const handleAudioOnlyToggle = async (checked: boolean) => {
-    setAudioOnly(checked);
+  const handleModeToggle = async (isVideoMode: boolean) => {
+    const newAudioOnly = !isVideoMode;
+    const previousAudioOnly = audioOnly;
     
-    // If session is active, restart with new mode
+    // If session is active, switch modes
     if (sessionActive) {
+      setIsModeSwitching(true);
+      setAudioOnly(newAudioOnly); // Optimistically update UI
+      
       try {
         await endSession();
         await new Promise(resolve => setTimeout(resolve, 500));
-        await startSession({ audioOnly: checked, avatarId: selectedAvatarId });
+        await startSession({ audioOnly: newAudioOnly, avatarId: selectedAvatarId });
+        
+        toast({
+          title: isVideoMode ? "Video Mode" : "Audio Mode",
+          description: isVideoMode
+            ? "Switched to video mode with live avatar"
+            : "Switched to audio mode",
+        });
       } catch (error) {
-        console.error("Error switching audio mode:", error);
+        console.error("Error switching mode:", error);
+        // Revert to previous mode on failure
+        setAudioOnly(previousAudioOnly);
+        // Try to restart previous session
+        try {
+          await startSession({ audioOnly: previousAudioOnly, avatarId: selectedAvatarId });
+        } catch (restartError) {
+          console.error("Failed to restore session:", restartError);
+        }
+        toast({
+          variant: "destructive",
+          title: "Switch failed",
+          description: "Failed to switch mode. Session restored.",
+        });
+      } finally {
+        setIsModeSwitching(false);
       }
+    } else {
+      // If session not active, just update the state for next session
+      setAudioOnly(newAudioOnly);
     }
-    
-    toast({
-      title: checked ? "Audio Mode Enabled" : "Video Mode Enabled",
-      description: checked
-        ? "Switched to audio-only mode for lower bandwidth"
-        : "Switched to video mode",
-    });
   };
 
   const handleAvatarSwitch = async (newAvatarId: string) => {
@@ -377,7 +401,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           />
           
           {audioOnly && (
-            <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} />
+            <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
           )}
         </div>
 
@@ -385,26 +409,36 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {sessionActive && (
           <>
             {/* Top Controls Bar */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 bg-gradient-to-b from-black/60 to-transparent z-30">
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => togglePause()}
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
-                  size="sm"
-                  data-testid="button-pause-toggle"
-                >
-                  {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                </Button>
-                
-                <Button
-                  onClick={() => setShowAvatarSwitcher(true)}
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
-                  size="sm"
-                  data-testid="button-switch-avatar"
-                >
-                  Switch Avatar
-                </Button>
+            <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-4 bg-gradient-to-b from-black/60 to-transparent z-30">
+              {/* Audio/Video Toggle - Centered at top like YouTube Music */}
+              <div className="mb-3">
+                <AudioVideoToggle
+                  isVideoMode={!audioOnly}
+                  onToggle={handleModeToggle}
+                  disabled={isModeSwitching || isLoading}
+                />
               </div>
+              
+              <div className="w-full flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => togglePause()}
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    size="sm"
+                    data-testid="button-pause-toggle"
+                  >
+                    {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                  </Button>
+                  
+                  <Button
+                    onClick={() => setShowAvatarSwitcher(true)}
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    size="sm"
+                    data-testid="button-switch-avatar"
+                  >
+                    Switch Avatar
+                  </Button>
+                </div>
 
               <div className="flex items-center gap-2">
                 {/* Fullscreen Button - Video-like immersive experience (works on mobile too) */}
@@ -454,6 +488,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 >
                   <X className="w-4 h-4" />
                 </Button>
+              </div>
               </div>
             </div>
 
@@ -557,12 +592,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         )}
 
         {/* Loading Overlay */}
-        {isLoading && !showReconnect && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black z-20">
+        {(isLoading || isModeSwitching) && !showReconnect && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
             {audioOnly ? (
               <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
             ) : (
               <LoadingSpinner size="md" />
+            )}
+            {isModeSwitching && (
+              <p className="text-white/80 mt-4 text-sm">
+                Switching to {audioOnly ? 'audio' : 'video'} mode...
+              </p>
             )}
           </div>
         )}
@@ -604,7 +644,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <Checkbox
                   id="audio-only"
                   checked={audioOnly}
-                  onCheckedChange={handleAudioOnlyToggle}
+                  onCheckedChange={(checked) => handleModeToggle(!checked)}
                   className="border-white data-[state=checked]:bg-primary"
                 />
               </div>
