@@ -1002,6 +1002,24 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
 
+      // Stop voice recognition FIRST to prevent picking up trailing audio from speakers
+      recognitionIntentionalStopRef.current = true;
+      recognitionRunningRef.current = false;
+      if (recognitionRestartTimeoutRef.current) {
+        clearTimeout(recognitionRestartTimeoutRef.current);
+        recognitionRestartTimeoutRef.current = null;
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+          console.log("✅ Voice recognition stopped on pause");
+        } catch (error) {
+          console.warn("Error stopping speech recognition on pause:", error);
+        }
+      }
+      setMicrophoneStatus('stopped');
+
       if (avatarRef.current) {
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for pause");
