@@ -605,15 +605,10 @@ export function useAvatarSession({
       // This event only works with HeyGen's voice chat which causes echo loops
       // Voice input now handled by Web Speech API in the component
 
-      await avatar.createStartAvatar({
+      // Build the avatar config - only include voice if we have a specific voiceId
+      const avatarStartConfig: any = {
         quality: AvatarQuality.High,
         avatarName: avatarConfig.heygenAvatarId,
-        voice: avatarConfig.heygenVoiceId ? {
-          voiceId: avatarConfig.heygenVoiceId,
-          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-        } : {
-          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-        },
         language: "en",
         disableIdleTimeout: true,
         // ❌ CRITICAL: Disable ALL HeyGen AI features - we use Claude instead
@@ -621,7 +616,17 @@ export function useAvatarSession({
         knowledgeId: undefined, // No knowledge ID
         useSilencePrompt: false, // Don't auto-respond to silence
         enablePushToTalk: false, // Disable push-to-talk mode
-      });
+      };
+      
+      // Only set voice if we have a specific voice ID, otherwise let HeyGen use avatar's default
+      if (avatarConfig.heygenVoiceId) {
+        avatarStartConfig.voice = {
+          voiceId: avatarConfig.heygenVoiceId,
+          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
+        };
+      }
+      
+      await avatar.createStartAvatar(avatarStartConfig);
 
       // ❌ DISABLED: HeyGen's voice chat causes echo loop with Claude
       // HeyGen's voice chat is designed ONLY for their built-in AI
