@@ -486,14 +486,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
             </div>
 
-            {/* Microphone Status */}
-            {microphoneStatus === 'listening' && (
-              <div className="absolute top-20 right-4 flex items-center gap-2 bg-green-500/20 border border-green-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
-                <Mic className="w-4 h-4 text-green-400 animate-pulse" />
-                <span className="text-sm text-green-400 font-medium">Listening</span>
-              </div>
-            )}
-            
+            {/* Mic Blocked Status - only show when permission denied */}
             {microphoneStatus === 'permission-denied' && (
               <div className="absolute top-20 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
                 <MicOff className="w-4 h-4 text-red-400" />
@@ -671,15 +664,39 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               }}
               className="flex items-center gap-2 max-w-4xl mx-auto"
             >
-              <Input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your message..."
-                className="flex-1 bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm"
-                data-testid="input-message"
-                disabled={!sessionActive || isPaused}
-              />
+              <div className="flex-1 relative">
+                <Input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  placeholder={microphoneStatus === 'listening' ? "" : "Type your message..."}
+                  className="flex-1 w-full bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm pr-4"
+                  data-testid="input-message"
+                  disabled={!sessionActive || isPaused}
+                />
+                {/* Audio Waveform - shows inside input when listening */}
+                {microphoneStatus === 'listening' && !inputMessage && (
+                  <div className="absolute inset-y-0 left-3 flex items-center gap-[3px] pointer-events-none">
+                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                      <div
+                        key={i}
+                        className="w-[3px] bg-green-400 rounded-full"
+                        style={{
+                          height: '60%',
+                          animation: `waveform 0.8s ease-in-out infinite`,
+                          animationDelay: `${i * 0.1}s`,
+                        }}
+                      />
+                    ))}
+                    <style>{`
+                      @keyframes waveform {
+                        0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
+                        50% { transform: scaleY(1); opacity: 1; }
+                      }
+                    `}</style>
+                  </div>
+                )}
+              </div>
               <Button
                 type="submit"
                 disabled={!inputMessage.trim() || !sessionActive || isPaused}
