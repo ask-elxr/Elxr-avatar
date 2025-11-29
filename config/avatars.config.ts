@@ -275,9 +275,9 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     profileImageUrl: "/attached_assets/Nigel-Loop-avatar_1763964600000.gif",
     heygenAvatarId: "2bc688a56d3949d3a49aab4a44efab49", // Custom Nigel avatar for streaming
     heygenVideoAvatarId: "b570e1e91cdc4d52931a9a124c0e3f3f", // Nigel avatar for video generation
-    heygenVoiceId: "fWUVBoxa3cvv6VWj6VRS", // ElevenLabs voice for HeyGen video streaming
+    heygenVoiceId: null, // Uses HeyGen's built-in voice for video mode
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
-    elevenlabsVoiceId: "fWUVBoxa3cvv6VWj6VRS",
+    elevenlabsVoiceId: "fWUVBoxa3cvv6VWj6VRS", // ElevenLabs voice for audio-only mode
     voiceRate: "1.0",
     pineconeNamespaces: ["nigel", "WORK", "LIFE", "TRANSITIONS", "MIDLIFE"],
     personalityPrompt: `🚨 YOUR NAME IS NIGEL 🚨
