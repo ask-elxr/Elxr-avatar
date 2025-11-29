@@ -478,6 +478,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pre-cache acknowledgment phrases for an avatar (called when chat starts)
+  app.post("/api/audio/acknowledgments/precache", async (req, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "preCacheAcknowledgments" });
+    
+    try {
+      const { avatarId = "mark-kohl" } = req.body;
+      
+      const avatarConfig = getAvatarById(avatarId);
+      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+        return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
+      }
+
+      if (!elevenlabsService.isAvailable()) {
+        return res.status(500).json({ error: "ElevenLabs service not available" });
+      }
+
+      // Start caching in background (don't wait)
+      elevenlabsService.preCacheAcknowledgments(avatarConfig.elevenlabsVoiceId)
+        .catch(err => log.error({ error: err.message }, "Background cache failed"));
+
+      res.json({ 
+        success: true, 
+        message: "Acknowledgment caching started",
+        hasCached: elevenlabsService.hasAcknowledgmentsFor(avatarConfig.elevenlabsVoiceId)
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error starting acknowledgment cache");
+      res.status(500).json({ error: "Failed to start caching" });
+    }
+  });
+
+  // Get a cached acknowledgment audio for instant playback
+  app.get("/api/audio/acknowledgment/:avatarId", async (req, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "getAcknowledgment" });
+    
+    try {
+      const { avatarId } = req.params;
+      
+      const avatarConfig = getAvatarById(avatarId);
+      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+        return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
+      }
+
+      const cachedAudio = elevenlabsService.getCachedAcknowledgment(avatarConfig.elevenlabsVoiceId);
+      if (!cachedAudio) {
+        return res.status(404).json({ error: "No cached acknowledgments available" });
+      }
+
+      log.debug({ avatarId }, "Serving cached acknowledgment audio");
+      res.setHeader("Content-Type", "audio/mpeg");
+      res.setHeader("Content-Length", cachedAudio.length.toString());
+      res.setHeader("Cache-Control", "no-cache"); // Each request gets random phrase
+      res.send(cachedAudio);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error serving acknowledgment");
+      res.status(500).json({ error: "Failed to get acknowledgment audio" });
+    }
+  });
+
   // Pinecone conversation endpoints
   app.post("/api/conversations", async (req, res) => {
     try {

@@ -84,6 +84,8 @@ export function useAvatarSession({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Auto-reconnection timer
   const lastRecognitionRestartRef = useRef<number>(0); // Track last restart time for throttling
   const recognitionRestartTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Delayed restart timer
+  const acknowledgmentAudioRef = useRef<HTMLAudioElement | null>(null); // Cached acknowledgment audio
+  const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
 
@@ -141,6 +143,71 @@ export function useAvatarSession({
       }
     }
   };
+
+  const preloadAcknowledgmentAudio = useCallback(async (avatarId: string) => {
+    if (acknowledgmentCacheReadyRef.current.get(avatarId)) {
+      return; // Already loaded
+    }
+    try {
+      const response = await fetch(`/api/audio/acknowledgment/${avatarId}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.preload = "auto";
+        acknowledgmentAudioRef.current = audio;
+        acknowledgmentCacheReadyRef.current.set(avatarId, true);
+        console.log("🔊 Acknowledgment audio preloaded for:", avatarId);
+      }
+    } catch (error) {
+      console.log("Acknowledgment audio not ready yet, will retry later");
+    }
+  }, []);
+
+  const triggerAcknowledgmentCache = useCallback(async (avatarId: string) => {
+    try {
+      const response = await fetch("/api/audio/acknowledgments/precache", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatarId }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("🔊 Acknowledgment pre-cache triggered for:", avatarId, data.hasCached ? "(already cached)" : "(caching started)");
+        // Preload first acknowledgment audio after a short delay to allow caching
+        if (!data.hasCached) {
+          setTimeout(() => preloadAcknowledgmentAudio(avatarId), 3000);
+        } else {
+          preloadAcknowledgmentAudio(avatarId);
+        }
+      } else {
+        console.warn("Failed to trigger acknowledgment cache:", response.status);
+      }
+    } catch (error) {
+      console.error("Failed to trigger acknowledgment cache:", error);
+    }
+  }, [preloadAcknowledgmentAudio]);
+
+  const playAcknowledgmentInstantly = useCallback(async () => {
+    if (!audioOnlyRef.current) return; // Only for audio-only mode
+    const avatarId = currentAvatarIdRef.current;
+    
+    try {
+      const response = await fetch(`/api/audio/acknowledgment/${avatarId}`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        audio.volume = 0.8; // Slightly lower volume for acknowledgment
+        audio.onended = () => URL.revokeObjectURL(audioUrl);
+        await audio.play();
+        console.log("🔊 Instant acknowledgment played");
+      }
+    } catch (error) {
+      // Acknowledgment failed - proceed without it
+      console.log("Acknowledgment not available, proceeding...");
+    }
+  }, []);
 
   const clearIdleTimeout = useCallback(() => {
     if (idleTimeoutRef.current) {
@@ -701,6 +768,9 @@ export function useAvatarSession({
         loadingTimeoutRef.current = null;
       }
       setIsLoading(false);
+      
+      // Pre-cache acknowledgment audio for faster responses in audio-only mode
+      triggerAcknowledgmentCache(activeAvatarId);
     }
     
     setTimeout(() => {
@@ -713,6 +783,7 @@ export function useAvatarSession({
     onResetInactivityTimer,
     startHeyGenSession,
     startVoiceRecognition,
+    triggerAcknowledgmentCache,
   ]);
 
   const endSessionShowReconnect = useCallback(async () => {
@@ -1160,6 +1231,9 @@ export function useAvatarSession({
         isSpeakingRef.current = true;
         setIsSpeakingState(true);
 
+        // Play instant acknowledgment while Claude processes (non-blocking)
+        playAcknowledgmentInstantly().catch(() => {});
+
         try {
           const audioResponse = await fetch("/api/audio", {
             method: "POST",
@@ -1392,7 +1466,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect]);
+  }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly]);
 
   const stopAudio = useCallback(() => {
     if (currentAudioRef.current) {

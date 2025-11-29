@@ -4,10 +4,19 @@ import { logger } from "./logger.js";
 import { metrics } from "./metrics.js";
 import { storage } from "./storage.js";
 
+const ACKNOWLEDGMENT_PHRASES = [
+  "Let me think about that...",
+  "Good question...",
+  "Hmm, let me consider that...",
+  "Interesting, let me look into that...",
+  "Give me a moment...",
+];
+
 class ElevenLabsService {
   private client?: ElevenLabsClient;
   private apiKey: string;
   private ttsBreaker: any;
+  private acknowledgmentCache: Map<string, Buffer[]> = new Map();
 
   constructor() {
     this.apiKey = process.env.ELEVENLABS_API_KEY || "";
@@ -111,6 +120,68 @@ class ElevenLabsService {
 
   isAvailable(): boolean {
     return !!this.apiKey && !!this.client;
+  }
+
+  async preCacheAcknowledgments(voiceId: string): Promise<void> {
+    if (!this.client) return;
+    
+    if (this.acknowledgmentCache.has(voiceId)) {
+      logger.debug({ voiceId }, "Acknowledgments already cached for voice");
+      return;
+    }
+
+    const log = logger.child({
+      service: "elevenlabs",
+      operation: "preCacheAcknowledgments",
+      voiceId,
+    });
+
+    try {
+      log.info("Pre-caching acknowledgment phrases for voice");
+      const startTime = Date.now();
+      const cachedBuffers: Buffer[] = [];
+
+      for (const phrase of ACKNOWLEDGMENT_PHRASES) {
+        try {
+          const audioStream = await this.client.textToSpeech.convert(voiceId, {
+            text: phrase,
+            model_id: "eleven_turbo_v2_5",
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+          });
+
+          const chunks: Buffer[] = [];
+          for await (const chunk of audioStream) {
+            chunks.push(Buffer.from(chunk));
+          }
+          cachedBuffers.push(Buffer.concat(chunks));
+        } catch (phraseError) {
+          log.warn({ phrase, error: phraseError }, "Failed to cache phrase");
+        }
+      }
+
+      this.acknowledgmentCache.set(voiceId, cachedBuffers);
+      const duration = Date.now() - startTime;
+      log.info({ duration, phraseCount: cachedBuffers.length }, "Acknowledgments cached");
+    } catch (error: any) {
+      log.error({ error: error.message }, "Failed to pre-cache acknowledgments");
+    }
+  }
+
+  getCachedAcknowledgment(voiceId: string): Buffer | null {
+    const cached = this.acknowledgmentCache.get(voiceId);
+    if (!cached || cached.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * cached.length);
+    return cached[randomIndex];
+  }
+
+  hasAcknowledgmentsFor(voiceId: string): boolean {
+    return this.acknowledgmentCache.has(voiceId) && 
+           (this.acknowledgmentCache.get(voiceId)?.length ?? 0) > 0;
   }
 }
 
