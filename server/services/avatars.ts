@@ -14,6 +14,54 @@ import {
 import { storage } from '../storage.js';
 
 /**
+ * Convert pinecone namespace names to display-friendly tags
+ * e.g., "addiction" -> "Addiction", "personal-development" -> "Personal Development"
+ */
+function namespaceToTag(namespace: string): string {
+  return namespace
+    .split(/[-_]/)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
+}
+
+/**
+ * Generate display tags from pineconeNamespaces
+ * Filters out personal names/generic namespaces and takes top categories for display
+ */
+function generateDisplayTags(namespaces: string[]): string[] {
+  if (!namespaces || namespaces.length === 0) return [];
+  
+  // List of namespaces to exclude from display tags (personal names, generic, etc.)
+  const excludePatterns = [
+    /^[a-z]+$/i, // Single lowercase words that might be names (like "shawn", "willie")
+  ];
+  
+  // Specific known topic categories to prioritize
+  const topicCategories = new Set([
+    'addiction', 'body', 'transitions', 'science', 'nutrition', 'longevity',
+    'midlife', 'work', 'mind', 'sexuality', 'spirituality', 'psychedelics',
+    'life', 'grief', 'movement', 'sleep', 'leadership', 'performance',
+    'personal-development', 'health', 'wellness', 'fitness', 'sports',
+    'business', 'career', 'relationships', 'mental-health', 'education'
+  ]);
+  
+  // Filter and sort: prioritize known topic categories
+  const filteredNamespaces = namespaces.filter(ns => {
+    const lower = ns.toLowerCase();
+    // Keep if it's a known topic category
+    if (topicCategories.has(lower)) return true;
+    // Keep if it has a hyphen/underscore (likely a compound topic)
+    if (ns.includes('-') || ns.includes('_')) return true;
+    // Exclude if it's all uppercase (likely a category) but not in the set
+    if (ns === ns.toUpperCase() && ns.length > 2) return true;
+    return false;
+  });
+  
+  // Take up to 5 tags for better coverage of categories
+  return filteredNamespaces.slice(0, 5).map(namespaceToTag);
+}
+
+/**
  * Merge a single avatar record: DB fields override default fields
  * Only falls back to defaults when DB value is null/undefined, NOT empty string
  */
@@ -34,7 +82,9 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
   }
   
   // Merge: start with default, overlay DB fields
-  // Use nullish coalescing (??) to only fallback when undefined/null, not empty strings
+  // Handle namespaces safely - use nullish coalescing for proper null/undefined handling
+  const mergedNamespaces = dbAvatar.pineconeNamespaces ?? defaultAvatar.pineconeNamespaces ?? [];
+  
   return {
     ...defaultAvatar,
     ...dbAvatar,
@@ -48,13 +98,15 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     heygenKnowledgeId: dbAvatar.heygenKnowledgeId !== undefined ? dbAvatar.heygenKnowledgeId : defaultAvatar.heygenKnowledgeId,
     elevenlabsVoiceId: dbAvatar.elevenlabsVoiceId !== undefined ? dbAvatar.elevenlabsVoiceId : defaultAvatar.elevenlabsVoiceId,
     voiceRate: dbAvatar.voiceRate !== undefined ? dbAvatar.voiceRate : defaultAvatar.voiceRate,
-    pineconeNamespaces: dbAvatar.pineconeNamespaces !== undefined ? dbAvatar.pineconeNamespaces : defaultAvatar.pineconeNamespaces,
+    pineconeNamespaces: mergedNamespaces,
     personalityPrompt: dbAvatar.personalityPrompt !== undefined ? dbAvatar.personalityPrompt : defaultAvatar.personalityPrompt,
     isActive: dbAvatar.isActive !== undefined ? dbAvatar.isActive : defaultAvatar.isActive,
     // Research source toggles - DB values take precedence
     usePubMed: dbAvatar.usePubMed !== undefined ? dbAvatar.usePubMed : defaultAvatar.usePubMed,
     useWikipedia: dbAvatar.useWikipedia !== undefined ? dbAvatar.useWikipedia : defaultAvatar.useWikipedia,
     useGoogleSearch: dbAvatar.useGoogleSearch !== undefined ? dbAvatar.useGoogleSearch : defaultAvatar.useGoogleSearch,
+    // Auto-generate display tags from pinecone namespaces
+    tags: generateDisplayTags(mergedNamespaces),
   };
 }
 

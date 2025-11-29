@@ -209,7 +209,7 @@ export default function AvatarSelect() {
                         
                         {/* Tags - Fixed height area */}
                         <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
-                          {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 3).map((tag, index) => (
+                          {avatar.tags && avatar.tags.length > 0 && avatar.tags.slice(0, 5).map((tag, index) => (
                             <span
                               key={index}
                               className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi h-fit"
