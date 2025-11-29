@@ -280,6 +280,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       log.info({ avatarId, messageLength: message.length }, "Processing audio chat message");
+      
+      // Enhanced logging for audio mode
+      console.log(`\n🎧 ═══════════════════════════════════════════════════════════════`);
+      console.log(`🎧 AUDIO MODE - ${avatarConfig.name}`);
+      console.log(`🎧 ═══════════════════════════════════════════════════════════════`);
+      console.log(`📥 USER MESSAGE: "${message}"`);
 
       // Retrieve relevant memories if memory is enabled
       let memoryContext = "";
@@ -365,6 +371,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(500).json({ error: "No response generated from AI" });
       }
       
+      // Enhanced logging for audio mode response
+      console.log(`📤 CLAUDE RESPONSE:`);
+      console.log(`───────────────────────────────────────────────────────────────`);
+      console.log(responseText);
+      console.log(`───────────────────────────────────────────────────────────────`);
+      console.log(`📊 Response length: ${responseText.length} characters`);
+      
       log.info({ responseLength: responseText.length }, "Claude response generated");
 
       // Log API call
@@ -389,6 +402,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const audioBuffer = await elevenlabsService.generateSpeech(responseText, avatarConfig.elevenlabsVoiceId);
 
       log.info({ audioSize: audioBuffer.length }, "Audio generated successfully");
+      console.log(`🔊 Audio generated: ${(audioBuffer.length / 1024).toFixed(1)} KB`);
+      console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
 
       // Log API call
       storage.logApiCall({
