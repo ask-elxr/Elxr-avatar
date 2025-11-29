@@ -65,23 +65,24 @@ export class HeyGenDriver implements SessionDriver {
       }
     });
 
-    await avatar.createStartAvatar({
+    // Build the avatar config - only include voice if we have a specific voiceId
+    const avatarStartConfig: any = {
       quality: this.config.audioOnly ? AvatarQuality.Low : AvatarQuality.High,
       avatarName: this.config.avatarConfig.heygenAvatarId,
       // ❌ CRITICAL: DO NOT pass knowledgeBase - HeyGen's built-in AI bypasses our Claude Sonnet 4.5 backend!
-      // When knowledgeBase is set, HeyGen uses its own AI with its own personality instead of routing through our backend
-      // knowledgeBase: this.config.avatarConfig.heygenKnowledgeId || undefined,
-      voice: this.config.avatarConfig.heygenVoiceId
-        ? {
-            voiceId: this.config.avatarConfig.heygenVoiceId,
-            rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
-          }
-        : {
-            rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
-          },
       language: "en",
       disableIdleTimeout: true,
-    });
+    };
+    
+    // Only set voice if we have a specific voice ID, otherwise let HeyGen use avatar's default
+    if (this.config.avatarConfig.heygenVoiceId) {
+      avatarStartConfig.voice = {
+        voiceId: this.config.avatarConfig.heygenVoiceId,
+        rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
+      };
+    }
+    
+    await avatar.createStartAvatar(avatarStartConfig);
 
     // ❌ DO NOT call startVoiceChat() - this enables HeyGen's built-in AI which auto-responds!
     // We want HeyGen ONLY for video rendering, not for AI responses

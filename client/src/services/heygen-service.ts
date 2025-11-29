@@ -51,20 +51,27 @@ export class HeyGenService {
       const token = await this.fetchAccessToken();
       this.streamingAvatar = new StreamingAvatar({ token });
 
-      const sessionInfo = await this.streamingAvatar.createStartAvatar({
+      // Build config - only include voice if we have a specific voiceId
+      const avatarStartConfig: any = {
         quality: AvatarQuality.High,
         avatarName: this.config.avatarId,
         knowledgeBase: undefined,
         knowledgeId: undefined,
         useSilencePrompt: false,
-        voice: {
+        language: "en",
+        disableIdleTimeout: true,
+      };
+      
+      // Only set voice if we have a valid voice ID
+      if (this.config.voiceId && this.config.voiceId !== "default") {
+        avatarStartConfig.voice = {
           voiceId: this.config.voiceId,
           rate: 1.0,
           emotion: VoiceEmotion.FRIENDLY,
-        },
-        language: "en",
-        disableIdleTimeout: true,
-      });
+        };
+      }
+      
+      const sessionInfo = await this.streamingAvatar.createStartAvatar(avatarStartConfig);
 
       return { avatar: this.streamingAvatar, sessionInfo };
     } catch (error) {

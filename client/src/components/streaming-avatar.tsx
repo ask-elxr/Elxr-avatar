@@ -98,9 +98,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0", // Your avatar ID
         knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4", // Required by HeyGen but responses are overridden
-        voice: {
-          rate: 1.0
-        },
+        // Don't pass voice config - let HeyGen use avatar's default voice
         language: "en",
         disableIdleTimeout: false
       });
