@@ -29,7 +29,7 @@ import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
 import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
-import { getAvatarById } from "../config/avatars.config.js";
+import { getAvatarById } from "./services/avatars.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
@@ -268,8 +268,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get memory toggle preference from request
       const { memoryEnabled = false } = req.body;
 
-      // Get avatar configuration
-      const avatarConfig = getAvatarById(avatarId);
+      // Get avatar configuration (from DB with merged defaults)
+      const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig) {
         return res.status(404).json({ error: "Avatar not found" });
       }
@@ -455,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const avatarConfig = getAvatarById(avatarId);
+      const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
         log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
@@ -485,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { avatarId = "mark-kohl" } = req.body;
       
-      const avatarConfig = getAvatarById(avatarId);
+      const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { avatarId } = req.params;
       
-      const avatarConfig = getAvatarById(avatarId);
+      const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
@@ -1547,7 +1547,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get avatar configuration early to check usePubMed setting
-      const avatarConfig = getAvatarById(avatarId);
+      const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig) {
         return res.status(404).json({ error: "Avatar not found" });
       }
