@@ -1,10 +1,11 @@
 import axios from "axios";
 import { db } from "../db";
-import { chatGeneratedVideos, avatarProfiles, conversations } from "@shared/schema";
+import { chatGeneratedVideos, avatarProfiles, conversations, users } from "@shared/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { generateLessonScript } from "./rag";
 import { getUserAvatarMemory } from "./memory";
 import { getAvatarById } from "./avatars";
+import { emailService } from "./email";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
@@ -284,6 +285,9 @@ ${memoryContext}
           });
 
           console.log(`✅ Chat video completed: ${heygenVideoId}`);
+          
+          // Send email notification if user has email
+          this.sendVideoReadyEmail(userId, avatarId, topic, video_url, thumbnail_url, durationInt);
         } else if (status === "failed") {
           await db
             .update(chatGeneratedVideos)
@@ -365,6 +369,64 @@ ${memoryContext}
       .orderBy(desc(chatGeneratedVideos.createdAt));
 
     return videos;
+  }
+
+  private async sendVideoReadyEmail(
+    userId: string,
+    avatarId: string,
+    topic: string,
+    videoUrl: string,
+    thumbnailUrl?: string | null,
+    duration?: number | null
+  ): Promise<void> {
+    try {
+      // Skip if email service not available
+      if (!emailService.isAvailable()) {
+        console.log('📧 Email service not available - skipping notification');
+        return;
+      }
+
+      // Skip for anonymous/temp users
+      if (userId.startsWith('temp_')) {
+        console.log('📧 Skipping email for anonymous user');
+        return;
+      }
+
+      // Get user email
+      const [user] = await db
+        .select({ email: users.email, firstName: users.firstName })
+        .from(users)
+        .where(eq(users.id, userId));
+
+      if (!user?.email) {
+        console.log(`📧 No email found for user ${userId} - skipping notification`);
+        return;
+      }
+
+      // Get avatar name
+      const avatar = await getAvatarById(avatarId);
+      const avatarName = avatar?.name || 'AI Avatar';
+
+      // Send the email
+      const result = await emailService.sendVideoReadyEmail({
+        toEmail: user.email,
+        userName: user.firstName || undefined,
+        topic,
+        videoUrl,
+        thumbnailUrl: thumbnailUrl || undefined,
+        avatarName,
+        duration: duration || undefined,
+      });
+
+      if (result.success) {
+        console.log(`📧 Video ready email sent to ${user.email}`);
+      } else {
+        console.error(`📧 Failed to send email: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error('📧 Error sending video ready email:', error.message);
+      // Don't throw - email failure shouldn't break the video completion flow
+    }
   }
 }
 
