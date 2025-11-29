@@ -97,7 +97,7 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
     heygenVideoAvatarId: "57d0eb901fe84211b92b0a9d91f2e5c0", // Talking Photo ID for video generation (Willie)
     heygenVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI,
-    elevenlabsVoiceId: "fWUVBoxa3cvv6VWj6VRS",
+    elevenlabsVoiceId: "oNLn7a7xv87XHdamxgeT",
     voiceRate: "1.0",
     pineconeNamespaces: ["willie-gault", "WORK", "MOVEMENT"],
     personalityPrompt: `🚨 YOUR NAME IS WILLIE GAULT 🚨
