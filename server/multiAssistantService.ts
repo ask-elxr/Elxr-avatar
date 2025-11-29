@@ -26,7 +26,7 @@ const mentorConfigsBase: Record<string, MentorConfig> = {
     category: "work",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-    elevenlabsVoiceId: "pNInz6obpgDQGcFmaJgB",
+    elevenlabsVoiceId: "f8cb9e237a914c27a45728d43bd74835",
     audioOnly: false,
   },
   june: {
