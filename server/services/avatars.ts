@@ -95,6 +95,7 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     heygenAvatarId: dbAvatar.heygenAvatarId !== undefined ? dbAvatar.heygenAvatarId : defaultAvatar.heygenAvatarId,
     heygenVideoAvatarId: dbAvatar.heygenVideoAvatarId !== undefined ? dbAvatar.heygenVideoAvatarId : defaultAvatar.heygenVideoAvatarId,
     heygenVoiceId: dbAvatar.heygenVoiceId !== undefined ? dbAvatar.heygenVoiceId : defaultAvatar.heygenVoiceId,
+    heygenVideoVoiceId: dbAvatar.heygenVideoVoiceId !== undefined ? dbAvatar.heygenVideoVoiceId : (defaultAvatar as any).heygenVideoVoiceId,
     heygenKnowledgeId: dbAvatar.heygenKnowledgeId !== undefined ? dbAvatar.heygenKnowledgeId : defaultAvatar.heygenKnowledgeId,
     elevenlabsVoiceId: dbAvatar.elevenlabsVoiceId !== undefined ? dbAvatar.elevenlabsVoiceId : defaultAvatar.elevenlabsVoiceId,
     voiceRate: dbAvatar.voiceRate !== undefined ? dbAvatar.voiceRate : defaultAvatar.voiceRate,
