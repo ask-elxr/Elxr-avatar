@@ -152,14 +152,16 @@ ${memoryContext}
 
       const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8";
       
-      // Use HeyGen voice ID (ElevenLabs voices must be integrated via HeyGen UI first)
+      // Use video-specific voice ID if available, otherwise fall back to general HeyGen voice
+      const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId || DEFAULT_VOICE_ID;
+      
       const voiceConfig: any = {
         type: "text",
         input_text: scriptResult.script.slice(0, 5000),
-        voice_id: avatar.heygenVoiceId || DEFAULT_VOICE_ID,
+        voice_id: videoVoiceId,
       };
       
-      console.log(`🎙️ Using HeyGen voice for ${avatar.name}: ${avatar.heygenVoiceId || DEFAULT_VOICE_ID}`);
+      console.log(`🎙️ Using HeyGen voice for chat video (${avatar.name}): ${videoVoiceId}`);
 
       const isTalkingPhoto = TALKING_PHOTO_IDS.has(avatar.heygenVideoAvatarId);
       
