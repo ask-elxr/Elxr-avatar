@@ -331,14 +331,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       if (pineconeNamespaceService.isAvailable() && allNamespaces.length > 0) {
-        const knowledgeResults = await pineconeNamespaceService.retrieveContext(
-          message,
-          3,
-          allNamespaces,
-        );
-        if (knowledgeResults.length > 0) {
-          knowledgeContext = knowledgeResults[0].text;
-          log.debug({ contextLength: knowledgeContext.length, namespaces: allNamespaces.length }, "Knowledge context retrieved");
+        try {
+          const knowledgeResults = await pineconeNamespaceService.retrieveContext(
+            message,
+            3,
+            allNamespaces,
+          );
+          if (knowledgeResults.length > 0) {
+            knowledgeContext = knowledgeResults[0].text;
+            log.debug({ contextLength: knowledgeContext.length, namespaces: allNamespaces.length }, "Knowledge context retrieved");
+          }
+        } catch (pineconeError: any) {
+          // Continue without knowledge context if embeddings fail (e.g., OpenAI quota exceeded)
+          log.warn({ error: pineconeError.message }, "Failed to retrieve knowledge context - continuing without it");
         }
       }
 
