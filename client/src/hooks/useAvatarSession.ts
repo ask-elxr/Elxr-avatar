@@ -1076,6 +1076,32 @@ export function useAvatarSession({
       
       clearIdleTimeout();
       
+      // Stop any playing audio
+      if (currentAudioRef.current) {
+        try {
+          currentAudioRef.current.pause();
+          currentAudioRef.current.currentTime = 0;
+          currentAudioRef.current.src = '';
+          currentAudioRef.current = null;
+          console.log("🛑 Audio stopped on cleanup");
+        } catch (e) {
+          console.warn("Error stopping audio on cleanup:", e);
+          currentAudioRef.current = null;
+        }
+      }
+      
+      // Stop voice recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionIntentionalStopRef.current = true;
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+          console.log("🛑 Voice recognition stopped on cleanup");
+        } catch (e) {
+          console.warn("Error stopping voice recognition on cleanup:", e);
+        }
+      }
+      
       if (avatarRef.current) {
         intentionalStopRef.current = true;
         avatarRef.current.stopAvatar().catch(console.error);
