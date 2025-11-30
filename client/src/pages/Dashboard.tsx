@@ -273,6 +273,7 @@ export default function Dashboard() {
     mood: string;
     response: string;
   } | null>(null);
+  const [videoToDelete, setVideoToDelete] = useState<ChatVideo | null>(null);
 
   // Generate or get user ID for chat
   const [chatUserId] = useState(() => {
@@ -385,6 +386,28 @@ export default function Dashboard() {
       toast({
         title: "Error",
         description: error.message || "Failed to upgrade plan",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteVideoMutation = useMutation({
+    mutationFn: async (videoId: number) => {
+      const response = await apiRequest(`/api/courses/chat-videos/${videoId}`, "DELETE");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses/chat-videos"] });
+      setVideoToDelete(null);
+      toast({
+        title: "Video Deleted",
+        description: "The video has been removed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete video",
         variant: "destructive",
       });
     },
@@ -1154,9 +1177,20 @@ export default function Dashboard() {
                                 <h4 className="font-medium text-white truncate mb-2">
                                   {video.topic}
                                 </h4>
-                                <div className="flex items-center gap-2 text-sm text-white/60">
-                                  {getStatusIcon(video.status)}
-                                  <span>{getStatusText(video.status)}</span>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 text-sm text-white/60">
+                                    {getStatusIcon(video.status)}
+                                    <span>{getStatusText(video.status)}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10"
+                                    onClick={() => setVideoToDelete(video)}
+                                    data-testid={`button-delete-${video.id}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
                                 <p className="text-xs text-white/40 mt-2">
                                   Started{" "}
@@ -1215,24 +1249,35 @@ export default function Dashboard() {
                                     {getStatusIcon(video.status)}
                                     <span>{getStatusText(video.status)}</span>
                                   </div>
-                                  {video.videoUrl && (
+                                  <div className="flex items-center gap-1">
+                                    {video.videoUrl && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-white/70 hover:text-white"
+                                        asChild
+                                        data-testid={`button-download-${video.id}`}
+                                      >
+                                        <a
+                                          href={video.videoUrl}
+                                          download
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </a>
+                                      </Button>
+                                    )}
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="text-white/70 hover:text-white"
-                                      asChild
-                                      data-testid={`button-download-${video.id}`}
+                                      className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10"
+                                      onClick={() => setVideoToDelete(video)}
+                                      data-testid={`button-delete-${video.id}`}
                                     >
-                                      <a
-                                        href={video.videoUrl}
-                                        download
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                      >
-                                        <Download className="w-4 h-4" />
-                                      </a>
+                                      <Trash2 className="w-4 h-4" />
                                     </Button>
-                                  )}
+                                  </div>
                                 </div>
                                 <p className="text-xs text-white/40 mt-2">
                                   Completed{" "}
@@ -1278,9 +1323,20 @@ export default function Dashboard() {
                                 <h4 className="font-medium text-white truncate mb-2">
                                   {video.topic}
                                 </h4>
-                                <div className="flex items-center gap-2 text-sm text-red-400">
-                                  {getStatusIcon(video.status)}
-                                  <span>{getStatusText(video.status)}</span>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2 text-sm text-red-400">
+                                    {getStatusIcon(video.status)}
+                                    <span>{getStatusText(video.status)}</span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-400/70 hover:text-red-400 hover:bg-red-500/10"
+                                    onClick={() => setVideoToDelete(video)}
+                                    data-testid={`button-delete-${video.id}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
                                 </div>
                                 <p className="text-xs text-white/40 mt-2">
                                   {formatDistanceToNow(
@@ -2797,6 +2853,61 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+
+      {/* Delete Video Confirmation Dialog */}
+      <Dialog open={!!videoToDelete} onOpenChange={(open) => !open && setVideoToDelete(null)}>
+        <DialogContent className="glass-strong border-red-500/30">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-400" />
+              Delete Video
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-white/70">
+              Are you sure you want to delete this video?
+            </p>
+            {videoToDelete && (
+              <div className="glass p-3 rounded-lg border border-white/10">
+                <p className="font-medium text-white truncate">{videoToDelete.topic}</p>
+                <p className="text-xs text-white/50 mt-1">
+                  Status: {getStatusText(videoToDelete.status)}
+                </p>
+              </div>
+            )}
+            <p className="text-sm text-red-400/80">
+              This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={() => setVideoToDelete(null)}
+                data-testid="button-cancel-delete"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => videoToDelete && deleteVideoMutation.mutate(videoToDelete.id)}
+                disabled={deleteVideoMutation.isPending}
+                data-testid="button-confirm-delete"
+              >
+                {deleteVideoMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
