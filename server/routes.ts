@@ -350,9 +350,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .replace(/⚠️ CRITICAL SYSTEM CONFIGURATION:/, `⚠️ CRITICAL SYSTEM CONFIGURATION:\n- Today's date: ${currentDate}`);
 
       // Enhanced personality prompt with memory context
-      const enhancedPersonality = memoryContext
-        ? `${personalityWithDate}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`
-        : personalityWithDate;
+      let enhancedPersonality = personalityWithDate;
+      
+      if (memoryEnabled && memoryService.isAvailable()) {
+        // Always tell the avatar they have memory capabilities when enabled
+        const memoryCapabilityNote = `\n\n🧠 LONG-TERM MEMORY ENABLED: You have persistent memory across conversations. You can remember details about this person from previous chats and build an ongoing relationship with them.`;
+        
+        if (memoryContext) {
+          enhancedPersonality = `${personalityWithDate}${memoryCapabilityNote}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
+        } else {
+          enhancedPersonality = `${personalityWithDate}${memoryCapabilityNote}\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
+        }
+      }
 
       // Get knowledge base context
       const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
@@ -1980,7 +1989,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enhanced personality prompt with memory and PubMed context
       let enhancedPersonality = personalityPrompt;
       
-      if (memoryContext) {
+      // Tell avatar about memory capabilities when enabled
+      if (memoryEnabled && memoryService.isAvailable()) {
+        const memoryCapabilityNote = `\n\n🧠 LONG-TERM MEMORY ENABLED: You have persistent memory across conversations. You can remember details about this person from previous chats and build an ongoing relationship with them.`;
+        enhancedPersonality += memoryCapabilityNote;
+        
+        if (memoryContext) {
+          enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
+        } else {
+          enhancedPersonality += `\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
+        }
+      } else if (memoryContext) {
         enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`;
       }
       
