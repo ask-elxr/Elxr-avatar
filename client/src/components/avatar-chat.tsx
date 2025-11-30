@@ -676,21 +676,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 />
                 {/* Audio Waveform - shows inside input when listening */}
                 {microphoneStatus === 'listening' && !inputMessage && (
-                  <div className="absolute inset-y-0 left-3 flex items-center gap-[3px] pointer-events-none">
-                    {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                  <div className="absolute inset-y-0 left-3 flex items-center gap-[2px] pointer-events-none">
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
                         key={i}
-                        className="w-[3px] bg-green-400 rounded-full"
+                        className="w-[2px] rounded-full"
                         style={{
                           height: '60%',
-                          animation: `waveform 0.8s ease-in-out infinite`,
-                          animationDelay: `${i * 0.1}s`,
+                          background: `linear-gradient(to top, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 1), rgba(167, 139, 250, 0.9))`,
+                          boxShadow: '0 0 8px rgba(139, 92, 246, 0.6)',
+                          animation: `waveform 0.6s ease-in-out infinite`,
+                          animationDelay: `${i * 0.08}s`,
                         }}
                       />
                     ))}
                     <style>{`
                       @keyframes waveform {
-                        0%, 100% { transform: scaleY(0.3); opacity: 0.6; }
+                        0%, 100% { transform: scaleY(0.2); opacity: 0.5; }
                         50% { transform: scaleY(1); opacity: 1; }
                       }
                     `}</style>

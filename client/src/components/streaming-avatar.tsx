@@ -231,7 +231,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
             <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-md rounded-full px-6 py-3">
               <div className="flex items-center gap-3">
                 {isUserTalking ? (
-                  <Mic className="w-5 h-5 text-green-400 animate-pulse" />
+                  <Mic className="w-5 h-5 text-violet-400 animate-pulse" />
                 ) : (
                   <MicOff className="w-5 h-5 text-gray-400" />
                 )}

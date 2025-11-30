@@ -27,16 +27,17 @@ export function AudioOnlyDisplay({ isSpeaking, sessionActive, avatarId = 'mark-k
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           {isSpeaking && sessionActive && (
             <>
-              {[0, 1, 2, 3, 4].map((i) => (
+              {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="absolute rounded-full border-2 border-white/40"
+                  className="absolute rounded-full"
                   style={{
-                    width: `${280 + i * 60}px`,
-                    height: `${280 + i * 60}px`,
-                    opacity: 0.6 - (i * 0.1),
-                    animation: `pulse-ring ${1.2 + i * 0.2}s ease-out infinite`,
-                    animationDelay: `${i * 0.15}s`,
+                    width: `${280 + i * 70}px`,
+                    height: `${280 + i * 70}px`,
+                    background: `radial-gradient(circle, transparent 60%, rgba(139, 92, 246, ${0.4 - i * 0.06}) 80%, rgba(99, 102, 241, ${0.3 - i * 0.05}) 100%)`,
+                    boxShadow: `0 0 ${20 + i * 10}px rgba(139, 92, 246, ${0.3 - i * 0.05}), inset 0 0 ${15 + i * 8}px rgba(99, 102, 241, ${0.2 - i * 0.03})`,
+                    animation: `pulse-ring ${1.5 + i * 0.25}s ease-out infinite`,
+                    animationDelay: `${i * 0.2}s`,
                   }}
                 />
               ))}
@@ -46,10 +47,12 @@ export function AudioOnlyDisplay({ isSpeaking, sessionActive, avatarId = 'mark-k
           {/* Static subtle ring when not speaking */}
           {!isSpeaking && sessionActive && (
             <div 
-              className="absolute rounded-full border border-white/20"
+              className="absolute rounded-full"
               style={{
                 width: '280px',
                 height: '280px',
+                background: 'radial-gradient(circle, transparent 70%, rgba(139, 92, 246, 0.15) 90%, rgba(99, 102, 241, 0.1) 100%)',
+                boxShadow: '0 0 20px rgba(139, 92, 246, 0.2), inset 0 0 15px rgba(99, 102, 241, 0.1)',
               }}
             />
           )}
@@ -59,7 +62,7 @@ export function AudioOnlyDisplay({ isSpeaking, sessionActive, avatarId = 'mark-k
         <div className="relative z-10">
           <div 
             className={`relative rounded-full overflow-hidden transition-all duration-300 ${
-              isSpeaking ? 'ring-4 ring-white/50 shadow-[0_0_60px_rgba(255,255,255,0.4)]' : 'ring-2 ring-white/20'
+              isSpeaking ? 'ring-4 ring-violet-400/60 shadow-[0_0_80px_rgba(139,92,246,0.5)]' : 'ring-2 ring-violet-400/30'
             }`}
             style={{
               width: '240px',
