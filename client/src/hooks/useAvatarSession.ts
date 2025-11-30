@@ -87,6 +87,7 @@ export function useAvatarSession({
   const recognitionRestartTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Delayed restart timer
   const acknowledgmentAudioRef = useRef<HTMLAudioElement | null>(null); // Cached acknowledgment audio
   const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
+  const currentAcknowledgmentRef = useRef<HTMLAudioElement | null>(null); // Currently playing acknowledgment (for stopping)
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
 
@@ -194,6 +195,19 @@ export function useAvatarSession({
     }
   }, [preloadAcknowledgmentAudio]);
 
+  const stopAcknowledgmentAudio = useCallback(() => {
+    if (currentAcknowledgmentRef.current) {
+      try {
+        currentAcknowledgmentRef.current.pause();
+        currentAcknowledgmentRef.current.currentTime = 0;
+        currentAcknowledgmentRef.current = null;
+        console.log("🔇 Acknowledgment audio stopped");
+      } catch (e) {
+        currentAcknowledgmentRef.current = null;
+      }
+    }
+  }, []);
+
   const playAcknowledgmentInstantly = useCallback(async () => {
     if (!audioOnlyRef.current) return; // Only for audio-only mode
     const avatarId = currentAvatarIdRef.current;
@@ -205,7 +219,13 @@ export function useAvatarSession({
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         audio.volume = 0.8; // Slightly lower volume for acknowledgment
-        audio.onended = () => URL.revokeObjectURL(audioUrl);
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          if (currentAcknowledgmentRef.current === audio) {
+            currentAcknowledgmentRef.current = null;
+          }
+        };
+        currentAcknowledgmentRef.current = audio; // Track for stopping later
         await audio.play();
         console.log("🔊 Instant acknowledgment played");
       }
@@ -1311,6 +1331,9 @@ export function useAvatarSession({
               return;
             }
             
+            // Stop acknowledgment audio before playing main response
+            stopAcknowledgmentAudio();
+            
             const audioBlob = await audioResponse.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
@@ -1532,7 +1555,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly]);
+  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly, stopAcknowledgmentAudio]);
 
   const stopAudio = useCallback(() => {
     if (currentAudioRef.current) {
