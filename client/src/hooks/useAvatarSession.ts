@@ -223,10 +223,19 @@ export function useAvatarSession({
   }, []);
 
   const startVoiceRecognition = useCallback(() => {
-    // Skip if already initialized
-    if (recognitionRef.current) {
+    // Skip if already initialized AND running
+    if (recognitionRef.current && recognitionRunningRef.current) {
       console.log("⏭️ Voice recognition already active");
       return;
+    }
+    
+    // If we have a stale reference that's not running, clean it up
+    if (recognitionRef.current && !recognitionRunningRef.current) {
+      console.log("🔄 Cleaning up stale voice recognition reference");
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
 
     // Clear any stuck timeout from previous instance
