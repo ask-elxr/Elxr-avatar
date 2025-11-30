@@ -1287,6 +1287,15 @@ export function useAvatarSession({
           }
 
           if (audioResponse.ok) {
+            // CRITICAL: Check if we're still in audio mode before playing
+            // User might have switched to video mode while waiting for response
+            if (!audioOnlyRef.current) {
+              console.log("🚫 Skipping audio playback - switched to video mode during fetch");
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+              return;
+            }
+            
             const audioBlob = await audioResponse.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
@@ -1305,6 +1314,16 @@ export function useAvatarSession({
               URL.revokeObjectURL(audioUrl);
               currentAudioRef.current = null;
             };
+
+            // Final check before playing - mode might have changed during blob processing
+            if (!audioOnlyRef.current) {
+              console.log("🚫 Skipping audio playback - mode changed to video");
+              URL.revokeObjectURL(audioUrl);
+              currentAudioRef.current = null;
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+              return;
+            }
 
             await audio.play();
             console.log("Audio playback started");
