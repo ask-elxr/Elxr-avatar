@@ -1209,7 +1209,7 @@ export function useAvatarSession({
   }, [clearIdleTimeout]);
 
   const handleSubmitMessage = useCallback(async (message: string) => {
-    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive });
+    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive, memoryEnabled, userId });
     
     if (!message.trim()) {
       console.warn("Empty message, skipping");
@@ -1248,6 +1248,7 @@ export function useAvatarSession({
       // Audio-only mode: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
       if (audioOnlyRef.current) {
         console.log("Audio-only mode: Using /api/audio endpoint");
+        console.log("🧠 Memory settings:", { memoryEnabled, userId });
         isSpeakingRef.current = true;
         setIsSpeakingState(true);
 

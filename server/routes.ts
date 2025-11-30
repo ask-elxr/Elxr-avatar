@@ -267,6 +267,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Get memory toggle preference from request
       const { memoryEnabled = false } = req.body;
+      
+      // Debug logging for memory
+      log.info({ memoryEnabled, userId, memoryServiceAvailable: memoryService.isAvailable() }, "Memory settings for request");
 
       // Get avatar configuration (from DB with merged defaults)
       const avatarConfig = await getAvatarById(avatarId);

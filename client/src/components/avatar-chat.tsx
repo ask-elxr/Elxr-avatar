@@ -75,6 +75,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // Memory preference from localStorage
   useEffect(() => {
     const memoryPref = localStorage.getItem('memory-enabled');
+    console.log("🧠 Loading memory preference from localStorage:", memoryPref);
     setMemoryEnabled(memoryPref === 'true');
   }, []);
 
@@ -124,6 +125,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   // Save memory preference to localStorage
   const handleMemoryToggle = (checked: boolean) => {
+    console.log("🧠 Memory toggle changed to:", checked);
     setMemoryEnabled(checked);
     localStorage.setItem('memory-enabled', checked.toString());
     toast({
@@ -133,6 +135,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         : "Memory has been turned off",
     });
   };
+  
+  // Debug: Log when memoryEnabled changes
+  useEffect(() => {
+    console.log("🧠 memoryEnabled state is now:", memoryEnabled);
+  }, [memoryEnabled]);
   
   // Hook 1: Avatar session management
   const {
