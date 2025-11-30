@@ -587,32 +587,24 @@ export function useAvatarSession({
         const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
         const delay = (isIOS || isSafari) ? 3500 : 1000; // 3.5s for iOS/Safari, 1s for others
         
+        console.log("🎤 Avatar stopped talking, will resume voice recognition in", delay, "ms");
+        
         setTimeout(() => {
-          if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current && !recognitionRunningRef.current) {
-            try {
-              // On iOS/Safari, completely recreate recognition instance after video playback
-              if (isIOS || isSafari) {
-                recognitionRef.current.abort();
-                recognitionRef.current = null;
-                // Delay slightly more before recreating
-                setTimeout(() => {
-                  if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
-                    startVoiceRecognition();
-                    console.log("🔊 Voice recognition recreated for iOS/Safari (avatar finished)");
-                  }
-                }, 500);
-              } else {
-                setMicrophoneStatus('listening'); // Set immediately to prevent UI flicker
-                recognitionRef.current.start();
-                recognitionRunningRef.current = true;
-                console.log("🔊 Voice recognition resumed (avatar finished)");
-              }
-            } catch (e) {
-              // Ignore errors if already running - this can happen if onend auto-restart already started it
-              recognitionRunningRef.current = false;
-              setMicrophoneStatus('stopped');
-            }
+          // Skip if intentionally stopped or avatar started speaking again
+          if (recognitionIntentionalStopRef.current || isSpeakingRef.current) {
+            console.log("🎤 Skip resume: intentionalStop=", recognitionIntentionalStopRef.current, "isSpeaking=", isSpeakingRef.current);
+            return;
           }
+          
+          // Skip if already running
+          if (recognitionRunningRef.current) {
+            console.log("🎤 Voice recognition already running");
+            return;
+          }
+          
+          // Use startVoiceRecognition for more robust handling (handles recreation)
+          console.log("🔊 Resuming voice recognition (avatar finished speaking)");
+          startVoiceRecognition();
         }, delay);
       });
 
@@ -1060,6 +1052,13 @@ export function useAvatarSession({
         await startHeyGenSession(currentAvatarIdRef.current);
         setIsLoading(false);
         console.log("✅ HeyGen started - switched to video mode");
+        
+        // CRITICAL: Ensure voice recognition is active after switching to video mode
+        // The HeyGen session might not trigger speaking events, so explicitly ensure recognition is running
+        if (!recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+          console.log("🎤 Restarting voice recognition after video mode switch");
+          startVoiceRecognition();
+        }
       } catch (error) {
         console.error("Error starting HeyGen for mode switch:", error);
         setIsLoading(false);
@@ -1073,9 +1072,14 @@ export function useAvatarSession({
       }
     }
     
-    // Voice recognition continues running throughout - no restart needed
-    console.log("🎤 Voice recognition remains active during mode switch");
-  }, [videoRef, startHeyGenSession, clearIdleTimeout]);
+    // Ensure voice recognition is running after any mode switch
+    if (!recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+      console.log("🎤 Ensuring voice recognition is active after mode switch");
+      startVoiceRecognition();
+    } else {
+      console.log("🎤 Voice recognition status: running=" + recognitionRunningRef.current);
+    }
+  }, [videoRef, startHeyGenSession, clearIdleTimeout, startVoiceRecognition]);
 
   const togglePause = useCallback(async () => {
     if (isPaused) {
