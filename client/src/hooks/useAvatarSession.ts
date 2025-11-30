@@ -985,19 +985,26 @@ export function useAvatarSession({
     const wasAudioOnly = audioOnlyRef.current;
     audioOnlyRef.current = newAudioOnly;
     
-    // Stop any current playback first
+    // Stop any current audio playback first (thorough cleanup)
     if (currentAudioRef.current) {
       try {
         currentAudioRef.current.pause();
         currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = '';
+        currentAudioRef.current.load(); // Force release audio resources
         currentAudioRef.current = null;
         isSpeakingRef.current = false;
         setIsSpeakingState(false);
-        console.log("Stopped audio playback for mode switch");
+        console.log("🛑 Stopped audio playback for mode switch");
       } catch (e) {
         console.warn("Error stopping audio:", e);
+        currentAudioRef.current = null;
       }
     }
+    
+    // Also clear speaking state even if no audio ref (safety)
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
     
     // If switching FROM video TO audio, stop HeyGen client (releases credits automatically)
     // Keep server session alive for conversation continuity
