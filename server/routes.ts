@@ -46,6 +46,7 @@ import {
   isVideoRejection,
   generateConfirmationPrompt,
   generateRejectionResponse,
+  refineVideoTopic,
 } from "./services/intent.js";
 import { detectEndChatIntent, getFarewellResponse } from "./services/endChatIntent.js";
 import { chatVideoService } from "./services/chatVideo.js";
@@ -343,10 +344,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.send(audioBuffer);
           }
           
-          // User provided more details - update the topic
-          const newTopic = `${pendingConfirmation.topic} - ${message}`;
-          setPendingVideoConfirmation(userId, newTopic, pendingConfirmation.originalMessage + " " + message, avatarId);
-          console.log(`📝 Updated pending video topic to: "${newTopic}"`);
+          // User provided more details - use AI to intelligently refine the topic
+          const refinement = await refineVideoTopic(pendingConfirmation.topic, message);
+          const newTopic = refinement.refinedTopic;
+          
+          // Update with the refined topic - use user's message as the new original if it was a replacement
+          const newOriginalMessage = refinement.isReplacement ? message : `${pendingConfirmation.originalMessage} ${message}`;
+          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId);
+          console.log(`📝 Updated pending video topic to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
           const audioBuffer = await elevenlabsService.generateSpeech(updatePrompt, avatarConfig.elevenlabsVoiceId);
@@ -1752,10 +1757,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
-          // User provided more details - update the topic
-          const newTopic = `${pendingConfirmation.topic} - ${message}`;
-          setPendingVideoConfirmation(userId, newTopic, pendingConfirmation.originalMessage + " " + message, avatarId);
-          console.log(`📝 Updated pending video topic (video mode) to: "${newTopic}"`);
+          // User provided more details - use AI to intelligently refine the topic
+          const refinement = await refineVideoTopic(pendingConfirmation.topic, message);
+          const newTopic = refinement.refinedTopic;
+          
+          // Update with the refined topic - use user's message as the new original if it was a replacement
+          const newOriginalMessage = refinement.isReplacement ? message : `${pendingConfirmation.originalMessage} ${message}`;
+          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId);
+          console.log(`📝 Updated pending video topic (video mode) to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
           return res.json({

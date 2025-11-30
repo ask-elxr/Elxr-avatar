@@ -571,3 +571,77 @@ export function generateVideoAcknowledgment(topic: string | null, avatarName: st
   
   return responses[Math.floor(Math.random() * responses.length)];
 }
+
+interface TopicRefinementResult {
+  refinedTopic: string;
+  isReplacement: boolean; // true = user clarified/replaced, false = user added details
+}
+
+/**
+ * Intelligently refines the video topic based on user's follow-up message.
+ * Determines if the user is:
+ * 1. Clarifying/replacing the topic (new message IS the topic)
+ * 2. Adding details to the existing topic (should be combined)
+ */
+export async function refineVideoTopic(
+  originalTopic: string,
+  userMessage: string
+): Promise<TopicRefinementResult> {
+  try {
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 200,
+      system: `You analyze video topic refinements. When a user is asked to clarify what they want in a video, they may:
+1. REPLACE: Provide a new/clarified topic that should replace the original (e.g., "protein intake for athletes" replaces "nutrition")
+2. ADD: Add specific details to enhance the original topic (e.g., "with examples" adds to "meditation techniques")
+
+Respond ONLY in JSON:
+{
+  "refinedTopic": "the final topic to use",
+  "isReplacement": true/false
+}
+
+EXAMPLES:
+- Original: "nutrition", User says: "focus on protein intake for athletes" → {"refinedTopic": "protein intake for athletes", "isReplacement": true}
+- Original: "meditation", User says: "specifically about mindfulness" → {"refinedTopic": "mindfulness meditation", "isReplacement": true}
+- Original: "workout routines", User says: "with warm-up exercises included" → {"refinedTopic": "workout routines with warm-up exercises", "isReplacement": false}
+- Original: "stress management", User says: "breathing techniques" → {"refinedTopic": "breathing techniques for stress management", "isReplacement": true}
+- Original: "nutrition", User says: "actually make it about sleep instead" → {"refinedTopic": "sleep", "isReplacement": true}
+- Original: "running", User says: "for beginners" → {"refinedTopic": "running for beginners", "isReplacement": false}
+
+The refined topic should be concise and clear - suitable for a video title.`,
+      messages: [
+        {
+          role: "user",
+          content: `Original topic: "${originalTopic}"\nUser's follow-up: "${userMessage}"\n\nDetermine the refined topic.`,
+        },
+      ],
+    });
+
+    const text = response.content[0].type === 'text' ? response.content[0].text : '';
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    
+    if (jsonMatch) {
+      const result = JSON.parse(jsonMatch[0]);
+      console.log(`[Topic Refinement] Original: "${originalTopic}" + User: "${userMessage}" → "${result.refinedTopic}" (${result.isReplacement ? 'replaced' : 'enhanced'})`);
+      return {
+        refinedTopic: result.refinedTopic || userMessage,
+        isReplacement: Boolean(result.isReplacement),
+      };
+    }
+    
+    // Fallback: treat as replacement if message seems like a complete topic
+    console.log(`[Topic Refinement] Fallback - treating as replacement`);
+    return {
+      refinedTopic: userMessage,
+      isReplacement: true,
+    };
+  } catch (error) {
+    console.error("[Topic Refinement] Error:", error);
+    // On error, default to treating the new message as the complete topic
+    return {
+      refinedTopic: userMessage,
+      isReplacement: true,
+    };
+  }
+}
