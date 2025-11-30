@@ -287,6 +287,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🎧 ═══════════════════════════════════════════════════════════════`);
       console.log(`📥 USER MESSAGE: "${message}"`);
 
+      // Check for video request intent in audio mode
+      const videoIntent = await detectVideoIntent(message);
+      log.info({ videoIntent }, "Video intent detection result");
+      
+      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
+        const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
+        
+        // Start video generation in background
+        const videoResult = await chatVideoService.createVideoFromChat({
+          userId,
+          avatarId,
+          requestText: message,
+          topic: topic || "the requested topic",
+        });
+
+        if (videoResult.success) {
+          const acknowledgment = generateVideoAcknowledgment(topic, avatarConfig.name);
+          
+          log.info({ userId, avatarId, topic, videoRecordId: videoResult.videoRecordId }, 'Video generation started from audio chat');
+          console.log(`🎬 VIDEO REQUEST DETECTED - Creating video about: "${topic}"`);
+          
+          // Generate audio for the acknowledgment
+          const audioBuffer = await elevenlabsService.generateSpeech(acknowledgment, avatarConfig.elevenlabsVoiceId);
+          
+          res.setHeader("Content-Type", "audio/mpeg");
+          res.setHeader("Content-Length", audioBuffer.length.toString());
+          res.setHeader("X-Video-Generating", "true");
+          res.setHeader("X-Video-Record-Id", videoResult.videoRecordId || "");
+          res.setHeader("X-Video-Topic", encodeURIComponent(topic || ""));
+          return res.send(audioBuffer);
+        }
+        // If video creation failed, continue with normal response
+        log.warn({ userId, avatarId, error: videoResult.error }, 'Video generation request failed in audio mode, continuing with normal response');
+      }
+
       // Retrieve relevant memories if memory is enabled
       let memoryContext = "";
       if (memoryEnabled && userId && memoryService.isAvailable()) {
