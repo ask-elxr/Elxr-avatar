@@ -70,6 +70,7 @@ export function useAvatarSession({
   const isSpeakingRef = useRef(false);
   const audioOnlyRef = useRef(false);
   const currentAvatarIdRef = useRef(selectedAvatarId);
+  const memoryEnabledRef = useRef(memoryEnabled); // Always have current value for callbacks
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -98,6 +99,11 @@ export function useAvatarSession({
   useEffect(() => {
     sessionActiveRef.current = sessionActive;
   }, [sessionActive]);
+
+  // Sync memoryEnabledRef with memoryEnabled prop (prevents stale closures)
+  useEffect(() => {
+    memoryEnabledRef.current = memoryEnabled;
+  }, [memoryEnabled]);
 
   const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
@@ -1220,7 +1226,7 @@ export function useAvatarSession({
   }, [clearIdleTimeout]);
 
   const handleSubmitMessage = useCallback(async (message: string) => {
-    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive, memoryEnabled, userId });
+    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive, memoryEnabled: memoryEnabledRef.current, userId });
     
     if (!message.trim()) {
       console.warn("Empty message, skipping");
@@ -1259,7 +1265,7 @@ export function useAvatarSession({
       // Audio-only mode: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
       if (audioOnlyRef.current) {
         console.log("Audio-only mode: Using /api/audio endpoint");
-        console.log("🧠 Memory settings:", { memoryEnabled, userId });
+        console.log("🧠 Memory settings:", { memoryEnabled: memoryEnabledRef.current, userId });
         isSpeakingRef.current = true;
         setIsSpeakingState(true);
 
@@ -1272,9 +1278,9 @@ export function useAvatarSession({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               message,
-              userId: memoryEnabled ? userId : undefined,
+              userId: memoryEnabledRef.current ? userId : undefined,
               avatarId: currentAvatarIdRef.current,
-              memoryEnabled, // Pass memory toggle flag
+              memoryEnabled: memoryEnabledRef.current, // Use ref for current value
             }),
             signal: controller.signal,
           });
@@ -1362,9 +1368,9 @@ export function useAvatarSession({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message,
-            userId: memoryEnabled ? userId : undefined,
+            userId: memoryEnabledRef.current ? userId : undefined,
             avatarId: currentAvatarIdRef.current,
-            memoryEnabled, // Pass memory toggle flag
+            memoryEnabled: memoryEnabledRef.current, // Use ref for current value
           }),
           signal: controller.signal,
         });
@@ -1517,7 +1523,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, heygenSessionActive, memoryEnabled, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly]);
+  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly]);
 
   const stopAudio = useCallback(() => {
     if (currentAudioRef.current) {

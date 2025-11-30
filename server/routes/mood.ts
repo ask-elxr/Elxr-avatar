@@ -3,6 +3,7 @@ import { db } from "../db";
 import { moodEntries, insertMoodEntrySchema, moodTypeEnum } from "@shared/schema";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { moodResponseService } from "../services/moodResponse";
+import { subscriptionService } from "../services/subscription";
 import { logger } from "../logger";
 
 export const moodRouter = Router();
@@ -70,6 +71,11 @@ moodRouter.post("/", async (req: Request, res: Response) => {
         avatarResponse,
       })
       .returning();
+
+    // Track usage for dashboard
+    await subscriptionService.incrementUsage(userId, "mood").catch(err => {
+      log.warn({ error: err.message }, 'Failed to track mood usage');
+    });
 
     log.info({ entryId: entry.id }, 'Mood entry created successfully');
     

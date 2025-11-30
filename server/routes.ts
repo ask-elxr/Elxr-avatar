@@ -3612,6 +3612,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sessionId = `session_${userId}_${Date.now()}`;
       sessionManager.startSession(sessionId, userId, avatarId || 'unknown');
 
+      // Track usage for dashboard
+      await subscriptionService.incrementUsage(userId, "chatSession").catch(err => {
+        console.warn("Failed to track chat session usage:", err.message);
+      });
+
       res.json({ sessionId });
     } catch (error) {
       console.error("Error starting session:", error);

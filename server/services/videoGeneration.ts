@@ -3,6 +3,7 @@ import { db } from "../db";
 import { lessons, generatedVideos, avatarProfiles, courses } from "@shared/schema";
 import { eq, inArray } from "drizzle-orm";
 import { ElevenLabsClient } from "elevenlabs";
+import { subscriptionService } from "./subscription";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
@@ -268,6 +269,13 @@ export class VideoGenerationService {
           testVideo: useTestMode, // Track whether this is a test video
         })
         .returning();
+
+      // Track usage for dashboard (course has userId)
+      if (course.userId) {
+        await subscriptionService.incrementUsage(course.userId, "video").catch(err => {
+          console.warn("Failed to track video usage:", err.message);
+        });
+      }
 
       // Update lesson status
       await db

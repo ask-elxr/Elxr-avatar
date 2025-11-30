@@ -16,6 +16,7 @@ import {
 import { eq, and, desc, or } from "drizzle-orm";
 import { videoGenerationService } from "../services/videoGeneration";
 import { chatVideoService } from "../services/chatVideo";
+import { subscriptionService } from "../services/subscription";
 
 export const coursesRouter = Router();
 
@@ -259,6 +260,11 @@ coursesRouter.post("/", async (req: Request, res: Response) => {
       .insert(courses)
       .values(validatedData)
       .returning();
+
+    // Track usage for dashboard
+    await subscriptionService.incrementUsage(userId, "course").catch(err => {
+      console.warn("Failed to track course usage:", err.message);
+    });
 
     res.status(201).json(newCourse);
   } catch (error) {

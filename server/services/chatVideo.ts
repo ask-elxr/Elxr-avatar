@@ -7,6 +7,7 @@ import { getUserAvatarMemory } from "./memory";
 import { getAvatarById } from "./avatars";
 import { emailService } from "./email";
 import { ElevenLabsClient } from "elevenlabs";
+import { subscriptionService } from "./subscription";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
@@ -142,6 +143,11 @@ export class ChatVideoService {
           status: "pending",
         })
         .returning();
+
+      // Track usage for dashboard
+      await subscriptionService.incrementUsage(params.userId, "video").catch(err => {
+        console.warn("Failed to track chat video usage:", err.message);
+      });
 
       this.generateVideoAsync(videoRecord.id, params.userId, avatar, params.topic);
 
