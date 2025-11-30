@@ -496,7 +496,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
             {/* Pending Video Notification */}
             {pendingVideos.length > 0 && (
-              <div className="absolute top-20 left-4 flex flex-col gap-2 z-30">
+              <div className="absolute top-32 left-4 flex flex-col gap-2 z-30">
                 {pendingVideos.map((video) => (
                   <div 
                     key={video.id} 
