@@ -294,11 +294,26 @@ export function useAvatarSession({
           lastTranscriptRef.current = transcript;
           console.log("🎤 Voice input (final):", transcript);
           
-          // Only process if avatar isn't speaking
+          // If avatar is speaking in audio mode, interrupt it
+          if (isSpeakingRef.current && currentAudioRef.current) {
+            console.log("🛑 Interrupting audio - user is speaking");
+            try {
+              currentAudioRef.current.pause();
+              currentAudioRef.current.currentTime = 0;
+              currentAudioRef.current.src = '';
+              currentAudioRef.current.load();
+              currentAudioRef.current = null;
+            } catch (e) {
+              console.warn("Error interrupting audio:", e);
+              currentAudioRef.current = null;
+            }
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+          }
+          
+          // Process the message (now that we've interrupted if needed)
           if (!isSpeakingRef.current) {
             handleSubmitMessage(transcript);
-          } else {
-            console.log("⏭️ Ignoring voice input - avatar is speaking");
           }
         }
       };
