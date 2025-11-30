@@ -6,9 +6,13 @@ import { generateLessonScript } from "./rag";
 import { getUserAvatarMemory } from "./memory";
 import { getAvatarById } from "./avatars";
 import { emailService } from "./email";
+import { ElevenLabsClient } from "elevenlabs";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
+const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
+
+const elevenLabsClient = ELEVENLABS_API_KEY ? new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY }) : null;
 
 const TALKING_PHOTO_IDS = new Set([
   "84f913285ac944188a35ce5b58ceb861",
@@ -43,6 +47,70 @@ export class ChatVideoService {
     "Content-Type": "application/json",
     "X-Api-Key": HEYGEN_API_KEY || "",
   };
+
+  /**
+   * Generate audio using ElevenLabs and upload to HeyGen
+   * Returns the HeyGen asset_id for the uploaded audio
+   */
+  private async generateElevenLabsAudio(text: string, voiceId: string, avatarName: string): Promise<string | null> {
+    if (!elevenLabsClient || !ELEVENLABS_API_KEY) {
+      console.log("⚠️ ElevenLabs not configured, falling back to HeyGen voice");
+      return null;
+    }
+
+    try {
+      console.log(`🎙️ Generating ElevenLabs audio for chat video (${avatarName}) with voice ${voiceId}...`);
+      
+      // Generate audio with ElevenLabs
+      const audioStream = await elevenLabsClient.textToSpeech.convert(voiceId, {
+        text: text.slice(0, 5000), // ElevenLabs has its own limits
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
+      });
+
+      // Collect stream into buffer
+      const chunks: Buffer[] = [];
+      for await (const chunk of audioStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const audioBuffer = Buffer.concat(chunks);
+      
+      console.log(`✅ ElevenLabs audio generated: ${audioBuffer.length} bytes`);
+
+      // Upload audio to HeyGen
+      const FormData = (await import("form-data")).default;
+      const formData = new FormData();
+      formData.append("file", audioBuffer, {
+        filename: `audio_${Date.now()}.mp3`,
+        contentType: "audio/mpeg",
+      });
+
+      const uploadResponse = await axios.post(
+        "https://api.heygen.com/v1/asset",
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            "X-Api-Key": HEYGEN_API_KEY || "",
+          },
+        }
+      );
+
+      if (uploadResponse.data?.data?.asset_id) {
+        console.log(`✅ Audio uploaded to HeyGen: ${uploadResponse.data.data.asset_id}`);
+        return uploadResponse.data.data.asset_id;
+      }
+
+      console.error("❌ Failed to get asset_id from HeyGen upload response");
+      return null;
+    } catch (error: any) {
+      console.error("❌ Error generating ElevenLabs audio for chat video:", error.message);
+      return null;
+    }
+  }
 
   async createVideoFromChat(params: {
     userId: string;
@@ -151,18 +219,48 @@ ${memoryContext}
         })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
 
-      const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8";
+      // Create voice config - prefer ElevenLabs if avatar has it configured
+      let voiceConfig: any;
       
-      // Use video-specific voice ID if available, otherwise fall back to general HeyGen voice
-      const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId || DEFAULT_VOICE_ID;
-      
-      const voiceConfig: any = {
-        type: "text",
-        input_text: scriptResult.script.slice(0, 5000),
-        voice_id: videoVoiceId,
-      };
-      
-      console.log(`🎙️ Using HeyGen voice for chat video (${avatar.name}): ${videoVoiceId}`);
+      if (avatar.elevenlabsVoiceId && elevenLabsClient) {
+        // Use ElevenLabs voice - generate audio and upload to HeyGen
+        console.log(`🎙️ Using ElevenLabs voice for chat video (${avatar.name}): ${avatar.elevenlabsVoiceId}`);
+        const audioAssetId = await this.generateElevenLabsAudio(
+          scriptResult.script,
+          avatar.elevenlabsVoiceId,
+          avatar.name
+        );
+        
+        if (audioAssetId) {
+          voiceConfig = {
+            type: "audio",
+            audio_asset_id: audioAssetId,
+          };
+          console.log(`✅ Using ElevenLabs audio asset for chat video: ${audioAssetId}`);
+        } else {
+          // Fallback to HeyGen voice if ElevenLabs failed
+          const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
+          const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId || DEFAULT_VOICE_ID;
+          voiceConfig = {
+            type: "text",
+            input_text: scriptResult.script.slice(0, 5000),
+            voice_id: videoVoiceId,
+          };
+          console.log(`⚠️ ElevenLabs failed, falling back to HeyGen voice: ${videoVoiceId}`);
+        }
+      } else {
+        // Use HeyGen voice - video-specific voice ID if available, otherwise fall back
+        const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
+        const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId || DEFAULT_VOICE_ID;
+        
+        voiceConfig = {
+          type: "text",
+          input_text: scriptResult.script.slice(0, 5000),
+          voice_id: videoVoiceId,
+        };
+        
+        console.log(`🎙️ Using HeyGen voice for chat video (${avatar.name}): ${videoVoiceId}`);
+      }
 
       const isTalkingPhoto = TALKING_PHOTO_IDS.has(avatar.heygenVideoAvatarId);
       
