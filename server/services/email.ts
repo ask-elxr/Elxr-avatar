@@ -1,15 +1,23 @@
 import { Resend } from 'resend';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@resend.dev';
 
 class EmailService {
   private resend: Resend | null = null;
-  private fromEmail = 'noreply@resend.dev'; // Default Resend sandbox domain
+  private fromEmail: string;
 
   constructor() {
+    this.fromEmail = RESEND_FROM_EMAIL;
+    
     if (RESEND_API_KEY) {
       this.resend = new Resend(RESEND_API_KEY);
-      console.log('📧 Email service initialized with Resend');
+      console.log(`📧 Email service initialized with Resend (from: ${this.fromEmail})`);
+      
+      if (this.fromEmail === 'noreply@resend.dev') {
+        console.warn('⚠️ Using Resend sandbox domain - emails can only be sent to account owner');
+        console.warn('   Set RESEND_FROM_EMAIL to use a verified domain (e.g., noreply@mail.yourdomain.com)');
+      }
     } else {
       console.warn('⚠️ RESEND_API_KEY not configured - email notifications disabled');
     }
