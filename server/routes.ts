@@ -36,7 +36,17 @@ import { heygenCreditService } from "./heygenCreditService.js";
 import { memoryService, MemoryType } from "./memoryService.js";
 import * as pubmedService from "./pubmedService.js";
 import { googleDriveService } from "./googleDriveService.js";
-import { detectVideoIntent, generateVideoAcknowledgment } from "./services/intent.js";
+import { 
+  detectVideoIntent, 
+  generateVideoAcknowledgment,
+  setPendingVideoConfirmation,
+  getPendingVideoConfirmation,
+  clearPendingVideoConfirmation,
+  isVideoConfirmation,
+  isVideoRejection,
+  generateConfirmationPrompt,
+  generateRejectionResponse,
+} from "./services/intent.js";
 import { detectEndChatIntent, getFarewellResponse } from "./services/endChatIntent.js";
 import { chatVideoService } from "./services/chatVideo.js";
 import { subscriptionService } from "./services/subscription.js";
@@ -290,6 +300,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`🎧 ═══════════════════════════════════════════════════════════════`);
       console.log(`📥 USER MESSAGE: "${message}"`);
 
+      // Check for pending video confirmation first
+      if (userId) {
+        const pendingConfirmation = getPendingVideoConfirmation(userId);
+        if (pendingConfirmation) {
+          // Check if user is confirming
+          if (isVideoConfirmation(message)) {
+            clearPendingVideoConfirmation(userId);
+            console.log(`✅ VIDEO CONFIRMED - Creating video about: "${pendingConfirmation.topic}"`);
+            
+            // Start video generation
+            const videoResult = await chatVideoService.createVideoFromChat({
+              userId,
+              avatarId: pendingConfirmation.avatarId,
+              requestText: pendingConfirmation.originalMessage,
+              topic: pendingConfirmation.topic,
+            });
+
+            if (videoResult.success) {
+              const acknowledgment = generateVideoAcknowledgment(pendingConfirmation.topic, avatarConfig.name);
+              log.info({ userId, avatarId, topic: pendingConfirmation.topic, videoRecordId: videoResult.videoRecordId }, 'Video generation confirmed and started from audio chat');
+              
+              const audioBuffer = await elevenlabsService.generateSpeech(acknowledgment, avatarConfig.elevenlabsVoiceId);
+              res.setHeader("Content-Type", "audio/mpeg");
+              res.setHeader("Content-Length", audioBuffer.length.toString());
+              res.setHeader("X-Video-Generating", "true");
+              res.setHeader("X-Video-Record-Id", videoResult.videoRecordId || "");
+              res.setHeader("X-Video-Topic", encodeURIComponent(pendingConfirmation.topic || ""));
+              return res.send(audioBuffer);
+            }
+          }
+          
+          // Check if user is rejecting
+          if (isVideoRejection(message)) {
+            clearPendingVideoConfirmation(userId);
+            console.log(`❌ VIDEO REJECTED by user`);
+            
+            const rejectionResponse = generateRejectionResponse();
+            const audioBuffer = await elevenlabsService.generateSpeech(rejectionResponse, avatarConfig.elevenlabsVoiceId);
+            res.setHeader("Content-Type", "audio/mpeg");
+            res.setHeader("Content-Length", audioBuffer.length.toString());
+            return res.send(audioBuffer);
+          }
+          
+          // User provided more details - update the topic
+          const newTopic = `${pendingConfirmation.topic} - ${message}`;
+          setPendingVideoConfirmation(userId, newTopic, pendingConfirmation.originalMessage + " " + message, avatarId);
+          console.log(`📝 Updated pending video topic to: "${newTopic}"`);
+          
+          const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
+          const audioBuffer = await elevenlabsService.generateSpeech(updatePrompt, avatarConfig.elevenlabsVoiceId);
+          res.setHeader("Content-Type", "audio/mpeg");
+          res.setHeader("Content-Length", audioBuffer.length.toString());
+          res.setHeader("X-Video-Pending-Confirmation", "true");
+          return res.send(audioBuffer);
+        }
+      }
+
       // Check for video request intent in audio mode
       const videoIntent = await detectVideoIntent(message);
       log.info({ videoIntent }, "Video intent detection result");
@@ -297,32 +364,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
-        // Start video generation in background
-        const videoResult = await chatVideoService.createVideoFromChat({
-          userId,
-          avatarId,
-          requestText: message,
-          topic: topic || "the requested topic",
-        });
-
-        if (videoResult.success) {
-          const acknowledgment = generateVideoAcknowledgment(topic, avatarConfig.name);
-          
-          log.info({ userId, avatarId, topic, videoRecordId: videoResult.videoRecordId }, 'Video generation started from audio chat');
-          console.log(`🎬 VIDEO REQUEST DETECTED - Creating video about: "${topic}"`);
-          
-          // Generate audio for the acknowledgment
-          const audioBuffer = await elevenlabsService.generateSpeech(acknowledgment, avatarConfig.elevenlabsVoiceId);
-          
-          res.setHeader("Content-Type", "audio/mpeg");
-          res.setHeader("Content-Length", audioBuffer.length.toString());
-          res.setHeader("X-Video-Generating", "true");
-          res.setHeader("X-Video-Record-Id", videoResult.videoRecordId || "");
-          res.setHeader("X-Video-Topic", encodeURIComponent(topic || ""));
-          return res.send(audioBuffer);
-        }
-        // If video creation failed, continue with normal response
-        log.warn({ userId, avatarId, error: videoResult.error }, 'Video generation request failed in audio mode, continuing with normal response');
+        // Store pending confirmation instead of immediately generating
+        setPendingVideoConfirmation(userId, topic || "the requested topic", message, avatarId);
+        console.log(`🎬 VIDEO INTENT DETECTED - Asking for confirmation about: "${topic}"`);
+        
+        const confirmationPrompt = generateConfirmationPrompt(topic || "the requested topic", avatarConfig.name);
+        const audioBuffer = await elevenlabsService.generateSpeech(confirmationPrompt, avatarConfig.elevenlabsVoiceId);
+        
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Length", audioBuffer.length.toString());
+        res.setHeader("X-Video-Pending-Confirmation", "true");
+        res.setHeader("X-Video-Topic", encodeURIComponent(topic || ""));
+        return res.send(audioBuffer);
       }
 
       // Retrieve relevant memories if memory is enabled
@@ -1643,51 +1696,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check for pending video confirmation first (video mode)
+      if (userId) {
+        const pendingConfirmation = getPendingVideoConfirmation(userId);
+        if (pendingConfirmation) {
+          // Check if user is confirming
+          if (isVideoConfirmation(message)) {
+            clearPendingVideoConfirmation(userId);
+            console.log(`✅ VIDEO CONFIRMED (video mode) - Creating video about: "${pendingConfirmation.topic}"`);
+            
+            // Start video generation
+            const videoResult = await chatVideoService.createVideoFromChat({
+              userId,
+              avatarId: pendingConfirmation.avatarId,
+              requestText: pendingConfirmation.originalMessage,
+              topic: pendingConfirmation.topic,
+            });
+
+            if (videoResult.success) {
+              const acknowledgment = generateVideoAcknowledgment(pendingConfirmation.topic, avatarConfig.name);
+              
+              await storage.saveConversation({
+                userId,
+                avatarId,
+                role: 'assistant',
+                text: acknowledgment,
+                metadata: { type: 'video-generating', videoRecordId: videoResult.videoRecordId, topic: pendingConfirmation.topic },
+              });
+
+              logger.info({ userId, avatarId, topic: pendingConfirmation.topic, videoRecordId: videoResult.videoRecordId }, 'Video generation confirmed and started from video chat');
+
+              return res.json({
+                success: true,
+                message,
+                knowledgeResponse: acknowledgment,
+                personalityUsed: avatarConfig.personalityPrompt,
+                usedClaude: true,
+                videoGenerating: { videoRecordId: videoResult.videoRecordId, topic: pendingConfirmation.topic },
+              });
+            }
+          }
+          
+          // Check if user is rejecting
+          if (isVideoRejection(message)) {
+            clearPendingVideoConfirmation(userId);
+            console.log(`❌ VIDEO REJECTED (video mode) by user`);
+            
+            const rejectionResponse = generateRejectionResponse();
+            return res.json({
+              success: true,
+              message,
+              knowledgeResponse: rejectionResponse,
+              personalityUsed: avatarConfig.personalityPrompt,
+              usedClaude: false,
+            });
+          }
+          
+          // User provided more details - update the topic
+          const newTopic = `${pendingConfirmation.topic} - ${message}`;
+          setPendingVideoConfirmation(userId, newTopic, pendingConfirmation.originalMessage + " " + message, avatarId);
+          console.log(`📝 Updated pending video topic (video mode) to: "${newTopic}"`);
+          
+          const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
+          return res.json({
+            success: true,
+            message,
+            knowledgeResponse: updatePrompt,
+            personalityUsed: avatarConfig.personalityPrompt,
+            usedClaude: false,
+            videoPendingConfirmation: true,
+          });
+        }
+      }
+
       // Check for video request intent
       const videoIntent = await detectVideoIntent(message);
       if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
-        // Start video generation in background
-        const videoResult = await chatVideoService.createVideoFromChat({
-          userId,
-          avatarId,
-          requestText: message,
-          topic: topic || "the requested topic",
+        // Store pending confirmation instead of immediately generating
+        setPendingVideoConfirmation(userId, topic || "the requested topic", message, avatarId);
+        console.log(`🎬 VIDEO INTENT DETECTED (video mode) - Asking for confirmation about: "${topic}"`);
+        
+        const confirmationPrompt = generateConfirmationPrompt(topic || "the requested topic", avatarConfig.name);
+        
+        return res.json({
+          success: true,
+          message,
+          knowledgeResponse: confirmationPrompt,
+          personalityUsed: avatarConfig.personalityPrompt,
+          usedClaude: false,
+          videoPendingConfirmation: true,
+          videoTopic: topic,
         });
-
-        if (videoResult.success) {
-          const acknowledgment = generateVideoAcknowledgment(topic, avatarConfig.name);
-          
-          // Save the acknowledgment to conversation history
-          await storage.saveConversation({
-            userId,
-            avatarId,
-            role: 'assistant',
-            text: acknowledgment,
-            metadata: {
-              type: 'video-generating',
-              videoRecordId: videoResult.videoRecordId,
-              topic,
-            },
-          });
-
-          logger.info({ userId, avatarId, topic, videoRecordId: videoResult.videoRecordId }, 'Video generation started from chat');
-
-          return res.json({
-            success: true,
-            message,
-            knowledgeResponse: acknowledgment,
-            personalityUsed: avatarConfig.personalityPrompt,
-            usedClaude: true,
-            videoGenerating: {
-              videoRecordId: videoResult.videoRecordId,
-              topic,
-            },
-          });
-        }
-        // If video creation failed, continue with normal response
-        logger.warn({ userId, avatarId, error: videoResult.error }, 'Video generation request failed, continuing with normal response');
       }
 
       // Update session activity to prevent premature cleanup

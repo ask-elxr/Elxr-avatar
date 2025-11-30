@@ -8,6 +8,93 @@ interface VideoIntentResult {
   confidence: number;
 }
 
+// Track pending video confirmations per user
+interface PendingVideoConfirmation {
+  topic: string;
+  originalMessage: string;
+  avatarId: string;
+  timestamp: number;
+}
+
+const pendingVideoConfirmations = new Map<string, PendingVideoConfirmation>();
+
+// Confirmation patterns
+const CONFIRMATION_PATTERNS = [
+  /^(?:yes|yeah|yep|yup|sure|ok|okay|confirm|do it|go ahead|please|definitely|absolutely|yes please|go for it)$/i,
+  /^(?:yes|yeah|yep|yup|sure|ok|okay),?\s*(?:please|do it|go ahead|that sounds good|let's do it)$/i,
+  /^(?:that's|thats)\s+(?:right|correct|good|perfect|great)$/i,
+  /^(?:sounds good|perfect|great|awesome|cool)$/i,
+  /^(?:make|create|generate)\s+(?:it|the video)$/i,
+];
+
+const REJECTION_PATTERNS = [
+  /^(?:no|nope|nah|cancel|never mind|nevermind|stop|don't|dont|not now|maybe later|wait)$/i,
+  /^(?:actually|wait),?\s*(?:no|never mind|cancel|stop)/i,
+  /^(?:hold on|wait a minute|wait a sec)/i,
+];
+
+export function setPendingVideoConfirmation(userId: string, topic: string, originalMessage: string, avatarId: string): void {
+  pendingVideoConfirmations.set(userId, {
+    topic,
+    originalMessage,
+    avatarId,
+    timestamp: Date.now(),
+  });
+  
+  // Auto-expire after 2 minutes
+  setTimeout(() => {
+    const pending = pendingVideoConfirmations.get(userId);
+    if (pending && pending.timestamp === Date.now()) {
+      pendingVideoConfirmations.delete(userId);
+    }
+  }, 120000);
+}
+
+export function getPendingVideoConfirmation(userId: string): PendingVideoConfirmation | undefined {
+  const pending = pendingVideoConfirmations.get(userId);
+  if (pending) {
+    // Check if still valid (within 2 minutes)
+    if (Date.now() - pending.timestamp < 120000) {
+      return pending;
+    } else {
+      pendingVideoConfirmations.delete(userId);
+    }
+  }
+  return undefined;
+}
+
+export function clearPendingVideoConfirmation(userId: string): void {
+  pendingVideoConfirmations.delete(userId);
+}
+
+export function isVideoConfirmation(message: string): boolean {
+  const normalized = message.trim().toLowerCase();
+  return CONFIRMATION_PATTERNS.some(pattern => pattern.test(normalized));
+}
+
+export function isVideoRejection(message: string): boolean {
+  const normalized = message.trim().toLowerCase();
+  return REJECTION_PATTERNS.some(pattern => pattern.test(normalized));
+}
+
+export function generateConfirmationPrompt(topic: string, avatarName: string): string {
+  const prompts = [
+    `Just to confirm - would you like me to create a video about "${topic}"? Say "yes" when you're ready, or tell me more about what you'd like in the video.`,
+    `I can create a video about "${topic}" for you. Does that sound right? Say "yes" to start, or feel free to add more details about what you'd like covered.`,
+    `So you'd like a video about "${topic}"? Let me know if that's correct by saying "yes", or tell me more about what you want in the video.`,
+  ];
+  return prompts[Math.floor(Math.random() * prompts.length)];
+}
+
+export function generateRejectionResponse(): string {
+  const responses = [
+    "No problem! Let me know if you'd like a video later. What else can I help you with?",
+    "Okay, I'll hold off on the video. Feel free to ask anytime. What else would you like to discuss?",
+    "Got it, no video for now. What would you like to talk about instead?",
+  ];
+  return responses[Math.floor(Math.random() * responses.length)];
+}
+
 // Comprehensive video request patterns organized by category
 const VIDEO_REQUEST_PATTERNS = [
   // === DIRECT ACTION VERBS ===
