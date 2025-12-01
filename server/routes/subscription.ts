@@ -34,6 +34,57 @@ router.get("/user-plan", isAuthenticated, async (req: Request, res: Response) =>
   }
 });
 
+router.get("/trial-time", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const userId = (req.user as any)?.claims?.sub;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const planInfo = await subscriptionService.getUserPlanInfo(userId);
+    
+    if (!planInfo.subscription || planInfo.plan?.slug !== "free") {
+      return res.json({
+        isTrialUser: false,
+        remainingSeconds: null,
+        remainingMinutes: null,
+        expiresAt: null,
+        isExpired: false,
+      });
+    }
+
+    const now = new Date();
+    const expiresAt = planInfo.subscription.expiresAt ? new Date(planInfo.subscription.expiresAt) : null;
+    
+    if (!expiresAt) {
+      return res.json({
+        isTrialUser: true,
+        remainingSeconds: null,
+        remainingMinutes: null,
+        expiresAt: null,
+        isExpired: false,
+      });
+    }
+
+    const remainingMs = expiresAt.getTime() - now.getTime();
+    const isExpired = remainingMs <= 0;
+    const remainingSeconds = isExpired ? 0 : Math.floor(remainingMs / 1000);
+    const remainingMinutes = isExpired ? 0 : Math.floor(remainingMs / 60000);
+
+    res.json({
+      isTrialUser: true,
+      remainingSeconds,
+      remainingMinutes,
+      expiresAt: expiresAt.toISOString(),
+      isExpired,
+      totalDurationHours: planInfo.plan?.durationHours || 1,
+    });
+  } catch (error: any) {
+    logger.error({ error: error.message }, "Failed to get trial time");
+    res.status(500).json({ message: "Failed to get trial time" });
+  }
+});
+
 router.post("/start-trial", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = (req.user as any)?.claims?.sub;

@@ -14,6 +14,7 @@ import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
 import { AudioVideoToggle } from "@/components/AudioVideoToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { TrialCountdown } from "@/components/TrialCountdown";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -481,8 +482,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           <>
             {/* Top Controls Bar */}
             <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-4 bg-gradient-to-b from-black/60 to-transparent z-30">
-              {/* Audio/Video Toggle and Language Selector - Centered at top */}
+              {/* Audio/Video Toggle, Language Selector, and Trial Countdown - Centered at top */}
               <div className="mb-3 flex items-center gap-3">
+                <TrialCountdown compact />
                 <AudioVideoToggle
                   isVideoMode={!audioOnly}
                   onToggle={handleModeToggle}
