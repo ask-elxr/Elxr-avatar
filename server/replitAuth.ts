@@ -155,33 +155,27 @@ export async function setupAuth(app: Express) {
   });
 }
 
+// Authentication is bypassed - this app is embedded in Webflow which handles auth
+// All routes are accessible without login
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user.expires_at) {
-    return res.status(401).json({ message: "Unauthorized" });
+  // Bypass authentication - Webflow handles auth externally
+  // Create a mock user for session tracking if none exists
+  if (!req.user) {
+    (req as any).user = {
+      claims: {
+        sub: req.session?.userId || `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        email: null,
+        first_name: 'Webflow',
+        last_name: 'User',
+        profile_image_url: null,
+      },
+    };
+    // Store userId in session for consistency
+    if (req.session && !req.session.userId) {
+      req.session.userId = (req as any).user.claims.sub;
+    }
   }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  return next();
 };
 
 // Middleware to require admin role
