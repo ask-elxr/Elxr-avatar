@@ -226,14 +226,41 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     prevSessionActiveRef.current = sessionActive;
   }, [sessionActive, showReconnect, switchingAvatar]);
   
-  // Hook 2: Inactivity timer management
+  // Hook 2: Inactivity timer management with polite warning
+  const handleSpeakWarning = useCallback(async (message: string) => {
+    if (avatarRef.current && !audioOnly) {
+      try {
+        await avatarRef.current.speak({ text: message, taskType: "repeat" as any });
+      } catch (error) {
+        console.error("Failed to speak warning via HeyGen:", error);
+      }
+    } else if (audioOnly) {
+      try {
+        const response = await fetch(`/api/audio/speak`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: message, avatarId: selectedAvatarId })
+        });
+        if (response.ok) {
+          const audioBlob = await response.blob();
+          const audio = new Audio(URL.createObjectURL(audioBlob));
+          await audio.play();
+        }
+      } catch (error) {
+        console.error("Failed to speak warning via audio:", error);
+      }
+    }
+  }, [avatarRef, audioOnly, selectedAvatarId]);
+
   const { resetInactivityTimer } = useInactivityTimer({
     sessionActive,
     isPaused,
     avatarRef,
     speakingIntervalRef,
     hasAskedAnythingElseRef,
-    onEndSessionShowReconnect: endSessionShowReconnect
+    onEndSessionShowReconnect: endSessionShowReconnect,
+    isVideoMode: !audioOnly,
+    onSpeakWarning: handleSpeakWarning
   });
   
   // Bridge the actual function to the ref

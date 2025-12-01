@@ -5,6 +5,8 @@ import { eq, inArray } from "drizzle-orm";
 import { ElevenLabsClient } from "elevenlabs";
 import { subscriptionService } from "./subscription";
 import { formatVideoTitle } from "../utils/videoTitle";
+import { emailService } from "./email";
+import { getAvatarById } from "./avatars";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
@@ -407,6 +409,9 @@ export class VideoGenerationService {
 
           activePollingSet.delete(heygenVideoId);
           console.log(`✅ Video generation completed: ${heygenVideoId}`);
+          
+          // Send email notification for course video (await to ensure it completes)
+          await this.sendCourseVideoReadyEmail(lessonId, video_url, thumbnail_url, durationInt);
         } else if (status === "failed") {
           // Update with error
           await db
@@ -502,6 +507,10 @@ export class VideoGenerationService {
           .where(eq(lessons.id, video.lessonId));
 
         console.log(`✅ Background check: Video ${heygenVideoId} completed`);
+        
+        // Send email notification for recovered video (await to ensure it completes)
+        await this.sendCourseVideoReadyEmail(video.lessonId, video_url, thumbnail_url, durationInt);
+        
         return { status: "completed", updated: true };
       } else if (status === "failed") {
         await db
@@ -655,6 +664,83 @@ export class VideoGenerationService {
       thumbnailUrl: video.thumbnailUrl || undefined,
       error: video.errorMessage || undefined,
     };
+  }
+
+  /**
+   * Send email notification when course video is ready
+   */
+  private async sendCourseVideoReadyEmail(
+    lessonId: string,
+    videoUrl: string,
+    thumbnailUrl?: string | null,
+    duration?: number | null
+  ): Promise<void> {
+    try {
+      if (!emailService.isAvailable()) {
+        console.log('📧 Email service not available - skipping course video notification');
+        return;
+      }
+
+      // Get lesson details
+      const [lesson] = await db
+        .select()
+        .from(lessons)
+        .where(eq(lessons.id, lessonId));
+
+      if (!lesson) {
+        console.log('📧 Lesson not found for email notification');
+        return;
+      }
+
+      // Get course details
+      const [course] = await db
+        .select()
+        .from(courses)
+        .where(eq(courses.id, lesson.courseId));
+
+      if (!course) {
+        console.log('📧 Course not found for email notification');
+        return;
+      }
+
+      // Get user
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, course.userId));
+
+      if (!user || !user.email) {
+        console.log(`📧 No email found for user ${course.userId} - skipping notification`);
+        return;
+      }
+
+      // Get avatar name
+      const avatar = await getAvatarById(course.avatarId);
+      const avatarName = avatar?.name || 'AI Avatar';
+
+      // Build topic from lesson title (handle null title)
+      const lessonTitle = lesson.title || `Lesson ${lesson.order + 1}`;
+      const topic = `${course.title} - ${lessonTitle}`;
+
+      // Send the email
+      const result = await emailService.sendVideoReadyEmail({
+        toEmail: user.email,
+        userName: user.firstName || undefined,
+        topic,
+        videoUrl,
+        thumbnailUrl: thumbnailUrl || undefined,
+        avatarName,
+        duration: duration || undefined,
+      });
+
+      if (result.success) {
+        console.log(`📧 Course video ready email sent to ${user.email} for: ${topic}`);
+      } else {
+        console.error(`📧 Failed to send course video email: ${result.error}`);
+      }
+    } catch (error: any) {
+      console.error('📧 Error sending course video email notification:', error.message);
+    }
   }
 }
 

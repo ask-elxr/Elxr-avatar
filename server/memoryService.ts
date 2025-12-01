@@ -174,8 +174,10 @@ class MemoryService {
           userId,
           type,
           recordId,
+          contentPreview: content.substring(0, 100),
+          namespace: this.getUserNamespace(userId),
         },
-        `Added ${type} memory for user ${userId}`,
+        `🧠 Memory added: ${type} for user ${userId}`,
       );
 
       return { success: true, memory: record };
@@ -199,10 +201,12 @@ class MemoryService {
   ): Promise<MemoryResponse> {
     try {
       if (!this.isAvailable()) {
+        logger.warn({ service: 'memory', userId, query: query.substring(0, 50) }, 'Memory service not available for search');
         return { success: false, error: 'Memory service not available' };
       }
 
-      const { limit = 10, type, minScore = 0.7 } = options;
+      // Lowered minScore from 0.7 to 0.5 to be more inclusive of related memories
+      const { limit = 10, type, minScore = 0.5 } = options;
 
       // Generate embedding for query
       const embedding = await this.generateEmbedding(query);
@@ -223,6 +227,7 @@ class MemoryService {
         includeMetadata: true,
       });
 
+      const rawMatchCount = queryResponse.matches.length;
       const memories: MemorySearchResult[] = queryResponse.matches
         .filter((match) => match.score && match.score >= minScore)
         .map((match) => ({
@@ -235,14 +240,32 @@ class MemoryService {
           createdAt: (match.metadata?.createdAt as number) || Date.now(),
         }));
 
+      // Log warning if only low-score matches are returned (between minScore and 0.6)
+      const lowScoreMatches = memories.filter(m => m.score < 0.6);
+      if (lowScoreMatches.length > 0 && lowScoreMatches.length === memories.length) {
+        logger.warn(
+          {
+            service: 'memory',
+            userId,
+            lowScoreCount: lowScoreMatches.length,
+            scores: lowScoreMatches.map(m => m.score.toFixed(3)),
+          },
+          `🧠 Warning: Only low-confidence memories returned (all scores < 0.6)`,
+        );
+      }
+      
       logger.info(
         {
           service: 'memory',
           userId,
-          query,
-          resultCount: memories.length,
+          query: query.substring(0, 100),
+          rawMatchCount,
+          filteredCount: memories.length,
+          minScoreThreshold: minScore,
+          topScores: queryResponse.matches.slice(0, 3).map(m => m.score?.toFixed(3) || 'N/A'),
+          namespace: this.getUserNamespace(userId),
         },
-        `Searched memories for user ${userId}`,
+        `🧠 Memory search: ${memories.length}/${rawMatchCount} results above ${minScore} threshold`,
       );
 
       return { success: true, memories };

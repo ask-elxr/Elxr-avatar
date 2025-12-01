@@ -8,11 +8,24 @@ interface InactivityTimerConfig {
   speakingIntervalRef: React.MutableRefObject<NodeJS.Timeout | null>;
   hasAskedAnythingElseRef: React.MutableRefObject<boolean>;
   onEndSessionShowReconnect: () => Promise<void>;
+  isVideoMode?: boolean;
+  onSpeakWarning?: (message: string) => Promise<void>;
 }
 
 interface InactivityTimerReturn {
   resetInactivityTimer: () => void;
   clearAllTimers: () => void;
+}
+
+const POLITE_WARNING = "I haven't heard from you in a while — are you still there? Just say something if you'd like to continue chatting.";
+const POLITE_FAREWELL = "It seems like you might be busy. I'll step away for now to save your credits. Just click the reconnect button when you're ready to chat again!";
+
+// Estimate speech duration: average speaking rate is ~150 words per minute, plus buffer for avatar animation
+function estimateSpeechDuration(message: string): number {
+  const wordCount = message.split(/\s+/).length;
+  const millisecondsPerWord = 400; // ~150 wpm = 400ms per word
+  const animationBuffer = 2000; // Extra time for avatar animation startup/wind-down
+  return Math.max(wordCount * millisecondsPerWord + animationBuffer, 5000); // Minimum 5 seconds
 }
 
 export function useInactivityTimer({
@@ -22,9 +35,12 @@ export function useInactivityTimer({
   speakingIntervalRef,
   hasAskedAnythingElseRef,
   onEndSessionShowReconnect,
+  isVideoMode = false,
+  onSpeakWarning,
 }: InactivityTimerConfig): InactivityTimerReturn {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const signOffTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasShownWarningRef = useRef<boolean>(false);
 
   const clearAllTimers = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -41,6 +57,8 @@ export function useInactivityTimer({
       clearInterval(speakingIntervalRef.current);
       speakingIntervalRef.current = null;
     }
+    
+    hasShownWarningRef.current = false;
   }, [speakingIntervalRef]);
 
   const resetInactivityTimer = useCallback(() => {
@@ -68,14 +86,52 @@ export function useInactivityTimer({
     }
 
     hasAskedAnythingElseRef.current = false;
+    hasShownWarningRef.current = false;
 
-    // Auto-end session after 5 minutes of silence to save credits
-    // No farewell message - just show reconnect button
+    const warningDelay = isVideoMode ? 120000 : 180000;
+    const signOffDelay = 30000;
+
     inactivityTimerRef.current = setTimeout(async () => {
-      console.log("Inactivity timeout triggered - 5 minutes elapsed, ending session to save credits");
-      onEndSessionShowReconnect();
-    }, 300000); // 5 minutes = 300,000ms
-  }, [avatarRef, speakingIntervalRef, onEndSessionShowReconnect]);
+      console.log(`⏰ Inactivity warning triggered after ${warningDelay / 1000}s - prompting user`);
+      hasShownWarningRef.current = true;
+      
+      if (avatarRef.current && onSpeakWarning) {
+        try {
+          await onSpeakWarning(POLITE_WARNING);
+        } catch (error) {
+          console.error("Failed to speak warning:", error);
+        }
+      }
+
+      signOffTimeoutRef.current = setTimeout(async () => {
+        console.log(`⏰ Sign-off triggered after ${signOffDelay / 1000}s grace period - ending session`);
+        
+        let farewellComplete = false;
+        
+        if (onSpeakWarning) {
+          try {
+            await onSpeakWarning(POLITE_FAREWELL);
+            // Wait for farewell speech to complete based on message length
+            const estimatedDuration = estimateSpeechDuration(POLITE_FAREWELL);
+            console.log(`⏳ Waiting ${estimatedDuration}ms for farewell speech to complete`);
+            await new Promise(resolve => setTimeout(resolve, estimatedDuration));
+            farewellComplete = true;
+          } catch (error) {
+            console.error("Failed to speak farewell:", error);
+            farewellComplete = true; // Continue even if farewell fails
+          }
+        } else {
+          farewellComplete = true;
+        }
+        
+        // Only end session after farewell is complete or if we failed
+        if (farewellComplete) {
+          console.log("✅ Farewell complete, ending session");
+          onEndSessionShowReconnect();
+        }
+      }, signOffDelay);
+    }, warningDelay);
+  }, [avatarRef, speakingIntervalRef, onEndSessionShowReconnect, isVideoMode, onSpeakWarning]);
 
   useEffect(() => {
     if (sessionActive && !isPaused) {

@@ -2275,10 +2275,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 'Google search results retrieved');
       }
 
-      // Get knowledge context
+      // Get knowledge context with logging
       const knowledgeContext = knowledgeResult.context;
       if (knowledgeContext && knowledgeResult.namespaces > 0) {
-        console.log(`📚 Knowledge context retrieved for ${avatarId} (${knowledgeContext.length} chars) from ${knowledgeResult.namespaces} namespaces`);
+        logger.info({ 
+          avatarId, 
+          contextLength: knowledgeContext.length, 
+          namespaceCount: knowledgeResult.namespaces 
+        }, `📚 Knowledge context retrieved for ${avatarId}`);
+      } else {
+        logger.info({ avatarId, namespaceCount: knowledgeResult.namespaces }, "⚠️ No knowledge context found - will use graceful fallback");
       }
 
       const currentDate = new Date().toLocaleDateString("en-US", {
@@ -2357,6 +2363,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Add capabilities summary if any sources are active
       if (activeSources.length > 0) {
         enhancedPersonality += `\n\n⚡ RESEARCH CAPABILITIES CONFIRMED: You currently have access to: ${activeSources.join(', ')}. When asked about your capabilities, confirm that you CAN access these sources and you have already retrieved relevant information for this conversation.`;
+      }
+
+      // Add graceful fallback instruction when combined knowledge payload is effectively empty
+      // Build combined knowledge to check total length
+      const combinedKnowledgeCheck = (knowledgeContext || '') + (pubmedContext || '') + (wikipediaContext || '') + (googleSearchContext || '');
+      if (!combinedKnowledgeCheck || combinedKnowledgeCheck.trim().length < 50) {
+        enhancedPersonality += `\n\n📌 GRACEFUL KNOWLEDGE HANDLING: I don't have specific information about this topic in my knowledge base right now. Respond naturally and helpfully based on your expertise, but don't be defensive or apologize excessively. If asked about something outside your knowledge, say something like: "I don't have that specific information in my resources right now, but I can share what I do know about..." or "That's not in my current materials, but let me offer some thoughts based on my experience..."`;
       }
 
       // Add video generation context so the AI knows about its capability
@@ -2640,12 +2653,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const knowStart = Date.now();
           try {
             const avatarNamespaces = getAvatarNamespaces(avatarConfig);
-            const { retrieveContext } = await import("./pineconeService.js");
-            const context = await retrieveContext(message, 3, avatarNamespaces, userId || undefined);
+            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+            if (!pineconeNamespaceService.isAvailable()) {
+              perfTimings.knowledge = Date.now() - knowStart;
+              logger.debug({ avatarId }, "Pinecone namespace service not available");
+              return null;
+            }
+            const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
             perfTimings.knowledge = Date.now() - knowStart;
-            return context;
-          } catch (error) {
+            
+            if (results.length > 0) {
+              logger.info({ 
+                avatarId, 
+                namespaces: avatarNamespaces.length,
+                resultLength: results[0].text?.length || 0
+              }, "📚 RAG knowledge retrieved for streaming");
+              return results[0].text || null;
+            }
+            logger.debug({ avatarId }, "No RAG results found for streaming");
+            return null;
+          } catch (error: any) {
             perfTimings.knowledge = Date.now() - knowStart;
+            logger.error({ error: error.message, avatarId }, "Error fetching knowledge for streaming");
             return null;
           }
         })()
@@ -2727,6 +2756,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (memoryContext) {
         enhancedPersonality += memoryContext + "\n\nUse these memories naturally in your response when relevant.";
+      }
+
+      // Add graceful fallback instruction when combined context is effectively empty
+      // Check if combinedContext is empty or too short to be meaningful (less than 50 chars)
+      if (!combinedContext || combinedContext.trim().length < 50) {
+        enhancedPersonality += `\n\n📌 GRACEFUL KNOWLEDGE HANDLING: I don't have specific information about this topic in my knowledge base right now. Respond naturally and helpfully based on your expertise, but don't be defensive or apologize excessively. If asked about something outside your knowledge, say something like: "I don't have that specific information in my resources right now, but I can share what I do know about..." or "That's not in my current materials, but let me offer some thoughts based on my experience..."`;
       }
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
