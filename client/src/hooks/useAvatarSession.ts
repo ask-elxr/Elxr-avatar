@@ -215,6 +215,17 @@ export function useAvatarSession({
     try {
       const response = await fetch(`/api/audio/acknowledgment/${avatarId}`);
       if (response.ok) {
+        // 🔇 Pause voice recognition BEFORE playing acknowledgment to prevent feedback
+        if (recognitionRef.current && recognitionRunningRef.current) {
+          try {
+            recognitionRef.current.stop();
+            recognitionRunningRef.current = false;
+            console.log("🔇 Voice recognition paused (acknowledgment playing)");
+          } catch (e) {
+            // Ignore errors when stopping
+          }
+        }
+        
         const blob = await response.blob();
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
@@ -224,6 +235,8 @@ export function useAvatarSession({
           if (currentAcknowledgmentRef.current === audio) {
             currentAcknowledgmentRef.current = null;
           }
+          // Note: Don't resume voice recognition here - main response audio will play next
+          // Voice recognition will be resumed after main response ends
         };
         currentAcknowledgmentRef.current = audio; // Track for stopping later
         await audio.play();
@@ -1334,6 +1347,17 @@ export function useAvatarSession({
             // Stop acknowledgment audio before playing main response
             stopAcknowledgmentAudio();
             
+            // 🔇 CRITICAL: Pause voice recognition BEFORE audio playback to prevent feedback loop
+            if (recognitionRef.current && recognitionRunningRef.current) {
+              try {
+                recognitionRef.current.stop();
+                recognitionRunningRef.current = false;
+                console.log("🔇 Voice recognition paused (audio-only mode - avatar speaking)");
+              } catch (e) {
+                // Ignore errors when stopping
+              }
+            }
+            
             const audioBlob = await audioResponse.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
@@ -1344,6 +1368,14 @@ export function useAvatarSession({
               setIsSpeakingState(false);
               URL.revokeObjectURL(audioUrl);
               currentAudioRef.current = null;
+              
+              // 🔊 Resume voice recognition after audio ends (with delay to prevent echo)
+              setTimeout(() => {
+                if (audioOnlyRef.current && !recognitionRunningRef.current) {
+                  startVoiceRecognition();
+                  console.log("🔊 Voice recognition resumed (audio-only mode - avatar finished)");
+                }
+              }, 500);
             };
 
             audio.onerror = () => {
@@ -1351,6 +1383,13 @@ export function useAvatarSession({
               setIsSpeakingState(false);
               URL.revokeObjectURL(audioUrl);
               currentAudioRef.current = null;
+              
+              // Resume voice recognition on error too
+              setTimeout(() => {
+                if (audioOnlyRef.current && !recognitionRunningRef.current) {
+                  startVoiceRecognition();
+                }
+              }, 500);
             };
 
             // Final check before playing - mode might have changed during blob processing
