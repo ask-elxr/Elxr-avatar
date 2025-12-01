@@ -1633,6 +1633,7 @@ export function useAvatarSession({
             userId: memoryEnabledRef.current ? userId : undefined,
             avatarId: currentAvatarIdRef.current,
             memoryEnabled: memoryEnabledRef.current, // Use ref for current value
+            languageCode: elevenLabsLanguageCodeRef.current, // Pass language for Claude response
           }),
           signal: controller.signal,
         });

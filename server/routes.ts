@@ -416,14 +416,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enhanced personality prompt with memory context
       let enhancedPersonality = personalityWithDate;
       
+      // Add language instruction if a non-English language is selected
+      if (languageCode && languageCode !== "en" && languageCode !== "en-US") {
+        const languageNames: Record<string, string> = {
+          "ja": "Japanese", "ja-JP": "Japanese",
+          "es": "Spanish", "es-ES": "Spanish", "es-MX": "Spanish",
+          "fr": "French", "fr-FR": "French",
+          "de": "German", "de-DE": "German",
+          "it": "Italian", "it-IT": "Italian",
+          "pt": "Portuguese", "pt-BR": "Portuguese", "pt-PT": "Portuguese",
+          "ko": "Korean", "ko-KR": "Korean",
+          "zh": "Chinese", "zh-CN": "Chinese", "zh-TW": "Chinese",
+          "ru": "Russian", "ru-RU": "Russian",
+          "ar": "Arabic", "ar-SA": "Arabic",
+          "hi": "Hindi", "hi-IN": "Hindi",
+          "nl": "Dutch", "nl-NL": "Dutch",
+          "pl": "Polish", "pl-PL": "Polish",
+          "sv": "Swedish", "sv-SE": "Swedish",
+          "tr": "Turkish", "tr-TR": "Turkish",
+          "vi": "Vietnamese", "vi-VN": "Vietnamese",
+          "th": "Thai", "th-TH": "Thai",
+          "id": "Indonesian", "id-ID": "Indonesian",
+        };
+        const languageName = languageNames[languageCode] || languageCode;
+        enhancedPersonality = `🌐 LANGUAGE REQUIREMENT: You MUST respond entirely in ${languageName}. The user has selected ${languageName} as their preferred language. All your responses should be in ${languageName}, maintaining your personality and expertise while speaking naturally in ${languageName}.\n\n${enhancedPersonality}`;
+        log.info({ languageCode, languageName }, 'Language instruction added to Claude prompt');
+      }
+      
       if (memoryEnabled && memoryService.isAvailable()) {
         // Always tell the avatar they have memory capabilities when enabled
         const memoryCapabilityNote = `\n\n🧠 LONG-TERM MEMORY ENABLED: You have persistent memory across conversations. You can remember details about this person from previous chats and build an ongoing relationship with them.`;
         
         if (memoryContext) {
-          enhancedPersonality = `${personalityWithDate}${memoryCapabilityNote}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
+          enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
         } else {
-          enhancedPersonality = `${personalityWithDate}${memoryCapabilityNote}\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
+          enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
         }
       }
 
@@ -1686,6 +1713,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useWebSearch = false,
         avatarId = "mark-kohl",
         memoryEnabled = false, // Extract memory toggle flag
+        languageCode, // Language for Claude responses (e.g., "en", "ja", "es")
       } = req.body;
 
       // Get userId from authenticated session if available, or allow temp_ prefixed IDs for anonymous users
@@ -2133,6 +2161,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Enhanced personality prompt with memory and PubMed context
       let enhancedPersonality = personalityPrompt;
+      
+      // Add language instruction if a non-English language is selected
+      if (languageCode && languageCode !== "en" && languageCode !== "en-US") {
+        const languageNames: Record<string, string> = {
+          "ja": "Japanese", "ja-JP": "Japanese",
+          "es": "Spanish", "es-ES": "Spanish", "es-MX": "Spanish",
+          "fr": "French", "fr-FR": "French",
+          "de": "German", "de-DE": "German",
+          "it": "Italian", "it-IT": "Italian",
+          "pt": "Portuguese", "pt-BR": "Portuguese", "pt-PT": "Portuguese",
+          "ko": "Korean", "ko-KR": "Korean",
+          "zh": "Chinese", "zh-CN": "Chinese", "zh-TW": "Chinese",
+          "ru": "Russian", "ru-RU": "Russian",
+          "ar": "Arabic", "ar-SA": "Arabic",
+          "hi": "Hindi", "hi-IN": "Hindi",
+          "nl": "Dutch", "nl-NL": "Dutch",
+          "pl": "Polish", "pl-PL": "Polish",
+          "sv": "Swedish", "sv-SE": "Swedish",
+          "tr": "Turkish", "tr-TR": "Turkish",
+          "vi": "Vietnamese", "vi-VN": "Vietnamese",
+          "th": "Thai", "th-TH": "Thai",
+          "id": "Indonesian", "id-ID": "Indonesian",
+        };
+        const languageName = languageNames[languageCode] || languageCode;
+        enhancedPersonality = `🌐 LANGUAGE REQUIREMENT: You MUST respond entirely in ${languageName}. The user has selected ${languageName} as their preferred language. All your responses should be in ${languageName}, maintaining your personality and expertise while speaking naturally in ${languageName}.\n\n${enhancedPersonality}`;
+        logger.info({ languageCode, languageName }, 'Language instruction added to Claude prompt');
+      }
       
       // Tell avatar about memory capabilities when enabled
       if (memoryEnabled && memoryService.isAvailable()) {
