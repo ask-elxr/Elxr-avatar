@@ -56,6 +56,13 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 -   **Backend Protection**: `requireAdmin` middleware for admin-only routes (e.g., document uploads, knowledge base management, analytics, user management).
 -   **Frontend Guards**: UI elements and pages are conditionally rendered based on user role.
 
+#### Webflow Embedding Mode
+-   **Anonymous Access**: Authentication is bypassed for all user-facing routes. Users are automatically assigned anonymous session IDs (format: `webflow_[timestamp]_[random]`).
+-   **Admin Secret Authentication**: Admin routes are protected by `X-Admin-Secret` header (set via `ADMIN_SECRET` environment variable). The admin page prompts for the secret if not provided.
+-   **Secret Storage**: Admin secret can be provided via URL parameter (`?admin_secret=...`) or entered in the admin login form. It is persisted in `localStorage` for convenience.
+-   **CORS & CSP**: Configured to allow embedding from any origin with `frame-ancestors *` header.
+-   **Hidden Auth UI**: Login/logout buttons are hidden in the embedded mode since authentication is handled externally by Webflow.
+
 #### Technical Implementations
 -   **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent conversation memory.
 -   **Pinecone**: Direct namespace-based vector queries for cost-effective knowledge retrieval.
