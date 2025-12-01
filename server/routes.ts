@@ -2560,7 +2560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: 'avatar-stream', operation: 'streamResponse' });
     
     try {
-      const { message, avatarId, conversationHistory = [], memoryEnabled = false } = req.body;
+      const { message, avatarId, conversationHistory = [], memoryEnabled = false, languageCode } = req.body;
       let userId = req.user?.claims?.sub || null;
       if (!userId && req.body.userId?.startsWith('temp_')) {
         userId = req.body.userId;
@@ -2697,6 +2697,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
       const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       let enhancedPersonality = `${personalityPrompt}\n\n⚠️ TODAY'S DATE: ${currentDate}. Use this when asked about dates, current events, or time-sensitive topics.`;
+      
+      // Add language instruction if a non-English language is selected
+      if (languageCode && languageCode !== "en" && languageCode !== "en-US") {
+        const languageNames: Record<string, string> = {
+          "ja": "Japanese", "ja-JP": "Japanese",
+          "es": "Spanish", "es-ES": "Spanish", "es-MX": "Spanish",
+          "fr": "French", "fr-FR": "French",
+          "de": "German", "de-DE": "German",
+          "it": "Italian", "it-IT": "Italian",
+          "pt": "Portuguese", "pt-BR": "Portuguese", "pt-PT": "Portuguese",
+          "ko": "Korean", "ko-KR": "Korean",
+          "zh": "Chinese", "zh-CN": "Chinese", "zh-TW": "Chinese",
+          "ru": "Russian", "ru-RU": "Russian",
+          "ar": "Arabic", "ar-SA": "Arabic",
+          "hi": "Hindi", "hi-IN": "Hindi",
+          "nl": "Dutch", "nl-NL": "Dutch",
+          "pl": "Polish", "pl-PL": "Polish",
+          "sv": "Swedish", "sv-SE": "Swedish",
+          "tr": "Turkish", "tr-TR": "Turkish",
+          "vi": "Vietnamese", "vi-VN": "Vietnamese",
+          "th": "Thai", "th-TH": "Thai",
+          "id": "Indonesian", "id-ID": "Indonesian",
+        };
+        const languageName = languageNames[languageCode] || languageCode;
+        enhancedPersonality = `🌐 LANGUAGE REQUIREMENT: You MUST respond entirely in ${languageName}. The user has selected ${languageName} as their preferred language. All your responses should be in ${languageName}, maintaining your personality and expertise while speaking naturally in ${languageName}.\n\n${enhancedPersonality}`;
+        log.info({ languageCode, languageName }, 'Language instruction added to Claude prompt (streaming)');
+      }
       
       if (memoryContext) {
         enhancedPersonality += memoryContext + "\n\nUse these memories naturally in your response when relevant.";
