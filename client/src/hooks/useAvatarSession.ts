@@ -535,7 +535,7 @@ export function useAvatarSession({
       const avatar = new StreamingAvatar({ token });
       avatarRef.current = avatar;
 
-      avatar.on(StreamingEvents.STREAM_READY, (event) => {
+      avatar.on(StreamingEvents.STREAM_READY, async (event) => {
         console.log("Stream ready:", event.detail);
         if (videoRef.current) {
           videoRef.current.srcObject = event.detail;
@@ -548,6 +548,23 @@ export function useAvatarSession({
           loadingTimeoutRef.current = null;
         }
         setIsLoading(false);
+        
+        // 🎤 Avatar speaks first with a personalized greeting
+        try {
+          const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
+          if (greetingResponse.ok) {
+            const { greeting } = await greetingResponse.json();
+            if (greeting && avatar) {
+              console.log("🗣️ Avatar greeting:", greeting);
+              await avatar.speak({
+                text: greeting,
+                taskType: TaskType.REPEAT,
+              });
+            }
+          }
+        } catch (error) {
+          console.warn("Failed to fetch greeting:", error);
+        }
       });
 
       avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
@@ -831,6 +848,34 @@ export function useAvatarSession({
       
       // Pre-cache acknowledgment audio for faster responses in audio-only mode
       triggerAcknowledgmentCache(activeAvatarId);
+      
+      // 🎤 Avatar speaks first with a personalized greeting (audio-only mode)
+      try {
+        const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
+        if (greetingResponse.ok) {
+          const { greeting } = await greetingResponse.json();
+          if (greeting) {
+            console.log("🗣️ Audio-only greeting:", greeting);
+            // Use ElevenLabs TTS endpoint to speak the greeting
+            const audioResponse = await fetch("/api/elevenlabs/tts", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                text: greeting,
+                avatarId: activeAvatarId,
+              }),
+            });
+            if (audioResponse.ok) {
+              const audioBlob = await audioResponse.blob();
+              const audioUrl = URL.createObjectURL(audioBlob);
+              const audio = new Audio(audioUrl);
+              audio.play().catch(console.error);
+            }
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to play audio greeting:", error);
+      }
     }
     
     setTimeout(() => {

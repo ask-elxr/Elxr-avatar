@@ -6,6 +6,7 @@ import { isAuthenticated } from '../replitAuth.js';
 import { getActiveAvatars, getAvatarById, getAllAvatars, getVideoCapableAvatars } from '../services/avatars.js';
 import { insertAvatarProfileSchema, updateAvatarProfileSchema } from '@shared/schema';
 import { previewGenerationService } from '../services/previewGeneration.js';
+import { getIntroPhrase } from '../config/lineLibrary.js';
 
 export const avatarRouter = Router();
 
@@ -27,6 +28,23 @@ avatarRouter.get("/avatar/config/:avatarId", async (req: Request, res: Response)
   } catch (error: any) {
     logger.error({ error: error.message, avatarId: req.params.avatarId }, "Error fetching avatar config");
     res.status(500).json({ error: "Failed to fetch avatar configuration" });
+  }
+});
+
+/**
+ * Get a personalized greeting for an avatar to speak first
+ * @route GET /api/avatar/greeting/:avatarId
+ */
+avatarRouter.get("/avatar/greeting/:avatarId", async (req: Request, res: Response) => {
+  try {
+    const { avatarId } = req.params;
+    
+    const greeting = getIntroPhrase(avatarId);
+    
+    res.json({ greeting });
+  } catch (error: any) {
+    logger.error({ error: error.message, avatarId: req.params.avatarId }, "Error fetching avatar greeting");
+    res.status(500).json({ error: "Failed to fetch greeting" });
   }
 });
 
