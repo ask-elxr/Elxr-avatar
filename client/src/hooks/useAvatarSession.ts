@@ -1821,6 +1821,9 @@ export function useAvatarSession({
                           if (performanceData) {
                             console.log(`🚀 [STREAMING] Backend breakdown:`, performanceData);
                           }
+                          console.log(`📝 USER MESSAGE: ${message}`);
+                          console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
+                          console.log(`---`);
                         } else if (eventType === 'timing') {
                           console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetch}ms`);
                         }
