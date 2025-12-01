@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function Account() {
-  const { user, isLoading, isAuthenticated } = useAuth();
+  const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
   const { toast } = useToast();
 
   // Fetch user's documents
@@ -165,11 +165,13 @@ export default function Account() {
 
               <div className="text-center text-muted-foreground" data-testid="text-upload-info">
                 <p>Your documents are processed and stored securely in the vector database.</p>
-                <p className="mt-2">
-                  <Button asChild className="mt-4" data-testid="button-go-admin">
-                    <a href="/admin">Upload More Documents</a>
-                  </Button>
-                </p>
+                {isAdmin && (
+                  <p className="mt-2">
+                    <Button asChild className="mt-4" data-testid="button-go-admin">
+                      <a href="/admin">Upload More Documents</a>
+                    </Button>
+                  </p>
+                )}
               </div>
             </div>
           )}
