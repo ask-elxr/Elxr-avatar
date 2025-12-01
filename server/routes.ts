@@ -427,21 +427,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.send(audioBuffer);
       }
 
-      // Retrieve relevant memories if memory is enabled
-      let memoryContext = "";
-      if (memoryEnabled && userId && memoryService.isAvailable()) {
+      // ⚡ PARALLEL DATA FETCHING - Fetch memory and knowledge at the same time
+      const perfStart = Date.now();
+      const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+      
+      // Build namespace list
+      let allNamespaces = [...avatarConfig.pineconeNamespaces];
+      if (userId && !userId.startsWith('temp_')) {
         try {
-          const memoryResult = await memoryService.searchMemories(message, userId, { limit: 5 });
-          if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
-            memoryContext =
-              "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
-              memoryResult.memories.map((m) => `- ${m.content}`).join("\n");
-            log.info({ userId, memoryCount: memoryResult.memories.length }, 'Retrieved relevant memories for audio conversation');
-          }
-        } catch (memError) {
-          log.error({ error: memError }, "Error fetching memories");
-          // Continue without memories if there's an error
+          const userSources = await storage.listKnowledgeSources(userId);
+          const activeSourceNamespaces = userSources
+            .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
+            .map(source => source.pineconeNamespace);
+          allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
+        } catch (error) {
+          log.warn({ error }, 'Error fetching user knowledge sources');
         }
+      }
+
+      // Run memory and knowledge fetches in PARALLEL
+      const [memoryResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+        (async () => {
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+            return { success: false, memories: [] };
+          }
+          try {
+            return await memoryService.searchMemories(message, userId, { limit: 5 });
+          } catch (error) {
+            return { success: false, memories: [] };
+          }
+        })(),
+        (async () => {
+          if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
+            return null;
+          }
+          try {
+            const results = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
+            return results.length > 0 ? results[0].text : null;
+          } catch (error) {
+            return null;
+          }
+        })()
+      ]);
+
+      const dataFetchTime = Date.now() - perfStart;
+      log.info({ dataFetchMs: dataFetchTime }, "Parallel data fetch completed");
+
+      // Process results
+      let memoryContext = "";
+      if (memoryResultSettled.status === 'fulfilled' && memoryResultSettled.value?.memories?.length > 0) {
+        memoryContext = "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
+          memoryResultSettled.value.memories.map((m: any) => `- ${m.content}`).join("\n");
+        log.info({ userId, memoryCount: memoryResultSettled.value.memories.length }, 'Retrieved relevant memories');
+      }
+
+      let knowledgeContext = "";
+      if (knowledgeResultSettled.status === 'fulfilled' && knowledgeResultSettled.value) {
+        knowledgeContext = knowledgeResultSettled.value;
+        log.debug({ contextLength: knowledgeContext.length }, "Knowledge context retrieved");
       }
 
       // Step 1: Get Claude response with knowledge base context
@@ -492,40 +535,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
         } else {
           enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
-        }
-      }
-
-      // Get knowledge base context
-      const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
-      let knowledgeContext = "";
-      let allNamespaces = [...avatarConfig.pineconeNamespaces];
-      
-      if (userId && !userId.startsWith('temp_')) {
-        try {
-          const userSources = await storage.listKnowledgeSources(userId);
-          const activeSourceNamespaces = userSources
-            .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
-            .map(source => source.pineconeNamespace);
-          allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
-        } catch (error) {
-          log.warn({ error }, 'Error fetching user knowledge sources');
-        }
-      }
-
-      if (pineconeNamespaceService.isAvailable() && allNamespaces.length > 0) {
-        try {
-          const knowledgeResults = await pineconeNamespaceService.retrieveContext(
-            message,
-            3,
-            allNamespaces,
-          );
-          if (knowledgeResults.length > 0) {
-            knowledgeContext = knowledgeResults[0].text;
-            log.debug({ contextLength: knowledgeContext.length, namespaces: allNamespaces.length }, "Knowledge context retrieved");
-          }
-        } catch (pineconeError: any) {
-          // Continue without knowledge context if embeddings fail (e.g., OpenAI quota exceeded)
-          log.warn({ error: pineconeError.message }, "Failed to retrieve knowledge context - continuing without it");
         }
       }
 
