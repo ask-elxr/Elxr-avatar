@@ -1310,8 +1310,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin avatar management endpoints
-  // TODO: Add proper role-based authorization check (verify user is admin)
-  app.get("/api/admin/avatars", isAuthenticated, async (req: any, res) => {
+  // Protected by requireAdmin - requires X-Admin-Secret header or admin role
+  app.get("/api/admin/avatars", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       // Return all avatars including inactive ones for admin view
       const avatars = await storage.listAvatars(false);
@@ -1322,7 +1322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/avatars", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/avatars", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       // Validate request body
       const validatedData = insertAvatarProfileSchema.parse(req.body);
@@ -1346,7 +1346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/avatars/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/admin/avatars/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -1376,7 +1376,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/avatars/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/admin/avatars/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -1390,7 +1390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reorder avatars endpoint
-  app.post("/api/admin/avatars/reorder", isAuthenticated, async (req: any, res) => {
+  app.post("/api/admin/avatars/reorder", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const { avatarIds } = req.body;
       

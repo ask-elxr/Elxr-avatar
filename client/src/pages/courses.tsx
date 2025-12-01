@@ -83,9 +83,7 @@ export default function CoursesPage() {
   const handleDeleteVideo = async (videoId: string) => {
     setDeletingVideoId(videoId);
     try {
-      await apiRequest(`/api/courses/chat-videos/${videoId}`, {
-        method: 'DELETE'
-      });
+      await apiRequest(`/api/courses/chat-videos/${videoId}`, 'DELETE');
       queryClient.invalidateQueries({ queryKey: ["/api/courses/chat-videos"] });
       toast({
         title: "Video deleted",

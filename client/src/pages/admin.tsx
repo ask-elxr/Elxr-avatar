@@ -4,13 +4,14 @@ import { DatabaseStatus } from "@/components/DatabaseStatus";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { LayoutDashboard, Users, FileText, Settings, Home, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown, Lock } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, hasAdminAccess, getAdminSecret } from "@/lib/queryClient";
 import Credits from "@/pages/Credits";
 import Analytics from "@/pages/Analytics";
 
@@ -35,10 +36,28 @@ export default function Admin() {
   const [showCourseBuilder, setShowCourseBuilder] = useState(false);
   const [preSelectedAvatarId, setPreSelectedAvatarId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [adminSecretInput, setAdminSecretInput] = useState('');
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
   const { toast } = useToast();
-  const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
+  const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
+  
+  // Check for admin access on mount
+  useEffect(() => {
+    // Check URL params first and store in localStorage
+    const urlParams = new URLSearchParams(searchString);
+    const urlSecret = urlParams.get('admin_secret');
+    if (urlSecret) {
+      localStorage.setItem('admin_secret', urlSecret);
+      setIsAdminVerified(true);
+      // Remove secret from URL for security
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+    } else if (hasAdminAccess()) {
+      setIsAdminVerified(true);
+    }
+  }, [searchString]);
 
   // Handle URL parameters for navigation
   const handleUrlParams = useCallback(() => {
@@ -73,17 +92,17 @@ export default function Admin() {
 
   const { data: avatarsData } = useQuery({
     queryKey: ['/api/admin/avatars'],
-    enabled: isAuthenticated,
+    enabled: isAdminVerified,
   });
 
   const { data: statsData } = useQuery({
     queryKey: ['/api/pinecone/stats'],
-    enabled: isAuthenticated,
+    enabled: isAdminVerified,
   });
 
   const { data: coursesData } = useQuery({
     queryKey: ['/api/courses'],
-    enabled: isAuthenticated,
+    enabled: isAdminVerified,
     refetchInterval: (query) => {
       // Poll every 5 seconds if any lesson is generating
       const data = query.state.data as any[] | undefined;
@@ -98,7 +117,7 @@ export default function Admin() {
 
   const { data: chatVideosData } = useQuery({
     queryKey: ['/api/courses/chat-videos'],
-    enabled: isAuthenticated,
+    enabled: isAdminVerified,
     refetchInterval: 10000,
   });
 
@@ -126,16 +145,13 @@ export default function Admin() {
 
   const { data: usersData, isLoading: usersLoading } = useQuery<AdminUserStats[]>({
     queryKey: ['/api/admin/users'],
-    enabled: isAuthenticated && isAdmin,
+    enabled: isAdminVerified,
   });
 
   // Reorder avatars mutation
   const reorderMutation = useMutation({
     mutationFn: async (avatarIds: string[]) => {
-      return apiRequest('/api/admin/avatars/reorder', {
-        method: 'POST',
-        body: JSON.stringify({ avatarIds }),
-      });
+      return apiRequest('/api/admin/avatars/reorder', 'POST', { avatarIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/avatars'] });
@@ -174,8 +190,46 @@ export default function Admin() {
     reorderMutation.mutate(newOrder.map((a: any) => a.id));
   };
 
-  // In embedded mode, admin access is open (protected by backend ADMIN_SECRET if needed)
-  // No authentication checks on frontend - backend handles admin authorization
+  // Handle admin secret submission
+  const handleAdminSecretSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminSecretInput.trim()) return;
+    
+    // Store the secret
+    localStorage.setItem('admin_secret', adminSecretInput);
+    
+    // Test the secret by making an admin API call
+    try {
+      const res = await fetch('/api/admin/avatars', {
+        headers: { 'X-Admin-Secret': adminSecretInput },
+        credentials: 'include',
+      });
+      
+      if (res.ok) {
+        setIsAdminVerified(true);
+        toast({
+          title: "Access Granted",
+          description: "Welcome to the admin panel.",
+        });
+        // Refresh queries with new secret
+        queryClient.invalidateQueries();
+      } else {
+        localStorage.removeItem('admin_secret');
+        toast({
+          title: "Access Denied",
+          description: "Invalid admin secret. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      localStorage.removeItem('admin_secret');
+      toast({
+        title: "Error",
+        description: "Failed to verify admin access.",
+        variant: "destructive",
+      });
+    }
+  };
   
   if (isLoading) {
     return (
@@ -185,8 +239,53 @@ export default function Admin() {
     );
   }
 
-  // Admin panel is accessible in embedded mode
-  // Backend APIs are protected by ADMIN_SECRET header for sensitive operations
+  // Show admin secret input if not verified
+  if (!isAdminVerified) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-background to-muted" data-testid="admin-login">
+        <Card className="w-full max-w-md mx-4">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+              <Lock className="w-6 h-6 text-primary" />
+            </div>
+            <CardTitle>Admin Access Required</CardTitle>
+            <CardDescription>
+              Enter the admin secret to access the admin panel.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleAdminSecretSubmit} className="space-y-4">
+              <Input
+                type="password"
+                placeholder="Admin Secret"
+                value={adminSecretInput}
+                onChange={(e) => setAdminSecretInput(e.target.value)}
+                data-testid="input-admin-secret"
+                autoFocus
+              />
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={!adminSecretInput.trim()}
+                data-testid="button-submit-admin-secret"
+              >
+                Access Admin Panel
+              </Button>
+              <div className="text-center">
+                <Button 
+                  variant="link" 
+                  asChild
+                  className="text-muted-foreground"
+                >
+                  <Link href="/">Back to Chat</Link>
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const totalAvatars = Array.isArray(avatarsData) ? avatarsData.filter((a: any) => a.isActive).length : 0;
   const totalDocuments = (statsData as any)?.success ? ((statsData as any).documents?.total || 0) : 0;

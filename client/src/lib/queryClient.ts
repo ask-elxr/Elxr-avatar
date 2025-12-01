@@ -1,5 +1,24 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Get admin secret from URL params or localStorage
+export function getAdminSecret(): string | null {
+  // Check URL params first
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlSecret = urlParams.get('admin_secret');
+  if (urlSecret) {
+    // Store in localStorage for persistence
+    localStorage.setItem('admin_secret', urlSecret);
+    return urlSecret;
+  }
+  // Check localStorage
+  return localStorage.getItem('admin_secret');
+}
+
+// Check if admin secret is configured
+export function hasAdminAccess(): boolean {
+  return !!getAdminSecret();
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
@@ -12,9 +31,19 @@ export async function apiRequest(
   method: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  // Add admin secret header for admin routes
+  if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge')) {
+    const adminSecret = getAdminSecret();
+    if (adminSecret) {
+      headers['X-Admin-Secret'] = adminSecret;
+    }
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -29,8 +58,20 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const url = queryKey.join("/") as string;
+    const headers: Record<string, string> = {};
+    
+    // Add admin secret header for admin routes
+    if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge')) {
+      const adminSecret = getAdminSecret();
+      if (adminSecret) {
+        headers['X-Admin-Secret'] = adminSecret;
+      }
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
+      headers,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
