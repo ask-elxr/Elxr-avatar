@@ -2584,7 +2584,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (imageBase64) {
-        log.info({ hasImage: true, imageMimeType }, 'Image attached to message');
+        log.info({ hasImage: true, imageMimeType, imageLength: imageBase64.length }, 'Image attached to message');
+        console.log('📷 IMAGE RECEIVED - Size:', imageBase64.length, 'Type:', imageMimeType);
       }
 
       const avatarConfig = await getAvatarById(avatarId || "nigel");

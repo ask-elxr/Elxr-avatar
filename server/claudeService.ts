@@ -127,6 +127,8 @@ RESPONSE REQUIREMENTS:
     let userContent: any;
     if (imageBase64 && imageMimeType) {
       // Multi-modal message with image
+      console.log('📷 CLAUDE: Building multimodal request with image');
+      console.log('📷 CLAUDE: Image type:', imageMimeType, 'Size:', imageBase64.length);
       userContent = [
         {
           type: 'image',
@@ -141,7 +143,7 @@ RESPONSE REQUIREMENTS:
           text: textMessage || 'What do you see in this image?'
         }
       ];
-      log.info({ imageMimeType }, 'Including image in Claude request');
+      log.info({ imageMimeType, imageSize: imageBase64.length }, 'Including image in Claude request');
     } else {
       userContent = textMessage;
     }
@@ -162,12 +164,20 @@ RESPONSE REQUIREMENTS:
       - Maintain context from the conversation history
       - Think "helpful friend" not "encyclopedia"`;
 
-    const stream = await this.anthropic.messages.stream({
-      model: DEFAULT_MODEL_STR,
-      max_tokens: 4096,
-      messages: messages,
-      system: systemPrompt
-    });
+    let stream;
+    try {
+      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages');
+      stream = await this.anthropic.messages.stream({
+        model: DEFAULT_MODEL_STR,
+        max_tokens: 4096,
+        messages: messages,
+        system: systemPrompt
+      });
+      console.log('📷 CLAUDE: Stream created successfully');
+    } catch (streamError: any) {
+      console.error('📷 CLAUDE ERROR: Failed to create stream:', streamError.message);
+      throw streamError;
+    }
 
     let buffer = '';
     let fullResponse = '';
