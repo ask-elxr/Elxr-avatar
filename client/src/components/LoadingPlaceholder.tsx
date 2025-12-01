@@ -1,31 +1,20 @@
-import markPhoto from "@assets/Mark_1763305942420.png";
-import thadPhoto from "@assets/Thad_1763954316719.png";
-import shawnPhoto from "@assets/shawn_preview.png";
-import williePhoto from "@assets/Willie Gault.png";
-import junePhoto from "@assets/June.png";
-import annPhoto from "@assets/Ann.png";
-import nigelPhoto from "@assets/Nigel_1763954340501.png";
-import kelseyPhoto from "@assets/kelsey_preview.png";
-import judyPhoto from "@assets/judy_preview.png";
-import dexterPhoto from "@assets/dexter_preview.png";
-
 interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   avatarId?: string;
 }
 
-const avatarPhotos: Record<string, string> = {
-  "mark-kohl": markPhoto,
-  "mark": markPhoto,
-  "thad": thadPhoto,
-  "shawn": shawnPhoto,
-  "willie-gault": williePhoto,
-  "willie": williePhoto,
-  "june": junePhoto,
-  "ann": annPhoto,
-  "nigel": nigelPhoto,
-  "kelsey": kelseyPhoto,
-  "judy": judyPhoto,
-  "dexter": dexterPhoto,
+const avatarGifs: Record<string, string> = {
+  "mark-kohl": "/attached_assets/MArk-kohl-loop_1763964600000.gif",
+  "mark": "/attached_assets/MArk-kohl-loop_1763964600000.gif",
+  "willie-gault": "/attached_assets/Willie gault gif-low_1763964813725.gif",
+  "willie": "/attached_assets/Willie gault gif-low_1763964813725.gif",
+  "june": "/attached_assets/June-low_1764106896823.gif",
+  "thad": "/attached_assets/Thad_1763963906199.gif",
+  "nigel": "/attached_assets/Nigel-Loop-avatar_1763964600000.gif",
+  "ann": "/attached_assets/Ann_1763966361095.gif",
+  "kelsey": "/attached_assets/Kelsey_1764111279103.gif",
+  "judy": "/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif",
+  "dexter": "/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif",
+  "shawn": "/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif",
 };
 
 export function LoadingPlaceholder({ 
@@ -33,16 +22,24 @@ export function LoadingPlaceholder({
   avatarId = "mark-kohl",
   ...props 
 }: LoadingPlaceholderProps) {
-  const photoSrc = avatarPhotos[avatarId] || markPhoto;
+  const gifSrc = avatarGifs[avatarId] || avatarGifs["mark-kohl"];
   
   return (
     <div className={`flex items-center justify-center bg-black ${className}`} {...props}>
-      <img
-        src={photoSrc}
-        alt="Avatar"
-        className="w-full max-w-md h-auto object-contain"
-        data-testid="avatar-photo"
-      />
+      <div 
+        className="rounded-full overflow-hidden"
+        style={{
+          width: '240px',
+          height: '240px',
+        }}
+      >
+        <img
+          src={gifSrc}
+          alt="Avatar"
+          className="w-full h-full object-cover"
+          data-testid="avatar-gif"
+        />
+      </div>
     </div>
   );
 }
