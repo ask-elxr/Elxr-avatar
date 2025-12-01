@@ -1,6 +1,6 @@
 import Dashboard, { type UserView } from "../Dashboard";
 
-type EmbedView = Exclude<UserView, "active-chat" | "course-view" | "course-edit">;
+type EmbedView = Exclude<UserView, "active-chat" | "course-edit">;
 
 interface EmbedPageProps {
   view: EmbedView;

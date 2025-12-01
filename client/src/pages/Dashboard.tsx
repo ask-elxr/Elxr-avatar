@@ -757,7 +757,7 @@ export default function Dashboard({
                       </p>
                       <Button
                         className="w-full"
-                        onClick={() => setLocation("/dashboard/chat")}
+                        onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}
                         data-testid="button-start-chat"
                       >
                         <MessageSquare className="w-4 h-4 mr-2" />
@@ -791,7 +791,7 @@ export default function Dashboard({
                         <Button
                           className="flex-1"
                           variant="secondary"
-                          onClick={() => setLocation("/dashboard/videos")}
+                          onClick={() => setLocation(isEmbed ? "/embed/videos" : "/dashboard/videos")}
                           data-testid="button-view-videos"
                         >
                           <Video className="w-4 h-4 mr-2" />
@@ -967,7 +967,7 @@ export default function Dashboard({
                         <p className="text-purple-400 text-sm mb-4 text-center">
                           Your plan includes 1 avatar.{" "}
                           <button
-                            onClick={() => setLocation("/dashboard/plan")}
+                            onClick={() => setLocation(isEmbed ? "/embed/plan" : "/dashboard/plan")}
                             className="underline hover:text-purple-300"
                           >
                             Upgrade to Pro
@@ -1068,10 +1068,10 @@ export default function Dashboard({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           if (locked) {
-                                            setLocation("/dashboard/plan");
+                                            setLocation(isEmbed ? "/embed/plan" : "/dashboard/plan");
                                           } else {
                                             setLocation(
-                                              `/dashboard/chat/${avatar.id}`,
+                                              isEmbed ? `/embed/chat/${avatar.id}` : `/dashboard/chat/${avatar.id}`,
                                             );
                                           }
                                         }}
@@ -1144,7 +1144,7 @@ export default function Dashboard({
                     </CardHeader>
                     <CardContent className="flex justify-center">
                       <Button
-                        onClick={() => setLocation("/dashboard/chat")}
+                        onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}
                         data-testid="button-start-chat-empty"
                       >
                         <Sparkles className="w-4 h-4 mr-2" />
@@ -1425,7 +1425,7 @@ export default function Dashboard({
                           key={course.id}
                           className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden flex flex-col"
                           onClick={() =>
-                            setLocation(`/dashboard/courses/${course.id}`)
+                            setLocation(isEmbed ? `/embed/courses/${course.id}` : `/dashboard/courses/${course.id}`)
                           }
                           data-testid={`card-course-${course.id}`}
                         >
@@ -2278,7 +2278,7 @@ export default function Dashboard({
                     <div className="text-center py-12">
                       <p className="text-white/60">Course not found</p>
                       <Button
-                        onClick={() => setLocation("/dashboard/courses")}
+                        onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
                         className="mt-4"
                       >
                         Back to Courses
@@ -2300,7 +2300,7 @@ export default function Dashboard({
                     <div className="flex items-center justify-between">
                       <Button
                         variant="ghost"
-                        onClick={() => setLocation("/dashboard/courses")}
+                        onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
                         className="text-white/60 hover:text-white"
                         data-testid="button-back-to-courses"
                       >
@@ -2539,7 +2539,7 @@ export default function Dashboard({
                 <CourseBuilderPage
                   isEmbedded={true}
                   courseId={selectedCourseId}
-                  onBack={() => setLocation("/dashboard/courses")}
+                  onBack={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
                 />
               </div>
             )}
