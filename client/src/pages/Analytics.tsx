@@ -1,8 +1,21 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
-import { Users, MessageSquare, TrendingUp, Activity, BarChart3 } from "lucide-react";
+import { Users, MessageSquare, TrendingUp, Activity, BarChart3, Heart, Smile } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 import { MarqueeText } from "@/components/MarqueeText";
+
+interface MoodDistribution {
+  mood: string;
+  count: number;
+}
+
+interface MoodAnalyticsData {
+  distribution: MoodDistribution[];
+  trend: { date: string; mood: string; count: number }[];
+  intensityByMood: { mood: string; avgIntensity: number }[];
+  totals: { totalEntries: number; uniqueUsers: number };
+  positiveRatio: number;
+}
 
 interface AvatarStats {
   avatarId: string;
@@ -28,10 +41,35 @@ interface AnalyticsData {
   engagementTrend: { date: string; messages: number }[];
 }
 
+const MOOD_COLORS: Record<string, string> = {
+  joyful: '#facc15',
+  calm: '#3b82f6',
+  energized: '#a855f7',
+  neutral: '#6b7280',
+  anxious: '#f59e0b',
+  sad: '#6366f1',
+  stressed: '#ef4444',
+};
+
+const MOOD_EMOJIS: Record<string, string> = {
+  joyful: '😊',
+  calm: '😌',
+  energized: '⚡',
+  neutral: '😐',
+  anxious: '😰',
+  sad: '😢',
+  stressed: '😫',
+};
+
 export default function Analytics() {
   const { data: analytics, isLoading } = useQuery<AnalyticsData>({
     queryKey: ['/api/analytics/overview'],
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
+  });
+
+  const { data: moodAnalytics } = useQuery<MoodAnalyticsData>({
+    queryKey: ['/api/admin/mood/analytics'],
+    refetchInterval: 60000,
   });
 
   if (isLoading || !analytics) {
@@ -43,6 +81,13 @@ export default function Analytics() {
   }
 
   const COLORS = ['#0ea5e9', '#8b5cf6', '#14b8a6', '#64748b', '#06b6d4', '#6366f1'];
+
+  const moodDistributionData = moodAnalytics?.distribution?.map(m => ({
+    name: m.mood,
+    value: m.count,
+    emoji: MOOD_EMOJIS[m.mood] || '🙂',
+    color: MOOD_COLORS[m.mood] || '#6b7280',
+  })) || [];
 
   return (
     <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
@@ -335,6 +380,193 @@ export default function Analytics() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        )}
+
+        {/* Mood Analytics Section */}
+        {moodAnalytics && (
+          <>
+            {/* Mood Overview Cards */}
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                    <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-pink-500 flex-shrink-0" />
+                    <span className="truncate">Mood Entries</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <p className="text-xl sm:text-2xl font-semibold">{moodAnalytics.totals.totalEntries.toLocaleString()}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Total logged</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">Users Tracking</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <p className="text-xl sm:text-2xl font-semibold">{moodAnalytics.totals.uniqueUsers.toLocaleString()}</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Active trackers</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                    <Smile className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500 flex-shrink-0" />
+                    <span className="truncate">Positive Mood</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <p className="text-xl sm:text-2xl font-semibold">{moodAnalytics.positiveRatio}%</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Of all entries</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+                  <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                    <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">Avg Intensity</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+                  <p className="text-xl sm:text-2xl font-semibold">
+                    {moodAnalytics.intensityByMood.length > 0 
+                      ? (moodAnalytics.intensityByMood.reduce((sum, m) => sum + (m.avgIntensity || 0), 0) / moodAnalytics.intensityByMood.length).toFixed(1)
+                      : '—'
+                    }/5
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Across all moods</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Mood Distribution Chart */}
+            <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+              <Card>
+                <CardHeader className="pb-3 px-3 sm:px-6">
+                  <CardTitle className="text-sm sm:text-base lg:text-lg font-semibold flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-pink-500" />
+                    Mood Distribution
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Breakdown of all mood entries by type
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-2 sm:px-6">
+                  {moodDistributionData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <PieChart>
+                        <Pie
+                          data={moodDistributionData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={2}
+                          dataKey="value"
+                          label={({ name, percent }) => `${MOOD_EMOJIS[name] || '🙂'} ${(percent * 100).toFixed(0)}%`}
+                          labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                        >
+                          {moodDistributionData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            color: 'hsl(var(--foreground))',
+                            fontSize: '12px'
+                          }}
+                          formatter={(value: number, name: string) => [
+                            `${value} entries`, 
+                            `${MOOD_EMOJIS[name] || ''} ${name.charAt(0).toUpperCase() + name.slice(1)}`
+                          ]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-[280px] text-muted-foreground">
+                      No mood data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Mood Intensity by Type */}
+              <Card>
+                <CardHeader className="pb-3 px-3 sm:px-6">
+                  <CardTitle className="text-sm sm:text-base lg:text-lg font-semibold flex items-center gap-2">
+                    <BarChart3 className="w-4 h-4" />
+                    Mood Intensity
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Average intensity level per mood type
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="px-2 sm:px-6">
+                  {moodAnalytics.intensityByMood.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <BarChart 
+                        data={moodAnalytics.intensityByMood.map(m => ({
+                          mood: `${MOOD_EMOJIS[m.mood] || ''} ${m.mood.charAt(0).toUpperCase() + m.mood.slice(1)}`,
+                          intensity: m.avgIntensity,
+                          fill: MOOD_COLORS[m.mood] || '#6b7280',
+                        }))}
+                        margin={{ left: 0, right: 10, top: 10, bottom: 60 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.3} />
+                        <XAxis 
+                          dataKey="mood" 
+                          stroke="#64748b" 
+                          tick={{ fontSize: 10 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          interval={0}
+                        />
+                        <YAxis 
+                          stroke="#64748b" 
+                          tick={{ fontSize: 10 }} 
+                          width={30}
+                          domain={[0, 5]}
+                          ticks={[1, 2, 3, 4, 5]}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                            color: 'hsl(var(--foreground))',
+                            fontSize: '12px'
+                          }}
+                          formatter={(value: number) => [`${value}/5`, 'Avg Intensity']}
+                        />
+                        <Bar 
+                          dataKey="intensity" 
+                          radius={[4, 4, 0, 0]}
+                        >
+                          {moodAnalytics.intensityByMood.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={MOOD_COLORS[entry.mood] || '#6b7280'} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-[280px] text-muted-foreground">
+                      No intensity data available
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
         )}
       </div>
     </div>
