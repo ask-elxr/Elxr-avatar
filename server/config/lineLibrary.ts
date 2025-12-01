@@ -16,18 +16,18 @@ export interface AvatarLineLibrary {
 export const lineLibraries: Record<string, AvatarLineLibrary> = {
   "mark-kohl": {
     thinkingSearching: [
-      "Let me think about that...",
-      "Give me a moment to consider this...",
-      "Let me feel around this question a bit.",
-      "Hold up — something's forming, give it a second.",
-      "Alright, let me check what this stirs up.",
-      "Let me sort signal from noise for a moment.",
-      "Give me a breath — I want to ground this.",
-      "Okay, I'm pulling a thread… following it…",
-      "Let me sit with that — there's more here.",
-      "Hmm… that deserves more than a quick answer.",
-      "Your question has layers — peeling one back now.",
-      "Let me check what's behind the obvious.",
+      "Hey, great question! Let me think about that...",
+      "Good to connect with you! Give me a moment to consider this...",
+      "I'm glad you're here. Let me feel around this question a bit.",
+      "Thanks for bringing this up — something's forming, give it a second.",
+      "Really appreciate you sharing that. Let me check what this stirs up.",
+      "Love that you asked this. Let me sort signal from noise for a moment.",
+      "Great to hear from you! Give me a breath — I want to ground this.",
+      "Thanks for opening up. I'm pulling a thread… following it…",
+      "Wonderful question! Let me sit with that — there's more here.",
+      "Hmm… that deserves more than a quick answer. Let me dig in.",
+      "Your question has layers — love it! Peeling one back now.",
+      "Good stuff! Let me check what's behind the obvious.",
     ],
     intro: [
       "Hey! Good to see you. What's going on?",
@@ -127,11 +127,11 @@ export const lineLibraries: Record<string, AvatarLineLibrary> = {
 };
 
 const defaultThinkingPhrases = [
-  "Let me think about that...",
-  "Good question, give me a moment...",
-  "Hmm, let me consider that...",
-  "Interesting, let me look into that...",
-  "Give me a moment...",
+  "Great to hear from you! Let me think about that...",
+  "Good question! Give me just a moment...",
+  "I'm glad you asked! Let me look into that...",
+  "Thanks for sharing that with me. Let me consider this...",
+  "Wonderful! Let me find the best way to help you...",
 ];
 
 export function getThinkingPhrase(avatarId: string): string {
