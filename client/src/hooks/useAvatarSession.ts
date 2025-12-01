@@ -239,16 +239,8 @@ export function useAvatarSession({
     try {
       const response = await fetch(`/api/audio/acknowledgment/${avatarId}`);
       if (response.ok) {
-        // 🔇 Pause voice recognition BEFORE playing acknowledgment to prevent feedback
-        if (recognitionRef.current && recognitionRunningRef.current) {
-          try {
-            recognitionRef.current.stop();
-            recognitionRunningRef.current = false;
-            console.log("🔇 Voice recognition paused (acknowledgment playing)");
-          } catch (e) {
-            // Ignore errors when stopping
-          }
-        }
+        // Note: Voice recognition is already stopped in handleSubmitMessage
+        // before this function is called, so no need to stop it here
         
         const blob = await response.blob();
         const audioUrl = URL.createObjectURL(blob);
@@ -1522,6 +1514,22 @@ export function useAvatarSession({
       return;
     }
 
+    // 🔇 CRITICAL: Stop voice recognition IMMEDIATELY to prevent echo/feedback
+    // This must happen BEFORE any async operations to avoid race conditions
+    if (recognitionRef.current && recognitionRunningRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRunningRef.current = false;
+        console.log("🔇 Voice recognition stopped (processing user message)");
+      } catch (e) {
+        recognitionRunningRef.current = false;
+      }
+    }
+    
+    // Set speaking flag immediately to prevent auto-restart of recognition
+    isSpeakingRef.current = true;
+    setIsSpeakingState(true);
+
     // Clear idle timeout immediately to prevent mid-conversation shutdowns
     clearIdleTimeout();
     
@@ -1535,10 +1543,8 @@ export function useAvatarSession({
       // Audio-only mode: Stop current audio
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
-      isSpeakingRef.current = false;
-      setIsSpeakingState(false);
-    } else if (avatarRef.current && isSpeakingRef.current) {
-      // Video mode: Interrupt avatar
+    } else if (avatarRef.current) {
+      // Video mode: Interrupt avatar if speaking
       await avatarRef.current.interrupt().catch(() => {});
     }
 
@@ -1555,8 +1561,6 @@ export function useAvatarSession({
       if (audioOnlyRef.current) {
         console.log("Audio-only mode: Using /api/audio endpoint");
         console.log("🧠 Memory settings:", { memoryEnabled: memoryEnabledRef.current, userId });
-        isSpeakingRef.current = true;
-        setIsSpeakingState(true);
 
         // Play instant acknowledgment while Claude processes (non-blocking)
         playAcknowledgmentInstantly().catch(() => {});
@@ -1595,16 +1599,8 @@ export function useAvatarSession({
             // Stop acknowledgment audio before playing main response
             stopAcknowledgmentAudio();
             
-            // 🔇 CRITICAL: Pause voice recognition BEFORE audio playback to prevent feedback loop
-            if (recognitionRef.current && recognitionRunningRef.current) {
-              try {
-                recognitionRef.current.stop();
-                recognitionRunningRef.current = false;
-                console.log("🔇 Voice recognition paused (audio-only mode - avatar speaking)");
-              } catch (e) {
-                // Ignore errors when stopping
-              }
-            }
+            // Note: Voice recognition already stopped at start of handleSubmitMessage
+            // and will be resumed after audio.onended
             
             const audioBlob = await audioResponse.blob();
             const audioUrl = URL.createObjectURL(audioBlob);
