@@ -254,20 +254,39 @@ ${memoryContext}
           };
           console.log(`✅ Using ElevenLabs audio asset for chat video: ${audioAssetId}`);
         } else {
-          // Fallback to HeyGen voice if ElevenLabs failed
-          const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
-          const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId || DEFAULT_VOICE_ID;
+          // If avatar has ElevenLabs configured but it failed, check for HeyGen fallback
+          const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
+          if (videoVoiceId) {
+            voiceConfig = {
+              type: "text",
+              input_text: scriptResult.script.slice(0, 5000),
+              voice_id: videoVoiceId,
+            };
+            console.log(`⚠️ ElevenLabs failed, using avatar's HeyGen voice: ${videoVoiceId}`);
+          } else {
+            // No fallback voice available - fail the video generation
+            throw new Error(`ElevenLabs audio generation failed for ${avatar.name} and no HeyGen fallback voice is configured`);
+          }
+        }
+      } else if (avatar.elevenlabsVoiceId && !elevenLabsClient) {
+        // Avatar has ElevenLabs configured but client is not available
+        const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
+        if (videoVoiceId) {
           voiceConfig = {
             type: "text",
             input_text: scriptResult.script.slice(0, 5000),
             voice_id: videoVoiceId,
           };
-          console.log(`⚠️ ElevenLabs failed, falling back to HeyGen voice: ${videoVoiceId}`);
+          console.log(`⚠️ ElevenLabs not configured, using avatar's HeyGen voice: ${videoVoiceId}`);
+        } else {
+          throw new Error(`ELEVENLABS_API_KEY not configured and no HeyGen fallback voice for ${avatar.name}`);
         }
       } else {
-        // Use HeyGen voice - video-specific voice ID if available, otherwise fall back
-        const DEFAULT_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Sara - Cheerful
-        const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId || DEFAULT_VOICE_ID;
+        // Use HeyGen voice - video-specific voice ID if available
+        const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
+        if (!videoVoiceId) {
+          throw new Error(`No voice configured for avatar ${avatar.name}. Please set either elevenlabsVoiceId or heygenVideoVoiceId.`);
+        }
         
         voiceConfig = {
           type: "text",
