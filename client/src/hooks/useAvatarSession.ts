@@ -405,7 +405,11 @@ export function useAvatarSession({
         // Deduplicate (Web Speech can fire same result multiple times)
         if (transcript && transcript !== lastTranscriptRef.current) {
           lastTranscriptRef.current = transcript;
+          // ⏱️ TIMING: Mark when voice input was captured
+          const voiceInputTime = performance.now();
+          console.log("⏱️ [TIMING] === VOICE INPUT CAPTURED ===");
           console.log("🎤 Voice input (final):", transcript);
+          console.log("⏱️ [TIMING] STT completed at:", new Date().toISOString());
           
           // If avatar is speaking in audio mode, interrupt it
           if (isSpeakingRef.current && currentAudioRef.current) {
@@ -1613,16 +1617,26 @@ export function useAvatarSession({
           }
         }
       } else {
+        // ⏱️ TIMING: Start full flow timer
+        const flowStartTime = performance.now();
+        console.log("⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===");
+        
         // Video mode: Start HeyGen session ONLY on first message if not already started
         if (!heygenSessionActive && !avatarRef.current) {
           try {
+            const heygenStartTime = performance.now();
             await startHeyGenSession(currentAvatarIdRef.current);
+            console.log(`⏱️ [TIMING] HeyGen session start: ${(performance.now() - heygenStartTime).toFixed(0)}ms`);
           } catch (error) {
             console.error("Failed to start HeyGen session:", error);
             // ⚠️ DON'T return early - still send message to Claude!
             // HeyGen is just for video rendering, Claude generates the response
           }
         }
+        
+        // ⏱️ TIMING: API call
+        const apiStartTime = performance.now();
+        console.log("⏱️ [TIMING] API call starting...");
         
         // Get Claude response then speak via HeyGen
         const response = await fetch("/api/avatar/response", {
@@ -1637,6 +1651,9 @@ export function useAvatarSession({
           }),
           signal: controller.signal,
         });
+        
+        const apiEndTime = performance.now();
+        console.log(`⏱️ [TIMING] API response received: ${(apiEndTime - apiStartTime).toFixed(0)}ms`);
 
         if (requestId !== currentRequestIdRef.current) {
           console.log("Ignoring old response - newer request in progress");
@@ -1650,7 +1667,24 @@ export function useAvatarSession({
 
         const data = await response.json();
         const claudeResponse = data.knowledgeResponse || data.response;
-        console.log("Claude response received:", claudeResponse);
+        
+        // ⏱️ Log backend performance breakdown
+        if (data.performance) {
+          console.log("⏱️ [TIMING] === BACKEND BREAKDOWN ===");
+          console.log(`⏱️ [TIMING] ├─ Total backend: ${data.performance.totalMs}ms`);
+          console.log(`⏱️ [TIMING] ├─ Data fetch (parallel): ${data.performance.dataFetchMs}ms`);
+          if (data.performance.breakdown) {
+            const b = data.performance.breakdown;
+            if (b.memory) console.log(`⏱️ [TIMING] │  ├─ Memory (Mem0): ${b.memory}ms`);
+            if (b.pubmed) console.log(`⏱️ [TIMING] │  ├─ PubMed: ${b.pubmed}ms`);
+            if (b.wikipedia) console.log(`⏱️ [TIMING] │  ├─ Wikipedia: ${b.wikipedia}ms`);
+            if (b.googleSearch) console.log(`⏱️ [TIMING] │  ├─ Google Search: ${b.googleSearch}ms`);
+            if (b.knowledge) console.log(`⏱️ [TIMING] │  └─ Knowledge (Pinecone): ${b.knowledge}ms`);
+          }
+          console.log(`⏱️ [TIMING] └─ Claude AI: ${data.performance.claudeMs}ms`);
+        }
+        
+        console.log("Claude response received:", claudeResponse.substring(0, 100) + "...");
 
         // Check if this is an end session response
         const shouldEndSession = data.endSession === true;
@@ -1684,11 +1718,11 @@ export function useAvatarSession({
         if (avatarRef.current) {
           // ✅ Avatar speaks Claude's response
           // Note: Voice recognition will be paused by AVATAR_START_TALKING event
-          console.log("🗣️ SENDING TO HEYGEN - Full Claude response:");
-          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-          console.log(claudeResponse);
-          console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-          console.log("Text length:", claudeResponse.length, "characters");
+          console.log("🗣️ SENDING TO HEYGEN - Text length:", claudeResponse.length, "characters");
+          
+          // ⏱️ TIMING: HeyGen speak call
+          const speakStartTime = performance.now();
+          console.log("⏱️ [TIMING] HeyGen speak() starting...");
           
           // Helper function to speak with retry on 401
           const speakWithRetry = async (retryCount = 0): Promise<void> => {
@@ -1700,6 +1734,9 @@ export function useAvatarSession({
                 text: claudeResponse,
                 task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
               });
+              const speakEndTime = performance.now();
+              console.log(`⏱️ [TIMING] HeyGen speak() completed: ${(speakEndTime - speakStartTime).toFixed(0)}ms`);
+              console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(speakEndTime - flowStartTime).toFixed(0)}ms ===`);
               console.log("✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)");
             } catch (speakError) {
               const errorMsg = speakError instanceof Error ? speakError.message : String(speakError);
