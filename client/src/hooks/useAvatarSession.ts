@@ -1411,6 +1411,21 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
 
+      // Clear sentence queue immediately to stop avatar from speaking more
+      sentenceQueueRef.current = [];
+      isSpeakingQueueRef.current = false;
+      console.log("🛑 Sentence queue cleared on pause");
+
+      // Interrupt avatar speech immediately
+      if (avatarRef.current) {
+        try {
+          await avatarRef.current.interrupt();
+          console.log("🛑 Avatar speech interrupted on pause");
+        } catch (e) {
+          console.warn("Error interrupting avatar:", e);
+        }
+      }
+
       // Stop voice recognition FIRST to prevent picking up trailing audio from speakers
       recognitionIntentionalStopRef.current = true;
       recognitionRunningRef.current = false;
