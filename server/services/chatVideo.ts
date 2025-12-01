@@ -8,19 +8,7 @@ import { getAvatarById } from "./avatars";
 import { emailService } from "./email";
 import { ElevenLabsClient } from "elevenlabs";
 import { subscriptionService } from "./subscription";
-
-function formatVideoTitle(params: {
-  avatarName: string;
-  topic: string;
-  userName?: string;
-  userId?: string;
-  type: 'course' | 'chat';
-}): string {
-  const date = new Date().toISOString().slice(0, 10);
-  const userLabel = params.userName || (params.userId ? `User-${params.userId.slice(0, 8)}` : 'Anonymous');
-  const typeLabel = params.type === 'course' ? 'Course' : 'Chat';
-  return `[${typeLabel}] ${params.avatarName} - ${params.topic} - ${userLabel} - ${date}`;
-}
+import { formatVideoTitle } from "../utils/videoTitle";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
