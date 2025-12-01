@@ -371,22 +371,18 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
         </nav>
 
         <div className="p-2 border-t space-y-1">
-          {!isEmbed && (
-            <Button
-              variant="ghost"
-              className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
-              onClick={() => setLocation('/')}
-              data-testid="nav-home"
-              title={!sidebarOpen ? "Back to Home" : undefined}
-            >
-              <Home className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
-              <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-                Back to Home
-              </span>
-            </Button>
-          )}
-          
-          {/* Logout button hidden in embedded mode - auth handled by Webflow */}
+          <Button
+            variant="ghost"
+            className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+            onClick={() => setLocation(isEmbed ? '/embed/dashboard' : '/')}
+            data-testid="nav-home"
+            title={!sidebarOpen ? "Back to Home" : undefined}
+          >
+            <Home className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+              Back to Home
+            </span>
+          </Button>
         </div>
       </aside>
 
