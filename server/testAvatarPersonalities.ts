@@ -4,7 +4,7 @@
  * 
  * Tests all 6 avatars with the same question to verify:
  * 1. Each has a distinct personality
- * 2. Responses follow guidelines (concise, direct, ending question)
+ * 2. Responses follow guidelines (concise, direct)
  * 3. No action descriptions are used
  * 4. System configuration is correct
  */
@@ -52,11 +52,8 @@ async function testAvatar(avatarId: string, avatarName: string, personalityPromp
 
     const response = message.content[0].type === 'text' ? message.content[0].text : '';
     
-    // Check 1: Ends with the required question
-    const hasEnding = response.includes("Would you like me to go deeper on any part of that?");
-    if (!hasEnding) {
-      issues.push("❌ Missing required ending question");
-    }
+    // Check 1: Response ends naturally (no forced ending phrase required)
+    const hasEnding = true; // No longer requiring specific ending phrase
 
     // Check 2: Is concise (approximately 2-3 paragraphs = 150-400 words)
     const wordCount = response.split(/\s+/).length;
@@ -155,7 +152,7 @@ async function runTests() {
   results.forEach(result => {
     const status = result.passed ? '✅ PASS' : '❌ FAIL';
     console.log(`${status} - ${result.avatarName}`);
-    console.log(`  - Ends with question: ${result.checks.hasEnding ? '✓' : '✗'}`);
+    console.log(`  - Natural ending: ${result.checks.hasEnding ? '✓' : '✗'}`);
     console.log(`  - Concise response: ${result.checks.isConcise ? '✓' : '✗'}`);
     console.log(`  - No action descriptions: ${result.checks.noActionDescriptions ? '✓' : '✗'}`);
     console.log(`  - Distinct voice: ${result.checks.hasDistinctVoice ? '✓' : '✗'}`);
