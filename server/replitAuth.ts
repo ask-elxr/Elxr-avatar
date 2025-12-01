@@ -167,19 +167,20 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     
     // Use Memberstack ID if provided, otherwise use session userId or generate a temporary one
     let userId: string;
+    const session = req.session as any;
     if (memberstackId) {
       // Prefix Memberstack IDs to ensure uniqueness across auth providers
       userId = `ms_${memberstackId}`;
       // Store in session for consistency across requests
-      if (req.session) {
-        req.session.userId = userId;
+      if (session) {
+        session.userId = userId;
       }
-    } else if (req.session?.userId) {
-      userId = req.session.userId;
+    } else if (session?.userId) {
+      userId = session.userId;
     } else {
       userId = `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-      if (req.session) {
-        req.session.userId = userId;
+      if (session) {
+        session.userId = userId;
       }
     }
     
