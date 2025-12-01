@@ -2821,7 +2821,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      log.info({ userId, avatarId, perfTimings, sentenceCount }, 'Streaming response completed');
+      // Log Claude response in development mode for debugging
+      log.info({ 
+        userId, 
+        avatarId, 
+        perfTimings, 
+        sentenceCount,
+        userMessage: message,
+        claudeResponse: fullResponse.substring(0, 500) + (fullResponse.length > 500 ? '...' : ''),
+        responseLength: fullResponse.length,
+        contextLength: combinedContext?.length || 0,
+      }, '🤖 Claude streaming response completed');
+      
+      // Also log full response to console for easy viewing in dev
+      console.log('\n📝 USER MESSAGE:', message);
+      console.log('🤖 CLAUDE RESPONSE:', fullResponse);
+      console.log('---\n');
+      
       res.end();
 
     } catch (error: any) {
