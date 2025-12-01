@@ -758,18 +758,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <label htmlFor="audio-only" className="text-white text-sm">
-                  Audio Only Mode
-                </label>
-                <Checkbox
-                  id="audio-only"
-                  checked={audioOnly}
-                  onCheckedChange={(checked) => handleModeToggle(!checked)}
-                  className="border-white data-[state=checked]:bg-primary"
-                />
-              </div>
-
-              <div className="flex items-center justify-between">
                 <label htmlFor="memory" className="text-white text-sm">
                   Conversation Memory
                 </label>
