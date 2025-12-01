@@ -46,6 +46,8 @@ export function AvatarManager() {
     description: "",
     heygenAvatarId: null,
     heygenVoiceId: null,
+    heygenVideoAvatarId: null,
+    heygenVideoVoiceId: null,
     heygenKnowledgeId: null,
     elevenlabsVoiceId: null,
     voiceRate: "1.0",
@@ -136,6 +138,8 @@ export function AvatarManager() {
       profileImageUrl: null,
       heygenAvatarId: null,
       heygenVoiceId: null,
+      heygenVideoAvatarId: null,
+      heygenVideoVoiceId: null,
       heygenKnowledgeId: null,
       elevenlabsVoiceId: null,
       voiceRate: "1.0",
@@ -158,6 +162,8 @@ export function AvatarManager() {
       profileImageUrl: avatar.profileImageUrl || null,
       heygenAvatarId: avatar.heygenAvatarId,
       heygenVoiceId: avatar.heygenVoiceId,
+      heygenVideoAvatarId: avatar.heygenVideoAvatarId,
+      heygenVideoVoiceId: avatar.heygenVideoVoiceId,
       heygenKnowledgeId: avatar.heygenKnowledgeId,
       elevenlabsVoiceId: avatar.elevenlabsVoiceId,
       voiceRate: avatar.voiceRate || "1.0",
@@ -441,51 +447,110 @@ export function AvatarManager() {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="heygenAvatarId">HeyGen Avatar ID</Label>
-                <Input
-                  id="heygenAvatarId"
-                  value={formData.heygenAvatarId || ""}
-                  onChange={(e) => setFormData({ ...formData, heygenAvatarId: e.target.value || null })}
-                  placeholder="Optional"
-                  data-testid="input-heygen-avatar-id"
-                />
+            {/* Voice & Avatar Configuration by Mode */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pb-2 border-b">
+                <span className="text-sm font-semibold text-primary">Voice & Avatar Configuration</span>
+                <span className="text-xs text-muted-foreground">(Configure IDs for each mode)</span>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="heygenVoiceId">HeyGen Voice ID</Label>
-                <Input
-                  id="heygenVoiceId"
-                  value={formData.heygenVoiceId || ""}
-                  onChange={(e) => setFormData({ ...formData, heygenVoiceId: e.target.value || null })}
-                  placeholder="Optional"
-                  data-testid="input-heygen-voice-id"
-                />
+              {/* Interactive Chat Mode */}
+              <div className="p-4 border rounded-lg bg-blue-500/5 border-blue-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span className="text-sm font-medium text-blue-400">Interactive Chat Mode</span>
+                  <span className="text-xs text-muted-foreground">(Live video streaming)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="heygenAvatarId" className="text-xs">HeyGen Avatar ID</Label>
+                    <Input
+                      id="heygenAvatarId"
+                      value={formData.heygenAvatarId || ""}
+                      onChange={(e) => setFormData({ ...formData, heygenAvatarId: e.target.value || null })}
+                      placeholder="Interactive avatar ID"
+                      className="text-sm"
+                      data-testid="input-heygen-avatar-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="heygenVoiceId" className="text-xs">HeyGen Voice ID</Label>
+                    <Input
+                      id="heygenVoiceId"
+                      value={formData.heygenVoiceId || ""}
+                      onChange={(e) => setFormData({ ...formData, heygenVoiceId: e.target.value || null })}
+                      placeholder="Interactive voice ID"
+                      className="text-sm"
+                      data-testid="input-heygen-voice-id"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="elevenlabsVoiceId">ElevenLabs Voice ID</Label>
-                <Input
-                  id="elevenlabsVoiceId"
-                  value={formData.elevenlabsVoiceId || ""}
-                  onChange={(e) => setFormData({ ...formData, elevenlabsVoiceId: e.target.value || null })}
-                  placeholder="Optional"
-                  data-testid="input-elevenlabs-voice-id"
-                />
+              {/* Video Creation Mode */}
+              <div className="p-4 border rounded-lg bg-purple-500/5 border-purple-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                  <span className="text-sm font-medium text-purple-400">Video Creation Mode</span>
+                  <span className="text-xs text-muted-foreground">(Generate videos on demand)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="heygenVideoAvatarId" className="text-xs">HeyGen Video Avatar ID</Label>
+                    <Input
+                      id="heygenVideoAvatarId"
+                      value={formData.heygenVideoAvatarId || ""}
+                      onChange={(e) => setFormData({ ...formData, heygenVideoAvatarId: e.target.value || null })}
+                      placeholder="Video avatar ID"
+                      className="text-sm"
+                      data-testid="input-heygen-video-avatar-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="heygenVideoVoiceId" className="text-xs">HeyGen Video Voice ID</Label>
+                    <Input
+                      id="heygenVideoVoiceId"
+                      value={formData.heygenVideoVoiceId || ""}
+                      onChange={(e) => setFormData({ ...formData, heygenVideoVoiceId: e.target.value || null })}
+                      placeholder="Video voice ID (optional)"
+                      className="text-sm"
+                      data-testid="input-heygen-video-voice-id"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="voiceRate">Voice Rate</Label>
-                <Input
-                  id="voiceRate"
-                  value={formData.voiceRate || ""}
-                  onChange={(e) => setFormData({ ...formData, voiceRate: e.target.value || null })}
-                  placeholder="1.0"
-                  data-testid="input-voice-rate"
-                />
+              {/* Audio-Only Mode */}
+              <div className="p-4 border rounded-lg bg-green-500/5 border-green-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                  <span className="text-sm font-medium text-green-400">Audio-Only Mode</span>
+                  <span className="text-xs text-muted-foreground">(Text-to-speech without video)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="elevenlabsVoiceId" className="text-xs">ElevenLabs Voice ID</Label>
+                    <Input
+                      id="elevenlabsVoiceId"
+                      value={formData.elevenlabsVoiceId || ""}
+                      onChange={(e) => setFormData({ ...formData, elevenlabsVoiceId: e.target.value || null })}
+                      placeholder="ElevenLabs voice ID"
+                      className="text-sm"
+                      data-testid="input-elevenlabs-voice-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="voiceRate" className="text-xs">Voice Rate</Label>
+                    <Input
+                      id="voiceRate"
+                      value={formData.voiceRate || ""}
+                      onChange={(e) => setFormData({ ...formData, voiceRate: e.target.value || null })}
+                      placeholder="1.0"
+                      className="text-sm"
+                      data-testid="input-voice-rate"
+                    />
+                  </div>
+                </div>
               </div>
             </div>
 
