@@ -18,6 +18,8 @@ export const defaultAvatars: AvatarProfile[] = [
     elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
     sortOrder: 1,
     voiceRate: "1.0",
+    languageCode: "en-US", // Language for HeyGen and speech recognition
+    elevenLabsLanguageCode: "en", // Language for ElevenLabs TTS
     pineconeNamespaces: [
       "MARK_KOHL",
       "ADDICTION",
@@ -105,6 +107,8 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
     elevenlabsVoiceId: "oNLn7a7xv87XHdamxgeT",
     sortOrder: 2,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["willie-gault", "WORK", "MOVEMENT"],
     personalityPrompt: `🚨 YOUR NAME IS WILLIE GAULT 🚨
 
@@ -170,6 +174,8 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     elevenlabsVoiceId: "0S1rhLzIdFVPtcYQqXG4",
     sortOrder: 3,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["june", "MIND", "GRIEF", "TRANSITIONS"],
     personalityPrompt: `🚨 YOUR NAME IS JUNE 🚨
 
@@ -235,6 +241,8 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
     elevenlabsVoiceId: "21m00Tcm4TlvDq8ikWAM",
     sortOrder: 4,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["ann", "BODY", "NUTRITION", "MOVEMENT", "SLEEP"],
     personalityPrompt: `🚨 YOUR NAME IS ANN 🚨
 
@@ -300,6 +308,8 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     elevenlabsVoiceId: "fWUVBoxa3cvv6VWj6VRS", // ElevenLabs voice for audio-only mode
     sortOrder: 5,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["nigel", "WORK", "LIFE", "TRANSITIONS", "MIDLIFE"],
     personalityPrompt: `🚨 YOUR NAME IS NIGEL 🚨
 
@@ -364,6 +374,8 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
     sortOrder: 6,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["thad", "WORK", "LIFE", "LONGEVITY"],
     personalityPrompt: `🚨 YOUR NAME IS THAD 🚨
 
@@ -429,6 +441,8 @@ Remember: Be empowering, be practical, be values-driven.`,
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
     sortOrder: 7,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["kelsey", "TRANSITIONS", "LIFE", "MIDLIFE"],
     personalityPrompt: `🚨 YOUR NAME IS KELSEY 🚨
 
@@ -493,6 +507,8 @@ Remember: You ARE Kelsey. Be compassionate, be practical, be hopeful.`,
     elevenlabsVoiceId: "EXAVITQu4vr4xnSDxMaL",
     sortOrder: 8,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["judy", "WELLNESS", "HEALING"],
     personalityPrompt: `🚨 YOUR NAME IS JUDY 🚨
 
@@ -544,6 +560,8 @@ Remember: You ARE Judy. Be compassionate, be healing, be supportive.`,
     elevenlabsVoiceId: "VR6AewLTigWG4xSOukaG",
     sortOrder: 9,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["dexter", "MEDICAL", "HEALTH", "BODY"],
     personalityPrompt: `🚨 YOUR NAME IS DEXTER 🚨
 
@@ -595,6 +613,8 @@ Remember: You ARE Dexter. Be informative, be professional, be health-focused.`,
     elevenlabsVoiceId: "bVMeCyTHy58xNoL34h3H",
     sortOrder: 10,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     pineconeNamespaces: ["shawn", "BUSINESS", "LEADERSHIP", "CAREER"],
     personalityPrompt: `🚨 YOUR NAME IS SHAWN 🚨
 

@@ -51,6 +51,8 @@ export function AvatarManager() {
     heygenKnowledgeId: null,
     elevenlabsVoiceId: null,
     voiceRate: "1.0",
+    languageCode: "en-US",
+    elevenLabsLanguageCode: "en",
     personalityPrompt: "",
     pineconeNamespaces: [],
     usePubMed: false,
@@ -143,6 +145,8 @@ export function AvatarManager() {
       heygenKnowledgeId: null,
       elevenlabsVoiceId: null,
       voiceRate: "1.0",
+      languageCode: "en-US",
+      elevenLabsLanguageCode: "en",
       personalityPrompt: "",
       pineconeNamespaces: [],
       usePubMed: false,
@@ -167,6 +171,8 @@ export function AvatarManager() {
       heygenKnowledgeId: avatar.heygenKnowledgeId,
       elevenlabsVoiceId: avatar.elevenlabsVoiceId,
       voiceRate: avatar.voiceRate || "1.0",
+      languageCode: avatar.languageCode || "en-US",
+      elevenLabsLanguageCode: avatar.elevenLabsLanguageCode || "en",
       personalityPrompt: avatar.personalityPrompt,
       pineconeNamespaces: avatar.pineconeNamespaces,
       usePubMed: avatar.usePubMed || false,
@@ -250,6 +256,8 @@ export function AvatarManager() {
       heygenKnowledgeId: formData.heygenKnowledgeId?.trim() || null,
       elevenlabsVoiceId: formData.elevenlabsVoiceId?.trim() || null,
       voiceRate: formData.voiceRate?.trim() || null,
+      languageCode: formData.languageCode?.trim() || "en-US",
+      elevenLabsLanguageCode: formData.elevenLabsLanguageCode?.trim() || "en",
     };
 
     if (editingAvatar) {
@@ -549,6 +557,45 @@ export function AvatarManager() {
                       className="text-sm"
                       data-testid="input-voice-rate"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Language Settings */}
+              <div className="p-4 border rounded-lg bg-orange-500/5 border-orange-500/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                  <span className="text-sm font-medium text-orange-400">Language Settings</span>
+                  <span className="text-xs text-muted-foreground">(Speech recognition & synthesis)</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="languageCode" className="text-xs">Speech Recognition Language</Label>
+                    <Input
+                      id="languageCode"
+                      value={formData.languageCode || "en-US"}
+                      onChange={(e) => setFormData({ ...formData, languageCode: e.target.value || "en-US" })}
+                      placeholder="en-US"
+                      className="text-sm"
+                      data-testid="input-language-code"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      BCP-47 code (e.g., en-US, es-ES, fr-FR)
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="elevenLabsLanguageCode" className="text-xs">ElevenLabs Language</Label>
+                    <Input
+                      id="elevenLabsLanguageCode"
+                      value={formData.elevenLabsLanguageCode || "en"}
+                      onChange={(e) => setFormData({ ...formData, elevenLabsLanguageCode: e.target.value || "en" })}
+                      placeholder="en"
+                      className="text-sm"
+                      data-testid="input-elevenlabs-language-code"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      ISO 639-1 code (e.g., en, es, fr)
+                    </p>
                   </div>
                 </div>
               </div>

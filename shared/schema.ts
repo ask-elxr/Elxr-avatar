@@ -159,6 +159,9 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   heygenKnowledgeId: text("heygen_knowledge_id"),
   elevenlabsVoiceId: text("elevenlabs_voice_id"),
   voiceRate: text("voice_rate").default("1.0"),
+  // Language configuration
+  languageCode: text("language_code").default("en-US"), // BCP-47 language code for HeyGen & speech recognition (e.g., "en-US", "es-ES", "fr-FR")
+  elevenLabsLanguageCode: text("elevenlabs_language_code").default("en"), // ElevenLabs language code (e.g., "en", "es", "fr", "de", "it", "pt", "pl", "hi", "ar", "zh", "ja", "ko")
   personalityPrompt: text("personality_prompt").notNull(),
   pineconeNamespaces: text("pinecone_namespaces").array().notNull().default(sql`ARRAY[]::text[]`),
   tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),

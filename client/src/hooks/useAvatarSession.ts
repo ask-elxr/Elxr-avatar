@@ -894,6 +894,25 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true);
     
+    // ✅ MOBILE FIX: Warm up microphone before starting voice recognition
+    // Mobile browsers (especially iOS Safari) require an active audio stream
+    // before Web Speech API will work properly
+    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
+    if (isMobile) {
+      try {
+        console.log("📱 Mobile detected - warming up microphone...");
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Keep stream active briefly to "warm up" the microphone
+        await new Promise(resolve => setTimeout(resolve, 300));
+        // Stop tracks - we just needed to activate the microphone
+        stream.getTracks().forEach(track => track.stop());
+        console.log("📱 Microphone warmed up successfully");
+      } catch (error) {
+        console.warn("📱 Microphone warm-up failed:", error);
+        // Continue anyway - voice recognition may still work
+      }
+    }
+    
     // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
     // This allows users to speak even before video loads or in audio-only mode
     startVoiceRecognition();
