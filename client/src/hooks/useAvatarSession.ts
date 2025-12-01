@@ -424,10 +424,17 @@ export function useAvatarSession({
             setIsSpeakingState(false);
           }
           
-          // Process the message (now that we've interrupted if needed)
-          if (!isSpeakingRef.current) {
-            handleSubmitMessage(transcript);
+          // If avatar is speaking in video mode, interrupt it
+          if (isSpeakingRef.current && avatarRef.current && !audioOnlyRef.current) {
+            console.log("🛑 Interrupting HeyGen avatar - user is speaking");
+            avatarRef.current.interrupt().catch(() => {});
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
           }
+          
+          // Process the message (always process after interrupting)
+          console.log("🎤 Submitting voice transcript:", transcript, "isSpeaking:", isSpeakingRef.current);
+          handleSubmitMessage(transcript);
         }
       };
       
