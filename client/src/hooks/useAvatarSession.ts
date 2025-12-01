@@ -281,30 +281,51 @@ export function useAvatarSession({
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
+      // Enhanced mobile browser detection
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+      const isAndroid = /android/i.test(userAgent);
+      const isMobile = isIOS || isAndroid || /mobile/i.test(userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
+      const isChrome = /chrome/i.test(userAgent) && !/edge/i.test(userAgent);
+      const isChromeIOS = isIOS && /CriOS/i.test(userAgent);
+      const isFirefoxIOS = isIOS && /FxiOS/i.test(userAgent);
+      
+      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}`);
+      
+      // Chrome on iOS does NOT support Web Speech API (Apple restricts it)
+      // Only Safari can use it on iOS
+      if (isChromeIOS || isFirefoxIOS) {
+        console.warn("⚠️ Voice input not supported in Chrome/Firefox on iOS - only Safari supports it");
+        setMicrophoneStatus('not-supported');
+        return;
+      }
+      
       if (!SpeechRecognition) {
         console.warn("⚠️ Web Speech API not supported in this browser - use text input instead");
         setMicrophoneStatus('not-supported');
         return;
       }
 
-      // Detect iOS/Safari for special handling
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
       const recognition = new SpeechRecognition();
-      recognition.continuous = true;
+      
+      // MOBILE FIX: Use non-continuous mode on mobile for better reliability
+      // Safari iOS especially has issues with continuous mode
+      recognition.continuous = !isMobile;
       recognition.interimResults = false; // Only get final results
       recognition.lang = 'en-US';
       recognition.maxAlternatives = 1; // Only get best match
       
-      // iOS Safari stuck detection - recreate if no results for 15 seconds
+      console.log(`🎤 Voice recognition config: continuous=${recognition.continuous}, mobile=${isMobile}`);
+      
+      // Mobile/Safari stuck detection - recreate if no results for 15 seconds
       const resetStuckTimeout = () => {
         if (recognitionStuckTimeoutRef.current) {
           clearTimeout(recognitionStuckTimeoutRef.current);
         }
-        if ((isIOS || isSafari) && sessionActiveRef.current && !isSpeakingRef.current) {
+        if (isMobile && sessionActiveRef.current && !isSpeakingRef.current) {
           recognitionStuckTimeoutRef.current = setTimeout(() => {
-            console.log("⚠️ iOS/Safari: Recognition appears stuck, recreating...");
+            console.log("⚠️ Mobile: Recognition appears stuck, recreating...");
             if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
               try {
                 recognitionRef.current.abort();
@@ -316,7 +337,7 @@ export function useAvatarSession({
                 if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
                   startVoiceRecognition();
                 }
-              }, 1000);
+              }, 500);
             }
           }, 15000); // 15 seconds stuck detection
         }
@@ -324,8 +345,32 @@ export function useAvatarSession({
       
       recognition.onstart = () => {
         setMicrophoneStatus('listening');
-        console.log("🎤 Microphone listening");
+        console.log("🎤 Microphone listening" + (isMobile ? " (mobile mode)" : ""));
         resetStuckTimeout(); // Start stuck detection
+      };
+      
+      // MOBILE FIX: Handle audio start/end events for Safari iOS
+      recognition.onaudiostart = () => {
+        console.log("🔊 Audio capture started");
+      };
+      
+      recognition.onaudioend = () => {
+        console.log("🔊 Audio capture ended");
+      };
+      
+      recognition.onspeechstart = () => {
+        console.log("🗣️ Speech detected");
+      };
+      
+      recognition.onspeechend = () => {
+        console.log("🗣️ Speech ended");
+        // SAFARI FIX: Force proper stop on speech end
+        if (isSafari && isIOS) {
+          try {
+            // This counterintuitive pattern helps Safari properly end recognition
+            recognition.stop();
+          } catch (e) {}
+        }
       };
       
       recognition.onresult = (event: any) => {
@@ -367,6 +412,8 @@ export function useAvatarSession({
       };
       
       recognition.onerror = (event: any) => {
+        console.log(`🎤 Speech recognition error: ${event.error} (mobile=${isMobile}, iOS=${isIOS})`);
+        
         if (event.error === 'not-allowed') {
           console.error("🎤 Microphone permission denied - use text input instead");
           setMicrophoneStatus('permission-denied');
@@ -375,9 +422,30 @@ export function useAvatarSession({
             clearTimeout(recognitionStuckTimeoutRef.current);
             recognitionStuckTimeoutRef.current = null;
           }
+        } else if (event.error === 'service-not-allowed') {
+          // This happens on iOS when using non-Safari browsers or in PWA mode
+          console.error("🎤 Speech recognition service not allowed - may be browser limitation");
+          setMicrophoneStatus('not-supported');
+        } else if (event.error === 'network') {
+          // Network required for speech recognition (it's server-based)
+          console.error("🎤 Network error - check internet connection");
+          // Try to restart after a delay
+          if (!recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+            setTimeout(() => {
+              if (!recognitionIntentionalStopRef.current && sessionActiveRef.current && !recognitionRunningRef.current) {
+                console.log("🔄 Retrying voice recognition after network error...");
+                startVoiceRecognition();
+              }
+            }, 3000);
+          }
+        } else if (event.error === 'audio-capture') {
+          // Microphone not available or in use by another app
+          console.error("🎤 Audio capture failed - microphone may be in use");
+          setMicrophoneStatus('permission-denied');
         } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
           console.error("🎤 Speech recognition error:", event.error);
         }
+        // 'no-speech' and 'aborted' are normal events, don't log as errors
       };
       
       recognition.onend = () => {

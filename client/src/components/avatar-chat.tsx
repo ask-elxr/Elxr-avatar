@@ -518,6 +518,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <span className="text-sm text-red-400 font-medium">Mic blocked</span>
               </div>
             )}
+            
+            {/* Voice Not Supported - show on unsupported browsers (e.g., Chrome on iOS) */}
+            {microphoneStatus === 'not-supported' && (
+              <div className="absolute top-20 right-4 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
+                <div className="flex items-center gap-2">
+                  <MicOff className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm text-amber-400 font-medium">Voice not available</span>
+                </div>
+                <span className="text-xs text-amber-300/80 text-right">Use Safari for voice input on iOS, or type your message</span>
+              </div>
+            )}
 
             {/* Video Notifications - Pending and Completed */}
             {(pendingVideos.length > 0 || completedVideos.length > 0) && (
