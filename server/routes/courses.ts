@@ -17,6 +17,7 @@ import { eq, and, desc, or } from "drizzle-orm";
 import { videoGenerationService } from "../services/videoGeneration";
 import { chatVideoService } from "../services/chatVideo";
 import { subscriptionService } from "../services/subscription";
+import { isAuthenticated, requireAdmin } from "../replitAuth";
 
 export const coursesRouter = Router();
 
@@ -246,8 +247,8 @@ coursesRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Create a new course
-coursesRouter.post("/", async (req: Request, res: Response) => {
+// Create a new course (admin only)
+coursesRouter.post("/", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
     
@@ -273,8 +274,8 @@ coursesRouter.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// Update a course
-coursesRouter.put("/:id", async (req: Request, res: Response) => {
+// Update a course (admin only)
+coursesRouter.put("/:id", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.session.userId;
@@ -301,8 +302,8 @@ coursesRouter.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Delete a course
-coursesRouter.delete("/:id", async (req: Request, res: Response) => {
+// Delete a course (admin only)
+coursesRouter.delete("/:id", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.session.userId;
@@ -323,8 +324,8 @@ coursesRouter.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Add a lesson to a course
-coursesRouter.post("/:courseId/lessons", async (req: Request, res: Response) => {
+// Add a lesson to a course (admin only)
+coursesRouter.post("/:courseId/lessons", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { courseId } = req.params;
     const userId = req.session.userId;
@@ -365,8 +366,8 @@ coursesRouter.post("/:courseId/lessons", async (req: Request, res: Response) => 
   }
 });
 
-// Update a lesson
-coursesRouter.put("/lessons/:id", async (req: Request, res: Response) => {
+// Update a lesson (admin only)
+coursesRouter.put("/lessons/:id", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.session.userId;
@@ -408,8 +409,8 @@ coursesRouter.put("/lessons/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Delete a lesson
-coursesRouter.delete("/lessons/:id", async (req: Request, res: Response) => {
+// Delete a lesson (admin only)
+coursesRouter.delete("/lessons/:id", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.session.userId;
@@ -454,8 +455,8 @@ coursesRouter.delete("/lessons/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Generate video for a lesson
-coursesRouter.post("/lessons/:id/generate-video", async (req: Request, res: Response) => {
+// Generate video for a lesson (admin only)
+coursesRouter.post("/lessons/:id/generate-video", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const { id: lessonId } = req.params;
     const userId = req.session.userId;
@@ -523,8 +524,8 @@ coursesRouter.get("/lessons/:id/video-status", async (req: Request, res: Respons
   }
 });
 
-// Generate AI script for a lesson using avatar's knowledge base
-coursesRouter.post("/generate-script", async (req: Request, res: Response) => {
+// Generate AI script for a lesson using avatar's knowledge base (admin only)
+coursesRouter.post("/generate-script", isAuthenticated, requireAdmin, async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
     const { avatarId, courseId, topic, lessonTitle, targetDuration, additionalContext } = req.body;

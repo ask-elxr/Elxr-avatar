@@ -1435,34 +1435,40 @@ export default function Dashboard({
                         No Courses Yet
                       </CardTitle>
                       <CardDescription className="text-white/60">
-                        Start creating video courses with AI avatars. Build structured lessons and generate professional videos.
+                        {isAdmin 
+                          ? "Start creating video courses with AI avatars. Build structured lessons and generate professional videos."
+                          : "Video courses will appear here once they are created by administrators."}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex justify-center">
-                      <Button
-                        onClick={() =>
-                          setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
-                        }
-                        data-testid="button-create-course"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Your First Course
-                      </Button>
-                    </CardContent>
+                    {isAdmin && (
+                      <CardContent className="flex justify-center">
+                        <Button
+                          onClick={() =>
+                            setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
+                          }
+                          data-testid="button-create-course"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Your First Course
+                        </Button>
+                      </CardContent>
+                    )}
                   </Card>
                 ) : (
                   <>
-                    <div className="flex justify-end mb-6">
-                      <Button
-                        onClick={() =>
-                          setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
-                        }
-                        data-testid="button-new-course"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Course
-                      </Button>
-                    </div>
+                    {isAdmin && (
+                      <div className="flex justify-end mb-6">
+                        <Button
+                          onClick={() =>
+                            setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
+                          }
+                          data-testid="button-new-course"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          New Course
+                        </Button>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {courses.map((course) => (
                         <Card
@@ -1550,7 +1556,7 @@ export default function Dashboard({
                                 </div>
                               )}
                             </div>
-                            {!isEmbed && (
+                            {!isEmbed && isAdmin && (
                               <div className="mt-auto pt-3 border-t border-white/10">
                                 <Button
                                   variant="outline"
@@ -2351,7 +2357,7 @@ export default function Dashboard({
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Back to Courses
                       </Button>
-                      {!isEmbed && (
+                      {!isEmbed && isAdmin && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -2434,7 +2440,7 @@ export default function Dashboard({
                           <p className="text-white/60">
                             No lessons in this course yet
                           </p>
-                          {!isEmbed && (
+                          {!isEmbed && isAdmin && (
                             <Button
                               onClick={() =>
                                 setLocation(
@@ -2529,9 +2535,11 @@ export default function Dashboard({
                               <p className="text-white/60">
                                 No videos generated yet
                               </p>
-                              <p className="text-white/40 text-sm mt-1">
-                                Go to Edit Course to generate videos
-                              </p>
+                              {isAdmin && (
+                                <p className="text-white/40 text-sm mt-1">
+                                  Go to Edit Course to generate videos
+                                </p>
+                              )}
                             </CardContent>
                           </Card>
                         )}
