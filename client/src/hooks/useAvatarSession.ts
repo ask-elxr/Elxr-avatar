@@ -503,7 +503,7 @@ export function useAvatarSession({
     }
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
-  const startHeyGenSession = useCallback(async (activeAvatarId: string) => {
+  const startHeyGenSession = useCallback(async (activeAvatarId: string, options?: { skipGreeting?: boolean }) => {
     // Skip if audio-only
     if (audioOnlyRef.current) {
       return;
@@ -515,7 +515,8 @@ export function useAvatarSession({
       return;
     }
     
-    console.log("Starting HeyGen session for first message");
+    const skipGreeting = options?.skipGreeting ?? false;
+    console.log(`Starting HeyGen session${skipGreeting ? ' (mode switch - no greeting)' : ' (fresh start)'}`);
     setIsLoading(true);
     
     try {
@@ -549,21 +550,30 @@ export function useAvatarSession({
         }
         setIsLoading(false);
         
-        // 🎤 Avatar speaks first with a personalized greeting
-        try {
-          const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
-          if (greetingResponse.ok) {
-            const { greeting } = await greetingResponse.json();
-            if (greeting && avatar) {
-              console.log("🗣️ Avatar greeting:", greeting);
-              await avatar.speak({
-                text: greeting,
-                taskType: TaskType.REPEAT,
-              });
+        // 🎤 Avatar speaks first with a personalized greeting (only for fresh starts, not mode switches)
+        if (!skipGreeting) {
+          try {
+            const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
+            if (greetingResponse.ok) {
+              const { greeting } = await greetingResponse.json();
+              if (greeting && avatar) {
+                console.log("🗣️ Avatar greeting:", greeting);
+                await avatar.speak({
+                  text: greeting,
+                  taskType: TaskType.REPEAT,
+                });
+              }
             }
+          } catch (error) {
+            console.warn("Failed to fetch greeting:", error);
           }
-        } catch (error) {
-          console.warn("Failed to fetch greeting:", error);
+        } else {
+          console.log("⏭️ Skipping greeting - mode switch (seamless transition)");
+          // For mode switches, ensure voice recognition starts immediately
+          if (!recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+            console.log("🎤 Starting voice recognition after seamless mode switch");
+            startVoiceRecognition();
+          }
         }
       });
 
@@ -714,7 +724,7 @@ export function useAvatarSession({
       setIsLoading(false);
       throw error;
     }
-  }, [heygenSessionActive, videoRef, startIdleTimeout, clearIdleTimeout]);
+  }, [heygenSessionActive, videoRef, startIdleTimeout, clearIdleTimeout, startVoiceRecognition]);
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
@@ -1050,7 +1060,7 @@ export function useAvatarSession({
   }, [startSession]);
 
   // Switch between audio-only and video modes WITHOUT restarting the session
-  // This preserves conversation context and keeps voice recognition running
+  // This preserves conversation context and provides seamless transition
   const switchTransportMode = useCallback(async (toVideoMode: boolean) => {
     const newAudioOnly = !toVideoMode;
     
@@ -1065,6 +1075,33 @@ export function useAvatarSession({
     // CRITICAL: Clear any pending idle timeout to prevent it from firing in audio mode
     // and calling stopHeyGenSession which would clear sessionIdRef
     clearIdleTimeout();
+    
+    // CRITICAL: Stop voice recognition IMMEDIATELY to prevent processing queued audio
+    // This ensures no messages from the old mode leak into the new mode
+    if (recognitionRef.current) {
+      try {
+        recognitionIntentionalStopRef.current = true;
+        recognitionRunningRef.current = false;
+        if (recognitionRestartTimeoutRef.current) {
+          clearTimeout(recognitionRestartTimeoutRef.current);
+          recognitionRestartTimeoutRef.current = null;
+        }
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        console.log("🛑 Voice recognition stopped for seamless mode switch");
+      } catch (e) {
+        console.warn("Error stopping voice recognition during mode switch:", e);
+        recognitionRef.current = null;
+      }
+    }
+    setMicrophoneStatus('stopped');
+    
+    // CRITICAL: Cancel any pending API requests to prevent old responses in new mode
+    if (abortControllerRef.current) {
+      console.log("🛑 Cancelling pending API request for mode switch");
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     
     // CRITICAL: Update mode ref FIRST so all guards work correctly
     const wasAudioOnly = audioOnlyRef.current;
@@ -1142,16 +1179,15 @@ export function useAvatarSession({
       
       try {
         setIsLoading(true);
-        await startHeyGenSession(currentAvatarIdRef.current);
+        // Pass skipGreeting=true for seamless mode switch - conversation is already in progress
+        await startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true });
         setIsLoading(false);
-        console.log("✅ HeyGen started - switched to video mode");
+        console.log("✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)");
         
-        // CRITICAL: Ensure voice recognition is active after switching to video mode
-        // The HeyGen session might not trigger speaking events, so explicitly ensure recognition is running
-        if (!recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
-          console.log("🎤 Restarting voice recognition after video mode switch");
-          startVoiceRecognition();
-        }
+        // CRITICAL: Reset the intentional stop flag so voice recognition can restart
+        // Voice recognition will be started by the STREAM_READY handler
+        recognitionIntentionalStopRef.current = false;
+        
       } catch (error) {
         console.error("Error starting HeyGen for mode switch:", error);
         setIsLoading(false);
@@ -1165,12 +1201,13 @@ export function useAvatarSession({
       }
     }
     
-    // Ensure voice recognition is running after any mode switch
-    if (!recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
-      console.log("🎤 Ensuring voice recognition is active after mode switch");
-      startVoiceRecognition();
-    } else {
-      console.log("🎤 Voice recognition status: running=" + recognitionRunningRef.current);
+    // For audio mode switch, reset flag and restart voice recognition
+    if (newAudioOnly) {
+      recognitionIntentionalStopRef.current = false;
+      if (!recognitionRunningRef.current && sessionActiveRef.current) {
+        console.log("🎤 Restarting voice recognition after audio mode switch");
+        startVoiceRecognition();
+      }
     }
   }, [videoRef, startHeyGenSession, clearIdleTimeout, startVoiceRecognition]);
 
