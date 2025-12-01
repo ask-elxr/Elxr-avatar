@@ -532,6 +532,119 @@ ${memoryContext}
       // Don't throw - email failure shouldn't break the video completion flow
     }
   }
+
+  /**
+   * Check and update status for a specific chat video from HeyGen
+   */
+  async checkAndUpdateVideoStatus(heygenVideoId: string): Promise<boolean> {
+    try {
+      const response = await axios.get<HeyGenVideoStatusResponse>(
+        `https://api.heygen.com/v1/video_status.get?video_id=${heygenVideoId}`,
+        { headers: this.headers }
+      );
+
+      const { status, video_url, thumbnail_url, duration, error } = response.data.data;
+      
+      // Find the video record
+      const [video] = await db
+        .select()
+        .from(chatGeneratedVideos)
+        .where(eq(chatGeneratedVideos.heygenVideoId, heygenVideoId));
+      
+      if (!video) {
+        console.log(`⚠️ No chat video record found for HeyGen ID: ${heygenVideoId}`);
+        return false;
+      }
+
+      if (status === "completed" && video_url) {
+        const durationInt = duration ? Math.round(duration) : null;
+        const now = new Date();
+        
+        await db
+          .update(chatGeneratedVideos)
+          .set({
+            status: "completed",
+            videoUrl: video_url,
+            thumbnailUrl: thumbnail_url,
+            duration: durationInt,
+            updatedAt: now,
+            completedAt: now,
+          })
+          .where(eq(chatGeneratedVideos.id, video.id));
+
+        // Add conversation message about video ready
+        await db.insert(conversations).values({
+          userId: video.userId,
+          avatarId: video.avatarId,
+          role: "assistant",
+          text: `🎬 Your video about "${video.topic}" is ready! Click below to watch it.`,
+          metadata: {
+            type: "video-ready",
+            videoRecordId: video.id,
+            videoUrl: video_url,
+            thumbnailUrl: thumbnail_url,
+            duration: durationInt,
+            topic: video.topic,
+          },
+        });
+
+        console.log(`✅ Chat video recovered from stuck state: ${heygenVideoId}`);
+        
+        // Send email notification
+        this.sendVideoReadyEmail(video.userId, video.avatarId, video.topic, video_url, thumbnail_url, durationInt);
+        return true;
+      } else if (status === "failed") {
+        await db
+          .update(chatGeneratedVideos)
+          .set({
+            status: "failed",
+            errorMessage: error || "Video generation failed",
+            updatedAt: new Date(),
+          })
+          .where(eq(chatGeneratedVideos.id, video.id));
+        console.log(`❌ Chat video marked as failed: ${heygenVideoId}`);
+        return true;
+      }
+      
+      return false; // Still processing
+    } catch (error: any) {
+      console.error(`Error checking chat video status for ${heygenVideoId}:`, error.message);
+      return false;
+    }
+  }
+
+  /**
+   * Start background checker that periodically checks generating chat videos
+   */
+  startBackgroundChecker(): void {
+    const CHECK_INTERVAL = 2 * 60 * 1000; // 2 minutes
+
+    const check = async () => {
+      try {
+        const generatingVideos = await db
+          .select()
+          .from(chatGeneratedVideos)
+          .where(eq(chatGeneratedVideos.status, "generating"));
+
+        if (generatingVideos.length > 0) {
+          console.log(`🔄 Chat video background check: ${generatingVideos.length} videos in generating state`);
+          
+          for (const video of generatingVideos) {
+            if (video.heygenVideoId) {
+              await this.checkAndUpdateVideoStatus(video.heygenVideoId);
+            }
+          }
+        }
+      } catch (error: any) {
+        console.error("Chat video background checker error:", error.message);
+      }
+    };
+
+    // Run check immediately and then every 2 minutes
+    check();
+    setInterval(check, CHECK_INTERVAL);
+    console.log("📹 Chat video background checker started (interval: 2 minutes)");
+  }
 }
 
 export const chatVideoService = new ChatVideoService();
