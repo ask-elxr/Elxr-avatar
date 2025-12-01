@@ -210,6 +210,32 @@ avatarRouter.delete("/admin/avatars/:id", isAuthenticated, async (req: any, res:
 });
 
 /**
+ * Reorder avatars (change display order)
+ * @route POST /api/admin/avatars/reorder
+ * @access Authenticated users
+ */
+avatarRouter.post("/admin/avatars/reorder", isAuthenticated, async (req: any, res: Response) => {
+  try {
+    const { avatarIds } = req.body;
+    
+    if (!Array.isArray(avatarIds)) {
+      return res.status(400).json({ error: "avatarIds must be an array" });
+    }
+    
+    // Update sort order for each avatar
+    for (let i = 0; i < avatarIds.length; i++) {
+      await storage.updateAvatar(avatarIds[i], { sortOrder: i });
+    }
+    
+    logger.info({ avatarCount: avatarIds.length }, "Avatars reordered by admin");
+    res.json({ success: true, message: "Avatar order updated" });
+  } catch (error: any) {
+    logger.error({ error: error.message }, "Error reordering avatars");
+    res.status(500).json({ error: "Failed to reorder avatars" });
+  }
+});
+
+/**
  * Generate preview GIF for a specific avatar using HeyGen
  * @route POST /api/admin/avatars/:id/generate-preview
  * @access Authenticated users
