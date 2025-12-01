@@ -981,6 +981,18 @@ export function useAvatarSession({
           const { greeting } = await greetingResponse.json();
           if (greeting) {
             console.log("🗣️ Audio-only greeting:", greeting);
+            
+            // 🔇 Pause voice recognition while greeting plays to prevent feedback
+            if (recognitionRef.current && recognitionRunningRef.current) {
+              try {
+                recognitionRef.current.stop();
+                recognitionRunningRef.current = false;
+                console.log("🔇 Voice recognition paused (greeting playing)");
+              } catch (e) {
+                recognitionRunningRef.current = false;
+              }
+            }
+            
             // Use ElevenLabs TTS endpoint to speak the greeting
             const audioResponse = await fetch("/api/elevenlabs/tts", {
               method: "POST",
@@ -995,12 +1007,49 @@ export function useAvatarSession({
               const audioBlob = await audioResponse.blob();
               const audioUrl = URL.createObjectURL(audioBlob);
               const audio = new Audio(audioUrl);
-              audio.play().catch(console.error);
+              
+              // 🔊 Resume voice recognition after greeting ends
+              audio.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                setTimeout(() => {
+                  if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                    console.log("🔊 Voice recognition resumed (greeting finished)");
+                    startVoiceRecognition();
+                  }
+                }, 500);
+              };
+              
+              audio.onerror = () => {
+                URL.revokeObjectURL(audioUrl);
+                // Still try to resume voice recognition on error
+                setTimeout(() => {
+                  if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                    console.log("🔊 Voice recognition resumed (greeting error)");
+                    startVoiceRecognition();
+                  }
+                }, 500);
+              };
+              
+              audio.play().catch((err) => {
+                console.error("Failed to play greeting audio:", err);
+                // Resume voice recognition if play fails
+                setTimeout(() => {
+                  if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                    startVoiceRecognition();
+                  }
+                }, 500);
+              });
             }
           }
         }
       } catch (error) {
         console.warn("Failed to play audio greeting:", error);
+        // Resume voice recognition on any error
+        setTimeout(() => {
+          if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+            startVoiceRecognition();
+          }
+        }, 500);
       }
     }
     
