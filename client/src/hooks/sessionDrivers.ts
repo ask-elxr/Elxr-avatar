@@ -7,9 +7,10 @@ import StreamingAvatar, {
 export interface SessionDriver {
   start(): Promise<void>;
   stop(): Promise<void>;
-  speak(text: string): Promise<void>;
+  speak(text: string, languageCode?: string): Promise<void>;
   interrupt(): Promise<void>;
   supportsVoiceInput(): boolean;
+  setLanguage?(languageCode: string): void;
 }
 
 interface DriverConfig {
@@ -152,10 +153,12 @@ export class AudioOnlyDriver implements SessionDriver {
   private config: DriverConfig;
   private currentAudio: HTMLAudioElement | null = null;
   private avatarId: string;
+  private languageCode: string;
 
-  constructor(config: DriverConfig, avatarId: string) {
+  constructor(config: DriverConfig, avatarId: string, languageCode: string = "en") {
     this.config = config;
     this.avatarId = avatarId;
+    this.languageCode = languageCode;
   }
 
   async start(): Promise<void> {
@@ -166,7 +169,12 @@ export class AudioOnlyDriver implements SessionDriver {
     this.stopCurrentAudio();
   }
 
-  async speak(text: string): Promise<void> {
+  setLanguage(languageCode: string): void {
+    this.languageCode = languageCode;
+    console.log(`🌐 AudioOnlyDriver language set to: ${languageCode}`);
+  }
+
+  async speak(text: string, languageCodeOverride?: string): Promise<void> {
     try {
       this.stopCurrentAudio();
 
@@ -178,6 +186,7 @@ export class AudioOnlyDriver implements SessionDriver {
         body: JSON.stringify({
           text,
           avatarId: this.avatarId,
+          languageCode: languageCodeOverride || this.languageCode,
         }),
       });
 

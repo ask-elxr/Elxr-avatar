@@ -259,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "audio-chat", operation: "processMessage" });
 
     try {
-      const { message, avatarId = "mark-kohl" } = req.body;
+      const { message, avatarId = "mark-kohl", languageCode } = req.body;
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
@@ -293,7 +293,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Avatar not configured for audio mode" });
       }
 
-      log.info({ avatarId, messageLength: message.length }, "Processing audio chat message");
+      // Determine effective language code: request override > avatar config > undefined
+      const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
+      
+      log.info({ avatarId, messageLength: message.length, languageCode: effectiveLanguageCode }, "Processing audio chat message");
       
       // Enhanced logging for audio mode
       console.log(`\n🎧 ═══════════════════════════════════════════════════════════════`);
@@ -322,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const acknowledgment = generateVideoAcknowledgment(pendingConfirmation.topic, avatarConfig.name);
               log.info({ userId, avatarId, topic: pendingConfirmation.topic, videoRecordId: videoResult.videoRecordId }, 'Video generation confirmed and started from audio chat');
               
-              const audioBuffer = await elevenlabsService.generateSpeech(acknowledgment, avatarConfig.elevenlabsVoiceId);
+              const audioBuffer = await elevenlabsService.generateSpeech(acknowledgment, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
               res.setHeader("Content-Type", "audio/mpeg");
               res.setHeader("Content-Length", audioBuffer.length.toString());
               res.setHeader("X-Video-Generating", "true");
@@ -338,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`❌ VIDEO REJECTED by user`);
             
             const rejectionResponse = generateRejectionResponse();
-            const audioBuffer = await elevenlabsService.generateSpeech(rejectionResponse, avatarConfig.elevenlabsVoiceId);
+            const audioBuffer = await elevenlabsService.generateSpeech(rejectionResponse, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
             res.setHeader("Content-Type", "audio/mpeg");
             res.setHeader("Content-Length", audioBuffer.length.toString());
             return res.send(audioBuffer);
@@ -354,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`📝 Updated pending video topic to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
-          const audioBuffer = await elevenlabsService.generateSpeech(updatePrompt, avatarConfig.elevenlabsVoiceId);
+          const audioBuffer = await elevenlabsService.generateSpeech(updatePrompt, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
           res.setHeader("Content-Type", "audio/mpeg");
           res.setHeader("Content-Length", audioBuffer.length.toString());
           res.setHeader("X-Video-Pending-Confirmation", "true");
@@ -374,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🎬 VIDEO INTENT DETECTED - Asking for confirmation about: "${topic}"`);
         
         const confirmationPrompt = generateConfirmationPrompt(topic || "the requested topic", avatarConfig.name);
-        const audioBuffer = await elevenlabsService.generateSpeech(confirmationPrompt, avatarConfig.elevenlabsVoiceId);
+        const audioBuffer = await elevenlabsService.generateSpeech(confirmationPrompt, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
         
         res.setHeader("Content-Type", "audio/mpeg");
         res.setHeader("Content-Length", audioBuffer.length.toString());
@@ -503,8 +506,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      log.debug({ textLength: responseText.length, voiceId: avatarConfig.elevenlabsVoiceId }, "Generating TTS audio");
-      const audioBuffer = await elevenlabsService.generateSpeech(responseText, avatarConfig.elevenlabsVoiceId);
+      log.debug({ textLength: responseText.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating TTS audio");
+      const audioBuffer = await elevenlabsService.generateSpeech(responseText, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
 
       log.info({ audioSize: audioBuffer.length }, "Audio generated successfully");
       console.log(`🔊 Audio generated: ${(audioBuffer.length / 1024).toFixed(1)} KB`);
@@ -562,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "elevenlabs", operation: "generateSpeech" });
 
     try {
-      const { text, avatarId = "mark-kohl" } = req.body;
+      const { text, avatarId = "mark-kohl", languageCode } = req.body;
 
       if (!text) {
         return res.status(400).json({ error: "Text is required" });
@@ -581,9 +584,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
 
-      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId }, "Generating TTS audio");
+      // Use provided languageCode override, otherwise fall back to avatar config
+      const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
+      
+      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating TTS audio");
 
-      const audioBuffer = await elevenlabsService.generateSpeech(text, avatarConfig.elevenlabsVoiceId);
+      const audioBuffer = await elevenlabsService.generateSpeech(
+        text, 
+        avatarConfig.elevenlabsVoiceId,
+        effectiveLanguageCode
+      );
 
       log.info({ audioSize: audioBuffer.length }, "TTS audio generated successfully");
 

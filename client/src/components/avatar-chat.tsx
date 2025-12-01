@@ -12,6 +12,7 @@ import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
 import { AudioVideoToggle } from "@/components/AudioVideoToggle";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface ChatGeneratedVideo {
@@ -55,6 +56,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState("en-US");
+  const [elevenLabsLanguage, setElevenLabsLanguage] = useState("en");
   const [pendingVideos, setPendingVideos] = useState<ChatGeneratedVideo[]>([]);
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
@@ -78,6 +81,43 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     console.log("🧠 Loading memory preference from localStorage:", memoryPref);
     setMemoryEnabled(memoryPref === 'true');
   }, []);
+
+  // Load avatar's language settings when avatar changes
+  useEffect(() => {
+    const abortController = new AbortController();
+    const avatarIdAtFetch = selectedAvatarId;
+    
+    const loadAvatarLanguage = async () => {
+      try {
+        const response = await fetch(`/api/avatar/config/${avatarIdAtFetch}`, {
+          signal: abortController.signal
+        });
+        if (response.ok && avatarIdAtFetch === selectedAvatarId) {
+          const avatar = await response.json();
+          if (avatar.languageCode) {
+            setSelectedLanguage(avatar.languageCode);
+            console.log(`🌐 Loaded avatar language: ${avatar.languageCode}`);
+          } else {
+            setSelectedLanguage("en-US");
+          }
+          if (avatar.elevenLabsLanguageCode) {
+            setElevenLabsLanguage(avatar.elevenLabsLanguageCode);
+          } else {
+            setElevenLabsLanguage("en");
+          }
+        }
+      } catch (error: any) {
+        if (error.name !== 'AbortError') {
+          console.warn("Failed to load avatar language settings:", error);
+        }
+      }
+    };
+    loadAvatarLanguage();
+    
+    return () => {
+      abortController.abort();
+    };
+  }, [selectedAvatarId]);
 
   // Check initial microphone permission status
   useEffect(() => {
@@ -166,6 +206,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     userId,
     memoryEnabled,
     selectedAvatarId,
+    languageCode: selectedLanguage,
+    elevenLabsLanguageCode: elevenLabsLanguage,
     onResetInactivityTimer: () => resetTimerRef.current?.()
   });
   
@@ -323,6 +365,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
+  const handleLanguageChange = (languageCode: string, elevenLabsCode: string) => {
+    setSelectedLanguage(languageCode);
+    setElevenLabsLanguage(elevenLabsCode);
+    
+    toast({
+      title: "Language Changed",
+      description: `Speech recognition and synthesis set to ${languageCode}`,
+    });
+  };
+
   const handleModeToggle = async (isVideoMode: boolean) => {
     const newAudioOnly = !isVideoMode;
     const previousAudioOnly = audioOnly;
@@ -429,12 +481,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           <>
             {/* Top Controls Bar */}
             <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-4 bg-gradient-to-b from-black/60 to-transparent z-30">
-              {/* Audio/Video Toggle - Centered at top like YouTube Music */}
-              <div className="mb-3">
+              {/* Audio/Video Toggle and Language Selector - Centered at top */}
+              <div className="mb-3 flex items-center gap-3">
                 <AudioVideoToggle
                   isVideoMode={!audioOnly}
                   onToggle={handleModeToggle}
                   disabled={isModeSwitching || isLoading}
+                />
+                <LanguageSelector
+                  selectedLanguage={selectedLanguage}
+                  onLanguageChange={handleLanguageChange}
+                  disabled={isLoading}
                 />
               </div>
               

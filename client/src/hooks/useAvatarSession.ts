@@ -11,6 +11,8 @@ interface AvatarSessionConfig {
   userId: string;
   memoryEnabled: boolean;
   selectedAvatarId?: string;
+  languageCode?: string;
+  elevenLabsLanguageCode?: string;
   onSessionActiveChange?: (active: boolean) => void;
   onResetInactivityTimer?: () => void;
 }
@@ -49,6 +51,8 @@ export function useAvatarSession({
   userId,
   memoryEnabled,
   selectedAvatarId = "mark-kohl",
+  languageCode = "en-US",
+  elevenLabsLanguageCode = "en",
   onSessionActiveChange,
   onResetInactivityTimer,
 }: AvatarSessionConfig): AvatarSessionReturn {
@@ -71,6 +75,8 @@ export function useAvatarSession({
   const audioOnlyRef = useRef(false);
   const currentAvatarIdRef = useRef(selectedAvatarId);
   const memoryEnabledRef = useRef(memoryEnabled); // Always have current value for callbacks
+  const languageCodeRef = useRef(languageCode); // For speech recognition
+  const elevenLabsLanguageCodeRef = useRef(elevenLabsLanguageCode); // For TTS
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -105,6 +111,20 @@ export function useAvatarSession({
   useEffect(() => {
     memoryEnabledRef.current = memoryEnabled;
   }, [memoryEnabled]);
+
+  // Sync language refs with props
+  useEffect(() => {
+    languageCodeRef.current = languageCode;
+    // Update recognition language if active
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = languageCode;
+      console.log(`🌐 Updated speech recognition language to: ${languageCode}`);
+    }
+  }, [languageCode]);
+
+  useEffect(() => {
+    elevenLabsLanguageCodeRef.current = elevenLabsLanguageCode;
+  }, [elevenLabsLanguageCode]);
 
   const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
@@ -313,10 +333,10 @@ export function useAvatarSession({
       // Safari iOS especially has issues with continuous mode
       recognition.continuous = !isMobile;
       recognition.interimResults = false; // Only get final results
-      recognition.lang = 'en-US';
+      recognition.lang = languageCodeRef.current;
       recognition.maxAlternatives = 1; // Only get best match
       
-      console.log(`🎤 Voice recognition config: continuous=${recognition.continuous}, mobile=${isMobile}`);
+      console.log(`🎤 Voice recognition config: continuous=${recognition.continuous}, mobile=${isMobile}, lang=${recognition.lang}`);
       
       // Mobile/Safari stuck detection - recreate if no results for 15 seconds
       const resetStuckTimeout = () => {
@@ -960,6 +980,7 @@ export function useAvatarSession({
               body: JSON.stringify({
                 text: greeting,
                 avatarId: activeAvatarId,
+                languageCode: elevenLabsLanguageCodeRef.current,
               }),
             });
             if (audioResponse.ok) {
@@ -1492,6 +1513,7 @@ export function useAvatarSession({
               userId: memoryEnabledRef.current ? userId : undefined,
               avatarId: currentAvatarIdRef.current,
               memoryEnabled: memoryEnabledRef.current, // Use ref for current value
+              languageCode: elevenLabsLanguageCodeRef.current, // Pass language for TTS
             }),
             signal: controller.signal,
           });
