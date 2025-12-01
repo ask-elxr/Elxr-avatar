@@ -14,6 +14,26 @@ export function getAdminSecret(): string | null {
   return localStorage.getItem('admin_secret');
 }
 
+// Get Memberstack user ID from URL params or localStorage
+// This is used for persistent memory across sessions when embedded in Webflow
+export function getMemberstackId(): string | null {
+  // Check URL params first (member_id is passed from Webflow/Memberstack)
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlMemberId = urlParams.get('member_id');
+  if (urlMemberId) {
+    // Store in localStorage for persistence across page navigations
+    localStorage.setItem('memberstack_id', urlMemberId);
+    return urlMemberId;
+  }
+  // Check localStorage for previously stored ID
+  return localStorage.getItem('memberstack_id');
+}
+
+// Check if Memberstack ID is available
+export function hasMemberstackId(): boolean {
+  return !!getMemberstackId();
+}
+
 // Check if admin secret is configured
 export function hasAdminAccess(): boolean {
   return !!getAdminSecret();
@@ -32,6 +52,12 @@ export async function apiRequest(
   data?: unknown | undefined,
 ): Promise<Response> {
   const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  
+  // Add Memberstack ID header for persistent user identification
+  const memberstackId = getMemberstackId();
+  if (memberstackId) {
+    headers['X-Member-Id'] = memberstackId;
+  }
   
   // Add admin secret header for admin routes
   if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge')) {
@@ -60,6 +86,12 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     const url = queryKey.join("/") as string;
     const headers: Record<string, string> = {};
+    
+    // Add Memberstack ID header for persistent user identification
+    const memberstackId = getMemberstackId();
+    if (memberstackId) {
+      headers['X-Member-Id'] = memberstackId;
+    }
     
     // Add admin secret header for admin routes
     if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge')) {

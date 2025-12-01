@@ -5,6 +5,7 @@ import StreamingAvatar, {
   StreamingEvents,
 } from "@heygen/streaming-avatar";
 import { SessionDriver, HeyGenDriver, AudioOnlyDriver } from "./sessionDrivers";
+import { getMemberstackId } from "@/lib/queryClient";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -1689,9 +1690,15 @@ export function useAvatarSession({
           
           try {
             // Use fetch with streaming body for SSE
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            const memberstackId = getMemberstackId();
+            if (memberstackId) {
+              headers['X-Member-Id'] = memberstackId;
+            }
+            
             const response = await fetch("/api/avatar/response/stream", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers,
               body: JSON.stringify({
                 message,
                 userId: memoryEnabledRef.current ? userId : undefined,
@@ -1806,9 +1813,15 @@ export function useAvatarSession({
         }
         
         // Non-streaming fallback
+        const fallbackHeaders: Record<string, string> = { "Content-Type": "application/json" };
+        const fallbackMemberstackId = getMemberstackId();
+        if (fallbackMemberstackId) {
+          fallbackHeaders['X-Member-Id'] = fallbackMemberstackId;
+        }
+        
         const response = await fetch("/api/avatar/response", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: fallbackHeaders,
           body: JSON.stringify({
             message,
             userId: memoryEnabledRef.current ? userId : undefined,

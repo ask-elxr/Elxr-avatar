@@ -157,23 +157,41 @@ export async function setupAuth(app: Express) {
 
 // Authentication is bypassed - this app is embedded in Webflow which handles auth
 // All routes are accessible without login
+// Memberstack user ID can be passed via X-Member-Id header or member_id query param for persistent memory
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   // Bypass authentication - Webflow handles auth externally
   // Create a mock user for session tracking if none exists
   if (!req.user) {
+    // Check for Memberstack user ID from header or query param
+    const memberstackId = (req.headers['x-member-id'] as string) || (req.query.member_id as string);
+    
+    // Use Memberstack ID if provided, otherwise use session userId or generate a temporary one
+    let userId: string;
+    if (memberstackId) {
+      // Prefix Memberstack IDs to ensure uniqueness across auth providers
+      userId = `ms_${memberstackId}`;
+      // Store in session for consistency across requests
+      if (req.session) {
+        req.session.userId = userId;
+      }
+    } else if (req.session?.userId) {
+      userId = req.session.userId;
+    } else {
+      userId = `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      if (req.session) {
+        req.session.userId = userId;
+      }
+    }
+    
     (req as any).user = {
       claims: {
-        sub: req.session?.userId || `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        sub: userId,
         email: null,
         first_name: 'Webflow',
         last_name: 'User',
         profile_image_url: null,
       },
     };
-    // Store userId in session for consistency
-    if (req.session && !req.session.userId) {
-      req.session.userId = (req as any).user.claims.sub;
-    }
   }
   return next();
 };
