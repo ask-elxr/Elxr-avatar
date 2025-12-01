@@ -843,16 +843,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             </form>
           </div>
         )}
-      </div>
 
-      {/* Avatar Switcher Dialog */}
-      <AvatarSwitcher
-        open={showAvatarSwitcher}
-        onOpenChange={setShowAvatarSwitcher}
-        currentAvatarId={selectedAvatarId}
-        onSwitch={handleAvatarSwitch}
-        disabled={switchingAvatar}
-      />
+        {/* Avatar Switcher Dialog - Must be inside fullscreen container to work in fullscreen mode */}
+        <AvatarSwitcher
+          open={showAvatarSwitcher}
+          onOpenChange={setShowAvatarSwitcher}
+          currentAvatarId={selectedAvatarId}
+          onSwitch={handleAvatarSwitch}
+          disabled={switchingAvatar}
+        />
+      </div>
     </div>
   );
 }
