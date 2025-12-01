@@ -60,7 +60,9 @@ export class ClaudeService {
     query: string, 
     context: string, 
     conversationHistory: any[] = [], 
-    customSystemPrompt?: string
+    customSystemPrompt?: string,
+    imageBase64?: string,
+    imageMimeType?: string
   ): AsyncGenerator<{ type: 'text' | 'sentence' | 'done'; content: string }> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
@@ -71,7 +73,8 @@ export class ClaudeService {
       operation: 'streamResponse',
       queryLength: query.length,
       contextLength: context.length,
-      historyLength: conversationHistory.length
+      historyLength: conversationHistory.length,
+      hasImage: !!imageBase64
     });
 
     log.debug('Starting Claude streaming response');
@@ -104,7 +107,7 @@ export class ClaudeService {
       researchCapabilitiesNote = `\n\n⚠️ CRITICAL INSTRUCTION: The content below includes REAL-TIME data from ${sources.join(', ')}. Use ALL the information provided.`;
     }
 
-    const currentMessage = context 
+    const textMessage = context 
       ? `You have knowledge content below. Use it to answer clearly.${researchCapabilitiesNote}
 
 AVAILABLE KNOWLEDGE:
@@ -119,10 +122,33 @@ RESPONSE REQUIREMENTS:
 - Be BRIEF and to the point (2-3 sentences unless more is needed)
 - Keep it conversational and natural`
       : query;
+
+    // Build user message content - can include both text and image
+    let userContent: any;
+    if (imageBase64 && imageMimeType) {
+      // Multi-modal message with image
+      userContent = [
+        {
+          type: 'image',
+          source: {
+            type: 'base64',
+            media_type: imageMimeType,
+            data: imageBase64
+          }
+        },
+        {
+          type: 'text',
+          text: textMessage || 'What do you see in this image?'
+        }
+      ];
+      log.info({ imageMimeType }, 'Including image in Claude request');
+    } else {
+      userContent = textMessage;
+    }
       
     messages.push({
       role: 'user',
-      content: currentMessage
+      content: userContent
     });
 
     const systemPrompt = customSystemPrompt || `You are an intelligent AI assistant with access to a comprehensive knowledge base. 

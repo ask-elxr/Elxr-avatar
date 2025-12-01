@@ -2573,14 +2573,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: 'avatar-stream', operation: 'streamResponse' });
     
     try {
-      const { message, avatarId, conversationHistory = [], memoryEnabled = false, languageCode } = req.body;
+      const { message, avatarId, conversationHistory = [], memoryEnabled = false, languageCode, imageBase64, imageMimeType } = req.body;
       let userId = req.user?.claims?.sub || null;
       if (!userId && req.body.userId?.startsWith('temp_')) {
         userId = req.body.userId;
       }
 
-      if (!message) {
-        return res.status(400).json({ error: "Message is required" });
+      if (!message && !imageBase64) {
+        return res.status(400).json({ error: "Message or image is required" });
+      }
+      
+      if (imageBase64) {
+        log.info({ hasImage: true, imageMimeType }, 'Image attached to message');
       }
 
       const avatarConfig = await getAvatarById(avatarId || "nigel");
@@ -2773,10 +2777,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         for await (const chunk of claudeService.streamResponse(
-          message,
+          message || 'What do you see in this image?',
           combinedContext,
           dbConversationHistory.length > 0 ? dbConversationHistory : conversationHistory,
-          enhancedPersonality
+          enhancedPersonality,
+          imageBase64,
+          imageMimeType
         )) {
           if (chunk.type === 'text') {
             sendEvent('text', { content: chunk.content });

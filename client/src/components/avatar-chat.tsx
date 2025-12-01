@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, FormEvent, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
@@ -61,10 +61,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [elevenLabsLanguage, setElevenLabsLanguage] = useState("en");
   const [pendingVideos, setPendingVideos] = useState<ChatGeneratedVideo[]>([]);
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
+  const [attachedImage, setAttachedImage] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -385,12 +388,103 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }, [sessionActive, userId]);
 
   // Wrapped handleSubmitMessage that adds to chat history
-  const handleSubmitMessage = async (message: string) => {
-    // Send to AI
-    await originalHandleSubmitMessage(message);
+  const handleSubmitMessage = async (message: string, imageData?: { base64: string; mimeType: string }) => {
+    // Send to AI with optional image
+    await originalHandleSubmitMessage(message, imageData);
+    
+    // Clear attached image after sending
+    if (attachedImage) {
+      setAttachedImage(null);
+    }
     
     // Poll immediately after sending to get updated history
     setTimeout(fetchConversationHistory, 500);
+  };
+
+  // Handle image file processing
+  const processImageFile = (file: File) => {
+    if (!file.type.startsWith('image/')) {
+      toast({
+        variant: "destructive",
+        title: "Invalid file type",
+        description: "Please drop an image file (JPEG, PNG, GIF, or WebP)",
+      });
+      return;
+    }
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast({
+        variant: "destructive",
+        title: "Unsupported image format",
+        description: "Supported formats: JPEG, PNG, GIF, WebP",
+      });
+      return;
+    }
+
+    // Check file size (max 5MB for base64 encoding)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Image too large",
+        description: "Please use an image smaller than 5MB",
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      const base64 = dataUrl.split(',')[1]; // Remove data:image/xxx;base64, prefix
+      const preview = dataUrl;
+      
+      setAttachedImage({
+        base64,
+        mimeType: file.type,
+        preview,
+      });
+      
+      toast({
+        title: "Image attached",
+        description: "Your image will be sent with your next message",
+      });
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Drag and drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      processImageFile(files[0]);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      processImageFile(files[0]);
+    }
+  };
+
+  const removeAttachedImage = () => {
+    setAttachedImage(null);
   };
 
   const handleLanguageChange = (languageCode: string, elevenLabsCode: string) => {
@@ -799,31 +893,97 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </div>
         )}
 
+        {/* Drag overlay */}
+        {isDragOver && sessionActive && (
+          <div 
+            className="absolute inset-0 bg-primary/30 backdrop-blur-sm z-20 flex items-center justify-center border-4 border-dashed border-primary rounded-lg"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <div className="text-center text-white">
+              <Image className="w-16 h-16 mx-auto mb-4 opacity-80" />
+              <p className="text-xl font-semibold">Drop image here</p>
+              <p className="text-sm opacity-70">Claude will analyze and respond</p>
+            </div>
+          </div>
+        )}
+
         {/* Chat Input Overlay (Bottom) */}
         {sessionActive && (
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent z-10">
+          <div 
+            className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent z-10"
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            {/* Image preview */}
+            {attachedImage && (
+              <div className="max-w-4xl mx-auto mb-3">
+                <div className="relative inline-block">
+                  <img 
+                    src={attachedImage.preview} 
+                    alt="Attached" 
+                    className="h-20 rounded-lg border-2 border-white/30"
+                  />
+                  <button
+                    onClick={removeAttachedImage}
+                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1"
+                    data-testid="button-remove-image"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
+            
             <form 
               onSubmit={(e: FormEvent) => {
                 e.preventDefault();
-                if (inputMessage.trim() && !isPaused) {
-                  handleSubmitMessage(inputMessage);
+                if ((inputMessage.trim() || attachedImage) && !isPaused) {
+                  handleSubmitMessage(
+                    inputMessage || "What do you see in this image?",
+                    attachedImage ? { base64: attachedImage.base64, mimeType: attachedImage.mimeType } : undefined
+                  );
                   setInputMessage("");
                 }
               }}
               className="flex items-center gap-2 max-w-4xl mx-auto"
             >
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                onChange={handleFileSelect}
+                className="hidden"
+                data-testid="input-file"
+              />
+              
+              {/* Image upload button */}
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="bg-black/50 border-white/20 text-white hover:bg-white/20"
+                disabled={!sessionActive || isPaused}
+                data-testid="button-attach-image"
+              >
+                <Image className="w-4 h-4" />
+              </Button>
+              
               <div className="flex-1 relative">
                 <Input
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder={microphoneStatus === 'listening' ? "" : "Type your message..."}
+                  placeholder={attachedImage ? "Ask about the image..." : (microphoneStatus === 'listening' ? "" : "Type your message...")}
                   className="flex-1 w-full bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm pr-4"
                   data-testid="input-message"
                   disabled={!sessionActive || isPaused}
                 />
                 {/* Audio Waveform - shows inside input when listening */}
-                {microphoneStatus === 'listening' && !inputMessage && (
+                {microphoneStatus === 'listening' && !inputMessage && !attachedImage && (
                   <div className="absolute inset-y-0 left-3 flex items-center gap-[2px] pointer-events-none">
                     {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                       <div
@@ -849,7 +1009,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
               <Button
                 type="submit"
-                disabled={!inputMessage.trim() || !sessionActive || isPaused}
+                disabled={(!inputMessage.trim() && !attachedImage) || !sessionActive || isPaused}
                 className="bg-primary hover:bg-primary/90 text-white"
                 data-testid="button-send-message"
               >

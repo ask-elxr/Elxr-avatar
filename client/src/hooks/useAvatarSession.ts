@@ -43,7 +43,7 @@ interface AvatarSessionReturn {
   currentRequestIdRef: React.MutableRefObject<string>;
   speakingIntervalRef: React.MutableRefObject<NodeJS.Timeout | null>;
   hasAskedAnythingElseRef: React.MutableRefObject<boolean>;
-  handleSubmitMessage: (message: string) => Promise<void>;
+  handleSubmitMessage: (message: string, imageData?: { base64: string; mimeType: string }) => Promise<void>;
   stopAudio: () => void;
 }
 
@@ -1526,11 +1526,11 @@ export function useAvatarSession({
     };
   }, [clearIdleTimeout]);
 
-  const handleSubmitMessage = useCallback(async (message: string) => {
-    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive, memoryEnabled: memoryEnabledRef.current, userId });
+  const handleSubmitMessage = useCallback(async (message: string, imageData?: { base64: string; mimeType: string }) => {
+    console.log("📝 handleSubmitMessage called with:", { message, sessionActive, heygenSessionActive, memoryEnabled: memoryEnabledRef.current, userId, hasImage: !!imageData });
     
-    if (!message.trim()) {
-      console.warn("Empty message, skipping");
+    if (!message.trim() && !imageData) {
+      console.warn("Empty message and no image, skipping");
       return;
     }
 
@@ -1770,6 +1770,8 @@ export function useAvatarSession({
                 avatarId: currentAvatarIdRef.current,
                 memoryEnabled: memoryEnabledRef.current,
                 languageCode: elevenLabsLanguageCodeRef.current,
+                imageBase64: imageData?.base64,
+                imageMimeType: imageData?.mimeType,
               }),
               signal: controller.signal,
             });
