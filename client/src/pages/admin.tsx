@@ -174,25 +174,9 @@ export default function Admin() {
     reorderMutation.mutate(newOrder.map((a: any) => a.id));
   };
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Please sign in",
-        description: "You need to be signed in to access the admin panel.",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        window.location.href = "/api/login";
-      }, 1000);
-    } else if (!isLoading && isAuthenticated && !isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access the admin panel.",
-        variant: "destructive",
-      });
-    }
-  }, [isAuthenticated, isLoading, isAdmin, toast]);
-
+  // In embedded mode, admin access is open (protected by backend ADMIN_SECRET if needed)
+  // No authentication checks on frontend - backend handles admin authorization
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -201,53 +185,8 @@ export default function Admin() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" data-testid="signin-prompt">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Admin Access Required</CardTitle>
-            <CardDescription>
-              Please sign in to access the admin dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button asChild data-testid="button-signin">
-              <a href="/api/login">Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" data-testid="access-denied">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You don't have administrator privileges to access this page.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
-            <p className="text-sm text-muted-foreground text-center">
-              Contact an administrator if you believe you should have access.
-            </p>
-            <div className="flex gap-2">
-              <Button variant="outline" asChild data-testid="button-home">
-                <Link href="/">Go to Chat</Link>
-              </Button>
-              <Button variant="outline" asChild data-testid="button-dashboard">
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // Admin panel is accessible in embedded mode
+  // Backend APIs are protected by ADMIN_SECRET header for sensitive operations
 
   const totalAvatars = Array.isArray(avatarsData) ? avatarsData.filter((a: any) => a.isActive).length : 0;
   const totalDocuments = (statsData as any)?.success ? ((statsData as any).documents?.total || 0) : 0;
@@ -332,20 +271,7 @@ export default function Admin() {
             </span>
           </Button>
           
-          <Button
-            variant="ghost"
-            className={`w-full justify-start text-destructive hover:text-destructive transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
-            asChild
-            data-testid="nav-logout"
-            title={!sidebarOpen ? "Logout" : undefined}
-          >
-            <a href="/api/logout">
-              <LogOut className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
-              <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-                Logout
-              </span>
-            </a>
-          </Button>
+          {/* Logout button hidden in embedded mode - auth handled by Webflow */}
         </div>
       </aside>
 

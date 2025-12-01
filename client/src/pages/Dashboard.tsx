@@ -471,28 +471,8 @@ export default function Dashboard() {
     );
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background dot-pattern flex items-center justify-center">
-        <Card className="w-full max-w-md glass-strong border-purple-500/30">
-          <CardHeader className="text-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-primary glow-primary flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-white" />
-            </div>
-            <CardTitle className="text-white">Sign In Required</CardTitle>
-            <CardDescription className="text-white/60">
-              Please sign in to access your dashboard.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button asChild>
-              <a href="/api/login">Sign In</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+  // In embedded mode (Webflow), authentication is always true
+  // No need to show login screen - handled by Webflow externally
 
   const viewToPath: Record<UserView, string> = {
     dashboard: "/dashboard",
@@ -667,20 +647,7 @@ export default function Dashboard() {
             </span>
           </Button>
 
-          <Button
-            variant="ghost"
-            className={`w-full justify-start text-destructive hover:text-destructive transition-all duration-300 ${sidebarOpen ? "" : "justify-center px-2"}`}
-            asChild
-            data-testid="nav-logout"
-            title={!sidebarOpen ? "Logout" : undefined}
-          >
-            <a href="/api/logout">
-              <LogOut className={`w-4 h-4 ${sidebarOpen ? "mr-3" : ""}`} />
-              <span className={`transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0 overflow-hidden"}`}>
-                Logout
-              </span>
-            </a>
-          </Button>
+          {/* Logout button hidden in embedded mode - auth handled by Webflow */}
         </div>
       </aside>
 
@@ -2830,22 +2797,7 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    <div className="glass p-4 rounded-lg border border-white/10">
-                      <h4 className="text-sm font-medium text-white mb-2">
-                        Account Actions
-                      </h4>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        asChild
-                        className="w-full sm:w-auto"
-                      >
-                        <a href="/api/logout">
-                          <LogOut className="w-4 h-4 mr-2" />
-                          Sign Out
-                        </a>
-                      </Button>
-                    </div>
+                    {/* Account actions hidden in embedded mode - auth handled by Webflow */}
                   </CardContent>
                 </Card>
               </div>
