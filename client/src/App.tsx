@@ -24,6 +24,9 @@ const Analytics = lazy(() => import("@/pages/Analytics"));
 const Credits = lazy(() => import("@/pages/Credits"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
+const EmbedPage = lazy(() => import("@/pages/embed/index"));
+const EmbedAdmin = lazy(() => import("@/pages/embed/admin"));
+
 function LoadingFallback() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-black">
@@ -75,6 +78,27 @@ function Router() {
         <Route path="/analytics" component={Analytics} />
         <Route path="/credits" component={Credits} />
         <Route path="/account" component={Account} />
+        
+        {/* Embed routes - content only pages for Webflow embedding */}
+        <Route path="/embed/dashboard">{() => <EmbedPage view="dashboard" />}</Route>
+        <Route path="/embed/chat">{() => <EmbedPage view="chat" />}</Route>
+        <Route path="/embed/chat/:avatarId">{(params) => <EmbedPage view="chat" avatarId={params.avatarId} />}</Route>
+        <Route path="/embed/videos">{() => <EmbedPage view="videos" />}</Route>
+        <Route path="/embed/courses">{() => <EmbedPage view="courses" />}</Route>
+        <Route path="/embed/mood">{() => <EmbedPage view="mood" />}</Route>
+        <Route path="/embed/plan">{() => <EmbedPage view="plan" />}</Route>
+        <Route path="/embed/credits">{() => <EmbedPage view="credits" />}</Route>
+        <Route path="/embed/settings">{() => <EmbedPage view="settings" />}</Route>
+        
+        {/* Embed admin routes */}
+        <Route path="/embed/admin">{() => <EmbedAdmin view="dashboard" />}</Route>
+        <Route path="/embed/admin/avatars">{() => <EmbedAdmin view="avatars" />}</Route>
+        <Route path="/embed/admin/knowledge">{() => <EmbedAdmin view="knowledge" />}</Route>
+        <Route path="/embed/admin/courses">{() => <EmbedAdmin view="courses" />}</Route>
+        <Route path="/embed/admin/users">{() => <EmbedAdmin view="users" />}</Route>
+        <Route path="/embed/admin/analytics">{() => <EmbedAdmin view="analytics" />}</Route>
+        <Route path="/embed/admin/credits">{() => <EmbedAdmin view="credits" />}</Route>
+        
         <Route component={NotFound} />
       </Switch>
     </Suspense>
