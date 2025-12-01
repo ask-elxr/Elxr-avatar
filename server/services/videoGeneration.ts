@@ -1,9 +1,22 @@
 import axios from "axios";
 import { db } from "../db";
-import { lessons, generatedVideos, avatarProfiles, courses } from "@shared/schema";
+import { lessons, generatedVideos, avatarProfiles, courses, users } from "@shared/schema";
 import { eq, inArray } from "drizzle-orm";
 import { ElevenLabsClient } from "elevenlabs";
 import { subscriptionService } from "./subscription";
+
+function formatVideoTitle(params: {
+  avatarName: string;
+  topic: string;
+  userName?: string;
+  userId?: string;
+  type: 'course' | 'chat';
+}): string {
+  const date = new Date().toISOString().slice(0, 10);
+  const userLabel = params.userName || (params.userId ? `User-${params.userId.slice(0, 8)}` : 'Anonymous');
+  const typeLabel = params.type === 'course' ? 'Course' : 'Chat';
+  return `[${typeLabel}] ${params.avatarName} - ${params.topic} - ${userLabel} - ${date}`;
+}
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
@@ -162,6 +175,15 @@ export class VideoGenerationService {
         throw new Error("Avatar video generation ID not configured");
       }
 
+      let userName: string | undefined;
+      if (course.userId) {
+        const [user] = await db
+          .select({ firstName: users.firstName, email: users.email })
+          .from(users)
+          .where(eq(users.id, course.userId));
+        userName = user?.firstName || user?.email?.split('@')[0];
+      }
+
       // Production mode - no test limits on paid HeyGen plan
       // All avatars (public and custom) use production mode for watermark-free videos
       const useTestMode = false;
@@ -226,6 +248,14 @@ export class VideoGenerationService {
 
       console.log(`📹 Avatar type: ${isTalkingPhoto ? 'TALKING_PHOTO' : 'AVATAR'} (${avatar.heygenVideoAvatarId})`);
 
+      const videoTitle = formatVideoTitle({
+        avatarName: avatar.name,
+        topic: lesson.title,
+        userName,
+        userId: course.userId || undefined,
+        type: 'course',
+      });
+
       const videoRequest = {
         video_inputs: [
           {
@@ -239,7 +269,7 @@ export class VideoGenerationService {
         },
         test: useTestMode, // Use test mode for Instant Avatars, production for public avatars
         caption: false,
-        title: lesson.title,
+        title: videoTitle,
       };
 
       // Call HeyGen API to generate video

@@ -9,6 +9,19 @@ import { emailService } from "./email";
 import { ElevenLabsClient } from "elevenlabs";
 import { subscriptionService } from "./subscription";
 
+function formatVideoTitle(params: {
+  avatarName: string;
+  topic: string;
+  userName?: string;
+  userId?: string;
+  type: 'course' | 'chat';
+}): string {
+  const date = new Date().toISOString().slice(0, 10);
+  const userLabel = params.userName || (params.userId ? `User-${params.userId.slice(0, 8)}` : 'Anonymous');
+  const typeLabel = params.type === 'course' ? 'Course' : 'Chat';
+  return `[${typeLabel}] ${params.avatarName} - ${params.topic} - ${userLabel} - ${date}`;
+}
+
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
@@ -176,6 +189,15 @@ export class ChatVideoService {
         .set({ status: "generating", updatedAt: new Date() })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
 
+      let userName: string | undefined;
+      if (userId && !userId.startsWith('temp_') && !userId.startsWith('webflow_')) {
+        const [user] = await db
+          .select({ firstName: users.firstName, email: users.email })
+          .from(users)
+          .where(eq(users.id, userId));
+        userName = user?.firstName || user?.email?.split('@')[0];
+      }
+
       const recentConversations = await db
         .select()
         .from(conversations)
@@ -281,6 +303,14 @@ ${memoryContext}
             avatar_style: "normal",
           };
 
+      const videoTitle = formatVideoTitle({
+        avatarName: avatar.name,
+        topic,
+        userName,
+        userId,
+        type: 'chat',
+      });
+
       const videoRequest = {
         video_inputs: [
           {
@@ -294,7 +324,7 @@ ${memoryContext}
         },
         test: false,
         caption: false,
-        title: `Chat Video: ${topic}`,
+        title: videoTitle,
       };
 
       console.log(`📹 Generating chat video for topic: ${topic}`);
