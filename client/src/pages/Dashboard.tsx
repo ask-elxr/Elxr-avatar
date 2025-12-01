@@ -846,7 +846,11 @@ export default function Dashboard({
                   Features
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                  <Card className="glass border-white/10 hover:border-purple-500/30 transition-all duration-300 group">
+                  <Card 
+                    className="glass border-white/10 hover:border-purple-500/30 transition-all duration-300 group cursor-pointer card-hover"
+                    onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}
+                    data-testid="feature-card-conversations"
+                  >
                     <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
                       <CardTitle className="flex items-center space-x-2 text-sm sm:text-base text-white">
                         <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center group-hover:bg-gradient-primary transition-all">
@@ -863,7 +867,11 @@ export default function Dashboard({
                     </CardContent>
                   </Card>
 
-                  <Card className="glass border-white/10 hover:border-cyan-500/30 transition-all duration-300 group">
+                  <Card 
+                    className="glass border-white/10 hover:border-cyan-500/30 transition-all duration-300 group cursor-pointer card-hover"
+                    onClick={() => setLocation(isEmbed ? "/embed/videos" : "/dashboard/videos")}
+                    data-testid="feature-card-videos"
+                  >
                     <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
                       <CardTitle className="flex items-center space-x-2 text-sm sm:text-base text-white">
                         <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center group-hover:bg-gradient-primary transition-all">
@@ -880,7 +888,11 @@ export default function Dashboard({
                     </CardContent>
                   </Card>
 
-                  <Card className="glass border-white/10 hover:border-green-500/30 transition-all duration-300 group">
+                  <Card 
+                    className="glass border-white/10 hover:border-green-500/30 transition-all duration-300 group cursor-pointer card-hover"
+                    onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                    data-testid="feature-card-courses"
+                  >
                     <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
                       <CardTitle className="flex items-center space-x-2 text-sm sm:text-base text-white">
                         <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-green-500 group-hover:to-emerald-500 transition-all">
@@ -897,7 +909,11 @@ export default function Dashboard({
                     </CardContent>
                   </Card>
 
-                  <Card className="glass border-white/10 hover:border-orange-500/30 transition-all duration-300 group">
+                  <Card 
+                    className="glass border-white/10 hover:border-orange-500/30 transition-all duration-300 group cursor-pointer card-hover"
+                    onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}
+                    data-testid="feature-card-avatars"
+                  >
                     <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-3">
                       <CardTitle className="flex items-center space-x-2 text-sm sm:text-base text-white">
                         <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-gradient-to-r group-hover:from-orange-500 group-hover:to-amber-500 transition-all">
