@@ -398,6 +398,19 @@ export function useAvatarSession({
         
         const transcript = result[0].transcript.trim();
         
+        // 🔇 ECHO PROTECTION: If avatar is speaking and we don't have a way to interrupt,
+        // this is likely the avatar's own audio being picked up - ignore it
+        if (isSpeakingRef.current) {
+          // Check if we can interrupt (user intentionally speaking over avatar)
+          const canInterruptAudio = audioOnlyRef.current && currentAudioRef.current;
+          const canInterruptVideo = !audioOnlyRef.current && avatarRef.current;
+          
+          if (!canInterruptAudio && !canInterruptVideo) {
+            console.log("🔇 ECHO BLOCKED: Ignoring transcript while avatar speaking (no active audio to interrupt):", transcript.substring(0, 50));
+            return;
+          }
+        }
+        
         // Deduplicate (Web Speech can fire same result multiple times)
         if (transcript && transcript !== lastTranscriptRef.current) {
           lastTranscriptRef.current = transcript;
