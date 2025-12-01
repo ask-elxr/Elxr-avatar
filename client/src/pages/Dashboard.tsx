@@ -1369,35 +1369,40 @@ export default function Dashboard({
                         No Courses Yet
                       </CardTitle>
                       <CardDescription className="text-white/60">
-                        Start creating video courses with AI avatars. Build
-                        structured lessons and generate professional videos.
+                        {isEmbed
+                          ? "No courses are available at the moment."
+                          : "Start creating video courses with AI avatars. Build structured lessons and generate professional videos."}
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex justify-center">
-                      <Button
-                        onClick={() =>
-                          setLocation("/dashboard/courses/new/edit")
-                        }
-                        data-testid="button-create-course"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create Your First Course
-                      </Button>
-                    </CardContent>
+                    {!isEmbed && (
+                      <CardContent className="flex justify-center">
+                        <Button
+                          onClick={() =>
+                            setLocation("/dashboard/courses/new/edit")
+                          }
+                          data-testid="button-create-course"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create Your First Course
+                        </Button>
+                      </CardContent>
+                    )}
                   </Card>
                 ) : (
                   <>
-                    <div className="flex justify-end mb-6">
-                      <Button
-                        onClick={() =>
-                          setLocation("/dashboard/courses/new/edit")
-                        }
-                        data-testid="button-new-course"
-                      >
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Course
-                      </Button>
-                    </div>
+                    {!isEmbed && (
+                      <div className="flex justify-end mb-6">
+                        <Button
+                          onClick={() =>
+                            setLocation("/dashboard/courses/new/edit")
+                          }
+                          data-testid="button-new-course"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          New Course
+                        </Button>
+                      </div>
+                    )}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                       {courses.map((course) => (
                         <Card
@@ -1485,23 +1490,25 @@ export default function Dashboard({
                                 </div>
                               )}
                             </div>
-                            <div className="mt-auto pt-3 border-t border-white/10">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-white"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setLocation(
-                                    `/dashboard/courses/${course.id}/edit`,
-                                  );
-                                }}
-                                data-testid={`button-edit-course-${course.id}`}
-                              >
-                                <Settings className="w-4 h-4 mr-2" />
-                                Edit Course
-                              </Button>
-                            </div>
+                            {!isEmbed && (
+                              <div className="mt-auto pt-3 border-t border-white/10">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="w-full border-purple-500/30 text-purple-300 hover:bg-purple-500/20 hover:text-white"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLocation(
+                                      `/dashboard/courses/${course.id}/edit`,
+                                    );
+                                  }}
+                                  data-testid={`button-edit-course-${course.id}`}
+                                >
+                                  <Settings className="w-4 h-4 mr-2" />
+                                  Edit Course
+                                </Button>
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
@@ -2284,20 +2291,22 @@ export default function Dashboard({
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Back to Courses
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
-                        onClick={() =>
-                          setLocation(
-                            `/dashboard/courses/${selectedCourseId}/edit`,
-                          )
-                        }
-                        data-testid="button-edit-course-from-view"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Edit Course
-                      </Button>
+                      {!isEmbed && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-purple-500/30 text-purple-300 hover:bg-purple-500/20"
+                          onClick={() =>
+                            setLocation(
+                              `/dashboard/courses/${selectedCourseId}/edit`,
+                            )
+                          }
+                          data-testid="button-edit-course-from-view"
+                        >
+                          <Settings className="w-4 h-4 mr-2" />
+                          Edit Course
+                        </Button>
+                      )}
                     </div>
 
                     {/* Course Info */}
@@ -2365,18 +2374,20 @@ export default function Dashboard({
                           <p className="text-white/60">
                             No lessons in this course yet
                           </p>
-                          <Button
-                            onClick={() =>
-                              setLocation(
-                                `/dashboard/courses/${selectedCourseId}/edit`,
-                              )
-                            }
-                            className="mt-4"
-                            data-testid="button-add-lessons"
-                          >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Add Lessons
-                          </Button>
+                          {!isEmbed && (
+                            <Button
+                              onClick={() =>
+                                setLocation(
+                                  `/dashboard/courses/${selectedCourseId}/edit`,
+                                )
+                              }
+                              className="mt-4"
+                              data-testid="button-add-lessons"
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Lessons
+                            </Button>
+                          )}
                         </CardContent>
                       </Card>
                     ) : (
