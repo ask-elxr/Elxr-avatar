@@ -62,6 +62,10 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 -   **Secret Storage**: Admin secret can be provided via URL parameter (`?admin_secret=...`) or entered in the admin login form. It is persisted in `localStorage` for convenience.
 -   **CORS & CSP**: Configured to allow embedding from any origin with `frame-ancestors *` header.
 -   **Hidden Auth UI**: Login/logout buttons are hidden in the embedded mode since authentication is handled externally by Webflow.
+-   **Embed-Only Routes**: Chrome-free pages for iframe embedding without navigation sidebars:
+    -   User Routes: `/embed/dashboard`, `/embed/chat`, `/embed/chat/:avatarId`, `/embed/videos`, `/embed/courses`, `/embed/mood`, `/embed/plan`, `/embed/credits`, `/embed/settings`
+    -   Admin Routes: `/embed/admin`, `/embed/admin/avatars`, `/embed/admin/knowledge`, `/embed/admin/courses`, `/embed/admin/users`, `/embed/admin/analytics`, `/embed/admin/credits`
+-   **Implementation**: Embed pages reuse Dashboard/Admin components with `isEmbed={true}` prop that hides sidebar, mobile header, and floating orbs.
 
 #### Technical Implementations
 -   **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent conversation memory.

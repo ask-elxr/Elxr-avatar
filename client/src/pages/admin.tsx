@@ -15,7 +15,7 @@ import { apiRequest, queryClient, hasAdminAccess, getAdminSecret } from "@/lib/q
 import Credits from "@/pages/Credits";
 import Analytics from "@/pages/Analytics";
 
-type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'users' | 'analytics' | 'credits' | 'settings';
+export type AdminView = 'dashboard' | 'avatars' | 'knowledge' | 'courses' | 'users' | 'analytics' | 'credits' | 'settings';
 
 const avatarGifs: Record<string, string> = {
   'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
@@ -30,12 +30,17 @@ const avatarGifs: Record<string, string> = {
   'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
 };
 
-export default function Admin() {
-  const [currentView, setCurrentView] = useState<AdminView>('dashboard');
+interface AdminProps {
+  isEmbed?: boolean;
+  embedView?: AdminView;
+}
+
+export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
+  const [currentView, setCurrentView] = useState<AdminView>(embedView || 'dashboard');
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [showCourseBuilder, setShowCourseBuilder] = useState(false);
   const [preSelectedAvatarId, setPreSelectedAvatarId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(!isEmbed);
   const [adminSecretInput, setAdminSecretInput] = useState('');
   const [isAdminVerified, setIsAdminVerified] = useState(false);
   const { toast } = useToast();
@@ -78,8 +83,16 @@ export default function Admin() {
     handleUrlParams();
   }, [handleUrlParams]);
 
-  // Auto-collapse sidebar on mobile
+  // Sync embedView when prop changes
   useEffect(() => {
+    if (isEmbed && embedView) {
+      setCurrentView(embedView);
+    }
+  }, [isEmbed, embedView]);
+
+  // Auto-collapse sidebar on mobile (only when not in embed mode)
+  useEffect(() => {
+    if (isEmbed) return;
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setSidebarOpen(false);
@@ -88,7 +101,7 @@ export default function Admin() {
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  }, [isEmbed]);
 
   const { data: avatarsData } = useQuery({
     queryKey: ['/api/admin/avatars'],
@@ -311,87 +324,91 @@ export default function Admin() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+      {/* Mobile Overlay - hidden in embed mode */}
+      {!isEmbed && sidebarOpen && (
         <div 
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside 
-        className={`
-          fixed md:relative z-50 h-full
-          border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
-          transition-all duration-300 ease-in-out
-          ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-16'}
-        `}
-      >
-        <div className={`p-4 border-b flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
-          {sidebarOpen && (
-            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent transition-opacity duration-300">
-              Admin Panel
-            </h1>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="flex-shrink-0"
-            data-testid="button-toggle-sidebar"
-          >
-            {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </Button>
-        </div>
-        
-        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-          <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
-          <NavButton view="avatars" icon={Users} label="Avatars" />
-          <NavButton view="knowledge" icon={FileText} label="Knowledge Base" />
-          <NavButton view="courses" icon={Video} label="Video Courses" />
-          <NavButton view="users" icon={UserCog} label="User Management" />
-          <NavButton view="analytics" icon={BarChart3} label="Analytics" />
-          <NavButton view="credits" icon={CreditCard} label="Credits" />
-          <NavButton view="settings" icon={Settings} label="Settings" />
-        </nav>
-
-        <div className="p-2 border-t space-y-1">
-          <Button
-            variant="ghost"
-            className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
-            onClick={() => setLocation('/')}
-            data-testid="nav-home"
-            title={!sidebarOpen ? "Back to Home" : undefined}
-          >
-            <Home className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
-            <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-              Back to Home
-            </span>
-          </Button>
-          
-          {/* Logout button hidden in embedded mode - auth handled by Webflow */}
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 min-w-0 h-full overflow-y-auto transition-all duration-300">
-        {/* Mobile Header with Menu Button */}
-        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
-          <div className="flex items-center gap-3">
+      {/* Sidebar - hidden in embed mode */}
+      {!isEmbed && (
+        <aside 
+          className={`
+            fixed md:relative z-50 h-full
+            border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
+            transition-all duration-300 ease-in-out
+            ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-16'}
+          `}
+        >
+          <div className={`p-4 border-b flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
+            {sidebarOpen && (
+              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent transition-opacity duration-300">
+                Admin Panel
+              </h1>
+            )}
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setSidebarOpen(true)}
-              data-testid="button-open-sidebar-mobile"
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="flex-shrink-0"
+              data-testid="button-toggle-sidebar"
             >
-              <Menu className="w-5 h-5" />
+              {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </Button>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-              Admin Panel
-            </h1>
           </div>
-        </div>
+          
+          <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+            <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
+            <NavButton view="avatars" icon={Users} label="Avatars" />
+            <NavButton view="knowledge" icon={FileText} label="Knowledge Base" />
+            <NavButton view="courses" icon={Video} label="Video Courses" />
+            <NavButton view="users" icon={UserCog} label="User Management" />
+            <NavButton view="analytics" icon={BarChart3} label="Analytics" />
+            <NavButton view="credits" icon={CreditCard} label="Credits" />
+            <NavButton view="settings" icon={Settings} label="Settings" />
+          </nav>
+
+          <div className="p-2 border-t space-y-1">
+            <Button
+              variant="ghost"
+              className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
+              onClick={() => setLocation('/')}
+              data-testid="nav-home"
+              title={!sidebarOpen ? "Back to Home" : undefined}
+            >
+              <Home className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
+              <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
+                Back to Home
+              </span>
+            </Button>
+            
+            {/* Logout button hidden in embedded mode - auth handled by Webflow */}
+          </div>
+        </aside>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 min-w-0 h-full overflow-y-auto transition-all duration-300">
+        {/* Mobile Header with Menu Button - hidden in embed mode */}
+        {!isEmbed && (
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                data-testid="button-open-sidebar-mobile"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                Admin Panel
+              </h1>
+            </div>
+          </div>
+        )}
 
         <div className="p-4 sm:p-6 lg:p-8">
           {/* Header */}

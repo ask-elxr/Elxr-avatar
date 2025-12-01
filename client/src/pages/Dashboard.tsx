@@ -109,7 +109,7 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { AvatarChat } from "@/components/avatar-chat";
 
-type UserView =
+export type UserView =
   | "dashboard"
   | "chat"
   | "active-chat"
@@ -177,9 +177,21 @@ interface UserPlanInfo {
   };
 }
 
-export default function Dashboard() {
+interface DashboardProps {
+  isEmbed?: boolean;
+  embedView?: UserView;
+  embedAvatarId?: string;
+  embedCourseId?: string;
+}
+
+export default function Dashboard({
+  isEmbed = false,
+  embedView,
+  embedAvatarId,
+  embedCourseId,
+}: DashboardProps = {}) {
   const { isAuthenticated, isLoading, user, isAdmin } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(!isEmbed);
   const [location, setLocation] = useLocation();
 
   const [, chatParams] = useRoute("/dashboard/chat/:avatarId");
@@ -187,6 +199,10 @@ export default function Dashboard() {
   const [, courseEditParams] = useRoute("/dashboard/courses/:courseId/edit");
 
   const currentView = useMemo((): UserView => {
+    if (isEmbed && embedView) {
+      if (embedView === "chat" && embedAvatarId) return "active-chat";
+      return embedView;
+    }
     if (location.startsWith("/dashboard/chat/") && chatParams?.avatarId)
       return "active-chat";
     if (location === "/dashboard/chat") return "chat";
@@ -206,13 +222,14 @@ export default function Dashboard() {
     if (location === "/dashboard/credits") return "credits";
     if (location === "/dashboard/settings") return "settings";
     return "dashboard";
-  }, [location, chatParams, courseViewParams, courseEditParams]);
+  }, [location, chatParams, courseViewParams, courseEditParams, isEmbed, embedView, embedAvatarId]);
 
-  const activeChatAvatarId = chatParams?.avatarId || null;
-  const selectedCourseId =
-    location === "/dashboard/courses/new/edit"
-      ? null
-      : courseViewParams?.courseId || courseEditParams?.courseId || null;
+  const activeChatAvatarId = isEmbed && embedAvatarId ? embedAvatarId : (chatParams?.avatarId || null);
+  const selectedCourseId = isEmbed && embedCourseId
+    ? embedCourseId
+    : (location === "/dashboard/courses/new/edit"
+        ? null
+        : courseViewParams?.courseId || courseEditParams?.courseId || null);
 
   const { data: chatVideos, isLoading: videosLoading } = useQuery<ChatVideo[]>({
     queryKey: ["/api/courses/chat-videos"],
@@ -447,7 +464,9 @@ export default function Dashboard() {
     return false;
   };
 
+  // Auto-collapse sidebar on mobile (only when not in embed mode)
   useEffect(() => {
+    if (isEmbed) return;
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setSidebarOpen(false);
@@ -456,7 +475,7 @@ export default function Dashboard() {
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  }, [isEmbed]);
 
   if (isLoading) {
     return (
@@ -554,30 +573,33 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-screen bg-background dot-pattern overflow-hidden">
-      {/* Floating orbs for ambiance */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-[100px] animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-500/20 rounded-full blur-[120px] animate-float-delayed" />
-      </div>
+    <div className={`flex h-screen bg-background ${isEmbed ? '' : 'dot-pattern'} overflow-hidden`}>
+      {/* Floating orbs for ambiance - hidden in embed mode */}
+      {!isEmbed && (
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-purple-500/20 rounded-full blur-[100px] animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-cyan-500/20 rounded-full blur-[120px] animate-float-delayed" />
+        </div>
+      )}
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+      {/* Mobile Overlay - hidden in embed mode */}
+      {!isEmbed && sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
-      <aside
-        className={`
-          fixed md:relative z-50 h-full
-          border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
-          transition-all duration-300 ease-in-out
-          ${sidebarOpen ? "w-64 translate-x-0" : "-translate-x-full md:translate-x-0 md:w-16"}
-        `}
-      >
+      {/* Sidebar - hidden in embed mode */}
+      {!isEmbed && (
+        <aside
+          className={`
+            fixed md:relative z-50 h-full
+            border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
+            transition-all duration-300 ease-in-out
+            ${sidebarOpen ? "w-64 translate-x-0" : "-translate-x-full md:translate-x-0 md:w-16"}
+          `}
+        >
         <div
           className={`p-4 border-b flex items-center ${sidebarOpen ? "justify-between" : "justify-center"}`}
         >
@@ -650,25 +672,28 @@ export default function Dashboard() {
           {/* Logout button hidden in embedded mode - auth handled by Webflow */}
         </div>
       </aside>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 h-full overflow-y-auto transition-all duration-300">
-        {/* Mobile Header with Menu Button */}
-        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(true)}
-              data-testid="button-open-sidebar-mobile"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
-              My Dashboard
-            </h1>
+        {/* Mobile Header with Menu Button - hidden in embed mode */}
+        {!isEmbed && (
+          <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-sm border-b md:hidden p-4">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSidebarOpen(true)}
+                data-testid="button-open-sidebar-mobile"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
+                My Dashboard
+              </h1>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Active Chat View - Full Screen within Dashboard */}
         {currentView === "active-chat" && activeChatAvatarId && (
