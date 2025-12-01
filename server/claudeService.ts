@@ -78,7 +78,8 @@ export class ClaudeService {
     const startTime = Date.now();
 
     const messages: any[] = [];
-    const recentHistory = conversationHistory.slice(-10);
+    // Limit to last 4 messages for faster processing (reduced from 10)
+    const recentHistory = conversationHistory.slice(-4);
     
     for (const msg of recentHistory) {
       if (msg.message && typeof msg.message === 'string') {
@@ -211,8 +212,8 @@ RESPONSE REQUIREMENTS:
       // Build conversation messages
       const messages: any[] = [];
       
-      // Limit conversation history to last 10 messages to prevent timeout issues
-      const recentHistory = conversationHistory.slice(-10);
+      // Limit conversation history to last 4 messages for faster processing
+      const recentHistory = conversationHistory.slice(-4);
       
       // Add conversation history
       for (const msg of recentHistory) {

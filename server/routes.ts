@@ -1915,11 +1915,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionManager.updateActivityByUserId(userId);
       }
 
-      // Retrieve conversation history from database (last 20 messages for context)
+      // Retrieve conversation history from database (last 6 messages for faster processing)
       let dbConversationHistory: any[] = [];
       if (userId) {
         try {
-          const conversationRecords = await storage.getConversationHistory(userId, avatarId, 20);
+          const conversationRecords = await storage.getConversationHistory(userId, avatarId, 6);
           dbConversationHistory = conversationRecords.map(conv => ({
             message: conv.text,
             isUser: conv.role === 'user',
@@ -2596,11 +2596,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (wikipediaContext) combinedContext += wikipediaContext;
       if (googleSearchContext) combinedContext += googleSearchContext;
 
-      // Get conversation history
+      // Get conversation history (reduced to 6 for faster processing)
       let dbConversationHistory: any[] = [];
       if (userId) {
         try {
-          const records = await storage.getConversationHistory(userId, avatarId, 20);
+          const records = await storage.getConversationHistory(userId, avatarId, 6);
           dbConversationHistory = records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
         } catch (error) { }
       }
