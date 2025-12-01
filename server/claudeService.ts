@@ -43,9 +43,152 @@ export class ClaudeService {
     );
   }
 
+  getClient(): Anthropic | null {
+    return this.anthropic;
+  }
+
+  getDefaultModel(): string {
+    return DEFAULT_MODEL_STR;
+  }
+
   // Check if Claude is available
   isAvailable(): boolean {
     return !!this.anthropic;
+  }
+
+  async *streamResponse(
+    query: string, 
+    context: string, 
+    conversationHistory: any[] = [], 
+    customSystemPrompt?: string
+  ): AsyncGenerator<{ type: 'text' | 'sentence' | 'done'; content: string }> {
+    if (!this.anthropic) {
+      throw new Error('Claude Sonnet is not available - API key not configured');
+    }
+
+    const log = logger.child({ 
+      service: 'claude', 
+      operation: 'streamResponse',
+      queryLength: query.length,
+      contextLength: context.length,
+      historyLength: conversationHistory.length
+    });
+
+    log.debug('Starting Claude streaming response');
+    const startTime = Date.now();
+
+    const messages: any[] = [];
+    const recentHistory = conversationHistory.slice(-10);
+    
+    for (const msg of recentHistory) {
+      if (msg.message && typeof msg.message === 'string') {
+        messages.push({
+          role: msg.isUser ? 'user' : 'assistant',
+          content: msg.message
+        });
+      }
+    }
+
+    let researchCapabilitiesNote = '';
+    const hasWebSearch = context && context.includes('WEB SEARCH RESULTS:');
+    const hasPubMed = context && context.includes('PEER-REVIEWED RESEARCH FROM PUBMED:');
+    const hasWikipedia = context && context.includes('WIKIPEDIA INFORMATION:');
+    
+    if (hasWebSearch || hasPubMed || hasWikipedia) {
+      const sources: string[] = [];
+      if (hasWebSearch) sources.push('web search');
+      if (hasPubMed) sources.push('PubMed research');
+      if (hasWikipedia) sources.push('Wikipedia');
+      
+      researchCapabilitiesNote = `\n\n⚠️ CRITICAL INSTRUCTION: The content below includes REAL-TIME data from ${sources.join(', ')}. Use ALL the information provided.`;
+    }
+
+    const currentMessage = context 
+      ? `You have knowledge content below. Use it to answer clearly.${researchCapabilitiesNote}
+
+AVAILABLE KNOWLEDGE:
+${context}
+
+---
+
+User question: ${query}
+
+RESPONSE REQUIREMENTS:
+- Use the information above to answer the question directly
+- Be BRIEF and to the point (2-3 sentences unless more is needed)
+- Keep it conversational and natural`
+      : query;
+      
+    messages.push({
+      role: 'user',
+      content: currentMessage
+    });
+
+    const systemPrompt = customSystemPrompt || `You are an intelligent AI assistant with access to a comprehensive knowledge base. 
+      
+      Guidelines:
+      - DEFAULT: Keep responses SHORT and CLEAR (2-3 sentences) - be conversational, not verbose
+      - Only give detailed responses when the user explicitly asks for more information
+      - Use the provided context to give accurate, helpful responses
+      - If information isn't in the context, say so clearly
+      - Be conversational and engaging, but CONCISE
+      - Maintain context from the conversation history
+      - Think "helpful friend" not "encyclopedia"`;
+
+    const stream = await this.anthropic.messages.stream({
+      model: DEFAULT_MODEL_STR,
+      max_tokens: 4096,
+      messages: messages,
+      system: systemPrompt
+    });
+
+    let buffer = '';
+    let fullResponse = '';
+    const sentenceEnders = /([.!?])\s+/g;
+
+    for await (const event of stream) {
+      if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+        const text = event.delta.text;
+        buffer += text;
+        fullResponse += text;
+        
+        yield { type: 'text', content: text };
+        
+        let match;
+        let lastIndex = 0;
+        const tempBuffer = buffer;
+        
+        while ((match = sentenceEnders.exec(tempBuffer)) !== null) {
+          const sentence = tempBuffer.slice(lastIndex, match.index + match[1].length).trim();
+          if (sentence.length > 10) {
+            yield { type: 'sentence', content: sentence };
+          }
+          lastIndex = match.index + match[0].length;
+        }
+        
+        if (lastIndex > 0) {
+          buffer = tempBuffer.slice(lastIndex);
+        }
+      }
+    }
+
+    if (buffer.trim().length > 0) {
+      yield { type: 'sentence', content: buffer.trim() };
+    }
+
+    const duration = Date.now() - startTime;
+    log.info({ duration, responseLength: fullResponse.length }, 'Claude streaming response completed');
+
+    storage.logApiCall({
+      serviceName: 'claude',
+      endpoint: 'messages.stream',
+      userId: null,
+      responseTimeMs: duration,
+    }).catch((error) => {
+      log.error({ error: error.message }, 'Failed to log API call');
+    });
+
+    yield { type: 'done', content: fullResponse };
   }
 
   // Generate conversational response with context and optional custom system prompt

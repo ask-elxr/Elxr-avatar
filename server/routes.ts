@@ -2422,6 +2422,224 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // STREAMING AVATAR RESPONSE - Sends sentences progressively via SSE
+  app.post("/api/avatar/response/stream", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: 'avatar-stream', operation: 'streamResponse' });
+    
+    try {
+      const { message, avatarId, conversationHistory = [], memoryEnabled = false } = req.body;
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const avatarConfig = await getAvatarById(avatarId || "nigel");
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      // Set up SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+
+      const sendEvent = (eventType: string, data: any) => {
+        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+      };
+
+      // Start performance timing
+      const perfStart = Date.now();
+      const perfTimings: Record<string, number> = {};
+
+      sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
+
+      // Check avatar research source toggles
+      const avatarUsePubMed = avatarConfig.usePubMed || false;
+      const avatarUseWikipedia = avatarConfig.useWikipedia || false;
+      const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
+
+      // PARALLEL DATA FETCHING (same as non-streaming endpoint)
+      const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+        (async () => {
+          const memStart = Date.now();
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+            return { success: false, memories: [] };
+          }
+          try {
+            const result = await memoryService.searchMemories(message, userId, { limit: 5 });
+            perfTimings.memory = Date.now() - memStart;
+            return result;
+          } catch (error) {
+            perfTimings.memory = Date.now() - memStart;
+            return { success: false, memories: [] };
+          }
+        })(),
+        (async () => {
+          const wikiStart = Date.now();
+          if (!avatarUseWikipedia) return null;
+          try {
+            const result = await wikipediaService.searchAndSummarize(message);
+            perfTimings.wikipedia = Date.now() - wikiStart;
+            return result;
+          } catch (error) {
+            perfTimings.wikipedia = Date.now() - wikiStart;
+            return null;
+          }
+        })(),
+        (async () => {
+          const googleStart = Date.now();
+          if (!avatarUseGoogleSearch || !googleSearchService.isAvailable()) return null;
+          try {
+            const result = await googleSearchService.search(message, 4);
+            perfTimings.googleSearch = Date.now() - googleStart;
+            return result;
+          } catch (error) {
+            perfTimings.googleSearch = Date.now() - googleStart;
+            return null;
+          }
+        })(),
+        (async () => {
+          const knowStart = Date.now();
+          try {
+            const avatarNamespaces = getAvatarNamespaces(avatarConfig);
+            const { retrieveContext } = await import("./pineconeService.js");
+            const context = await retrieveContext(message, 3, avatarNamespaces, userId || undefined);
+            perfTimings.knowledge = Date.now() - knowStart;
+            return context;
+          } catch (error) {
+            perfTimings.knowledge = Date.now() - knowStart;
+            return null;
+          }
+        })()
+      ]);
+
+      perfTimings.dataFetch = Date.now() - perfStart;
+      sendEvent('timing', { dataFetch: perfTimings.dataFetch });
+
+      // Process results
+      let memoryContext = "";
+      let wikipediaContext = "";
+      let googleSearchContext = "";
+      let knowledgeContext = "";
+
+      if (memoryResultSettled.status === 'fulfilled' && memoryResultSettled.value?.memories?.length > 0) {
+        memoryContext = "\n\nRELEVANT MEMORIES:\n" + memoryResultSettled.value.memories.map((m: any) => `- ${m.content}`).join("\n");
+      }
+      if (wikipediaResultSettled.status === 'fulfilled' && wikipediaResultSettled.value) {
+        wikipediaContext = `\n\nWIKIPEDIA INFORMATION:\n${wikipediaResultSettled.value}`;
+      }
+      if (googleSearchResultSettled.status === 'fulfilled' && googleSearchResultSettled.value) {
+        googleSearchContext = `\n\nWEB SEARCH RESULTS:\n${googleSearchResultSettled.value}`;
+      }
+      if (knowledgeResultSettled.status === 'fulfilled' && knowledgeResultSettled.value) {
+        knowledgeContext = knowledgeResultSettled.value;
+      }
+
+      // Build combined context
+      let combinedContext = knowledgeContext || '';
+      if (memoryContext) combinedContext += memoryContext;
+      if (wikipediaContext) combinedContext += wikipediaContext;
+      if (googleSearchContext) combinedContext += googleSearchContext;
+
+      // Get conversation history
+      let dbConversationHistory: any[] = [];
+      if (userId) {
+        try {
+          const records = await storage.getConversationHistory(userId, avatarId, 20);
+          dbConversationHistory = records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
+        } catch (error) { }
+      }
+
+      // Save user message
+      if (userId) {
+        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
+      }
+
+      // Build enhanced personality prompt
+      const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
+      const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      let enhancedPersonality = `${personalityPrompt}\n\n⚠️ TODAY'S DATE: ${currentDate}. Use this when asked about dates, current events, or time-sensitive topics.`;
+      
+      if (memoryContext) {
+        enhancedPersonality += memoryContext + "\n\nUse these memories naturally in your response when relevant.";
+      }
+
+      sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
+
+      // Stream Claude response
+      const claudeStart = Date.now();
+      let fullResponse = '';
+      let sentenceCount = 0;
+
+      try {
+        for await (const chunk of claudeService.streamResponse(
+          message,
+          combinedContext,
+          dbConversationHistory.length > 0 ? dbConversationHistory : conversationHistory,
+          enhancedPersonality
+        )) {
+          if (chunk.type === 'text') {
+            sendEvent('text', { content: chunk.content });
+          } else if (chunk.type === 'sentence') {
+            sentenceCount++;
+            sendEvent('sentence', { content: chunk.content, index: sentenceCount });
+          } else if (chunk.type === 'done') {
+            fullResponse = chunk.content;
+          }
+        }
+      } catch (streamError: any) {
+        log.error({ error: streamError.message }, 'Claude streaming error');
+        sendEvent('error', { message: 'AI generation failed' });
+        return res.end();
+      }
+
+      perfTimings.claude = Date.now() - claudeStart;
+      perfTimings.total = Date.now() - perfStart;
+
+      // Save assistant response
+      if (userId && fullResponse) {
+        await storage.saveConversation({ userId, avatarId, role: 'assistant', text: fullResponse }).catch(() => {});
+      }
+
+      // Store in memory if enabled
+      if (memoryEnabled && userId && memoryService.isAvailable() && fullResponse) {
+        const conversationText = `User asked: "${message}"\nAssistant responded: "${fullResponse}"`;
+        await memoryService.addMemory(conversationText, userId, MemoryType.NOTE, {
+          timestamp: new Date().toISOString(),
+          avatarId,
+        }).catch(() => {});
+      }
+
+      // Send completion event
+      sendEvent('done', {
+        fullResponse,
+        performance: {
+          totalMs: perfTimings.total,
+          dataFetchMs: perfTimings.dataFetch,
+          claudeMs: perfTimings.claude,
+          breakdown: perfTimings
+        }
+      });
+
+      log.info({ userId, avatarId, perfTimings, sentenceCount }, 'Streaming response completed');
+      res.end();
+
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Streaming endpoint error');
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Streaming failed' });
+      } else {
+        res.write(`event: error\ndata: ${JSON.stringify({ message: error.message })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
 
   // Configure multer for file uploads
   const upload = multer({ 

@@ -94,6 +94,9 @@ export function useAvatarSession({
   const acknowledgmentAudioRef = useRef<HTMLAudioElement | null>(null); // Cached acknowledgment audio
   const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
   const currentAcknowledgmentRef = useRef<HTMLAudioElement | null>(null); // Currently playing acknowledgment (for stopping)
+  const streamingEnabledRef = useRef(true); // Enable streaming mode by default for faster responses
+  const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
+  const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
 
@@ -1629,8 +1632,6 @@ export function useAvatarSession({
             console.log(`⏱️ [TIMING] HeyGen session start: ${(performance.now() - heygenStartTime).toFixed(0)}ms`);
           } catch (error) {
             console.error("Failed to start HeyGen session:", error);
-            // ⚠️ DON'T return early - still send message to Claude!
-            // HeyGen is just for video rendering, Claude generates the response
           }
         }
         
@@ -1638,7 +1639,173 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Get Claude response then speak via HeyGen
+        // Use streaming mode for faster perceived response
+        if (streamingEnabledRef.current && avatarRef.current) {
+          console.log("🚀 [STREAMING] Using streaming mode for faster response");
+          
+          let fullResponse = '';
+          let firstSentenceTime = 0;
+          let sentenceCount = 0;
+          let streamingComplete = false;
+          let performanceData: any = null;
+          
+          // Clear sentence queue for new message
+          sentenceQueueRef.current = [];
+          isSpeakingQueueRef.current = false;
+          
+          // Helper to speak all sentences sequentially - waits for each to complete
+          const processSentenceQueue = async () => {
+            while (sentenceQueueRef.current.length > 0 || !streamingComplete) {
+              // Wait for more sentences if queue is empty but stream isn't complete
+              if (sentenceQueueRef.current.length === 0) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                continue;
+              }
+              
+              if (!avatarRef.current) break;
+              
+              const sentence = sentenceQueueRef.current.shift();
+              if (sentence) {
+                isSpeakingQueueRef.current = true;
+                try {
+                  // Wait for speak to complete before next sentence
+                  await avatarRef.current.speak({
+                    text: sentence,
+                    task_type: TaskType.REPEAT,
+                  });
+                  // Small delay between sentences for natural pacing
+                  await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (e) {
+                  console.warn("Speak error:", e);
+                }
+                isSpeakingQueueRef.current = false;
+              }
+            }
+            console.log("🚀 [STREAMING] Sentence queue fully processed");
+          };
+          
+          // Start processing queue in background (runs concurrently with stream reading)
+          const queueProcessor = processSentenceQueue();
+          
+          try {
+            // Use fetch with streaming body for SSE
+            const response = await fetch("/api/avatar/response/stream", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                message,
+                userId: memoryEnabledRef.current ? userId : undefined,
+                avatarId: currentAvatarIdRef.current,
+                memoryEnabled: memoryEnabledRef.current,
+                languageCode: elevenLabsLanguageCodeRef.current,
+              }),
+              signal: controller.signal,
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Stream failed: ${response.status}`);
+            }
+            
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            
+            if (reader) {
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                
+                for (let i = 0; i < lines.length; i++) {
+                  const line = lines[i];
+                  if (line.startsWith('event: ')) {
+                    const eventType = line.slice(7);
+                    // Look for data line right after event line
+                    if (i + 1 < lines.length && lines[i + 1].startsWith('data: ')) {
+                      try {
+                        const data = JSON.parse(lines[i + 1].slice(6));
+                        
+                        if (eventType === 'sentence') {
+                          sentenceCount++;
+                          if (sentenceCount === 1) {
+                            firstSentenceTime = performance.now();
+                            console.log(`🚀 [STREAMING] First sentence ready: ${(firstSentenceTime - apiStartTime).toFixed(0)}ms`);
+                          }
+                          console.log(`🚀 [STREAMING] Sentence ${sentenceCount}: "${data.content.substring(0, 50)}..."`);
+                          
+                          // Queue sentence for speaking
+                          sentenceQueueRef.current.push(data.content);
+                        } else if (eventType === 'done') {
+                          fullResponse = data.fullResponse;
+                          performanceData = data.performance;
+                          const totalTime = performance.now() - flowStartTime;
+                          console.log(`🚀 [STREAMING] === STREAMING COMPLETE ===`);
+                          console.log(`🚀 [STREAMING] Total sentences: ${sentenceCount}`);
+                          console.log(`🚀 [STREAMING] First sentence delay: ${firstSentenceTime ? (firstSentenceTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
+                          console.log(`🚀 [STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
+                          if (performanceData) {
+                            console.log(`🚀 [STREAMING] Backend breakdown:`, performanceData);
+                          }
+                        } else if (eventType === 'timing') {
+                          console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetch}ms`);
+                        }
+                      } catch (e) {
+                        // JSON parse error, skip
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            
+            // Mark stream as complete so queue processor can finish
+            streamingComplete = true;
+            
+            // Wait for all sentences to be spoken
+            await queueProcessor;
+            
+            // Post-response cleanup (same as non-streaming)
+            onResetInactivityTimer?.();
+            clearIdleTimeout();
+            
+            // Clear and set speaking interval
+            if (speakingIntervalRef.current) {
+              clearInterval(speakingIntervalRef.current);
+            }
+            speakingIntervalRef.current = setInterval(() => {
+              onResetInactivityTimer?.();
+            }, 10000);
+            
+            setTimeout(() => {
+              if (speakingIntervalRef.current) {
+                clearInterval(speakingIntervalRef.current);
+                speakingIntervalRef.current = null;
+                onResetInactivityTimer?.();
+              }
+            }, 180000);
+            
+            console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
+            
+          } catch (streamError) {
+            streamingComplete = true; // Ensure queue processor can exit
+            if (streamError instanceof Error && streamError.name !== "AbortError") {
+              console.error("Streaming error, falling back to non-streaming:", streamError);
+              streamingEnabledRef.current = false;
+            } else {
+              throw streamError;
+            }
+          }
+          
+          // If streaming succeeded, we're done
+          if (fullResponse) {
+            return;
+          }
+        }
+        
+        // Non-streaming fallback
         const response = await fetch("/api/avatar/response", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1646,8 +1813,8 @@ export function useAvatarSession({
             message,
             userId: memoryEnabledRef.current ? userId : undefined,
             avatarId: currentAvatarIdRef.current,
-            memoryEnabled: memoryEnabledRef.current, // Use ref for current value
-            languageCode: elevenLabsLanguageCodeRef.current, // Pass language for Claude response
+            memoryEnabled: memoryEnabledRef.current,
+            languageCode: elevenLabsLanguageCodeRef.current,
           }),
           signal: controller.signal,
         });
