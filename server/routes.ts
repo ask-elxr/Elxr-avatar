@@ -124,6 +124,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
+
+  // Update user profile endpoint
+  app.patch("/api/auth/user/profile", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { firstName, lastName } = req.body;
+
+      // Validate input types
+      if (firstName !== undefined && typeof firstName !== 'string') {
+        return res.status(400).json({ message: "firstName must be a string" });
+      }
+      if (lastName !== undefined && typeof lastName !== 'string') {
+        return res.status(400).json({ message: "lastName must be a string" });
+      }
+
+      // Build update data with trimmed values, only if provided
+      const updateData: { firstName?: string; lastName?: string } = {};
+      if (firstName !== undefined) {
+        updateData.firstName = firstName.trim();
+      }
+      if (lastName !== undefined) {
+        updateData.lastName = lastName.trim();
+      }
+
+      // Require at least one field to update
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "At least one field (firstName or lastName) must be provided" });
+      }
+
+      const updatedUser = await storage.updateUserProfile(userId, updateData);
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ message: "Failed to update user profile" });
+    }
+  });
+
   // GET HeyGen credit usage endpoint
   app.get("/api/heygen/credits", async (req: any, res) => {
     const log = logger.child({ service: "heygen-credit", operation: "getCredits" });

@@ -99,6 +99,8 @@ import {
 import CourseBuilderPage from "./course-builder";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -429,6 +431,54 @@ export default function Dashboard({
       });
     },
   });
+
+  // Profile editing state
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+
+  // Initialize edit form when user data loads
+  useEffect(() => {
+    if (user) {
+      setEditFirstName(user.firstName || "");
+      setEditLastName(user.lastName || "");
+    }
+  }, [user]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: { firstName: string; lastName: string }) => {
+      const response = await apiRequest("/api/auth/user/profile", "PATCH", data);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+      setIsEditingProfile(false);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been saved successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update profile",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSaveProfile = () => {
+    updateProfileMutation.mutate({
+      firstName: editFirstName.trim(),
+      lastName: editLastName.trim(),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingProfile(false);
+    setEditFirstName(user?.firstName || "");
+    setEditLastName(user?.lastName || "");
+  };
 
   const completedVideos =
     chatVideos?.filter((v) => v.status === "completed") || [];
@@ -2822,25 +2872,98 @@ export default function Dashboard({
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="glass p-4 rounded-lg border border-white/10">
-                      <h4 className="text-sm font-medium text-white mb-2">
-                        Profile Information
-                      </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Email</span>
-                          <span className="text-white">
-                            {user?.email || "Not available"}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-white/60">Name</span>
-                          <span className="text-white">
-                            {user?.firstName || user?.lastName
-                              ? `${user?.firstName || ""} ${user?.lastName || ""}`.trim()
-                              : "Not set"}
-                          </span>
-                        </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-sm font-medium text-white">
+                          Profile Information
+                        </h4>
+                        {!isEditingProfile && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setIsEditingProfile(true)}
+                            className="text-purple-400 hover:text-purple-300"
+                            data-testid="button-edit-profile"
+                          >
+                            Edit
+                          </Button>
+                        )}
                       </div>
+                      
+                      {isEditingProfile ? (
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="firstName" className="text-white/70">First Name</Label>
+                            <Input
+                              id="firstName"
+                              value={editFirstName}
+                              onChange={(e) => setEditFirstName(e.target.value)}
+                              placeholder="Enter your first name"
+                              className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
+                              data-testid="input-first-name"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="lastName" className="text-white/70">Last Name</Label>
+                            <Input
+                              id="lastName"
+                              value={editLastName}
+                              onChange={(e) => setEditLastName(e.target.value)}
+                              placeholder="Enter your last name"
+                              className="bg-white/5 border-white/20 text-white placeholder:text-white/40"
+                              data-testid="input-last-name"
+                            />
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            <Button
+                              onClick={handleSaveProfile}
+                              disabled={updateProfileMutation.isPending}
+                              className="bg-purple-600 hover:bg-purple-700"
+                              data-testid="button-save-profile"
+                            >
+                              {updateProfileMutation.isPending ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <Check className="w-4 h-4 mr-2" />
+                                  Save
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              onClick={handleCancelEdit}
+                              disabled={updateProfileMutation.isPending}
+                              data-testid="button-cancel-edit-profile"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 text-sm">
+                          <div className="flex justify-between items-center py-2 border-b border-white/10">
+                            <span className="text-white/60">Email</span>
+                            <span className="text-white">
+                              {user?.email || "Not available"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2 border-b border-white/10">
+                            <span className="text-white/60">First Name</span>
+                            <span className="text-white">
+                              {user?.firstName || "Not set"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center py-2">
+                            <span className="text-white/60">Last Name</span>
+                            <span className="text-white">
+                              {user?.lastName || "Not set"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Account actions hidden in embedded mode - auth handled by Webflow */}
