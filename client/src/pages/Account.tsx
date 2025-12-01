@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthSync } from "@/hooks/useAuthSync";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import { isUnauthorizedError } from "@/lib/authUtils";
 
 export default function Account() {
   const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
+  const { handleLogout } = useAuthSync();
   const { toast } = useToast();
 
   // Fetch user's documents
@@ -90,8 +92,8 @@ export default function Account() {
           <h1 className="text-3xl font-bold" data-testid="text-page-title">Your Account</h1>
           <p className="text-muted-foreground">Manage your profile and document uploads</p>
         </div>
-        <Button variant="outline" asChild data-testid="button-signout">
-          <a href="/api/logout">Sign Out</a>
+        <Button variant="outline" onClick={handleLogout} data-testid="button-signout">
+          Sign Out
         </Button>
       </div>
 

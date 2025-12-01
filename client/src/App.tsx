@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { useAuth } from "@/hooks/useAuth";
+import { useAuthSync } from "@/hooks/useAuthSync";
 import { useAnonymousUser } from "@/hooks/useAnonymousUser";
 import { useChatVideoNotifications } from "@/hooks/useChatVideoNotifications";
 import { useCourseVideoNotifications } from "@/hooks/useCourseVideoNotifications";
@@ -46,6 +47,11 @@ function GlobalVideoNotifications() {
   useChatVideoNotifications(effectiveUserId);
   useCourseVideoNotifications(effectiveUserId);
   
+  return null;
+}
+
+function AuthSyncListener() {
+  useAuthSync();
   return null;
 }
 
@@ -113,6 +119,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
+        <AuthSyncListener />
         <GlobalVideoNotifications />
         <Router />
       </TooltipProvider>
