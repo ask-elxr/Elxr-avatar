@@ -40,7 +40,7 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
   const [editingCourseId, setEditingCourseId] = useState<string | null>(null);
   const [showCourseBuilder, setShowCourseBuilder] = useState(false);
   const [preSelectedAvatarId, setPreSelectedAvatarId] = useState<string | null>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(!isEmbed);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [adminSecretInput, setAdminSecretInput] = useState('');
   const [isAdminVerified, setIsAdminVerified] = useState(false);
   const { toast } = useToast();
@@ -90,18 +90,19 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
     }
   }, [isEmbed, embedView]);
 
-  // Auto-collapse sidebar on mobile (only when not in embed mode)
+  // Auto-collapse sidebar on mobile
   useEffect(() => {
-    if (isEmbed) return;
     const handleResize = () => {
       if (window.innerWidth < 768) {
         setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
       }
     };
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isEmbed]);
+  }, []);
 
   const { data: avatarsData } = useQuery({
     queryKey: ['/api/admin/avatars'],
@@ -332,45 +333,45 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
         />
       )}
 
-      {/* Sidebar - hidden in embed mode */}
-      {!isEmbed && (
-        <aside 
-          className={`
-            fixed md:relative z-50 h-full
-            border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
-            transition-all duration-300 ease-in-out
-            ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-16'}
-          `}
-        >
-          <div className={`p-4 border-b flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
-            {sidebarOpen && (
-              <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent transition-opacity duration-300">
-                Admin Panel
-              </h1>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex-shrink-0"
-              data-testid="button-toggle-sidebar"
-            >
-              {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </Button>
-          </div>
-          
-          <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
-            <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
-            <NavButton view="avatars" icon={Users} label="Avatars" />
-            <NavButton view="knowledge" icon={FileText} label="Knowledge Base" />
-            <NavButton view="courses" icon={Video} label="Video Courses" />
-            <NavButton view="users" icon={UserCog} label="User Management" />
-            <NavButton view="analytics" icon={BarChart3} label="Analytics" />
-            <NavButton view="credits" icon={CreditCard} label="Credits" />
-            <NavButton view="settings" icon={Settings} label="Settings" />
-          </nav>
+      {/* Sidebar - always visible */}
+      <aside 
+        className={`
+          fixed md:relative z-50 h-full
+          border-r bg-card/95 backdrop-blur-sm flex flex-col flex-shrink-0
+          transition-all duration-300 ease-in-out
+          ${sidebarOpen ? 'w-64 translate-x-0' : '-translate-x-full md:translate-x-0 md:w-16'}
+        `}
+      >
+        <div className={`p-4 border-b flex items-center ${sidebarOpen ? 'justify-between' : 'justify-center'}`}>
+          {sidebarOpen && (
+            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent transition-opacity duration-300">
+              Admin Panel
+            </h1>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="flex-shrink-0"
+            data-testid="button-toggle-sidebar"
+          >
+            {sidebarOpen ? <ChevronLeft className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </Button>
+        </div>
+        
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+          <NavButton view="dashboard" icon={LayoutDashboard} label="Dashboard" />
+          <NavButton view="avatars" icon={Users} label="Avatars" />
+          <NavButton view="knowledge" icon={FileText} label="Knowledge Base" />
+          <NavButton view="courses" icon={Video} label="Video Courses" />
+          <NavButton view="users" icon={UserCog} label="User Management" />
+          <NavButton view="analytics" icon={BarChart3} label="Analytics" />
+          <NavButton view="credits" icon={CreditCard} label="Credits" />
+          <NavButton view="settings" icon={Settings} label="Settings" />
+        </nav>
 
-          <div className="p-2 border-t space-y-1">
+        <div className="p-2 border-t space-y-1">
+          {!isEmbed && (
             <Button
               variant="ghost"
               className={`w-full justify-start transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
@@ -383,11 +384,11 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                 Back to Home
               </span>
             </Button>
-            
-            {/* Logout button hidden in embedded mode - auth handled by Webflow */}
-          </div>
-        </aside>
-      )}
+          )}
+          
+          {/* Logout button hidden in embedded mode - auth handled by Webflow */}
+        </div>
+      </aside>
 
       {/* Main Content */}
       <main className="flex-1 min-w-0 h-full overflow-y-auto transition-all duration-300">
