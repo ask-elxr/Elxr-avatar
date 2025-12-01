@@ -179,11 +179,22 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 };
 
 // Middleware to require admin role
+// In embedded mode, admin access is controlled via ADMIN_SECRET header
 export const requireAdmin: RequestHandler = async (req, res, next) => {
+  // Check for admin secret in header (for embedded/Webflow mode)
+  const adminSecret = req.headers['x-admin-secret'] as string;
+  const envAdminSecret = process.env.ADMIN_SECRET;
+  
+  // If admin secret is provided and matches, allow access
+  if (envAdminSecret && adminSecret === envAdminSecret) {
+    return next();
+  }
+  
+  // Fallback: Check if user is authenticated and has admin role in DB
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user?.claims?.sub) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ message: "Unauthorized - Admin access required. Use X-Admin-Secret header or login as admin." });
   }
 
   try {
