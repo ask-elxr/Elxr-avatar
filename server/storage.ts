@@ -245,9 +245,11 @@ export class DatabaseStorage implements IStorage {
   // Avatar operations
   async listAvatars(activeOnly: boolean = true): Promise<AvatarProfile[]> {
     if (activeOnly) {
-      return await db.select().from(avatarProfiles).where(eq(avatarProfiles.isActive, true));
+      return await db.select().from(avatarProfiles)
+        .where(eq(avatarProfiles.isActive, true))
+        .orderBy(avatarProfiles.sortOrder);
     }
-    return await db.select().from(avatarProfiles);
+    return await db.select().from(avatarProfiles).orderBy(avatarProfiles.sortOrder);
   }
 
   async getAvatar(id: string): Promise<AvatarProfile | undefined> {

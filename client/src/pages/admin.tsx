@@ -4,12 +4,13 @@ import { DatabaseStatus } from "@/components/DatabaseStatus";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2 } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, LogOut, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import Credits from "@/pages/Credits";
 import Analytics from "@/pages/Analytics";
 
@@ -127,6 +128,51 @@ export default function Admin() {
     queryKey: ['/api/admin/users'],
     enabled: isAuthenticated && isAdmin,
   });
+
+  // Reorder avatars mutation
+  const reorderMutation = useMutation({
+    mutationFn: async (avatarIds: string[]) => {
+      return apiRequest('/api/admin/avatars/reorder', {
+        method: 'POST',
+        body: JSON.stringify({ avatarIds }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/avatars'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/avatars'] });
+      toast({
+        title: "Order updated",
+        description: "Avatar display order has been saved.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update avatar order.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const moveAvatarUp = (avatarId: string) => {
+    if (!avatarsData || !Array.isArray(avatarsData)) return;
+    const activeAvatars = avatarsData.filter((a: any) => a.isActive);
+    const index = activeAvatars.findIndex((a: any) => a.id === avatarId);
+    if (index <= 0) return;
+    const newOrder = [...activeAvatars];
+    [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+    reorderMutation.mutate(newOrder.map((a: any) => a.id));
+  };
+
+  const moveAvatarDown = (avatarId: string) => {
+    if (!avatarsData || !Array.isArray(avatarsData)) return;
+    const activeAvatars = avatarsData.filter((a: any) => a.isActive);
+    const index = activeAvatars.findIndex((a: any) => a.id === avatarId);
+    if (index < 0 || index >= activeAvatars.length - 1) return;
+    const newOrder = [...activeAvatars];
+    [newOrder[index], newOrder[index + 1]] = [newOrder[index + 1], newOrder[index]];
+    reorderMutation.mutate(newOrder.map((a: any) => a.id));
+  };
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -461,7 +507,29 @@ export default function Admin() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3 justify-between sm:justify-end">
+                        <div className="flex items-center gap-2 justify-between sm:justify-end">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => moveAvatarUp(avatar.id)}
+                              disabled={reorderMutation.isPending || avatarsData.filter((a: any) => a.isActive).findIndex((a: any) => a.id === avatar.id) === 0}
+                              data-testid={`button-move-up-${avatar.id}`}
+                            >
+                              <ChevronUp className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => moveAvatarDown(avatar.id)}
+                              disabled={reorderMutation.isPending || avatarsData.filter((a: any) => a.isActive).findIndex((a: any) => a.id === avatar.id) === avatarsData.filter((a: any) => a.isActive).length - 1}
+                              data-testid={`button-move-down-${avatar.id}`}
+                            >
+                              <ChevronDown className="h-4 w-4" />
+                            </Button>
+                          </div>
                           <div className="flex items-center gap-2">
                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
                             <span className="text-xs sm:text-sm text-green-600 dark:text-green-400">Active</span>

@@ -166,6 +166,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   useWikipedia: boolean("use_wikipedia").default(false).notNull(),
   useGoogleSearch: boolean("use_google_search").default(false).notNull(),
   isActive: boolean("is_active").default(true).notNull(),
+  sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
