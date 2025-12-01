@@ -10,7 +10,10 @@ import {
   updateAvatarProfileSchema,
   insertKnowledgeBaseSourceSchema,
   updateKnowledgeBaseSourceSchema,
+  moodEntries,
 } from "../shared/schema.js";
+import { sql, gte, desc } from "drizzle-orm";
+import { db } from "./db.js";
 import multer from "multer";
 import * as fs from "fs";
 import * as path from "path";
@@ -1232,6 +1235,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log.error({ error: error.message }, "Error getting analytics overview");
       res.status(500).json({
         error: "Failed to get analytics overview",
+        details: error.message,
+      });
+    }
+  });
+
+  // Admin Mood Analytics endpoint
+  app.get("/api/admin/mood/analytics", isAuthenticated, requireAdmin, async (req, res) => {
+    const log = logger.child({ service: "mood-analytics", operation: "getAdminStats" });
+    
+    try {
+      log.info("Getting mood analytics for admin");
+
+      // Get overall mood distribution
+      const moodDistribution = await db
+        .select({
+          mood: moodEntries.mood,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(moodEntries)
+        .groupBy(moodEntries.mood);
+
+      // Get mood trends over the last 7 days
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const moodTrend = await db
+        .select({
+          date: sql<string>`date(${moodEntries.createdAt})`,
+          mood: moodEntries.mood,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(moodEntries)
+        .where(gte(moodEntries.createdAt, sevenDaysAgo))
+        .groupBy(sql`date(${moodEntries.createdAt})`, moodEntries.mood)
+        .orderBy(sql`date(${moodEntries.createdAt})`);
+
+      // Get average intensity by mood
+      const intensityByMood = await db
+        .select({
+          mood: moodEntries.mood,
+          avgIntensity: sql<number>`round(avg(${moodEntries.intensity})::numeric, 1)`,
+        })
+        .from(moodEntries)
+        .groupBy(moodEntries.mood);
+
+      // Get total mood entries and unique users
+      const totals = await db
+        .select({
+          totalEntries: sql<number>`count(*)::int`,
+          uniqueUsers: sql<number>`count(distinct ${moodEntries.userId})::int`,
+        })
+        .from(moodEntries);
+
+      // Get recent mood entries (last 20)
+      const recentEntries = await db
+        .select()
+        .from(moodEntries)
+        .orderBy(desc(moodEntries.createdAt))
+        .limit(20);
+
+      // Calculate positive vs negative mood ratio
+      const positiveMoods = ['joyful', 'calm', 'energized', 'neutral'];
+      const totalMoods = moodDistribution.reduce((sum, m) => sum + m.count, 0);
+      const positiveMoodCount = moodDistribution
+        .filter(m => positiveMoods.includes(m.mood))
+        .reduce((sum, m) => sum + m.count, 0);
+      const positiveRatio = totalMoods > 0 ? Math.round((positiveMoodCount / totalMoods) * 100) : 0;
+
+      res.json({
+        distribution: moodDistribution,
+        trend: moodTrend,
+        intensityByMood,
+        totals: totals[0] || { totalEntries: 0, uniqueUsers: 0 },
+        recentEntries,
+        positiveRatio,
+      });
+
+      log.info("Mood analytics retrieved successfully");
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting mood analytics");
+      res.status(500).json({
+        error: "Failed to get mood analytics",
         details: error.message,
       });
     }
