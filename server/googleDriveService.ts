@@ -169,6 +169,33 @@ export class GoogleDriveService {
     }
   }
 
+  async searchFiles(query: string, pageToken?: string) {
+    try {
+      this.log.info({ query }, 'Searching Google Drive files');
+      const drive = await getUncachableGoogleDriveClient();
+
+      // Search for files matching the query in shared folders
+      // Using fullText for content search and name for file name search
+      const searchQuery = `(fullText contains '${query.replace(/'/g, "\\'")}' or name contains '${query.replace(/'/g, "\\'")}') and trashed=false`;
+      
+      const response = await drive.files.list({
+        q: searchQuery,
+        fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, iconLink, webViewLink, parents)',
+        pageSize: 50,
+        pageToken: pageToken,
+        orderBy: 'modifiedTime desc'
+      });
+
+      return {
+        files: response.data.files || [],
+        nextPageToken: response.data.nextPageToken
+      };
+    } catch (error: any) {
+      this.log.error({ error: error.message, query }, 'Failed to search Google Drive');
+      throw new Error('Failed to search Google Drive');
+    }
+  }
+
   // List all files recursively in a folder (with optional depth limit)
   async listAllFilesRecursive(folderId: string, maxDepth: number = 3, currentDepth: number = 0): Promise<any[]> {
     if (currentDepth >= maxDepth) {

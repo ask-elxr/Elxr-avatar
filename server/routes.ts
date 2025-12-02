@@ -3065,6 +3065,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/google-drive/search", isAuthenticated, async (req: any, res) => {
+    try {
+      const { q, pageToken } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+      const result = await googleDriveService.searchFiles(q, pageToken as string | undefined);
+      res.json(result);
+    } catch (error) {
+      console.error("Error searching Google Drive:", error);
+      res.status(500).json({
+        error: "Failed to search Google Drive",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   app.post("/api/google-drive/upload-to-pinecone", isAuthenticated, async (req: any, res) => {
     const userId = req.user.claims.sub;
     try {
