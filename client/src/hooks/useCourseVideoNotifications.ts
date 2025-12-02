@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./use-toast";
 import type { Course, Lesson, GeneratedVideo } from "@shared/schema";
@@ -10,8 +10,10 @@ interface CourseWithLessons extends Course {
 const NOTIFICATION_WINDOW_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_MS = 5000;
 const SEEN_NOTIFICATIONS_KEY = "seen-course-video-notifications";
+const GENERATING_VIDEOS_KEY = "generating-course-videos";
 
 function getSeenNotifications(userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
   try {
     const key = `${SEEN_NOTIFICATIONS_KEY}:${userId}`;
     const stored = localStorage.getItem(key);
@@ -28,6 +30,7 @@ function getSeenNotifications(userId: string): Set<string> {
 }
 
 function addSeenNotification(userId: string, videoId: string): void {
+  if (typeof window === 'undefined') return;
   try {
     const key = `${SEEN_NOTIFICATIONS_KEY}:${userId}`;
     const seen = getSeenNotifications(userId);
@@ -36,6 +39,34 @@ function addSeenNotification(userId: string, videoId: string): void {
     localStorage.setItem(key, JSON.stringify(arr));
   } catch (e) {
     console.error("Error saving seen course notification:", e);
+  }
+}
+
+function getGeneratingVideos(userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const key = `${GENERATING_VIDEOS_KEY}:${userId}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map(String));
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing generating course videos:", e);
+  }
+  return new Set();
+}
+
+function setGeneratingVideos(userId: string, videoIds: Set<string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = `${GENERATING_VIDEOS_KEY}:${userId}`;
+    const arr = Array.from(videoIds).slice(-50);
+    localStorage.setItem(key, JSON.stringify(arr));
+  } catch (e) {
+    console.error("Error saving generating course videos:", e);
   }
 }
 
@@ -72,8 +103,10 @@ export function useCourseVideoNotifications(userId: string | null) {
     }
 
     const seenNotifications = getSeenNotifications(userId);
+    const generatingVideos = getGeneratingVideos(userId);
     const now = Date.now();
     let hasNewCompletions = false;
+    const currentGenerating = new Set<string>();
 
     courses.forEach((course) => {
       course.lessons?.forEach((lesson) => {
@@ -82,18 +115,23 @@ export function useCourseVideoNotifications(userId: string | null) {
 
         const videoId = String(video.id);
         const previousStatus = previousStatusMapRef.current.get(videoId);
+        const notAlreadySeen = !seenNotifications.has(videoId);
+
+        if (video.status === "generating" || video.status === "queued" || video.status === "processing") {
+          currentGenerating.add(videoId);
+        }
         
+        const wasGenerating = 
+          (previousStatus === "generating" || previousStatus === "queued" || previousStatus === "processing") ||
+          generatingVideos.has(videoId);
+
         const isNewlyCompleted = 
-          video.status === "completed" &&
-          previousStatus !== undefined &&
-          previousStatus !== "completed";
+          video.status === "completed" && wasGenerating;
 
         const isRecentCompletion = 
           video.status === "completed" &&
           video.generatedAt &&
           (now - new Date(video.generatedAt).getTime()) < NOTIFICATION_WINDOW_MS;
-
-        const notAlreadySeen = !seenNotifications.has(videoId);
 
         if (isNewlyCompleted && notAlreadySeen) {
           addSeenNotification(userId, videoId);
@@ -103,6 +141,7 @@ export function useCourseVideoNotifications(userId: string | null) {
             duration: 10000,
           });
           hasNewCompletions = true;
+          console.log(`[Notification] Course video completed: ${lesson.title}`);
         } else if (isInitialLoadRef.current && isRecentCompletion && notAlreadySeen) {
           addSeenNotification(userId, videoId);
           toast({
@@ -111,11 +150,14 @@ export function useCourseVideoNotifications(userId: string | null) {
             duration: 10000,
           });
           hasNewCompletions = true;
+          console.log(`[Notification] Recent course video detected: ${lesson.title}`);
         }
 
         previousStatusMapRef.current.set(videoId, video.status);
       });
     });
+
+    setGeneratingVideos(userId, currentGenerating);
 
     if (hasNewCompletions) {
       queryClient.invalidateQueries({ queryKey: ["courses-notifications", userId] });

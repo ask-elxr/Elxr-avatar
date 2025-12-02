@@ -52,11 +52,12 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
     queryKey: ["/api/courses", courseId],
     enabled: isEditing,
     refetchInterval: (query) => {
-      // Poll every 5 seconds if any lesson is generating
+      // Poll every 5 seconds if any lesson is generating or processing
       const data = query.state.data as CourseWithLessons | undefined;
-      const hasGenerating = data?.lessons?.some(
-        (l: any) => l.status === "generating" || l.video?.status === "generating"
-      );
+      const hasGenerating = data?.lessons?.some((l: any) => {
+        const status = l.video?.status || l.status;
+        return status === "generating" || status === "processing";
+      });
       return hasGenerating ? 5000 : false;
     },
   });
@@ -92,8 +93,9 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
       const currentStatus = lesson.video?.status || lesson.status;
       const prevStatus = prevLessonStatusesRef.current[lesson.id];
       
-      // Detect transition from generating -> completed
-      if (prevStatus === "generating" && currentStatus === "completed") {
+      // Detect transition from in-flight (generating/processing/queued) -> completed
+      const wasInFlight = prevStatus === "generating" || prevStatus === "processing" || prevStatus === "queued";
+      if (wasInFlight && currentStatus === "completed") {
         newlyCompleted.push(lesson.title);
       }
       
@@ -352,6 +354,60 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
 
   // Track generation start times for progress calculation
   const [generationStartTimes, setGenerationStartTimes] = useState<Record<string, number>>({});
+  
+  // Track which lessons are currently generating and manage timestamps
+  const prevLessonStatusRef = useRef<Record<string, string>>({});
+  
+  useEffect(() => {
+    if (!lessons) return;
+    
+    const updates: Record<string, number | null> = {};
+    
+    lessons.forEach(lesson => {
+      const currentStatus = lesson.video?.status || lesson.status;
+      const prevStatus = prevLessonStatusRef.current[lesson.id];
+      const isGenerating = currentStatus === "generating" || currentStatus === "processing";
+      const wasGenerating = prevStatus === "generating" || prevStatus === "processing";
+      
+      if (isGenerating && !wasGenerating) {
+        // Just started generating - set fresh timestamp
+        updates[lesson.id] = Date.now();
+      } else if (!isGenerating && wasGenerating) {
+        // Just finished - clear timestamp so next run starts fresh
+        updates[lesson.id] = null;
+      }
+      
+      prevLessonStatusRef.current[lesson.id] = currentStatus;
+    });
+    
+    // Apply updates if any
+    if (Object.keys(updates).length > 0) {
+      setGenerationStartTimes(prev => {
+        const newTimes = { ...prev };
+        Object.entries(updates).forEach(([id, time]) => {
+          if (time === null) {
+            delete newTimes[id];
+          } else {
+            newTimes[id] = time;
+          }
+        });
+        return newTimes;
+      });
+    }
+  }, [lessons]);
+  
+  // Force re-render every second for generating/processing lessons to update timer
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const hasGenerating = lessons?.some(l => {
+      const status = l.video?.status || l.status;
+      return status === "generating" || status === "processing";
+    });
+    if (hasGenerating) {
+      const interval = setInterval(() => setTick(t => t + 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [lessons]);
 
   // AI Script Generation state
   const [scriptGenDialog, setScriptGenDialog] = useState<{
@@ -460,31 +516,34 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
     
     switch (videoStatus) {
       case "completed":
-        return { text: "Video Ready", color: "text-green-400", icon: Play };
+        return { text: "Video Ready", color: "text-green-400", icon: Play, isGenerating: false };
       case "generating":
       case "processing":
-        // Track start time for this lesson
-        if (!generationStartTimes[lesson.id]) {
-          setGenerationStartTimes(prev => ({ ...prev, [lesson.id]: Date.now() }));
-        }
-        
+        // Use tracked start time or fallback to now (timer effect handles initial tracking)
         const startTime = generationStartTimes[lesson.id] || Date.now();
         const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
         const minutes = Math.floor(elapsedSeconds / 60);
         const seconds = elapsedSeconds % 60;
         const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
         
+        // Estimate progress (avg 3 min = 180 sec)
+        const estimatedTotal = 180;
+        const progress = Math.min((elapsedSeconds / estimatedTotal) * 100, 95);
+        
         return { 
-          text: `Generating... ${timeStr}`, 
+          text: `Generating Video...`, 
           color: "text-yellow-400", 
           icon: Loader2,
-          subtitle: "Avg: 2-5 min | Checking every 5 sec"
+          subtitle: `Elapsed: ${timeStr} | Avg: 2-5 min`,
+          isGenerating: true,
+          progress,
+          elapsedTime: timeStr
         };
       case "failed":
         const errorMsg = lesson.errorMessage || "Unknown error";
-        return { text: "Failed", color: "text-red-400", icon: null, subtitle: errorMsg };
+        return { text: "Failed", color: "text-red-400", icon: null, subtitle: errorMsg, isGenerating: false };
       default:
-        return { text: "No Video", color: "text-gray-400", icon: null };
+        return { text: "No Video", color: "text-gray-400", icon: null, isGenerating: false };
     }
   };
 
@@ -681,34 +740,49 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
 
                             {/* Video Generation Status and Button */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-700">
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-2">
-                                  {(() => {
-                                    const status = getVideoStatusDisplay(lesson);
-                                    const Icon = status.icon;
-                                    return (
-                                      <>
+                              <div className="flex flex-col gap-2 flex-1 max-w-md">
+                                {(() => {
+                                  const status = getVideoStatusDisplay(lesson);
+                                  const Icon = status.icon;
+                                  return (
+                                    <>
+                                      <div className="flex items-center gap-2">
                                         {Icon && (
                                           <Icon
                                             className={`w-4 h-4 ${status.color} ${
-                                              status.text.startsWith("Generating") ? "animate-spin" : ""
+                                              status.isGenerating ? "animate-spin" : ""
                                             }`}
                                           />
                                         )}
                                         <span className={`text-xs sm:text-sm font-satoshi ${status.color}`}>
                                           {status.text}
                                         </span>
-                                      </>
-                                    );
-                                  })()}
-                                </div>
-                                {(() => {
-                                  const status = getVideoStatusDisplay(lesson);
-                                  return status.subtitle ? (
-                                    <span className="text-xs font-satoshi text-gray-500">
-                                      {status.subtitle}
-                                    </span>
-                                  ) : null;
+                                        {status.elapsedTime && (
+                                          <span className="text-xs font-satoshi text-purple-400 font-mono bg-purple-900/30 px-2 py-0.5 rounded">
+                                            {status.elapsedTime}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {status.isGenerating && status.progress !== undefined && (
+                                        <div className="w-full">
+                                          <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                                            <div 
+                                              className="h-full bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 transition-all duration-300 animate-pulse"
+                                              style={{ width: `${status.progress}%` }}
+                                            />
+                                          </div>
+                                          <p className="text-xs text-gray-500 mt-1 font-satoshi">
+                                            {status.subtitle}
+                                          </p>
+                                        </div>
+                                      )}
+                                      {!status.isGenerating && status.subtitle && (
+                                        <span className="text-xs font-satoshi text-gray-500">
+                                          {status.subtitle}
+                                        </span>
+                                      )}
+                                    </>
+                                  );
                                 })()}
                               </div>
 

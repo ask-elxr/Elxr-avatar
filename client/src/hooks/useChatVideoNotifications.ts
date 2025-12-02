@@ -6,8 +6,10 @@ import type { ChatGeneratedVideo } from "@shared/schema";
 const NOTIFICATION_WINDOW_MS = 10 * 60 * 1000;
 const POLL_INTERVAL_MS = 5000;
 const SEEN_NOTIFICATIONS_KEY = "seen-video-notifications";
+const GENERATING_CHAT_VIDEOS_KEY = "generating-chat-videos";
 
 function getSeenNotifications(userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
   try {
     const key = `${SEEN_NOTIFICATIONS_KEY}:${userId}`;
     const stored = localStorage.getItem(key);
@@ -24,6 +26,7 @@ function getSeenNotifications(userId: string): Set<string> {
 }
 
 function addSeenNotification(userId: string, videoId: string): void {
+  if (typeof window === 'undefined') return;
   try {
     const key = `${SEEN_NOTIFICATIONS_KEY}:${userId}`;
     const seen = getSeenNotifications(userId);
@@ -32,6 +35,34 @@ function addSeenNotification(userId: string, videoId: string): void {
     localStorage.setItem(key, JSON.stringify(arr));
   } catch (e) {
     console.error("Error saving seen notification:", e);
+  }
+}
+
+function getGeneratingVideos(userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const key = `${GENERATING_CHAT_VIDEOS_KEY}:${userId}`;
+    const stored = localStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return new Set(parsed.map(String));
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing generating chat videos:", e);
+  }
+  return new Set();
+}
+
+function setGeneratingVideos(userId: string, videoIds: Set<string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const key = `${GENERATING_CHAT_VIDEOS_KEY}:${userId}`;
+    const arr = Array.from(videoIds).slice(-50);
+    localStorage.setItem(key, JSON.stringify(arr));
+  } catch (e) {
+    console.error("Error saving generating chat videos:", e);
   }
 }
 
@@ -68,44 +99,56 @@ export function useChatVideoNotifications(userId: string | null) {
     }
 
     const seenNotifications = getSeenNotifications(userId);
+    const generatingVideos = getGeneratingVideos(userId);
     const now = Date.now();
     let hasNewCompletions = false;
+    const currentGenerating = new Set<string>();
     
     videos.forEach((video) => {
       const videoId = String(video.id);
       const previousStatus = previousStatusMapRef.current.get(videoId);
+      const notAlreadySeen = !seenNotifications.has(videoId);
+
+      if (video.status === "generating" || video.status === "pending" || video.status === "processing") {
+        currentGenerating.add(videoId);
+      }
+
+      const wasGenerating = 
+        (previousStatus === "generating" || previousStatus === "pending" || previousStatus === "processing") ||
+        generatingVideos.has(videoId);
+
       const isNewlyCompleted = 
-        video.status === "completed" &&
-        previousStatus !== undefined &&
-        previousStatus !== "completed";
+        video.status === "completed" && wasGenerating;
 
       const isRecentCompletion = 
         video.status === "completed" &&
         video.completedAt &&
         (now - new Date(video.completedAt).getTime()) < NOTIFICATION_WINDOW_MS;
 
-      const notAlreadySeen = !seenNotifications.has(videoId);
-
       if (isNewlyCompleted && notAlreadySeen) {
         addSeenNotification(userId, videoId);
         toast({
-          title: "Video Ready!",
+          title: "Video Ready! 🎬",
           description: `Your video about "${video.topic}" is ready to view in the Video Courses section.`,
           duration: 10000,
         });
         hasNewCompletions = true;
+        console.log(`[Notification] Chat video completed: ${video.topic}`);
       } else if (isInitialLoadRef.current && isRecentCompletion && notAlreadySeen) {
         addSeenNotification(userId, videoId);
         toast({
-          title: "Video Ready!",
+          title: "Video Ready! 🎬",
           description: `Your video about "${video.topic}" is ready to view in the Video Courses section.`,
           duration: 10000,
         });
         hasNewCompletions = true;
+        console.log(`[Notification] Recent chat video detected: ${video.topic}`);
       }
 
       previousStatusMapRef.current.set(videoId, video.status);
     });
+
+    setGeneratingVideos(userId, currentGenerating);
 
     if (hasNewCompletions) {
       queryClient.invalidateQueries({ queryKey: ["chat-videos-notifications", userId] });
