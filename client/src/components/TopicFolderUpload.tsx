@@ -75,8 +75,16 @@ export function TopicFolderUpload() {
     setUploadStatuses(prev => ({ ...prev, [folder.id]: status }));
 
     try {
+      // Get admin secret for authentication
+      const adminSecret = localStorage.getItem('admin_secret');
+      const headers: Record<string, string> = {};
+      if (adminSecret) {
+        headers['X-Admin-Secret'] = adminSecret;
+      }
+      
       const filesResponse = await fetch(`/api/google-drive/topic-folder/${folder.id}/files`, {
         credentials: 'include',
+        headers,
       });
       const filesData = await filesResponse.json();
       const files: FileInfo[] = filesData.files || [];

@@ -60,7 +60,7 @@ export async function apiRequest(
   }
   
   // Add admin secret header for admin routes
-  if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge')) {
+  if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge') || url.includes('/api/google-drive')) {
     const adminSecret = getAdminSecret();
     if (adminSecret) {
       headers['X-Admin-Secret'] = adminSecret;
@@ -94,7 +94,7 @@ export const getQueryFn: <T>(options: {
     }
     
     // Add admin secret header for admin routes
-    if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge')) {
+    if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge') || url.includes('/api/google-drive')) {
       const adminSecret = getAdminSecret();
       if (adminSecret) {
         headers['X-Admin-Secret'] = adminSecret;
