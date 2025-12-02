@@ -436,6 +436,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Build namespace list
       let allNamespaces = [...avatarConfig.pineconeNamespaces];
+      log.info({ 
+        avatarId, 
+        avatarName: avatarConfig.name,
+        baseNamespaces: avatarConfig.pineconeNamespaces 
+      }, '🔍 Audio mode - Avatar Pinecone namespaces');
+      
       if (userId && !userId.startsWith('temp_')) {
         try {
           const userSources = await storage.listKnowledgeSources(userId);
@@ -443,10 +449,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
             .map(source => source.pineconeNamespace);
           allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
+          if (activeSourceNamespaces.length > 0) {
+            log.info({ userNamespaces: activeSourceNamespaces }, 'Added user knowledge source namespaces');
+          }
         } catch (error) {
           log.warn({ error }, 'Error fetching user knowledge sources');
         }
       }
+      
+      log.info({ allNamespaces, totalCount: allNamespaces.length }, '🔍 Total namespaces to query');
 
       // Run memory and knowledge fetches in PARALLEL
       const [memoryResultSettled, knowledgeResultSettled] = await Promise.allSettled([
@@ -462,12 +473,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })(),
         (async () => {
           if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
+            log.info({ available: false, namespaceCount: allNamespaces.length }, '🔍 Pinecone not available or no namespaces');
             return null;
           }
           try {
             const results = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
+            if (results.length > 0) {
+              log.info({ 
+                resultCount: results.length,
+                topResultPreview: results[0].text?.substring(0, 200) + '...',
+                topResultNamespace: results[0].namespace || 'unknown',
+                topResultScore: results[0].score
+              }, '🔍 Pinecone knowledge results');
+            } else {
+              log.info({ query: message.substring(0, 100) }, '🔍 No Pinecone results found');
+            }
             return results.length > 0 ? results[0].text : null;
-          } catch (error) {
+          } catch (error: any) {
+            log.error({ error: error.message }, '🔍 Pinecone query error');
             return null;
           }
         })()
