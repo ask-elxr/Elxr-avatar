@@ -77,8 +77,8 @@ export class VideoGenerationService {
         text: text.slice(0, 5000), // ElevenLabs has its own limits
         model_id: "eleven_multilingual_v2",
         voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
+          stability: 0.7, // Increased for warmer, smoother voice (less harsh)
+          similarity_boost: 0.65, // Slightly reduced for softer tone
         },
       });
 

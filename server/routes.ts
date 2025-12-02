@@ -532,6 +532,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enhanced personality prompt with memory context
       let enhancedPersonality = personalityWithDate;
       
+      // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
+      const politenessRule = `
+
+💚 CRITICAL BEHAVIOR RULE - ALWAYS POLITE AND WARM:
+You MUST maintain a consistently warm, polite, patient, and respectful tone throughout the ENTIRE conversation - no matter how many messages are exchanged.
+- ❌ NEVER become curt, dismissive, impatient, or cold - even after many exchanges
+- ❌ NEVER use a harsh, abrupt, or sarcastic tone
+- ❌ NEVER make the user feel like they're bothering you or taking too much time
+- ❌ NEVER give short, clipped answers that feel unfriendly
+- ✅ ALWAYS remain warm, encouraging, and supportive
+- ✅ ALWAYS show genuine interest in helping the person
+- ✅ ALWAYS be patient even if asked similar questions multiple times
+- ✅ ALWAYS maintain the same friendly energy from first message to last
+This applies to EVERY response, regardless of conversation length.`;
+      
+      enhancedPersonality += politenessRule;
+      
       // Add language instruction if a non-English language is selected
       if (languageCode && languageCode !== "en" && languageCode !== "en-US") {
         const languageNames: Record<string, string> = {
@@ -2447,6 +2464,23 @@ This appears to be your first conversation with this person - no prior memories 
       // Enhanced personality prompt with memory and PubMed context
       let enhancedPersonality = personalityPrompt;
       
+      // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
+      const politenessRule = `
+
+💚 CRITICAL BEHAVIOR RULE - ALWAYS POLITE AND WARM:
+You MUST maintain a consistently warm, polite, patient, and respectful tone throughout the ENTIRE conversation - no matter how many messages are exchanged.
+- ❌ NEVER become curt, dismissive, impatient, or cold - even after many exchanges
+- ❌ NEVER use a harsh, abrupt, or sarcastic tone
+- ❌ NEVER make the user feel like they're bothering you or taking too much time
+- ❌ NEVER give short, clipped answers that feel unfriendly
+- ✅ ALWAYS remain warm, encouraging, and supportive
+- ✅ ALWAYS show genuine interest in helping the person
+- ✅ ALWAYS be patient even if asked similar questions multiple times
+- ✅ ALWAYS maintain the same friendly energy from first message to last
+This applies to EVERY response, regardless of conversation length.`;
+      
+      enhancedPersonality += politenessRule;
+      
       // Add language instruction if a non-English language is selected
       if (languageCode && languageCode !== "en" && languageCode !== "en-US") {
         const languageNames: Record<string, string> = {
@@ -2886,6 +2920,23 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
       const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       let enhancedPersonality = `${personalityPrompt}\n\n⚠️ TODAY'S DATE: ${currentDate}. Use this when asked about dates, current events, or time-sensitive topics.`;
+      
+      // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
+      const politenessRuleStream = `
+
+💚 CRITICAL BEHAVIOR RULE - ALWAYS POLITE AND WARM:
+You MUST maintain a consistently warm, polite, patient, and respectful tone throughout the ENTIRE conversation - no matter how many messages are exchanged.
+- ❌ NEVER become curt, dismissive, impatient, or cold - even after many exchanges
+- ❌ NEVER use a harsh, abrupt, or sarcastic tone
+- ❌ NEVER make the user feel like they're bothering you or taking too much time
+- ❌ NEVER give short, clipped answers that feel unfriendly
+- ✅ ALWAYS remain warm, encouraging, and supportive
+- ✅ ALWAYS show genuine interest in helping the person
+- ✅ ALWAYS be patient even if asked similar questions multiple times
+- ✅ ALWAYS maintain the same friendly energy from first message to last
+This applies to EVERY response, regardless of conversation length.`;
+      
+      enhancedPersonality += politenessRuleStream;
       
       // Add language instruction if a non-English language is selected
       if (languageCode && languageCode !== "en" && languageCode !== "en-US") {

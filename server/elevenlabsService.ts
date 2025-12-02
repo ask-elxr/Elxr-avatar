@@ -76,8 +76,8 @@ class ElevenLabsService {
         text,
         model_id: "eleven_turbo_v2_5",
         voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
+          stability: 0.7, // Increased for warmer, smoother voice (less harsh)
+          similarity_boost: 0.65, // Slightly reduced for softer tone
           style: 0.0,
           use_speaker_boost: true,
         },
@@ -171,8 +171,8 @@ class ElevenLabsService {
             text: phrase,
             model_id: "eleven_turbo_v2_5",
             voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
+              stability: 0.7, // Increased for warmer, smoother voice (less harsh)
+              similarity_boost: 0.65, // Slightly reduced for softer tone
               style: 0.0,
               use_speaker_boost: true,
             },
