@@ -15,7 +15,16 @@ export const PINECONE_CATEGORIES = [
   "MOVEMENT",
   "WORK",
   "SLEEP",
+  "ANN",
+  "DEXTER",
+  "JUDY",
+  "JUNE",
+  "KELSEY",
   "MARK_KOHL",
+  "NIGEL",
+  "SHAWN",
+  "THAD",
+  "WILLIE_GAULT",
   "OTHER"
 ] as const;
 
@@ -38,6 +47,15 @@ export const CATEGORY_DESCRIPTIONS: Record<PineconeCategory, string> = {
   MOVEMENT: "Exercise, fitness, and physical movement",
   WORK: "Career, professional development, and work-life balance",
   SLEEP: "Sleep health, optimization, and rest",
+  ANN: "Ann's personal knowledge, experiences, and expertise",
+  DEXTER: "Dexter's personal knowledge, experiences, and expertise",
+  JUDY: "Judy's personal knowledge, experiences, and expertise",
+  JUNE: "June's personal knowledge, experiences, and expertise",
+  KELSEY: "Kelsey's personal knowledge, experiences, and expertise",
   MARK_KOHL: "Mark Kohl's personal knowledge, experiences, and expertise",
+  NIGEL: "Nigel's personal knowledge, experiences, and expertise",
+  SHAWN: "Shawn's personal knowledge, experiences, and expertise",
+  THAD: "Thad's personal knowledge, experiences, and expertise",
+  WILLIE_GAULT: "Willie Gault's personal knowledge, experiences, and expertise",
   OTHER: "Miscellaneous topics not fitting other categories"
 };
