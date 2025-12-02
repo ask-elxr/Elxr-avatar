@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Video, Clock, User, MessageSquare, Play, Trash2, Download, Loader2 } from "lucide-react";
+import { Plus, Video, Clock, User, MessageSquare, Play, Trash2, Download, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -118,6 +118,7 @@ export default function CoursesPage() {
 
   const completedChatVideos = chatVideos?.filter(v => v.status === 'completed') || [];
   const pendingChatVideos = chatVideos?.filter(v => v.status === 'pending' || v.status === 'generating' || v.status === 'processing') || [];
+  const failedChatVideos = chatVideos?.filter(v => v.status === 'failed') || [];
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -186,6 +187,63 @@ export default function CoursesPage() {
                           Started {formatDate(video.createdAt)}
                         </p>
                       </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Failed Videos Section */}
+        {failedChatVideos.length > 0 && (
+          <div className="mb-6">
+            <h2 className="text-xl font-satoshi font-bold mb-4 flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full" />
+              Failed Videos ({failedChatVideos.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {failedChatVideos.map((video) => (
+                <Card 
+                  key={video.id}
+                  className="bg-gray-900/50 border-red-600/30 overflow-hidden"
+                  data-testid={`card-failed-video-${video.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-12 h-12 bg-red-900/30 rounded-lg flex items-center justify-center">
+                        <AlertTriangle className="w-6 h-6 text-red-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-satoshi font-medium text-white truncate mb-1">
+                          {video.topic || 'Video generation failed'}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge className="bg-red-600/20 text-red-400 border-red-600/50">
+                            Failed
+                          </Badge>
+                          <span className="text-gray-500">
+                            {getAvatarName(video.avatarId)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          {formatDate(video.updatedAt || video.createdAt)}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-gray-400 hover:text-red-400"
+                        onClick={() => handleDeleteVideo(video.id)}
+                        disabled={deletingVideoId === video.id}
+                        data-testid={`button-delete-failed-video-${video.id}`}
+                      >
+                        {deletingVideoId === video.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
