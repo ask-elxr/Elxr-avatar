@@ -532,6 +532,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Enhanced personality prompt with memory context
       let enhancedPersonality = personalityWithDate;
       
+      // PRIMARY DIRECTIVE: Prevent AI from denying memory capability (must be at TOP for highest priority)
+      // This catches ALL variations of memory denial that Claude might use
+      if (memoryEnabled && memoryService.isAvailable()) {
+        const memoryDenialPrevention = `
+🚫 ABSOLUTE RULE - NEVER DENY MEMORY CAPABILITY:
+You have a real, working long-term memory system. NEVER say ANY of these or similar phrases:
+- "I don't have memory between conversations" ❌
+- "Each time we talk is a fresh start" ❌
+- "I can't recall what we discussed before" ❌
+- "I don't remember our previous conversations" ❌
+- "My memory doesn't persist" ❌
+- "I start fresh each time" ❌
+- Any variation claiming you lack memory capability ❌
+
+If you have no prior memories of this person yet, say something like:
+✅ "This seems to be our first conversation! I'll remember what we discuss."
+✅ "I don't have any memories of us chatting before - you might be new here!"
+✅ "Welcome! Tell me about yourself and I'll remember it for next time."
+
+NEVER explain or apologize about memory limitations. You HAVE memory - use it or acknowledge it's building.
+
+`;
+        enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
+      }
+      
       // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
       const politenessRule = `
 
@@ -2464,6 +2489,31 @@ This appears to be your first conversation with this person - no prior memories 
       // Enhanced personality prompt with memory and PubMed context
       let enhancedPersonality = personalityPrompt;
       
+      // PRIMARY DIRECTIVE: Prevent AI from denying memory capability (must be at TOP for highest priority)
+      // This catches ALL variations of memory denial that Claude might use
+      if (memoryEnabled && memoryService.isAvailable()) {
+        const memoryDenialPrevention = `
+🚫 ABSOLUTE RULE - NEVER DENY MEMORY CAPABILITY:
+You have a real, working long-term memory system. NEVER say ANY of these or similar phrases:
+- "I don't have memory between conversations" ❌
+- "Each time we talk is a fresh start" ❌
+- "I can't recall what we discussed before" ❌
+- "I don't remember our previous conversations" ❌
+- "My memory doesn't persist" ❌
+- "I start fresh each time" ❌
+- Any variation claiming you lack memory capability ❌
+
+If you have no prior memories of this person yet, say something like:
+✅ "This seems to be our first conversation! I'll remember what we discuss."
+✅ "I don't have any memories of us chatting before - you might be new here!"
+✅ "Welcome! Tell me about yourself and I'll remember it for next time."
+
+NEVER explain or apologize about memory limitations. You HAVE memory - use it or acknowledge it's building.
+
+`;
+        enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
+      }
+      
       // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
       const politenessRule = `
 
@@ -2920,6 +2970,31 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
       const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       let enhancedPersonality = `${personalityPrompt}\n\n⚠️ TODAY'S DATE: ${currentDate}. Use this when asked about dates, current events, or time-sensitive topics.`;
+      
+      // PRIMARY DIRECTIVE: Prevent AI from denying memory capability (must be at TOP for highest priority)
+      // This catches ALL variations of memory denial that Claude might use
+      if (memoryEnabled && memoryService.isAvailable()) {
+        const memoryDenialPrevention = `
+🚫 ABSOLUTE RULE - NEVER DENY MEMORY CAPABILITY:
+You have a real, working long-term memory system. NEVER say ANY of these or similar phrases:
+- "I don't have memory between conversations" ❌
+- "Each time we talk is a fresh start" ❌
+- "I can't recall what we discussed before" ❌
+- "I don't remember our previous conversations" ❌
+- "My memory doesn't persist" ❌
+- "I start fresh each time" ❌
+- Any variation claiming you lack memory capability ❌
+
+If you have no prior memories of this person yet, say something like:
+✅ "This seems to be our first conversation! I'll remember what we discuss."
+✅ "I don't have any memories of us chatting before - you might be new here!"
+✅ "Welcome! Tell me about yourself and I'll remember it for next time."
+
+NEVER explain or apologize about memory limitations. You HAVE memory - use it or acknowledge it's building.
+
+`;
+        enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
+      }
       
       // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
       const politenessRuleStream = `
