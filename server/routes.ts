@@ -678,12 +678,14 @@ This appears to be your first conversation with this person - no prior memories 
       }
 
       // Generate Claude response with enhanced personality
+      // isVoiceMode=true for audio mode - ensures ultra-concise responses (1-2 sentences, <30 words)
       const claudeResponseResult = await claudeService.generateEnhancedResponse(
         message,
         knowledgeContext,
         "", // webSearchResults (empty for audio mode)
         [], // conversationHistory (no history for audio mode currently)
         enhancedPersonality, // customSystemPrompt - Use enhanced personality with memories
+        true // isVoiceMode=true for audio mode - brief responses unless user asks for detail
       );
 
       const responseText = typeof claudeResponseResult === 'string' 
@@ -3166,7 +3168,8 @@ This applies to EVERY response, regardless of conversation length.`;
           dbConversationHistory.length > 0 ? dbConversationHistory : conversationHistory,
           enhancedPersonality,
           imageBase64,
-          imageMimeType
+          imageMimeType,
+          false // isVoiceMode = false for video streaming (allows longer text responses)
         )) {
           if (chunk.type === 'text') {
             sendEvent('text', { content: chunk.content });

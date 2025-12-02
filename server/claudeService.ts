@@ -62,7 +62,8 @@ export class ClaudeService {
     conversationHistory: any[] = [], 
     customSystemPrompt?: string,
     imageBase64?: string,
-    imageMimeType?: string
+    imageMimeType?: string,
+    isVoiceMode: boolean = true
   ): AsyncGenerator<{ type: 'text' | 'sentence' | 'done'; content: string }> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
@@ -79,6 +80,21 @@ export class ClaudeService {
 
     log.debug('Starting Claude streaming response');
     const startTime = Date.now();
+
+    // Detect if user wants detailed/comprehensive response
+    const detailKeywords = [
+      'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
+      'give me details', 'full explanation', 'comprehensive', 'in depth',
+      'tell me everything', 'more information', 'expand on', 'detailed answer',
+      'long answer', 'thorough', 'complete answer', 'walk me through',
+      'step by step', 'break it down', 'all the details'
+    ];
+    const queryLower = query.toLowerCase();
+    const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
+    
+    if (wantsDetailedResponse) {
+      log.info('User requested detailed response - using extended max_tokens');
+    }
 
     const messages: any[] = [];
     // Limit to last 4 messages for faster processing (reduced from 10)
@@ -153,10 +169,25 @@ RESPONSE REQUIREMENTS:
       content: userContent
     });
 
-    const systemPrompt = customSystemPrompt || `You are an intelligent AI assistant with access to a comprehensive knowledge base. 
+    // Voice mode brevity directive - forces concise responses for audio
+    const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
+🎤 VOICE MODE - ULTRA CONCISE RESPONSES REQUIRED:
+This is a voice conversation. Users are LISTENING, not reading. You MUST be extremely brief:
+- Respond in 1-2 SHORT sentences maximum (under 30 words total)
+- Get straight to the point - no preambles, no filler
+- If asked a yes/no question, lead with the answer
+- Skip pleasantries and unnecessary context
+- Think "radio host" not "textbook"
+- If user wants more detail, they will ask - keep initial response minimal
+
+` : '';
+
+    const systemPrompt = customSystemPrompt 
+      ? voiceModeBrevity + customSystemPrompt
+      : `${voiceModeBrevity}You are an intelligent AI assistant with access to a comprehensive knowledge base. 
       
       Guidelines:
-      - DEFAULT: Keep responses SHORT and CLEAR (2-3 sentences) - be conversational, not verbose
+      - DEFAULT: Keep responses SHORT and CLEAR (1-2 sentences) - be conversational, not verbose
       - Only give detailed responses when the user explicitly asks for more information
       - Use the provided context to give accurate, helpful responses
       - If information isn't in the context, say so clearly
@@ -164,12 +195,15 @@ RESPONSE REQUIREMENTS:
       - Maintain context from the conversation history
       - Think "helpful friend" not "encyclopedia"`;
 
+    // Use lower max_tokens for faster response in voice mode, higher when details requested
+    const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 300 : 1000);
+
     let stream;
     try {
-      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages');
+      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages, max_tokens:', maxTokens);
       stream = await this.anthropic.messages.stream({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 4096,
+        max_tokens: maxTokens,
         messages: messages,
         system: systemPrompt
       });
@@ -374,11 +408,23 @@ RESPONSE REQUIREMENTS:
     context: string, 
     webSearchResults: string = '', 
     conversationHistory: any[] = [],
-    customSystemPrompt?: string
+    customSystemPrompt?: string,
+    isVoiceMode: boolean = true
   ): Promise<string> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
     }
+
+    // Detect if user wants detailed/comprehensive response
+    const detailKeywords = [
+      'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
+      'give me details', 'full explanation', 'comprehensive', 'in depth',
+      'tell me everything', 'more information', 'expand on', 'detailed answer',
+      'long answer', 'thorough', 'complete answer', 'walk me through',
+      'step by step', 'break it down', 'all the details'
+    ];
+    const queryLower = query.toLowerCase();
+    const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
 
     const log = logger.child({ 
       service: 'claude', 
@@ -386,8 +432,14 @@ RESPONSE REQUIREMENTS:
       queryLength: query.length,
       contextLength: context.length,
       webSearchLength: webSearchResults.length,
-      historyLength: conversationHistory.length
+      historyLength: conversationHistory.length,
+      isVoiceMode,
+      wantsDetailedResponse
     });
+
+    if (wantsDetailedResponse) {
+      log.info('User requested detailed response - using extended max_tokens');
+    }
 
     try {
       log.debug('Generating enhanced Claude response');
@@ -408,9 +460,7 @@ RESPONSE REQUIREMENTS:
       let enhancedMessage = '';
       
       if (context) {
-        enhancedMessage += `CRITICAL: You have extensive verified knowledge below. Use it fully to give a DEEP, detailed, insightful response.
-
-PRIMARY KNOWLEDGE BASE CONTENT:
+        enhancedMessage += `PRIMARY KNOWLEDGE BASE CONTENT:
 ${context}
 
 ---
@@ -427,16 +477,32 @@ ${webSearchResults}
 `;
       }
       
-      enhancedMessage += `User question: ${query}
+      // Voice mode: Ultra concise responses unless details requested
+      if (isVoiceMode && !wantsDetailedResponse) {
+        enhancedMessage += `User question: ${query}
 
-RESPONSE REQUIREMENTS:
+VOICE MODE - BE ULTRA CONCISE:
+- Answer in 1-2 SHORT sentences maximum (under 30 words total)
+- Get straight to the key point - no preambles
+- Skip pleasantries and unnecessary context
+- If they want more detail, they'll ask`;
+      } else if (wantsDetailedResponse) {
+        enhancedMessage += `User question: ${query}
+
+DETAILED RESPONSE REQUESTED:
 - Draw from the specific details, examples, and insights in the knowledge base above
-- Go DEEP - don't skim the surface, provide rich, substantive answers
+- Go DEEP - provide rich, substantive answers
 - Use actual quotes, examples, and specifics from the context
 - Weave in relevant stories, experiences, or details
-- Make it conversational but rich with substance
-- If the knowledge base has nuanced points, include them
-- Do NOT give generic responses - this is your chance to share real expertise`;
+- Make it conversational but rich with substance`;
+      } else {
+        enhancedMessage += `User question: ${query}
+
+RESPONSE REQUIREMENTS:
+- Use the knowledge above to give a clear, helpful answer
+- Keep it conversational and natural
+- Be concise but complete`;
+      }
       
       messages.push({
         role: 'user',
@@ -473,11 +539,19 @@ ABSOLUTE RULES:
 4. ✅ If you don't know something current, simply say you don't have that specific information
 5. ✅ Today is ${currentDateStr} - keep this awareness in all responses`;
       
-      const systemPrompt = baseSystemPrompt + webSearchInstructions;
+      // Add voice mode brevity to system prompt
+      const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse 
+        ? `\n\n🎤 VOICE MODE ACTIVE: This is a spoken conversation. Keep responses ULTRA SHORT (1-2 sentences, under 30 words). Get straight to the point.`
+        : '';
+      
+      const systemPrompt = baseSystemPrompt + voiceModeBrevity + webSearchInstructions;
+
+      // Use lower max_tokens for faster response in voice mode, higher when details requested
+      const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 300 : 1000);
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 4096, // ✅ Increased from 350 to allow full, detailed responses
+        max_tokens: maxTokens,
         messages: messages,
         system: systemPrompt
       });
