@@ -3050,6 +3050,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // List all Shared Drives (Team Drives)
+  app.get("/api/google-drive/shared-drives", isAuthenticated, async (req: any, res) => {
+    try {
+      const { pageToken } = req.query;
+      const result = await googleDriveService.listSharedDrives(pageToken as string | undefined);
+      res.json(result);
+    } catch (error) {
+      console.error("Error listing Shared Drives:", error);
+      res.status(500).json({
+        error: "Failed to list Shared Drives",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // List folders in a specific Shared Drive
+  app.get("/api/google-drive/shared-drive/:driveId/folders", isAuthenticated, async (req: any, res) => {
+    try {
+      const { driveId } = req.params;
+      const { pageToken } = req.query;
+      const result = await googleDriveService.listSharedDriveFolders(driveId, pageToken as string | undefined);
+      res.json(result);
+    } catch (error) {
+      console.error("Error listing Shared Drive folders:", error);
+      res.status(500).json({
+        error: "Failed to list Shared Drive folders",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   app.get("/api/google-drive/folder/:folderId", isAuthenticated, async (req: any, res) => {
     try {
       const { folderId } = req.params;

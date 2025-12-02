@@ -51,6 +51,57 @@ async function getUncachableGoogleDriveClient() {
 export class GoogleDriveService {
   private log = logger.child({ service: 'google-drive' });
 
+  // List all Shared Drives (Team Drives) the user has access to
+  async listSharedDrives(pageToken?: string) {
+    try {
+      this.log.info('Listing Shared Drives from Google Drive');
+      const drive = await getUncachableGoogleDriveClient();
+
+      const response = await drive.drives.list({
+        pageSize: 50,
+        pageToken: pageToken,
+        fields: 'nextPageToken, drives(id, name, createdTime)'
+      });
+
+      return {
+        drives: response.data.drives || [],
+        nextPageToken: response.data.nextPageToken
+      };
+    } catch (error: any) {
+      this.log.error({ error: error.message }, 'Failed to list Shared Drives');
+      // Return empty array if no access to shared drives (personal accounts)
+      return { drives: [], nextPageToken: undefined };
+    }
+  }
+
+  // List folders in a specific Shared Drive
+  async listSharedDriveFolders(driveId: string, pageToken?: string) {
+    try {
+      this.log.info({ driveId }, 'Listing folders in Shared Drive');
+      const drive = await getUncachableGoogleDriveClient();
+
+      const response = await drive.files.list({
+        q: `mimeType='application/vnd.google-apps.folder' and '${driveId}' in parents and trashed=false`,
+        corpora: 'drive',
+        driveId: driveId,
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true,
+        fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, iconLink, webViewLink)',
+        pageSize: 50,
+        pageToken: pageToken,
+        orderBy: 'name'
+      });
+
+      return {
+        folders: response.data.files || [],
+        nextPageToken: response.data.nextPageToken
+      };
+    } catch (error: any) {
+      this.log.error({ error: error.message, driveId }, 'Failed to list Shared Drive folders');
+      throw new Error('Failed to list Shared Drive folders');
+    }
+  }
+
   async listSharedFolders(pageToken?: string) {
     try {
       this.log.info('Listing shared folders from Google Drive');
@@ -84,7 +135,9 @@ export class GoogleDriveService {
         fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, iconLink, webViewLink)',
         pageSize: 100,
         pageToken: pageToken,
-        orderBy: 'folder,name'
+        orderBy: 'folder,name',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
       });
 
       return {
@@ -102,10 +155,11 @@ export class GoogleDriveService {
       this.log.info({ fileId }, 'Downloading file from Google Drive');
       const drive = await getUncachableGoogleDriveClient();
 
-      // Get file metadata first
+      // Get file metadata first (with Shared Drives support)
       const metadata = await drive.files.get({
         fileId: fileId,
-        fields: 'name, mimeType, size'
+        fields: 'name, mimeType, size',
+        supportsAllDrives: true
       });
 
       const fileName = metadata.data.name || 'unknown';
@@ -141,10 +195,11 @@ export class GoogleDriveService {
         };
       }
 
-      // Regular file download
+      // Regular file download (with Shared Drives support)
       const response = await drive.files.get({
         fileId: fileId,
-        alt: 'media'
+        alt: 'media',
+        supportsAllDrives: true
       }, {
         responseType: 'arraybuffer'
       });
@@ -174,18 +229,21 @@ export class GoogleDriveService {
       this.log.info({ query }, 'Searching Google Drive files');
       const drive = await getUncachableGoogleDriveClient();
 
-      // Search for files matching the query in shared folders only
+      // Search for files matching the query across all accessible drives
       // Using fullText for content search and name for file name search
-      // sharedWithMe=true ensures we only search files that have been shared with this account
+      // Search in both shared files and shared drives
       const escapedQuery = query.replace(/'/g, "\\'");
-      const searchQuery = `(fullText contains '${escapedQuery}' or name contains '${escapedQuery}') and sharedWithMe=true and trashed=false`;
+      const searchQuery = `(fullText contains '${escapedQuery}' or name contains '${escapedQuery}') and trashed=false`;
       
       const response = await drive.files.list({
         q: searchQuery,
-        fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, iconLink, webViewLink, parents)',
+        fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, iconLink, webViewLink, parents, driveId)',
         pageSize: 50,
         pageToken: pageToken,
-        orderBy: 'modifiedTime desc'
+        orderBy: 'modifiedTime desc',
+        corpora: 'allDrives',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
       });
 
       return {
