@@ -208,17 +208,42 @@ export function AvatarManager() {
 
   const handleToggleCategory = (category: string) => {
     const currentNamespaces = formData.pineconeNamespaces || [];
-    if (currentNamespaces.includes(category)) {
+    const categoryLower = category.toLowerCase().replace(/_/g, '-');
+    
+    // Check if any version of this category exists (case-insensitive, handling underscores vs hyphens)
+    const existingIndex = currentNamespaces.findIndex(ns => 
+      ns.toLowerCase().replace(/_/g, '-') === categoryLower
+    );
+    
+    if (existingIndex !== -1) {
+      // Remove the existing namespace (whatever case it is)
       setFormData({
         ...formData,
-        pineconeNamespaces: currentNamespaces.filter((ns) => ns !== category),
+        pineconeNamespaces: currentNamespaces.filter((_, i) => i !== existingIndex),
       });
     } else {
+      // Add the category in uppercase (standard format)
       setFormData({
         ...formData,
         pineconeNamespaces: [...currentNamespaces, category],
       });
     }
+  };
+  
+  // Helper to check if a category is selected (case-insensitive)
+  const isCategorySelected = (category: string) => {
+    const categoryLower = category.toLowerCase().replace(/_/g, '-');
+    return (formData.pineconeNamespaces || []).some(ns => 
+      ns.toLowerCase().replace(/_/g, '-') === categoryLower
+    );
+  };
+  
+  // Get orphan namespaces (those not matching any PINECONE_CATEGORIES)
+  const getOrphanNamespaces = () => {
+    const categoriesLower = PINECONE_CATEGORIES.map(c => c.toLowerCase().replace(/_/g, '-'));
+    return (formData.pineconeNamespaces || []).filter(ns => 
+      !categoriesLower.includes(ns.toLowerCase().replace(/_/g, '-'))
+    );
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -629,7 +654,7 @@ export function AvatarManager() {
                   <div key={category} className="flex items-center space-x-2">
                     <Checkbox
                       id={`category-${category}`}
-                      checked={(formData.pineconeNamespaces || []).includes(category)}
+                      checked={isCategorySelected(category)}
                       onCheckedChange={() => handleToggleCategory(category)}
                       data-testid={`checkbox-category-${category}`}
                     />
@@ -644,12 +669,27 @@ export function AvatarManager() {
               </div>
               {(formData.pineconeNamespaces || []).length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {(formData.pineconeNamespaces || []).map((ns) => (
-                    <Badge key={ns} variant="secondary" className="text-xs">
-                      {ns}
-                    </Badge>
-                  ))}
+                  {(formData.pineconeNamespaces || []).map((ns) => {
+                    const isOrphan = getOrphanNamespaces().includes(ns);
+                    return (
+                      <Badge 
+                        key={ns} 
+                        variant={isOrphan ? "destructive" : "secondary"} 
+                        className={`text-xs ${isOrphan ? 'cursor-pointer' : ''}`}
+                        onClick={isOrphan ? () => handleRemoveNamespace(ns) : undefined}
+                        title={isOrphan ? `Click to remove orphan namespace "${ns}"` : undefined}
+                      >
+                        {ns}
+                        {isOrphan && <X className="w-3 h-3 ml-1" />}
+                      </Badge>
+                    );
+                  })}
                 </div>
+              )}
+              {getOrphanNamespaces().length > 0 && (
+                <p className="text-xs text-destructive">
+                  ⚠️ {getOrphanNamespaces().length} orphan namespace(s) found that don't match any predefined category. Click to remove.
+                </p>
               )}
               
               {/* Optional: Manual namespace input for custom namespaces */}
