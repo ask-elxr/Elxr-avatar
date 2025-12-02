@@ -405,15 +405,18 @@ export function useAvatarSession({
         
         const transcript = result[0].transcript.trim();
         
-        // 🔇 ECHO PROTECTION: If avatar is speaking and we don't have a way to interrupt,
-        // this is likely the avatar's own audio being picked up - ignore it
-        if (isSpeakingRef.current) {
-          // Check if we can interrupt (user intentionally speaking over avatar)
-          const canInterruptAudio = audioOnlyRef.current && currentAudioRef.current;
-          const canInterruptVideo = !audioOnlyRef.current && avatarRef.current;
-          
-          if (!canInterruptAudio && !canInterruptVideo) {
-            console.log("🔇 ECHO BLOCKED: Ignoring transcript while avatar speaking (no active audio to interrupt):", transcript.substring(0, 50));
+        // 🔇 ECHO PROTECTION: Block transcripts while audio is playing in audio-only mode
+        // This prevents the avatar from hearing its own voice through the speaker
+        if (audioOnlyRef.current && currentAudioRef.current) {
+          console.log("🔇 ECHO BLOCKED: Ignoring transcript while audio playing:", transcript.substring(0, 50));
+          return;
+        }
+        
+        // 🔇 ECHO PROTECTION: If avatar is speaking (video mode), allow interrupts
+        if (isSpeakingRef.current && !audioOnlyRef.current) {
+          // In video mode, user can interrupt by speaking
+          if (!avatarRef.current) {
+            console.log("🔇 ECHO BLOCKED: Ignoring transcript while avatar speaking (no active session):", transcript.substring(0, 50));
             return;
           }
         }
@@ -504,9 +507,10 @@ export function useAvatarSession({
           recognitionRestartTimeoutRef.current = null;
         }
         
-        // Auto-restart unless intentionally stopped or avatar is speaking
+        // Auto-restart unless intentionally stopped, avatar is speaking, or audio is playing
         // Use ref instead of state to get current value in closure
-        if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
+        // 🔇 ECHO FIX: Don't restart while audio is playing in audio-only mode
+        if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current && !currentAudioRef.current) {
           // Throttle restarts to prevent rapid loop (min 2 seconds between restarts)
           const now = Date.now();
           const timeSinceLastRestart = now - lastRecognitionRestartRef.current;
@@ -515,7 +519,8 @@ export function useAvatarSession({
           if (delayNeeded > 0) {
             // Schedule delayed restart
             recognitionRestartTimeoutRef.current = setTimeout(() => {
-              if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current && !recognitionRunningRef.current) {
+              // 🔇 ECHO FIX: Don't restart while audio is playing
+              if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
                 try {
                   setMicrophoneStatus('listening');
                   recognition.start();
@@ -1556,8 +1561,11 @@ export function useAvatarSession({
       return;
     }
 
-    // 🔇 CRITICAL: Stop voice recognition IMMEDIATELY to prevent echo/feedback
-    // This must happen BEFORE any async operations to avoid race conditions
+    // 🔇 CRITICAL: Set speaking flag FIRST to prevent recognition auto-restart race condition
+    isSpeakingRef.current = true;
+    setIsSpeakingState(true);
+    
+    // 🔇 Then stop voice recognition to prevent echo/feedback
     if (recognitionRef.current && recognitionRunningRef.current) {
       try {
         recognitionRef.current.stop();
@@ -1567,10 +1575,6 @@ export function useAvatarSession({
         recognitionRunningRef.current = false;
       }
     }
-    
-    // Set speaking flag immediately to prevent auto-restart of recognition
-    isSpeakingRef.current = true;
-    setIsSpeakingState(true);
 
     // Clear idle timeout immediately to prevent mid-conversation shutdowns
     clearIdleTimeout();
@@ -1655,13 +1659,14 @@ export function useAvatarSession({
               URL.revokeObjectURL(audioUrl);
               currentAudioRef.current = null;
               
-              // 🔊 Resume voice recognition after audio ends (with delay to prevent echo)
+              // 🔊 Resume voice recognition after audio ends (with 1s delay to prevent echo)
+              // Increased from 500ms to allow any speaker echo to fully dissipate
               setTimeout(() => {
-                if (audioOnlyRef.current && !recognitionRunningRef.current) {
+                if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
                   startVoiceRecognition();
                   console.log("🔊 Voice recognition resumed (audio-only mode - avatar finished)");
                 }
-              }, 500);
+              }, 1000);
             };
 
             audio.onerror = () => {
@@ -1670,12 +1675,12 @@ export function useAvatarSession({
               URL.revokeObjectURL(audioUrl);
               currentAudioRef.current = null;
               
-              // Resume voice recognition on error too
+              // Resume voice recognition on error too (with delay to prevent echo)
               setTimeout(() => {
-                if (audioOnlyRef.current && !recognitionRunningRef.current) {
+                if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
                   startVoiceRecognition();
                 }
-              }, 500);
+              }, 1000);
             };
 
             // Final check before playing - mode might have changed during blob processing
