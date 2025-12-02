@@ -1,5 +1,14 @@
 import { google } from 'googleapis';
 import { logger } from './logger';
+import { GOOGLE_DRIVE_SOURCE_FOLDER_ID, getFolderNamespace, PineconeCategory } from '../shared/pineconeCategories';
+
+export interface TopicFolder {
+  id: string;
+  name: string;
+  namespace: PineconeCategory;
+  fileCount: number;
+  supportedFiles: number;
+}
 
 let connectionSettings: any;
 
@@ -331,6 +340,87 @@ export class GoogleDriveService {
     }
 
     return stats;
+  }
+
+  async getTopicFolders(): Promise<TopicFolder[]> {
+    try {
+      this.log.info({ sourceFolderId: GOOGLE_DRIVE_SOURCE_FOLDER_ID }, 'Getting topic folders from source');
+      
+      const { files } = await this.listFolderContents(GOOGLE_DRIVE_SOURCE_FOLDER_ID);
+      
+      const folders = files.filter(f => f.mimeType === 'application/vnd.google-apps.folder');
+      
+      const supportedMimeTypes = [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain',
+        'application/vnd.google-apps.document'
+      ];
+      
+      const topicFolders: TopicFolder[] = [];
+      
+      for (const folder of folders) {
+        if (!folder.id || !folder.name) continue;
+        
+        const namespace = getFolderNamespace(folder.name);
+        
+        const { files: folderFiles } = await this.listFolderContents(folder.id);
+        
+        const supportedFiles = folderFiles.filter(f => 
+          supportedMimeTypes.includes(f.mimeType || '') || 
+          f.name?.endsWith('.pdf') || 
+          f.name?.endsWith('.docx') || 
+          f.name?.endsWith('.txt')
+        );
+        
+        topicFolders.push({
+          id: folder.id,
+          name: folder.name,
+          namespace,
+          fileCount: folderFiles.length,
+          supportedFiles: supportedFiles.length
+        });
+      }
+      
+      this.log.info({ folderCount: topicFolders.length }, 'Topic folders retrieved');
+      return topicFolders;
+    } catch (error: any) {
+      this.log.error({ error: error.message }, 'Failed to get topic folders');
+      throw new Error('Failed to get topic folders from Google Drive');
+    }
+  }
+
+  async getFilesInTopicFolder(folderId: string): Promise<any[]> {
+    const supportedMimeTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.google-apps.document'
+    ];
+    
+    const allFiles: any[] = [];
+    let pageToken: string | undefined;
+    
+    do {
+      const result = await this.listFolderContents(folderId, pageToken);
+      
+      for (const file of result.files) {
+        if (!file.id) continue;
+        
+        const isSupportedFile = supportedMimeTypes.includes(file.mimeType || '') || 
+          file.name?.endsWith('.pdf') || 
+          file.name?.endsWith('.docx') || 
+          file.name?.endsWith('.txt');
+        
+        if (isSupportedFile && file.mimeType !== 'application/vnd.google-apps.folder') {
+          allFiles.push(file);
+        }
+      }
+      
+      pageToken = result.nextPageToken || undefined;
+    } while (pageToken);
+    
+    return allFiles;
   }
 }
 

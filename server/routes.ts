@@ -3492,6 +3492,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get topic folders from the source Google Drive folder (admin only)
+  app.get("/api/google-drive/topic-folders", isAuthenticated, requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "google-drive", operation: "getTopicFolders" });
+    try {
+      log.info("Getting topic folders from source");
+      const topicFolders = await googleDriveService.getTopicFolders();
+      res.json({ success: true, folders: topicFolders });
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to get topic folders");
+      res.status(500).json({
+        error: "Failed to get topic folders",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Get files in a specific topic folder (admin only)
+  app.get("/api/google-drive/topic-folder/:folderId/files", isAuthenticated, requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "google-drive", operation: "getTopicFolderFiles" });
+    const { folderId } = req.params;
+    try {
+      log.info({ folderId }, "Getting files in topic folder");
+      const files = await googleDriveService.getFilesInTopicFolder(folderId);
+      res.json({ success: true, files, count: files.length });
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error", folderId }, "Failed to get topic folder files");
+      res.status(500).json({
+        error: "Failed to get topic folder files",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Upload a single file from a topic folder to its namespace (admin only)
+  app.post("/api/google-drive/topic-upload-single", isAuthenticated, requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "google-drive", operation: "topicUploadSingle" });
+    const userId = req.user.claims.sub;
+    
+    try {
+      const { fileId, fileName, namespace } = req.body;
+
+      if (!fileId || !namespace) {
+        return res.status(400).json({
+          error: "Missing required fields: fileId, namespace",
+        });
+      }
+
+      log.info({ fileId, fileName, namespace }, "Uploading single file from topic folder");
+
+      // Download file from Google Drive
+      const { buffer, mimeType, fileName: processedFileName } = await googleDriveService.downloadFile(fileId);
+
+      // Save to temporary file
+      const tempDir = "uploads";
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+      
+      const tempPath = path.join(tempDir, `topic_single_${Date.now()}_${processedFileName}`);
+      fs.writeFileSync(tempPath, buffer);
+
+      try {
+        const documentId = `doc_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+        const metadata = { 
+          userId, 
+          category: normalizedNamespace,
+          namespace: normalizedNamespace,
+          source: 'google-drive-topic', 
+          originalFilename: fileName || processedFileName
+        };
+
+        await documentProcessor.processDocument(
+          tempPath,
+          mimeType,
+          documentId,
+          metadata,
+        );
+
+        fs.unlinkSync(tempPath);
+
+        log.info({ fileName: processedFileName, namespace: normalizedNamespace }, "File uploaded successfully");
+        res.json({ 
+          success: true, 
+          message: "File uploaded successfully",
+          fileName: processedFileName,
+          namespace: normalizedNamespace,
+          documentId
+        });
+      } catch (processingError: any) {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+        throw processingError;
+      }
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to upload file");
+      res.status(500).json({
+        error: "Failed to upload file from topic folder",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   // Batch upload files from a Google Drive folder to Pinecone
   app.post("/api/google-drive/batch-upload", isAuthenticated, async (req: any, res) => {
     const log = logger.child({ service: "google-drive", operation: "batchUpload" });

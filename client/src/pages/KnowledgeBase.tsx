@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { FileText, Upload, Home, Shield } from "lucide-react";
+import { TopicFolderUpload } from "@/components/TopicFolderUpload";
+import { FileText, Upload, Home, Shield, FolderOpen } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -113,17 +114,27 @@ export default function KnowledgeBase() {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 glass p-1">
+            <TabsList className="grid w-full grid-cols-3 glass p-1">
               <TabsTrigger 
                 value="upload" 
                 className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-upload"
               >
                 <Upload className="w-4 h-4" />
                 Upload Files
               </TabsTrigger>
               <TabsTrigger 
+                value="gdrive" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-gdrive"
+              >
+                <FolderOpen className="w-4 h-4" />
+                Topic Folders
+              </TabsTrigger>
+              <TabsTrigger 
                 value="documents" 
                 className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-documents"
               >
                 <FileText className="w-4 h-4" />
                 My Documents
@@ -191,6 +202,10 @@ export default function KnowledgeBase() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="gdrive" className="space-y-6">
+              <TopicFolderUpload />
             </TabsContent>
 
             <TabsContent value="documents" className="space-y-6">

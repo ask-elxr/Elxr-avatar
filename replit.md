@@ -67,9 +67,20 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   Admin Routes: `/embed/admin`, `/embed/admin/avatars`, `/embed/admin/knowledge`, `/embed/admin/courses`, `/embed/admin/users`, `/embed/admin/analytics`, `/embed/admin/credits`
 -   **Implementation**: Embed pages reuse Dashboard/Admin components with `isEmbed={true}` prop that hides sidebar, mobile header, and floating orbs.
 
+#### Google Drive Topic Folders Integration
+-   **Source Folder**: `0AL_h7e92I2C8Uk9PVA` contains pre-organized topic folders for Pinecone namespace population.
+-   **Folder-to-Namespace Mapping**: Configured in `shared/pineconeCategories.ts` with automatic folder name normalization.
+-   **Topic Folders**: Addiction, Body, Career→WORK, grief→GRIEF, life→LIFE, longevity→LONGEVITY, Mark Kohl Brain→MARK_KOHL, Mind, movement→MOVEMENT, Nigel Williams→NIGEL_WILLIAMS, Nutrition, Sleep, Spirituality, Transitions, Willie Gault→WILLIE_GAULT.
+-   **Admin UI**: KnowledgeBase page has "Topic Folders" tab for bulk uploads.
+-   **API Endpoints**:
+    -   `GET /api/google-drive/topic-folders` - List all topic folders with file counts
+    -   `GET /api/google-drive/topic-folder/:folderId/files` - List files in a topic folder
+    -   `POST /api/google-drive/topic-upload-single` - Upload single file to namespace
+-   **Memory Limitation**: Large document processing may cause heap overflow. Documents are limited to 500KB text and 25 chunks max.
+
 #### Technical Implementations
 -   **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent conversation memory.
--   **Pinecone**: Direct namespace-based vector queries for cost-effective knowledge retrieval.
+-   **Pinecone**: Direct namespace-based vector queries for cost-effective knowledge retrieval. Namespace normalization converts uppercase categories (ADDICTION, MARK_KOHL) to lowercase (addiction, mark-kohl).
 -   **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
 -   **Anonymous Sessions**: Support for persistent anonymous user sessions.
 
