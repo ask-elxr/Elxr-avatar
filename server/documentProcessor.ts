@@ -179,12 +179,27 @@ class DocumentProcessor {
     try {
       log.info({ filePath }, 'Processing document');
       
+      // Check file size before processing (max 5MB for documents)
+      const stats = fs.statSync(filePath);
+      const maxFileSize = 5 * 1024 * 1024; // 5MB
+      if (stats.size > maxFileSize) {
+        log.warn({ fileSize: stats.size, maxSize: maxFileSize }, 
+          'File too large, skipping to prevent memory issues');
+        return {
+          documentId,
+          chunksProcessed: 0,
+          totalChunks: 0,
+          skipped: true,
+          reason: 'File too large (max 5MB)'
+        };
+      }
+      
       // Extract text from document
       const text = await this.extractTextFromFile(filePath, fileType);
       log.debug({ textLength: text.length }, 'Extracted text from document');
 
-      // Limit text size to prevent memory issues (max 500KB of text)
-      const maxTextSize = 512 * 1024; // 500KB
+      // Limit text size to prevent memory issues (max 200KB of text - reduced for stability)
+      const maxTextSize = 200 * 1024; // 200KB
       const limitedText = text.length > maxTextSize ? text.substring(0, maxTextSize) : text;
       if (text.length > maxTextSize) {
         log.warn({ originalLength: text.length, truncatedLength: maxTextSize }, 
@@ -195,8 +210,8 @@ class DocumentProcessor {
       const chunks = this.chunkText(limitedText);
       log.debug({ chunkCount: chunks.length }, 'Created text chunks');
 
-      // Limit number of chunks to prevent memory overflow (max 25 chunks)
-      const maxChunks = 25;
+      // Limit number of chunks to prevent memory overflow (max 15 chunks - reduced for stability)
+      const maxChunks = 15;
       const limitedChunks = chunks.slice(0, maxChunks);
       if (chunks.length > maxChunks) {
         log.warn({ originalChunks: chunks.length, limitedChunks: maxChunks }, 
@@ -205,8 +220,8 @@ class DocumentProcessor {
 
       let processedChunks = 0;
 
-      // Process chunks in parallel for speed (but limit to prevent overload)
-      const batchSize = 3;
+      // Process chunks sequentially to minimize memory usage
+      const batchSize = 1;
       for (let batchStart = 0; batchStart < limitedChunks.length; batchStart += batchSize) {
         const batch = limitedChunks.slice(batchStart, Math.min(batchStart + batchSize, limitedChunks.length));
         

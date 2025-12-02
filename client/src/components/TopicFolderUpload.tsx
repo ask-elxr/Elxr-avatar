@@ -22,6 +22,7 @@ interface FileInfo {
   id: string;
   name: string;
   mimeType: string;
+  size?: string;
 }
 
 interface UploadStatus {
@@ -215,7 +216,8 @@ export function TopicFolderUpload() {
               Google Drive Topic Folders
             </CardTitle>
             <CardDescription className="text-white/70">
-              Upload documents from organized topic folders to their Pinecone namespaces
+              Upload documents from organized topic folders to their Pinecone namespaces.
+              <span className="block text-xs mt-1 text-white/50">Files &gt;3MB and archives (zip/rar) are automatically filtered out for stability.</span>
             </CardDescription>
           </div>
           <Button
@@ -321,6 +323,15 @@ export function TopicFolderUpload() {
   );
 }
 
+function formatFileSize(bytes: string | undefined): string {
+  if (!bytes) return '';
+  const size = parseInt(bytes, 10);
+  if (isNaN(size)) return '';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 function FolderFiles({ folderId }: { folderId: string }) {
   const { data: files, isLoading } = useQuery<FileInfo[]>({
     queryKey: ['/api/google-drive/topic-folder', folderId, 'files'],
@@ -339,25 +350,35 @@ function FolderFiles({ folderId }: { folderId: string }) {
   if (!files || files.length === 0) {
     return (
       <div className="text-center py-4 text-white/50 text-sm">
-        No files found
+        No files found (large files &gt;3MB and archives are filtered out)
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pl-6">
-      {files.slice(0, 10).map(file => (
-        <div 
-          key={file.id} 
-          className="flex items-center gap-2 text-sm text-white/70 py-1"
-          data-testid={`file-item-${file.id}`}
-        >
-          <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
-          <span className="truncate">{file.name}</span>
-        </div>
-      ))}
+    <div className="space-y-2 pl-6">
+      <div className="text-xs text-white/40 mb-2">
+        Files under 3MB only (zip/rar excluded)
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {files.slice(0, 10).map(file => (
+          <div 
+            key={file.id} 
+            className="flex items-center gap-2 text-sm text-white/70 py-1"
+            data-testid={`file-item-${file.id}`}
+          >
+            <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
+            <span className="truncate flex-1">{file.name}</span>
+            {file.size && (
+              <span className="text-xs text-white/40 flex-shrink-0">
+                {formatFileSize(file.size)}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
       {files.length > 10 && (
-        <div className="text-xs text-white/40 col-span-full">
+        <div className="text-xs text-white/40">
           +{files.length - 10} more files
         </div>
       )}

@@ -357,6 +357,18 @@ export class GoogleDriveService {
         'application/vnd.google-apps.document'
       ];
       
+      // Exclude zip files and archives
+      const excludedMimeTypes = [
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-rar-compressed',
+        'application/x-7z-compressed',
+        'application/gzip'
+      ];
+      
+      // Max file size: 3MB
+      const maxFileSize = 3 * 1024 * 1024;
+      
       const topicFolders: TopicFolder[] = [];
       
       for (const folder of folders) {
@@ -366,19 +378,29 @@ export class GoogleDriveService {
         
         const { files: folderFiles } = await this.listFolderContents(folder.id);
         
-        const supportedFiles = folderFiles.filter(f => 
-          supportedMimeTypes.includes(f.mimeType || '') || 
-          f.name?.endsWith('.pdf') || 
-          f.name?.endsWith('.docx') || 
-          f.name?.endsWith('.txt')
-        );
+        // Filter to only uploadable files (no zips, no large files)
+        const uploadableFiles = folderFiles.filter(f => {
+          // Skip folders
+          if (f.mimeType === 'application/vnd.google-apps.folder') return false;
+          // Skip archives
+          if (excludedMimeTypes.includes(f.mimeType || '')) return false;
+          if (f.name?.endsWith('.zip') || f.name?.endsWith('.rar') || f.name?.endsWith('.7z')) return false;
+          // Skip large files
+          const fileSize = parseInt(f.size || '0', 10);
+          if (fileSize > maxFileSize) return false;
+          // Check if supported type
+          return supportedMimeTypes.includes(f.mimeType || '') || 
+            f.name?.endsWith('.pdf') || 
+            f.name?.endsWith('.docx') || 
+            f.name?.endsWith('.txt');
+        });
         
         topicFolders.push({
           id: folder.id,
           name: folder.name,
           namespace,
           fileCount: folderFiles.length,
-          supportedFiles: supportedFiles.length
+          supportedFiles: uploadableFiles.length
         });
       }
       
@@ -398,6 +420,18 @@ export class GoogleDriveService {
       'application/vnd.google-apps.document'
     ];
     
+    // Exclude zip files and other archive types
+    const excludedMimeTypes = [
+      'application/zip',
+      'application/x-zip-compressed',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      'application/gzip'
+    ];
+    
+    // Max file size: 3MB (to ensure memory safety)
+    const maxFileSize = 3 * 1024 * 1024;
+    
     const allFiles: any[] = [];
     let pageToken: string | undefined;
     
@@ -407,12 +441,26 @@ export class GoogleDriveService {
       for (const file of result.files) {
         if (!file.id) continue;
         
+        // Skip folders
+        if (file.mimeType === 'application/vnd.google-apps.folder') continue;
+        
+        // Skip excluded types (zip, rar, etc.)
+        if (excludedMimeTypes.includes(file.mimeType || '')) continue;
+        if (file.name?.endsWith('.zip') || file.name?.endsWith('.rar') || file.name?.endsWith('.7z')) continue;
+        
+        // Check file size if available
+        const fileSize = parseInt(file.size || '0', 10);
+        if (fileSize > maxFileSize) {
+          this.log.debug({ fileName: file.name, fileSize }, 'Skipping large file');
+          continue;
+        }
+        
         const isSupportedFile = supportedMimeTypes.includes(file.mimeType || '') || 
           file.name?.endsWith('.pdf') || 
           file.name?.endsWith('.docx') || 
           file.name?.endsWith('.txt');
         
-        if (isSupportedFile && file.mimeType !== 'application/vnd.google-apps.folder') {
+        if (isSupportedFile) {
           allFiles.push(file);
         }
       }
