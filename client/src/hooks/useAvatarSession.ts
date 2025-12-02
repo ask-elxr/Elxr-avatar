@@ -330,23 +330,25 @@ export function useAvatarSession({
 
       const recognition = new SpeechRecognition();
       
-      // MOBILE FIX: Use non-continuous mode on mobile for better reliability
-      // Safari iOS especially has issues with continuous mode
-      recognition.continuous = !isMobile;
+      // MOBILE/SAFARI FIX: Use non-continuous mode for better reliability
+      // Safari (both iOS and macOS) and mobile browsers have issues with continuous mode
+      const useContinuous = !isMobile && !isSafari;
+      recognition.continuous = useContinuous;
       recognition.interimResults = false; // Only get final results
       recognition.lang = languageCodeRef.current;
       recognition.maxAlternatives = 1; // Only get best match
       
-      console.log(`🎤 Voice recognition config: continuous=${recognition.continuous}, mobile=${isMobile}, lang=${recognition.lang}`);
+      console.log(`🎤 Voice recognition config: continuous=${useContinuous}, mobile=${isMobile}, safari=${isSafari}, lang=${recognition.lang}`);
       
       // Mobile/Safari stuck detection - recreate if no results for 15 seconds
       const resetStuckTimeout = () => {
         if (recognitionStuckTimeoutRef.current) {
           clearTimeout(recognitionStuckTimeoutRef.current);
         }
-        if (isMobile && sessionActiveRef.current && !isSpeakingRef.current) {
+        // Apply stuck detection for mobile AND Safari (both can get stuck)
+        if ((isMobile || isSafari) && sessionActiveRef.current && !isSpeakingRef.current) {
           recognitionStuckTimeoutRef.current = setTimeout(() => {
-            console.log("⚠️ Mobile: Recognition appears stuck, recreating...");
+            console.log("⚠️ Recognition appears stuck (mobile/Safari), recreating...");
             if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
               try {
                 recognitionRef.current.abort();
@@ -385,8 +387,8 @@ export function useAvatarSession({
       
       recognition.onspeechend = () => {
         console.log("🗣️ Speech ended");
-        // SAFARI FIX: Force proper stop on speech end
-        if (isSafari && isIOS) {
+        // SAFARI FIX: Force proper stop on speech end (both iOS and macOS Safari)
+        if (isSafari) {
           try {
             // This counterintuitive pattern helps Safari properly end recognition
             recognition.stop();
