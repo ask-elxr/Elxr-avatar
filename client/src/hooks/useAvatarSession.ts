@@ -1852,11 +1852,22 @@ export function useAvatarSession({
             // and will be resumed after audio.onended
             
             const audioBlob = await audioResponse.blob();
+            console.log(`🔊 Audio blob received: ${(audioBlob.size / 1024).toFixed(1)} KB, type: ${audioBlob.type}`);
+            
             const audioUrl = URL.createObjectURL(audioBlob);
             const audio = new Audio(audioUrl);
             currentAudioRef.current = audio;
+            
+            // Set volume to max and log audio properties
+            audio.volume = 1.0;
+            console.log(`🔊 Audio element created, volume: ${audio.volume}, muted: ${audio.muted}`);
+
+            audio.onloadedmetadata = () => {
+              console.log(`🔊 Audio metadata loaded: duration=${audio.duration.toFixed(2)}s, volume=${audio.volume}`);
+            };
 
             audio.onended = () => {
+              console.log(`🔊 Audio playback ENDED successfully`);
               isSpeakingRef.current = false;
               setIsSpeakingState(false);
               URL.revokeObjectURL(audioUrl);
@@ -1872,7 +1883,8 @@ export function useAvatarSession({
               }, 1000);
             };
 
-            audio.onerror = () => {
+            audio.onerror = (e) => {
+              console.error(`🔊 Audio playback ERROR:`, e, audio.error);
               isSpeakingRef.current = false;
               setIsSpeakingState(false);
               URL.revokeObjectURL(audioUrl);
@@ -1896,8 +1908,12 @@ export function useAvatarSession({
               return;
             }
 
-            await audio.play();
-            console.log("Audio playback started");
+            try {
+              await audio.play();
+              console.log(`🔊 Audio playback STARTED - duration: ${audio.duration.toFixed(2)}s, currentTime: ${audio.currentTime}, paused: ${audio.paused}`);
+            } catch (playError) {
+              console.error(`🔊 Audio play() FAILED:`, playError);
+            }
           } else {
             // Audio fetch failed - clear state
             isSpeakingRef.current = false;
