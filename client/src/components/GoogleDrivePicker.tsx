@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Folder, FileText, File, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Loader2, Folder, FileText, File, ArrowLeft, CheckCircle2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type PineconeCategory } from "@shared/pineconeCategories";
 
@@ -32,6 +33,10 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<Map<string, string>>(new Map());
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<GoogleDriveFile[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -98,8 +103,43 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
   };
 
   const goBack = () => {
-    setCurrentFolder(null);
-    setFiles([]);
+    if (showSearchResults) {
+      setShowSearchResults(false);
+      setSearchResults([]);
+      setSearchQuery("");
+      setSelectedFiles(new Set());
+    } else {
+      setCurrentFolder(null);
+      setFiles([]);
+      setSelectedFiles(new Set());
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      setIsSearching(true);
+      const response = await fetch(`/api/google-drive/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      const data = await response.json();
+      setSearchResults(data.files || []);
+      setShowSearchResults(true);
+    } catch (error) {
+      console.error("Error searching Google Drive:", error);
+      toast({
+        title: "Search Failed",
+        description: "Failed to search Google Drive",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearchResults(false);
     setSelectedFiles(new Set());
   };
 
@@ -120,7 +160,8 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
     const progressMap = new Map<string, string>();
 
     try {
-      const filesToUpload = files.filter(f => selectedFiles.has(f.id));
+      const sourceFiles = showSearchResults ? searchResults : files;
+      const filesToUpload = sourceFiles.filter(f => selectedFiles.has(f.id));
       let successCount = 0;
       let errorCount = 0;
 
@@ -216,15 +257,21 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
           <div>
             <CardTitle className="text-white flex items-center gap-2">
               <Folder className="w-5 h-5 text-purple-400" />
-              {currentFolder ? currentFolder.name : "Google Drive Shared Folders"}
+              {showSearchResults 
+                ? `Search Results for "${searchQuery}"`
+                : currentFolder 
+                  ? currentFolder.name 
+                  : "Google Drive Shared Folders"}
             </CardTitle>
             <CardDescription className="text-white/70">
-              {currentFolder 
-                ? `Select files to upload to ${selectedCategory}` 
-                : "Browse your shared Google Drive folders"}
+              {showSearchResults
+                ? `${searchResults.length} file(s) found - Select files to upload to ${selectedCategory}`
+                : currentFolder 
+                  ? `Select files to upload to ${selectedCategory}` 
+                  : "Browse your shared Google Drive folders"}
             </CardDescription>
           </div>
-          {currentFolder && (
+          {(currentFolder || showSearchResults) && (
             <Button
               variant="ghost"
               size="sm"
@@ -237,12 +284,103 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
             </Button>
           )}
         </div>
+        
+        {!currentFolder && !showSearchResults && (
+          <div className="flex gap-2 mt-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
+              <Input
+                type="text"
+                placeholder="Search files and folders..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pl-10 pr-10 bg-black/30 border-white/20 text-white placeholder:text-white/50"
+                data-testid="input-search-drive"
+              />
+              {searchQuery && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearSearch}
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7 p-0 text-white/50 hover:text-white"
+                  data-testid="button-clear-search"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
+            <Button
+              onClick={handleSearch}
+              disabled={!searchQuery.trim() || isSearching}
+              className="bg-gradient-primary hover:opacity-90 text-white"
+              data-testid="button-search-drive"
+            >
+              {isSearching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+            </Button>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] rounded-lg border border-white/10 bg-black/20 p-4">
-          {isLoading ? (
+          {isLoading || isSearching ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+              <span className="ml-2 text-white/70">
+                {isSearching ? "Searching..." : "Loading..."}
+              </span>
+            </div>
+          ) : showSearchResults ? (
+            <div className="space-y-2">
+              {searchResults.length === 0 ? (
+                <p className="text-center text-white/50 py-8">No files found matching "{searchQuery}"</p>
+              ) : (
+                searchResults.map((file) => {
+                  const isFolder = file.mimeType === 'application/vnd.google-apps.folder';
+                  const isSelected = selectedFiles.has(file.id);
+                  const progress = uploadProgress.get(file.id);
+
+                  return (
+                    <div
+                      key={file.id}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-lg transition-all cursor-pointer",
+                        isFolder 
+                          ? "opacity-50 cursor-not-allowed"
+                          : isSelected 
+                            ? "bg-purple-500/20 border border-purple-500/50" 
+                            : "hover:bg-white/5 border border-transparent"
+                      )}
+                      onClick={() => !isFolder && !isUploading && toggleFileSelection(file.id)}
+                      data-testid={`search-item-${file.id}`}
+                    >
+                      {isFolder ? (
+                        <Folder className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                      ) : (
+                        <FileText className="w-5 h-5 text-purple-400 flex-shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm truncate">{file.name}</p>
+                        {file.modifiedTime && (
+                          <p className="text-white/50 text-xs">
+                            Modified {new Date(file.modifiedTime).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      {progress && (
+                        <span className="text-xs text-white/70 flex-shrink-0">{progress}</span>
+                      )}
+                      {!isFolder && isSelected && !progress && (
+                        <CheckCircle2 className="w-5 h-5 text-purple-400 flex-shrink-0" />
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           ) : currentFolder ? (
             <div className="space-y-2">
@@ -318,7 +456,7 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
           )}
         </ScrollArea>
 
-        {currentFolder && selectedFiles.size > 0 && (
+        {(currentFolder || showSearchResults) && selectedFiles.size > 0 && (
           <div className="mt-4 flex items-center justify-between p-4 rounded-lg bg-purple-500/10 border border-purple-500/30">
             <span className="text-white text-sm">
               {selectedFiles.size} file(s) selected

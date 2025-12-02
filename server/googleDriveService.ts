@@ -174,9 +174,11 @@ export class GoogleDriveService {
       this.log.info({ query }, 'Searching Google Drive files');
       const drive = await getUncachableGoogleDriveClient();
 
-      // Search for files matching the query in shared folders
+      // Search for files matching the query in shared folders only
       // Using fullText for content search and name for file name search
-      const searchQuery = `(fullText contains '${query.replace(/'/g, "\\'")}' or name contains '${query.replace(/'/g, "\\'")}') and trashed=false`;
+      // sharedWithMe=true ensures we only search files that have been shared with this account
+      const escapedQuery = query.replace(/'/g, "\\'");
+      const searchQuery = `(fullText contains '${escapedQuery}' or name contains '${escapedQuery}') and sharedWithMe=true and trashed=false`;
       
       const response = await drive.files.list({
         q: searchQuery,
