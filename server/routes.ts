@@ -3157,6 +3157,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk upload documents to Pinecone with topic-based namespaces - Admin only
+  app.post("/api/pinecone/bulk-namespace-upload", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { namespace, limit = 10, dryRun = false } = req.body;
+      
+      if (!namespace) {
+        return res.status(400).json({
+          error: "namespace is required",
+          availableNamespaces: [
+            'ADDICTION', 'MIND', 'BODY', 'SEXUALITY', 'TRANSITIONS', 'SPIRITUALITY',
+            'SCIENCE', 'PSYCHEDELICS', 'NUTRITION', 'LIFE', 'LONGEVITY', 'GRIEF',
+            'MIDLIFE', 'MOVEMENT', 'WORK', 'SLEEP', 'MARK_KOHL', 'WILLIE_GAULT', 'OTHER'
+          ]
+        });
+      }
+
+      // Query documents with this namespace that are completed and have object_path
+      const documents = await db.query.documents.findMany({
+        where: sql`pinecone_namespace = ${namespace} AND status = 'completed' AND object_path IS NOT NULL`,
+        limit: Math.min(limit, 50), // Cap at 50 per batch
+      });
+
+      if (documents.length === 0) {
+        return res.json({
+          success: true,
+          namespace,
+          message: "No documents found for this namespace",
+          documentsFound: 0,
+          processed: 0
+        });
+      }
+
+      // Normalize namespace for Pinecone (lowercase with hyphens)
+      const pineconeNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+
+      if (dryRun) {
+        return res.json({
+          success: true,
+          dryRun: true,
+          namespace,
+          pineconeNamespace,
+          documentsFound: documents.length,
+          documents: documents.map(d => ({
+            id: d.id,
+            filename: d.filename,
+            fileType: d.fileType,
+            objectPath: d.objectPath
+          }))
+        });
+      }
+
+      // Process each document
+      const results: any[] = [];
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const doc of documents) {
+        try {
+          // Check if file exists locally
+          if (!fs.existsSync(doc.objectPath!)) {
+            results.push({
+              documentId: doc.id,
+              filename: doc.filename,
+              status: 'error',
+              error: 'File not found locally'
+            });
+            errorCount++;
+            continue;
+          }
+
+          // Determine file type for processing
+          let fileType = 'text/plain';
+          if (doc.fileType === 'pdf') fileType = 'application/pdf';
+          else if (doc.fileType === 'docx') fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          else if (doc.fileType === 'txt') fileType = 'text/plain';
+
+          // Process document with the correct namespace
+          const result = await documentProcessor.processDocument(
+            doc.objectPath!,
+            fileType,
+            doc.id,
+            { 
+              category: pineconeNamespace,
+              namespace: pineconeNamespace,
+              filename: doc.filename,
+              originalNamespace: namespace
+            }
+          );
+
+          results.push({
+            documentId: doc.id,
+            filename: doc.filename,
+            status: 'success',
+            chunksProcessed: result.chunksProcessed,
+            totalChunks: result.totalChunks
+          });
+          successCount++;
+        } catch (error: any) {
+          results.push({
+            documentId: doc.id,
+            filename: doc.filename,
+            status: 'error',
+            error: error.message
+          });
+          errorCount++;
+        }
+      }
+
+      // Invalidate Pinecone cache after bulk upload
+      latencyCache.invalidatePineconeCache();
+
+      res.json({
+        success: true,
+        namespace,
+        pineconeNamespace,
+        documentsFound: documents.length,
+        successCount,
+        errorCount,
+        results
+      });
+    } catch (error) {
+      console.error("Error in bulk namespace upload:", error);
+      res.status(500).json({
+        error: "Failed to bulk upload documents",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
+  // Get namespace statistics for bulk upload planning - Admin only
+  app.get("/api/pinecone/namespace-stats", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      // Get count of documents per namespace
+      const stats = await db.execute(sql`
+        SELECT 
+          pinecone_namespace as namespace,
+          COUNT(*) as total,
+          COUNT(CASE WHEN status = 'completed' AND object_path IS NOT NULL THEN 1 END) as ready_to_upload,
+          COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed
+        FROM documents 
+        WHERE pinecone_namespace IS NOT NULL 
+          AND pinecone_namespace NOT LIKE 'documents-%'
+        GROUP BY pinecone_namespace 
+        ORDER BY total DESC
+      `);
+
+      res.json({
+        success: true,
+        namespaces: stats.rows
+      });
+    } catch (error) {
+      console.error("Error getting namespace stats:", error);
+      res.status(500).json({
+        error: "Failed to get namespace stats",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   // Google Drive integration endpoints
   app.get("/api/google-drive/status", isAuthenticated, async (req: any, res) => {
     try {

@@ -59,21 +59,31 @@ class PineconeNamespaceService {
     );
   }
 
+  // Helper to normalize namespace names (ADDICTION -> addiction, MARK_KOHL -> mark-kohl)
+  private normalizeNamespace(namespace: string): string {
+    return namespace.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
   async retrieveContext(query: string, topK: number = 3, customNamespaces?: string[]): Promise<any[]> {
     if (!this.apiKey || !this.client || !this.openai) {
       throw new Error('Pinecone or OpenAI not configured');
     }
 
-    // Deduplicate and sort namespaces for consistent cache keys
+    // Normalize and deduplicate namespaces (ADDICTION -> addiction, MARK_KOHL -> mark-kohl)
     const rawNamespaces = customNamespaces || this.namespaces;
-    const namespacesToQuery = Array.from(new Set(rawNamespaces)).sort();
+    const normalizedNamespaces = rawNamespaces.map(ns => this.normalizeNamespace(ns));
+    const namespacesToQuery = Array.from(new Set(normalizedNamespaces)).sort();
 
     const log = logger.child({
       service: 'pinecone',
       operation: 'retrieveContext',
       queryLength: query.length,
       topK,
-      namespaces: namespacesToQuery,
+      rawNamespaces: rawNamespaces,
+      normalizedNamespaces: namespacesToQuery,
       rawCount: rawNamespaces.length,
       deduplicatedCount: namespacesToQuery.length
     });
