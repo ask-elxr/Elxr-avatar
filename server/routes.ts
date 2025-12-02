@@ -362,13 +362,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (isVideoConfirmation(message)) {
             clearPendingVideoConfirmation(userId);
             console.log(`✅ VIDEO CONFIRMED - Creating video about: "${pendingConfirmation.topic}"`);
+            if (pendingConfirmation.imageBase64) {
+              console.log(`📷 Image attached to video request - will analyze for script generation`);
+            }
             
-            // Start video generation
+            // Start video generation with image data if available
             const videoResult = await chatVideoService.createVideoFromChat({
               userId,
               avatarId: pendingConfirmation.avatarId,
               requestText: pendingConfirmation.originalMessage,
               topic: pendingConfirmation.topic,
+              imageBase64: pendingConfirmation.imageBase64,
+              imageMimeType: pendingConfirmation.imageMimeType,
             });
 
             if (videoResult.success) {
@@ -402,8 +407,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newTopic = refinement.refinedTopic;
           
           // Update with the refined topic - use user's message as the new original if it was a replacement
+          // Preserve image data from pending confirmation
           const newOriginalMessage = refinement.isReplacement ? message : `${pendingConfirmation.originalMessage} ${message}`;
-          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId);
+          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId, pendingConfirmation.imageBase64, pendingConfirmation.imageMimeType);
           console.log(`📝 Updated pending video topic to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
@@ -2142,13 +2148,18 @@ This appears to be your first conversation with this person - no prior memories 
           if (isVideoConfirmation(message)) {
             clearPendingVideoConfirmation(userId);
             console.log(`✅ VIDEO CONFIRMED (video mode) - Creating video about: "${pendingConfirmation.topic}"`);
+            if (pendingConfirmation.imageBase64) {
+              console.log(`📷 Image attached to video request - will analyze for script generation`);
+            }
             
-            // Start video generation
+            // Start video generation with image data if available
             const videoResult = await chatVideoService.createVideoFromChat({
               userId,
               avatarId: pendingConfirmation.avatarId,
               requestText: pendingConfirmation.originalMessage,
               topic: pendingConfirmation.topic,
+              imageBase64: pendingConfirmation.imageBase64,
+              imageMimeType: pendingConfirmation.imageMimeType,
             });
 
             if (videoResult.success) {
@@ -2195,8 +2206,9 @@ This appears to be your first conversation with this person - no prior memories 
           const newTopic = refinement.refinedTopic;
           
           // Update with the refined topic - use user's message as the new original if it was a replacement
+          // Preserve image data from pending confirmation
           const newOriginalMessage = refinement.isReplacement ? message : `${pendingConfirmation.originalMessage} ${message}`;
-          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId);
+          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId, pendingConfirmation.imageBase64, pendingConfirmation.imageMimeType);
           console.log(`📝 Updated pending video topic (video mode) to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
@@ -2211,12 +2223,12 @@ This appears to be your first conversation with this person - no prior memories 
         }
       }
 
-      // Check for video request intent
+      // Check for video request intent (video mode doesn't have image data in request)
       const videoIntent = await detectVideoIntent(message);
       if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
-        // Store pending confirmation instead of immediately generating
+        // Store pending confirmation (no image data in video mode endpoint)
         setPendingVideoConfirmation(userId, topic || "the requested topic", message, avatarId);
         console.log(`🎬 VIDEO INTENT DETECTED (video mode) - Asking for confirmation about: "${topic}"`);
         
@@ -2908,13 +2920,18 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
           if (isVideoConfirmation(message)) {
             clearPendingVideoConfirmation(userId);
             console.log(`✅ VIDEO CONFIRMED (streaming mode) - Creating video about: "${pendingConfirmation.topic}"`);
+            if (pendingConfirmation.imageBase64) {
+              console.log(`📷 Image attached to video request - will analyze for script generation`);
+            }
             
-            // Start video generation
+            // Start video generation with image data if available
             const videoResult = await chatVideoService.createVideoFromChat({
               userId,
               avatarId: pendingConfirmation.avatarId,
               requestText: pendingConfirmation.originalMessage,
               topic: pendingConfirmation.topic,
+              imageBase64: pendingConfirmation.imageBase64,
+              imageMimeType: pendingConfirmation.imageMimeType,
             });
 
             if (videoResult.success) {
@@ -2967,7 +2984,8 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
           const newTopic = refinement.refinedTopic;
           
           const newOriginalMessage = refinement.isReplacement ? message : `${pendingConfirmation.originalMessage} ${message}`;
-          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId);
+          // Preserve image data from pending confirmation when refining topic
+          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId, pendingConfirmation.imageBase64, pendingConfirmation.imageMimeType);
           console.log(`📝 Updated pending video topic (streaming mode) to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
@@ -2988,8 +3006,8 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
-        // Store pending confirmation instead of immediately generating
-        setPendingVideoConfirmation(userId, topic || "the requested topic", message, avatarId);
+        // Store pending confirmation with image data if available
+        setPendingVideoConfirmation(userId, topic || "the requested topic", message, avatarId, imageBase64, imageMimeType);
         console.log(`🎬 VIDEO INTENT DETECTED (streaming mode) - Asking for confirmation about: "${topic}"`);
         
         const confirmationPrompt = generateConfirmationPrompt(topic || "the requested topic", avatarConfig.name);

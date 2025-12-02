@@ -9,6 +9,7 @@ import { emailService } from "./email";
 import { ElevenLabsClient } from "elevenlabs";
 import { subscriptionService } from "./subscription";
 import { formatVideoTitle } from "../utils/videoTitle";
+import Anthropic from "@anthropic-ai/sdk";
 
 const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
@@ -91,16 +92,40 @@ export class ChatVideoService {
         contentType: "audio/mpeg",
       });
 
-      const uploadResponse = await axios.post(
-        "https://api.heygen.com/v1/asset",
-        formData,
-        {
-          headers: {
-            ...formData.getHeaders(),
-            "X-Api-Key": HEYGEN_API_KEY || "",
-          },
-        }
-      );
+      // Try v2/asset endpoint first, then fallback to v1/asset if needed
+      let uploadResponse;
+      try {
+        uploadResponse = await axios.post(
+          "https://api.heygen.com/v2/asset",
+          formData,
+          {
+            headers: {
+              ...formData.getHeaders(),
+              "X-Api-Key": HEYGEN_API_KEY || "",
+            },
+          }
+        );
+      } catch (v2Error: any) {
+        console.log(`⚠️ HeyGen v2/asset failed (${v2Error.response?.status || v2Error.message}), trying v1/asset...`);
+        // Fallback to v1/asset
+        const FormData = (await import("form-data")).default;
+        const fallbackFormData = new FormData();
+        fallbackFormData.append("file", audioBuffer, {
+          filename: `audio_${Date.now()}.mp3`,
+          contentType: "audio/mpeg",
+        });
+        
+        uploadResponse = await axios.post(
+          "https://api.heygen.com/v1/asset",
+          fallbackFormData,
+          {
+            headers: {
+              ...fallbackFormData.getHeaders(),
+              "X-Api-Key": HEYGEN_API_KEY || "",
+            },
+          }
+        );
+      }
 
       if (uploadResponse.data?.data?.asset_id) {
         console.log(`✅ Audio uploaded to HeyGen: ${uploadResponse.data.data.asset_id}`);
@@ -115,11 +140,69 @@ export class ChatVideoService {
     }
   }
 
+  /**
+   * Analyze an image using Claude to generate a detailed description for video script generation
+   */
+  private async analyzeImageForScript(imageBase64: string, imageMimeType: string, topic: string): Promise<string> {
+    // Validate inputs
+    if (!imageBase64 || !imageMimeType) {
+      console.warn("⚠️ Image analysis skipped: missing imageBase64 or imageMimeType");
+      return "";
+    }
+
+    // Validate mime type
+    const validMimeTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!validMimeTypes.includes(imageMimeType)) {
+      console.warn(`⚠️ Image analysis skipped: unsupported mime type "${imageMimeType}"`);
+      return "";
+    }
+
+    const anthropic = new Anthropic();
+    
+    const response = await anthropic.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 1000,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: imageMimeType as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: imageBase64,
+              },
+            },
+            {
+              type: "text",
+              text: `The user wants a video about this image. The topic they mentioned is: "${topic}"
+
+Please analyze this image in detail and provide:
+1. A comprehensive description of what's shown in the image
+2. Key elements, objects, people, or scenes visible
+3. Any text, labels, or important details
+4. The context or setting of the image
+5. How this image relates to the topic "${topic}"
+
+Provide a thorough but concise description that will help generate an engaging video script about this image. Focus on factual observations that would be useful for creating spoken narration.`,
+            },
+          ],
+        },
+      ],
+    });
+
+    const textContent = response.content.find(c => c.type === "text");
+    return textContent?.text || "Unable to analyze the image";
+  }
+
   async createVideoFromChat(params: {
     userId: string;
     avatarId: string;
     requestText: string;
     topic: string;
+    imageBase64?: string;
+    imageMimeType?: string;
   }): Promise<{ success: boolean; videoRecordId?: string; error?: string }> {
     try {
       if (!HEYGEN_API_KEY) {
@@ -151,7 +234,7 @@ export class ChatVideoService {
         console.warn("Failed to track chat video usage:", err.message);
       });
 
-      this.generateVideoAsync(videoRecord.id, params.userId, avatar, params.topic);
+      this.generateVideoAsync(videoRecord.id, params.userId, avatar, params.topic, params.imageBase64, params.imageMimeType);
 
       return {
         success: true,
@@ -170,7 +253,9 @@ export class ChatVideoService {
     videoRecordId: string,
     userId: string,
     avatar: any,
-    topic: string
+    topic: string,
+    imageBase64?: string,
+    imageMimeType?: string
   ): Promise<void> {
     try {
       await db
@@ -205,17 +290,35 @@ export class ChatVideoService {
       const memorySnippets = await getUserAvatarMemory(userId, avatar.id);
       const memoryContext = memorySnippets.slice(0, 5).join("\n");
 
+      // If image is provided, analyze it with Claude to get description
+      let imageDescription = '';
+      if (imageBase64 && imageMimeType) {
+        console.log(`📷 Analyzing image for video script generation...`);
+        try {
+          imageDescription = await this.analyzeImageForScript(imageBase64, imageMimeType, topic);
+          console.log(`📷 Image analysis complete: ${imageDescription.substring(0, 100)}...`);
+        } catch (imageError: any) {
+          console.error(`❌ Failed to analyze image: ${imageError.message}`);
+        }
+      }
+
       const additionalContext = `
 Recent conversation:
 ${conversationContext}
 
 User memory context:
 ${memoryContext}
+${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
       `.trim();
+
+      // Enhance topic with image description if available
+      const enhancedTopic = imageDescription 
+        ? `${topic} - based on image showing: ${imageDescription.substring(0, 200)}`
+        : topic;
 
       const scriptResult = await generateLessonScript({
         avatarId: avatar.id,
-        topic: topic,
+        topic: enhancedTopic,
         lessonTitle: `Video about ${topic}`,
         pineconeNamespaces: avatar.pineconeNamespaces || [],
         personalityPrompt: avatar.personalityPrompt,

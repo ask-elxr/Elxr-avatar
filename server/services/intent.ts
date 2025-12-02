@@ -14,6 +14,8 @@ interface PendingVideoConfirmation {
   originalMessage: string;
   avatarId: string;
   timestamp: number;
+  imageBase64?: string;
+  imageMimeType?: string;
 }
 
 const pendingVideoConfirmations = new Map<string, PendingVideoConfirmation>();
@@ -33,12 +35,21 @@ const REJECTION_PATTERNS = [
   /^(?:hold on|wait a minute|wait a sec)/i,
 ];
 
-export function setPendingVideoConfirmation(userId: string, topic: string, originalMessage: string, avatarId: string): void {
+export function setPendingVideoConfirmation(
+  userId: string, 
+  topic: string, 
+  originalMessage: string, 
+  avatarId: string,
+  imageBase64?: string,
+  imageMimeType?: string
+): void {
   pendingVideoConfirmations.set(userId, {
     topic,
     originalMessage,
     avatarId,
     timestamp: Date.now(),
+    imageBase64,
+    imageMimeType,
   });
   
   // Auto-expire after 2 minutes

@@ -99,16 +99,40 @@ export class VideoGenerationService {
         contentType: "audio/mpeg",
       });
 
-      const uploadResponse = await axios.post(
-        "https://api.heygen.com/v1/asset",
-        formData,
-        {
-          headers: {
-            ...formData.getHeaders(),
-            "X-Api-Key": HEYGEN_API_KEY || "",
-          },
-        }
-      );
+      // Try v2/asset endpoint first, then fallback to v1/asset if needed
+      let uploadResponse;
+      try {
+        uploadResponse = await axios.post(
+          "https://api.heygen.com/v2/asset",
+          formData,
+          {
+            headers: {
+              ...formData.getHeaders(),
+              "X-Api-Key": HEYGEN_API_KEY || "",
+            },
+          }
+        );
+      } catch (v2Error: any) {
+        console.log(`⚠️ HeyGen v2/asset failed (${v2Error.response?.status || v2Error.message}), trying v1/asset...`);
+        // Fallback to v1/asset
+        const FormData = (await import("form-data")).default;
+        const fallbackFormData = new FormData();
+        fallbackFormData.append("file", audioBuffer, {
+          filename: `audio_${Date.now()}.mp3`,
+          contentType: "audio/mpeg",
+        });
+        
+        uploadResponse = await axios.post(
+          "https://api.heygen.com/v1/asset",
+          fallbackFormData,
+          {
+            headers: {
+              ...fallbackFormData.getHeaders(),
+              "X-Api-Key": HEYGEN_API_KEY || "",
+            },
+          }
+        );
+      }
 
       if (uploadResponse.data?.data?.asset_id) {
         console.log(`✅ Audio uploaded to HeyGen: ${uploadResponse.data.data.asset_id}`);
