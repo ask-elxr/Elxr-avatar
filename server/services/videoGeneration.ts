@@ -407,6 +407,9 @@ export class VideoGenerationService {
             .set({ status: "completed" })
             .where(eq(lessons.id, lessonId));
 
+          // Update course status if all lessons are completed
+          await this.updateCourseStatusIfComplete(lessonId);
+
           activePollingSet.delete(heygenVideoId);
           console.log(`✅ Video generation completed: ${heygenVideoId}`);
           
@@ -505,6 +508,9 @@ export class VideoGenerationService {
           .update(lessons)
           .set({ status: "completed" })
           .where(eq(lessons.id, video.lessonId));
+
+        // Update course status if all lessons are completed
+        await this.updateCourseStatusIfComplete(video.lessonId);
 
         console.log(`✅ Background check: Video ${heygenVideoId} completed`);
         
@@ -740,6 +746,57 @@ export class VideoGenerationService {
       }
     } catch (error: any) {
       console.error('📧 Error sending course video email notification:', error.message);
+    }
+  }
+
+  /**
+   * Update course status to "completed" if all lessons have completed videos
+   */
+  private async updateCourseStatusIfComplete(lessonId: string): Promise<void> {
+    try {
+      // Get the lesson to find the course
+      const [lesson] = await db
+        .select()
+        .from(lessons)
+        .where(eq(lessons.id, lessonId));
+
+      if (!lesson) {
+        return;
+      }
+
+      // Get all lessons for this course
+      const courseLessons = await db
+        .select()
+        .from(lessons)
+        .where(eq(lessons.courseId, lesson.courseId));
+
+      // Check if all lessons are completed
+      const allCompleted = courseLessons.every(l => l.status === "completed");
+
+      if (allCompleted && courseLessons.length > 0) {
+        // Calculate total duration from all videos
+        const videoRecords = await db
+          .select()
+          .from(generatedVideos)
+          .where(inArray(generatedVideos.lessonId, courseLessons.map(l => l.id)));
+
+        const totalDuration = videoRecords.reduce((sum, v) => sum + (v.duration || 0), 0);
+
+        // Update course to completed
+        await db
+          .update(courses)
+          .set({
+            status: "completed",
+            totalLessons: courseLessons.length,
+            totalDuration,
+            updatedAt: new Date(),
+          })
+          .where(eq(courses.id, lesson.courseId));
+
+        console.log(`✅ Course ${lesson.courseId} marked as completed (${courseLessons.length} lessons, ${totalDuration}s total)`);
+      }
+    } catch (error: any) {
+      console.error('Error updating course status:', error.message);
     }
   }
 }
