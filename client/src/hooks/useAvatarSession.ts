@@ -301,13 +301,18 @@ export function useAvatarSession({
       const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
       const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
       const isAndroid = /android/i.test(userAgent);
-      const isMobile = isIOS || isAndroid || /mobile/i.test(userAgent);
+      // Better mobile detection: check for mobile keyword, touch capability, and small screen
+      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      const hasMobileKeyword = /mobile|phone/i.test(userAgent);
+      const isMobile = isIOS || isAndroid || hasMobileKeyword || (hasTouchScreen && isSmallScreen);
       const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
       const isChrome = /chrome/i.test(userAgent) && !/edge/i.test(userAgent);
       const isChromeIOS = isIOS && /CriOS/i.test(userAgent);
       const isFirefoxIOS = isIOS && /FxiOS/i.test(userAgent);
+      const isChromeMobile = isChrome && (isAndroid || hasMobileKeyword);
       
-      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}`);
+      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
       
       // Chrome on iOS does NOT support Web Speech API (Apple restricts it)
       // Only Safari can use it on iOS
