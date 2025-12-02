@@ -1,0 +1,110 @@
+🔊 Audio capture ended
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/audio/acknowledgment/shawn 404 (Not Found)
+apply @ injected.js:214
+(anonymous) @ useAvatarSession.ts:242
+(anonymous) @ useAvatarSession.ts:1614
+handleSubmitMessage @ avatar-chat.tsx:404
+onSubmit @ avatar-chat.tsx:955
+callCallback2 @ chunk-RPCDYKBN.js?v=115e32ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=115e32ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=115e32ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=115e32ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=115e32ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=115e32ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=115e32ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=115e32ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=115e32ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=115e32ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=115e32ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=115e32ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=115e32ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=115e32ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=115e32ee:5449Understand this error
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/audio 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ useAvatarSession.ts:1617
+handleSubmitMessage @ avatar-chat.tsx:404
+onSubmit @ avatar-chat.tsx:955
+callCallback2 @ chunk-RPCDYKBN.js?v=115e32ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=115e32ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=115e32ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=115e32ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=115e32ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=115e32ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=115e32ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=115e32ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=115e32ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=115e32ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=115e32ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=115e32ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=115e32ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=115e32ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=115e32ee:5449Understand this error
+injected.js:37 Failed to get audio response: 500 {"error":"Failed to process audio message"}
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:1717
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:404
+onSubmit @ avatar-chat.tsx:955
+callCallback2 @ chunk-RPCDYKBN.js?v=115e32ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=115e32ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=115e32ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=115e32ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=115e32ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=115e32ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=115e32ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=115e32ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=115e32ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=115e32ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=115e32ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=115e32ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=115e32ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=115e32ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=115e32ee:5449Understand this error
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hello', sessionActive: true, heygenSessionActive: false, memoryEnabled: true, userId: 'temp_1763845491403_loak142e6', …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17646990502070.e5p6mpat9vs
+injected.js:37 Audio-only mode: Using /api/audio endpoint
+injected.js:37 🧠 Memory settings: {memoryEnabled: true, userId: 'temp_1763845491403_loak142e6'}
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/audio/acknowledgment/shawn 404 (Not Found)
+apply @ injected.js:214
+(anonymous) @ useAvatarSession.ts:242
+(anonymous) @ useAvatarSession.ts:1614
+handleSubmitMessage @ avatar-chat.tsx:404
+onSubmit @ avatar-chat.tsx:955
+callCallback2 @ chunk-RPCDYKBN.js?v=115e32ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=115e32ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=115e32ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=115e32ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=115e32ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=115e32ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=115e32ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=115e32ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=115e32ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=115e32ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=115e32ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=115e32ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=115e32ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=115e32ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=115e32ee:5449Understand this error
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/audio 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ useAvatarSession.ts:1617
+handleSubmitMessage @ avatar-chat.tsx:404
+onSubmit @ avatar-chat.tsx:955
+callCallback2 @ chunk-RPCDYKBN.js?v=115e32ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=115e32ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=115e32ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=115e32ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=115e32ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=115e32ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=115e32ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=115e32ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=115e32ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=115e32ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=115e32ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=115e32ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=115e32ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=115e32ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=115e32ee:5449Understand this error
+injected.js:37 Failed to get audio response: 500 {"error":"Failed to process audio message"}
