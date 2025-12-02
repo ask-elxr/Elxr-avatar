@@ -102,6 +102,7 @@ export function useAvatarSession({
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
   const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
   const elevenLabsVideoAudioRef = useRef<HTMLAudioElement | null>(null); // Audio element for ElevenLabs in video mode
+  const elevenLabsRecognitionResumeTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Pending recognition resume timer for ElevenLabs
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
 
@@ -658,6 +659,30 @@ export function useAvatarSession({
       elevenLabsVideoAudioRef.current = audio;
 
       return new Promise((resolve) => {
+        // Helper function to resume recognition with platform-specific delay
+        // iOS Safari needs a longer delay (3-5 seconds) due to video/audio conflicts
+        // Uses ref for cancellation to prevent racing timers
+        const resumeRecognitionWithDelay = () => {
+          // Cancel any pending resume timeout to prevent racing
+          if (elevenLabsRecognitionResumeTimeoutRef.current) {
+            clearTimeout(elevenLabsRecognitionResumeTimeoutRef.current);
+            elevenLabsRecognitionResumeTimeoutRef.current = null;
+          }
+          
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          const delay = (isIOS || isSafari) ? 3500 : 1000; // 3.5s for iOS/Safari, 1s for others
+          
+          elevenLabsRecognitionResumeTimeoutRef.current = setTimeout(() => {
+            elevenLabsRecognitionResumeTimeoutRef.current = null;
+            recognitionIntentionalStopRef.current = false;
+            if (!recognitionRunningRef.current && sessionActiveRef.current) {
+              startVoiceRecognition();
+              console.log("🎤 Voice recognition resumed after ElevenLabs speech (delayed)");
+            }
+          }, delay);
+        };
+
         audio.onended = () => {
           // === AVATAR_STOP_TALKING equivalent ===
           isSpeakingRef.current = false;
@@ -666,12 +691,8 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (video mode)");
           
-          // Resume voice recognition
-          recognitionIntentionalStopRef.current = false;
-          if (!recognitionRunningRef.current && sessionActiveRef.current) {
-            startVoiceRecognition();
-            console.log("🎤 Voice recognition resumed after ElevenLabs speech");
-          }
+          // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
+          resumeRecognitionWithDelay();
           
           // Reset idle timeout
           startIdleTimeout();
@@ -686,11 +707,8 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
           
-          // Resume voice recognition on error
-          recognitionIntentionalStopRef.current = false;
-          if (!recognitionRunningRef.current && sessionActiveRef.current) {
-            startVoiceRecognition();
-          }
+          // Resume voice recognition with delay on error
+          resumeRecognitionWithDelay();
           
           // Restart idle timeout on error
           startIdleTimeout();
@@ -704,11 +722,8 @@ export function useAvatarSession({
           setIsSpeakingState(false);
           console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
           
-          // Resume voice recognition on play error
-          recognitionIntentionalStopRef.current = false;
-          if (!recognitionRunningRef.current && sessionActiveRef.current) {
-            startVoiceRecognition();
-          }
+          // Resume voice recognition with delay on play error
+          resumeRecognitionWithDelay();
           
           // Restart idle timeout on play error
           startIdleTimeout();
@@ -722,11 +737,24 @@ export function useAvatarSession({
       setIsSpeakingState(false);
       console.log("🗣️ ElevenLabs avatar STOP talking (fetch error - video mode)");
       
-      // Resume voice recognition on error
-      recognitionIntentionalStopRef.current = false;
-      if (!recognitionRunningRef.current && sessionActiveRef.current) {
-        startVoiceRecognition();
+      // Resume voice recognition with delay on fetch error
+      // Cancel any pending resume timeout to prevent racing
+      if (elevenLabsRecognitionResumeTimeoutRef.current) {
+        clearTimeout(elevenLabsRecognitionResumeTimeoutRef.current);
+        elevenLabsRecognitionResumeTimeoutRef.current = null;
       }
+      
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      const delay = (isIOS || isSafari) ? 3500 : 1000;
+      
+      elevenLabsRecognitionResumeTimeoutRef.current = setTimeout(() => {
+        elevenLabsRecognitionResumeTimeoutRef.current = null;
+        recognitionIntentionalStopRef.current = false;
+        if (!recognitionRunningRef.current && sessionActiveRef.current) {
+          startVoiceRecognition();
+        }
+      }, delay);
       
       // Restart idle timeout on fetch error
       startIdleTimeout();
@@ -2288,12 +2316,33 @@ export function useAvatarSession({
         currentAudioRef.current = null;
       }
     }
-    // Also stop ElevenLabs audio in video mode
+    // Also stop ElevenLabs audio in video mode and handle recognition state
     if (elevenLabsVideoAudioRef.current) {
       try {
         elevenLabsVideoAudioRef.current.pause();
         elevenLabsVideoAudioRef.current = null;
         console.log("🛑 ElevenLabs video audio force stopped");
+        
+        // Cancel any pending recognition resume timeout
+        if (elevenLabsRecognitionResumeTimeoutRef.current) {
+          clearTimeout(elevenLabsRecognitionResumeTimeoutRef.current);
+          elevenLabsRecognitionResumeTimeoutRef.current = null;
+        }
+        
+        // Immediately reset recognition state and schedule resume
+        // Use the same delayed resume logic to avoid echo
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+        const delay = (isIOS || isSafari) ? 3500 : 1000;
+        
+        elevenLabsRecognitionResumeTimeoutRef.current = setTimeout(() => {
+          elevenLabsRecognitionResumeTimeoutRef.current = null;
+          recognitionIntentionalStopRef.current = false;
+          if (!recognitionRunningRef.current && sessionActiveRef.current) {
+            startVoiceRecognition();
+            console.log("🎤 Voice recognition resumed after manual audio stop");
+          }
+        }, delay);
       } catch (e) {
         console.warn("Error force stopping ElevenLabs video audio:", e);
         elevenLabsVideoAudioRef.current = null;
@@ -2301,7 +2350,7 @@ export function useAvatarSession({
     }
     isSpeakingRef.current = false;
     setIsSpeakingState(false);
-  }, []);
+  }, [startVoiceRecognition]);
 
   useEffect(() => {
     return () => {
