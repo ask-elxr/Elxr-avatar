@@ -2900,6 +2900,114 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         return res.status(404).json({ error: "Avatar not found" });
       }
 
+      // Check for pending video confirmation first (streaming mode)
+      if (userId) {
+        const pendingConfirmation = getPendingVideoConfirmation(userId);
+        if (pendingConfirmation) {
+          // Check if user is confirming
+          if (isVideoConfirmation(message)) {
+            clearPendingVideoConfirmation(userId);
+            console.log(`✅ VIDEO CONFIRMED (streaming mode) - Creating video about: "${pendingConfirmation.topic}"`);
+            
+            // Start video generation
+            const videoResult = await chatVideoService.createVideoFromChat({
+              userId,
+              avatarId: pendingConfirmation.avatarId,
+              requestText: pendingConfirmation.originalMessage,
+              topic: pendingConfirmation.topic,
+            });
+
+            if (videoResult.success) {
+              const acknowledgment = generateVideoAcknowledgment(pendingConfirmation.topic, avatarConfig.name);
+              
+              await storage.saveConversation({
+                userId,
+                avatarId,
+                role: 'assistant',
+                text: acknowledgment,
+                metadata: { type: 'video-generating', videoRecordId: videoResult.videoRecordId, topic: pendingConfirmation.topic },
+              });
+
+              log.info({ userId, avatarId, topic: pendingConfirmation.topic, videoRecordId: videoResult.videoRecordId }, 'Video generation confirmed and started from streaming chat');
+
+              // Set up SSE and send the acknowledgment
+              res.setHeader('Content-Type', 'text/event-stream');
+              res.setHeader('Cache-Control', 'no-cache');
+              res.setHeader('Connection', 'keep-alive');
+              res.setHeader('X-Accel-Buffering', 'no');
+              
+              res.write(`event: sentence\ndata: ${JSON.stringify({ content: acknowledgment })}\n\n`);
+              res.write(`event: done\ndata: ${JSON.stringify({ 
+                fullResponse: acknowledgment,
+                videoGenerating: { videoRecordId: videoResult.videoRecordId, topic: pendingConfirmation.topic }
+              })}\n\n`);
+              return res.end();
+            }
+          }
+          
+          // Check if user is rejecting
+          if (isVideoRejection(message)) {
+            clearPendingVideoConfirmation(userId);
+            console.log(`❌ VIDEO REJECTED (streaming mode) by user`);
+            
+            const rejectionResponse = generateRejectionResponse();
+            
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+            res.setHeader('X-Accel-Buffering', 'no');
+            
+            res.write(`event: sentence\ndata: ${JSON.stringify({ content: rejectionResponse })}\n\n`);
+            res.write(`event: done\ndata: ${JSON.stringify({ fullResponse: rejectionResponse })}\n\n`);
+            return res.end();
+          }
+          
+          // User provided more details - use AI to intelligently refine the topic
+          const refinement = await refineVideoTopic(pendingConfirmation.topic, message);
+          const newTopic = refinement.refinedTopic;
+          
+          const newOriginalMessage = refinement.isReplacement ? message : `${pendingConfirmation.originalMessage} ${message}`;
+          setPendingVideoConfirmation(userId, newTopic, newOriginalMessage, avatarId);
+          console.log(`📝 Updated pending video topic (streaming mode) to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
+          
+          const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
+          
+          res.setHeader('Content-Type', 'text/event-stream');
+          res.setHeader('Cache-Control', 'no-cache');
+          res.setHeader('Connection', 'keep-alive');
+          res.setHeader('X-Accel-Buffering', 'no');
+          
+          res.write(`event: sentence\ndata: ${JSON.stringify({ content: updatePrompt })}\n\n`);
+          res.write(`event: done\ndata: ${JSON.stringify({ fullResponse: updatePrompt, videoPendingConfirmation: true })}\n\n`);
+          return res.end();
+        }
+      }
+
+      // Check for video request intent (streaming mode)
+      const videoIntent = await detectVideoIntent(message);
+      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
+        const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
+        
+        // Store pending confirmation instead of immediately generating
+        setPendingVideoConfirmation(userId, topic || "the requested topic", message, avatarId);
+        console.log(`🎬 VIDEO INTENT DETECTED (streaming mode) - Asking for confirmation about: "${topic}"`);
+        
+        const confirmationPrompt = generateConfirmationPrompt(topic || "the requested topic", avatarConfig.name);
+        
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        
+        res.write(`event: sentence\ndata: ${JSON.stringify({ content: confirmationPrompt })}\n\n`);
+        res.write(`event: done\ndata: ${JSON.stringify({ 
+          fullResponse: confirmationPrompt, 
+          videoPendingConfirmation: true,
+          videoTopic: topic
+        })}\n\n`);
+        return res.end();
+      }
+
       // Set up SSE headers
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
