@@ -53,7 +53,7 @@ export function TopicFolderUpload() {
   });
 
   const uploadSingleFile = async (fileId: string, fileName: string, namespace: string) => {
-    const response = await apiRequest('POST', '/api/google-drive/topic-upload-single', {
+    const response = await apiRequest('/api/google-drive/topic-upload-single', 'POST', {
       fileId,
       fileName,
       namespace,
