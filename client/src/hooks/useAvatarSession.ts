@@ -1866,6 +1866,13 @@ export function useAvatarSession({
                           console.log(`📝 USER MESSAGE: ${message}`);
                           console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
                           console.log(`---`);
+                          
+                          // Check for video generation notification
+                          if (data.videoGenerating && onVideoGenerating) {
+                            const { videoRecordId, topic } = data.videoGenerating;
+                            console.log(`🎬 [STREAMING] Video generation started: topic="${topic}", id=${videoRecordId}`);
+                            onVideoGenerating(topic, videoRecordId);
+                          }
                         } else if (eventType === 'timing') {
                           console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetch}ms`);
                         }
