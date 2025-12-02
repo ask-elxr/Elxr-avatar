@@ -62,16 +62,35 @@ coursesRouter.get("/", async (req: Request, res: Response) => {
           .orderBy(lessons.order);
 
         // Get video generation status for each lesson
+        // Prioritize completed videos, then most recent
         const lessonsWithVideos = await Promise.all(
           courseLessons.map(async (lesson) => {
-            const [video] = await db
+            // First try to get a completed video
+            const [completedVideo] = await db
               .select()
               .from(generatedVideos)
-              .where(eq(generatedVideos.lessonId, lesson.id));
+              .where(and(
+                eq(generatedVideos.lessonId, lesson.id),
+                eq(generatedVideos.status, "completed")
+              ))
+              .orderBy(desc(generatedVideos.createdAt))
+              .limit(1);
+
+            if (completedVideo) {
+              return { ...lesson, video: completedVideo };
+            }
+
+            // If no completed video, get the most recent one
+            const [latestVideo] = await db
+              .select()
+              .from(generatedVideos)
+              .where(eq(generatedVideos.lessonId, lesson.id))
+              .orderBy(desc(generatedVideos.createdAt))
+              .limit(1);
 
             return {
               ...lesson,
-              video: video || null,
+              video: latestVideo || null,
             };
           })
         );
@@ -223,16 +242,35 @@ coursesRouter.get("/:id", async (req: Request, res: Response) => {
       .orderBy(lessons.order);
 
     // Get video generation status for each lesson
+    // Prioritize completed videos, then most recent
     const lessonsWithVideos = await Promise.all(
       courseLessons.map(async (lesson) => {
-        const [video] = await db
+        // First try to get a completed video
+        const [completedVideo] = await db
           .select()
           .from(generatedVideos)
-          .where(eq(generatedVideos.lessonId, lesson.id));
+          .where(and(
+            eq(generatedVideos.lessonId, lesson.id),
+            eq(generatedVideos.status, "completed")
+          ))
+          .orderBy(desc(generatedVideos.createdAt))
+          .limit(1);
+
+        if (completedVideo) {
+          return { ...lesson, video: completedVideo };
+        }
+
+        // If no completed video, get the most recent one (pending/generating/failed)
+        const [latestVideo] = await db
+          .select()
+          .from(generatedVideos)
+          .where(eq(generatedVideos.lessonId, lesson.id))
+          .orderBy(desc(generatedVideos.createdAt))
+          .limit(1);
 
         return {
           ...lesson,
-          video: video || null,
+          video: latestVideo || null,
         };
       })
     );
