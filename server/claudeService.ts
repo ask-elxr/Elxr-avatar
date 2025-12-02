@@ -409,7 +409,9 @@ RESPONSE REQUIREMENTS:
     webSearchResults: string = '', 
     conversationHistory: any[] = [],
     customSystemPrompt?: string,
-    isVoiceMode: boolean = true
+    isVoiceMode: boolean = true,
+    imageBase64?: string,
+    imageMimeType?: string
   ): Promise<string> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
@@ -504,10 +506,33 @@ RESPONSE REQUIREMENTS:
 - Be concise but complete`;
       }
       
-      messages.push({
-        role: 'user',
-        content: enhancedMessage
-      });
+      // Build user message content - with or without image
+      if (imageBase64 && imageMimeType) {
+        // Multimodal content with image
+        messages.push({
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: imageMimeType,
+                data: imageBase64
+              }
+            },
+            {
+              type: 'text',
+              text: enhancedMessage
+            }
+          ]
+        });
+      } else {
+        // Text-only content
+        messages.push({
+          role: 'user',
+          content: enhancedMessage
+        });
+      }
 
       // Enhanced system prompt with ALWAYS-ON current date awareness
       const baseSystemPrompt = customSystemPrompt || `You are an advanced AI assistant with access to both a knowledge base and real-time web information.`;

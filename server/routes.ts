@@ -303,16 +303,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const log = logger.child({ service: "audio-chat", operation: "processMessage" });
 
     try {
-      const { message, avatarId = "mark-kohl", languageCode } = req.body;
+      const { message, avatarId = "mark-kohl", languageCode, imageBase64, imageMimeType } = req.body;
       
       log.info({ 
         avatarId, 
         languageCode: languageCode || 'en-US (default)',
-        messagePreview: message?.substring(0, 50) 
+        messagePreview: message?.substring(0, 50),
+        hasImage: !!imageBase64
       }, '🎤 Audio mode request - language and message received');
 
-      if (!message) {
-        return res.status(400).json({ error: "Message is required" });
+      // Log image info if present
+      if (imageBase64) {
+        log.info({ hasImage: true, imageMimeType, imageLength: imageBase64.length }, 'Image attached to audio message');
+        console.log('📷 IMAGE ATTACHED (audio mode) - Size:', imageBase64.length, 'Type:', imageMimeType);
+      }
+
+      if (!message && !imageBase64) {
+        return res.status(400).json({ error: "Message or image is required" });
       }
 
       // Get userId from authenticated session if available, or allow temp_ prefixed IDs
@@ -719,12 +726,14 @@ This appears to be your first conversation with this person - no prior memories 
       // Generate Claude response with enhanced personality
       // isVoiceMode=true for audio mode - ensures ultra-concise responses (1-2 sentences, <30 words)
       const claudeResponseResult = await claudeService.generateEnhancedResponse(
-        message,
+        message || 'What do you see in this image?', // Default message if only image is provided
         knowledgeContext,
         "", // webSearchResults (empty for audio mode)
         [], // conversationHistory (no history for audio mode currently)
         enhancedPersonality, // customSystemPrompt - Use enhanced personality with memories
-        true // isVoiceMode=true for audio mode - brief responses unless user asks for detail
+        true, // isVoiceMode=true for audio mode - brief responses unless user asks for detail
+        imageBase64, // Image data for vision
+        imageMimeType // Image MIME type
       );
 
       const responseText = typeof claudeResponseResult === 'string' 

@@ -1795,6 +1795,8 @@ export function useAvatarSession({
               avatarId: currentAvatarIdRef.current,
               memoryEnabled: memoryEnabledRef.current, // Use ref for current value
               languageCode: elevenLabsLanguageCodeRef.current, // Pass language for TTS
+              imageBase64: imageData?.base64,
+              imageMimeType: imageData?.mimeType,
             }),
             signal: controller.signal,
           });
