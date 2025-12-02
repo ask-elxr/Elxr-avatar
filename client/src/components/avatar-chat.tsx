@@ -4,6 +4,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -212,7 +213,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     selectedAvatarId,
     languageCode: selectedLanguage,
     elevenLabsLanguageCode: elevenLabsLanguage,
-    onResetInactivityTimer: () => resetTimerRef.current?.()
+    onResetInactivityTimer: () => resetTimerRef.current?.(),
+    onVideoGenerating: (topic, videoRecordId) => {
+      console.log("🎬 Video generation notification:", { topic, videoRecordId });
+      toast({
+        title: "🎬 Creating Your Video",
+        description: `Generating video about "${topic}". You'll find it in My Videos when ready!`,
+        duration: 8000,
+      });
+      // Invalidate chat videos query to trigger refresh
+      queryClient.invalidateQueries({ queryKey: ["/api/courses/chat-videos"] });
+    }
   });
   
   // Sync isSpeaking state from hook

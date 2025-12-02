@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, Video, Clock, User, MessageSquare, Play, Trash2, Download } from "lucide-react";
+import { Plus, Video, Clock, User, MessageSquare, Play, Trash2, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -138,18 +138,60 @@ export default function CoursesPage() {
           </Link>
         </div>
 
-        {/* Pending Videos Alert */}
+        {/* Generating Videos Section */}
         {pendingChatVideos.length > 0 && (
-          <Card className="bg-yellow-900/20 border-yellow-600/30 mb-6">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" />
-                <span className="text-yellow-300 font-satoshi">
-                  {pendingChatVideos.length} video{pendingChatVideos.length > 1 ? 's' : ''} generating...
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="mb-6">
+            <h2 className="text-xl font-satoshi font-bold mb-4 flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full animate-pulse" />
+              Videos in Progress ({pendingChatVideos.length})
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {pendingChatVideos.map((video) => (
+                <Card 
+                  key={video.id}
+                  className="bg-gray-900/50 border-yellow-600/30 overflow-hidden"
+                  data-testid={`card-generating-video-${video.id}`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      {/* Animated loader */}
+                      <div className="flex-shrink-0 w-12 h-12 bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                        <Loader2 className="w-6 h-6 text-yellow-500 animate-spin" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-satoshi font-medium text-white truncate mb-1">
+                          {video.topic || 'Generating video...'}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Badge className={getStatusColor(video.status)}>
+                            {video.status === 'pending' ? 'Queued' : 
+                             video.status === 'processing' ? 'Processing' : 'Generating'}
+                          </Badge>
+                          <span className="text-gray-500">
+                            {getAvatarName(video.avatarId)}
+                          </span>
+                        </div>
+                        {/* Progress bar animation */}
+                        <div className="mt-3 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-yellow-600 to-yellow-400 rounded-full animate-pulse"
+                            style={{ 
+                              width: video.status === 'pending' ? '15%' : 
+                                     video.status === 'generating' ? '50%' : '80%',
+                              transition: 'width 0.5s ease-in-out'
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Started {formatDate(video.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         )}
 
         <Tabs defaultValue="chat-videos" className="w-full">

@@ -16,6 +16,7 @@ interface AvatarSessionConfig {
   elevenLabsLanguageCode?: string;
   onSessionActiveChange?: (active: boolean) => void;
   onResetInactivityTimer?: () => void;
+  onVideoGenerating?: (topic: string, videoRecordId: string) => void;
 }
 
 interface StartSessionOptions {
@@ -56,6 +57,7 @@ export function useAvatarSession({
   elevenLabsLanguageCode = "en",
   onSessionActiveChange,
   onResetInactivityTimer,
+  onVideoGenerating,
 }: AvatarSessionConfig): AvatarSessionReturn {
   const [sessionActive, setSessionActive] = useState(false);
   const [heygenSessionActive, setHeygenSessionActive] = useState(false);
@@ -1633,6 +1635,17 @@ export function useAvatarSession({
           }
 
           if (audioResponse.ok) {
+            // Check for video generation headers and notify
+            const isVideoGenerating = audioResponse.headers.get("X-Video-Generating") === "true";
+            const videoRecordId = audioResponse.headers.get("X-Video-Record-Id");
+            const videoTopic = audioResponse.headers.get("X-Video-Topic");
+            
+            if (isVideoGenerating && videoRecordId && onVideoGenerating) {
+              const decodedTopic = videoTopic ? decodeURIComponent(videoTopic) : "your requested topic";
+              console.log("🎬 Video generation started:", { videoRecordId, topic: decodedTopic });
+              onVideoGenerating(decodedTopic, videoRecordId);
+            }
+            
             // CRITICAL: Check if we're still in audio mode before playing
             // User might have switched to video mode while waiting for response
             if (!audioOnlyRef.current) {
