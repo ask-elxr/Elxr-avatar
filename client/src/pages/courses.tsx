@@ -44,12 +44,12 @@ export default function CoursesPage() {
     refetchInterval: 10000,
   });
 
-  const { data: avatars } = useQuery({
+  const { data: avatars } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["/api/avatars"],
   });
 
   const getAvatarName = (avatarId: string) => {
-    const avatar = avatars?.find((a: any) => a.id === avatarId);
+    const avatar = avatars?.find((a) => a.id === avatarId);
     return avatar?.name || avatarId;
   };
 
@@ -117,7 +117,7 @@ export default function CoursesPage() {
   }
 
   const completedChatVideos = chatVideos?.filter(v => v.status === 'completed') || [];
-  const pendingChatVideos = chatVideos?.filter(v => v.status === 'pending' || v.status === 'generating') || [];
+  const pendingChatVideos = chatVideos?.filter(v => v.status === 'pending' || v.status === 'generating' || v.status === 'processing') || [];
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -360,10 +360,10 @@ export default function CoursesPage() {
                             <Video className="w-4 h-4" />
                             <span>{course.totalLessons || 0} lessons</span>
                           </div>
-                          {course.totalDuration > 0 && (
+                          {(course.totalDuration ?? 0) > 0 && (
                             <div className="flex items-center gap-2">
                               <Clock className="w-4 h-4" />
-                              <span>{formatDuration(course.totalDuration)}</span>
+                              <span>{formatDuration(course.totalDuration ?? 0)}</span>
                             </div>
                           )}
                         </div>

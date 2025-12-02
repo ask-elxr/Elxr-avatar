@@ -162,6 +162,7 @@ export function useCourseVideoNotifications(userId: string | null) {
     if (hasNewCompletions) {
       queryClient.invalidateQueries({ queryKey: ["courses-notifications", userId] });
       queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses/chat-videos"] });
     }
 
     isInitialLoadRef.current = false;
@@ -169,7 +170,7 @@ export function useCourseVideoNotifications(userId: string | null) {
 
   const pendingLessonVideos = courses.flatMap(course => 
     (course.lessons || [])
-      .filter(lesson => lesson.video && (lesson.video.status === "queued" || lesson.video.status === "generating"))
+      .filter(lesson => lesson.video && (lesson.video.status === "queued" || lesson.video.status === "generating" || lesson.video.status === "processing"))
       .map(lesson => ({
         courseTitle: course.title,
         lessonTitle: lesson.title,

@@ -152,13 +152,14 @@ export function useChatVideoNotifications(userId: string | null) {
 
     if (hasNewCompletions) {
       queryClient.invalidateQueries({ queryKey: ["chat-videos-notifications", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/courses/chat-videos"] });
     }
 
     isInitialLoadRef.current = false;
   }, [videos, userId, toast, queryClient]);
 
   return {
-    pendingVideos: videos.filter(v => v.status === "pending" || v.status === "generating"),
+    pendingVideos: videos.filter(v => v.status === "pending" || v.status === "generating" || v.status === "processing"),
     completedVideos: videos.filter(v => v.status === "completed"),
   };
 }
