@@ -1,9 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useQuery } from "@tanstack/react-query";
-import { Database, HardDrive, FileText, Layers, Activity, CheckCircle, AlertCircle } from "lucide-react";
+import { useState } from "react";
+import { Database, HardDrive, FileText, Layers, Activity, CheckCircle, AlertCircle, ChevronDown } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 
 export function DatabaseStatus() {
+  const [isNamespaceOpen, setIsNamespaceOpen] = useState(false);
+  
   const { data: stats, isLoading } = useQuery({
     queryKey: ['/api/pinecone/stats'],
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -33,7 +37,7 @@ export function DatabaseStatus() {
 
   // Calculate total vectors across all namespaces
   const totalVectors = pineconeData.namespaces 
-    ? Object.values(pineconeData.namespaces).reduce((sum: number, ns: any) => sum + (ns.vectorCount || 0), 0)
+    ? Object.values(pineconeData.namespaces).reduce((sum: number, ns: any) => sum + (ns.recordCount || ns.vectorCount || 0), 0)
     : 0;
 
   const namespaceCount = pineconeData.namespaces ? Object.keys(pineconeData.namespaces).length : 0;
@@ -118,33 +122,46 @@ export function DatabaseStatus() {
 
       {/* Detailed Statistics */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Namespace Breakdown */}
+        {/* Namespace Breakdown - Collapsible */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold">Namespace Distribution</CardTitle>
-            <CardDescription className="text-xs">Vector counts by knowledge category</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pineconeData.namespaces && Object.entries(pineconeData.namespaces).map(([namespace, data]: [string, any]) => {
-                const vectorCount = data.vectorCount || 0;
-                const percentage = totalVectors > 0 ? (vectorCount / totalVectors) * 100 : 0;
-                
-                return (
-                  <div key={namespace} className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-medium truncate">{namespace}</span>
-                      <span className="text-muted-foreground ml-2">{vectorCount.toLocaleString()}</span>
-                    </div>
-                    <Progress value={percentage} className="h-2" />
+          <Collapsible open={isNamespaceOpen} onOpenChange={setIsNamespaceOpen}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="pb-3 cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-sm font-semibold">Namespace Distribution</CardTitle>
+                    <CardDescription className="text-xs">Vector counts by knowledge category ({namespaceCount} namespaces)</CardDescription>
                   </div>
-                );
-              })}
-              {(!pineconeData.namespaces || Object.keys(pineconeData.namespaces).length === 0) && (
-                <p className="text-sm text-muted-foreground text-center py-4">No namespaces found</p>
-              )}
-            </div>
-          </CardContent>
+                  <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isNamespaceOpen ? 'rotate-180' : ''}`} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 duration-200">
+              <CardContent className="pt-0">
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                  {pineconeData.namespaces && Object.entries(pineconeData.namespaces)
+                    .sort(([, a]: [string, any], [, b]: [string, any]) => (b.recordCount || b.vectorCount || 0) - (a.recordCount || a.vectorCount || 0))
+                    .map(([namespace, data]: [string, any]) => {
+                    const vectorCount = data.recordCount || data.vectorCount || 0;
+                    const percentage = totalVectors > 0 ? (vectorCount / totalVectors) * 100 : 0;
+                    
+                    return (
+                      <div key={namespace} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-medium truncate text-xs">{namespace}</span>
+                          <span className="text-muted-foreground ml-2 text-xs">{vectorCount.toLocaleString()}</span>
+                        </div>
+                        <Progress value={percentage} className="h-1.5" />
+                      </div>
+                    );
+                  })}
+                  {(!pineconeData.namespaces || Object.keys(pineconeData.namespaces).length === 0) && (
+                    <p className="text-sm text-muted-foreground text-center py-4">No namespaces found</p>
+                  )}
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Document Status */}
