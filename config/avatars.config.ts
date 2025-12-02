@@ -11,7 +11,7 @@ export const defaultAvatars: AvatarProfile[] = [
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
     profileImageUrl: "/attached_assets/MArk-kohl-loop_1763964600000.gif",
     heygenAvatarId: "e16db57e57824a0e90b661ad528d3994", // Custom LiveAvatar for streaming
-    heygenVideoAvatarId: "84d6a3a8f0d545a9900bf16176c7b7ae", // Mark's Talking Photo from HeyGen UI
+    heygenVideoAvatarId: "e16db57e57824a0e90b661ad528d3994", // Using Live Avatar for video (Talking Photo was deleted from HeyGen)
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
