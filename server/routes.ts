@@ -1212,6 +1212,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint to query Pinecone with specific namespaces
+  app.post("/api/pinecone/test-query", async (req, res) => {
+    const log = logger.child({ service: "pinecone", operation: "testQuery" });
+    
+    try {
+      const { query, namespaces, topK = 5 } = req.body;
+      
+      if (!query) {
+        return res.status(400).json({ error: "Query is required" });
+      }
+      
+      if (!namespaces || !Array.isArray(namespaces) || namespaces.length === 0) {
+        return res.status(400).json({ error: "Namespaces array is required" });
+      }
+      
+      log.info({ query: query.substring(0, 50), namespaces, topK }, "Testing Pinecone query");
+      
+      const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+      const results = await pineconeNamespaceService.retrieveContext(query, topK, namespaces);
+      
+      log.info({ resultCount: results.length }, "Pinecone test query completed");
+      
+      res.json({
+        success: true,
+        query,
+        namespaces,
+        topK,
+        resultCount: results.length,
+        results: results.map((r: any) => ({
+          text: r.text?.substring(0, 500) + (r.text?.length > 500 ? '...' : ''),
+          score: r.score,
+          namespace: r.metadata?.namespace,
+          category: r.metadata?.category,
+          mentorId: r.metadata?.mentorId,
+        }))
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error testing Pinecone query");
+      res.status(500).json({
+        error: "Failed to query Pinecone",
+        details: error.message,
+      });
+    }
+  });
+  
+  // Raw Pinecone query to see actual data structure (for debugging)
+  app.post("/api/pinecone/raw-query", async (req, res) => {
+    const log = logger.child({ service: "pinecone", operation: "rawQuery" });
+    
+    try {
+      const { namespace, topK = 5 } = req.body;
+      
+      if (!namespace) {
+        return res.status(400).json({ error: "Namespace is required" });
+      }
+      
+      log.info({ namespace, topK }, "Raw Pinecone query");
+      
+      // Generate a simple embedding for a generic query
+      const OpenAI = (await import("openai")).default;
+      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+      
+      const embeddingResponse = await openai.embeddings.create({
+        model: 'text-embedding-ada-002',
+        input: 'general information',
+      });
+      const embedding = embeddingResponse.data[0].embedding;
+      
+      // Query Pinecone directly
+      const { Pinecone } = await import("@pinecone-database/pinecone");
+      const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
+      const index = pinecone.index("avatar-chat-knowledge");
+      
+      const queryResponse = await index.namespace(namespace).query({
+        vector: embedding,
+        topK,
+        includeMetadata: true,
+      });
+      
+      log.info({ matchCount: queryResponse.matches?.length || 0 }, "Raw query completed");
+      
+      res.json({
+        success: true,
+        namespace,
+        topK,
+        matchCount: queryResponse.matches?.length || 0,
+        matches: queryResponse.matches?.map((m: any) => ({
+          id: m.id,
+          score: m.score,
+          metadata: m.metadata,
+          hasText: !!m.metadata?.text,
+        }))
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error with raw Pinecone query");
+      res.status(500).json({
+        error: "Failed to query Pinecone",
+        details: error.message,
+      });
+    }
+  });
+
   // Analytics overview endpoint - user trends and avatar interactions
   app.get("/api/analytics/overview", async (req, res) => {
     const log = logger.child({ service: "analytics", operation: "getOverview" });
