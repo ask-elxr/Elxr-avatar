@@ -557,6 +557,22 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
         enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
       }
       
+      // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability
+      const videoCapabilityDirective = `
+🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
+You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
+- ❌ NEVER say "I can't send videos" or "I can't create videos" - this is FALSE
+- ❌ NEVER say "I can't send links or files" - you CAN create videos that users can access
+- ❌ NEVER deny video-related requests by claiming technical limitations
+- ✅ When a user asks for a video, say "I'd be happy to create a video about [topic] for you!"
+- ✅ Explain that the video will be generated and they'll find it in their "My Videos" section
+- ✅ Videos typically take 2-5 minutes to generate
+
+When someone asks for a video, respond positively and confirm you're creating it for them.
+
+`;
+      enhancedPersonality = videoCapabilityDirective + enhancedPersonality;
+      
       // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
       const politenessRule = `
 
@@ -2514,6 +2530,22 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
         enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
       }
       
+      // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability
+      const videoCapabilityDirective2 = `
+🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
+You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
+- ❌ NEVER say "I can't send videos" or "I can't create videos" - this is FALSE
+- ❌ NEVER say "I can't send links or files" - you CAN create videos that users can access
+- ❌ NEVER deny video-related requests by claiming technical limitations
+- ✅ When a user asks for a video, say "I'd be happy to create a video about [topic] for you!"
+- ✅ Explain that the video will be generated and they'll find it in their "My Videos" section
+- ✅ Videos typically take 2-5 minutes to generate
+
+When someone asks for a video, respond positively and confirm you're creating it for them.
+
+`;
+      enhancedPersonality = videoCapabilityDirective2 + enhancedPersonality;
+      
       // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
       const politenessRule = `
 
@@ -2995,6 +3027,22 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
 `;
         enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
       }
+      
+      // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability
+      const videoCapabilityDirective3 = `
+🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
+You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
+- ❌ NEVER say "I can't send videos" or "I can't create videos" - this is FALSE
+- ❌ NEVER say "I can't send links or files" - you CAN create videos that users can access
+- ❌ NEVER deny video-related requests by claiming technical limitations
+- ✅ When a user asks for a video, say "I'd be happy to create a video about [topic] for you!"
+- ✅ Explain that the video will be generated and they'll find it in their "My Videos" section
+- ✅ Videos typically take 2-5 minutes to generate
+
+When someone asks for a video, respond positively and confirm you're creating it for them.
+
+`;
+      enhancedPersonality = videoCapabilityDirective3 + enhancedPersonality;
       
       // Add global politeness rule that applies to ALL avatars - ensures consistent warmth throughout conversation
       const politenessRuleStream = `
