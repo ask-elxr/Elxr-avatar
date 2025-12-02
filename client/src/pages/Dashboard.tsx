@@ -1057,10 +1057,10 @@ export default function Dashboard({
                               </div>
                             )}
 
-                            <CardHeader className="p-4 md:p-5 flex-1 flex flex-col">
+                            <CardHeader className="p-5 sm:p-4 md:p-5 flex-1 flex flex-col">
                               <div className="flex flex-col h-full">
-                                {/* Avatar Image/GIF */}
-                                <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
+                                {/* Avatar Image/GIF - larger on mobile */}
+                                <div className="w-full aspect-square sm:aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
                                   {avatarGifs[avatar.id] ? (
                                     <img
                                       src={avatarGifs[avatar.id]}
@@ -1084,20 +1084,20 @@ export default function Dashboard({
                                 <div className="relative flex-1 flex flex-col">
                                   <div className="pr-10 flex-1 flex flex-col">
                                     {/* Name */}
-                                    <CardTitle className="text-white text-lg md:text-xl mb-2 flex items-center gap-2">
+                                    <CardTitle className="text-white text-xl sm:text-lg md:text-xl mb-2 flex items-center gap-2">
                                       {avatar.name}
                                       {isSelectedAvatar && (
-                                        <Crown className="w-4 h-4 text-yellow-400" />
+                                        <Crown className="w-5 h-5 sm:w-4 sm:h-4 text-yellow-400" />
                                       )}
                                     </CardTitle>
 
                                     {/* Description */}
-                                    <CardDescription className="text-white/60 text-xs md:text-sm mb-3 line-clamp-3 min-h-[3.5rem]">
+                                    <CardDescription className="text-white/60 text-sm sm:text-xs md:text-sm mb-3 line-clamp-3 min-h-[3.5rem]">
                                       {avatar.description}
                                     </CardDescription>
 
                                     {/* Tags */}
-                                    <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
+                                    <div className="flex flex-wrap gap-2 sm:gap-1.5 mb-4 min-h-[2.5rem]">
                                       {avatar.tags &&
                                         avatar.tags.length > 0 &&
                                         avatar.tags
@@ -1105,7 +1105,7 @@ export default function Dashboard({
                                           .map((tag, index) => (
                                             <span
                                               key={index}
-                                              className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
+                                              className="text-sm sm:text-xs px-3 sm:px-2 py-1 sm:py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
                                             >
                                               {tag}
                                             </span>
@@ -1125,7 +1125,7 @@ export default function Dashboard({
                                             );
                                           }
                                         }}
-                                        className={`w-full font-semibold py-2.5 text-sm rounded-lg transition-all duration-200 shadow-lg ${
+                                        className={`w-full font-semibold py-3 sm:py-2.5 text-base sm:text-sm rounded-lg transition-all duration-200 shadow-lg ${
                                           locked
                                             ? "bg-gray-700 hover:bg-gray-600 text-gray-300 shadow-none z-20 relative"
                                             : "bg-gradient-to-r from-purple-600 to-cyan-600 hover:from-purple-700 hover:to-cyan-700 text-white hover:scale-[1.02] shadow-purple-500/20"
@@ -1134,12 +1134,12 @@ export default function Dashboard({
                                       >
                                         {locked ? (
                                           <>
-                                            <Lock className="w-4 h-4 mr-2" />
+                                            <Lock className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
                                             Upgrade to Unlock
                                           </>
                                         ) : (
                                           <>
-                                            <MessageSquare className="w-4 h-4 mr-2" />
+                                            <MessageSquare className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
                                             Start Chat
                                           </>
                                         )}
