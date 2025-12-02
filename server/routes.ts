@@ -349,10 +349,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log.info({ avatarId, messageLength: message.length, languageCode: effectiveLanguageCode }, "Processing audio chat message");
       
       // Enhanced logging for audio mode
+      const audioModeTimestamp = new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
       console.log(`\n🎧 ═══════════════════════════════════════════════════════════════`);
-      console.log(`🎧 AUDIO MODE - ${avatarConfig.name}`);
+      console.log(`🎧 AUDIO MODE - ${avatarConfig.name} [${audioModeTimestamp}]`);
       console.log(`🎧 ═══════════════════════════════════════════════════════════════`);
       console.log(`📥 USER MESSAGE: "${message}"`);
+      console.log(`🧠 Memory: ${memoryEnabled ? 'ENABLED' : 'DISABLED'} | User: ${userId || 'anonymous'}`);
 
       // Check for pending video confirmation first
       if (userId) {
@@ -380,6 +382,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const acknowledgment = generateVideoAcknowledgment(pendingConfirmation.topic, avatarConfig.name);
               log.info({ userId, avatarId, topic: pendingConfirmation.topic, videoRecordId: videoResult.videoRecordId }, 'Video generation confirmed and started from audio chat');
               
+              // Log the spoken response
+              console.log(`📤 AVATAR RESPONSE (Video Confirmation):`);
+              console.log(`───────────────────────────────────────────────────────────────`);
+              console.log(acknowledgment);
+              console.log(`───────────────────────────────────────────────────────────────`);
+              console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+              
               const audioBuffer = await elevenlabsService.generateSpeech(acknowledgment, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
               res.setHeader("Content-Type", "audio/mpeg");
               res.setHeader("Content-Length", audioBuffer.length.toString());
@@ -396,6 +405,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`❌ VIDEO REJECTED by user`);
             
             const rejectionResponse = generateRejectionResponse();
+            
+            // Log the spoken response
+            console.log(`📤 AVATAR RESPONSE (Video Rejection):`);
+            console.log(`───────────────────────────────────────────────────────────────`);
+            console.log(rejectionResponse);
+            console.log(`───────────────────────────────────────────────────────────────`);
+            console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+            
             const audioBuffer = await elevenlabsService.generateSpeech(rejectionResponse, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
             res.setHeader("Content-Type", "audio/mpeg");
             res.setHeader("Content-Length", audioBuffer.length.toString());
@@ -413,6 +430,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`📝 Updated pending video topic to: "${newTopic}" (${refinement.isReplacement ? 'replaced' : 'enhanced'})`);
           
           const updatePrompt = `Got it! So you'd like a video about "${newTopic}". Say "yes" when you're ready for me to create it.`;
+          
+          // Log the spoken response
+          console.log(`📤 AVATAR RESPONSE (Topic Update):`);
+          console.log(`───────────────────────────────────────────────────────────────`);
+          console.log(updatePrompt);
+          console.log(`───────────────────────────────────────────────────────────────`);
+          console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+          
           const audioBuffer = await elevenlabsService.generateSpeech(updatePrompt, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
           res.setHeader("Content-Type", "audio/mpeg");
           res.setHeader("Content-Length", audioBuffer.length.toString());
@@ -433,6 +458,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🎬 VIDEO INTENT DETECTED - Asking for confirmation about: "${topic}"`);
         
         const confirmationPrompt = generateConfirmationPrompt(topic || "the requested topic", avatarConfig.name);
+        
+        // Log the spoken response
+        console.log(`📤 AVATAR RESPONSE (Video Confirmation Request):`);
+        console.log(`───────────────────────────────────────────────────────────────`);
+        console.log(confirmationPrompt);
+        console.log(`───────────────────────────────────────────────────────────────`);
+        console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+        
         const audioBuffer = await elevenlabsService.generateSpeech(confirmationPrompt, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
         
         res.setHeader("Content-Type", "audio/mpeg");
@@ -704,13 +737,14 @@ This appears to be your first conversation with this person - no prior memories 
       }
       
       // Enhanced logging for audio mode response
-      console.log(`📤 CLAUDE RESPONSE:`);
+      const timestamp = new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      console.log(`📤 CLAUDE RESPONSE [${timestamp}]:`);
       console.log(`───────────────────────────────────────────────────────────────`);
       console.log(responseText);
       console.log(`───────────────────────────────────────────────────────────────`);
-      console.log(`📊 Response length: ${responseText.length} characters`);
+      console.log(`📊 Response: ${responseText.length} chars | Avatar: ${avatarConfig.name} | Memory: ${memoryEnabled ? 'ON' : 'OFF'}`);
       
-      log.info({ responseLength: responseText.length }, "Claude response generated");
+      log.info({ responseLength: responseText.length, avatarName: avatarConfig.name, memoryEnabled }, "Claude response generated");
 
       // Log API call
       storage.logApiCall({
