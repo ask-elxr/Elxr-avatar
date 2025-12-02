@@ -1,0 +1,47 @@
+🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
