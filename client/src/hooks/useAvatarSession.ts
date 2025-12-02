@@ -610,6 +610,24 @@ export function useAvatarSession({
     }
   }, [heygenSessionActive, videoRef, clearIdleTimeout]);
 
+  const startIdleTimeout = useCallback(() => {
+    clearIdleTimeout();
+    
+    // Only start idle timeout in video mode when not paused
+    if (!audioOnlyRef.current && !isPaused) {
+      idleTimeoutRef.current = setTimeout(() => {
+        // Double-check we're still in video mode before stopping HeyGen
+        // User might have switched to audio mode during the 3 minutes
+        if (!audioOnlyRef.current && avatarRef.current) {
+          console.log("3min idle timeout - stopping HeyGen session to save credits");
+          stopHeyGenSession();
+        } else {
+          console.log("Idle timeout fired but not in video mode - skipping");
+        }
+      }, 180000); // 3 minutes - allows for longer avatar responses without disconnect
+    }
+  }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
+
   // Helper to speak with ElevenLabs in video mode (for avatars without HeyGen voice)
   // This mirrors the AVATAR_START_TALKING/STOP_TALKING behavior from HeyGen sessions
   const speakWithElevenLabsInVideoMode = useCallback(async (text: string): Promise<void> => {
@@ -760,24 +778,6 @@ export function useAvatarSession({
       startIdleTimeout();
     }
   }, [clearIdleTimeout, startIdleTimeout, startVoiceRecognition]);
-
-  const startIdleTimeout = useCallback(() => {
-    clearIdleTimeout();
-    
-    // Only start idle timeout in video mode when not paused
-    if (!audioOnlyRef.current && !isPaused) {
-      idleTimeoutRef.current = setTimeout(() => {
-        // Double-check we're still in video mode before stopping HeyGen
-        // User might have switched to audio mode during the 3 minutes
-        if (!audioOnlyRef.current && avatarRef.current) {
-          console.log("3min idle timeout - stopping HeyGen session to save credits");
-          stopHeyGenSession();
-        } else {
-          console.log("Idle timeout fired but not in video mode - skipping");
-        }
-      }, 180000); // 3 minutes - allows for longer avatar responses without disconnect
-    }
-  }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
   const startHeyGenSession = useCallback(async (activeAvatarId: string, options?: { skipGreeting?: boolean }) => {
     // Skip if audio-only
