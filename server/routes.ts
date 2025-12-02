@@ -805,9 +805,12 @@ This appears to be your first conversation with this person - no prior memories 
         }
       }
 
-      // Return audio
+      // Return audio with response text header for frontend logging
       res.setHeader("Content-Type", "audio/mpeg");
       res.setHeader("Content-Length", audioBuffer.length.toString());
+      res.setHeader("X-Claude-Response", encodeURIComponent(responseText));
+      res.setHeader("X-Avatar-Name", encodeURIComponent(avatarConfig.name));
+      res.setHeader("Access-Control-Expose-Headers", "X-Claude-Response, X-Avatar-Name, X-Video-Generating, X-Video-Record-Id, X-Video-Topic, X-Video-Pending-Confirmation");
       res.send(audioBuffer);
 
     } catch (error: any) {

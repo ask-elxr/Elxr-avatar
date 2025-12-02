@@ -1807,6 +1807,24 @@ export function useAvatarSession({
           }
 
           if (audioResponse.ok) {
+            // Log Claude response from header for frontend debugging
+            const claudeResponse = audioResponse.headers.get("X-Claude-Response");
+            const avatarName = audioResponse.headers.get("X-Avatar-Name");
+            if (claudeResponse) {
+              const decodedResponse = decodeURIComponent(claudeResponse);
+              const decodedAvatarName = avatarName ? decodeURIComponent(avatarName) : "Avatar";
+              console.log(`\n🎧 ═══════════════════════════════════════════════════════════════`);
+              console.log(`🎧 AUDIO MODE - ${decodedAvatarName}`);
+              console.log(`🎧 ═══════════════════════════════════════════════════════════════`);
+              console.log(`📥 USER: "${message}"`);
+              console.log(`📤 CLAUDE RESPONSE:`);
+              console.log(`───────────────────────────────────────────────────────────────`);
+              console.log(decodedResponse);
+              console.log(`───────────────────────────────────────────────────────────────`);
+              console.log(`📊 Response: ${decodedResponse.length} chars`);
+              console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+            }
+            
             // Check for video generation headers and notify
             const isVideoGenerating = audioResponse.headers.get("X-Video-Generating") === "true";
             const videoRecordId = audioResponse.headers.get("X-Video-Record-Id");
