@@ -3526,6 +3526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a single file from a topic folder to its namespace (admin only)
+  // Uses lightweight processing to avoid memory issues
   app.post("/api/google-drive/topic-upload-single", isAuthenticated, requireAdmin, async (req: any, res) => {
     const log = logger.child({ service: "google-drive", operation: "topicUploadSingle" });
     const userId = req.user.claims.sub;
@@ -3541,12 +3542,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info({ fileId, fileName, namespace }, "Uploading single file from topic folder");
 
+      // Clear all caches before processing to free memory
+      latencyCache.cleanup();
+      if (global.gc) {
+        global.gc();
+      }
+
       // Download file from Google Drive (has built-in 2MB size limit)
       let downloadResult;
       try {
         downloadResult = await googleDriveService.downloadFile(fileId);
       } catch (downloadError: any) {
-        // Handle file too large error gracefully
         if (downloadError.message?.includes('too large')) {
           log.warn({ fileId, fileName, error: downloadError.message }, "File skipped - too large");
           return res.status(413).json({
@@ -3560,53 +3566,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { buffer, mimeType, fileName: processedFileName } = downloadResult;
 
-      // Save to temporary file
-      const tempDir = "uploads";
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
+      // Extract text directly from buffer without saving to disk
+      let text = '';
+      try {
+        if (mimeType === 'text/plain') {
+          text = buffer.toString('utf-8');
+        } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          const mammoth = await import('mammoth');
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value;
+        } else if (mimeType === 'application/pdf') {
+          const pdfParse = await import('pdf-parse').then(m => m.default);
+          const pdfData = await pdfParse(buffer);
+          text = pdfData.text || '';
+        } else {
+          throw new Error(`Unsupported file type: ${mimeType}`);
+        }
+      } catch (extractError: any) {
+        log.error({ error: extractError.message }, "Failed to extract text");
+        throw extractError;
       }
-      
-      const tempPath = path.join(tempDir, `topic_single_${Date.now()}_${processedFileName}`);
-      fs.writeFileSync(tempPath, buffer);
-      
-      // MEMORY: Clear the buffer reference immediately after writing to disk
-      // @ts-ignore - intentionally clearing reference for GC
+
+      // Clear buffer immediately after text extraction
+      // @ts-ignore
       downloadResult.buffer = null;
 
-      try {
-        const documentId = `doc_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-        const metadata = { 
-          userId, 
-          category: normalizedNamespace,
-          namespace: normalizedNamespace,
-          source: 'google-drive-topic', 
-          originalFilename: fileName || processedFileName
-        };
-
-        await documentProcessor.processDocument(
-          tempPath,
-          mimeType,
-          documentId,
-          metadata,
-        );
-
-        fs.unlinkSync(tempPath);
-
-        log.info({ fileName: processedFileName, namespace: normalizedNamespace }, "File uploaded successfully");
-        res.json({ 
-          success: true, 
-          message: "File uploaded successfully",
-          fileName: processedFileName,
-          namespace: normalizedNamespace,
-          documentId
-        });
-      } catch (processingError: any) {
-        if (fs.existsSync(tempPath)) {
-          fs.unlinkSync(tempPath);
-        }
-        throw processingError;
+      // Limit text size (max 100KB for lightweight processing)
+      const maxTextSize = 100 * 1024;
+      if (text.length > maxTextSize) {
+        text = text.substring(0, maxTextSize);
+        log.warn({ originalLength: text.length }, "Text truncated for memory safety");
       }
+
+      if (!text || text.trim().length < 50) {
+        log.warn({ fileName: processedFileName }, "File has insufficient text content");
+        return res.json({ 
+          success: true, 
+          message: "File skipped - insufficient text content",
+          fileName: processedFileName,
+          skipped: true
+        });
+      }
+
+      const documentId = `doc_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      
+      // Create a single chunk for lightweight processing (avoid chunking overhead)
+      const chunkText = text.substring(0, 8000); // Limit to ~2000 tokens for embedding
+      
+      // Generate embedding using OpenAI directly (bypass heavy processor)
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (!openaiKey) {
+        throw new Error("OPENAI_API_KEY not configured");
+      }
+      
+      const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${openaiKey}`
+        },
+        body: JSON.stringify({
+          model: 'text-embedding-3-small',
+          input: chunkText
+        })
+      });
+
+      if (!embeddingResponse.ok) {
+        const errorText = await embeddingResponse.text();
+        throw new Error(`OpenAI embedding failed: ${errorText}`);
+      }
+
+      const embeddingData = await embeddingResponse.json();
+      const embedding = embeddingData.data[0].embedding;
+
+      // Store directly in Pinecone
+      const chunkId = `${documentId}_chunk_0`;
+      const metadata = { 
+        documentId,
+        chunkIndex: 0,
+        type: 'document_chunk',
+        fileType: mimeType,
+        text: chunkText,
+        timestamp: new Date().toISOString(),
+        userId, 
+        category: normalizedNamespace,
+        namespace: normalizedNamespace,
+        source: 'google-drive-topic', 
+        originalFilename: fileName || processedFileName
+      };
+
+      await pineconeService.storeConversation(chunkId, chunkText, embedding, metadata);
+
+      // Force garbage collection after processing
+      if (global.gc) {
+        global.gc();
+      }
+
+      log.info({ fileName: processedFileName, namespace: normalizedNamespace }, "File uploaded successfully");
+      res.json({ 
+        success: true, 
+        message: "File uploaded successfully",
+        fileName: processedFileName,
+        namespace: normalizedNamespace,
+        documentId,
+        chunksProcessed: 1
+      });
+
     } catch (error) {
       log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to upload file");
       res.status(500).json({
