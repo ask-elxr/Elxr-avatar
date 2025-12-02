@@ -69,14 +69,19 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 
 #### Google Drive Topic Folders Integration
 -   **Source Folder**: `0AL_h7e92I2C8Uk9PVA` contains pre-organized topic folders for Pinecone namespace population.
--   **Folder-to-Namespace Mapping**: Configured in `shared/pineconeCategories.ts` with automatic folder name normalization.
+-   **Folder-to-Namespace Mapping**: Configured in `shared/pineconeCategories.ts` with case-insensitive folder name matching.
 -   **Topic Folders**: Addiction, Body, Career→WORK, grief→GRIEF, life→LIFE, longevity→LONGEVITY, Mark Kohl Brain→MARK_KOHL, Mind, movement→MOVEMENT, Nigel Williams→NIGEL_WILLIAMS, Nutrition, Sleep, Spirituality, Transitions, Willie Gault→WILLIE_GAULT.
--   **Admin UI**: KnowledgeBase page has "Topic Folders" tab for bulk uploads.
--   **API Endpoints**:
+-   **Admin UI**: KnowledgeBase page has "Topic Folders" tab for bulk uploads. Shows file sizes and filtering info.
+-   **API Endpoints** (admin-only with `requireAdmin` middleware):
     -   `GET /api/google-drive/topic-folders` - List all topic folders with file counts
     -   `GET /api/google-drive/topic-folder/:folderId/files` - List files in a topic folder
     -   `POST /api/google-drive/topic-upload-single` - Upload single file to namespace
--   **Memory Limitation**: Large document processing may cause heap overflow. Documents are limited to 500KB text and 25 chunks max.
+-   **Memory Optimization**: 
+    -   File size limit: 3MB max per file (files >3MB auto-skipped)
+    -   Archives excluded: zip, rar, 7z, gzip files filtered out
+    -   Text limit: 200KB max extracted text per document
+    -   Chunk limit: 15 max chunks per document
+    -   Sequential processing: One chunk at a time to minimize memory
 
 #### Technical Implementations
 -   **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent conversation memory.
