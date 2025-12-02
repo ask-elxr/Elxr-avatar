@@ -3432,7 +3432,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       try {
         const documentId = `doc_gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        const metadata = { userId, indexName, namespace, source: 'google-drive' };
+        // Use 'category' for Pinecone namespace routing (pineconeService.storeConversation uses metadata.category)
+        const normalizedNamespace = namespace ? namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') : 'default';
+        const metadata = { 
+          userId, 
+          indexName, 
+          category: normalizedNamespace, // This is what pineconeService uses for namespace
+          namespace: normalizedNamespace,
+          source: 'google-drive',
+          originalFilename: processedFileName
+        };
 
         // Process document directly
         const result = await documentProcessor.processDocument(
@@ -3449,6 +3458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           documentId,
           fileName: processedFileName,
+          namespace: normalizedNamespace,
           result,
           message: "File uploaded from Google Drive and processed successfully",
         });
@@ -3562,7 +3572,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           try {
             const documentId = `doc_gdrive_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            const metadata = { userId, namespace, source: 'google-drive-batch', parentFolder: file.parentFolder };
+            // Normalize namespace for Pinecone (lowercase with hyphens)
+            const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+            const metadata = { 
+              userId, 
+              category: normalizedNamespace, // This is what pineconeService uses for namespace
+              namespace: normalizedNamespace,
+              source: 'google-drive-batch', 
+              parentFolder: file.parentFolder,
+              originalFilename: file.name
+            };
 
             // Process document
             await documentProcessor.processDocument(
@@ -3608,9 +3627,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         successRate 
       }, "Batch upload completed");
 
+      // Get normalized namespace for response
+      const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      
       res.json({
         success: true,
         message: `Batch upload completed. ${successful}/${filesToProcess.length} files processed successfully.`,
+        namespace: normalizedNamespace,
         stats: {
           total: filesToProcess.length,
           processed: successful + failed,
