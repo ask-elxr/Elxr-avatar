@@ -1,6 +1,7 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
+import { TopicFolderUpload } from "@/components/TopicFolderUpload";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -606,11 +607,15 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
           {currentView === 'knowledge' && (
             <div className="space-y-4 sm:space-y-6">
               <DatabaseStatus />
+              
+              {/* Topic Folders from Google Drive */}
+              <TopicFolderUpload />
+              
               <Card>
                 <CardHeader className="p-4 sm:p-6">
                   <CardTitle>Upload Documents</CardTitle>
                   <CardDescription>
-                    Upload documents to enhance AI avatar responses and capabilities
+                    Upload individual documents to enhance AI avatar responses
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 sm:p-6 pt-0">
