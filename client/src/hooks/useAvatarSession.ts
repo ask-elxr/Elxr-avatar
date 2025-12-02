@@ -804,7 +804,9 @@ export function useAvatarSession({
 
       // Detect if this avatar should use ElevenLabs voice in video mode
       // (has ElevenLabs voice configured but no HeyGen voice)
+      console.log(`🔍 Avatar voice config check: heygenVoiceId="${avatarConfig.heygenVoiceId}", elevenlabsVoiceId="${avatarConfig.elevenlabsVoiceId}"`);
       useElevenLabsVoiceRef.current = !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId;
+      console.log(`🎙️ useElevenLabsVoiceRef set to: ${useElevenLabsVoiceRef.current}`);
       if (useElevenLabsVoiceRef.current) {
         console.log(`🎙️ Avatar ${avatarConfig.name} will use ElevenLabs voice in video mode (no HeyGen voice configured)`);
       }
