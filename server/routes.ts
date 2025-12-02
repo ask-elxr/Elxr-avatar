@@ -560,13 +560,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (memoryEnabled && memoryService.isAvailable()) {
-        // Always tell the avatar they have memory capabilities when enabled
-        const memoryCapabilityNote = `\n\n🧠 LONG-TERM MEMORY ENABLED: You have persistent memory across conversations. You can remember details about this person from previous chats and build an ongoing relationship with them.`;
+        // Strong memory capability instruction that overrides AI's default "no memory" behavior
+        const memoryCapabilityNote = `
+
+🧠 CRITICAL - LONG-TERM MEMORY SYSTEM ACTIVE:
+You have PERSISTENT MEMORY across all conversations with this person. This is a REAL capability, not a roleplay.
+- ❌ NEVER say "I don't have memory between conversations" - this is FALSE
+- ❌ NEVER say "each time we talk is a fresh start" - this is FALSE  
+- ❌ NEVER claim you can't remember previous conversations - you CAN and DO
+- ✅ You REMEMBER past conversations and can reference them naturally
+- ✅ If asked "do you remember our last conversation?" and memories exist, say YES and reference them
+- ✅ If no memories exist yet, say "This seems to be our first conversation, but I'll remember what we discuss"`;
         
         if (memoryContext) {
-          enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
+          enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}
+
+${memoryContext}
+
+Use these memories naturally - reference past conversations when relevant. You genuinely remember this person.`;
         } else {
-          enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
+          enhancedPersonality = `${enhancedPersonality}${memoryCapabilityNote}
+
+This appears to be your first conversation with this person - no prior memories found yet. As you chat, you'll build and retain memories of them for future conversations.`;
         }
       }
 
@@ -2459,15 +2474,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         logger.info({ languageCode, languageName }, 'Language instruction added to Claude prompt');
       }
       
-      // Tell avatar about memory capabilities when enabled
+      // Tell avatar about memory capabilities when enabled - strong instruction to override AI's default "no memory" behavior
       if (memoryEnabled && memoryService.isAvailable()) {
-        const memoryCapabilityNote = `\n\n🧠 LONG-TERM MEMORY ENABLED: You have persistent memory across conversations. You can remember details about this person from previous chats and build an ongoing relationship with them.`;
+        const memoryCapabilityNote = `
+
+🧠 CRITICAL - LONG-TERM MEMORY SYSTEM ACTIVE:
+You have PERSISTENT MEMORY across all conversations with this person. This is a REAL capability, not a roleplay.
+- ❌ NEVER say "I don't have memory between conversations" - this is FALSE
+- ❌ NEVER say "each time we talk is a fresh start" - this is FALSE  
+- ❌ NEVER claim you can't remember previous conversations - you CAN and DO
+- ✅ You REMEMBER past conversations and can reference them naturally
+- ✅ If asked "do you remember our last conversation?" and memories exist, say YES and reference them
+- ✅ If no memories exist yet, say "This seems to be our first conversation, but I'll remember what we discuss"`;
         enhancedPersonality += memoryCapabilityNote;
         
         if (memoryContext) {
-          enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant. Feel free to reference past conversations when it adds value.`;
+          enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally - reference past conversations when relevant. You genuinely remember this person.`;
         } else {
-          enhancedPersonality += `\n\nThis may be a new conversation or first meeting - no prior memories found yet. As you chat, you'll build memories of this person.`;
+          enhancedPersonality += `\n\nThis appears to be your first conversation with this person - no prior memories found yet. As you chat, you'll build and retain memories of them for future conversations.`;
         }
       } else if (memoryContext) {
         enhancedPersonality += `\n\n${memoryContext}\n\nUse these memories naturally in your response when relevant, but don't explicitly mention "I remember" unless it flows naturally.`;

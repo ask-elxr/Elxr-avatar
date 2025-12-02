@@ -205,8 +205,8 @@ class MemoryService {
         return { success: false, error: 'Memory service not available' };
       }
 
-      // Lowered minScore from 0.7 to 0.5 to be more inclusive of related memories
-      const { limit = 10, type, minScore = 0.5 } = options;
+      // Lowered minScore from 0.5 to 0.4 to be more inclusive of conversational memories
+      const { limit = 10, type, minScore = 0.4 } = options;
 
       // Generate embedding for query
       const embedding = await this.generateEmbedding(query);
@@ -240,8 +240,8 @@ class MemoryService {
           createdAt: (match.metadata?.createdAt as number) || Date.now(),
         }));
 
-      // Log warning if only low-score matches are returned (between minScore and 0.6)
-      const lowScoreMatches = memories.filter(m => m.score < 0.6);
+      // Log warning if only low-score matches are returned (between minScore and 0.5)
+      const lowScoreMatches = memories.filter(m => m.score < 0.5);
       if (lowScoreMatches.length > 0 && lowScoreMatches.length === memories.length) {
         logger.warn(
           {
