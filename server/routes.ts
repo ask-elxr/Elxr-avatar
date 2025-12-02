@@ -3541,8 +3541,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info({ fileId, fileName, namespace }, "Uploading single file from topic folder");
 
-      // Download file from Google Drive
-      const { buffer, mimeType, fileName: processedFileName } = await googleDriveService.downloadFile(fileId);
+      // Download file from Google Drive (has built-in 2MB size limit)
+      let downloadResult;
+      try {
+        downloadResult = await googleDriveService.downloadFile(fileId);
+      } catch (downloadError: any) {
+        // Handle file too large error gracefully
+        if (downloadError.message?.includes('too large')) {
+          log.warn({ fileId, fileName, error: downloadError.message }, "File skipped - too large");
+          return res.status(413).json({
+            error: "File too large",
+            details: downloadError.message,
+            skipped: true
+          });
+        }
+        throw downloadError;
+      }
+      
+      const { buffer, mimeType, fileName: processedFileName } = downloadResult;
 
       // Save to temporary file
       const tempDir = "uploads";
@@ -3552,6 +3568,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const tempPath = path.join(tempDir, `topic_single_${Date.now()}_${processedFileName}`);
       fs.writeFileSync(tempPath, buffer);
+      
+      // MEMORY: Clear the buffer reference immediately after writing to disk
+      // @ts-ignore - intentionally clearing reference for GC
+      downloadResult.buffer = null;
 
       try {
         const documentId = `doc_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;

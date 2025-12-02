@@ -112,8 +112,13 @@ export function TopicFolderUpload() {
         try {
           await uploadSingleFile(file.id, file.name, folder.namespace);
           successCount++;
-        } catch (error) {
-          console.error(`Failed to upload ${file.name}:`, error);
+        } catch (error: any) {
+          // Handle "file too large" as a skip rather than error
+          if (error.message?.includes('too large') || error.message?.includes('413')) {
+            console.log(`Skipped ${file.name}: file too large`);
+          } else {
+            console.error(`Failed to upload ${file.name}:`, error);
+          }
           errorCount++;
         }
 

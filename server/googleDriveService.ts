@@ -182,8 +182,17 @@ export class GoogleDriveService {
 
       const fileName = metadata.data.name || 'unknown';
       const mimeType = metadata.data.mimeType || 'application/octet-stream';
+      const fileSize = parseInt(metadata.data.size || '0', 10);
 
-      this.log.info({ fileId, fileName, mimeType }, 'File metadata retrieved');
+      // MEMORY SAFETY: Check file size before downloading (max 2MB to prevent OOM)
+      const maxDownloadSize = 2 * 1024 * 1024; // 2MB
+      if (fileSize > maxDownloadSize && !mimeType.startsWith('application/vnd.google-apps.')) {
+        this.log.warn({ fileId, fileName, fileSize, maxSize: maxDownloadSize }, 
+          'File too large to download - skipping to prevent memory issues');
+        throw new Error(`File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 2MB limit)`);
+      }
+
+      this.log.info({ fileId, fileName, mimeType, fileSize }, 'File metadata retrieved');
 
       // Handle Google Docs formats - export as PDF or plain text
       if (mimeType.startsWith('application/vnd.google-apps.')) {
