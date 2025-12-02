@@ -19,11 +19,11 @@ const activePollingSet = new Set<string>();
 
 // Talking Photo IDs - these require different API format (type: "talking_photo" instead of "avatar")
 // Identified from HeyGen API: these are in the talking_photos category, not avatars
-// Note: Mark Kohl's talking photo (84d6a3a8f0d545a9900bf16176c7b7ae) was deleted from HeyGen, now using Live Avatar
 const TALKING_PHOTO_IDS = new Set([
   "84f913285ac944188a35ce5b58ceb861", // Kelsey
   "1da3f06fc92a4a9bbbe10f81b3b6a498", // Thad
   "57d0eb901fe84211b92b0a9d91f2e5c0", // Willie
+  "93cea50f10a14444888832d07925a94d", // Mark Kohl - Photo Avatar from HeyGen UI
 ]);
 
 interface VideoGenerationRequest {

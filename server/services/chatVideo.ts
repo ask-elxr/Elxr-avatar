@@ -17,12 +17,12 @@ const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 const elevenLabsClient = ELEVENLABS_API_KEY ? new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY }) : null;
 
 // Talking Photo IDs - these require different API format (type: "talking_photo" instead of "avatar")
-// Note: Mark Kohl's talking photo (84d6a3a8f0d545a9900bf16176c7b7ae) was deleted from HeyGen, now using Live Avatar
 const TALKING_PHOTO_IDS = new Set([
   "84f913285ac944188a35ce5b58ceb861",
   "1da3f06fc92a4a9bbbe10f81b3b6a498",
   "57d0eb901fe84211b92b0a9d91f2e5c0",
   "ee40f646802241e1902a93b5cf05575c",
+  "93cea50f10a14444888832d07925a94d", // Mark Kohl - Photo Avatar from HeyGen UI
 ]);
 
 interface HeyGenVideoResponse {
