@@ -304,6 +304,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const { message, avatarId = "mark-kohl", languageCode } = req.body;
+      
+      log.info({ 
+        avatarId, 
+        languageCode: languageCode || 'en-US (default)',
+        messagePreview: message?.substring(0, 50) 
+      }, '🎤 Audio mode request - language and message received');
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
