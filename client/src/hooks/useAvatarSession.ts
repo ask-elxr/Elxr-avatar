@@ -991,13 +991,16 @@ export function useAvatarSession({
         enablePushToTalk: false, // Disable push-to-talk mode
       };
       
-      // Only set voice if we have a specific voice ID, otherwise let HeyGen use avatar's default
-      if (avatarConfig.heygenVoiceId) {
-        avatarStartConfig.voice = {
-          voiceId: avatarConfig.heygenVoiceId,
-          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-        };
-      }
+      // HeyGen API requires a voice config to start the avatar session.
+      // For avatars using ElevenLabs voice (no heygenVoiceId), we pass a fallback
+      // voice ID just to satisfy HeyGen's requirements. The actual speaking will
+      // be done via ElevenLabs through speakWithElevenLabsInVideoMode().
+      const FALLBACK_HEYGEN_VOICE_ID = "ea54d3885c264ed4adbb45b71b1cab08"; // Generic HeyGen voice for session init
+      
+      avatarStartConfig.voice = {
+        voiceId: avatarConfig.heygenVoiceId || FALLBACK_HEYGEN_VOICE_ID,
+        rate: parseFloat(avatarConfig.voiceRate || "1.0"),
+      };
       
       await avatar.createStartAvatar(avatarStartConfig);
 
