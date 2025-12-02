@@ -125,12 +125,13 @@ export class GoogleDriveService {
     }
   }
 
-  async listFolderContents(folderId: string, pageToken?: string) {
+  async listFolderContents(folderId: string, pageToken?: string, driveId?: string) {
     try {
-      this.log.info({ folderId }, 'Listing folder contents');
+      this.log.info({ folderId, driveId }, 'Listing folder contents');
       const drive = await getUncachableGoogleDriveClient();
 
-      const response = await drive.files.list({
+      // Build the request options
+      const requestOptions: any = {
         q: `'${folderId}' in parents and trashed=false`,
         fields: 'nextPageToken, files(id, name, mimeType, modifiedTime, size, iconLink, webViewLink)',
         pageSize: 100,
@@ -138,14 +139,22 @@ export class GoogleDriveService {
         orderBy: 'folder,name',
         supportsAllDrives: true,
         includeItemsFromAllDrives: true
-      });
+      };
+
+      // If we're in a Shared Drive, set the corpora and driveId for proper access
+      if (driveId) {
+        requestOptions.corpora = 'drive';
+        requestOptions.driveId = driveId;
+      }
+
+      const response = await drive.files.list(requestOptions);
 
       return {
         files: response.data.files || [],
         nextPageToken: response.data.nextPageToken
       };
     } catch (error: any) {
-      this.log.error({ error: error.message, folderId }, 'Failed to list folder contents');
+      this.log.error({ error: error.message, folderId, driveId }, 'Failed to list folder contents');
       throw new Error('Failed to list folder contents');
     }
   }

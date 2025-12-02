@@ -3084,8 +3084,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/google-drive/folder/:folderId", isAuthenticated, async (req: any, res) => {
     try {
       const { folderId } = req.params;
-      const { pageToken } = req.query;
-      const result = await googleDriveService.listFolderContents(folderId, pageToken as string | undefined);
+      const { pageToken, driveId } = req.query;
+      const result = await googleDriveService.listFolderContents(
+        folderId, 
+        pageToken as string | undefined,
+        driveId as string | undefined
+      );
       res.json(result);
     } catch (error) {
       console.error("Error listing folder contents:", error);

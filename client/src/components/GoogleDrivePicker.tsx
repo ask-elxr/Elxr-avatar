@@ -5,7 +5,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Loader2, Folder, FileText, File, ArrowLeft, CheckCircle2, Search, X } from "lucide-react";
+import { Loader2, Folder, FileText, File, ArrowLeft, CheckCircle2, Search, X, HardDrive } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type PineconeCategory } from "@shared/pineconeCategories";
 
@@ -19,6 +19,12 @@ interface GoogleDriveFile {
   webViewLink?: string;
 }
 
+interface SharedDrive {
+  id: string;
+  name: string;
+  createdTime?: string;
+}
+
 interface GoogleDrivePickerProps {
   selectedCategory: PineconeCategory;
   onUploadComplete?: () => void;
@@ -28,6 +34,8 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
   const [isConnected, setIsConnected] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [folders, setFolders] = useState<GoogleDriveFile[]>([]);
+  const [sharedDrives, setSharedDrives] = useState<SharedDrive[]>([]);
+  const [currentDrive, setCurrentDrive] = useState<SharedDrive | null>(null);
   const [currentFolder, setCurrentFolder] = useState<GoogleDriveFile | null>(null);
   const [files, setFiles] = useState<GoogleDriveFile[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
@@ -50,7 +58,7 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
       setIsConnected(data.connected);
       
       if (data.connected) {
-        loadSharedFolders();
+        loadAllDriveData();
       }
     } catch (error) {
       console.error("Error checking Google Drive connection:", error);
@@ -60,17 +68,41 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
     }
   };
 
-  const loadSharedFolders = async () => {
+  const loadAllDriveData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/google-drive/folders");
+      // Load both shared folders and shared drives in parallel
+      const [foldersRes, drivesRes] = await Promise.all([
+        fetch("/api/google-drive/folders"),
+        fetch("/api/google-drive/shared-drives")
+      ]);
+      const foldersData = await foldersRes.json();
+      const drivesData = await drivesRes.json();
+      setFolders(foldersData.folders || []);
+      setSharedDrives(drivesData.drives || []);
+    } catch (error) {
+      console.error("Error loading drive data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load Google Drive data",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadSharedDriveFolders = async (driveId: string) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch(`/api/google-drive/shared-drive/${driveId}/folders`);
       const data = await response.json();
       setFolders(data.folders || []);
     } catch (error) {
-      console.error("Error loading folders:", error);
+      console.error("Error loading shared drive folders:", error);
       toast({
         title: "Error",
-        description: "Failed to load Google Drive folders",
+        description: "Failed to load shared drive folders",
         variant: "destructive",
       });
     } finally {
@@ -81,7 +113,11 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
   const loadFolderContents = async (folderId: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/google-drive/folder/${folderId}`);
+      // Include driveId if we're inside a Shared Drive for proper API context
+      const url = currentDrive 
+        ? `/api/google-drive/folder/${folderId}?driveId=${currentDrive.id}`
+        : `/api/google-drive/folder/${folderId}`;
+      const response = await fetch(url);
       const data = await response.json();
       setFiles(data.files || []);
     } catch (error) {
@@ -96,6 +132,12 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
     }
   };
 
+  const openSharedDrive = (drive: SharedDrive) => {
+    setCurrentDrive(drive);
+    setSelectedFiles(new Set());
+    loadSharedDriveFolders(drive.id);
+  };
+
   const openFolder = (folder: GoogleDriveFile) => {
     setCurrentFolder(folder);
     setSelectedFiles(new Set());
@@ -108,6 +150,20 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
       setSearchResults([]);
       setSearchQuery("");
       setSelectedFiles(new Set());
+    } else if (currentFolder) {
+      // If in a folder, go back to the drive/folder list
+      setCurrentFolder(null);
+      setFiles([]);
+      setSelectedFiles(new Set());
+      if (currentDrive) {
+        // Reload shared drive folders
+        loadSharedDriveFolders(currentDrive.id);
+      }
+    } else if (currentDrive) {
+      // If in a shared drive, go back to main view
+      setCurrentDrive(null);
+      setSelectedFiles(new Set());
+      loadAllDriveData();
     } else {
       setCurrentFolder(null);
       setFiles([]);
@@ -250,28 +306,38 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
     );
   }
 
+  const getTitle = () => {
+    if (showSearchResults) return `Search Results for "${searchQuery}"`;
+    if (currentFolder) return currentFolder.name;
+    if (currentDrive) return currentDrive.name;
+    return "Google Drive";
+  };
+
+  const getDescription = () => {
+    if (showSearchResults) return `${searchResults.length} file(s) found - Select files to upload to ${selectedCategory}`;
+    if (currentFolder) return `Select files to upload to ${selectedCategory}`;
+    if (currentDrive) return "Select a folder to browse";
+    return "Browse Shared Drives and shared folders";
+  };
+
   return (
     <Card className="glass-strong border-white/10">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-white flex items-center gap-2">
-              <Folder className="w-5 h-5 text-purple-400" />
-              {showSearchResults 
-                ? `Search Results for "${searchQuery}"`
-                : currentFolder 
-                  ? currentFolder.name 
-                  : "Google Drive Shared Folders"}
+              {currentDrive ? (
+                <HardDrive className="w-5 h-5 text-blue-400" />
+              ) : (
+                <Folder className="w-5 h-5 text-purple-400" />
+              )}
+              {getTitle()}
             </CardTitle>
             <CardDescription className="text-white/70">
-              {showSearchResults
-                ? `${searchResults.length} file(s) found - Select files to upload to ${selectedCategory}`
-                : currentFolder 
-                  ? `Select files to upload to ${selectedCategory}` 
-                  : "Browse your shared Google Drive folders"}
+              {getDescription()}
             </CardDescription>
           </div>
-          {(currentFolder || showSearchResults) && (
+          {(currentFolder || currentDrive || showSearchResults) && (
             <Button
               variant="ghost"
               size="sm"
@@ -285,13 +351,13 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
           )}
         </div>
         
-        {!currentFolder && !showSearchResults && (
+        {!currentFolder && !currentDrive && !showSearchResults && (
           <div className="flex gap-2 mt-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/50" />
               <Input
                 type="text"
-                placeholder="Search files and folders..."
+                placeholder="Search all files and folders..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -428,17 +494,17 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
                 })
               )}
             </div>
-          ) : (
+          ) : currentDrive ? (
             <div className="space-y-2">
               {folders.length === 0 ? (
-                <p className="text-center text-white/50 py-8">No shared folders found</p>
+                <p className="text-center text-white/50 py-8">No folders found in this drive</p>
               ) : (
                 folders.map((folder) => (
                   <div
                     key={folder.id}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all border border-transparent hover:border-purple-500/30"
                     onClick={() => openFolder(folder)}
-                    data-testid={`folder-item-${folder.id}`}
+                    data-testid={`drive-folder-item-${folder.id}`}
                   >
                     <Folder className="w-5 h-5 text-blue-400 flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -452,6 +518,58 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
                   </div>
                 ))
               )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Shared Drives Section */}
+              {sharedDrives.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium text-white/70 px-1">Shared Drives</h3>
+                  {sharedDrives.map((drive) => (
+                    <div
+                      key={drive.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all border border-transparent hover:border-blue-500/30"
+                      onClick={() => openSharedDrive(drive)}
+                      data-testid={`shared-drive-${drive.id}`}
+                    >
+                      <HardDrive className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm truncate">{drive.name}</p>
+                        <p className="text-white/50 text-xs">Shared Drive</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Shared With Me Section */}
+              <div className="space-y-2">
+                {sharedDrives.length > 0 && folders.length > 0 && (
+                  <h3 className="text-sm font-medium text-white/70 px-1">Shared With Me</h3>
+                )}
+                {folders.length === 0 && sharedDrives.length === 0 ? (
+                  <p className="text-center text-white/50 py-8">No shared folders or drives found</p>
+                ) : (
+                  folders.map((folder) => (
+                    <div
+                      key={folder.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer transition-all border border-transparent hover:border-purple-500/30"
+                      onClick={() => openFolder(folder)}
+                      data-testid={`folder-item-${folder.id}`}
+                    >
+                      <Folder className="w-5 h-5 text-purple-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white text-sm truncate">{folder.name}</p>
+                        {folder.modifiedTime && (
+                          <p className="text-white/50 text-xs">
+                            Modified {new Date(folder.modifiedTime).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           )}
         </ScrollArea>
