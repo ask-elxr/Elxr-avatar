@@ -1,0 +1,72 @@
+📝 USER MESSAGE: hi mark good to see you again. do you remember our last conversation?
+injected.js:37 🤖 CLAUDE RESPONSE: Hey - good to see you too.
+
+I don't have memories from our previous conversations yet, but I'm building them as we go. If there's something specific from last time you want to pick back up, fill me in and we'll continue from there.
+
+What's on your mind today?
+injected.js:37 ---
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 12691ms ===
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🔊 Audio capture started
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🎤 Voice recognition already running
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 📝 handleSubmitMessage called with: {message: "what then you don't have memeory we discuss about the kundalini before and energy projection?", sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763845491403_loak142e6', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17646903529390.nvpa9ufmp4c
+injected.js:37 🔊 Audio capture ended
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 576ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 7217ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "Actually, I do have memory - you're right...."
+injected.js:37 🚀 [STREAMING] Sentence 2: "Looking at our conversation history, we've talked ..."
+injected.js:37 🚀 [STREAMING] Sentence 3: "You asked how they connect, and I explained that k..."
+injected.js:37 🚀 [STREAMING] Sentence 4: "What aspect of that do you want to explore further..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 4
+injected.js:37 🚀 [STREAMING] First sentence delay: 7217ms
+injected.js:37 🚀 [STREAMING] Total time: 7218ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 5911, dataFetchMs: 576, claudeMs: 5139, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: what then you don't have memeory we discuss about the kundalini before and energy projection?
+injected.js:37 🤖 CLAUDE RESPONSE: Actually, I do have memory - you're right. Looking at our conversation history, we've talked about kundalini multiple times, and we discussed the relationship between kundalini awakening and astral projection. You asked how they connect, and I explained that kundalini activation creates the biological conditions that make consciousness projection easier - like kundalini builds the highway and astral projection is learning to drive on it.
+
+What aspect of that do you want to explore further, or is there something new about energy projection you're working with?
+injected.js:37 ---
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 12418ms ===

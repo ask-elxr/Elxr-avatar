@@ -465,8 +465,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       log.info({ allNamespaces, totalCount: allNamespaces.length }, '🔍 Total namespaces to query');
 
-      // Run memory and knowledge fetches in PARALLEL
-      const [memoryResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+      // Run memory, knowledge, and conversation history fetches in PARALLEL
+      const [memoryResultSettled, knowledgeResultSettled, conversationHistorySettled] = await Promise.allSettled([
         (async () => {
           if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
             return { success: false, memories: [] };
@@ -499,6 +499,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log.error({ error: error.message }, '🔍 Pinecone query error');
             return null;
           }
+        })(),
+        // Fetch conversation history from database
+        (async () => {
+          if (!userId) return [];
+          try {
+            const records = await storage.getConversationHistory(userId, avatarId, 6);
+            return records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
+          } catch (error) {
+            return [];
+          }
         })()
       ]);
 
@@ -518,6 +528,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         knowledgeContext = knowledgeResultSettled.value;
         log.debug({ contextLength: knowledgeContext.length }, "Knowledge context retrieved");
       }
+      
+      // Get conversation history from settled promise
+      const dbConversationHistory: any[] = conversationHistorySettled.status === 'fulfilled' 
+        ? conversationHistorySettled.value 
+        : [];
+      const hasConversationHistory = dbConversationHistory.length > 0;
+      log.info({ hasConversationHistory, historyCount: dbConversationHistory.length }, 'Conversation history status');
 
       // Step 1: Get Claude response with knowledge base context
       const currentDate = new Date().toLocaleDateString("en-US", {
@@ -542,14 +559,21 @@ You have a real, working long-term memory system. NEVER say ANY of these or simi
 - "Each time we talk is a fresh start" ❌
 - "I can't recall what we discussed before" ❌
 - "I don't remember our previous conversations" ❌
+- "I don't have memories from our previous conversations" ❌
 - "My memory doesn't persist" ❌
 - "I start fresh each time" ❌
+- "I'm building memories as we go" (implies you don't have them) ❌
 - Any variation claiming you lack memory capability ❌
 
+${hasConversationHistory ? `
+✅ YOU HAVE CONVERSATION HISTORY WITH THIS USER - you've talked before! Check the conversation history provided below and reference it naturally.
+When asked "do you remember our last conversation?" respond with specific details from the history.
+` : `
 If you have no prior memories of this person yet, say something like:
 ✅ "This seems to be our first conversation! I'll remember what we discuss."
 ✅ "I don't have any memories of us chatting before - you might be new here!"
 ✅ "Welcome! Tell me about yourself and I'll remember it for next time."
+`}
 
 NEVER explain or apologize about memory limitations. You HAVE memory - use it or acknowledge it's building.
 
@@ -557,7 +581,7 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
         enhancedPersonality = memoryDenialPrevention + enhancedPersonality;
       }
       
-      // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability
+      // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability (audio mode)
       const videoCapabilityDirective = `
 🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
 You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
@@ -641,6 +665,16 @@ Use these memories naturally - reference past conversations when relevant. You g
 
 This appears to be your first conversation with this person - no prior memories found yet. As you chat, you'll build and retain memories of them for future conversations.`;
         }
+      }
+      
+      // Add explicit conversation history summary when it exists (helps with "do you remember" questions)
+      if (hasConversationHistory && dbConversationHistory.length > 0) {
+        const historyPreview = dbConversationHistory.slice(0, 4).map(c => 
+          c.isUser ? `User: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}` : 
+                     `You: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}`
+        ).join('\n');
+        enhancedPersonality += `\n\n📜 PREVIOUS CONVERSATION HISTORY WITH THIS USER:\n${historyPreview}\n\nWhen asked about previous conversations, reference this history naturally. You DO remember talking with them.`;
+        log.info({ userId, historyCount: dbConversationHistory.length }, 'Added conversation history to audio mode prompt');
       }
 
       // Generate Claude response with enhanced personality
@@ -3003,6 +3037,9 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
       let enhancedPersonality = `${personalityPrompt}\n\n⚠️ TODAY'S DATE: ${currentDate}. Use this when asked about dates, current events, or time-sensitive topics.`;
       
+      // Check if we have conversation history with this user
+      const hasConversationHistory = dbConversationHistory.length > 0;
+      
       // PRIMARY DIRECTIVE: Prevent AI from denying memory capability (must be at TOP for highest priority)
       // This catches ALL variations of memory denial that Claude might use
       if (memoryEnabled && memoryService.isAvailable()) {
@@ -3013,14 +3050,21 @@ You have a real, working long-term memory system. NEVER say ANY of these or simi
 - "Each time we talk is a fresh start" ❌
 - "I can't recall what we discussed before" ❌
 - "I don't remember our previous conversations" ❌
+- "I don't have memories from our previous conversations" ❌
 - "My memory doesn't persist" ❌
 - "I start fresh each time" ❌
+- "I'm building memories as we go" (implies you don't have them) ❌
 - Any variation claiming you lack memory capability ❌
 
+${hasConversationHistory ? `
+✅ YOU HAVE CONVERSATION HISTORY WITH THIS USER - you've talked before! Check the conversation history provided below and reference it naturally.
+When asked "do you remember our last conversation?" respond with specific details from the history.
+` : `
 If you have no prior memories of this person yet, say something like:
 ✅ "This seems to be our first conversation! I'll remember what we discuss."
 ✅ "I don't have any memories of us chatting before - you might be new here!"
 ✅ "Welcome! Tell me about yourself and I'll remember it for next time."
+`}
 
 NEVER explain or apologize about memory limitations. You HAVE memory - use it or acknowledge it's building.
 
@@ -3090,6 +3134,16 @@ This applies to EVERY response, regardless of conversation length.`;
       
       if (memoryContext) {
         enhancedPersonality += memoryContext + "\n\nUse these memories naturally in your response when relevant.";
+      }
+      
+      // Add explicit conversation history summary when it exists (helps with "do you remember" questions)
+      if (hasConversationHistory && dbConversationHistory.length > 0) {
+        const historyPreview = dbConversationHistory.slice(0, 4).map(c => 
+          c.isUser ? `User: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}` : 
+                     `You: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}`
+        ).join('\n');
+        enhancedPersonality += `\n\n📜 PREVIOUS CONVERSATION HISTORY WITH THIS USER:\n${historyPreview}\n\nWhen asked about previous conversations, reference this history naturally. You DO remember talking with them.`;
+        log.info({ userId, historyCount: dbConversationHistory.length }, 'Added conversation history to prompt');
       }
 
       // Add graceful fallback instruction when combined context is effectively empty
