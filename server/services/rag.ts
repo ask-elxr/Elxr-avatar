@@ -114,7 +114,8 @@ export async function generateLessonScript({
   pineconeNamespaces = [],
   personalityPrompt,
   targetDuration = 60,
-  additionalContext = ''
+  additionalContext = '',
+  hasImageContent = false
 }: {
   avatarId: string;
   topic: string;
@@ -123,7 +124,10 @@ export async function generateLessonScript({
   personalityPrompt?: string;
   targetDuration?: number;
   additionalContext?: string;
+  hasImageContent?: boolean;
 }) {
+  // Auto-detect image content if not explicitly passed
+  const containsImageAnalysis = hasImageContent || additionalContext.includes('Image Analysis:');
   // 1. Retrieve relevant context from Pinecone
   let pineconeContext: any[] = [];
   if (pineconeNamespaces && pineconeNamespaces.length > 0) {
@@ -154,21 +158,33 @@ export async function generateLessonScript({
   const wordsPerMinute = 150;
   const targetWords = Math.round((targetDuration / 60) * wordsPerMinute);
   
+  // Add image-specific instructions when image content is detected
+  const imageInstructions = containsImageAnalysis ? `
+CRITICAL - IMAGE CONTENT:
+You have been provided with an "Image Analysis" section in the additional context. This contains a detailed description of an image the user uploaded.
+- You MUST describe and discuss what is shown in the image based on this analysis
+- Reference the visual elements, objects, people, or scenes described
+- Connect the image content directly to your explanation
+- Do NOT say "I cannot see the image" or "no image was provided" - the image analysis IS your view of the image
+- Speak as if you are looking at and describing the image to the viewer
+` : '';
+
   const scriptPrompt = `You are writing a video lesson script for "${lessonTitle}".
 
 TOPIC: ${topic}
-
+${imageInstructions}
 TARGET LENGTH: Approximately ${targetWords} words (${targetDuration} seconds when spoken at natural pace)
 
 SCRIPT REQUIREMENTS:
 1. Write in first person as if you are the speaker delivering this lesson
 2. Start with a brief, engaging introduction that hooks the viewer
 3. Present the main content clearly and conversationally
-4. Include specific examples, facts, or insights from the knowledge base
+4. Include specific examples, facts, or insights from the knowledge base${containsImageAnalysis ? ' AND the image analysis' : ''}
 5. End with a clear takeaway or call to action
 6. Write for SPOKEN delivery - use natural language, contractions, and conversational flow
 7. Avoid bullet points, numbered lists, or written formatting - write flowing paragraphs
 8. Do NOT include stage directions, camera cues, or "[pause]" markers
+${containsImageAnalysis ? '9. You MUST reference and describe the image content based on the Image Analysis provided' : ''}
 
 OUTPUT: Return ONLY the script text that the avatar will speak. No headers, no meta-commentary.`;
 

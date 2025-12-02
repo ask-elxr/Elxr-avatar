@@ -3090,7 +3090,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         (async () => {
           const knowStart = Date.now();
           try {
-            const avatarNamespaces = getAvatarNamespaces(avatarConfig);
+            const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
             const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
             if (!pineconeNamespaceService.isAvailable()) {
               perfTimings.knowledge = Date.now() - knowStart;

@@ -100,6 +100,8 @@ export function useAvatarSession({
   const streamingEnabledRef = useRef(true); // Enable streaming mode by default for faster responses
   const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
+  const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
+  const elevenLabsVideoAudioRef = useRef<HTMLAudioElement | null>(null); // Audio element for ElevenLabs in video mode
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
 
@@ -607,6 +609,130 @@ export function useAvatarSession({
     }
   }, [heygenSessionActive, videoRef, clearIdleTimeout]);
 
+  // Helper to speak with ElevenLabs in video mode (for avatars without HeyGen voice)
+  // This mirrors the AVATAR_START_TALKING/STOP_TALKING behavior from HeyGen sessions
+  const speakWithElevenLabsInVideoMode = useCallback(async (text: string): Promise<void> => {
+    try {
+      // Stop any currently playing ElevenLabs audio
+      if (elevenLabsVideoAudioRef.current) {
+        elevenLabsVideoAudioRef.current.pause();
+        elevenLabsVideoAudioRef.current = null;
+      }
+
+      // === AVATAR_START_TALKING equivalent ===
+      // Pause voice recognition while speaking
+      if (recognitionRef.current && recognitionRunningRef.current) {
+        try {
+          recognitionIntentionalStopRef.current = true;
+          recognitionRef.current.stop();
+          recognitionRunningRef.current = false;
+          setMicrophoneStatus('stopped');
+          console.log("🔇 Voice recognition paused for ElevenLabs speech (video mode)");
+        } catch (e) {
+          // Ignore errors
+        }
+      }
+
+      isSpeakingRef.current = true;
+      setIsSpeakingState(true);
+      clearIdleTimeout(); // Clear idle timeout while speaking
+      console.log("🗣️ ElevenLabs avatar START talking (video mode)");
+
+      const response = await fetch("/api/elevenlabs/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          avatarId: currentAvatarIdRef.current,
+          languageCode: elevenLabsLanguageCodeRef.current,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate ElevenLabs TTS audio");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      elevenLabsVideoAudioRef.current = audio;
+
+      return new Promise((resolve) => {
+        audio.onended = () => {
+          // === AVATAR_STOP_TALKING equivalent ===
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          URL.revokeObjectURL(audioUrl);
+          elevenLabsVideoAudioRef.current = null;
+          console.log("🗣️ ElevenLabs avatar STOP talking (video mode)");
+          
+          // Resume voice recognition
+          recognitionIntentionalStopRef.current = false;
+          if (!recognitionRunningRef.current && sessionActiveRef.current) {
+            startVoiceRecognition();
+            console.log("🎤 Voice recognition resumed after ElevenLabs speech");
+          }
+          
+          // Reset idle timeout
+          startIdleTimeout();
+          resolve();
+        };
+
+        audio.onerror = () => {
+          // === AVATAR_STOP_TALKING equivalent on error ===
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          URL.revokeObjectURL(audioUrl);
+          elevenLabsVideoAudioRef.current = null;
+          console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
+          
+          // Resume voice recognition on error
+          recognitionIntentionalStopRef.current = false;
+          if (!recognitionRunningRef.current && sessionActiveRef.current) {
+            startVoiceRecognition();
+          }
+          
+          // Restart idle timeout on error
+          startIdleTimeout();
+          resolve();
+        };
+
+        audio.play().catch((err) => {
+          console.error("Error playing ElevenLabs audio in video mode:", err);
+          // === AVATAR_STOP_TALKING equivalent on play error ===
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
+          
+          // Resume voice recognition on play error
+          recognitionIntentionalStopRef.current = false;
+          if (!recognitionRunningRef.current && sessionActiveRef.current) {
+            startVoiceRecognition();
+          }
+          
+          // Restart idle timeout on play error
+          startIdleTimeout();
+          resolve();
+        });
+      });
+    } catch (error) {
+      console.error("Error in speakWithElevenLabsInVideoMode:", error);
+      // === AVATAR_STOP_TALKING equivalent on fetch error ===
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false);
+      console.log("🗣️ ElevenLabs avatar STOP talking (fetch error - video mode)");
+      
+      // Resume voice recognition on error
+      recognitionIntentionalStopRef.current = false;
+      if (!recognitionRunningRef.current && sessionActiveRef.current) {
+        startVoiceRecognition();
+      }
+      
+      // Restart idle timeout on fetch error
+      startIdleTimeout();
+    }
+  }, [clearIdleTimeout, startIdleTimeout, startVoiceRecognition]);
+
   const startIdleTimeout = useCallback(() => {
     clearIdleTimeout();
     
@@ -648,6 +774,13 @@ export function useAvatarSession({
       }
       const avatarConfig = await avatarConfigResponse.json();
 
+      // Detect if this avatar should use ElevenLabs voice in video mode
+      // (has ElevenLabs voice configured but no HeyGen voice)
+      useElevenLabsVoiceRef.current = !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId;
+      if (useElevenLabsVoiceRef.current) {
+        console.log(`🎙️ Avatar ${avatarConfig.name} will use ElevenLabs voice in video mode (no HeyGen voice configured)`);
+      }
+
       const { token, sessionId } = await fetchAccessToken(activeAvatarId);
       // Only update sessionIdRef if we got a new one - during mode switching,
       // we already have a valid sessionId from startSession and the token endpoint
@@ -680,10 +813,16 @@ export function useAvatarSession({
               const { greeting } = await greetingResponse.json();
               if (greeting && avatar) {
                 console.log("🗣️ Avatar greeting:", greeting);
-                await avatar.speak({
-                  text: greeting,
-                  taskType: TaskType.REPEAT,
-                });
+                // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+                if (useElevenLabsVoiceRef.current) {
+                  console.log("🎙️ Using ElevenLabs for greeting (video mode with ElevenLabs voice)");
+                  await speakWithElevenLabsInVideoMode(greeting);
+                } else {
+                  await avatar.speak({
+                    text: greeting,
+                    taskType: TaskType.REPEAT,
+                  });
+                }
               }
             }
           } catch (error) {
@@ -1774,11 +1913,16 @@ export function useAvatarSession({
               if (sentence) {
                 isSpeakingQueueRef.current = true;
                 try {
-                  // Wait for speak to complete before next sentence
-                  await avatarRef.current.speak({
-                    text: sentence,
-                    task_type: TaskType.REPEAT,
-                  });
+                  // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+                  if (useElevenLabsVoiceRef.current) {
+                    await speakWithElevenLabsInVideoMode(sentence);
+                  } else {
+                    // Wait for speak to complete before next sentence
+                    await avatarRef.current.speak({
+                      text: sentence,
+                      task_type: TaskType.REPEAT,
+                    });
+                  }
                   // Small delay between sentences for natural pacing
                   await new Promise(resolve => setTimeout(resolve, 200));
                 } catch (e) {
@@ -2027,14 +2171,22 @@ export function useAvatarSession({
               if (!avatarRef.current) {
                 throw new Error("Avatar not available");
               }
-              await avatarRef.current.speak({
-                text: claudeResponse,
-                task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
-              });
+              
+              // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+              if (useElevenLabsVoiceRef.current) {
+                console.log("🎙️ Using ElevenLabs for response (video mode with ElevenLabs voice)");
+                await speakWithElevenLabsInVideoMode(claudeResponse);
+              } else {
+                await avatarRef.current.speak({
+                  text: claudeResponse,
+                  task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
+                });
+              }
+              
               const speakEndTime = performance.now();
-              console.log(`⏱️ [TIMING] HeyGen speak() completed: ${(speakEndTime - speakStartTime).toFixed(0)}ms`);
+              console.log(`⏱️ [TIMING] speak() completed: ${(speakEndTime - speakStartTime).toFixed(0)}ms`);
               console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(speakEndTime - flowStartTime).toFixed(0)}ms ===`);
-              console.log("✅ HeyGen speak() called with REPEAT mode (no HeyGen AI)");
+              console.log("✅ Speak completed successfully");
             } catch (speakError) {
               const errorMsg = speakError instanceof Error ? speakError.message : String(speakError);
               
@@ -2120,7 +2272,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly, stopAcknowledgmentAudio]);
+  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly, stopAcknowledgmentAudio, speakWithElevenLabsInVideoMode]);
 
   const stopAudio = useCallback(() => {
     if (currentAudioRef.current) {
@@ -2134,6 +2286,17 @@ export function useAvatarSession({
       } catch (e) {
         console.warn("Error force stopping audio:", e);
         currentAudioRef.current = null;
+      }
+    }
+    // Also stop ElevenLabs audio in video mode
+    if (elevenLabsVideoAudioRef.current) {
+      try {
+        elevenLabsVideoAudioRef.current.pause();
+        elevenLabsVideoAudioRef.current = null;
+        console.log("🛑 ElevenLabs video audio force stopped");
+      } catch (e) {
+        console.warn("Error force stopping ElevenLabs video audio:", e);
+        elevenLabsVideoAudioRef.current = null;
       }
     }
     isSpeakingRef.current = false;

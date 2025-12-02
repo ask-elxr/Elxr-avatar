@@ -17,6 +17,9 @@ interface DriverConfig {
   avatarConfig: any;
   audioOnly: boolean;
   videoRef: React.RefObject<HTMLVideoElement>;
+  avatarId: string;
+  userId: string;
+  languageCode?: string;
   onStreamReady?: () => void;
   onStreamDisconnected?: () => void;
   onAvatarStartTalking?: () => void;
@@ -27,9 +30,24 @@ interface DriverConfig {
 export class HeyGenDriver implements SessionDriver {
   private avatar: StreamingAvatar | null = null;
   private config: DriverConfig;
+  private currentAudio: HTMLAudioElement | null = null;
+  private useElevenLabsVoice: boolean = false;
+  private languageCode: string = "en";
 
   constructor(config: DriverConfig) {
     this.config = config;
+    this.languageCode = config.languageCode || "en";
+    
+    // Use ElevenLabs when avatar has ElevenLabs voice but no HeyGen voice
+    // This provides voice consistency between audio-only and video modes for avatars like Shawn, Judy, Kelsey
+    this.useElevenLabsVoice = !config.avatarConfig.heygenVoiceId && 
+                              !!config.avatarConfig.elevenlabsVoiceId;
+    
+    if (this.useElevenLabsVoice) {
+      console.log(`🎙️ HeyGenDriver: Using ElevenLabs voice for ${config.avatarConfig.name || config.avatarId} (no HeyGen voice configured)`);
+    } else {
+      console.log(`🎙️ HeyGenDriver: Using HeyGen voice for ${config.avatarConfig.name || config.avatarId}`);
+    }
   }
 
   async start(): Promise<void> {
@@ -51,13 +69,17 @@ export class HeyGenDriver implements SessionDriver {
       this.config.onStreamDisconnected?.();
     });
 
-    avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-      this.config.onAvatarStartTalking?.();
-    });
+    // Always wire up HeyGen talking events for avatars using HeyGen voice
+    // For ElevenLabs voice, we manually fire these events in speakWithElevenLabs
+    if (!this.useElevenLabsVoice) {
+      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+        this.config.onAvatarStartTalking?.();
+      });
 
-    avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-      this.config.onAvatarStopTalking?.();
-    });
+      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+        this.config.onAvatarStopTalking?.();
+      });
+    }
 
     avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
       const userMessage = message?.detail?.message || message?.message || message;
@@ -66,16 +88,14 @@ export class HeyGenDriver implements SessionDriver {
       }
     });
 
-    // Build the avatar config - only include voice if we have a specific voiceId
     const avatarStartConfig: any = {
       quality: this.config.audioOnly ? AvatarQuality.Low : AvatarQuality.High,
       avatarName: this.config.avatarConfig.heygenAvatarId,
-      // ❌ CRITICAL: DO NOT pass knowledgeBase - HeyGen's built-in AI bypasses our Claude Sonnet 4.5 backend!
       language: "en",
       disableIdleTimeout: true,
     };
     
-    // Only set voice if we have a specific voice ID, otherwise let HeyGen use avatar's default
+    // Only set voice if we have a specific HeyGen voice ID
     if (this.config.avatarConfig.heygenVoiceId) {
       avatarStartConfig.voice = {
         voiceId: this.config.avatarConfig.heygenVoiceId,
@@ -84,36 +104,31 @@ export class HeyGenDriver implements SessionDriver {
     }
     
     await avatar.createStartAvatar(avatarStartConfig);
-
-    // ❌ DO NOT call startVoiceChat() - this enables HeyGen's built-in AI which auto-responds!
-    // We want HeyGen ONLY for video rendering, not for AI responses
-    // Voice input will be handled manually through USER_TALKING_MESSAGE events
-    // Then we send the text to our Claude backend and manually call avatar.speak()
     
-    /* REMOVED - This was causing HeyGen's AI to respond instead of Claude:
-    try {
-      console.log("Starting voice chat...");
-      await avatar.startVoiceChat();
-      console.log("✅ Voice chat started successfully - microphone is active");
-    } catch (error) {
-      console.error("❌ Failed to start voice chat:", error);
-      console.error("This usually means microphone permission was denied or microphone is not available");
-      // Voice chat failed but avatar can still work with text input
-      // Don't throw error - allow text-only fallback
+    if (this.useElevenLabsVoice) {
+      console.log("✅ HeyGen avatar started with ElevenLabs voice mode (voice consistency enabled)");
     }
-    */
   }
 
   async stop(): Promise<void> {
+    this.stopCurrentAudio();
     if (this.avatar) {
       await this.avatar.stopAvatar().catch(console.error);
       this.avatar = null;
     }
   }
 
-  async speak(text: string): Promise<void> {
-    if (this.avatar) {
-      // ✅ CRITICAL: Use REPEAT (not TALK) - REPEAT just speaks our text, TALK uses HeyGen's AI
+  setLanguage(languageCode: string): void {
+    this.languageCode = languageCode;
+    console.log(`🌐 HeyGenDriver language set to: ${languageCode}`);
+  }
+
+  async speak(text: string, languageCodeOverride?: string): Promise<void> {
+    if (this.useElevenLabsVoice) {
+      // Use ElevenLabs audio for voice consistency
+      await this.speakWithElevenLabs(text, languageCodeOverride);
+    } else if (this.avatar) {
+      // Use HeyGen's built-in TTS with lip-sync
       await this.avatar.speak({
         text,
         task_type: TaskType.REPEAT,
@@ -121,7 +136,59 @@ export class HeyGenDriver implements SessionDriver {
     }
   }
 
+  private async speakWithElevenLabs(text: string, languageCodeOverride?: string): Promise<void> {
+    try {
+      this.stopCurrentAudio();
+      this.config.onAvatarStartTalking?.();
+
+      const response = await fetch("/api/elevenlabs/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text,
+          avatarId: this.config.avatarId || this.config.avatarConfig.id,
+          languageCode: languageCodeOverride || this.languageCode,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate ElevenLabs TTS audio");
+      }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      this.currentAudio = audio;
+
+      audio.onended = () => {
+        this.config.onAvatarStopTalking?.();
+        URL.revokeObjectURL(audioUrl);
+        this.currentAudio = null;
+      };
+
+      audio.onerror = () => {
+        this.config.onAvatarStopTalking?.();
+        URL.revokeObjectURL(audioUrl);
+        this.currentAudio = null;
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error("Error playing ElevenLabs TTS:", error);
+      this.config.onAvatarStopTalking?.();
+    }
+  }
+
+  private stopCurrentAudio(): void {
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio = null;
+      this.config.onAvatarStopTalking?.();
+    }
+  }
+
   async interrupt(): Promise<void> {
+    this.stopCurrentAudio();
     if (this.avatar) {
       await this.avatar.interrupt().catch(() => {});
     }
@@ -134,6 +201,13 @@ export class HeyGenDriver implements SessionDriver {
   private async fetchAccessToken(): Promise<string> {
     const response = await fetch("/api/heygen/token", {
       method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: this.config.userId,
+        avatarId: this.config.avatarId,
+      }),
     });
 
     if (!response.ok) {
@@ -146,6 +220,10 @@ export class HeyGenDriver implements SessionDriver {
 
   getAvatarInstance(): StreamingAvatar | null {
     return this.avatar;
+  }
+
+  isUsingElevenLabsVoice(): boolean {
+    return this.useElevenLabsVoice;
   }
 }
 

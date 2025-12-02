@@ -294,12 +294,22 @@ Provide a thorough but concise description that will help generate an engaging v
       let imageDescription = '';
       if (imageBase64 && imageMimeType) {
         console.log(`📷 Analyzing image for video script generation...`);
+        console.log(`📷 Image details: mimeType=${imageMimeType}, base64Length=${imageBase64.length}`);
         try {
           imageDescription = await this.analyzeImageForScript(imageBase64, imageMimeType, topic);
-          console.log(`📷 Image analysis complete: ${imageDescription.substring(0, 100)}...`);
+          if (imageDescription && imageDescription.length > 0) {
+            console.log(`📷 Image analysis complete (${imageDescription.length} chars): ${imageDescription.substring(0, 150)}...`);
+          } else {
+            console.warn(`⚠️ Image analysis returned empty description`);
+          }
         } catch (imageError: any) {
           console.error(`❌ Failed to analyze image: ${imageError.message}`);
+          console.error(`❌ Stack trace: ${imageError.stack}`);
         }
+      } else if (imageBase64 && !imageMimeType) {
+        console.warn(`⚠️ Image base64 provided but no mimeType - skipping analysis`);
+      } else if (!imageBase64 && imageMimeType) {
+        console.warn(`⚠️ Image mimeType provided but no base64 data - skipping analysis`);
       }
 
       const additionalContext = `
@@ -316,6 +326,9 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
         ? `${topic} - based on image showing: ${imageDescription.substring(0, 200)}`
         : topic;
 
+      const hasImageContent = !!imageDescription && imageDescription.length > 0;
+      console.log(`📝 Generating script with hasImageContent=${hasImageContent}, additionalContext length=${additionalContext.length}`);
+      
       const scriptResult = await generateLessonScript({
         avatarId: avatar.id,
         topic: enhancedTopic,
@@ -324,6 +337,7 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
         personalityPrompt: avatar.personalityPrompt,
         targetDuration: 60,
         additionalContext,
+        hasImageContent,
       });
 
       if (!scriptResult.script) {
