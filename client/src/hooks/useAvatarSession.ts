@@ -679,10 +679,12 @@ export function useAvatarSession({
         elevenLabsVideoAudioRef.current = null;
       }
 
-      // === MUTE VIDEO to prevent HeyGen's fallback voice from playing ===
+      // === SILENCE VIDEO to prevent HeyGen's fallback voice from playing ===
+      // Use volume instead of muted - muted has autoplay restrictions on mobile
+      // that prevent unmuting programmatically without a user gesture
       if (videoRef.current) {
-        videoRef.current.muted = true;
-        console.log("🔇 Video muted for ElevenLabs voice (preventing HeyGen fallback audio)");
+        videoRef.current.volume = 0;
+        console.log("🔇 Video volume set to 0 for ElevenLabs voice (preventing HeyGen fallback audio)");
       }
 
       // === AVATAR_START_TALKING equivalent ===
@@ -792,10 +794,10 @@ export function useAvatarSession({
           }
           elevenLabsVideoAudioRef.current = null;
           
-          // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+          // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
-            videoRef.current.muted = false;
-            console.log("🔊 Video unmuted after ElevenLabs audio finished");
+            videoRef.current.volume = 1;
+            console.log("🔊 Video volume restored to 1 after ElevenLabs audio finished");
           }
           
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
@@ -820,9 +822,9 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
           
-          // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+          // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
-            videoRef.current.muted = false;
+            videoRef.current.volume = 1;
           }
           
           // Resume voice recognition with delay on error
@@ -854,9 +856,9 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
           
-          // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+          // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
-            videoRef.current.muted = false;
+            videoRef.current.volume = 1;
           }
           
           // Resume voice recognition with delay on play error
@@ -874,9 +876,9 @@ export function useAvatarSession({
       setIsSpeakingState(false);
       console.log("🗣️ ElevenLabs avatar STOP talking (fetch error - video mode)");
       
-      // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+      // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
       if (videoRef.current) {
-        videoRef.current.muted = false;
+        videoRef.current.volume = 1;
       }
       
       // Resume voice recognition with delay on fetch error
