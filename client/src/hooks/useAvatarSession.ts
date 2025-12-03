@@ -713,6 +713,13 @@ export function useAvatarSession({
       }
 
       const audioBlob = await response.blob();
+      console.log(`🔊 ElevenLabs audio blob received: ${audioBlob.size} bytes, type: ${audioBlob.type}`);
+      
+      if (audioBlob.size === 0) {
+        console.error("❌ ElevenLabs returned empty audio blob");
+        throw new Error("Empty audio blob");
+      }
+      
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       elevenLabsVideoAudioRef.current = audio;
@@ -744,11 +751,12 @@ export function useAvatarSession({
 
         audio.onended = () => {
           // === AVATAR_STOP_TALKING equivalent ===
+          const duration = audio.duration || 0;
+          console.log(`🗣️ ElevenLabs avatar STOP talking (video mode) - played ${duration.toFixed(2)}s`);
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
           elevenLabsVideoAudioRef.current = null;
-          console.log("🗣️ ElevenLabs avatar STOP talking (video mode)");
           
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
           resumeRecognitionWithDelay();
@@ -758,8 +766,9 @@ export function useAvatarSession({
           resolve();
         };
 
-        audio.onerror = () => {
+        audio.onerror = (e) => {
           // === AVATAR_STOP_TALKING equivalent on error ===
+          console.error("🗣️ ElevenLabs audio error:", e);
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
@@ -774,20 +783,29 @@ export function useAvatarSession({
           resolve();
         };
 
-        audio.play().catch((err) => {
-          console.error("Error playing ElevenLabs audio in video mode:", err);
-          // === AVATAR_STOP_TALKING equivalent on play error ===
-          isSpeakingRef.current = false;
-          setIsSpeakingState(false);
-          console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
-          
-          // Resume voice recognition with delay on play error
-          resumeRecognitionWithDelay();
-          
-          // Restart idle timeout on play error
-          startIdleTimeout();
-          resolve();
-        });
+        // Wait for audio to be loaded before playing
+        audio.oncanplaythrough = () => {
+          console.log(`🔊 ElevenLabs audio loaded: duration=${audio.duration?.toFixed(2)}s, readyState=${audio.readyState}`);
+          audio.play().then(() => {
+            console.log("🔊 ElevenLabs audio playback started");
+          }).catch((err) => {
+            console.error("Error playing ElevenLabs audio in video mode:", err);
+            // === AVATAR_STOP_TALKING equivalent on play error ===
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+            console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
+            
+            // Resume voice recognition with delay on play error
+            resumeRecognitionWithDelay();
+            
+            // Restart idle timeout on play error
+            startIdleTimeout();
+            resolve();
+          });
+        };
+        
+        // Trigger load
+        audio.load();
       });
     } catch (error) {
       console.error("Error in speakWithElevenLabsInVideoMode:", error);
