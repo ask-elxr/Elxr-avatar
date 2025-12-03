@@ -13,159 +13,6 @@ export interface SessionDriver {
   setLanguage?(languageCode: string): void;
 }
 
-/**
- * HeyGen Realtime Audio Streamer
- * Handles WebSocket connection to HeyGen for streaming PCM audio with lip-sync
- */
-class HeyGenRealtimeStreamer {
-  private ws: WebSocket | null = null;
-  private isConnected: boolean = false;
-  private eventIdCounter: number = 0;
-  private currentEventId: string | null = null;
-  private onStartTalking?: () => void;
-  private onStopTalking?: () => void;
-
-  constructor(
-    onStartTalking?: () => void,
-    onStopTalking?: () => void
-  ) {
-    this.onStartTalking = onStartTalking;
-    this.onStopTalking = onStopTalking;
-  }
-
-  async connect(realtimeEndpoint: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        console.log("🔌 Connecting to HeyGen realtime WebSocket:", realtimeEndpoint);
-        this.ws = new WebSocket(realtimeEndpoint);
-
-        this.ws.onopen = () => {
-          console.log("✅ HeyGen realtime WebSocket connected");
-          this.isConnected = true;
-          resolve();
-        };
-
-        this.ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            console.log("📩 HeyGen realtime event:", data.type);
-            
-            switch (data.type) {
-              case "avatar.start_talking":
-                this.onStartTalking?.();
-                break;
-              case "avatar.stop_talking":
-                this.onStopTalking?.();
-                break;
-              case "error":
-                console.error("❌ HeyGen realtime error:", data.error);
-                break;
-            }
-          } catch (e) {
-            console.warn("Failed to parse HeyGen message:", e);
-          }
-        };
-
-        this.ws.onerror = (error) => {
-          console.error("❌ HeyGen realtime WebSocket error:", error);
-          this.isConnected = false;
-          reject(error);
-        };
-
-        this.ws.onclose = () => {
-          console.log("🔌 HeyGen realtime WebSocket closed");
-          this.isConnected = false;
-        };
-
-        // Timeout after 10 seconds
-        setTimeout(() => {
-          if (!this.isConnected) {
-            reject(new Error("WebSocket connection timeout"));
-          }
-        }, 10000);
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  /**
-   * Send PCM audio to HeyGen for lip-sync
-   * @param pcmData - PCM 16-bit 24kHz audio buffer
-   */
-  async sendAudio(pcmData: ArrayBuffer): Promise<void> {
-    if (!this.ws || !this.isConnected) {
-      throw new Error("WebSocket not connected");
-    }
-
-    // Generate new event ID for this audio utterance
-    this.currentEventId = `audio_${++this.eventIdCounter}_${Date.now()}`;
-    const base64Audio = this.arrayBufferToBase64(pcmData);
-
-    // Send audio chunk
-    this.ws.send(JSON.stringify({
-      type: "agent.speak",
-      event_id: this.currentEventId,
-      audio: base64Audio,
-    }));
-
-    console.log(`🎤 Sent ${pcmData.byteLength} bytes of PCM audio to HeyGen (event: ${this.currentEventId})`);
-  }
-
-  /**
-   * Signal end of audio utterance - reuses the event_id from sendAudio
-   */
-  endOfUtterance(): void {
-    if (!this.ws || !this.isConnected) return;
-    if (!this.currentEventId) {
-      console.warn("⚠️ No current event ID for speak_end");
-      return;
-    }
-
-    this.ws.send(JSON.stringify({
-      type: "agent.speak_end",
-      event_id: this.currentEventId,
-    }));
-    
-    console.log(`🔚 Sent speak_end to HeyGen (event: ${this.currentEventId})`);
-    this.currentEventId = null;
-  }
-
-  /**
-   * Interrupt current speech
-   */
-  interrupt(): void {
-    if (!this.ws || !this.isConnected) return;
-
-    this.ws.send(JSON.stringify({
-      type: "agent.interrupt",
-    }));
-    
-    console.log("⏹️ Sent interrupt to HeyGen");
-  }
-
-  disconnect(): void {
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-      this.isConnected = false;
-    }
-  }
-
-  isReady(): boolean {
-    return this.isConnected;
-  }
-
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  }
-}
-
 interface DriverConfig {
   avatarConfig: any;
   audioOnly: boolean;
@@ -186,7 +33,6 @@ export class HeyGenDriver implements SessionDriver {
   private currentAudio: HTMLAudioElement | null = null;
   private useElevenLabsVoice: boolean = false;
   private languageCode: string = "en";
-  private realtimeStreamer: HeyGenRealtimeStreamer | null = null;
   private sessionId: string | null = null;
 
   constructor(config: DriverConfig) {
@@ -222,21 +68,19 @@ export class HeyGenDriver implements SessionDriver {
 
     avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
       console.log("Stream disconnected");
-      this.realtimeStreamer?.disconnect();
       this.config.onStreamDisconnected?.();
     });
 
-    // Wire up HeyGen talking events for native voice mode
-    // For ElevenLabs mode, events come from the realtime streamer
-    if (!this.useElevenLabsVoice) {
-      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-        this.config.onAvatarStartTalking?.();
-      });
+    // Wire up HeyGen talking events for all avatars
+    // Since we now use avatar.speak(text) for lip-sync for all avatars, 
+    // HeyGen will emit these events for both native voice and ElevenLabs voice modes
+    avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+      this.config.onAvatarStartTalking?.();
+    });
 
-      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-        this.config.onAvatarStopTalking?.();
-      });
-    }
+    avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+      this.config.onAvatarStopTalking?.();
+    });
 
     avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
       const userMessage = message?.detail?.message || message?.message || message;
@@ -281,44 +125,17 @@ export class HeyGenDriver implements SessionDriver {
     if (sessionInfo) {
       this.sessionId = (sessionInfo as any).session_id || (sessionInfo as any).sessionId || null;
       console.log("📋 Session ID:", this.sessionId);
-      
-      // For ElevenLabs voice avatars, try to get the realtime endpoint for lip-sync
-      if (this.useElevenLabsVoice) {
-        const realtimeEndpoint = (sessionInfo as any).realtime_endpoint || 
-                                 (sessionInfo as any).data?.realtime_endpoint ||
-                                 (sessionInfo as any).webrtc?.realtime_endpoint;
-        
-        console.log("📋 All session info keys:", Object.keys(sessionInfo));
-        console.log("📍 Realtime endpoint from session:", realtimeEndpoint);
-        
-        if (realtimeEndpoint) {
-          try {
-            console.log("🔌 Initializing realtime audio streamer for lip-sync...");
-            this.realtimeStreamer = new HeyGenRealtimeStreamer(
-              () => this.config.onAvatarStartTalking?.(),
-              () => this.config.onAvatarStopTalking?.()
-            );
-            await this.realtimeStreamer.connect(realtimeEndpoint);
-            console.log("✅ Realtime audio streamer ready for ElevenLabs lip-sync");
-          } catch (error) {
-            console.warn("⚠️ Failed to connect realtime streamer, falling back to audio-only:", error);
-            this.realtimeStreamer = null;
-          }
-        } else {
-          console.warn("⚠️ No realtime endpoint in session info, using audio-only fallback");
-        }
-      }
     }
     
     if (this.useElevenLabsVoice) {
-      console.log("✅ HeyGen avatar started - ElevenLabs lip-sync mode enabled");
+      console.log("✅ HeyGen avatar started - text-based lip-sync with ElevenLabs audio");
+    } else {
+      console.log("✅ HeyGen avatar started - using native HeyGen voice");
     }
   }
 
   async stop(): Promise<void> {
     this.stopCurrentAudio();
-    this.realtimeStreamer?.disconnect();
-    this.realtimeStreamer = null;
     if (this.avatar) {
       await this.avatar.stopAvatar().catch(console.error);
       this.avatar = null;
@@ -331,11 +148,37 @@ export class HeyGenDriver implements SessionDriver {
   }
 
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
+    if (!this.avatar) return;
+
     if (this.useElevenLabsVoice) {
-      // Use ElevenLabs audio for correct voice
-      await this.speakWithElevenLabs(text, languageCodeOverride);
-    } else if (this.avatar) {
-      // Use HeyGen's built-in TTS with lip-sync
+      // For avatars with ElevenLabs voice but no HeyGen voice:
+      // 1. Mute HeyGen video to prevent fallback voice from playing
+      // 2. Use avatar.speak(text) to animate the avatar's lips (HeyGen animates from text)
+      // 3. Play ElevenLabs audio separately for the actual voice
+      console.log("🎙️ Using text-based lip-sync with ElevenLabs audio (HeyGen audio muted)");
+      
+      // Mute the video element to prevent HeyGen's fallback voice from playing
+      if (this.config.videoRef.current) {
+        this.config.videoRef.current.muted = true;
+      }
+      
+      // Start lip-sync animation from text (HeyGen will animate but audio is muted)
+      const speakPromise = this.avatar.speak({
+        text,
+        task_type: TaskType.REPEAT,
+      });
+      
+      // Play ElevenLabs audio for the actual voice
+      this.playElevenLabsAudio(text, languageCodeOverride).catch(console.error);
+      
+      // Wait for lip-sync animation to complete
+      await speakPromise;
+    } else {
+      // Use HeyGen's built-in TTS with lip-sync (for avatars with heygenVoiceId)
+      // Ensure video is unmuted for native HeyGen voice
+      if (this.config.videoRef.current) {
+        this.config.videoRef.current.muted = false;
+      }
       await this.avatar.speak({
         text,
         task_type: TaskType.REPEAT,
@@ -343,20 +186,13 @@ export class HeyGenDriver implements SessionDriver {
     }
   }
 
-  private async speakWithElevenLabs(text: string, languageCodeOverride?: string): Promise<void> {
+  /**
+   * Play ElevenLabs audio for the avatar's voice
+   * This is used alongside avatar.speak(text) for text-based lip-sync
+   */
+  private async playElevenLabsAudio(text: string, languageCodeOverride?: string): Promise<void> {
     try {
       this.stopCurrentAudio();
-
-      // Try to use realtime streamer for lip-sync if available
-      if (this.realtimeStreamer?.isReady()) {
-        console.log("🎤 Using realtime audio streaming for lip-sync");
-        await this.speakWithRealtimeLipSync(text, languageCodeOverride);
-        return;
-      }
-
-      // Fallback to regular audio playback without lip-sync
-      console.log("⚠️ Realtime streamer not available, using audio-only playback");
-      this.config.onAvatarStartTalking?.();
 
       const response = await fetch("/api/elevenlabs/tts", {
         method: "POST",
@@ -378,92 +214,19 @@ export class HeyGenDriver implements SessionDriver {
       this.currentAudio = audio;
 
       audio.onended = () => {
-        this.config.onAvatarStopTalking?.();
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
       };
 
       audio.onerror = () => {
-        this.config.onAvatarStopTalking?.();
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
       };
 
       await audio.play();
+      console.log("🔊 Playing ElevenLabs audio");
     } catch (error) {
-      console.error("Error playing ElevenLabs TTS:", error);
-      this.config.onAvatarStopTalking?.();
-    }
-  }
-
-  private async speakWithRealtimeLipSync(text: string, languageCodeOverride?: string): Promise<void> {
-    if (!this.realtimeStreamer?.isReady()) {
-      throw new Error("Realtime streamer not ready");
-    }
-
-    try {
-      // Get PCM audio from ElevenLabs
-      const response = await fetch("/api/elevenlabs/tts-pcm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text,
-          avatarId: this.config.avatarId || this.config.avatarConfig.id,
-          languageCode: languageCodeOverride || this.languageCode,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate PCM audio from ElevenLabs");
-      }
-
-      const pcmArrayBuffer = await response.arrayBuffer();
-      console.log(`📦 Received ${pcmArrayBuffer.byteLength} bytes of PCM audio`);
-
-      // Send PCM audio to HeyGen for lip-sync
-      await this.realtimeStreamer.sendAudio(pcmArrayBuffer);
-      this.realtimeStreamer.endOfUtterance();
-
-      // Also play the audio locally for the user to hear
-      // Convert PCM to playable format using AudioContext
-      await this.playPCMAudio(pcmArrayBuffer);
-
-    } catch (error) {
-      console.error("Error in realtime lip-sync:", error);
-      this.config.onAvatarStopTalking?.();
-      throw error;
-    }
-  }
-
-  private async playPCMAudio(pcmData: ArrayBuffer): Promise<void> {
-    try {
-      const audioContext = new AudioContext({ sampleRate: 24000 });
-      
-      // PCM 16-bit signed little-endian at 24kHz
-      const pcmInt16 = new Int16Array(pcmData);
-      const samples = pcmInt16.length;
-      
-      // Create audio buffer
-      const audioBuffer = audioContext.createBuffer(1, samples, 24000);
-      const channelData = audioBuffer.getChannelData(0);
-      
-      // Convert Int16 to Float32 (-1 to 1 range)
-      for (let i = 0; i < samples; i++) {
-        channelData[i] = pcmInt16[i] / 32768;
-      }
-      
-      // Play the audio
-      const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioContext.destination);
-      source.start();
-      
-      // Cleanup when done
-      source.onended = () => {
-        audioContext.close();
-      };
-    } catch (error) {
-      console.error("Error playing PCM audio:", error);
+      console.error("Error playing ElevenLabs audio:", error);
     }
   }
 
