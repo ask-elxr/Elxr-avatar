@@ -44,6 +44,7 @@ import {
   CloudRain,
   Lock,
   Crown,
+  GraduationCap,
 } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -221,7 +222,7 @@ export default function Dashboard({
       !location.endsWith("/edit")
     )
       return "course-view";
-    if (location === "/dashboard/courses") return "courses";
+    if (location === "/dashboard/courses" || location.startsWith("/dashboard/courses?")) return "courses";
     if (location === "/dashboard/videos") return "videos";
     if (location === "/dashboard/mood") return "mood";
     if (location === "/dashboard/plan") return "plan";
@@ -231,6 +232,13 @@ export default function Dashboard({
   }, [location, chatParams, mentorParams, courseViewParams, courseEditParams, isEmbed, embedView, embedAvatarId]);
 
   const activeChatAvatarId = isEmbed && embedAvatarId ? embedAvatarId : (chatParams?.avatarId || mentorParams?.avatarId || null);
+  
+  // Parse avatar filter from query params for courses view
+  const avatarFilterId = useMemo(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    return searchParams.get('avatar');
+  }, [location]);
+
   const selectedCourseId = isEmbed && embedCourseId
     ? embedCourseId
     : (location === "/dashboard/courses/new/edit"
@@ -1116,8 +1124,8 @@ export default function Dashboard({
                                           ))}
                                     </div>
 
-                                    {/* Start Chat Button */}
-                                    <div className="mt-auto">
+                                    {/* Buttons */}
+                                    <div className="mt-auto space-y-2">
                                       <Button
                                         onClick={(e) => {
                                           e.stopPropagation();
@@ -1147,6 +1155,25 @@ export default function Dashboard({
                                             Start Chat
                                           </>
                                         )}
+                                      </Button>
+                                      <Button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (!locked) {
+                                            setLocation(isEmbed ? `/embed/courses?avatar=${avatar.id}` : `/dashboard/courses?avatar=${avatar.id}`);
+                                          }
+                                        }}
+                                        variant="outline"
+                                        className={`w-full font-semibold py-3 sm:py-2.5 text-base sm:text-sm rounded-lg transition-all duration-200 ${
+                                          locked 
+                                            ? "border-gray-700 text-gray-500 cursor-not-allowed"
+                                            : "border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:border-purple-500/50 hover:scale-[1.02]"
+                                        }`}
+                                        disabled={locked}
+                                        data-testid={`button-courses-${avatar.id}`}
+                                      >
+                                        <GraduationCap className="w-5 h-5 sm:w-4 sm:h-4 mr-2" />
+                                        Courses
                                       </Button>
                                     </div>
                                   </div>
@@ -1460,21 +1487,67 @@ export default function Dashboard({
                   </Card>
                 ) : (
                   <>
-                    {isAdmin && (
-                      <div className="flex justify-end mb-6">
+                    {/* Filter indicator and controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                      {avatarFilterId && (
+                        <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg border border-purple-500/30">
+                          <span className="text-white/60 text-sm">Showing courses by:</span>
+                          <span className="text-purple-300 font-medium">
+                            {avatars?.find(a => a.id === avatarFilterId)?.name || avatarFilterId}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                            className="ml-2 h-6 w-6 p-0 text-white/40 hover:text-white"
+                            data-testid="button-clear-avatar-filter"
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      )}
+                      {isAdmin && (
                         <Button
                           onClick={() =>
                             setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
                           }
+                          className="sm:ml-auto"
                           data-testid="button-new-course"
                         >
                           <Plus className="w-4 h-4 mr-2" />
                           New Course
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
+                    {avatarFilterId && courses.filter(course => course.avatarId === avatarFilterId).length === 0 ? (
+                      <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
+                        <CardHeader className="text-center">
+                          <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                            <BookOpen className="w-8 h-8 text-purple-400" />
+                          </div>
+                          <CardTitle className="text-white">
+                            No Courses for This Mentor
+                          </CardTitle>
+                          <CardDescription className="text-white/60">
+                            {avatars?.find(a => a.id === avatarFilterId)?.name || 'This mentor'} doesn't have any courses yet.
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                            data-testid="button-view-all-courses"
+                          >
+                            View All Courses
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                      {courses.map((course) => (
+                      {(avatarFilterId 
+                        ? courses.filter(course => course.avatarId === avatarFilterId)
+                        : courses
+                      ).map((course) => (
                         <Card
                           key={course.id}
                           className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden flex flex-col"
@@ -1583,6 +1656,7 @@ export default function Dashboard({
                         </Card>
                       ))}
                     </div>
+                    )}
                   </>
                 )}
               </>

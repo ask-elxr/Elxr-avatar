@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, MessageCircle, Lock, Crown } from "lucide-react";
+import { Check, MessageCircle, Lock, Crown, GraduationCap } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { AvatarProfile } from "@shared/schema";
@@ -219,8 +219,8 @@ export default function AvatarSelect() {
                           ))}
                         </div>
 
-                        {/* Start Chat Button - Always at bottom */}
-                        <div className="mt-auto">
+                        {/* Buttons - Always at bottom */}
+                        <div className="mt-auto space-y-2">
                           <Button
                             onClick={(e) => handleStartChat(avatar.id, e)}
                             className={`w-full font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 shadow-lg ${
@@ -241,6 +241,25 @@ export default function AvatarSelect() {
                                 Start Chat
                               </>
                             )}
+                          </Button>
+                          <Button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!locked) {
+                                setLocation(`/dashboard/courses?avatar=${avatar.id}`);
+                              }
+                            }}
+                            variant="outline"
+                            className={`w-full font-semibold py-2.5 text-sm font-satoshi rounded-lg transition-all duration-200 ${
+                              locked 
+                                ? "border-gray-700 text-gray-500 cursor-not-allowed"
+                                : "border-purple-500/30 text-purple-300 hover:bg-purple-500/10 hover:border-purple-500/50 hover:scale-[1.02]"
+                            }`}
+                            disabled={locked}
+                            data-testid={`button-courses-${avatar.id}`}
+                          >
+                            <GraduationCap className="w-4 h-4 mr-2" />
+                            Courses
                           </Button>
                         </div>
                       </div>
