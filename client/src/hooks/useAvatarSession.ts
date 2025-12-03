@@ -669,14 +669,20 @@ export function useAvatarSession({
     }
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
-  // Helper to speak with ElevenLabs in video mode (for avatars without HeyGen voice)
-  // This mirrors the AVATAR_START_TALKING/STOP_TALKING behavior from HeyGen sessions
+  // Helper to speak with ElevenLabs voice AND HeyGen lip-sync in video mode
+  // For avatars without HeyGen voice: mute video, call avatar.speak() for lip-sync, play ElevenLabs audio
   const speakWithElevenLabsInVideoMode = useCallback(async (text: string): Promise<void> => {
     try {
       // Stop any currently playing ElevenLabs audio
       if (elevenLabsVideoAudioRef.current) {
         elevenLabsVideoAudioRef.current.pause();
         elevenLabsVideoAudioRef.current = null;
+      }
+
+      // === MUTE VIDEO to prevent HeyGen's fallback voice from playing ===
+      if (videoRef.current) {
+        videoRef.current.muted = true;
+        console.log("🔇 Video muted for ElevenLabs voice (preventing HeyGen fallback audio)");
       }
 
       // === AVATAR_START_TALKING equivalent ===
@@ -696,8 +702,18 @@ export function useAvatarSession({
       isSpeakingRef.current = true;
       setIsSpeakingState(true);
       clearIdleTimeout(); // Clear idle timeout while speaking
-      console.log("🗣️ ElevenLabs avatar START talking (video mode)");
+      console.log("🗣️ ElevenLabs avatar START talking with lip-sync (video mode)");
 
+      // === TRIGGER HEYGEN LIP-SYNC ANIMATION ===
+      // Call avatar.speak() for text-based lip-sync (video is muted, so no HeyGen audio will be heard)
+      const lipSyncPromise = avatarRef.current?.speak({
+        text,
+        task_type: TaskType.REPEAT,
+      }).catch(e => {
+        console.warn("HeyGen lip-sync error (non-fatal):", e);
+      });
+
+      // === FETCH ELEVENLABS AUDIO ===
       const response = await fetch("/api/elevenlabs/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -930,9 +946,9 @@ export function useAvatarSession({
               const { greeting } = await greetingResponse.json();
               if (greeting && avatar) {
                 console.log("🗣️ Avatar greeting:", greeting);
-                // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+                // Use ElevenLabs voice with lip-sync if avatar doesn't have HeyGen voice configured
                 if (useElevenLabsVoiceRef.current) {
-                  console.log("🎙️ Using ElevenLabs for greeting (video mode with ElevenLabs voice)");
+                  console.log("🎙️ Using ElevenLabs with lip-sync for greeting");
                   await speakWithElevenLabsInVideoMode(greeting);
                 } else {
                   await avatar.speak({
@@ -2097,11 +2113,10 @@ export function useAvatarSession({
               if (sentence) {
                 isSpeakingQueueRef.current = true;
                 try {
-                  // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+                  // Use ElevenLabs voice with lip-sync if avatar doesn't have HeyGen voice configured
                   if (useElevenLabsVoiceRef.current) {
                     await speakWithElevenLabsInVideoMode(sentence);
                   } else {
-                    // Wait for speak to complete before next sentence
                     await avatarRef.current.speak({
                       text: sentence,
                       task_type: TaskType.REPEAT,
@@ -2356,9 +2371,9 @@ export function useAvatarSession({
                 throw new Error("Avatar not available");
               }
               
-              // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+              // Use ElevenLabs voice with lip-sync if avatar doesn't have HeyGen voice configured
               if (useElevenLabsVoiceRef.current) {
-                console.log("🎙️ Using ElevenLabs for response (video mode with ElevenLabs voice)");
+                console.log("🎙️ Using ElevenLabs with lip-sync for response");
                 await speakWithElevenLabsInVideoMode(claudeResponse);
               } else {
                 await avatarRef.current.speak({
