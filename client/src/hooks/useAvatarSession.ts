@@ -902,7 +902,9 @@ export function useAvatarSession({
         } else {
           console.log("⏭️ Skipping greeting - mode switch (seamless transition)");
           // For mode switches, ensure voice recognition starts immediately
-          if (!recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+          // CRITICAL: Reset intentional stop flag HERE since this fires BEFORE the switchTransportMode reset
+          recognitionIntentionalStopRef.current = false;
+          if (!recognitionRunningRef.current && sessionActiveRef.current) {
             console.log("🎤 Starting voice recognition after seamless mode switch");
             startVoiceRecognition();
           }
