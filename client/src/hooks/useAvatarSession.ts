@@ -312,13 +312,16 @@ export function useAvatarSession({
       const isSmallScreen = window.innerWidth <= 768;
       const hasMobileKeyword = /mobile|phone/i.test(userAgent);
       const isMobile = isIOS || isAndroid || hasMobileKeyword || (hasTouchScreen && isSmallScreen);
-      const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
-      const isChrome = /chrome/i.test(userAgent) && !/edge/i.test(userAgent);
+      // More reliable Safari detection for iOS
+      const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
+      const isIOSSafari = isIOS && isSafari;
+      const isChrome = /Chrome/.test(userAgent) && !/Edg/.test(userAgent);
       const isChromeIOS = isIOS && /CriOS/i.test(userAgent);
       const isFirefoxIOS = isIOS && /FxiOS/i.test(userAgent);
       const isChromeMobile = isChrome && (isAndroid || hasMobileKeyword);
       
-      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
+      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, iOSSafari=${isIOSSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
+      console.log(`📱 UserAgent: ${userAgent.substring(0, 100)}...`);
       
       // Chrome on iOS does NOT support Web Speech API (Apple restricts it)
       // Only Safari can use it on iOS
@@ -330,7 +333,13 @@ export function useAvatarSession({
       
       if (!SpeechRecognition) {
         console.warn("⚠️ Web Speech API not supported in this browser - use text input instead");
-        setMicrophoneStatus('not-supported');
+        // On iOS Safari, offer tap-to-enable even if API seems missing (might be a timing issue)
+        if (isIOSSafari) {
+          console.log("📱 iOS Safari detected but SpeechRecognition not available - offering tap to enable");
+          setMicrophoneStatus('needs-gesture');
+        } else {
+          setMicrophoneStatus('not-supported');
+        }
         return;
       }
 
@@ -577,21 +586,33 @@ export function useAvatarSession({
         console.warn("⚠️ Failed to start speech recognition:", startError?.message || startError);
         recognitionRunningRef.current = false;
         
-        // Check if this is iOS Safari needing user gesture
-        const userAgent = navigator.userAgent || '';
-        const isIOS = /iPad|iPhone|iPod/.test(userAgent);
-        const isSafariNative = isIOS && /Safari/.test(userAgent) && !/CriOS|FxiOS/.test(userAgent);
-        
-        if (isSafariNative) {
-          console.log("📱 iOS Safari detected - may need user gesture to start voice");
+        // On iOS Safari, offer tap-to-enable (user gesture required)
+        if (isIOSSafari) {
+          console.log("📱 iOS Safari detected - need user gesture to start voice");
+          setMicrophoneStatus('needs-gesture');
+        } else if (isMobile) {
+          // Other mobile browsers might also need gesture
+          console.log("📱 Mobile browser detected - offering tap to enable");
           setMicrophoneStatus('needs-gesture');
         } else {
           setMicrophoneStatus('stopped');
         }
       }
-    } catch (error) {
-      console.error("❌ Error initializing Web Speech API:", error);
-      setMicrophoneStatus('not-supported');
+    } catch (error: any) {
+      console.error("❌ Error initializing Web Speech API:", error?.message || error);
+      
+      // Check if this is iOS Safari - offer tap-to-enable even on error
+      const userAgent = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+      const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
+      const isIOSSafariOuter = isIOS && isSafari;
+      
+      if (isIOSSafariOuter) {
+        console.log("📱 iOS Safari error - offering tap to enable voice");
+        setMicrophoneStatus('needs-gesture');
+      } else {
+        setMicrophoneStatus('not-supported');
+      }
     }
   }, []); // No dependencies needed - uses refs for current values
 
