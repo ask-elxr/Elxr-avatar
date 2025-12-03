@@ -281,8 +281,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info("HeyGen token created successfully");
 
+      // Get avatar config to check if we need realtime endpoint for ElevenLabs voice
+      let realtimeEndpoint = null;
+      let sessionId = null;
+      
+      if (avatarId) {
+        const avatarConfig = await getAvatarById(avatarId);
+        // If avatar uses ElevenLabs voice (no HeyGen voice), create session and get realtime endpoint
+        if (avatarConfig && !avatarConfig.heygenVoiceId && avatarConfig.elevenlabsVoiceId) {
+          try {
+            log.info({ avatarId }, "Creating HeyGen streaming session for ElevenLabs lip-sync");
+            
+            // Create streaming session to get realtime endpoint
+            const sessionResponse = await fetch("https://api.heygen.com/v1/streaming.new", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+              },
+              body: JSON.stringify({
+                version: "v2",
+                avatar_id: avatarConfig.heygenAvatarId,
+                voice: {
+                  voice_id: "1bd001e7e50f421d891986aad5158bc8", // Fallback voice
+                  rate: parseFloat(avatarConfig.voiceRate || "1.0"),
+                },
+              }),
+            });
+
+            if (sessionResponse.ok) {
+              const sessionData = await sessionResponse.json();
+              sessionId = sessionData.data?.session_id || sessionData.session_id;
+              realtimeEndpoint = sessionData.data?.realtime_endpoint || sessionData.realtime_endpoint;
+              log.info({ sessionId, hasRealtimeEndpoint: !!realtimeEndpoint }, "HeyGen streaming session created");
+            } else {
+              const errorText = await sessionResponse.text();
+              log.warn({ status: sessionResponse.status, error: errorText }, "Failed to create HeyGen streaming session for realtime endpoint");
+            }
+          } catch (sessionError: any) {
+            log.warn({ error: sessionError.message }, "Error creating HeyGen streaming session");
+          }
+        }
+      }
+
       res.json({
         token: tokenData.data?.token || tokenData.token,
+        sessionId,
+        realtimeEndpoint,
         ...tokenData,
       });
     } catch (error: any) {
@@ -874,6 +919,54 @@ This appears to be your first conversation with this person - no prior memories 
       log.error({ error: error.message }, "Error generating TTS audio");
       res.status(500).json({
         error: "Failed to generate TTS audio",
+      });
+    }
+  });
+
+  // ElevenLabs TTS endpoint for HeyGen lip-sync (PCM 24kHz format)
+  app.post("/api/elevenlabs/tts-pcm", async (req, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "generateSpeechPCM" });
+
+    try {
+      const { text, avatarId = "mark-kohl", languageCode } = req.body;
+
+      if (!text) {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      if (!elevenlabsService.isAvailable()) {
+        log.error("ElevenLabs service not available");
+        return res.status(500).json({
+          error: "ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY environment variable.",
+        });
+      }
+
+      const avatarConfig = await getAvatarById(avatarId);
+      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+        log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
+        return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
+      }
+
+      const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
+      
+      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating PCM audio for HeyGen lip-sync");
+
+      const audioBuffer = await elevenlabsService.generateSpeechPCM(
+        text, 
+        avatarConfig.elevenlabsVoiceId,
+        effectiveLanguageCode
+      );
+
+      log.info({ audioSize: audioBuffer.length, format: "pcm_24000" }, "PCM audio generated successfully");
+
+      res.setHeader("Content-Type", "audio/pcm");
+      res.setHeader("Content-Length", audioBuffer.length.toString());
+      res.setHeader("X-Audio-Format", "pcm_24000");
+      res.send(audioBuffer);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error generating PCM audio");
+      res.status(500).json({
+        error: "Failed to generate PCM audio",
       });
     }
   });
