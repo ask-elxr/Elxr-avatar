@@ -91,6 +91,8 @@ function Router() {
         <Route path="/embed/dashboard">{() => <EmbedPage view="dashboard" />}</Route>
         <Route path="/embed/chat">{() => <EmbedPage view="chat" />}</Route>
         <Route path="/embed/chat/:avatarId">{(params) => <EmbedPage view="chat" avatarId={params.avatarId} />}</Route>
+        <Route path="/embed/mentors">{() => <EmbedPage view="chat" />}</Route>
+        <Route path="/embed/mentors/:avatarId">{(params) => <EmbedPage view="chat" avatarId={params.avatarId} />}</Route>
         <Route path="/embed/videos">{() => <EmbedPage view="videos" />}</Route>
         <Route path="/embed/courses">{() => <EmbedPage view="courses" />}</Route>
         <Route path="/embed/courses/new/edit">{() => <EmbedPage view="course-edit" />}</Route>
