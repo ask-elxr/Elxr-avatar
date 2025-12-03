@@ -37,7 +37,7 @@ interface AvatarSessionReturn {
   switchTransportMode: (toVideoMode: boolean) => Promise<void>;
   isPaused: boolean;
   isSpeaking: boolean;
-  microphoneStatus: 'listening' | 'stopped' | 'not-supported' | 'permission-denied';
+  microphoneStatus: 'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture';
   avatarRef: React.MutableRefObject<StreamingAvatar | null>;
   intentionalStopRef: React.MutableRefObject<boolean>;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
@@ -46,6 +46,7 @@ interface AvatarSessionReturn {
   hasAskedAnythingElseRef: React.MutableRefObject<boolean>;
   handleSubmitMessage: (message: string, imageData?: { base64: string; mimeType: string }) => Promise<void>;
   stopAudio: () => void;
+  manualStartVoice: () => void;
 }
 
 export function useAvatarSession({
@@ -65,7 +66,7 @@ export function useAvatarSession({
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
-  const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied'>('stopped');
+  const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
 
   const avatarRef = useRef<StreamingAvatar | null>(null);
   const intentionalStopRef = useRef(false);
@@ -566,9 +567,28 @@ export function useAvatarSession({
       lastRecognitionRestartRef.current = Date.now(); // Initialize last restart time
       
       setMicrophoneStatus('listening'); // Set immediately before first start
-      recognition.start();
-      recognitionRunningRef.current = true;
-      console.log("✅ Web Speech API started for voice input");
+      
+      try {
+        recognition.start();
+        recognitionRunningRef.current = true;
+        console.log("✅ Web Speech API started for voice input");
+      } catch (startError: any) {
+        // iOS Safari often requires user gesture for first start
+        console.warn("⚠️ Failed to start speech recognition:", startError?.message || startError);
+        recognitionRunningRef.current = false;
+        
+        // Check if this is iOS Safari needing user gesture
+        const userAgent = navigator.userAgent || '';
+        const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+        const isSafariNative = isIOS && /Safari/.test(userAgent) && !/CriOS|FxiOS/.test(userAgent);
+        
+        if (isSafariNative) {
+          console.log("📱 iOS Safari detected - may need user gesture to start voice");
+          setMicrophoneStatus('needs-gesture');
+        } else {
+          setMicrophoneStatus('stopped');
+        }
+      }
     } catch (error) {
       console.error("❌ Error initializing Web Speech API:", error);
       setMicrophoneStatus('not-supported');
@@ -2410,6 +2430,20 @@ export function useAvatarSession({
     };
   }, []);
 
+  // Manual voice start for mobile Safari (requires user gesture)
+  const manualStartVoice = useCallback(() => {
+    console.log("🎤 Manual voice start triggered (user gesture)");
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+    recognitionRunningRef.current = false;
+    recognitionIntentionalStopRef.current = false;
+    startVoiceRecognition();
+  }, [startVoiceRecognition]);
+
   return {
     sessionActive,
     heygenSessionActive,
@@ -2432,5 +2466,6 @@ export function useAvatarSession({
     hasAskedAnythingElseRef,
     handleSubmitMessage,
     stopAudio,
+    manualStartVoice,
   };
 }

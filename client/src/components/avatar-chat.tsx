@@ -205,7 +205,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     hasAskedAnythingElseRef,
     speakingIntervalRef,
     handleSubmitMessage: originalHandleSubmitMessage,
-    stopAudio
+    stopAudio,
+    manualStartVoice
   } = useAvatarSession({
     videoRef,
     userId,
@@ -719,6 +720,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 </div>
                 <span className="text-xs text-amber-300/80 text-right">Use Safari for voice input on iOS, or type your message</span>
               </div>
+            )}
+            
+            {/* iOS Safari needs gesture - show tap to speak button */}
+            {microphoneStatus === 'needs-gesture' && (
+              <button
+                onClick={manualStartVoice}
+                className="absolute top-20 right-4 flex items-center gap-2 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/60 px-4 py-2 rounded-full backdrop-blur-sm z-30 transition-all active:scale-95"
+                data-testid="button-tap-to-speak"
+              >
+                <Mic className="w-4 h-4 text-blue-400" />
+                <span className="text-sm text-blue-300 font-medium">Tap to enable voice</span>
+              </button>
             )}
 
             {/* Video Notifications - Pending and Completed */}
