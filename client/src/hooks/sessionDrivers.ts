@@ -2,6 +2,7 @@ import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
   TaskType,
+  ElevenLabsModel,
 } from "@heygen/streaming-avatar";
 
 export interface SessionDriver {
@@ -69,17 +70,15 @@ export class HeyGenDriver implements SessionDriver {
       this.config.onStreamDisconnected?.();
     });
 
-    // Always wire up HeyGen talking events for avatars using HeyGen voice
-    // For ElevenLabs voice, we manually fire these events in speakWithElevenLabs
-    if (!this.useElevenLabsVoice) {
-      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-        this.config.onAvatarStartTalking?.();
-      });
+    // Always wire up HeyGen talking events - HeyGen SDK handles both native voices
+    // and ElevenLabs voices with lip-sync, so events come from HeyGen
+    avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+      this.config.onAvatarStartTalking?.();
+    });
 
-      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-        this.config.onAvatarStopTalking?.();
-      });
-    }
+    avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+      this.config.onAvatarStopTalking?.();
+    });
 
     avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
       const userMessage = message?.detail?.message || message?.message || message;
@@ -95,18 +94,34 @@ export class HeyGenDriver implements SessionDriver {
       disableIdleTimeout: true,
     };
     
-    // Only set voice if we have a specific HeyGen voice ID
+    // Configure voice: use HeyGen voice ID if available, otherwise use ElevenLabs voice via HeyGen
     if (this.config.avatarConfig.heygenVoiceId) {
+      // Use HeyGen's native voice
       avatarStartConfig.voice = {
         voiceId: this.config.avatarConfig.heygenVoiceId,
         rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
       };
+      console.log(`🎙️ HeyGenDriver: Using HeyGen native voice: ${this.config.avatarConfig.heygenVoiceId}`);
+    } else if (this.config.avatarConfig.elevenlabsVoiceId) {
+      // Use ElevenLabs voice through HeyGen SDK - this enables lip-sync with ElevenLabs audio
+      avatarStartConfig.voice = {
+        voiceId: this.config.avatarConfig.elevenlabsVoiceId,
+        rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
+        model: ElevenLabsModel.eleven_multilingual_v2,
+        elevenlabsSettings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.0,
+          use_speaker_boost: true,
+        },
+      };
+      console.log(`🎙️ HeyGenDriver: Using ElevenLabs voice via HeyGen SDK: ${this.config.avatarConfig.elevenlabsVoiceId} (lip-sync enabled)`);
     }
     
     await avatar.createStartAvatar(avatarStartConfig);
     
     if (this.useElevenLabsVoice) {
-      console.log("✅ HeyGen avatar started with ElevenLabs voice mode (voice consistency enabled)");
+      console.log("✅ HeyGen avatar started with ElevenLabs voice integration (HeyGen SDK handles TTS + lip-sync)");
     }
   }
 
@@ -124,11 +139,9 @@ export class HeyGenDriver implements SessionDriver {
   }
 
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
-    if (this.useElevenLabsVoice) {
-      // Use ElevenLabs audio for voice consistency
-      await this.speakWithElevenLabs(text, languageCodeOverride);
-    } else if (this.avatar) {
-      // Use HeyGen's built-in TTS with lip-sync
+    if (this.avatar) {
+      // Use HeyGen's speak method - this works with both native HeyGen voices 
+      // and ElevenLabs voices configured via the SDK (both get lip-sync)
       await this.avatar.speak({
         text,
         task_type: TaskType.REPEAT,
