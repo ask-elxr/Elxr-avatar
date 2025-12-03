@@ -1457,21 +1457,54 @@ export default function Dashboard({
                     </div>
                   </div>
                 ) : !courses || courses.length === 0 ? (
-                  <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
-                    <CardHeader className="text-center">
-                      <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
-                        <BookOpen className="w-8 h-8 text-purple-400" />
+                  <>
+                    {/* Show avatar filter indicator even when no courses exist */}
+                    {avatarFilterId && (
+                      <div className="flex items-center gap-2 glass px-4 py-2 rounded-lg border border-purple-500/30 w-fit mb-6">
+                        <span className="text-white/60 text-sm">Showing courses by:</span>
+                        <span className="text-purple-300 font-medium">
+                          {avatars?.find(a => a.id === avatarFilterId)?.name || avatarFilterId}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                          className="ml-2 h-6 w-6 p-0 text-white/40 hover:text-white"
+                          data-testid="button-clear-avatar-filter-empty"
+                        >
+                          ×
+                        </Button>
                       </div>
-                      <CardTitle className="text-white">
-                        No Courses Yet
-                      </CardTitle>
-                      <CardDescription className="text-white/60">
-                        {isAdmin 
-                          ? "Start creating video courses with AI avatars. Build structured lessons and generate professional videos."
-                          : "Video courses will appear here once they are created by administrators."}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                    )}
+                    <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
+                      <CardHeader className="text-center">
+                        <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                          <BookOpen className="w-8 h-8 text-purple-400" />
+                        </div>
+                        <CardTitle className="text-white">
+                          {avatarFilterId 
+                            ? `No Courses for ${avatars?.find(a => a.id === avatarFilterId)?.name || 'This Mentor'}`
+                            : "No Courses Yet"}
+                        </CardTitle>
+                        <CardDescription className="text-white/60">
+                          {avatarFilterId
+                            ? `${avatars?.find(a => a.id === avatarFilterId)?.name || 'This mentor'} doesn't have any courses yet.`
+                            : "Video courses will appear here once they are created."}
+                        </CardDescription>
+                      </CardHeader>
+                      {avatarFilterId && (
+                        <CardContent className="flex justify-center">
+                          <Button
+                            variant="outline"
+                            onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                            data-testid="button-view-all-courses-empty"
+                          >
+                            View All Courses
+                          </Button>
+                        </CardContent>
+                      )}
+                    </Card>
+                  </>
                 ) : (
                   <>
                     {/* Filter indicator and controls */}
