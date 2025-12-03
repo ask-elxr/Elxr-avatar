@@ -783,29 +783,27 @@ export function useAvatarSession({
           resolve();
         };
 
-        // Wait for audio to be loaded before playing
-        audio.oncanplaythrough = () => {
-          console.log(`🔊 ElevenLabs audio loaded: duration=${audio.duration?.toFixed(2)}s, readyState=${audio.readyState}`);
-          audio.play().then(() => {
-            console.log("🔊 ElevenLabs audio playback started");
-          }).catch((err) => {
-            console.error("Error playing ElevenLabs audio in video mode:", err);
-            // === AVATAR_STOP_TALKING equivalent on play error ===
-            isSpeakingRef.current = false;
-            setIsSpeakingState(false);
-            console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
-            
-            // Resume voice recognition with delay on play error
-            resumeRecognitionWithDelay();
-            
-            // Restart idle timeout on play error
-            startIdleTimeout();
-            resolve();
-          });
+        // Play audio - use loadeddata event to ensure audio is ready
+        audio.onloadeddata = () => {
+          console.log(`🔊 ElevenLabs audio loaded: duration=${audio.duration?.toFixed(2)}s`);
         };
         
-        // Trigger load
-        audio.load();
+        audio.play().then(() => {
+          console.log("🔊 ElevenLabs audio playback started");
+        }).catch((err) => {
+          console.error("Error playing ElevenLabs audio in video mode:", err);
+          // === AVATAR_STOP_TALKING equivalent on play error ===
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
+          console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
+          
+          // Resume voice recognition with delay on play error
+          resumeRecognitionWithDelay();
+          
+          // Restart idle timeout on play error
+          startIdleTimeout();
+          resolve();
+        });
       });
     } catch (error) {
       console.error("Error in speakWithElevenLabsInVideoMode:", error);
