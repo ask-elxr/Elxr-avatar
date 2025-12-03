@@ -1471,19 +1471,6 @@ export default function Dashboard({
                           : "Video courses will appear here once they are created by administrators."}
                       </CardDescription>
                     </CardHeader>
-                    {isAdmin && (
-                      <CardContent className="flex justify-center">
-                        <Button
-                          onClick={() =>
-                            setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
-                          }
-                          data-testid="button-create-course"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Create Your First Course
-                        </Button>
-                      </CardContent>
-                    )}
                   </Card>
                 ) : (
                   <>
@@ -1505,18 +1492,6 @@ export default function Dashboard({
                             ×
                           </Button>
                         </div>
-                      )}
-                      {isAdmin && (
-                        <Button
-                          onClick={() =>
-                            setLocation(isEmbed ? "/embed/courses/new/edit" : "/dashboard/courses/new/edit")
-                          }
-                          className="sm:ml-auto"
-                          data-testid="button-new-course"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          New Course
-                        </Button>
                       )}
                     </div>
                     {avatarFilterId && courses.filter(course => course.avatarId === avatarFilterId).length === 0 ? (
