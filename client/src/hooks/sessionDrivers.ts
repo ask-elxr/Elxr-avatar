@@ -2,7 +2,6 @@ import StreamingAvatar, {
   AvatarQuality,
   StreamingEvents,
   TaskType,
-  ElevenLabsModel,
 } from "@heygen/streaming-avatar";
 
 export interface SessionDriver {
@@ -94,34 +93,33 @@ export class HeyGenDriver implements SessionDriver {
       disableIdleTimeout: true,
     };
     
-    // Configure voice: use HeyGen voice ID if available, otherwise use ElevenLabs voice via HeyGen
+    // Configure voice for HeyGen session
+    // NOTE: HeyGen requires voices to be imported into their platform
+    // For avatars with only ElevenLabs voice, we use a fallback HeyGen voice for session init
+    // and play ElevenLabs audio separately for the correct voice
+    const FALLBACK_HEYGEN_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Wayne - neutral male voice
+    
     if (this.config.avatarConfig.heygenVoiceId) {
-      // Use HeyGen's native voice
+      // Use HeyGen's native voice with lip-sync
       avatarStartConfig.voice = {
         voiceId: this.config.avatarConfig.heygenVoiceId,
         rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
       };
       console.log(`🎙️ HeyGenDriver: Using HeyGen native voice: ${this.config.avatarConfig.heygenVoiceId}`);
-    } else if (this.config.avatarConfig.elevenlabsVoiceId) {
-      // Use ElevenLabs voice through HeyGen SDK - this enables lip-sync with ElevenLabs audio
+    } else {
+      // Use fallback voice for session initialization
+      // ElevenLabs audio will be played separately for the correct voice
       avatarStartConfig.voice = {
-        voiceId: this.config.avatarConfig.elevenlabsVoiceId,
+        voiceId: FALLBACK_HEYGEN_VOICE_ID,
         rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
-        model: ElevenLabsModel.eleven_multilingual_v2,
-        elevenlabsSettings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.0,
-          use_speaker_boost: true,
-        },
       };
-      console.log(`🎙️ HeyGenDriver: Using ElevenLabs voice via HeyGen SDK: ${this.config.avatarConfig.elevenlabsVoiceId} (lip-sync enabled)`);
+      console.log(`🎙️ HeyGenDriver: Using fallback voice for init, ElevenLabs provides audio: ${this.config.avatarConfig.elevenlabsVoiceId}`);
     }
     
     await avatar.createStartAvatar(avatarStartConfig);
     
     if (this.useElevenLabsVoice) {
-      console.log("✅ HeyGen avatar started with ElevenLabs voice integration (HeyGen SDK handles TTS + lip-sync)");
+      console.log("✅ HeyGen avatar started - ElevenLabs will provide voice audio");
     }
   }
 
@@ -139,9 +137,11 @@ export class HeyGenDriver implements SessionDriver {
   }
 
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
-    if (this.avatar) {
-      // Use HeyGen's speak method - this works with both native HeyGen voices 
-      // and ElevenLabs voices configured via the SDK (both get lip-sync)
+    if (this.useElevenLabsVoice) {
+      // Use ElevenLabs audio for correct voice
+      await this.speakWithElevenLabs(text, languageCodeOverride);
+    } else if (this.avatar) {
+      // Use HeyGen's built-in TTS with lip-sync
       await this.avatar.speak({
         text,
         task_type: TaskType.REPEAT,

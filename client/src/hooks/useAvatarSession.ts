@@ -3,7 +3,6 @@ import StreamingAvatar, {
   TaskType,
   AvatarQuality,
   StreamingEvents,
-  ElevenLabsModel,
 } from "@heygen/streaming-avatar";
 import { SessionDriver, HeyGenDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
@@ -931,11 +930,16 @@ export function useAvatarSession({
               const { greeting } = await greetingResponse.json();
               if (greeting && avatar) {
                 console.log("🗣️ Avatar greeting:", greeting);
-                // HeyGen SDK now handles both native HeyGen voices and ElevenLabs voices with lip-sync
-                await avatar.speak({
-                  text: greeting,
-                  taskType: TaskType.REPEAT,
-                });
+                // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+                if (useElevenLabsVoiceRef.current) {
+                  console.log("🎙️ Using ElevenLabs for greeting (video mode with ElevenLabs voice)");
+                  await speakWithElevenLabsInVideoMode(greeting);
+                } else {
+                  await avatar.speak({
+                    text: greeting,
+                    taskType: TaskType.REPEAT,
+                  });
+                }
               }
             }
           } catch (error) {
@@ -1076,28 +1080,27 @@ export function useAvatarSession({
         enablePushToTalk: false, // Disable push-to-talk mode
       };
       
-      // Configure voice: use HeyGen voice ID if available, otherwise use ElevenLabs voice via HeyGen
+      // Configure voice for HeyGen session
+      // NOTE: HeyGen requires voices to be imported into their platform
+      // For avatars with only ElevenLabs voice, we use a silent/minimal HeyGen voice for session init
+      // and play ElevenLabs audio separately for the correct voice
+      const FALLBACK_HEYGEN_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Wayne - neutral male voice for session init
+      
       if (avatarConfig.heygenVoiceId) {
-        // Use HeyGen's native voice
+        // Use HeyGen's native voice with full lip-sync
         avatarStartConfig.voice = {
           voiceId: avatarConfig.heygenVoiceId,
           rate: parseFloat(avatarConfig.voiceRate || "1.0"),
         };
         console.log(`🎙️ HeyGen session: Using HeyGen native voice: ${avatarConfig.heygenVoiceId}`);
-      } else if (avatarConfig.elevenlabsVoiceId) {
-        // Use ElevenLabs voice through HeyGen SDK - this enables lip-sync with ElevenLabs audio
+      } else {
+        // Use fallback voice for session initialization
+        // ElevenLabs audio will be played separately for the correct voice
         avatarStartConfig.voice = {
-          voiceId: avatarConfig.elevenlabsVoiceId,
+          voiceId: FALLBACK_HEYGEN_VOICE_ID,
           rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-          model: ElevenLabsModel.eleven_multilingual_v2,
-          elevenlabsSettings: {
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.0,
-            use_speaker_boost: true,
-          },
         };
-        console.log(`🎙️ HeyGen session: Using ElevenLabs voice via HeyGen SDK: ${avatarConfig.elevenlabsVoiceId} (lip-sync enabled)`);
+        console.log(`🎙️ HeyGen session: Using fallback voice for init, ElevenLabs will provide audio: ${avatarConfig.elevenlabsVoiceId}`);
       }
       
       await avatar.createStartAvatar(avatarStartConfig);
@@ -2094,11 +2097,16 @@ export function useAvatarSession({
               if (sentence) {
                 isSpeakingQueueRef.current = true;
                 try {
-                  // HeyGen SDK handles both native HeyGen voices and ElevenLabs voices with lip-sync
-                  await avatarRef.current.speak({
-                    text: sentence,
-                    task_type: TaskType.REPEAT,
-                  });
+                  // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+                  if (useElevenLabsVoiceRef.current) {
+                    await speakWithElevenLabsInVideoMode(sentence);
+                  } else {
+                    // Wait for speak to complete before next sentence
+                    await avatarRef.current.speak({
+                      text: sentence,
+                      task_type: TaskType.REPEAT,
+                    });
+                  }
                   // Small delay between sentences for natural pacing
                   await new Promise(resolve => setTimeout(resolve, 200));
                 } catch (e) {
@@ -2348,11 +2356,16 @@ export function useAvatarSession({
                 throw new Error("Avatar not available");
               }
               
-              // HeyGen SDK handles both native HeyGen voices and ElevenLabs voices with lip-sync
-              await avatarRef.current.speak({
-                text: claudeResponse,
-                task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
-              });
+              // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
+              if (useElevenLabsVoiceRef.current) {
+                console.log("🎙️ Using ElevenLabs for response (video mode with ElevenLabs voice)");
+                await speakWithElevenLabsInVideoMode(claudeResponse);
+              } else {
+                await avatarRef.current.speak({
+                  text: claudeResponse,
+                  task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
+                });
+              }
               
               const speakEndTime = performance.now();
               console.log(`⏱️ [TIMING] speak() completed: ${(speakEndTime - speakStartTime).toFixed(0)}ms`);
@@ -2443,7 +2456,7 @@ export function useAvatarSession({
         abortControllerRef.current = null;
       }
     }
-  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly, stopAcknowledgmentAudio]);
+  }, [sessionActive, heygenSessionActive, userId, onResetInactivityTimer, startHeyGenSession, clearIdleTimeout, endSessionShowReconnect, playAcknowledgmentInstantly, stopAcknowledgmentAudio, speakWithElevenLabsInVideoMode]);
 
   const stopAudio = useCallback(() => {
     if (currentAudioRef.current) {
