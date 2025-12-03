@@ -1247,9 +1247,17 @@ export function useAvatarSession({
               const audioUrl = URL.createObjectURL(audioBlob);
               const audio = new Audio(audioUrl);
               
+              // 🔇 CRITICAL: Set currentAudioRef to block voice recognition restart during playback
+              currentAudioRef.current = audio;
+              isSpeakingRef.current = true;
+              setIsSpeakingState(true);
+              
               // 🔊 Resume voice recognition after greeting ends
               audio.onended = () => {
                 URL.revokeObjectURL(audioUrl);
+                currentAudioRef.current = null;
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
                 setTimeout(() => {
                   if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
                     console.log("🔊 Voice recognition resumed (greeting finished)");
@@ -1260,6 +1268,9 @@ export function useAvatarSession({
               
               audio.onerror = () => {
                 URL.revokeObjectURL(audioUrl);
+                currentAudioRef.current = null;
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
                 // Still try to resume voice recognition on error
                 setTimeout(() => {
                   if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
@@ -1271,6 +1282,9 @@ export function useAvatarSession({
               
               audio.play().catch((err) => {
                 console.error("Failed to play greeting audio:", err);
+                currentAudioRef.current = null;
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
                 // Resume voice recognition if play fails
                 setTimeout(() => {
                   if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
