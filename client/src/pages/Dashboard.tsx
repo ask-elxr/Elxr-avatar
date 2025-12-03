@@ -1471,7 +1471,7 @@ export default function Dashboard({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses");
+                            window.location.href = isEmbed ? "/embed/courses" : "/dashboard/courses";
                           }}
                           className="ml-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors cursor-pointer"
                           data-testid="button-clear-avatar-filter-empty"
@@ -1500,7 +1500,9 @@ export default function Dashboard({
                         <CardContent className="flex justify-center">
                           <Button
                             variant="outline"
-                            onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                            onClick={() => {
+                              window.location.href = isEmbed ? "/embed/courses" : "/dashboard/courses";
+                            }}
                             data-testid="button-view-all-courses-empty"
                           >
                             View All Courses
@@ -1524,7 +1526,7 @@ export default function Dashboard({
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses");
+                              window.location.href = isEmbed ? "/embed/courses" : "/dashboard/courses";
                             }}
                             className="ml-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors cursor-pointer"
                             data-testid="button-clear-avatar-filter"
@@ -1550,7 +1552,9 @@ export default function Dashboard({
                         <CardContent className="flex justify-center">
                           <Button
                             variant="outline"
-                            onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
+                            onClick={() => {
+                              window.location.href = isEmbed ? "/embed/courses" : "/dashboard/courses";
+                            }}
                             data-testid="button-view-all-courses"
                           >
                             View All Courses
