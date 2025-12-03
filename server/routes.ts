@@ -281,53 +281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       log.info("HeyGen token created successfully");
 
-      // Get avatar config to check if we need realtime endpoint for ElevenLabs voice
-      let realtimeEndpoint = null;
-      let sessionId = null;
-      
-      if (avatarId) {
-        const avatarConfig = await getAvatarById(avatarId);
-        // If avatar uses ElevenLabs voice (no HeyGen voice), create session and get realtime endpoint
-        if (avatarConfig && !avatarConfig.heygenVoiceId && avatarConfig.elevenlabsVoiceId) {
-          try {
-            log.info({ avatarId }, "Creating HeyGen streaming session for ElevenLabs lip-sync");
-            
-            // Create streaming session to get realtime endpoint
-            const sessionResponse = await fetch("https://api.heygen.com/v1/streaming.new", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "x-api-key": apiKey,
-              },
-              body: JSON.stringify({
-                version: "v2",
-                avatar_id: avatarConfig.heygenAvatarId,
-                voice: {
-                  voice_id: "1bd001e7e50f421d891986aad5158bc8", // Fallback voice
-                  rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-                },
-              }),
-            });
-
-            if (sessionResponse.ok) {
-              const sessionData = await sessionResponse.json();
-              sessionId = sessionData.data?.session_id || sessionData.session_id;
-              realtimeEndpoint = sessionData.data?.realtime_endpoint || sessionData.realtime_endpoint;
-              log.info({ sessionId, hasRealtimeEndpoint: !!realtimeEndpoint }, "HeyGen streaming session created");
-            } else {
-              const errorText = await sessionResponse.text();
-              log.warn({ status: sessionResponse.status, error: errorText }, "Failed to create HeyGen streaming session for realtime endpoint");
-            }
-          } catch (sessionError: any) {
-            log.warn({ error: sessionError.message }, "Error creating HeyGen streaming session");
-          }
-        }
-      }
-
       res.json({
         token: tokenData.data?.token || tokenData.token,
-        sessionId,
-        realtimeEndpoint,
         ...tokenData,
       });
     } catch (error: any) {

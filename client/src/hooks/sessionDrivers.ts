@@ -21,6 +21,7 @@ class HeyGenRealtimeStreamer {
   private ws: WebSocket | null = null;
   private isConnected: boolean = false;
   private eventIdCounter: number = 0;
+  private currentEventId: string | null = null;
   private onStartTalking?: () => void;
   private onStopTalking?: () => void;
 
@@ -97,32 +98,37 @@ class HeyGenRealtimeStreamer {
       throw new Error("WebSocket not connected");
     }
 
-    const eventId = `audio_${++this.eventIdCounter}_${Date.now()}`;
+    // Generate new event ID for this audio utterance
+    this.currentEventId = `audio_${++this.eventIdCounter}_${Date.now()}`;
     const base64Audio = this.arrayBufferToBase64(pcmData);
 
     // Send audio chunk
     this.ws.send(JSON.stringify({
       type: "agent.speak",
-      event_id: eventId,
+      event_id: this.currentEventId,
       audio: base64Audio,
     }));
 
-    console.log(`🎤 Sent ${pcmData.byteLength} bytes of PCM audio to HeyGen`);
+    console.log(`🎤 Sent ${pcmData.byteLength} bytes of PCM audio to HeyGen (event: ${this.currentEventId})`);
   }
 
   /**
-   * Signal end of audio utterance
+   * Signal end of audio utterance - reuses the event_id from sendAudio
    */
   endOfUtterance(): void {
     if (!this.ws || !this.isConnected) return;
+    if (!this.currentEventId) {
+      console.warn("⚠️ No current event ID for speak_end");
+      return;
+    }
 
-    const eventId = `end_${++this.eventIdCounter}_${Date.now()}`;
     this.ws.send(JSON.stringify({
       type: "agent.speak_end",
-      event_id: eventId,
+      event_id: this.currentEventId,
     }));
     
-    console.log("🔚 Sent speak_end to HeyGen");
+    console.log(`🔚 Sent speak_end to HeyGen (event: ${this.currentEventId})`);
+    this.currentEventId = null;
   }
 
   /**
@@ -200,32 +206,15 @@ export class HeyGenDriver implements SessionDriver {
   }
 
   async start(): Promise<void> {
-    const { token, sessionId, realtimeEndpoint } = await this.fetchAccessTokenAndSession();
+    const token = await this.fetchAccessToken();
     const avatar = new StreamingAvatar({ token });
     this.avatar = avatar;
-    this.sessionId = sessionId;
 
     avatar.on(StreamingEvents.STREAM_READY, async (event) => {
       console.log("Stream ready:", event.detail);
       if (this.config.videoRef.current) {
         this.config.videoRef.current.srcObject = event.detail;
         this.config.videoRef.current.play().catch(console.error);
-      }
-      
-      // Initialize realtime streamer for ElevenLabs voice avatars after stream is ready
-      if (this.useElevenLabsVoice && realtimeEndpoint) {
-        try {
-          console.log("🔌 Initializing realtime audio streamer for lip-sync...");
-          this.realtimeStreamer = new HeyGenRealtimeStreamer(
-            () => this.config.onAvatarStartTalking?.(),
-            () => this.config.onAvatarStopTalking?.()
-          );
-          await this.realtimeStreamer.connect(realtimeEndpoint);
-          console.log("✅ Realtime audio streamer ready for ElevenLabs lip-sync");
-        } catch (error) {
-          console.warn("⚠️ Failed to connect realtime streamer, falling back to audio-only:", error);
-          this.realtimeStreamer = null;
-        }
       }
       
       this.config.onStreamReady?.();
@@ -285,7 +274,41 @@ export class HeyGenDriver implements SessionDriver {
       console.log(`🎙️ HeyGenDriver: Using fallback voice for init, ElevenLabs audio via realtime API`);
     }
     
-    await avatar.createStartAvatar(avatarStartConfig);
+    const sessionInfo = await avatar.createStartAvatar(avatarStartConfig);
+    console.log("📋 HeyGen session info:", sessionInfo);
+    
+    // Store session ID for reference
+    if (sessionInfo) {
+      this.sessionId = (sessionInfo as any).session_id || (sessionInfo as any).sessionId || null;
+      console.log("📋 Session ID:", this.sessionId);
+      
+      // For ElevenLabs voice avatars, try to get the realtime endpoint for lip-sync
+      if (this.useElevenLabsVoice) {
+        const realtimeEndpoint = (sessionInfo as any).realtime_endpoint || 
+                                 (sessionInfo as any).data?.realtime_endpoint ||
+                                 (sessionInfo as any).webrtc?.realtime_endpoint;
+        
+        console.log("📋 All session info keys:", Object.keys(sessionInfo));
+        console.log("📍 Realtime endpoint from session:", realtimeEndpoint);
+        
+        if (realtimeEndpoint) {
+          try {
+            console.log("🔌 Initializing realtime audio streamer for lip-sync...");
+            this.realtimeStreamer = new HeyGenRealtimeStreamer(
+              () => this.config.onAvatarStartTalking?.(),
+              () => this.config.onAvatarStopTalking?.()
+            );
+            await this.realtimeStreamer.connect(realtimeEndpoint);
+            console.log("✅ Realtime audio streamer ready for ElevenLabs lip-sync");
+          } catch (error) {
+            console.warn("⚠️ Failed to connect realtime streamer, falling back to audio-only:", error);
+            this.realtimeStreamer = null;
+          }
+        } else {
+          console.warn("⚠️ No realtime endpoint in session info, using audio-only fallback");
+        }
+      }
+    }
     
     if (this.useElevenLabsVoice) {
       console.log("✅ HeyGen avatar started - ElevenLabs lip-sync mode enabled");
@@ -463,7 +486,7 @@ export class HeyGenDriver implements SessionDriver {
     return true;
   }
 
-  private async fetchAccessTokenAndSession(): Promise<{ token: string; sessionId: string | null; realtimeEndpoint: string | null }> {
+  private async fetchAccessToken(): Promise<string> {
     const response = await fetch("/api/heygen/token", {
       method: "POST",
       headers: {
@@ -480,11 +503,7 @@ export class HeyGenDriver implements SessionDriver {
     }
 
     const data = await response.json();
-    return {
-      token: data.token,
-      sessionId: data.sessionId || null,
-      realtimeEndpoint: data.realtimeEndpoint || null,
-    };
+    return data.token;
   }
 
   getAvatarInstance(): StreamingAvatar | null {
