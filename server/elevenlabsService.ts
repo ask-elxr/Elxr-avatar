@@ -133,6 +133,81 @@ class ElevenLabsService {
     return !!this.apiKey && !!this.client;
   }
 
+  /**
+   * Generate PCM 24kHz 16-bit audio for HeyGen lip-sync
+   * HeyGen's Audio-to-Video API requires this specific format
+   */
+  async generateSpeechPCM(
+    text: string,
+    voiceId: string = "21m00Tcm4TlvDq8ikWAM",
+    languageCode?: string,
+  ): Promise<Buffer> {
+    if (!this.client) {
+      throw new Error(
+        "ElevenLabs client not initialized - check ELEVENLABS_API_KEY",
+      );
+    }
+
+    const log = logger.child({
+      service: "elevenlabs",
+      operation: "generateSpeechPCM",
+      textLength: text.length,
+      voiceId,
+      languageCode,
+    });
+
+    try {
+      log.debug("Generating PCM speech with ElevenLabs for HeyGen lip-sync");
+      const startTime = Date.now();
+
+      // Use direct API call to specify PCM output format
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": this.apiKey,
+          },
+          body: JSON.stringify({
+            text,
+            model_id: "eleven_turbo_v2_5",
+            voice_settings: {
+              stability: 0.7,
+              similarity_boost: 0.65,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+            ...(languageCode && { language_code: languageCode }),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = Buffer.from(arrayBuffer);
+
+      const duration = Date.now() - startTime;
+      log.info(
+        { duration, audioSize: audioBuffer.length, format: "pcm_24000" },
+        "PCM speech generated successfully for HeyGen",
+      );
+      metrics.recordElevenLabsTTS(duration);
+
+      return audioBuffer;
+    } catch (error: any) {
+      log.error(
+        { error: error.message, stack: error.stack },
+        "Error generating PCM speech with ElevenLabs",
+      );
+      throw error;
+    }
+  }
+
   async preCacheAcknowledgments(voiceId: string, avatarId?: string): Promise<void> {
     if (!this.client) return;
     
