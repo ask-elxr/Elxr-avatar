@@ -722,6 +722,19 @@ export function useAvatarSession({
       
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
+      
+      // Ensure audio is properly configured for playback
+      audio.volume = 1.0; // Maximum volume
+      audio.muted = false;
+      
+      // CRITICAL: Append audio element to document body to ensure it plays through speakers
+      // Some browsers don't play detached Audio elements properly
+      audio.style.display = 'none';
+      document.body.appendChild(audio);
+      
+      // For debugging - check audio context state
+      console.log(`🔊 Creating audio element: volume=${audio.volume}, muted=${audio.muted}, attached to DOM`);
+      
       elevenLabsVideoAudioRef.current = audio;
 
       return new Promise((resolve) => {
@@ -756,6 +769,11 @@ export function useAvatarSession({
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
+          
+          // Remove audio element from DOM
+          if (audio.parentNode) {
+            audio.parentNode.removeChild(audio);
+          }
           elevenLabsVideoAudioRef.current = null;
           
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
@@ -772,6 +790,11 @@ export function useAvatarSession({
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
+          
+          // Remove audio element from DOM
+          if (audio.parentNode) {
+            audio.parentNode.removeChild(audio);
+          }
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
           
@@ -795,6 +818,13 @@ export function useAvatarSession({
           // === AVATAR_STOP_TALKING equivalent on play error ===
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
+          
+          // Remove audio element from DOM on error
+          if (audio.parentNode) {
+            audio.parentNode.removeChild(audio);
+          }
+          URL.revokeObjectURL(audioUrl);
+          elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
           
           // Resume voice recognition with delay on play error
