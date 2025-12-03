@@ -792,6 +792,12 @@ export function useAvatarSession({
           }
           elevenLabsVideoAudioRef.current = null;
           
+          // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+          if (videoRef.current) {
+            videoRef.current.muted = false;
+            console.log("🔊 Video unmuted after ElevenLabs audio finished");
+          }
+          
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
           resumeRecognitionWithDelay();
           
@@ -813,6 +819,11 @@ export function useAvatarSession({
           }
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
+          
+          // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+          if (videoRef.current) {
+            videoRef.current.muted = false;
+          }
           
           // Resume voice recognition with delay on error
           resumeRecognitionWithDelay();
@@ -843,6 +854,11 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
           
+          // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+          if (videoRef.current) {
+            videoRef.current.muted = false;
+          }
+          
           // Resume voice recognition with delay on play error
           resumeRecognitionWithDelay();
           
@@ -857,6 +873,11 @@ export function useAvatarSession({
       isSpeakingRef.current = false;
       setIsSpeakingState(false);
       console.log("🗣️ ElevenLabs avatar STOP talking (fetch error - video mode)");
+      
+      // Unmute video for next avatar (in case user switches to HeyGen-voice avatar)
+      if (videoRef.current) {
+        videoRef.current.muted = false;
+      }
       
       // Resume voice recognition with delay on fetch error
       // Cancel any pending resume timeout to prevent racing
