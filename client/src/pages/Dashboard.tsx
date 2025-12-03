@@ -45,6 +45,7 @@ import {
   Lock,
   Crown,
   GraduationCap,
+  X,
 } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -1465,15 +1466,18 @@ export default function Dashboard({
                         <span className="text-purple-300 font-medium">
                           {avatars?.find(a => a.id === avatarFilterId)?.name || avatarFilterId}
                         </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
-                          className="ml-2 h-6 w-6 p-0 text-white/40 hover:text-white"
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses");
+                          }}
+                          className="ml-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors cursor-pointer"
                           data-testid="button-clear-avatar-filter-empty"
                         >
-                          ×
-                        </Button>
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                     )}
                     <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
@@ -1515,15 +1519,18 @@ export default function Dashboard({
                           <span className="text-purple-300 font-medium">
                             {avatars?.find(a => a.id === avatarFilterId)?.name || avatarFilterId}
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses")}
-                            className="ml-2 h-6 w-6 p-0 text-white/40 hover:text-white"
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setLocation(isEmbed ? "/embed/courses" : "/dashboard/courses");
+                            }}
+                            className="ml-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-white/40 hover:text-white transition-colors cursor-pointer"
                             data-testid="button-clear-avatar-filter"
                           >
-                            ×
-                          </Button>
+                            <X className="w-4 h-4" />
+                          </button>
                         </div>
                       )}
                     </div>
