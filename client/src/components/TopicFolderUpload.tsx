@@ -217,7 +217,8 @@ export function TopicFolderUpload() {
   }
 
   const totalFiles = topicFolders?.reduce((acc, f) => acc + f.supportedFiles, 0) || 0;
-  const foldersWithFiles = topicFolders?.filter(f => f.supportedFiles > 0) || [];
+  // Show all folders, sorted by name - folders with 0 files will show a message
+  const sortedFolders = [...(topicFolders || [])].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <Card className="glass-strong border-purple-500/30">
@@ -236,7 +237,10 @@ export function TopicFolderUpload() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => refetch()}
+            onClick={() => {
+              queryClient.invalidateQueries({ queryKey: ['/api/google-drive/topic-folders'] });
+              refetch();
+            }}
             className="gap-1"
             data-testid="button-refresh-folders"
           >
@@ -256,13 +260,14 @@ export function TopicFolderUpload() {
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
           <div className="space-y-2">
-            {foldersWithFiles.map(folder => {
+            {sortedFolders.map(folder => {
               const status = uploadStatuses[folder.id];
               const isExpanded = expandedFolders.has(folder.id);
+              const hasFiles = folder.supportedFiles > 0;
               
               return (
                 <Collapsible key={folder.id} open={isExpanded} onOpenChange={() => toggleFolder(folder.id)}>
-                  <div className="glass p-3 rounded-lg border border-white/10 hover:border-purple-500/30 transition-all">
+                  <div className={`glass p-3 rounded-lg border transition-all ${hasFiles ? 'border-white/10 hover:border-purple-500/30' : 'border-white/5 opacity-60'}`}>
                     <div className="flex items-center justify-between">
                       <CollapsibleTrigger asChild>
                         <button 
@@ -274,12 +279,12 @@ export function TopicFolderUpload() {
                           ) : (
                             <ChevronRight className="w-4 h-4 text-white/50" />
                           )}
-                          <FolderOpen className="w-4 h-4 text-yellow-400" />
-                          <span className="text-white font-medium">{folder.name}</span>
+                          <FolderOpen className={`w-4 h-4 ${hasFiles ? 'text-yellow-400' : 'text-white/30'}`} />
+                          <span className={`font-medium ${hasFiles ? 'text-white' : 'text-white/50'}`}>{folder.name}</span>
                           <Badge variant="secondary" className="ml-2 text-xs">
                             {folder.namespace.toLowerCase()}
                           </Badge>
-                          <span className="text-white/50 text-sm ml-auto mr-4">
+                          <span className={`text-sm ml-auto mr-4 ${hasFiles ? 'text-white/50' : 'text-white/30'}`}>
                             {folder.supportedFiles} files
                           </span>
                         </button>
@@ -290,7 +295,7 @@ export function TopicFolderUpload() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={status?.status === 'uploading'}
+                          disabled={status?.status === 'uploading' || !hasFiles}
                           onClick={() => handleUploadFolder(folder)}
                           className="gap-1"
                           data-testid={`button-upload-folder-${folder.id}`}
@@ -316,17 +321,23 @@ export function TopicFolderUpload() {
                     )}
 
                     <CollapsibleContent className="mt-3">
-                      <FolderFiles folderId={folder.id} />
+                      {hasFiles ? (
+                        <FolderFiles folderId={folder.id} />
+                      ) : (
+                        <div className="text-center py-4 text-white/40 text-sm">
+                          No uploadable files (all files may be &gt;3MB or archives)
+                        </div>
+                      )}
                     </CollapsibleContent>
                   </div>
                 </Collapsible>
               );
             })}
 
-            {foldersWithFiles.length === 0 && (
+            {sortedFolders.length === 0 && (
               <div className="text-center py-8 text-white/50">
                 <FolderOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No folders with supported files found</p>
+                <p>No topic folders found</p>
               </div>
             )}
           </div>
