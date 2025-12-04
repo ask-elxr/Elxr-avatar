@@ -50,6 +50,57 @@ export class LiveAvatarDriver implements SessionDriver {
     console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice with SDK lip-sync for ${config.avatarConfig.name || config.avatarId}`);
   }
 
+  /**
+   * Attach video element with retry logic
+   * Sometimes the video element isn't rendered yet when SESSION_STREAM_READY fires
+   */
+  private attachVideoWithRetry(retriesLeft: number): void {
+    if (this.videoAttached) {
+      console.log("✅ Video already attached, skipping");
+      return;
+    }
+
+    if (this.config.videoRef.current && this.session) {
+      console.log("📺 Attaching video element via session.attach()...");
+      try {
+        this.session.attach(this.config.videoRef.current);
+        this.videoAttached = true;
+        this.config.onStreamReady?.();
+        this.config.onVideoReady?.();
+        console.log("✅ Video element attached via SDK - stream should be visible");
+        
+        // Force video element to play
+        const videoEl = this.config.videoRef.current;
+        videoEl.muted = true; // We play audio separately
+        videoEl.play().catch(err => {
+          console.warn("⚠️ Video autoplay prevented:", err.message || err);
+        });
+        
+        // Log video state for debugging
+        setTimeout(() => {
+          if (this.config.videoRef.current) {
+            const v = this.config.videoRef.current;
+            console.log("📺 Video element state after attach:", {
+              srcObject: v.srcObject ? "present" : "null",
+              readyState: v.readyState,
+              paused: v.paused,
+              videoWidth: v.videoWidth,
+              videoHeight: v.videoHeight,
+              currentTime: v.currentTime,
+            });
+          }
+        }, 1000);
+      } catch (err) {
+        console.error("❌ Error attaching video:", err);
+      }
+    } else if (retriesLeft > 0) {
+      console.log(`⏳ Video ref not ready, retrying in 200ms... (${retriesLeft} retries left)`);
+      setTimeout(() => this.attachVideoWithRetry(retriesLeft - 1), 200);
+    } else {
+      console.error("❌ Failed to attach video - video element not available after retries");
+    }
+  }
+
   async start(): Promise<void> {
     console.log("🚀 LiveAvatarDriver.start() called for:", this.config.avatarId);
     
@@ -72,16 +123,8 @@ export class LiveAvatarDriver implements SessionDriver {
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
       console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
       // Use SDK's attach() method to connect video element
-      if (this.config.videoRef.current && this.session) {
-        console.log("📺 Attaching video element via session.attach()...");
-        this.session.attach(this.config.videoRef.current);
-        this.videoAttached = true;
-        this.config.onStreamReady?.();
-        this.config.onVideoReady?.();
-        console.log("✅ Video element attached via SDK - stream should be visible");
-      } else {
-        console.warn("⚠️ Cannot attach video - ref or session not available");
-      }
+      // Retry with increasing delays if video element is not yet rendered
+      this.attachVideoWithRetry(5);
     });
 
     // Listen for session state changes
