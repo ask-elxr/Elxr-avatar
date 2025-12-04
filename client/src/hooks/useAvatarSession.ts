@@ -1272,22 +1272,55 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true);
     
-    // ✅ MOBILE FIX: Warm up microphone before starting voice recognition
-    // Mobile browsers (especially iOS Safari) require an active audio stream
-    // before Web Speech API will work properly
-    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
-    if (isMobile) {
+    // ✅ iOS SAFARI FIX: Unlock audio stack before starting voice recognition
+    // iOS Safari requires BOTH getUserMedia AND AudioContext.resume during a user gesture
+    // This MUST happen during the user tap/click event for iOS to allow audio
+    const userAgent = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
+    const isIOSSafari = isIOS && isSafari;
+    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(userAgent);
+    
+    if (isMobile || isIOSSafari) {
       try {
-        console.log("📱 Mobile detected - warming up microphone...");
+        console.log("📱 Mobile/iOS Safari detected - unlocking audio stack...");
+        
+        // Step 1: Resume AudioContext (required for iOS audio playback)
+        try {
+          const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (AudioContextClass) {
+            const audioContext = new AudioContextClass();
+            await audioContext.resume();
+            console.log("🔊 AudioContext resumed successfully");
+            // Close it - we just needed to unlock the audio stack
+            audioContext.close().catch(() => {});
+          }
+        } catch (audioError) {
+          console.warn("🔊 AudioContext resume failed:", audioError);
+        }
+        
+        // Step 2: Request microphone permission via getUserMedia
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         // Keep stream active briefly to "warm up" the microphone
         await new Promise(resolve => setTimeout(resolve, 300));
         // Stop tracks - we just needed to activate the microphone
         stream.getTracks().forEach(track => track.stop());
-        console.log("📱 Microphone warmed up successfully");
-      } catch (error) {
-        console.warn("📱 Microphone warm-up failed:", error);
-        // Continue anyway - voice recognition may still work
+        console.log("📱 Microphone permission granted and warmed up");
+        
+        // Mark microphone as ready - this is critical for iOS Safari
+        setMicrophoneStatus('stopped'); // Will be set to 'listening' when recognition starts
+        
+      } catch (error: any) {
+        console.warn("📱 Audio stack unlock failed:", error);
+        // Check if it's a permission denied error
+        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+          console.error("🚫 Microphone permission denied by user");
+          setMicrophoneStatus('permission-denied');
+          // Don't throw - let the session continue but voice won't work
+        } else {
+          // Other errors - still try voice recognition
+          console.log("📱 Continuing without microphone warm-up");
+        }
       }
     }
     
