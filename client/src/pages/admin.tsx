@@ -2,11 +2,13 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { TopicFolderUpload } from "@/components/TopicFolderUpload";
+import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LayoutDashboard, Users, FileText, Settings, Home, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown, Lock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutDashboard, Users, FileText, Settings, Home, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown, Lock, FolderUp, Upload, Link2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation, useSearch } from "wouter";
@@ -608,20 +610,44 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
             <div className="space-y-4 sm:space-y-6">
               <DatabaseStatus />
               
-              {/* Topic Folders from Google Drive */}
-              <TopicFolderUpload />
-              
-              <Card>
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle>Upload Documents</CardTitle>
-                  <CardDescription>
-                    Upload individual documents to enhance AI avatar responses
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 sm:p-6 pt-0">
-                  <DocumentUpload />
-                </CardContent>
-              </Card>
+              <Tabs defaultValue="folders" className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-4">
+                  <TabsTrigger value="folders" className="gap-2" data-testid="admin-tab-folders">
+                    <FolderUp className="w-4 h-4" />
+                    Topic Folders
+                  </TabsTrigger>
+                  <TabsTrigger value="upload" className="gap-2" data-testid="admin-tab-upload">
+                    <Upload className="w-4 h-4" />
+                    Upload
+                  </TabsTrigger>
+                  <TabsTrigger value="mapping" className="gap-2" data-testid="admin-tab-mapping">
+                    <Link2 className="w-4 h-4" />
+                    Mapping
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="folders" className="space-y-4">
+                  <TopicFolderUpload />
+                </TabsContent>
+                
+                <TabsContent value="upload" className="space-y-4">
+                  <Card>
+                    <CardHeader className="p-4 sm:p-6">
+                      <CardTitle>Upload Documents</CardTitle>
+                      <CardDescription>
+                        Upload individual documents to enhance AI avatar responses
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 sm:p-6 pt-0">
+                      <DocumentUpload />
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+                
+                <TabsContent value="mapping" className="space-y-4">
+                  <AvatarNamespaceMatrix />
+                </TabsContent>
+              </Tabs>
             </div>
           )}
 
