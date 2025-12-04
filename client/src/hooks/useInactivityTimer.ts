@@ -1,10 +1,10 @@
 import { useRef, useEffect, useCallback } from "react";
-import { TaskType } from "@heygen/streaming-avatar";
+import type { SessionDriver } from "./sessionDrivers";
 
 interface InactivityTimerConfig {
   sessionActive: boolean;
   isPaused: boolean;
-  avatarRef: React.MutableRefObject<any | null>;
+  sessionDriverRef: React.MutableRefObject<SessionDriver | null>;
   speakingIntervalRef: React.MutableRefObject<NodeJS.Timeout | null>;
   hasAskedAnythingElseRef: React.MutableRefObject<boolean>;
   onEndSessionShowReconnect: () => Promise<void>;
@@ -31,7 +31,7 @@ function estimateSpeechDuration(message: string): number {
 export function useInactivityTimer({
   sessionActive,
   isPaused,
-  avatarRef,
+  sessionDriverRef,
   speakingIntervalRef,
   hasAskedAnythingElseRef,
   onEndSessionShowReconnect,
@@ -74,8 +74,8 @@ export function useInactivityTimer({
       signOffTimeoutRef.current = null;
       console.log("Sign-off timeout cancelled - user is active again");
 
-      if (avatarRef.current) {
-        avatarRef.current.interrupt().catch(() => {});
+      if (sessionDriverRef.current) {
+        sessionDriverRef.current.interrupt().catch(() => {});
       }
     }
 
@@ -95,7 +95,7 @@ export function useInactivityTimer({
       console.log(`⏰ Inactivity warning triggered after ${warningDelay / 1000}s - prompting user`);
       hasShownWarningRef.current = true;
       
-      if (avatarRef.current && onSpeakWarning) {
+      if (sessionDriverRef.current && onSpeakWarning) {
         try {
           await onSpeakWarning(POLITE_WARNING);
         } catch (error) {
@@ -131,7 +131,7 @@ export function useInactivityTimer({
         }
       }, signOffDelay);
     }, warningDelay);
-  }, [avatarRef, speakingIntervalRef, onEndSessionShowReconnect, isVideoMode, onSpeakWarning]);
+  }, [sessionDriverRef, speakingIntervalRef, onEndSessionShowReconnect, isVideoMode, onSpeakWarning]);
 
   useEffect(() => {
     if (sessionActive && !isPaused) {

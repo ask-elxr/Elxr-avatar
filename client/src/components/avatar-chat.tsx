@@ -201,7 +201,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     isPaused,
     isSpeaking: isSpeakingFromHook,
     microphoneStatus,
-    avatarRef,
+    sessionDriverRef,
     hasAskedAnythingElseRef,
     speakingIntervalRef,
     handleSubmitMessage: originalHandleSubmitMessage,
@@ -243,11 +243,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   
   // Hook 2: Inactivity timer management with polite warning
   const handleSpeakWarning = useCallback(async (message: string) => {
-    if (avatarRef.current && !audioOnly) {
+    if (sessionDriverRef.current && !audioOnly) {
       try {
-        await avatarRef.current.speak({ text: message, taskType: "repeat" as any });
+        await sessionDriverRef.current.speak(message);
       } catch (error) {
-        console.error("Failed to speak warning via HeyGen:", error);
+        console.error("Failed to speak warning via avatar:", error);
       }
     } else if (audioOnly) {
       try {
@@ -265,12 +265,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         console.error("Failed to speak warning via audio:", error);
       }
     }
-  }, [avatarRef, audioOnly, selectedAvatarId]);
+  }, [sessionDriverRef, audioOnly, selectedAvatarId]);
 
   const { resetInactivityTimer } = useInactivityTimer({
     sessionActive,
     isPaused,
-    avatarRef,
+    sessionDriverRef,
     speakingIntervalRef,
     hasAskedAnythingElseRef,
     onEndSessionShowReconnect: endSessionShowReconnect,

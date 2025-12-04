@@ -1,10 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import StreamingAvatar, {
-  TaskType,
-  AvatarQuality,
-  StreamingEvents,
-} from "@heygen/streaming-avatar";
-import { SessionDriver, HeyGenDriver, AudioOnlyDriver } from "./sessionDrivers";
+import { SessionDriver, LiveAvatarDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
 
 interface AvatarSessionConfig {
@@ -38,7 +33,7 @@ interface AvatarSessionReturn {
   isPaused: boolean;
   isSpeaking: boolean;
   microphoneStatus: 'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture';
-  avatarRef: React.MutableRefObject<StreamingAvatar | null>;
+  sessionDriverRef: React.MutableRefObject<SessionDriver | null>;
   intentionalStopRef: React.MutableRefObject<boolean>;
   abortControllerRef: React.MutableRefObject<AbortController | null>;
   currentRequestIdRef: React.MutableRefObject<string>;
@@ -68,7 +63,7 @@ export function useAvatarSession({
   const [isSpeakingState, setIsSpeakingState] = useState(false);
   const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
 
-  const avatarRef = useRef<StreamingAvatar | null>(null);
+  const sessionDriverRef = useRef<SessionDriver | null>(null);
   const intentionalStopRef = useRef(false);
   const hasStartedRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -430,7 +425,7 @@ export function useAvatarSession({
         // 🔇 ECHO PROTECTION: If avatar is speaking (video mode), allow interrupts
         if (isSpeakingRef.current && !audioOnlyRef.current) {
           // In video mode, user can interrupt by speaking
-          if (!avatarRef.current) {
+          if (!sessionDriverRef.current) {
             console.log("🔇 ECHO BLOCKED: Ignoring transcript while avatar speaking (no active session):", transcript.substring(0, 50));
             return;
           }
@@ -463,9 +458,9 @@ export function useAvatarSession({
           }
           
           // If avatar is speaking in video mode, interrupt it
-          if (isSpeakingRef.current && avatarRef.current && !audioOnlyRef.current) {
-            console.log("🛑 Interrupting HeyGen avatar - user is speaking");
-            avatarRef.current.interrupt().catch(() => {});
+          if (isSpeakingRef.current && sessionDriverRef.current && !audioOnlyRef.current) {
+            console.log("🛑 Interrupting avatar - user is speaking");
+            sessionDriverRef.current.interrupt().catch(() => {});
             isSpeakingRef.current = false;
             setIsSpeakingState(false);
           }
@@ -617,21 +612,21 @@ export function useAvatarSession({
   }, []); // No dependencies needed - uses refs for current values
 
   const stopHeyGenSession = useCallback(async () => {
-    if (!avatarRef.current || !heygenSessionActive) return;
+    if (!sessionDriverRef.current || !heygenSessionActive) return;
     
-    // Don't stop HeyGen if we're in audio mode - the session should continue
+    // Don't stop if we're in audio mode - the session should continue
     if (audioOnlyRef.current) {
-      console.log("In audio mode - skipping HeyGen stop (no HeyGen active)");
+      console.log("In audio mode - skipping avatar stop (no video active)");
       return;
     }
     
-    console.log("Stopping HeyGen session - keeping conversation active");
+    console.log("Stopping avatar session - keeping conversation active");
     clearIdleTimeout();
     
     try {
       intentionalStopRef.current = true;
-      await avatarRef.current.stopAvatar().catch(console.error);
-      avatarRef.current = null;
+      await sessionDriverRef.current.stop().catch(console.error);
+      sessionDriverRef.current = null;
       
       if (videoRef.current) {
         videoRef.current.srcObject = null;
@@ -641,13 +636,9 @@ export function useAvatarSession({
       isSpeakingRef.current = false;
       setIsSpeakingState(false);
       
-      // NOTE: Don't call endSessionOnServer() - the server session is for
-      // conversation tracking and should persist. HeyGen credits are released
-      // by stopAvatar() on the client side. This allows users to continue
-      // chatting after idle timeout (they can restart video or use audio mode).
-      console.log("HeyGen video stopped - conversation continues (audio/text still work)");
+      console.log("Avatar video stopped - conversation continues (audio/text still work)");
     } catch (error) {
-      console.error("Error stopping HeyGen session:", error);
+      console.error("Error stopping avatar session:", error);
     }
   }, [heygenSessionActive, videoRef, clearIdleTimeout]);
 
@@ -657,10 +648,10 @@ export function useAvatarSession({
     // Only start idle timeout in video mode when not paused
     if (!audioOnlyRef.current && !isPaused) {
       idleTimeoutRef.current = setTimeout(() => {
-        // Double-check we're still in video mode before stopping HeyGen
+        // Double-check we're still in video mode before stopping
         // User might have switched to audio mode during the 3 minutes
-        if (!audioOnlyRef.current && avatarRef.current) {
-          console.log("3min idle timeout - stopping HeyGen session to save credits");
+        if (!audioOnlyRef.current && sessionDriverRef.current) {
+          console.log("3min idle timeout - stopping avatar session to save credits");
           stopHeyGenSession();
         } else {
           console.log("Idle timeout fired but not in video mode - skipping");
@@ -866,20 +857,20 @@ export function useAvatarSession({
     }
   }, [clearIdleTimeout, startIdleTimeout, startVoiceRecognition]);
 
-  const startHeyGenSession = useCallback(async (activeAvatarId: string, options?: { skipGreeting?: boolean }) => {
+  const startLiveAvatarSession = useCallback(async (activeAvatarId: string, options?: { skipGreeting?: boolean }) => {
     // Skip if audio-only
     if (audioOnlyRef.current) {
       return;
     }
     
     // ✅ CRITICAL: Prevent multiple sessions from starting
-    if (avatarRef.current && heygenSessionActive) {
-      console.log("⏭️ HeyGen session already active - skipping restart");
+    if (sessionDriverRef.current && heygenSessionActive) {
+      console.log("⏭️ LiveAvatar session already active - skipping restart");
       return;
     }
     
     const skipGreeting = options?.skipGreeting ?? false;
-    console.log(`Starting HeyGen session${skipGreeting ? ' (mode switch - no greeting)' : ' (fresh start)'}`);
+    console.log(`Starting LiveAvatar session${skipGreeting ? ' (mode switch - no greeting)' : ' (fresh start)'}`);
     setIsLoading(true);
     
     try {
@@ -898,228 +889,179 @@ export function useAvatarSession({
         console.log(`🎙️ Avatar ${avatarConfig.name} will use ElevenLabs voice in video mode (no HeyGen voice configured)`);
       }
 
-      const { token, sessionId } = await fetchAccessToken(activeAvatarId);
-      // Only update sessionIdRef if we got a new one - during mode switching,
-      // we already have a valid sessionId from startSession and the token endpoint
-      // doesn't return one, so we'd overwrite with undefined
-      if (sessionId) {
-        sessionIdRef.current = sessionId;
-      }
-      const avatar = new StreamingAvatar({ token });
-      avatarRef.current = avatar;
-
-      avatar.on(StreamingEvents.STREAM_READY, async (event) => {
-        console.log("Stream ready:", event.detail);
-        if (videoRef.current) {
-          videoRef.current.srcObject = event.detail;
-          videoRef.current.play().catch(console.error);
-        }
+      // Create LiveAvatarDriver with callbacks wired to existing logic
+      const driver = new LiveAvatarDriver({
+        avatarConfig,
+        audioOnly: false,
+        videoRef,
+        avatarId: activeAvatarId,
+        userId,
+        languageCode: languageCodeRef.current,
         
-        // Clear loading state and timeout as soon as stream is ready
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-          loadingTimeoutRef.current = null;
-        }
-        setIsLoading(false);
-        
-        // 🎤 Avatar speaks first with a personalized greeting (only for fresh starts, not mode switches)
-        if (!skipGreeting) {
-          try {
-            const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
-            if (greetingResponse.ok) {
-              const { greeting } = await greetingResponse.json();
-              if (greeting && avatar) {
-                console.log("🗣️ Avatar greeting:", greeting);
-                // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
-                if (useElevenLabsVoiceRef.current) {
-                  console.log("🎙️ Using ElevenLabs for greeting (video mode with ElevenLabs voice)");
-                  await speakWithElevenLabsInVideoMode(greeting);
-                } else {
-                  await avatar.speak({
-                    text: greeting,
-                    taskType: TaskType.REPEAT,
-                  });
+        // Stream ready callback - handles video attachment and greeting
+        onStreamReady: async () => {
+          console.log("🎬 LiveAvatar stream ready");
+          
+          // Clear loading state and timeout as soon as stream is ready
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+          }
+          setIsLoading(false);
+          setHeygenSessionActive(true);
+          
+          // 🎤 Avatar speaks first with a personalized greeting (only for fresh starts, not mode switches)
+          if (!skipGreeting) {
+            try {
+              const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
+              if (greetingResponse.ok) {
+                const { greeting } = await greetingResponse.json();
+                if (greeting && sessionDriverRef.current) {
+                  console.log("🗣️ Avatar greeting:", greeting);
+                  await sessionDriverRef.current.speak(greeting, elevenLabsLanguageCodeRef.current);
                 }
               }
+            } catch (error) {
+              console.warn("Failed to fetch greeting:", error);
             }
-          } catch (error) {
-            console.warn("Failed to fetch greeting:", error);
+          } else {
+            console.log("⏭️ Skipping greeting - mode switch (seamless transition)");
+            // For mode switches, ensure voice recognition starts immediately
+            recognitionIntentionalStopRef.current = false;
+            if (!recognitionRunningRef.current && sessionActiveRef.current) {
+              console.log("🎤 Starting voice recognition after seamless mode switch");
+              startVoiceRecognition();
+            }
           }
-        } else {
-          console.log("⏭️ Skipping greeting - mode switch (seamless transition)");
-          // For mode switches, ensure voice recognition starts immediately
-          // CRITICAL: Reset intentional stop flag HERE since this fires BEFORE the switchTransportMode reset
-          recognitionIntentionalStopRef.current = false;
-          if (!recognitionRunningRef.current && sessionActiveRef.current) {
-            console.log("🎤 Starting voice recognition after seamless mode switch");
-            startVoiceRecognition();
-          }
-        }
-      });
-
-      avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
+        },
         
-        const wasUnintentional = !intentionalStopRef.current;
-        
-        intentionalStopRef.current = false;
-        isSpeakingRef.current = false;
-        avatarRef.current = null;
-        setHeygenSessionActive(false);
-        clearIdleTimeout();
-        
-        if (wasUnintentional && sessionActiveRef.current) {
-          const scheduleReconnect = () => {
-            reconnectAttemptsRef.current++;
-            const attemptNum = reconnectAttemptsRef.current;
+        // Stream disconnected callback - handles reconnection logic
+        onStreamDisconnected: () => {
+          console.log("📵 Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
+          
+          const wasUnintentional = !intentionalStopRef.current;
+          
+          intentionalStopRef.current = false;
+          isSpeakingRef.current = false;
+          sessionDriverRef.current = null;
+          setHeygenSessionActive(false);
+          clearIdleTimeout();
+          
+          if (wasUnintentional && sessionActiveRef.current) {
+            const scheduleReconnect = () => {
+              reconnectAttemptsRef.current++;
+              const attemptNum = reconnectAttemptsRef.current;
+              
+              if (attemptNum <= MAX_AUTO_RECONNECT_ATTEMPTS) {
+                const delay = Math.min(1000 * Math.pow(2, attemptNum - 1), 8000);
+                console.log(`🔄 Auto-reconnecting attempt ${attemptNum}/${MAX_AUTO_RECONNECT_ATTEMPTS} in ${delay}ms...`);
+                
+                if (reconnectTimeoutRef.current) {
+                  clearTimeout(reconnectTimeoutRef.current);
+                }
+                
+                reconnectTimeoutRef.current = setTimeout(async () => {
+                  try {
+                    if (sessionActiveRef.current && !sessionDriverRef.current) {
+                      console.log(`🔄 Executing auto-reconnect attempt ${attemptNum}...`);
+                      await startLiveAvatarSession(currentAvatarIdRef.current);
+                      console.log("✅ Auto-reconnect successful!");
+                      reconnectAttemptsRef.current = 0;
+                    }
+                  } catch (error) {
+                    console.error(`❌ Auto-reconnect attempt ${attemptNum} failed:`, error);
+                    if (reconnectAttemptsRef.current < MAX_AUTO_RECONNECT_ATTEMPTS) {
+                      scheduleReconnect();
+                    } else {
+                      console.log("⚠️ Max auto-reconnect attempts reached - showing reconnect button");
+                      setShowReconnect(true);
+                    }
+                  }
+                }, delay);
+              } else {
+                console.log("⚠️ Max auto-reconnect attempts reached - showing reconnect button");
+                setShowReconnect(true);
+              }
+            };
             
-            if (attemptNum <= MAX_AUTO_RECONNECT_ATTEMPTS) {
-              const delay = Math.min(1000 * Math.pow(2, attemptNum - 1), 8000);
-              console.log(`🔄 Auto-reconnecting attempt ${attemptNum}/${MAX_AUTO_RECONNECT_ATTEMPTS} in ${delay}ms...`);
-              
-              if (reconnectTimeoutRef.current) {
-                clearTimeout(reconnectTimeoutRef.current);
-              }
-              
-              reconnectTimeoutRef.current = setTimeout(async () => {
-                try {
-                  if (sessionActiveRef.current && !avatarRef.current) {
-                    console.log(`🔄 Executing auto-reconnect attempt ${attemptNum}...`);
-                    await startHeyGenSession(currentAvatarIdRef.current);
-                    console.log("✅ Auto-reconnect successful!");
-                    reconnectAttemptsRef.current = 0;
-                  }
-                } catch (error) {
-                  console.error(`❌ Auto-reconnect attempt ${attemptNum} failed:`, error);
-                  if (reconnectAttemptsRef.current < MAX_AUTO_RECONNECT_ATTEMPTS) {
-                    scheduleReconnect();
-                  } else {
-                    console.log("⚠️ Max auto-reconnect attempts reached - showing reconnect button");
-                    setShowReconnect(true);
-                  }
-                }
-              }, delay);
-            } else {
-              console.log("⚠️ Max auto-reconnect attempts reached - showing reconnect button");
-              setShowReconnect(true);
+            scheduleReconnect();
+          } else if (wasUnintentional) {
+            console.log("⚠️ Unexpected disconnect (session not active) - showing reconnect button");
+            setShowReconnect(true);
+          }
+        },
+        
+        // Avatar start talking callback - pause voice recognition
+        onAvatarStartTalking: () => {
+          isSpeakingRef.current = true;
+          setIsSpeakingState(true);
+          clearIdleTimeout();
+          
+          // 🎤 Pause voice recognition while avatar is speaking to prevent feedback loop
+          if (recognitionRef.current && recognitionRunningRef.current) {
+            try {
+              recognitionRef.current.stop();
+              recognitionRunningRef.current = false;
+              console.log("🔇 Voice recognition paused (avatar speaking)");
+            } catch (e) {
+              // Ignore errors if already stopped
+              recognitionRunningRef.current = false;
             }
-          };
-          
-          scheduleReconnect();
-        } else if (wasUnintentional) {
-          console.log("⚠️ Unexpected disconnect (session not active) - showing reconnect button");
-          setShowReconnect(true);
-        }
-      });
-
-      avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
-        isSpeakingRef.current = true;
-        setIsSpeakingState(true);
-        clearIdleTimeout();
-        
-        // 🎤 Pause voice recognition while avatar is speaking to prevent feedback loop
-        if (recognitionRef.current && recognitionRunningRef.current) {
-          try {
-            recognitionRef.current.stop();
-            recognitionRunningRef.current = false;
-            console.log("🔇 Voice recognition paused (avatar speaking)");
-          } catch (e) {
-            // Ignore errors if already stopped
-            recognitionRunningRef.current = false;
           }
-        }
-      });
-
-      avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
-        isSpeakingRef.current = false;
-        setIsSpeakingState(false);
-        // ✅ DON'T start idle timeout here - let the 5-minute inactivity timer handle session cleanup
-        // This allows users to think, speak, or pause without premature disconnection
+        },
         
-        // 🎤 Resume voice recognition after a delay to prevent echo
-        // iOS Safari needs a longer delay (3-5 seconds) due to video/audio conflicts
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-        const delay = (isIOS || isSafari) ? 3500 : 1000; // 3.5s for iOS/Safari, 1s for others
-        
-        console.log("🎤 Avatar stopped talking, will resume voice recognition in", delay, "ms");
-        
-        setTimeout(() => {
-          // Skip if intentionally stopped or avatar started speaking again
-          if (recognitionIntentionalStopRef.current || isSpeakingRef.current) {
-            console.log("🎤 Skip resume: intentionalStop=", recognitionIntentionalStopRef.current, "isSpeaking=", isSpeakingRef.current);
-            return;
-          }
+        // Avatar stop talking callback - resume voice recognition
+        onAvatarStopTalking: () => {
+          isSpeakingRef.current = false;
+          setIsSpeakingState(false);
           
-          // Skip if already running
-          if (recognitionRunningRef.current) {
-            console.log("🎤 Voice recognition already running");
-            return;
-          }
+          // 🎤 Resume voice recognition after a delay to prevent echo
+          // iOS Safari needs a longer delay (3-5 seconds) due to video/audio conflicts
+          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+          const delay = (isIOS || isSafari) ? 3500 : 1000;
           
-          // Use startVoiceRecognition for more robust handling (handles recreation)
-          console.log("🔊 Resuming voice recognition (avatar finished speaking)");
-          startVoiceRecognition();
-        }, delay);
+          console.log("🎤 Avatar stopped talking, will resume voice recognition in", delay, "ms");
+          
+          setTimeout(() => {
+            if (recognitionIntentionalStopRef.current || isSpeakingRef.current) {
+              console.log("🎤 Skip resume: intentionalStop=", recognitionIntentionalStopRef.current, "isSpeaking=", isSpeakingRef.current);
+              return;
+            }
+            
+            if (recognitionRunningRef.current) {
+              console.log("🎤 Voice recognition already running");
+              return;
+            }
+            
+            console.log("🔊 Resuming voice recognition (avatar finished speaking)");
+            startVoiceRecognition();
+          }, delay);
+        },
+        
+        // User message callback (from LiveAvatar voice input if enabled)
+        onUserMessage: (message: string) => {
+          console.log("🎤 User message from LiveAvatar:", message);
+          handleSubmitMessage(message);
+        },
       });
-
-      // ❌ DISABLED: USER_TALKING_MESSAGE listener removed
-      // This event only works with HeyGen's voice chat which causes echo loops
-      // Voice input now handled by Web Speech API in the component
-
-      // Build the avatar config
-      const avatarStartConfig: any = {
-        quality: AvatarQuality.High,
-        avatarName: avatarConfig.heygenAvatarId,
-        language: "en",
-        disableIdleTimeout: true,
-        // ❌ CRITICAL: Disable ALL HeyGen AI features - we use Claude instead
-        knowledgeBase: undefined, // No knowledge base
-        knowledgeId: undefined, // No knowledge ID
-        useSilencePrompt: false, // Don't auto-respond to silence
-        enablePushToTalk: false, // Disable push-to-talk mode
-      };
       
-      // Configure voice for HeyGen session
-      // NOTE: HeyGen requires voices to be imported into their platform
-      // For avatars with only ElevenLabs voice, we use a silent/minimal HeyGen voice for session init
-      // and play ElevenLabs audio separately for the correct voice
-      const FALLBACK_HEYGEN_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Wayne - neutral male voice for session init
+      sessionDriverRef.current = driver;
       
-      if (avatarConfig.heygenVoiceId) {
-        // Use HeyGen's native voice with full lip-sync
-        avatarStartConfig.voice = {
-          voiceId: avatarConfig.heygenVoiceId,
-          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-        };
-        console.log(`🎙️ HeyGen session: Using HeyGen native voice: ${avatarConfig.heygenVoiceId}`);
-      } else {
-        // Use fallback voice for session initialization
-        // ElevenLabs audio will be played separately for the correct voice
-        avatarStartConfig.voice = {
-          voiceId: FALLBACK_HEYGEN_VOICE_ID,
-          rate: parseFloat(avatarConfig.voiceRate || "1.0"),
-        };
-        console.log(`🎙️ HeyGen session: Using fallback voice for init, ElevenLabs will provide audio: ${avatarConfig.elevenlabsVoiceId}`);
-      }
+      // Start the LiveAvatar session
+      await driver.start();
       
-      await avatar.createStartAvatar(avatarStartConfig);
-
-      // ❌ DISABLED: HeyGen's voice chat causes echo loop with Claude
-      // HeyGen's voice chat is designed ONLY for their built-in AI
-      // When using Claude, the avatar hears itself and creates infinite loop
-      // Solution: Use Web Speech API for voice input (separate from HeyGen video)
-      console.log("✅ HeyGen video ready - voice input via Web Speech API, responses via Claude");
-
-      console.log("HeyGen session started successfully");
-      setHeygenSessionActive(true);
-      setIsLoading(false);
+      console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
     } catch (error) {
-      console.error("Error starting HeyGen session:", error);
+      console.error("Error starting LiveAvatar session:", error);
       setIsLoading(false);
+      sessionDriverRef.current = null;
       throw error;
     }
-  }, [heygenSessionActive, videoRef, startIdleTimeout, clearIdleTimeout, startVoiceRecognition]);
+  }, [heygenSessionActive, videoRef, userId, startIdleTimeout, clearIdleTimeout, startVoiceRecognition]);
+  
+  // Alias for backwards compatibility
+  const startHeyGenSession = startLiveAvatarSession;
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
@@ -1406,21 +1348,21 @@ export function useAvatarSession({
     // Always reset microphone status to stopped, even if recognition was never initialized
     setMicrophoneStatus('stopped');
 
-    if (avatarRef.current) {
+    if (sessionDriverRef.current) {
       try {
-        // No automatic farewell - saves HeyGen credits
+        // No automatic farewell - saves credits
         // Just stop the avatar session immediately
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for timeout");
 
-        await avatarRef.current.stopAvatar().catch(console.error);
-        avatarRef.current = null;
+        await sessionDriverRef.current.stop().catch(console.error);
+        sessionDriverRef.current = null;
       } catch (error) {
         console.error("Error stopping avatar on timeout:", error);
-        if (avatarRef.current) {
+        if (sessionDriverRef.current) {
           intentionalStopRef.current = true;
-          await avatarRef.current.stopAvatar().catch(console.error);
-          avatarRef.current = null;
+          await sessionDriverRef.current.stop().catch(console.error);
+          sessionDriverRef.current = null;
         }
       }
     }
@@ -1485,10 +1427,10 @@ export function useAvatarSession({
     // Always reset microphone status to stopped, even if recognition was never initialized
     setMicrophoneStatus('stopped');
 
-    if (avatarRef.current) {
+    if (sessionDriverRef.current) {
       intentionalStopRef.current = true;
-      await avatarRef.current.stopAvatar().catch(console.error);
-      avatarRef.current = null;
+      await sessionDriverRef.current.stop().catch(console.error);
+      sessionDriverRef.current = null;
     }
 
     if (videoRef.current) {
@@ -1606,22 +1548,22 @@ export function useAvatarSession({
     isSpeakingRef.current = false;
     setIsSpeakingState(false);
     
-    // If switching FROM video TO audio, stop HeyGen client (releases credits automatically)
+    // If switching FROM video TO audio, stop avatar (releases credits automatically)
     // Keep server session alive for conversation continuity
     if (!wasAudioOnly && newAudioOnly) {
-      // Always clear HeyGen state when switching to audio, even if avatar seems inactive
+      // Always clear avatar state when switching to audio, even if avatar seems inactive
       try {
         intentionalStopRef.current = true;
         
         // Stop avatar if it exists
-        if (avatarRef.current) {
-          await avatarRef.current.stopAvatar().catch((e) => {
+        if (sessionDriverRef.current) {
+          await sessionDriverRef.current.stop().catch((e: Error) => {
             console.warn("Error stopping avatar:", e);
           });
         }
         
         // ALWAYS clear these state values to ensure clean audio mode
-        avatarRef.current = null;
+        sessionDriverRef.current = null;
         setHeygenSessionActive(false);
         isSpeakingRef.current = false;
         setIsSpeakingState(false);
@@ -1634,14 +1576,14 @@ export function useAvatarSession({
         
         // NOTE: Don't call endSessionOnServer() - that clears sessionIdRef
         // which breaks subsequent requests. The server session is for
-        // conversation tracking, not HeyGen billing (that's handled by stopAvatar)
+        // conversation tracking, not billing (that's handled by stop)
         
-        console.log("✅ HeyGen stopped - switched to audio mode (session preserved, avatarRef cleared)");
+        console.log("✅ Avatar stopped - switched to audio mode (session preserved)");
       } catch (error) {
-        console.error("Error stopping HeyGen for mode switch:", error);
+        console.error("Error stopping avatar for mode switch:", error);
         // Revert mode on failure but still try to clean up state
         audioOnlyRef.current = wasAudioOnly;
-        avatarRef.current = null;
+        sessionDriverRef.current = null;
         setHeygenSessionActive(false);
         throw error;
       }
@@ -1718,9 +1660,9 @@ export function useAvatarSession({
       console.log("🛑 Sentence queue cleared on pause");
 
       // Interrupt avatar speech immediately
-      if (avatarRef.current) {
+      if (sessionDriverRef.current) {
         try {
-          await avatarRef.current.interrupt();
+          await sessionDriverRef.current.interrupt();
           console.log("🛑 Avatar speech interrupted on pause");
         } catch (e) {
           console.warn("Error interrupting avatar:", e);
@@ -1745,11 +1687,11 @@ export function useAvatarSession({
       }
       setMicrophoneStatus('stopped');
 
-      if (avatarRef.current) {
+      if (sessionDriverRef.current) {
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for pause");
-        await avatarRef.current.stopAvatar().catch(console.error);
-        avatarRef.current = null;
+        await sessionDriverRef.current.stop().catch(console.error);
+        sessionDriverRef.current = null;
       }
 
       if (videoRef.current) {
@@ -1827,9 +1769,9 @@ export function useAvatarSession({
         }
       }
       
-      if (avatarRef.current) {
+      if (sessionDriverRef.current) {
         intentionalStopRef.current = true;
-        avatarRef.current.stopAvatar().catch(console.error);
+        sessionDriverRef.current.stop().catch(console.error);
       }
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -1878,9 +1820,9 @@ export function useAvatarSession({
       // Audio-only mode: Stop current audio
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
-    } else if (avatarRef.current) {
+    } else if (sessionDriverRef.current) {
       // Video mode: Interrupt avatar if speaking
-      await avatarRef.current.interrupt().catch(() => {});
+      await sessionDriverRef.current.interrupt().catch(() => {});
     }
 
     // Cancel any in-flight request
@@ -2053,14 +1995,14 @@ export function useAvatarSession({
         const flowStartTime = performance.now();
         console.log("⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===");
         
-        // Video mode: Start HeyGen session ONLY on first message if not already started
-        if (!heygenSessionActive && !avatarRef.current) {
+        // Video mode: Start avatar session ONLY on first message if not already started
+        if (!heygenSessionActive && !sessionDriverRef.current) {
           try {
-            const heygenStartTime = performance.now();
+            const avatarStartTime = performance.now();
             await startHeyGenSession(currentAvatarIdRef.current);
-            console.log(`⏱️ [TIMING] HeyGen session start: ${(performance.now() - heygenStartTime).toFixed(0)}ms`);
+            console.log(`⏱️ [TIMING] Avatar session start: ${(performance.now() - avatarStartTime).toFixed(0)}ms`);
           } catch (error) {
-            console.error("Failed to start HeyGen session:", error);
+            console.error("Failed to start avatar session:", error);
           }
         }
         
@@ -2069,7 +2011,7 @@ export function useAvatarSession({
         console.log("⏱️ [TIMING] API call starting...");
         
         // Use streaming mode for faster perceived response
-        if (streamingEnabledRef.current && avatarRef.current) {
+        if (streamingEnabledRef.current && sessionDriverRef.current) {
           console.log("🚀 [STREAMING] Using streaming mode for faster response");
           
           let fullResponse = '';
@@ -2091,22 +2033,14 @@ export function useAvatarSession({
                 continue;
               }
               
-              if (!avatarRef.current) break;
+              if (!sessionDriverRef.current) break;
               
               const sentence = sentenceQueueRef.current.shift();
               if (sentence) {
                 isSpeakingQueueRef.current = true;
                 try {
-                  // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
-                  if (useElevenLabsVoiceRef.current) {
-                    await speakWithElevenLabsInVideoMode(sentence);
-                  } else {
-                    // Wait for speak to complete before next sentence
-                    await avatarRef.current.speak({
-                      text: sentence,
-                      task_type: TaskType.REPEAT,
-                    });
-                  }
+                  // Use the session driver's speak method which handles voice mode internally
+                  await sessionDriverRef.current.speak(sentence, elevenLabsLanguageCodeRef.current);
                   // Small delay between sentences for natural pacing
                   await new Promise(resolve => setTimeout(resolve, 200));
                 } catch (e) {
@@ -2339,33 +2273,25 @@ export function useAvatarSession({
           }
         }, 180000);
 
-        // Video mode: Use HeyGen avatar with auto-reconnect on 401
-        if (avatarRef.current) {
+        // Video mode: Use avatar with auto-reconnect on 401
+        if (sessionDriverRef.current) {
           // ✅ Avatar speaks Claude's response
           // Note: Voice recognition will be paused by AVATAR_START_TALKING event
-          console.log("🗣️ SENDING TO HEYGEN - Text length:", claudeResponse.length, "characters");
+          console.log("🗣️ SENDING TO AVATAR - Text length:", claudeResponse.length, "characters");
           
-          // ⏱️ TIMING: HeyGen speak call
+          // ⏱️ TIMING: Avatar speak call
           const speakStartTime = performance.now();
-          console.log("⏱️ [TIMING] HeyGen speak() starting...");
+          console.log("⏱️ [TIMING] Avatar speak() starting...");
           
           // Helper function to speak with retry on 401
           const speakWithRetry = async (retryCount = 0): Promise<void> => {
             try {
-              if (!avatarRef.current) {
+              if (!sessionDriverRef.current) {
                 throw new Error("Avatar not available");
               }
               
-              // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
-              if (useElevenLabsVoiceRef.current) {
-                console.log("🎙️ Using ElevenLabs for response (video mode with ElevenLabs voice)");
-                await speakWithElevenLabsInVideoMode(claudeResponse);
-              } else {
-                await avatarRef.current.speak({
-                  text: claudeResponse,
-                  task_type: TaskType.REPEAT, // ✅ CRITICAL: REPEAT = just speak our text, TALK = use HeyGen's AI
-                });
-              }
+              // Use the session driver's speak method which handles voice mode internally
+              await sessionDriverRef.current.speak(claudeResponse, elevenLabsLanguageCodeRef.current);
               
               const speakEndTime = performance.now();
               console.log(`⏱️ [TIMING] speak() completed: ${(speakEndTime - speakStartTime).toFixed(0)}ms`);
@@ -2376,23 +2302,23 @@ export function useAvatarSession({
               
               // Check for 401 Unauthorized - session expired
               if ((errorMsg.includes("401") || errorMsg.includes("Unauthorized")) && retryCount < 1) {
-                console.log("🔄 HeyGen session expired (401) - auto-reconnecting...");
+                console.log("🔄 Avatar session expired (401) - auto-reconnecting...");
                 
                 // Clear old session
                 setHeygenSessionActive(false);
-                if (avatarRef.current) {
+                if (sessionDriverRef.current) {
                   try {
-                    await avatarRef.current.stopAvatar().catch(() => {});
+                    await sessionDriverRef.current.stop().catch(() => {});
                   } catch (e) {
                     // Ignore errors when stopping expired session
                   }
                 }
-                avatarRef.current = null;
+                sessionDriverRef.current = null;
                 
-                // Restart HeyGen session
+                // Restart avatar session
                 try {
                   await startHeyGenSession(currentAvatarIdRef.current);
-                  console.log("✅ HeyGen session restarted - retrying speak...");
+                  console.log("✅ Avatar session restarted - retrying speak...");
                   
                   // Wait a moment for session to stabilize
                   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -2400,7 +2326,7 @@ export function useAvatarSession({
                   // Retry speak
                   await speakWithRetry(retryCount + 1);
                 } catch (reconnectError) {
-                  console.error("❌ Failed to reconnect HeyGen session:", reconnectError);
+                  console.error("❌ Failed to reconnect avatar session:", reconnectError);
                   setShowReconnect(true);
                 }
               } else {
@@ -2441,13 +2367,13 @@ export function useAvatarSession({
       } else {
         console.error("Error sending message:", error);
         
-        // Check for HeyGen 401 Unauthorized error - session expired (fallback if speakWithRetry failed)
+        // Check for 401 Unauthorized error - session expired (fallback if speakWithRetry failed)
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
-          console.log("🔄 HeyGen session expired (401) - showing reconnect button...");
+          console.log("🔄 Avatar session expired (401) - showing reconnect button...");
           setShowReconnect(true);
           setHeygenSessionActive(false);
-          avatarRef.current = null;
+          sessionDriverRef.current = null;
         }
       }
     } finally {
@@ -2553,7 +2479,7 @@ export function useAvatarSession({
     isPaused,
     isSpeaking: isSpeakingState,
     microphoneStatus,
-    avatarRef,
+    sessionDriverRef,
     intentionalStopRef,
     abortControllerRef,
     currentRequestIdRef,

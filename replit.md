@@ -12,11 +12,15 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 ### System Architecture
 
 #### Frontend (React + TypeScript)
--   **Core Features**: Avatar selection, HeyGen video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
+-   **Core Features**: Avatar selection, LiveAvatar video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
+-   **SessionDriver Pattern**: Unified abstraction for avatar sessions via `client/src/hooks/sessionDrivers.ts`:
+    -   `LiveAvatarDriver`: Uses HeyGen LiveAvatar SDK with CUSTOM mode for video streaming while preserving Claude + RAG + ElevenLabs pipeline.
+    -   `AudioOnlyDriver`: Audio-only mode using ElevenLabs TTS without video session.
+    -   Common interface: `start()`, `stop()`, `speak(text, languageCode?)`, `interrupt()`, `supportsVoiceInput()`.
 -   **Mobile Fullscreen Support**: Adaptive fullscreen modes for iOS Safari, Android Chrome, and a CSS fallback with safe area handling.
 -   **Microphone Permission**: Explicit user permission request for improved UX.
--   **Voice Recognition**: Throttled auto-restart to prevent rapid restart loops.
--   **Audio/Video Mode Toggle**: Seamless switching between HeyGen video and ElevenLabs audio modes, preserving conversation context. An idle timeout is implemented only for video mode.
+-   **Voice Recognition**: Throttled auto-restart to prevent rapid restart loops. Recognition pauses during avatar speech and resumes with platform-aware delays.
+-   **Audio/Video Mode Toggle**: Seamless switching between LiveAvatar video and ElevenLabs audio modes, preserving conversation context. An idle timeout is implemented only for video mode.
 
 #### Backend (Express + TypeScript + Python)
 -   **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
