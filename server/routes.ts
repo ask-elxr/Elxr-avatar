@@ -58,25 +58,42 @@ import { subscriptionService } from "./services/subscription.js";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
   // LiveAvatar uses a different API endpoint and response format than the old HeyGen Interactive Avatar
-  // We use CUSTOM mode since we have our own AI pipeline (Claude + RAG + ElevenLabs)
+  // FULL mode: LiveAvatar handles AI conversation, requires context_id from dashboard
+  // CUSTOM mode: We handle AI (Claude + RAG), requires LiveKit setup
   const liveAvatarTokenBreaker = wrapServiceCall(
-    async (apiKey: string, avatarConfig?: { avatarId?: string; voiceId?: string }) => {
+    async (apiKey: string, avatarConfig?: { avatarId?: string; voiceId?: string; contextId?: string }) => {
       // LiveAvatar API endpoint - different from old HeyGen streaming endpoint
-      // Using CUSTOM mode because we handle AI/TTS ourselves
-      // livekit_config.use_custom_room = false means use LiveAvatar's default room
+      // Using FULL mode with context_id from LiveAvatar dashboard
+      // Context defines the avatar's personality and knowledge
+      const contextId = avatarConfig?.contextId || process.env.LIVEAVATAR_CONTEXT_ID;
+      
+      if (!contextId) {
+        throw new Error(
+          'LiveAvatar requires a context_id. Please create a context at app.liveavatar.com and set LIVEAVATAR_CONTEXT_ID environment variable.'
+        );
+      }
+      
       const requestBody: any = {
-        mode: "CUSTOM",
+        mode: "FULL",
         avatar_id: avatarConfig?.avatarId,
-        livekit_config: {
-          use_custom_room: false  // Use LiveAvatar's managed room
+        avatar_persona: {
+          voice_id: avatarConfig?.voiceId,
+          context_id: contextId,
+          language: "en"
         }
       };
       
       logger.debug({
         service: 'liveavatar',
         operation: 'create_session_token',
-        requestBody,
-      }, 'Creating LiveAvatar session with CUSTOM mode');
+        requestBody: {
+          ...requestBody,
+          avatar_persona: {
+            ...requestBody.avatar_persona,
+            context_id: contextId ? `${contextId.substring(0, 8)}...` : 'missing'
+          }
+        },
+      }, 'Creating LiveAvatar session with FULL mode');
 
       const response = await fetch(
         "https://api.liveavatar.com/v1/sessions/token",
