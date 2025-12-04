@@ -281,6 +281,198 @@ class PineconeService {
       throw error;
     }
   }
+
+  async listNamespaceVectors(
+    namespace: string,
+    limit: number = 100,
+    paginationToken?: string,
+    indexName: PineconeIndexName = this.defaultIndexName
+  ) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+
+      const listResponse = await ns.listPaginated({
+        limit,
+        paginationToken
+      });
+
+      const vectors: Array<{
+        id: string;
+        metadata?: Record<string, any>;
+        text?: string;
+      }> = [];
+
+      if (listResponse.vectors && listResponse.vectors.length > 0) {
+        const vectorIds = listResponse.vectors.map(v => v.id).filter((id): id is string => id !== undefined);
+        
+        if (vectorIds.length > 0) {
+          const fetchResponse = await ns.fetch(vectorIds);
+          
+          if (fetchResponse.records) {
+            for (const [id, record] of Object.entries(fetchResponse.records)) {
+              vectors.push({
+                id,
+                metadata: record.metadata as Record<string, any> | undefined,
+                text: (record.metadata as any)?.text?.substring(0, 500) || ''
+              });
+            }
+          }
+        }
+      }
+
+      return {
+        vectors,
+        nextToken: listResponse.pagination?.next,
+        namespace
+      };
+    } catch (error) {
+      console.error(`Error listing vectors in namespace "${namespace}":`, error);
+      throw error;
+    }
+  }
+
+  async getVectorById(
+    id: string,
+    namespace: string,
+    indexName: PineconeIndexName = this.defaultIndexName
+  ) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+
+      const fetchResponse = await ns.fetch([id]);
+      
+      if (fetchResponse.records && fetchResponse.records[id]) {
+        const record = fetchResponse.records[id];
+        return {
+          id,
+          metadata: record.metadata as Record<string, any> | undefined,
+          text: (record.metadata as any)?.text || '',
+          hasValues: !!record.values && record.values.length > 0
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error fetching vector "${id}" from namespace "${namespace}":`, error);
+      throw error;
+    }
+  }
+
+  async updateVectorMetadata(
+    id: string,
+    namespace: string,
+    metadata: Record<string, any>,
+    indexName: PineconeIndexName = this.defaultIndexName
+  ) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+
+      await ns.update({
+        id,
+        metadata
+      });
+
+      console.log(`Updated metadata for vector "${id}" in namespace "${namespace}"`);
+      return { success: true, id, namespace };
+    } catch (error) {
+      console.error(`Error updating vector "${id}" in namespace "${namespace}":`, error);
+      throw error;
+    }
+  }
+
+  async deleteVectors(
+    ids: string[],
+    namespace: string,
+    indexName: PineconeIndexName = this.defaultIndexName
+  ) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+
+      await ns.deleteMany({ ids });
+
+      console.log(`Deleted ${ids.length} vectors from namespace "${namespace}"`);
+      return { success: true, deletedCount: ids.length, namespace };
+    } catch (error) {
+      console.error(`Error deleting vectors from namespace "${namespace}":`, error);
+      throw error;
+    }
+  }
+
+  async deleteNamespaceAll(
+    namespace: string,
+    indexName: PineconeIndexName = this.defaultIndexName
+  ) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+
+      await ns.deleteAll();
+
+      console.log(`Deleted all vectors from namespace "${namespace}"`);
+      return { success: true, namespace };
+    } catch (error) {
+      console.error(`Error deleting all vectors from namespace "${namespace}":`, error);
+      throw error;
+    }
+  }
+
+  async getNamespaceStats(indexName: PineconeIndexName = this.defaultIndexName) {
+    if (!this.client) {
+      throw new Error('Pinecone client not initialized - check PINECONE_API_KEY');
+    }
+
+    try {
+      const index = await this.initializeIndex(indexName);
+      const stats = await index.describeIndexStats();
+
+      const namespaceStats: Array<{
+        namespace: string;
+        vectorCount: number;
+      }> = [];
+
+      if (stats.namespaces) {
+        for (const [namespace, nsStats] of Object.entries(stats.namespaces)) {
+          namespaceStats.push({
+            namespace,
+            vectorCount: nsStats.recordCount || 0
+          });
+        }
+      }
+
+      return {
+        totalVectorCount: stats.totalRecordCount || 0,
+        dimension: stats.dimension || 0,
+        namespaces: namespaceStats.sort((a, b) => b.vectorCount - a.vectorCount)
+      };
+    } catch (error) {
+      console.error('Error getting namespace stats:', error);
+      throw error;
+    }
+  }
 }
 
 export const pineconeService = new PineconeService();
