@@ -69,6 +69,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         livekit_url: string;
         livekit_room: string;
         livekit_client_token: string;
+        frontend_token?: string;
       };
     }) => {
       let requestBody: any;
@@ -77,14 +78,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prefer CUSTOM mode if LiveKit is configured (preserves Claude + RAG pipeline)
       if (avatarConfig?.liveKitConfig) {
         mode = "CUSTOM";
+        // LiveAvatar API expects: room_name, livekit_url, livekit_token (for avatar to publish)
         requestBody = {
           mode: "CUSTOM",
           avatar_id: avatarConfig.avatarId,
           livekit_config: {
-            use_custom_room: true,
+            room_name: avatarConfig.liveKitConfig.livekit_room,
             livekit_url: avatarConfig.liveKitConfig.livekit_url,
-            livekit_room: avatarConfig.liveKitConfig.livekit_room,
-            livekit_client_token: avatarConfig.liveKitConfig.livekit_client_token,
+            livekit_token: avatarConfig.liveKitConfig.livekit_client_token, // Avatar's publish token
           }
         };
         
@@ -94,6 +95,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           mode: 'CUSTOM',
           avatarId: avatarConfig.avatarId,
           roomName: avatarConfig.liveKitConfig.livekit_room,
+          livekitUrl: avatarConfig.liveKitConfig.livekit_url.substring(0, 30) + '...',
         }, 'Creating LiveAvatar session with CUSTOM mode (preserves Claude + RAG)');
       } else {
         // Fallback to FULL mode if LiveKit not configured
@@ -338,6 +340,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           livekit_url: string;
           livekit_room: string;
           livekit_client_token: string;
+          frontend_token?: string;
         };
       } | undefined;
       
@@ -368,6 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         livekit_url: string;
         livekit_room: string;
         livekit_client_token: string;
+        frontend_token?: string;
       } | undefined;
       
       if (liveKitService.isConfigured()) {
@@ -456,7 +460,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         response.livekit = {
           url: avatarConfig.liveKitConfig.livekit_url,
           room: avatarConfig.liveKitConfig.livekit_room,
-          token: avatarConfig.liveKitConfig.livekit_client_token,
+          // Use frontend_token for user to SUBSCRIBE (different from avatar's publish token)
+          token: avatarConfig.liveKitConfig.frontend_token || avatarConfig.liveKitConfig.livekit_client_token,
         };
       }
       

@@ -100,12 +100,13 @@ export class LiveKitService {
    * Generate LiveKit config for LiveAvatar CUSTOM mode
    * @param userId - User identifier for the participant
    * @param avatarId - Avatar identifier for room naming
-   * @returns LiveKit configuration for LiveAvatar API
+   * @returns LiveKit configuration for LiveAvatar API AND client
    */
   async generateLiveAvatarConfig(userId: string, avatarId: string): Promise<{
     livekit_url: string;
     livekit_room: string;
     livekit_client_token: string;
+    frontend_token: string;
   }> {
     if (!this.config) {
       throw new Error('LiveKit service not configured');
@@ -114,13 +115,38 @@ export class LiveKitService {
     // Create unique room name for this session
     const roomName = `liveavatar-${avatarId}-${userId}-${Date.now()}`;
     
-    // Generate token for the user to join the room
-    const clientToken = await this.generateRoomToken({
-      roomName,
-      participantName: `User-${userId}`,
-      participantIdentity: `user-${userId}`,
-      ttl: 7200, // 2 hours
+    // Generate token for the AVATAR to publish to the room
+    // This token is sent to the LiveAvatar API so the avatar can stream
+    const avatarToken = new AccessToken(this.config.apiKey, this.config.apiSecret, {
+      identity: `avatar-${avatarId}`,
+      name: `Avatar-${avatarId}`,
+      ttl: 7200,
     });
+    avatarToken.addGrant({
+      room: roomName,
+      roomJoin: true,
+      roomCreate: true, // Allow creating the room if it doesn't exist
+      canPublish: true,
+      canPublishData: true,
+      canSubscribe: false, // Avatar doesn't need to subscribe
+    });
+    const avatarJwt = await avatarToken.toJwt();
+    
+    // Generate token for the USER to subscribe to the room
+    // This token is used by the frontend to receive the avatar's stream
+    const userToken = new AccessToken(this.config.apiKey, this.config.apiSecret, {
+      identity: `user-${userId}`,
+      name: `User-${userId}`,
+      ttl: 7200,
+    });
+    userToken.addGrant({
+      room: roomName,
+      roomJoin: true,
+      canPublish: false, // User doesn't need to publish
+      canSubscribe: true,
+      canPublishData: true,
+    });
+    const userJwt = await userToken.toJwt();
 
     logger.debug({
       service: 'livekit',
@@ -128,12 +154,13 @@ export class LiveKitService {
       roomName,
       userId,
       avatarId,
-    }, 'Generated LiveAvatar LiveKit config');
+    }, 'Generated LiveAvatar LiveKit config with separate avatar and user tokens');
 
     return {
       livekit_url: this.config.url,
       livekit_room: roomName,
-      livekit_client_token: clientToken,
+      livekit_client_token: avatarJwt, // Token for avatar to PUBLISH (sent to LiveAvatar API)
+      frontend_token: userJwt,         // Token for user to SUBSCRIBE (used by frontend)
     };
   }
 }
