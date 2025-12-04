@@ -75,15 +75,25 @@ export class LiveAvatarDriver implements SessionDriver {
     }
     
     console.log("🎬 Attaching LiveKit video track to video element");
-    const element = track.attach();
     
-    if (element instanceof HTMLVideoElement) {
-      this.config.videoRef.current.srcObject = element.srcObject;
-      this.config.videoRef.current.play().catch(console.error);
-    } else {
-      track.attach(this.config.videoRef.current);
-      this.config.videoRef.current.play().catch(console.error);
-    }
+    // Attach the track directly to our video element (most reliable method)
+    track.attach(this.config.videoRef.current);
+    
+    // Log the video element state for debugging
+    const videoEl = this.config.videoRef.current;
+    console.log("📺 Video element state after attach:", {
+      srcObject: videoEl.srcObject ? "present" : "null",
+      readyState: videoEl.readyState,
+      paused: videoEl.paused,
+      muted: videoEl.muted,
+      width: videoEl.videoWidth,
+      height: videoEl.videoHeight
+    });
+    
+    // Attempt to play (may be auto-blocked by browsers)
+    videoEl.play().catch(err => {
+      console.warn("⚠️ Video autoplay prevented:", err.message || err);
+    });
     
     this.videoAttached = true;
     this.config.onStreamReady?.();
