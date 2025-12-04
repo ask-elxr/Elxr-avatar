@@ -51,6 +51,8 @@ export const GOOGLE_DRIVE_SOURCE_FOLDER_ID = "0AL_h7e92I2C8Uk9PVA";
 export const FOLDER_TO_NAMESPACE_MAP: Record<string, PineconeCategory> = {
   "Addiction": "ADDICTION",
   "addiction": "ADDICTION",
+  "addicion": "ADDICTION",
+  "Addicion": "ADDICTION",
   "Body": "BODY",
   "body": "BODY",
   "Career": "WORK",
