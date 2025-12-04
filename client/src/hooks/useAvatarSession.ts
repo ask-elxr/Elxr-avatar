@@ -930,10 +930,18 @@ export function useAvatarSession({
 
       // Detect if this avatar should use ElevenLabs voice in video mode
       // (has ElevenLabs voice configured but no HeyGen voice)
-      console.log(`🔍 Avatar voice config check: heygenVoiceId="${avatarConfig.heygenVoiceId}", elevenlabsVoiceId="${avatarConfig.elevenlabsVoiceId}"`);
-      useElevenLabsVoiceRef.current = !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId;
+      // MOBILE FIX: Disable ElevenLabs voice on mobile devices - use HeyGen native voice instead
+      // ElevenLabs acknowledges mobile audio playback is a known issue on their platform
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log(`🔍 Avatar voice config check: heygenVoiceId="${avatarConfig.heygenVoiceId}", elevenlabsVoiceId="${avatarConfig.elevenlabsVoiceId}", isMobile=${isMobile}`);
+      
+      // On mobile, always use HeyGen native voice for video mode (ElevenLabs has known mobile issues)
+      // On desktop, use ElevenLabs if avatar has no HeyGen voice but has ElevenLabs voice
+      useElevenLabsVoiceRef.current = !isMobile && !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId;
       console.log(`🎙️ useElevenLabsVoiceRef set to: ${useElevenLabsVoiceRef.current}`);
-      if (useElevenLabsVoiceRef.current) {
+      if (isMobile && !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId) {
+        console.log(`📱 Mobile detected - forcing HeyGen native voice for ${avatarConfig.name} (ElevenLabs has known mobile issues)`);
+      } else if (useElevenLabsVoiceRef.current) {
         console.log(`🎙️ Avatar ${avatarConfig.name} will use ElevenLabs voice in video mode (no HeyGen voice configured)`);
       }
 
