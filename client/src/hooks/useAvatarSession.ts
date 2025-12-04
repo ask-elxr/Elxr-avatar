@@ -679,12 +679,11 @@ export function useAvatarSession({
         elevenLabsVideoAudioRef.current = null;
       }
 
-      // === SILENCE VIDEO to prevent HeyGen's fallback voice from playing ===
-      // Use volume instead of muted - muted has autoplay restrictions on mobile
-      // that prevent unmuting programmatically without a user gesture
+      // === MUTE VIDEO to prevent HeyGen's fallback voice from playing ===
+      // Using muted property (not volume) - this is the working pattern
       if (videoRef.current) {
-        videoRef.current.volume = 0;
-        console.log("🔇 Video volume set to 0 for ElevenLabs voice (preventing HeyGen fallback audio)");
+        videoRef.current.muted = true;
+        console.log("🔇 Video muted for ElevenLabs voice (preventing HeyGen fallback audio)");
       }
 
       // === AVATAR_START_TALKING equivalent ===
@@ -798,8 +797,7 @@ export function useAvatarSession({
           // Set both muted=false AND volume=1 for iOS Safari compatibility
           if (videoRef.current) {
             videoRef.current.muted = false;
-            videoRef.current.volume = 1;
-            console.log("🔊 Video unmuted and volume restored after ElevenLabs audio finished");
+            console.log("🔊 Video unmuted after ElevenLabs audio finished");
           }
           
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
@@ -827,7 +825,6 @@ export function useAvatarSession({
           // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
             videoRef.current.muted = false;
-            videoRef.current.volume = 1;
           }
           
           // Resume voice recognition with delay on error
@@ -862,7 +859,6 @@ export function useAvatarSession({
           // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
             videoRef.current.muted = false;
-            videoRef.current.volume = 1;
           }
           
           // Resume voice recognition with delay on play error
@@ -883,7 +879,6 @@ export function useAvatarSession({
       // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
       if (videoRef.current) {
         videoRef.current.muted = false;
-        videoRef.current.volume = 1;
       }
       
       // Resume voice recognition with delay on fetch error
@@ -964,34 +959,11 @@ export function useAvatarSession({
         console.log("Stream ready:", event.detail);
         if (videoRef.current) {
           videoRef.current.srcObject = event.detail;
-          // CRITICAL: Ensure video is properly configured for Safari iOS
-          videoRef.current.playsInline = true;
-          videoRef.current.muted = false;
-          videoRef.current.volume = 1;
-          console.log("🔊 Video configured: playsInline=true, muted=false, volume=1");
-          
-          // Safari iOS requires special handling for video.play()
-          const playVideo = async (attempt = 1) => {
-            try {
-              await videoRef.current?.play();
-              console.log("🔊 Video playback started successfully");
-            } catch (err: any) {
-              console.error(`🔊 Video play() failed (attempt ${attempt}):`, err?.name, err?.message);
-              
-              // Safari iOS specific: NotAllowedError means user gesture required
-              if (err?.name === 'NotAllowedError') {
-                console.log("🔊 Safari iOS: NotAllowedError - will retry when user interacts");
-                // Don't retry immediately - wait for next user interaction
-              } else if (err?.name === 'AbortError' && attempt < 3) {
-                // AbortError can happen when stream isn't ready - retry after short delay
-                console.log(`🔊 AbortError - retrying play() in 500ms (attempt ${attempt}/3)`);
-                await new Promise(resolve => setTimeout(resolve, 500));
-                return playVideo(attempt + 1);
-              }
-            }
-          };
-          
-          await playVideo();
+          // Simple play - this was the working pattern
+          // The video element already has autoPlay and playsInline attributes
+          videoRef.current.play().catch((err) => {
+            console.error("Video play error:", err);
+          });
         }
         
         // Clear loading state and timeout as soon as stream is ready
@@ -1202,31 +1174,6 @@ export function useAvatarSession({
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
-    
-    // 🔊 MOBILE AUDIO UNLOCK: Interact with video element immediately during user gesture
-    // Mobile browsers require audio to be "unlocked" during a user interaction (click/tap)
-    // By interacting with the video element NOW (while still in the click handler call stack),
-    // we ensure audio will work when the HeyGen stream is ready later
-    if (videoRef.current) {
-      try {
-        // Set video to unmuted state during user gesture
-        videoRef.current.muted = false;
-        videoRef.current.volume = 1;
-        
-        // Try to play (even with no source) to unlock audio context
-        // This is a common mobile audio unlock pattern
-        const playPromise = videoRef.current.play();
-        if (playPromise) {
-          playPromise.catch(() => {
-            // Expected to fail with no source, but it still unlocks audio
-          });
-        }
-        console.log("🔊 Mobile audio unlock: Video element interacted during user gesture");
-      } catch (e) {
-        // Ignore errors - this is just for unlocking audio
-        console.log("🔊 Mobile audio unlock attempt (may have failed, continuing)");
-      }
-    }
     
     reconnectAttemptsRef.current = 0;
     if (reconnectTimeoutRef.current) {
@@ -1757,22 +1704,6 @@ export function useAvatarSession({
         videoRef.current.style.display = 'block';
         videoRef.current.style.visibility = 'visible';
         videoRef.current.style.opacity = '1';
-        
-        // 🔊 MOBILE AUDIO UNLOCK: Interact with video element immediately during user gesture
-        // This is critical for Safari iOS - audio must be unlocked during the tap
-        try {
-          videoRef.current.muted = false;
-          videoRef.current.volume = 1;
-          const playPromise = videoRef.current.play();
-          if (playPromise) {
-            playPromise.catch(() => {
-              // Expected to fail with no source, but it still unlocks audio
-            });
-          }
-          console.log("🔊 Mobile audio unlock: Video element interacted during mode switch gesture");
-        } catch (e) {
-          console.log("🔊 Mobile audio unlock attempt during mode switch (continuing)");
-        }
       }
       
       try {
