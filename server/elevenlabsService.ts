@@ -208,6 +208,96 @@ class ElevenLabsService {
     }
   }
 
+  /**
+   * Generate PCM 24kHz audio as base64 for LiveAvatar SDK's repeatAudio()
+   * Uses /with-timestamps endpoint which returns audio_base64 directly
+   * This is the exact format required by LiveAvatar SDK for lip-sync
+   */
+  async generateSpeechBase64(
+    text: string,
+    voiceId: string = "21m00Tcm4TlvDq8ikWAM",
+    languageCode?: string,
+  ): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error(
+        "ElevenLabs API key not configured - check ELEVENLABS_API_KEY",
+      );
+    }
+
+    const log = logger.child({
+      service: "elevenlabs",
+      operation: "generateSpeechBase64",
+      textLength: text.length,
+      voiceId,
+      languageCode,
+    });
+
+    try {
+      log.debug("Generating base64 PCM speech for LiveAvatar SDK");
+      const startTime = Date.now();
+
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": this.apiKey,
+          },
+          body: JSON.stringify({
+            text,
+            model_id: "eleven_turbo_v2_5",
+            voice_settings: {
+              stability: 0.7,
+              similarity_boost: 0.65,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+            ...(languageCode && { language_code: languageCode }),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const audioBase64 = data.audio_base64;
+
+      if (!audioBase64) {
+        throw new Error("ElevenLabs API did not return audio_base64");
+      }
+
+      const duration = Date.now() - startTime;
+      log.info(
+        { duration, audioLength: audioBase64.length, format: "pcm_24000_base64" },
+        "Base64 PCM speech generated for LiveAvatar",
+      );
+      metrics.recordElevenLabsTTS(duration);
+
+      storage
+        .logApiCall({
+          serviceName: "elevenlabs",
+          endpoint: "textToSpeech/with-timestamps",
+          userId: null,
+          responseTimeMs: duration,
+        })
+        .catch((error) => {
+          log.error({ error: error.message }, "Failed to log API call");
+        });
+
+      return audioBase64;
+    } catch (error: any) {
+      log.error(
+        { error: error.message, stack: error.stack },
+        "Error generating base64 speech with ElevenLabs",
+      );
+      throw error;
+    }
+  }
+
   async preCacheAcknowledgments(voiceId: string, avatarId?: string): Promise<void> {
     if (!this.client) return;
     

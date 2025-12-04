@@ -213,12 +213,16 @@ export class LiveAvatarDriver implements SessionDriver {
   /**
    * Play ElevenLabs audio locally AND send base64 audio to SDK for lip-sync
    * Uses session.repeatAudio(base64) to animate avatar lips
+   * 
+   * CRITICAL: SDK requires PCM 24kHz base64 audio format
+   * Uses /api/elevenlabs/tts-base64 which returns audio in this exact format
    */
   private async playElevenLabsWithLipSync(text: string, languageCodeOverride?: string): Promise<void> {
     try {
       this.stopCurrentAudio();
 
-      const response = await fetch("/api/elevenlabs/tts", {
+      // Get base64 PCM audio from ElevenLabs (SDK-compatible format)
+      const response = await fetch("/api/elevenlabs/tts-base64", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -232,55 +236,84 @@ export class LiveAvatarDriver implements SessionDriver {
         throw new Error("Failed to generate ElevenLabs TTS audio");
       }
 
-      const audioBlob = await response.blob();
-      const arrayBuffer = await audioBlob.arrayBuffer();
+      const data = await response.json();
+      const base64Audio = data.audio;
       
-      // Convert to base64 for SDK's repeatAudio() method
-      const base64Audio = btoa(
-        new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
+      if (!base64Audio) {
+        throw new Error("No audio data in response");
+      }
       
-      // Send audio to SDK for lip-sync animation
+      console.log(`🎤 Got base64 PCM audio (${base64Audio.length} chars), sending to SDK for lip-sync...`);
+      
+      // Send base64 PCM audio to SDK for lip-sync animation
+      // The SDK expects PCM 24kHz 16-bit audio in base64 format
       if (this.session) {
-        console.log("🎤 Sending audio to SDK for lip-sync (repeatAudio)...");
         this.session.repeatAudio(base64Audio);
       }
       
       // Also play audio locally through speakers
-      // Create AudioContext if needed
-      if (!this.audioContext) {
-        this.audioContext = new AudioContext();
-      }
+      // Convert base64 PCM to audio buffer and play
+      await this.playPCMAudio(base64Audio);
       
-      // Resume AudioContext if suspended (browser autoplay policy)
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-      
-      // Decode and play the audio
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
-      const source = this.audioContext.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
-      
-      // Track the source for stopping
-      (source as any)._isPlaying = true;
-      this.currentAudio = source as any;
-      
-      // Handle audio end
-      source.onended = () => {
-        console.log("🔊 Audio playback ended");
-        this.config.onAvatarStopTalking?.();
-      };
-      
-      // Start playback
-      source.start(0);
       console.log("🔊 Playing ElevenLabs audio with SDK lip-sync");
       this.config.onAvatarStartTalking?.();
       
     } catch (error) {
       console.error("Error playing ElevenLabs audio:", error);
     }
+  }
+
+  /**
+   * Play PCM 24kHz 16-bit audio from base64 string
+   */
+  private async playPCMAudio(base64Audio: string): Promise<void> {
+    // Create AudioContext if needed
+    if (!this.audioContext) {
+      this.audioContext = new AudioContext();
+    }
+    
+    // Resume AudioContext if suspended (browser autoplay policy)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+    
+    // Decode base64 to raw PCM bytes
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // PCM 24kHz 16-bit mono: convert to AudioBuffer
+    const sampleRate = 24000;
+    const numSamples = bytes.length / 2; // 16-bit = 2 bytes per sample
+    const audioBuffer = this.audioContext.createBuffer(1, numSamples, sampleRate);
+    const channelData = audioBuffer.getChannelData(0);
+    
+    // Convert 16-bit signed PCM to float (-1 to 1)
+    const dataView = new DataView(bytes.buffer);
+    for (let i = 0; i < numSamples; i++) {
+      const sample = dataView.getInt16(i * 2, true); // little-endian
+      channelData[i] = sample / 32768; // normalize to -1 to 1
+    }
+    
+    // Create source and play
+    const source = this.audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(this.audioContext.destination);
+    
+    // Track the source for stopping
+    (source as any)._isPlaying = true;
+    this.currentAudio = source as any;
+    
+    // Handle audio end
+    source.onended = () => {
+      console.log("🔊 Audio playback ended");
+      this.config.onAvatarStopTalking?.();
+    };
+    
+    // Start playback
+    source.start(0);
   }
 
   private stopCurrentAudio(): void {

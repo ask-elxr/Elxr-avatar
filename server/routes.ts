@@ -1299,6 +1299,51 @@ This appears to be your first conversation with this person - no prior memories 
     }
   });
 
+  // ElevenLabs TTS endpoint for LiveAvatar SDK's repeatAudio() (base64 PCM format)
+  app.post("/api/elevenlabs/tts-base64", async (req, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "generateSpeechBase64" });
+
+    try {
+      const { text, avatarId = "mark-kohl", languageCode } = req.body;
+
+      if (!text) {
+        return res.status(400).json({ error: "Text is required" });
+      }
+
+      if (!elevenlabsService.isAvailable()) {
+        log.error("ElevenLabs service not available");
+        return res.status(500).json({
+          error: "ElevenLabs API key not configured. Please set ELEVENLABS_API_KEY environment variable.",
+        });
+      }
+
+      const avatarConfig = await getAvatarById(avatarId);
+      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+        log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
+        return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
+      }
+
+      const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
+      
+      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating base64 PCM audio for LiveAvatar SDK");
+
+      const audioBase64 = await elevenlabsService.generateSpeechBase64(
+        text, 
+        avatarConfig.elevenlabsVoiceId,
+        effectiveLanguageCode
+      );
+
+      log.info({ audioLength: audioBase64.length, format: "pcm_24000_base64" }, "Base64 PCM audio generated successfully for LiveAvatar");
+
+      res.json({ audio: audioBase64 });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error generating base64 PCM audio");
+      res.status(500).json({
+        error: "Failed to generate base64 PCM audio",
+      });
+    }
+  });
+
   // Pre-cache acknowledgment phrases for an avatar (called when chat starts)
   app.post("/api/audio/acknowledgments/precache", async (req, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "preCacheAcknowledgments" });
