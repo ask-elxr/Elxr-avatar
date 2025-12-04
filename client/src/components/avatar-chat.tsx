@@ -528,14 +528,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             ? "Switched to video - conversation continues"
             : "Switched to audio - conversation continues",
         });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error switching mode:", error);
         // Revert to previous mode on failure
         setAudioOnly(previousAudioOnly);
+        
+        // Check if this is a video unavailable error (404)
+        const errorMessage = error?.message?.toLowerCase() || '';
+        const is404 = errorMessage.includes('404') || errorMessage.includes('not found');
+        
         toast({
           variant: "destructive",
-          title: "Switch failed",
-          description: "Failed to switch mode. Please try again.",
+          title: is404 ? "Video unavailable" : "Switch failed",
+          description: is404 
+            ? "Video mode is not available for this avatar. Using audio mode instead."
+            : "Failed to switch to video mode. Please try again.",
         });
       } finally {
         setIsModeSwitching(false);
