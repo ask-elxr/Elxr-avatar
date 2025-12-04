@@ -11,7 +11,8 @@ import {
   RemoteTrack,
   RemoteTrackPublication,
   RemoteParticipant,
-  ConnectionState
+  ConnectionState,
+  LocalAudioTrack
 } from "livekit-client";
 
 export interface SessionDriver {
@@ -51,6 +52,9 @@ export class LiveAvatarDriver implements SessionDriver {
   private videoAttached: boolean = false;
   private livekitRoom: Room | null = null;
   private livekitCredentials: { url: string; room: string; token: string } | null = null;
+  private audioContext: AudioContext | null = null;
+  private publishedAudioTrack: LocalAudioTrack | null = null;
+  private mediaStreamDestination: MediaStreamAudioDestinationNode | null = null;
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -239,9 +243,20 @@ export class LiveAvatarDriver implements SessionDriver {
     this.stopCurrentAudio();
     this.videoAttached = false;
     
+    // Clean up audio context
+    if (this.audioContext) {
+      try {
+        await this.audioContext.close();
+      } catch (e) {
+        // Ignore
+      }
+      this.audioContext = null;
+    }
+    
     // Disconnect from LiveKit room first
     if (this.livekitRoom) {
       console.log("📵 Disconnecting from LiveKit room...");
+      await this.unpublishAudioTrack();
       await this.livekitRoom.disconnect();
       this.livekitRoom = null;
     }
@@ -261,27 +276,21 @@ export class LiveAvatarDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     if (!this.session) return;
 
-    // In CUSTOM mode, the avatar video streams through LiveKit but repeat() is not supported
-    // We play ElevenLabs audio for voice - the avatar will show but without lip-sync animation
-    // Future improvement: publish audio to LiveKit for lip-sync
-    console.log("🎙️ CUSTOM mode: Playing ElevenLabs voice with avatar video (no lip-sync in CUSTOM mode)");
+    // In CUSTOM mode, we publish audio to LiveKit so HeyGen can animate the avatar's lips
+    console.log("🎙️ CUSTOM mode: Publishing audio to LiveKit for lip-sync");
     
-    // Mute the video element to prevent any audio interference
+    // Mute the video element to prevent echo (audio comes from our own playback)
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = true;
     }
     
-    // Note: repeat() is NOT supported in CUSTOM mode - it generates "Unsupported command" errors
-    // For lip-sync in CUSTOM mode, we would need to publish audio to LiveKit room
-    // For now, we just play ElevenLabs audio without lip-sync animation
-    
-    // Play ElevenLabs audio for the actual voice
+    // Play ElevenLabs audio and publish to LiveKit for lip-sync
     await this.playElevenLabsAudio(text, languageCodeOverride);
   }
 
   /**
-   * Play ElevenLabs audio for the avatar's voice
-   * This is used alongside session.repeat(text) for text-based lip-sync
+   * Play ElevenLabs audio for the avatar's voice AND publish to LiveKit for lip-sync
+   * The audio is published to LiveKit so HeyGen can animate the avatar's lips
    */
   private async playElevenLabsAudio(text: string, languageCodeOverride?: string): Promise<void> {
     try {
@@ -302,33 +311,110 @@ export class LiveAvatarDriver implements SessionDriver {
       }
 
       const audioBlob = await response.blob();
-      const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      this.currentAudio = audio;
-
-      audio.onended = () => {
-        URL.revokeObjectURL(audioUrl);
-        this.currentAudio = null;
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      
+      // Create AudioContext if needed (use 48kHz for LiveKit compatibility)
+      if (!this.audioContext) {
+        this.audioContext = new AudioContext({ sampleRate: 48000 });
+      }
+      
+      // Resume AudioContext if suspended (browser autoplay policy)
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+      
+      // Decode the audio data
+      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      
+      // Create source and destination nodes
+      const source = this.audioContext.createBufferSource();
+      source.buffer = audioBuffer;
+      
+      // Create a MediaStreamDestination for publishing to LiveKit
+      this.mediaStreamDestination = this.audioContext.createMediaStreamDestination();
+      
+      // Connect source to both destination (for LiveKit) and speakers (for local playback)
+      source.connect(this.mediaStreamDestination);
+      source.connect(this.audioContext.destination);
+      
+      // Publish audio to LiveKit for lip-sync (if room is connected)
+      if (this.livekitRoom && this.livekitRoom.state === ConnectionState.Connected) {
+        try {
+          // Unpublish any existing track first
+          await this.unpublishAudioTrack();
+          
+          // Create LocalAudioTrack from the MediaStream
+          const audioTrack = this.mediaStreamDestination.stream.getAudioTracks()[0];
+          if (audioTrack) {
+            this.publishedAudioTrack = new LocalAudioTrack(audioTrack, undefined, false);
+            await this.livekitRoom.localParticipant.publishTrack(this.publishedAudioTrack);
+            console.log("🎤 Published audio to LiveKit for lip-sync");
+          }
+        } catch (pubError) {
+          console.warn("⚠️ Failed to publish audio to LiveKit:", pubError);
+          // Continue with local playback even if publishing fails
+        }
+      } else {
+        console.log("📵 LiveKit room not connected - playing audio locally only");
+      }
+      
+      // Track the source for stopping
+      (source as any)._isPlaying = true;
+      this.currentAudio = source as any;
+      
+      // Handle audio end - cleanup
+      source.onended = async () => {
+        console.log("🔊 Audio playback ended");
+        await this.unpublishAudioTrack();
+        this.config.onAvatarStopTalking?.();
       };
-
-      audio.onerror = () => {
-        URL.revokeObjectURL(audioUrl);
-        this.currentAudio = null;
-      };
-
-      await audio.play();
-      console.log("🔊 Playing ElevenLabs audio");
+      
+      // Start playback
+      source.start(0);
+      console.log("🔊 Playing ElevenLabs audio with LiveKit lip-sync");
+      this.config.onAvatarStartTalking?.();
+      
     } catch (error) {
       console.error("Error playing ElevenLabs audio:", error);
+      await this.unpublishAudioTrack();
     }
+  }
+  
+  /**
+   * Unpublish audio track from LiveKit room
+   */
+  private async unpublishAudioTrack(): Promise<void> {
+    if (this.publishedAudioTrack && this.livekitRoom) {
+      try {
+        await this.livekitRoom.localParticipant.unpublishTrack(this.publishedAudioTrack);
+        this.publishedAudioTrack.stop();
+        console.log("🔇 Unpublished audio from LiveKit");
+      } catch (e) {
+        console.warn("Error unpublishing audio track:", e);
+      }
+      this.publishedAudioTrack = null;
+    }
+    this.mediaStreamDestination = null;
   }
 
   private stopCurrentAudio(): void {
     if (this.currentAudio) {
-      this.currentAudio.pause();
+      try {
+        // Handle AudioBufferSourceNode (used for LiveKit lip-sync)
+        if ((this.currentAudio as any)._isPlaying) {
+          (this.currentAudio as AudioBufferSourceNode).stop();
+        } else if (typeof (this.currentAudio as any).pause === 'function') {
+          // Handle HTMLAudioElement (fallback)
+          (this.currentAudio as HTMLAudioElement).pause();
+        }
+      } catch (e) {
+        // AudioBufferSourceNode.stop() throws if already stopped
+      }
       this.currentAudio = null;
       this.config.onAvatarStopTalking?.();
     }
+    // Also unpublish from LiveKit
+    this.unpublishAudioTrack();
   }
 
   async interrupt(): Promise<void> {
