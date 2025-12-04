@@ -259,6 +259,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET available LiveAvatars from HeyGen API (diagnostic endpoint)
+  app.get("/api/heygen/available-avatars", requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "heygen", operation: "listAvailableAvatars" });
+
+    try {
+      // Try both API keys - Video API key is the main HeyGen API, LiveAvatar key is for sessions
+      const videoApiKey = process.env.HEYGEN_VIDEO_API_KEY;
+      const liveAvatarKey = process.env.LIVEAVATAR_API_KEY;
+      
+      const results: any = {
+        liveAvatarApiResult: null,
+        videoApiResult: null,
+        message: "Use 'liveAvatarId' in admin avatar settings for streaming. Check which avatars appear in the results."
+      };
+      
+      // Try with LiveAvatar API key first (streaming API)
+      if (liveAvatarKey) {
+        try {
+          const streamingResponse = await fetch("https://api.heygen.com/v1/streaming/avatar.list", {
+            method: "GET",
+            headers: {
+              "x-api-key": liveAvatarKey,
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (streamingResponse.ok) {
+            const data = await streamingResponse.json();
+            results.liveAvatarApiResult = {
+              success: true,
+              avatars: data.data?.avatars || [],
+              count: data.data?.avatars?.length || 0
+            };
+          } else {
+            results.liveAvatarApiResult = {
+              success: false,
+              error: await streamingResponse.text(),
+              status: streamingResponse.status
+            };
+          }
+        } catch (err: any) {
+          results.liveAvatarApiResult = { success: false, error: err.message };
+        }
+      }
+      
+      // Try with Video API key (main HeyGen API - different endpoint)
+      if (videoApiKey) {
+        try {
+          const videoResponse = await fetch("https://api.heygen.com/v1/streaming/avatar.list", {
+            method: "GET",
+            headers: {
+              "x-api-key": videoApiKey,
+              "Content-Type": "application/json",
+            },
+          });
+          
+          if (videoResponse.ok) {
+            const data = await videoResponse.json();
+            results.videoApiResult = {
+              success: true,
+              avatars: data.data?.avatars || [],
+              count: data.data?.avatars?.length || 0
+            };
+          } else {
+            results.videoApiResult = {
+              success: false,
+              error: await videoResponse.text(),
+              status: videoResponse.status
+            };
+          }
+        } catch (err: any) {
+          results.videoApiResult = { success: false, error: err.message };
+        }
+      }
+      
+      log.info({ 
+        liveAvatarCount: results.liveAvatarApiResult?.count || 0,
+        videoApiCount: results.videoApiResult?.count || 0 
+      }, "Listed available avatars");
+      
+      res.json(results);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error listing available avatars");
+      res.status(500).json({ error: "Failed to list available avatars", details: error.message });
+    }
+  });
+
   // GET HeyGen credit usage endpoint
   app.get("/api/heygen/credits", async (req: any, res) => {
     const log = logger.child({ service: "heygen-credit", operation: "getCredits" });
