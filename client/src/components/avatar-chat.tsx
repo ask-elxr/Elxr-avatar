@@ -595,7 +595,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {/* Full Screen Avatar Video */}
       <div className="relative w-full h-screen bg-black">
         {/* Video Element */}
-        <div className="w-full h-full flex items-center justify-center">
+        <div className="w-full h-full flex items-center justify-center relative">
           {/* Debug: Log render state */}
           {console.log("🖼️ Render state:", { audioOnly, heygenSessionActive, isLoading, showReconnect, 
             videoShouldShow: heygenSessionActive && !isLoading && !showReconnect,
@@ -607,7 +607,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             playsInline
             className="w-full h-full object-cover"
             style={{ 
-              display: (heygenSessionActive && !isLoading && !showReconnect) ? 'block' : 'none'
+              display: (heygenSessionActive && !isLoading && !showReconnect) ? 'block' : 'none',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              zIndex: 10
             }}
             data-testid="avatar-video"
           />
