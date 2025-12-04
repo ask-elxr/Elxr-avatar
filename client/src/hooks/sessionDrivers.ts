@@ -175,7 +175,8 @@ export class LiveAvatarDriver implements SessionDriver {
     
     console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken });
     
-    // Create LiveAvatarSession with the token
+    // Create LiveAvatarSession with sessionAccessToken and config
+    // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
     const session = new LiveAvatarSession(sessionToken, {
       voiceChat: true, // Enable voice chat for voice input
     });
@@ -340,15 +341,27 @@ export class LiveAvatarDriver implements SessionDriver {
       // Publish audio to LiveKit for lip-sync (if room is connected)
       if (this.livekitRoom && this.livekitRoom.state === ConnectionState.Connected) {
         try {
-          // Unpublish any existing track first
-          await this.unpublishAudioTrack();
+          // Unpublish any existing track first (but preserve our new mediaStreamDestination)
+          await this.unpublishExistingAudioTrack();
           
-          // Create LocalAudioTrack from the MediaStream
-          const audioTrack = this.mediaStreamDestination.stream.getAudioTracks()[0];
-          if (audioTrack) {
-            this.publishedAudioTrack = new LocalAudioTrack(audioTrack, undefined, false);
-            await this.livekitRoom.localParticipant.publishTrack(this.publishedAudioTrack);
-            console.log("🎤 Published audio to LiveKit for lip-sync");
+          // Ensure mediaStreamDestination exists and has audio tracks
+          if (!this.mediaStreamDestination) {
+            console.warn("⚠️ MediaStreamDestination not created");
+          } else if (!this.mediaStreamDestination.stream) {
+            console.warn("⚠️ MediaStreamDestination has no stream");
+          } else {
+            // Create LocalAudioTrack from the MediaStream
+            const audioTracks = this.mediaStreamDestination.stream.getAudioTracks();
+            console.log("🎵 Audio tracks available:", audioTracks.length);
+            
+            const audioTrack = audioTracks[0];
+            if (audioTrack) {
+              this.publishedAudioTrack = new LocalAudioTrack(audioTrack, undefined, false);
+              await this.livekitRoom.localParticipant.publishTrack(this.publishedAudioTrack);
+              console.log("🎤 Published audio to LiveKit for lip-sync");
+            } else {
+              console.warn("⚠️ No audio track available in MediaStreamDestination");
+            }
           }
         } catch (pubError: any) {
           console.warn("⚠️ Failed to publish audio to LiveKit:", pubError?.message || pubError);
@@ -383,19 +396,26 @@ export class LiveAvatarDriver implements SessionDriver {
   }
   
   /**
-   * Unpublish audio track from LiveKit room
+   * Unpublish existing audio track from LiveKit room (doesn't clear mediaStreamDestination)
    */
-  private async unpublishAudioTrack(): Promise<void> {
+  private async unpublishExistingAudioTrack(): Promise<void> {
     if (this.publishedAudioTrack && this.livekitRoom) {
       try {
         await this.livekitRoom.localParticipant.unpublishTrack(this.publishedAudioTrack);
         this.publishedAudioTrack.stop();
-        console.log("🔇 Unpublished audio from LiveKit");
+        console.log("🔇 Unpublished previous audio from LiveKit");
       } catch (e) {
         console.warn("Error unpublishing audio track:", e);
       }
       this.publishedAudioTrack = null;
     }
+  }
+  
+  /**
+   * Unpublish audio track and cleanup resources
+   */
+  private async unpublishAudioTrack(): Promise<void> {
+    await this.unpublishExistingAudioTrack();
     this.mediaStreamDestination = null;
   }
 
