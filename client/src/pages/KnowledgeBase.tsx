@@ -6,7 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { TopicFolderUpload } from "@/components/TopicFolderUpload";
-import { FileText, Upload, Home, Shield, FolderOpen } from "lucide-react";
+import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager";
+import { AvatarPineconeStatus } from "@/components/AvatarPineconeStatus";
+import { FileText, Upload, Home, Shield, FolderOpen, Database, Users } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -114,14 +116,14 @@ export default function KnowledgeBase() {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3 glass p-1">
+            <TabsList className="grid w-full grid-cols-5 glass p-1">
               <TabsTrigger 
                 value="upload" 
                 className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
                 data-testid="tab-upload"
               >
                 <Upload className="w-4 h-4" />
-                Upload Files
+                Upload
               </TabsTrigger>
               <TabsTrigger 
                 value="gdrive" 
@@ -129,7 +131,7 @@ export default function KnowledgeBase() {
                 data-testid="tab-gdrive"
               >
                 <FolderOpen className="w-4 h-4" />
-                Topic Folders
+                Folders
               </TabsTrigger>
               <TabsTrigger 
                 value="documents" 
@@ -137,7 +139,23 @@ export default function KnowledgeBase() {
                 data-testid="tab-documents"
               >
                 <FileText className="w-4 h-4" />
-                My Documents
+                Docs
+              </TabsTrigger>
+              <TabsTrigger 
+                value="namespaces" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-namespaces"
+              >
+                <Database className="w-4 h-4" />
+                Pinecone
+              </TabsTrigger>
+              <TabsTrigger 
+                value="avatars" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-avatars"
+              >
+                <Users className="w-4 h-4" />
+                Avatars
               </TabsTrigger>
             </TabsList>
 
@@ -210,6 +228,14 @@ export default function KnowledgeBase() {
 
             <TabsContent value="documents" className="space-y-6">
               <DocumentViewer />
+            </TabsContent>
+
+            <TabsContent value="namespaces" className="space-y-6">
+              <PineconeNamespaceManager />
+            </TabsContent>
+
+            <TabsContent value="avatars" className="space-y-6">
+              <AvatarPineconeStatus />
             </TabsContent>
           </Tabs>
         </div>
