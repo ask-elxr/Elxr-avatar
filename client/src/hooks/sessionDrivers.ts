@@ -158,9 +158,8 @@ export class HeyGenDriver implements SessionDriver {
       console.log("🎙️ Using text-based lip-sync with ElevenLabs audio (HeyGen audio muted)");
       
       // Silence the video element to prevent HeyGen's fallback voice from playing
-      // Use volume instead of muted - muted has autoplay restrictions on mobile
       if (this.config.videoRef.current) {
-        this.config.videoRef.current.volume = 0;
+        this.config.videoRef.current.muted = true;
       }
       
       // Start lip-sync animation from text (HeyGen will animate but audio is muted)
@@ -176,9 +175,9 @@ export class HeyGenDriver implements SessionDriver {
       await speakPromise;
     } else {
       // Use HeyGen's built-in TTS with lip-sync (for avatars with heygenVoiceId)
-      // Ensure video volume is restored for native HeyGen voice
+      // Ensure video is unmuted for native HeyGen voice
       if (this.config.videoRef.current) {
-        this.config.videoRef.current.volume = 1;
+        this.config.videoRef.current.muted = false;
       }
       await this.avatar.speak({
         text,
@@ -217,11 +216,19 @@ export class HeyGenDriver implements SessionDriver {
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
+        // Restore video audio for next utterance or avatar switch
+        if (this.config.videoRef.current) {
+          this.config.videoRef.current.muted = false;
+        }
       };
 
       audio.onerror = () => {
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
+        // Restore video audio on error
+        if (this.config.videoRef.current) {
+          this.config.videoRef.current.muted = false;
+        }
       };
 
       await audio.play();
