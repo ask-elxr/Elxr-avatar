@@ -3,6 +3,7 @@ import { AvatarManager } from "@/components/AvatarManager";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
 import { TopicFolderUpload } from "@/components/TopicFolderUpload";
 import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
+import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -611,7 +612,7 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
               <DatabaseStatus />
               
               <Tabs defaultValue="folders" className="w-full">
-                <TabsList className="grid w-full grid-cols-3 mb-4">
+                <TabsList className="grid w-full grid-cols-4 mb-4">
                   <TabsTrigger value="folders" className="gap-2" data-testid="admin-tab-folders">
                     <FolderUp className="w-4 h-4" />
                     Topic Folders
@@ -623,6 +624,10 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                   <TabsTrigger value="mapping" className="gap-2" data-testid="admin-tab-mapping">
                     <Link2 className="w-4 h-4" />
                     Mapping
+                  </TabsTrigger>
+                  <TabsTrigger value="manage" className="gap-2" data-testid="admin-tab-manage">
+                    <FileText className="w-4 h-4" />
+                    Manage
                   </TabsTrigger>
                 </TabsList>
                 
@@ -646,6 +651,10 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                 
                 <TabsContent value="mapping" className="space-y-4">
                   <AvatarNamespaceMatrix />
+                </TabsContent>
+                
+                <TabsContent value="manage" className="space-y-4">
+                  <PineconeNamespaceManager />
                 </TabsContent>
               </Tabs>
             </div>
