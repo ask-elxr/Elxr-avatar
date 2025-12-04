@@ -7,8 +7,8 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { TopicFolderUpload } from "@/components/TopicFolderUpload";
 import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager";
-import { AvatarPineconeStatus } from "@/components/AvatarPineconeStatus";
-import { FileText, Upload, Home, Shield, FolderOpen, Database, Users } from "lucide-react";
+import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
+import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2 } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -150,12 +150,12 @@ export default function KnowledgeBase() {
                 Pinecone
               </TabsTrigger>
               <TabsTrigger 
-                value="avatars" 
+                value="mapping" 
                 className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
-                data-testid="tab-avatars"
+                data-testid="tab-mapping"
               >
-                <Users className="w-4 h-4" />
-                Avatars
+                <Link2 className="w-4 h-4" />
+                Mapping
               </TabsTrigger>
             </TabsList>
 
@@ -234,8 +234,8 @@ export default function KnowledgeBase() {
               <PineconeNamespaceManager />
             </TabsContent>
 
-            <TabsContent value="avatars" className="space-y-6">
-              <AvatarPineconeStatus />
+            <TabsContent value="mapping" className="space-y-6">
+              <AvatarNamespaceMatrix />
             </TabsContent>
           </Tabs>
         </div>
