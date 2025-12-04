@@ -39,6 +39,7 @@ export class LiveAvatarDriver implements SessionDriver {
   private useElevenLabsVoice: boolean = false;
   private languageCode: string = "en";
   private sessionId: string | null = null;
+  private videoAttached: boolean = false;
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -56,6 +57,18 @@ export class LiveAvatarDriver implements SessionDriver {
     }
   }
 
+  private attachVideoElement(): void {
+    if (this.videoAttached || !this.session || !this.config.videoRef.current) {
+      return;
+    }
+    
+    console.log("🎬 Attaching video element to LiveAvatar session");
+    this.session.attach(this.config.videoRef.current);
+    this.config.videoRef.current.play().catch(console.error);
+    this.videoAttached = true;
+    this.config.onStreamReady?.();
+  }
+
   async start(): Promise<void> {
     // Fetch session credentials from the backend
     const { sessionId, sessionToken } = await this.fetchSessionCredentials();
@@ -71,20 +84,20 @@ export class LiveAvatarDriver implements SessionDriver {
 
     // Listen for stream ready event
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
-      console.log("🎬 LiveAvatar stream ready");
-      
-      // Attach the video element for the avatar stream
-      if (this.config.videoRef.current) {
-        session.attach(this.config.videoRef.current);
-        this.config.videoRef.current.play().catch(console.error);
-      }
-      
-      this.config.onStreamReady?.();
+      console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
+      this.attachVideoElement();
     });
 
     // Listen for session state changes
     session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
       console.log("📊 LiveAvatar session state:", state);
+      
+      // In CUSTOM mode, SESSION_STREAM_READY may not fire, so attach on CONNECTED as fallback
+      if (state === SessionState.CONNECTED && !this.videoAttached) {
+        console.log("📺 CONNECTED state reached - attempting video attachment (CUSTOM mode fallback)");
+        // Small delay to allow SDK to fully initialize the stream
+        setTimeout(() => this.attachVideoElement(), 500);
+      }
     });
 
     // Listen for session disconnected
@@ -128,6 +141,7 @@ export class LiveAvatarDriver implements SessionDriver {
 
   async stop(): Promise<void> {
     this.stopCurrentAudio();
+    this.videoAttached = false;
     if (this.session) {
       await this.session.stop();
       this.session = null;
