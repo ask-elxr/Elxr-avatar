@@ -32,7 +32,7 @@ import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
 import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
-import { getAvatarById } from "./services/avatars.js";
+import { getAvatarById, getAllAvatars } from "./services/avatars.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
@@ -1912,6 +1912,204 @@ This appears to be your first conversation with this person - no prior memories 
     } catch (error: any) {
       log.error({ error: error.message }, "Error migrating namespace");
       res.status(500).json({ error: "Failed to migrate namespace", message: error.message });
+    }
+  });
+
+  // Admin Pinecone namespace management endpoints
+  
+  // Get all Pinecone namespace statistics
+  app.get("/api/admin/pinecone/namespaces", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const stats = await pineconeService.getNamespaceStats();
+      res.json(stats);
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error getting namespace stats");
+      res.status(500).json({ error: "Failed to get namespace stats", message: error.message });
+    }
+  });
+
+  // List vectors in a specific namespace with pagination
+  app.get("/api/admin/pinecone/namespace/:namespace/vectors", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { namespace } = req.params;
+      const { limit = "100", cursor } = req.query;
+      
+      const result = await pineconeService.listNamespaceVectors(
+        namespace,
+        Math.min(parseInt(limit as string) || 100, 100),
+        cursor as string | undefined
+      );
+      
+      res.json(result);
+    } catch (error: any) {
+      logger.error({ error: error.message, namespace: req.params.namespace }, "Error listing namespace vectors");
+      res.status(500).json({ error: "Failed to list vectors", message: error.message });
+    }
+  });
+
+  // Get a specific vector by ID
+  app.get("/api/admin/pinecone/namespace/:namespace/vector/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { namespace, id } = req.params;
+      const vector = await pineconeService.getVectorById(id, namespace);
+      
+      if (!vector) {
+        return res.status(404).json({ error: "Vector not found" });
+      }
+      
+      res.json(vector);
+    } catch (error: any) {
+      logger.error({ error: error.message, namespace: req.params.namespace, id: req.params.id }, "Error getting vector");
+      res.status(500).json({ error: "Failed to get vector", message: error.message });
+    }
+  });
+
+  // Update vector metadata
+  app.put("/api/admin/pinecone/namespace/:namespace/vector/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { namespace, id } = req.params;
+      const { metadata } = req.body;
+      
+      if (!metadata || typeof metadata !== 'object') {
+        return res.status(400).json({ error: "Metadata object is required" });
+      }
+      
+      const result = await pineconeService.updateVectorMetadata(id, namespace, metadata);
+      logger.info({ namespace, id }, "Vector metadata updated by admin");
+      res.json(result);
+    } catch (error: any) {
+      logger.error({ error: error.message, namespace: req.params.namespace, id: req.params.id }, "Error updating vector");
+      res.status(500).json({ error: "Failed to update vector", message: error.message });
+    }
+  });
+
+  // Delete multiple vectors from a namespace
+  app.post("/api/admin/pinecone/namespace/:namespace/delete-vectors", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { namespace } = req.params;
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "Array of vector IDs is required" });
+      }
+      
+      const result = await pineconeService.deleteVectors(ids, namespace);
+      logger.info({ namespace, count: ids.length }, "Vectors deleted by admin");
+      res.json(result);
+    } catch (error: any) {
+      logger.error({ error: error.message, namespace: req.params.namespace }, "Error deleting vectors");
+      res.status(500).json({ error: "Failed to delete vectors", message: error.message });
+    }
+  });
+
+  // Delete all vectors in a namespace
+  app.delete("/api/admin/pinecone/namespace/:namespace", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { namespace } = req.params;
+      const { confirm } = req.query;
+      
+      if (confirm !== 'true') {
+        return res.status(400).json({ 
+          error: "Confirmation required", 
+          message: "Add ?confirm=true to confirm deletion of all vectors in this namespace" 
+        });
+      }
+      
+      const result = await pineconeService.deleteNamespaceAll(namespace);
+      logger.warn({ namespace }, "All vectors deleted from namespace by admin");
+      res.json(result);
+    } catch (error: any) {
+      logger.error({ error: error.message, namespace: req.params.namespace }, "Error deleting namespace");
+      res.status(500).json({ error: "Failed to delete namespace", message: error.message });
+    }
+  });
+
+  // Check avatar-Pinecone connection status
+  app.get("/api/admin/avatars/pinecone-status", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      // Get all avatars
+      const avatars = await getAllAvatars();
+      
+      // Get Pinecone namespace stats
+      const namespaceStats = await pineconeService.getNamespaceStats();
+      const existingNamespaces = new Set(namespaceStats.namespaces.map(ns => ns.namespace));
+      
+      // Helper to normalize namespace for comparison
+      const normalizeNamespace = (ns: string) => ns.toLowerCase()
+        .replace(/[^a-z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      
+      // Build status for each avatar
+      const avatarStatuses = avatars.map(avatar => {
+        const configuredNamespaces = avatar.pineconeNamespaces || [];
+        const normalizedNamespaces = configuredNamespaces.map(normalizeNamespace);
+        
+        // Check which namespaces exist in Pinecone
+        const namespaceStatus = normalizedNamespaces.map(ns => ({
+          namespace: ns,
+          exists: existingNamespaces.has(ns),
+          vectorCount: namespaceStats.namespaces.find(stat => stat.namespace === ns)?.vectorCount || 0
+        }));
+        
+        // Check for non-Pinecone data sources
+        const usesExternalSources = avatar.usePubMed || avatar.useWikipedia || avatar.useGoogleSearch;
+        const externalSources: string[] = [];
+        if (avatar.usePubMed) externalSources.push('PubMed');
+        if (avatar.useWikipedia) externalSources.push('Wikipedia');
+        if (avatar.useGoogleSearch) externalSources.push('Google Search');
+        
+        // Overall status
+        const hasValidNamespaces = namespaceStatus.some(ns => ns.exists && ns.vectorCount > 0);
+        const allNamespacesExist = namespaceStatus.every(ns => ns.exists);
+        
+        let status: 'ok' | 'warning' | 'error' = 'ok';
+        const issues: string[] = [];
+        
+        if (!hasValidNamespaces) {
+          status = 'error';
+          issues.push('No valid Pinecone namespaces with data');
+        } else if (!allNamespacesExist) {
+          status = 'warning';
+          issues.push('Some configured namespaces do not exist');
+        }
+        
+        if (usesExternalSources) {
+          if (status === 'ok') status = 'warning';
+          issues.push(`Uses external sources: ${externalSources.join(', ')}`);
+        }
+        
+        return {
+          avatarId: avatar.id,
+          avatarName: avatar.name,
+          isActive: avatar.isActive,
+          status,
+          issues,
+          configuredNamespaces,
+          namespaceStatus,
+          usesExternalSources,
+          externalSources,
+          pineconeOnly: !usesExternalSources && hasValidNamespaces
+        };
+      });
+      
+      // Summary stats
+      const summary = {
+        totalAvatars: avatarStatuses.length,
+        activeAvatars: avatarStatuses.filter(a => a.isActive).length,
+        pineconeOnlyCount: avatarStatuses.filter(a => a.pineconeOnly).length,
+        withExternalSources: avatarStatuses.filter(a => a.usesExternalSources).length,
+        withIssues: avatarStatuses.filter(a => a.status !== 'ok').length
+      };
+      
+      res.json({
+        summary,
+        avatars: avatarStatuses,
+        pineconeNamespaces: namespaceStats.namespaces
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error checking avatar-Pinecone status");
+      res.status(500).json({ error: "Failed to check avatar-Pinecone status", message: error.message });
     }
   });
 
