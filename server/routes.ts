@@ -65,46 +65,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (apiKey: string, avatarConfig?: { 
       avatarId?: string; 
       voiceId?: string; 
-      liveKitConfig?: {
-        livekit_url: string;
-        livekit_room: string;
-        livekit_client_token: string;
-        frontend_token?: string;
-      };
+      mode?: 'CUSTOM' | 'FULL';
     }) => {
       let requestBody: any;
       let mode: string;
       
-      // Prefer CUSTOM mode if LiveKit is configured (preserves Claude + RAG pipeline)
-      if (avatarConfig?.liveKitConfig) {
+      // Use specified mode, default to CUSTOM (preserves Claude + RAG + ElevenLabs pipeline)
+      // CUSTOM mode: SDK handles LiveKit internally when session.start() is called
+      // FULL mode: LiveAvatar handles AI conversation (requires LIVEAVATAR_CONTEXT_ID)
+      const requestedMode = avatarConfig?.mode || 'CUSTOM';
+      
+      if (requestedMode === 'CUSTOM') {
         mode = "CUSTOM";
-        // LiveAvatar API requires livekit_config with: livekit_url, livekit_room, livekit_client_token
-        // These are the exact field names required by the LiveAvatar validation
+        // Per official SDK demo: CUSTOM mode only needs mode + avatar_id
+        // SDK's session.start() internally calls LiveAvatar API to get LiveKit credentials
         requestBody = {
           mode: "CUSTOM",
-          avatar_id: avatarConfig.avatarId,
-          livekit_config: {
-            livekit_url: avatarConfig.liveKitConfig.livekit_url,
-            livekit_room: avatarConfig.liveKitConfig.livekit_room,
-            livekit_client_token: avatarConfig.liveKitConfig.livekit_client_token, // Avatar's publish token
-          }
+          avatar_id: avatarConfig?.avatarId,
         };
         
         logger.debug({
           service: 'liveavatar',
           operation: 'create_session_token',
           mode: 'CUSTOM',
-          avatarId: avatarConfig.avatarId,
-          roomName: avatarConfig.liveKitConfig.livekit_room,
-          livekitUrl: avatarConfig.liveKitConfig.livekit_url.substring(0, 30) + '...',
-        }, 'Creating LiveAvatar session with CUSTOM mode (preserves Claude + RAG)');
+          avatarId: avatarConfig?.avatarId,
+        }, 'Creating LiveAvatar session with CUSTOM mode (SDK handles LiveKit internally)');
       } else {
-        // Fallback to FULL mode if LiveKit not configured
+        // FULL mode - uses LiveAvatar's built-in LLM
         const contextId = process.env.LIVEAVATAR_CONTEXT_ID;
         if (!contextId) {
           throw new Error(
-            'LiveAvatar requires either LiveKit configuration (for CUSTOM mode) or LIVEAVATAR_CONTEXT_ID (for FULL mode). ' +
-            'Set LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET for CUSTOM mode.'
+            'FULL mode requires LIVEAVATAR_CONTEXT_ID environment variable. ' +
+            'Use CUSTOM mode instead to preserve Claude + RAG pipeline.'
           );
         }
         
@@ -577,16 +569,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get avatar config for the LiveAvatar session
+      // Default to CUSTOM mode - SDK handles LiveKit internally when session.start() is called
+      // CUSTOM mode preserves our Claude + RAG + ElevenLabs AI pipeline
       let avatarConfig: { 
         avatarId?: string; 
         voiceId?: string;
-        liveKitConfig?: {
-          livekit_url: string;
-          livekit_room: string;
-          livekit_client_token: string;
-          frontend_token?: string;
-        };
+        mode?: 'CUSTOM' | 'FULL';
       } | undefined;
+      
+      // Default to CUSTOM mode (our AI pipeline)
+      const mode: 'CUSTOM' | 'FULL' = (req.body.mode as 'CUSTOM' | 'FULL') || 'CUSTOM';
       
       if (avatarId) {
         const avatar = await getAvatarById(avatarId);
@@ -598,50 +590,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             avatarConfig = {
               avatarId: liveAvatarAvatarId,
               voiceId: avatar.heygenVoiceId || undefined,
+              mode,
             };
             log.debug({
               appAvatarId: avatarId,
               liveAvatarId: avatar.liveAvatarId,
               heygenAvatarId: avatar.heygenAvatarId,
               usedId: liveAvatarAvatarId,
+              mode,
             }, 'Resolved avatar ID for LiveAvatar session');
           }
         }
-      }
-      
-      // Generate LiveKit config if LiveKit is configured (for CUSTOM mode)
-      // CUSTOM mode preserves our Claude + RAG + ElevenLabs pipeline
-      let liveKitConfig: {
-        livekit_url: string;
-        livekit_room: string;
-        livekit_client_token: string;
-        frontend_token?: string;
-      } | undefined;
-      
-      if (liveKitService.isConfigured()) {
-        try {
-          liveKitConfig = await liveKitService.generateLiveAvatarConfig(
-            userId, 
-            avatarId || 'default'
-          );
-          log.debug({
-            roomName: liveKitConfig.livekit_room,
-            url: liveKitConfig.livekit_url.substring(0, 30) + '...',
-          }, 'Generated LiveKit config for CUSTOM mode');
-        } catch (liveKitError: any) {
-          log.warn({
-            error: liveKitError.message,
-          }, 'Failed to generate LiveKit config, will fall back to FULL mode');
-        }
       } else {
-        log.debug('LiveKit not configured, will use FULL mode (requires LIVEAVATAR_CONTEXT_ID)');
-      }
-      
-      // Add LiveKit config to avatar config if available
-      if (avatarConfig && liveKitConfig) {
-        avatarConfig.liveKitConfig = liveKitConfig;
-      } else if (liveKitConfig) {
-        avatarConfig = { liveKitConfig };
+        avatarConfig = { mode };
       }
 
       log.debug({ 
@@ -649,9 +610,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         keyLength: apiKey.length,
         keyPrefix: apiKey.substring(0, 8) + '...',
         avatarId: avatarConfig?.avatarId,
-        hasLiveKitConfig: !!avatarConfig?.liveKitConfig,
-        mode: avatarConfig?.liveKitConfig ? 'CUSTOM' : 'FULL',
-      }, "Creating LiveAvatar session token");
+        mode,
+      }, "Creating LiveAvatar session token (SDK handles LiveKit internally)");
 
       const startTime = Date.now();
       let tokenData;
@@ -681,7 +641,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const mode = avatarConfig?.liveKitConfig ? 'CUSTOM' : 'FULL';
       log.info({ 
         sessionId: tokenData?.data?.session_id || tokenData.session_id,
         mode,
@@ -690,24 +649,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract session data from API response (wrapped in 'data' field)
       const sessionData = tokenData.data || tokenData;
       
-      // Build response with LiveKit info for CUSTOM mode
+      // Build response - SDK handles LiveKit connection internally when session.start() is called
       const response: any = {
-        sessionId: sessionData.session_id,
-        sessionToken: sessionData.session_token,
-        token: sessionData.session_token, // Legacy compatibility
+        session_id: sessionData.session_id,
+        session_token: sessionData.session_token,
         mode, // Tell frontend which mode is active
         ...sessionData,
       };
-      
-      // Include LiveKit credentials for CUSTOM mode so frontend can connect to room
-      if (mode === 'CUSTOM' && avatarConfig?.liveKitConfig) {
-        response.livekit = {
-          url: avatarConfig.liveKitConfig.livekit_url,
-          room: avatarConfig.liveKitConfig.livekit_room,
-          // Use frontend_token for user to SUBSCRIBE (different from avatar's publish token)
-          token: avatarConfig.liveKitConfig.frontend_token || avatarConfig.liveKitConfig.livekit_client_token,
-        };
-      }
       
       res.json(response);
     } catch (error: any) {

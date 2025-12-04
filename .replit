@@ -4,7 +4,7 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["ffmpeg", "imagemagick"]
+packages = ["ffmpeg", "imagemagick", "unzip"]
 
 [deployment]
 deploymentTarget = "gce"
@@ -45,6 +45,10 @@ externalPort = 80
 [[ports]]
 localPort = 33415
 externalPort = 3001
+
+[[ports]]
+localPort = 33491
+externalPort = 8080
 
 [[ports]]
 localPort = 36789
