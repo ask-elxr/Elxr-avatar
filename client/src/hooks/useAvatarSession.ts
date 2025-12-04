@@ -964,13 +964,34 @@ export function useAvatarSession({
         console.log("Stream ready:", event.detail);
         if (videoRef.current) {
           videoRef.current.srcObject = event.detail;
-          // CRITICAL: Ensure video is unmuted and volume is up for HeyGen native audio
-          // iOS Safari autoplays videos muted - we must explicitly unmute after user interaction
-          // This handler runs after user clicked "Start" button, so unmuting should work
+          // CRITICAL: Ensure video is properly configured for Safari iOS
+          videoRef.current.playsInline = true;
           videoRef.current.muted = false;
           videoRef.current.volume = 1;
-          console.log("🔊 Video unmuted and volume set to 1 for HeyGen audio");
-          videoRef.current.play().catch(console.error);
+          console.log("🔊 Video configured: playsInline=true, muted=false, volume=1");
+          
+          // Safari iOS requires special handling for video.play()
+          const playVideo = async (attempt = 1) => {
+            try {
+              await videoRef.current?.play();
+              console.log("🔊 Video playback started successfully");
+            } catch (err: any) {
+              console.error(`🔊 Video play() failed (attempt ${attempt}):`, err?.name, err?.message);
+              
+              // Safari iOS specific: NotAllowedError means user gesture required
+              if (err?.name === 'NotAllowedError') {
+                console.log("🔊 Safari iOS: NotAllowedError - will retry when user interacts");
+                // Don't retry immediately - wait for next user interaction
+              } else if (err?.name === 'AbortError' && attempt < 3) {
+                // AbortError can happen when stream isn't ready - retry after short delay
+                console.log(`🔊 AbortError - retrying play() in 500ms (attempt ${attempt}/3)`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                return playVideo(attempt + 1);
+              }
+            }
+          };
+          
+          await playVideo();
         }
         
         // Clear loading state and timeout as soon as stream is ready
@@ -1736,12 +1757,38 @@ export function useAvatarSession({
         videoRef.current.style.display = 'block';
         videoRef.current.style.visibility = 'visible';
         videoRef.current.style.opacity = '1';
+        
+        // 🔊 MOBILE AUDIO UNLOCK: Interact with video element immediately during user gesture
+        // This is critical for Safari iOS - audio must be unlocked during the tap
+        try {
+          videoRef.current.muted = false;
+          videoRef.current.volume = 1;
+          const playPromise = videoRef.current.play();
+          if (playPromise) {
+            playPromise.catch(() => {
+              // Expected to fail with no source, but it still unlocks audio
+            });
+          }
+          console.log("🔊 Mobile audio unlock: Video element interacted during mode switch gesture");
+        } catch (e) {
+          console.log("🔊 Mobile audio unlock attempt during mode switch (continuing)");
+        }
       }
       
       try {
         setIsLoading(true);
+        
+        // Add timeout for mode switch to prevent Safari from hanging indefinitely
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error("Video mode switch timed out after 25 seconds")), 25000);
+        });
+        
         // Pass skipGreeting=true for seamless mode switch - conversation is already in progress
-        await startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true });
+        await Promise.race([
+          startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true }),
+          timeoutPromise
+        ]);
+        
         setIsLoading(false);
         console.log("✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)");
         
@@ -1749,8 +1796,9 @@ export function useAvatarSession({
         // Voice recognition will be started by the STREAM_READY handler
         recognitionIntentionalStopRef.current = false;
         
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error starting HeyGen for mode switch:", error);
+        console.error("Error details:", error?.message, error?.stack);
         setIsLoading(false);
         // Revert to audio mode on failure
         audioOnlyRef.current = true;
@@ -1758,7 +1806,7 @@ export function useAvatarSession({
           videoRef.current.style.display = 'none';
           videoRef.current.style.visibility = 'hidden';
         }
-        throw error;
+        throw new Error(error?.message || "Failed to switch to video mode. Safari may have WebRTC restrictions.");
       }
     }
     
