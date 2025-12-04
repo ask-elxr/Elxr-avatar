@@ -165,11 +165,13 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   async start(): Promise<void> {
+    console.log("🚀 LiveAvatarDriver.start() called for:", this.config.avatarId);
+    
     // Fetch session credentials from the backend
     const { sessionId, sessionToken } = await this.fetchSessionCredentials();
     this.sessionId = sessionId;
     
-    console.log("📋 Creating LiveAvatar session:", { sessionId });
+    console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken });
     
     // Create LiveAvatarSession with the token
     const session = new LiveAvatarSession(sessionToken, {
@@ -213,7 +215,9 @@ export class LiveAvatarDriver implements SessionDriver {
     });
 
     // Start the session
+    console.log("🔄 Calling session.start()...");
     await session.start();
+    console.log("✅ session.start() completed");
     
     if (this.useElevenLabsVoice) {
       console.log("✅ LiveAvatar session started - text-based lip-sync with ElevenLabs audio");
@@ -352,6 +356,8 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   private async fetchSessionCredentials(): Promise<{ sessionId: string; sessionToken: string }> {
+    console.log("🔑 Fetching LiveAvatar session credentials for:", this.config.avatarId);
+    
     const response = await fetch("/api/heygen/token", {
       method: "POST",
       headers: {
@@ -364,7 +370,9 @@ export class LiveAvatarDriver implements SessionDriver {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch LiveAvatar session credentials");
+      const errorText = await response.text();
+      console.error("❌ LiveAvatar API error:", response.status, errorText);
+      throw new Error(`Failed to fetch LiveAvatar session credentials: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();

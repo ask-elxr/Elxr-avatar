@@ -1052,8 +1052,9 @@ export function useAvatarSession({
       await driver.start();
       
       console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
-    } catch (error) {
-      console.error("Error starting LiveAvatar session:", error);
+    } catch (error: any) {
+      const errorMessage = error?.message || error?.toString?.() || JSON.stringify(error) || 'Unknown error';
+      console.error("❌ Error starting LiveAvatar session:", errorMessage, error);
       setIsLoading(false);
       sessionDriverRef.current = null;
       throw error;

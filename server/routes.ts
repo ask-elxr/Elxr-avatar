@@ -78,14 +78,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Prefer CUSTOM mode if LiveKit is configured (preserves Claude + RAG pipeline)
       if (avatarConfig?.liveKitConfig) {
         mode = "CUSTOM";
-        // LiveAvatar API expects: room_name, livekit_url, livekit_token (for avatar to publish)
+        // LiveAvatar API uses livekit_config with: url, room, token (for avatar to publish)
+        // Based on HeyGen Streaming API docs: https://docs.heygen.com/docs/using-your-own-livekit-instance
         requestBody = {
           mode: "CUSTOM",
           avatar_id: avatarConfig.avatarId,
           livekit_config: {
-            room_name: avatarConfig.liveKitConfig.livekit_room,
-            livekit_url: avatarConfig.liveKitConfig.livekit_url,
-            livekit_token: avatarConfig.liveKitConfig.livekit_client_token, // Avatar's publish token
+            url: avatarConfig.liveKitConfig.livekit_url,
+            room: avatarConfig.liveKitConfig.livekit_room,
+            token: avatarConfig.liveKitConfig.livekit_client_token, // Avatar's publish token
           }
         };
         
@@ -127,6 +128,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 'Creating LiveAvatar session with FULL mode (uses LiveAvatar LLM)');
       }
 
+      // Log the full request body for debugging CUSTOM mode issues
+      logger.debug({
+        service: 'liveavatar',
+        operation: 'create_session_token',
+        requestBody: JSON.stringify(requestBody, null, 2),
+      }, 'LiveAvatar API request body');
+      
       const response = await fetch(
         "https://api.liveavatar.com/v1/sessions/token",
         {
