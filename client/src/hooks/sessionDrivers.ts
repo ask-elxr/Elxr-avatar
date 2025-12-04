@@ -95,6 +95,34 @@ export class LiveAvatarDriver implements SessionDriver {
       console.warn("⚠️ Video autoplay prevented:", err.message || err);
     });
     
+    // Monitor for video to start playing
+    videoEl.addEventListener('loadedmetadata', () => {
+      console.log("📺 Video loadedmetadata:", {
+        width: videoEl.videoWidth,
+        height: videoEl.videoHeight,
+        duration: videoEl.duration
+      });
+    });
+    
+    videoEl.addEventListener('playing', () => {
+      console.log("📺 Video started playing:", {
+        width: videoEl.videoWidth,
+        height: videoEl.videoHeight
+      });
+    });
+    
+    // Check video state after a delay
+    setTimeout(() => {
+      console.log("📺 Video state after 2s:", {
+        srcObject: videoEl.srcObject ? "present" : "null",
+        readyState: videoEl.readyState,
+        paused: videoEl.paused,
+        width: videoEl.videoWidth,
+        height: videoEl.videoHeight,
+        display: window.getComputedStyle(videoEl).display
+      });
+    }, 2000);
+    
     this.videoAttached = true;
     this.config.onStreamReady?.();
     console.log("✅ LiveKit video track attached - stream ready");
