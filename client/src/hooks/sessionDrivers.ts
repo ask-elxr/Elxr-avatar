@@ -69,11 +69,20 @@ export class LiveAvatarDriver implements SessionDriver {
         this.config.onVideoReady?.();
         console.log("✅ Video element attached via SDK - stream should be visible");
         
-        // Force video element to play
+        // Force video element to play with audio enabled
+        // SDK handles audio through WebRTC - don't mute!
         const videoEl = this.config.videoRef.current;
-        videoEl.muted = true; // We play audio separately
+        videoEl.muted = false; // SDK handles audio through WebRTC stream
         videoEl.play().catch(err => {
           console.warn("⚠️ Video autoplay prevented:", err.message || err);
+          // If autoplay is blocked, try muted first then unmute
+          videoEl.muted = true;
+          videoEl.play().then(() => {
+            // Unmute after playback starts
+            setTimeout(() => {
+              videoEl.muted = false;
+            }, 100);
+          }).catch(e => console.error("Video play failed:", e));
         });
         
         // Log video state for debugging
@@ -200,27 +209,28 @@ export class LiveAvatarDriver implements SessionDriver {
     if (!this.session) return;
 
     // In CUSTOM mode, get ElevenLabs audio and send to SDK for lip-sync
-    console.log("🎙️ CUSTOM mode: Getting ElevenLabs audio for lip-sync");
+    // SDK handles audio playback through WebRTC - video element must NOT be muted
+    console.log("🎙️ CUSTOM mode: Getting ElevenLabs audio for SDK lip-sync");
     
-    // Mute the video element to prevent echo (audio comes from our own playback)
+    // Ensure video is unmuted - SDK plays audio through WebRTC stream
     if (this.config.videoRef.current) {
-      this.config.videoRef.current.muted = true;
+      this.config.videoRef.current.muted = false;
     }
     
-    await this.playElevenLabsWithLipSync(text, languageCodeOverride);
+    await this.sendAudioToSDKForLipSync(text, languageCodeOverride);
   }
 
   /**
-   * Play ElevenLabs audio locally AND send base64 audio to SDK for lip-sync
-   * Uses session.repeatAudio(base64) to animate avatar lips
+   * Send ElevenLabs audio to SDK for lip-sync
+   * SDK handles both lip-sync animation AND audio playback through WebRTC
    * 
    * CRITICAL: SDK requires PCM 24kHz base64 audio format
    * Uses /api/elevenlabs/tts-base64 which returns audio in this exact format
+   * 
+   * Following official demo pattern: just call repeatAudio() - SDK handles everything
    */
-  private async playElevenLabsWithLipSync(text: string, languageCodeOverride?: string): Promise<void> {
+  private async sendAudioToSDKForLipSync(text: string, languageCodeOverride?: string): Promise<void> {
     try {
-      this.stopCurrentAudio();
-
       // Get base64 PCM audio from ElevenLabs (SDK-compatible format)
       const response = await fetch("/api/elevenlabs/tts-base64", {
         method: "POST",
@@ -243,77 +253,18 @@ export class LiveAvatarDriver implements SessionDriver {
         throw new Error("No audio data in response");
       }
       
-      console.log(`🎤 Got base64 PCM audio (${base64Audio.length} chars), sending to SDK for lip-sync...`);
+      console.log(`🎤 Got base64 PCM audio (${base64Audio.length} chars), sending to SDK...`);
       
-      // Send base64 PCM audio to SDK for lip-sync animation
-      // The SDK expects PCM 24kHz 16-bit audio in base64 format
+      // Send base64 PCM audio to SDK - SDK handles BOTH lip-sync AND audio playback
+      // The audio comes through the WebRTC video stream (video element must be unmuted)
       if (this.session) {
         this.session.repeatAudio(base64Audio);
+        console.log("🔊 Audio sent to SDK for lip-sync playback");
       }
       
-      // Also play audio locally through speakers
-      // Convert base64 PCM to audio buffer and play
-      await this.playPCMAudio(base64Audio);
-      
-      console.log("🔊 Playing ElevenLabs audio with SDK lip-sync");
-      this.config.onAvatarStartTalking?.();
-      
     } catch (error) {
-      console.error("Error playing ElevenLabs audio:", error);
+      console.error("Error sending audio to SDK:", error);
     }
-  }
-
-  /**
-   * Play PCM 24kHz 16-bit audio from base64 string
-   */
-  private async playPCMAudio(base64Audio: string): Promise<void> {
-    // Create AudioContext if needed
-    if (!this.audioContext) {
-      this.audioContext = new AudioContext();
-    }
-    
-    // Resume AudioContext if suspended (browser autoplay policy)
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
-    }
-    
-    // Decode base64 to raw PCM bytes
-    const binaryString = atob(base64Audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // PCM 24kHz 16-bit mono: convert to AudioBuffer
-    const sampleRate = 24000;
-    const numSamples = bytes.length / 2; // 16-bit = 2 bytes per sample
-    const audioBuffer = this.audioContext.createBuffer(1, numSamples, sampleRate);
-    const channelData = audioBuffer.getChannelData(0);
-    
-    // Convert 16-bit signed PCM to float (-1 to 1)
-    const dataView = new DataView(bytes.buffer);
-    for (let i = 0; i < numSamples; i++) {
-      const sample = dataView.getInt16(i * 2, true); // little-endian
-      channelData[i] = sample / 32768; // normalize to -1 to 1
-    }
-    
-    // Create source and play
-    const source = this.audioContext.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
-    
-    // Track the source for stopping
-    (source as any)._isPlaying = true;
-    this.currentAudio = source as any;
-    
-    // Handle audio end
-    source.onended = () => {
-      console.log("🔊 Audio playback ended");
-      this.config.onAvatarStopTalking?.();
-    };
-    
-    // Start playback
-    source.start(0);
   }
 
   private stopCurrentAudio(): void {
