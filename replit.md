@@ -67,6 +67,17 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   Admin Routes: `/embed/admin`, `/embed/admin/avatars`, `/embed/admin/knowledge`, `/embed/admin/courses`, `/embed/admin/users`, `/embed/admin/analytics`, `/embed/admin/credits`
 -   **Implementation**: Embed pages reuse Dashboard/Admin components with `isEmbed={true}` prop that hides sidebar, mobile header, and floating orbs.
 
+#### Avatar-Namespace Matrix Visualization
+-   **Component**: `AvatarNamespaceMatrix.tsx` provides interactive visualization of avatar-to-Pinecone namespace relationships.
+-   **Views**: Toggle between matrix grid view (avatars × namespaces) and list view (namespace cards with connected avatars).
+-   **Detail Panel**: Click any namespace to see vector counts, connected avatars, content source breakdown, and sample content previews.
+-   **Data-testid Coverage**: Comprehensive test instrumentation for all dynamic elements (summary stats, matrix cells, footer totals, list badges, detail panels).
+-   **Integration**: Available in Knowledge Base admin page under "Mapping" tab.
+-   **API Endpoints**:
+    -   `GET /api/pinecone/namespaces` - List all namespaces with vector counts
+    -   `GET /api/pinecone/namespaces/:namespace` - Get namespace details with sample vectors
+    -   `GET /api/pinecone/avatar-connections` - Get avatar-namespace mapping
+
 #### Google Drive Topic Folders Integration
 -   **Source Folder**: `0AL_h7e92I2C8Uk9PVA` contains pre-organized topic folders for Pinecone namespace population.
 -   **Folder-to-Namespace Mapping**: Configured in `shared/pineconeCategories.ts` with case-insensitive folder name matching.
