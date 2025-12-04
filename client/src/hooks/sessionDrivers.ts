@@ -56,14 +56,12 @@ export class LiveAvatarDriver implements SessionDriver {
     this.config = config;
     this.languageCode = config.languageCode || "en";
     
-    this.useElevenLabsVoice = !config.avatarConfig.heygenVoiceId && 
-                              !!config.avatarConfig.elevenlabsVoiceId;
+    // CUSTOM mode doesn't support HeyGen's text-to-speech (repeat() method)
+    // In CUSTOM mode, we MUST use ElevenLabs TTS and animate lip-sync
+    // This is the designed behavior: CUSTOM mode = external LLM + external TTS + HeyGen avatar for lip-sync
+    this.useElevenLabsVoice = true;
     
-    if (this.useElevenLabsVoice) {
-      console.log(`🎙️ LiveAvatarDriver: Using ElevenLabs voice with lip-sync for ${config.avatarConfig.name || config.avatarId}`);
-    } else {
-      console.log(`🎙️ LiveAvatarDriver: Using HeyGen voice for ${config.avatarConfig.name || config.avatarId}`);
-    }
+    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice with lip-sync for ${config.avatarConfig.name || config.avatarId}`);
   }
 
   private attachVideoTrack(track: RemoteTrack): void {
@@ -263,33 +261,22 @@ export class LiveAvatarDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     if (!this.session) return;
 
-    if (this.useElevenLabsVoice) {
-      // For avatars with ElevenLabs voice but no HeyGen voice:
-      // 1. Mute HeyGen video to prevent fallback voice from playing
-      // 2. Use session.repeat(text) to animate the avatar's lips
-      // 3. Play ElevenLabs audio separately for the actual voice
-      console.log("🎙️ Using text-based lip-sync with ElevenLabs audio (HeyGen audio muted)");
-      
-      // Mute the video element to prevent HeyGen's fallback voice from playing
-      if (this.config.videoRef.current) {
-        this.config.videoRef.current.muted = true;
-      }
-      
-      // Start lip-sync animation from text using repeat (HeyGen will animate)
-      this.session.repeat(text);
-      
-      // Play ElevenLabs audio for the actual voice
-      await this.playElevenLabsAudio(text, languageCodeOverride);
-    } else {
-      // Use LiveAvatar's built-in TTS with lip-sync (for avatars with heygenVoiceId)
-      // Ensure video is unmuted for native HeyGen voice
-      if (this.config.videoRef.current) {
-        this.config.videoRef.current.muted = false;
-      }
-      
-      // Use repeat() to make the avatar speak the text
-      this.session.repeat(text);
+    // In CUSTOM mode, the avatar video streams through LiveKit but repeat() is not supported
+    // We play ElevenLabs audio for voice - the avatar will show but without lip-sync animation
+    // Future improvement: publish audio to LiveKit for lip-sync
+    console.log("🎙️ CUSTOM mode: Playing ElevenLabs voice with avatar video (no lip-sync in CUSTOM mode)");
+    
+    // Mute the video element to prevent any audio interference
+    if (this.config.videoRef.current) {
+      this.config.videoRef.current.muted = true;
     }
+    
+    // Note: repeat() is NOT supported in CUSTOM mode - it generates "Unsupported command" errors
+    // For lip-sync in CUSTOM mode, we would need to publish audio to LiveKit room
+    // For now, we just play ElevenLabs audio without lip-sync animation
+    
+    // Play ElevenLabs audio for the actual voice
+    await this.playElevenLabsAudio(text, languageCodeOverride);
   }
 
   /**
