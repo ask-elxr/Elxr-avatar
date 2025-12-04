@@ -214,11 +214,24 @@ export class LiveAvatarDriver implements SessionDriver {
     
     console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken });
     
+    // CRITICAL FIX: Connect to LiveKit FIRST with user token, BEFORE calling session.start()
+    // This ensures we join as the user identity and will see the avatar as a remote participant
+    // The SDK's internal LiveKit connection uses the avatar token (from /v1/sessions/start response)
+    // which would cause us to join as the avatar identity, seeing no remote participants
+    if (this.livekitCredentials) {
+      console.log("🔌 Pre-connecting to LiveKit room with USER token (CUSTOM mode)...");
+      await this.connectToLiveKitRoom();
+      console.log("✅ LiveKit room pre-connected - will receive avatar video as remote track");
+    } else {
+      console.log("⚠️ No LiveKit credentials - video won't work in CUSTOM mode");
+    }
+    
     // Create LiveAvatarSession with sessionAccessToken and config
     // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
     // The session_token from API is used as the access token for SDK operations
+    // NOTE: We skip voiceChat since we manage our own LiveKit room connection
     const session = new LiveAvatarSession(sessionToken, {
-      voiceChat: true, // Enable voice chat for voice input
+      voiceChat: false, // Disable SDK's voice chat - we manage LiveKit connection ourselves
     });
     this.session = session;
 
@@ -259,10 +272,32 @@ export class LiveAvatarDriver implements SessionDriver {
       }
     });
 
-    // Start the session
-    console.log("🔄 Calling session.start()...");
+    // Start the session - this triggers LiveAvatar backend to have the avatar join our LiveKit room
+    // NOTE: The SDK will also try to connect to LiveKit internally, but since we're already connected
+    // with a different identity (user), both connections will coexist
+    console.log("🔄 Calling session.start() - avatar will join LiveKit room...");
     await session.start();
-    console.log("✅ session.start() completed");
+    console.log("✅ session.start() completed - avatar should be publishing video");
+    
+    // Log current room state
+    if (this.livekitRoom) {
+      console.log("📊 LiveKit room state after session.start():", {
+        localIdentity: this.livekitRoom.localParticipant?.identity,
+        remoteParticipants: Array.from(this.livekitRoom.remoteParticipants.keys()),
+        connectionState: this.livekitRoom.state
+      });
+      
+      // Check for video tracks that may have been published while we were starting
+      this.livekitRoom.remoteParticipants.forEach((participant) => {
+        console.log("👤 Remote participant:", participant.identity, "tracks:", participant.trackPublications.size);
+        participant.trackPublications.forEach((publication) => {
+          if (publication.track && publication.track.kind === Track.Kind.Video) {
+            console.log("📺 Found video track from:", participant.identity);
+            this.attachVideoTrack(publication.track as RemoteTrack);
+          }
+        });
+      });
+    }
     
     if (this.useElevenLabsVoice) {
       console.log("✅ LiveAvatar session started - text-based lip-sync with ElevenLabs audio");
@@ -272,15 +307,6 @@ export class LiveAvatarDriver implements SessionDriver {
       }
     } else {
       console.log("✅ LiveAvatar session started - using native HeyGen voice");
-    }
-    
-    // Connect to LiveKit room for CUSTOM mode
-    // LiveKit provides: 1) video stream from avatar, 2) audio publishing for lip-sync
-    if (this.livekitCredentials) {
-      console.log("🔌 Connecting to LiveKit room (CUSTOM mode)...");
-      await this.connectToLiveKitRoom();
-    } else {
-      console.log("⚠️ No LiveKit credentials - video won't work in CUSTOM mode");
     }
   }
 
