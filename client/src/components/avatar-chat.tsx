@@ -602,12 +602,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             playsInline
             className="w-full h-full object-cover"
             style={{ 
-              display: (!audioOnly && heygenSessionActive && !isLoading && !showReconnect) ? 'block' : 'none'
+              display: (heygenSessionActive && !isLoading && !showReconnect) ? 'block' : 'none'
             }}
             data-testid="avatar-video"
           />
           
-          {audioOnly && (
+          {audioOnly && !heygenSessionActive && (
             <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
           )}
         </div>
@@ -859,9 +859,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         )}
 
         {/* Loading Overlay */}
-        {(isLoading || isModeSwitching) && !showReconnect && (
+        {(isLoading || isModeSwitching) && !showReconnect && !heygenSessionActive && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
-            {audioOnly ? (
+            {audioOnly && !isModeSwitching ? (
               <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
             ) : (
               <LoadingSpinner size="md" />
@@ -877,7 +877,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Reconnect Screen */}
         {showReconnect && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black z-20">
-            {audioOnly && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
+            {audioOnly && !heygenSessionActive && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
             <Button
               onClick={async () => {
                 try {
