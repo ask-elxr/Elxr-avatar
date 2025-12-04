@@ -596,6 +596,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       <div className="relative w-full h-screen bg-black">
         {/* Video Element */}
         <div className="w-full h-full flex items-center justify-center">
+          {/* Debug: Log render state */}
+          {console.log("🖼️ Render state:", { audioOnly, heygenSessionActive, isLoading, showReconnect, 
+            videoShouldShow: heygenSessionActive && !isLoading && !showReconnect,
+            gifShouldShow: audioOnly && !heygenSessionActive
+          })}
           <video
             ref={videoRef}
             autoPlay
