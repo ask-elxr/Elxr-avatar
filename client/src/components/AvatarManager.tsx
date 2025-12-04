@@ -496,7 +496,7 @@ export function AvatarManager() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="heygenAvatarId" className="text-xs">HeyGen Avatar ID</Label>
+                    <Label htmlFor="heygenAvatarId" className="text-xs">Live Avatar ID</Label>
                     <Input
                       id="heygenAvatarId"
                       value={formData.heygenAvatarId || ""}
@@ -507,7 +507,7 @@ export function AvatarManager() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="heygenVoiceId" className="text-xs">HeyGen Voice ID</Label>
+                    <Label htmlFor="heygenVoiceId" className="text-xs">ElevenLabs Voice ID</Label>
                     <Input
                       id="heygenVoiceId"
                       value={formData.heygenVoiceId || ""}
