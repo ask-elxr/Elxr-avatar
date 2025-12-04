@@ -250,6 +250,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Check API key is present (don't log any part of it)
+      log.debug({ keyConfigured: true, keyLength: apiKey.length }, "HeyGen API key loaded");
+
       log.debug("Creating HeyGen access token");
 
       const startTime = Date.now();
