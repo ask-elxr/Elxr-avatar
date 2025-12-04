@@ -80,7 +80,20 @@ export default function Analytics() {
     );
   }
 
-  const COLORS = ['#0ea5e9', '#8b5cf6', '#14b8a6', '#64748b', '#06b6d4', '#6366f1'];
+  const COLORS = [
+    '#0ea5e9', // Sky blue
+    '#8b5cf6', // Purple
+    '#14b8a6', // Teal
+    '#f97316', // Orange
+    '#ec4899', // Pink
+    '#22c55e', // Green
+    '#eab308', // Yellow
+    '#ef4444', // Red
+    '#06b6d4', // Cyan
+    '#6366f1', // Indigo
+    '#a855f7', // Violet
+    '#f43f5e', // Rose
+  ];
 
   const moodDistributionData = moodAnalytics?.distribution?.map(m => ({
     name: m.mood,
