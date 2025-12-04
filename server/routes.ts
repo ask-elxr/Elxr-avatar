@@ -346,6 +346,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test LiveAvatar IDs - diagnostic endpoint to check which avatar IDs work
+  app.get("/api/heygen/test-avatars", requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "heygen", operation: "testAvatars" });
+
+    try {
+      const apiKey = process.env.LIVEAVATAR_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "LIVEAVATAR_API_KEY not configured" });
+      }
+
+      // Get all avatars from database
+      const avatars = await getAllAvatars();
+      const results: any[] = [];
+
+      for (const avatar of avatars) {
+        const liveAvatarId = avatar.liveAvatarId || avatar.heygenAvatarId;
+        if (!liveAvatarId) {
+          results.push({
+            name: avatar.name,
+            id: avatar.id,
+            liveAvatarId: null,
+            status: "NO_ID",
+            message: "No LiveAvatar ID configured"
+          });
+          continue;
+        }
+
+        try {
+          // Use the actual LiveAvatar API (api.liveavatar.com, not api.heygen.com)
+          // We need LiveKit config for CUSTOM mode, so generate it
+          let liveKitConfig: any = undefined;
+          if (liveKitService.isConfigured()) {
+            try {
+              liveKitConfig = await liveKitService.generateLiveAvatarConfig(
+                'test-user',
+                avatar.id
+              );
+            } catch (e) {
+              // Ignore LiveKit errors for this test
+            }
+          }
+
+          // Build request body - prefer CUSTOM mode if LiveKit configured
+          let requestBody: any;
+          if (liveKitConfig) {
+            requestBody = {
+              mode: "CUSTOM",
+              avatar_id: liveAvatarId,
+              livekit_config: {
+                livekit_url: liveKitConfig.livekit_url,
+                livekit_room: liveKitConfig.livekit_room,
+                livekit_client_token: liveKitConfig.livekit_client_token,
+              }
+            };
+          } else {
+            // Need LIVEAVATAR_CONTEXT_ID for FULL mode
+            const contextId = process.env.LIVEAVATAR_CONTEXT_ID;
+            if (!contextId) {
+              results.push({
+                name: avatar.name,
+                id: avatar.id,
+                liveAvatarId,
+                status: "SKIP",
+                message: "Cannot test: LiveKit not configured and LIVEAVATAR_CONTEXT_ID not set"
+              });
+              continue;
+            }
+            requestBody = {
+              mode: "FULL",
+              avatar_id: liveAvatarId,
+              avatar_persona: {
+                context_id: contextId,
+                language: "en"
+              }
+            };
+          }
+
+          const response = await fetch("https://api.liveavatar.com/v1/sessions/token", {
+            method: "POST",
+            headers: {
+              "X-API-KEY": apiKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            results.push({
+              name: avatar.name,
+              id: avatar.id,
+              liveAvatarId,
+              status: "OK",
+              sessionId: data.session_id,
+              message: "Avatar ID is valid and works with LiveAvatar API"
+            });
+          } else {
+            const errorData = await response.text();
+            results.push({
+              name: avatar.name,
+              id: avatar.id,
+              liveAvatarId,
+              status: "ERROR",
+              httpStatus: response.status,
+              error: errorData,
+              message: response.status === 404 ? "Avatar not found in LiveAvatar system" : "API error"
+            });
+          }
+        } catch (err: any) {
+          results.push({
+            name: avatar.name,
+            id: avatar.id,
+            liveAvatarId,
+            status: "EXCEPTION",
+            error: err.message
+          });
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      const working = results.filter(r => r.status === "OK");
+      const failing = results.filter(r => r.status !== "OK");
+
+      log.info({ working: working.length, failing: failing.length }, "Avatar test completed");
+
+      res.json({
+        summary: {
+          total: results.length,
+          working: working.length,
+          failing: failing.length
+        },
+        results,
+        recommendation: failing.length > 0 
+          ? "Some avatars failed. Check if these LiveAvatar IDs are correctly configured in your LiveAvatar dashboard."
+          : "All avatars are working correctly!"
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error testing avatars");
+      res.status(500).json({ error: "Failed to test avatars", details: error.message });
+    }
+  });
+
   // GET HeyGen credit usage endpoint
   app.get("/api/heygen/credits", async (req: any, res) => {
     const log = logger.child({ service: "heygen-credit", operation: "getCredits" });
