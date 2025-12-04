@@ -166,12 +166,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const responseData = await response.json();
+      
+      // Log all available fields to debug the session_token issue
+      const dataFields = responseData?.data ? Object.keys(responseData.data) : [];
       logger.debug({
         service: 'liveavatar',
         operation: 'create_session_token',
         mode,
         sessionId: responseData?.data?.session_id,
-      }, 'LiveAvatar session created successfully');
+        hasSessionToken: !!responseData?.data?.session_token,
+        availableFields: dataFields,
+        rawDataKeys: Object.keys(responseData || {}),
+      }, 'LiveAvatar session created - checking available fields');
       
       return responseData;
     },
