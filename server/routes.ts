@@ -58,9 +58,26 @@ import { subscriptionService } from "./services/subscription.js";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
   // LiveAvatar uses a different API endpoint and response format than the old HeyGen Interactive Avatar
+  // We use CUSTOM mode since we have our own AI pipeline (Claude + RAG + ElevenLabs)
   const liveAvatarTokenBreaker = wrapServiceCall(
     async (apiKey: string, avatarConfig?: { avatarId?: string; voiceId?: string }) => {
       // LiveAvatar API endpoint - different from old HeyGen streaming endpoint
+      // Using CUSTOM mode because we handle AI/TTS ourselves
+      // livekit_config.use_custom_room = false means use LiveAvatar's default room
+      const requestBody: any = {
+        mode: "CUSTOM",
+        avatar_id: avatarConfig?.avatarId,
+        livekit_config: {
+          use_custom_room: false  // Use LiveAvatar's managed room
+        }
+      };
+      
+      logger.debug({
+        service: 'liveavatar',
+        operation: 'create_session_token',
+        requestBody,
+      }, 'Creating LiveAvatar session with CUSTOM mode');
+
       const response = await fetch(
         "https://api.liveavatar.com/v1/sessions/token",
         {
@@ -69,14 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             "X-API-KEY": apiKey,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            mode: "FULL",
-            avatar_id: avatarConfig?.avatarId,
-            avatar_persona: avatarConfig?.voiceId ? {
-              voice_id: avatarConfig.voiceId,
-              language: "en"
-            } : undefined
-          }),
+          body: JSON.stringify(requestBody),
         },
       );
 
@@ -98,7 +108,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
-      return await response.json();
+      const responseData = await response.json();
+      logger.debug({
+        service: 'liveavatar',
+        operation: 'create_session_token',
+        sessionId: responseData?.data?.session_id,
+      }, 'LiveAvatar session created successfully');
+      
+      return responseData;
     },
     "liveavatar",
     { timeout: 15000, errorThresholdPercentage: 50 },
