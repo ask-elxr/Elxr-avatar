@@ -36,6 +36,7 @@ interface DriverConfig {
   onAvatarStartTalking?: () => void;
   onAvatarStopTalking?: () => void;
   onUserMessage?: (message: string) => void;
+  onVideoReady?: () => void; // Called when LiveKit video track is attached and playing
 }
 
 /**
@@ -125,6 +126,7 @@ export class LiveAvatarDriver implements SessionDriver {
     
     this.videoAttached = true;
     this.config.onStreamReady?.();
+    this.config.onVideoReady?.(); // Signal that video is ready for display
     console.log("✅ LiveKit video track attached - stream ready");
   }
 

@@ -192,6 +192,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     heygenSessionActive,
     isLoading,
     showReconnect,
+    videoReady, // True when LiveKit video track is attached and playing
     startSession,
     endSession,
     endSessionShowReconnect,
@@ -604,8 +605,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Video Element */}
         <div className="w-full h-full flex items-center justify-center relative">
           {(() => {
-            console.log("🖼️ Render state:", { audioOnly, heygenSessionActive, isLoading, showReconnect, 
-              videoShouldShow: heygenSessionActive && !isLoading && !showReconnect,
+            console.log("🖼️ Render state:", { audioOnly, heygenSessionActive, videoReady, isLoading, showReconnect, 
+              videoShouldShow: videoReady && !isLoading && !showReconnect,
               gifShouldShow: audioOnly && !heygenSessionActive
             });
             return null;
@@ -616,7 +617,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             playsInline
             className="w-full h-full object-cover"
             style={{ 
-              display: (heygenSessionActive && !isLoading && !showReconnect) ? 'block' : 'none',
+              display: (videoReady && !isLoading && !showReconnect) ? 'block' : 'none',
               position: 'absolute',
               top: 0,
               left: 0,

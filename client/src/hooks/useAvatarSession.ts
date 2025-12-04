@@ -24,6 +24,7 @@ interface AvatarSessionReturn {
   heygenSessionActive: boolean;
   isLoading: boolean;
   showReconnect: boolean;
+  videoReady: boolean; // True when LiveKit video track is attached and playing
   startSession: (options?: StartSessionOptions) => Promise<void>;
   endSession: () => Promise<void>;
   endSessionShowReconnect: () => Promise<void>;
@@ -62,6 +63,7 @@ export function useAvatarSession({
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
   const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
+  const [videoReady, setVideoReady] = useState(false); // Track when LiveKit video track is attached
 
   const sessionDriverRef = useRef<SessionDriver | null>(null);
   const intentionalStopRef = useRef(false);
@@ -898,6 +900,12 @@ export function useAvatarSession({
         userId,
         languageCode: languageCodeRef.current,
         
+        // Video ready callback - called when LiveKit video track is attached
+        onVideoReady: () => {
+          console.log("📺 Video track ready - updating videoReady state");
+          setVideoReady(true);
+        },
+        
         // Stream ready callback - handles video attachment and greeting
         onStreamReady: async () => {
           console.log("🎬 LiveAvatar stream ready");
@@ -945,6 +953,7 @@ export function useAvatarSession({
           isSpeakingRef.current = false;
           sessionDriverRef.current = null;
           setHeygenSessionActive(false);
+          setVideoReady(false); // Reset video ready state on disconnect
           clearIdleTimeout();
           
           if (wasUnintentional && sessionActiveRef.current) {
@@ -2471,6 +2480,7 @@ export function useAvatarSession({
     heygenSessionActive,
     isLoading,
     showReconnect,
+    videoReady, // True when LiveKit video track is attached and playing
     startSession,
     endSession,
     endSessionShowReconnect,
