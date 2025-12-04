@@ -10,7 +10,8 @@ export const defaultAvatars: AvatarProfile[] = [
     description:
       "Mycological researcher, filmmaker, and kundalini instructor. Expert in psychedelics, spirituality, and fungi.",
     profileImageUrl: "/attached_assets/MArk-kohl-loop_1763964600000.gif",
-    heygenAvatarId: "e16db57e57824a0e90b661ad528d3994", // Custom LiveAvatar for streaming
+    heygenAvatarId: "e16db57e57824a0e90b661ad528d3994", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "98917de8-81a1-4a24-ad0b-584fff35c168", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "93cea50f10a14444888832d07925a94d", // Mark's Photo Avatar ID from HeyGen UI
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -101,7 +102,8 @@ Remember: You ARE Mark Kohl. Be clear, be useful, be respectful. Quality over cl
     description:
       "Former NFL wide receiver, Olympic bobsledder, and fitness expert. Guidance on work, career, and performance.",
     profileImageUrl: "/attached_assets/Willie gault gif-low_1763964813725.gif",
-    heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Custom LiveAvatar for streaming
+    heygenAvatarId: "a9d3346d94594c5f9ca522f6d0469038", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "df82e86b-bca5-4a87-9119-2e9c7a708532", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "57d0eb901fe84211b92b0a9d91f2e5c0", // Talking Photo ID for video generation (Willie)
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -170,7 +172,8 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     description:
       "Mental health and mindfulness expert. Guidance on mind, emotional wellbeing, and inner peace.",
     profileImageUrl: "/attached_assets/June-low_1764106896823.gif",
-    heygenAvatarId: "June_HR_public", // Public streaming avatar
+    heygenAvatarId: "June_HR_public", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "65f9e3c9-d48b-4118-b73a-4ae2e3cbb8f0", // LiveAvatar platform ID (June HR)
     heygenVideoAvatarId: "June_HR_public", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -239,7 +242,8 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
     description:
       "Body wellness and physical health expert. Guidance on movement, nutrition, and physical vitality.",
     profileImageUrl: "/attached_assets/Ann_1763966361095.gif",
-    heygenAvatarId: "Ann_Therapist_public", // Public streaming avatar
+    heygenAvatarId: "Ann_Therapist_public", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "513fd1b7-7ef9-466d-9af2-344e51eeb833", // LiveAvatar platform ID (Ann Therapist)
     heygenVideoAvatarId: "Ann_Therapist_public", // Same as streaming - works for both
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -308,7 +312,8 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     description:
       "Conscious leadership and performance integration expert. Guidance on leadership, personal development, and peak performance.",
     profileImageUrl: "/attached_assets/Nigel-Loop-avatar_1763964600000.gif",
-    heygenAvatarId: "2bc688a56d3949d3a49aab4a44efab49", // Custom Nigel avatar for streaming
+    heygenAvatarId: "2bc688a56d3949d3a49aab4a44efab49", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "0eb7418e-f377-43d5-806a-091f11e75541", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "b570e1e91cdc4d52931a9a124c0e3f3f", // Nigel avatar for video generation
     heygenVoiceId: null, // Uses avatar's linked voice (same as Willie)
     heygenVideoVoiceId: null,
@@ -376,7 +381,8 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     description:
       "Financial resilience and purposeful wealth expert. Guidance on financial wellness, wealth building, and money mindset.",
     profileImageUrl: "/attached_assets/Thad_1763963906199.gif",
-    heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Custom LiveAvatar for streaming
+    heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "3f462a97-2adc-4174-9c1c-b946ae4f909d", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "1da3f06fc92a4a9bbbe10f81b3b6a498", // Talking Photo ID for video generation (Thad)
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -445,7 +451,8 @@ Remember: Be empowering, be practical, be values-driven.`,
     description:
       "Life transitions and personal growth expert. Guidance on navigating change, building resilience, and finding purpose.",
     profileImageUrl: "/attached_assets/Kelsey_1764111279103.gif",
-    heygenAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c", // Custom Kelsey avatar for streaming
+    heygenAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "4fa4c788-dd88-4331-9276-8429c55e32b7", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "84f913285ac944188a35ce5b58ceb861", // Talking Photo ID for video generation (Kelsey)
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -513,7 +520,8 @@ Remember: You ARE Kelsey. Be compassionate, be practical, be hopeful.`,
     description:
       "Compassionate wellness guide specializing in emotional support and holistic healing.",
     profileImageUrl: "/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif",
-    heygenAvatarId: "Judy_Teacher_Sitting_public",
+    heygenAvatarId: "Judy_Teacher_Sitting_public", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "c72a9099-84b9-4d5d-98f4-a19ba131e654", // LiveAvatar platform ID (Judy Teacher Sitting)
     heygenVideoAvatarId: "Judy_Teacher_Sitting_public",
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -566,7 +574,8 @@ Remember: You ARE Judy. Be compassionate, be healing, be supportive.`,
     description:
       "Medical wellness expert providing health insights and lifestyle guidance from a clinical perspective.",
     profileImageUrl: "/attached_assets/DexterDoctor_1764107339868.gif",
-    heygenAvatarId: "Dexter_Doctor_Sitting2_public",
+    heygenAvatarId: "Dexter_Doctor_Sitting2_public", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "bd43ce31-7425-4379-8407-60f029548e61", // LiveAvatar platform ID (Dexter Doctor Sitting)
     heygenVideoAvatarId: "Dexter_Doctor_Sitting2_public",
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -619,7 +628,8 @@ Remember: You ARE Dexter. Be informative, be professional, be health-focused.`,
     description:
       "Business strategist and professional development coach. Expert in career growth and organizational leadership.",
     profileImageUrl: "/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif",
-    heygenAvatarId: "Shawn_Therapist_public",
+    heygenAvatarId: "Shawn_Therapist_public", // Legacy HeyGen Interactive Avatar ID
+    liveAvatarId: "7b888024-f8c9-4205-95e1-78ce01497bda", // LiveAvatar platform ID (Shawn Therapist)
     heygenVideoAvatarId: "Shawn_Therapist_public",
     heygenVoiceId: null,
     heygenVideoVoiceId: null,

@@ -153,6 +153,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   description: text("description").notNull(),
   profileImageUrl: text("profile_image_url"),
   heygenAvatarId: text("heygen_avatar_id"),
+  liveAvatarId: text("live_avatar_id"), // LiveAvatar platform ID (different from HeyGen Interactive Avatar ID)
   heygenVideoAvatarId: text("heygen_video_avatar_id"), // Separate ID for video generation (Instant Avatars)
   heygenVoiceId: text("heygen_voice_id"),
   heygenVideoVoiceId: text("heygen_video_voice_id"), // Separate voice ID for video generation

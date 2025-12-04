@@ -343,13 +343,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (avatarId) {
         const avatar = await getAvatarById(avatarId);
-        if (avatar && avatar.heygenAvatarId) {
-          // Use the HeyGen avatar ID for LiveAvatar sessions
-          // LiveAvatar uses the same avatar IDs as HeyGen Interactive Avatar
-          avatarConfig = {
-            avatarId: avatar.heygenAvatarId,
-            voiceId: avatar.heygenVoiceId || undefined,
-          };
+        if (avatar) {
+          // Prefer liveAvatarId for LiveAvatar sessions (new platform)
+          // Fall back to heygenAvatarId for legacy compatibility
+          const liveAvatarAvatarId = avatar.liveAvatarId || avatar.heygenAvatarId;
+          if (liveAvatarAvatarId) {
+            avatarConfig = {
+              avatarId: liveAvatarAvatarId,
+              voiceId: avatar.heygenVoiceId || undefined,
+            };
+            log.debug({
+              appAvatarId: avatarId,
+              liveAvatarId: avatar.liveAvatarId,
+              heygenAvatarId: avatar.heygenAvatarId,
+              usedId: liveAvatarAvatarId,
+            }, 'Resolved avatar ID for LiveAvatar session');
+          }
         }
       }
       
