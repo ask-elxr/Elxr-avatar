@@ -143,29 +143,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     checkMicPermission();
   }, []);
 
-  // Function to request microphone permission (with iOS Safari audio stack unlock)
+  // Function to request microphone permission
   const requestMicrophonePermission = async () => {
     setRequestingMicPermission(true);
     try {
-      // iOS Safari requires AudioContext resume during user gesture
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        try {
-          const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            const audioContext = new AudioContextClass();
-            await audioContext.resume();
-            console.log("🔊 iOS AudioContext resumed during permission request");
-            audioContext.close().catch(() => {});
-          }
-        } catch (e) {
-          console.log("AudioContext resume failed, continuing...");
-        }
-      }
-      
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Permission granted - keep stream briefly to warm up, then stop
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Permission granted - stop the stream immediately (we just needed permission)
       stream.getTracks().forEach(track => track.stop());
       setMicPermissionGranted(true);
       toast({
@@ -748,18 +731,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               >
                 <Mic className="w-4 h-4 text-blue-400" />
                 <span className="text-sm text-blue-300 font-medium">Tap to enable voice</span>
-              </button>
-            )}
-            
-            {/* iOS Safari fallback - show enable voice button when mic is stopped but session is active */}
-            {microphoneStatus === 'stopped' && sessionActive && !isLoading && (
-              <button
-                onClick={manualStartVoice}
-                className="absolute top-20 right-4 flex items-center gap-2 bg-green-500/30 hover:bg-green-500/50 border border-green-400/60 px-4 py-3 rounded-full backdrop-blur-sm z-30 transition-all active:scale-95 animate-pulse"
-                data-testid="button-enable-voice"
-              >
-                <Mic className="w-5 h-5 text-green-400" />
-                <span className="text-sm text-green-300 font-medium">Tap to enable voice</span>
               </button>
             )}
 

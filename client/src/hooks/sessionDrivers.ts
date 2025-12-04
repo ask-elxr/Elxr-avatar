@@ -157,7 +157,7 @@ export class HeyGenDriver implements SessionDriver {
       // 3. Play ElevenLabs audio separately for the actual voice
       console.log("🎙️ Using text-based lip-sync with ElevenLabs audio (HeyGen audio muted)");
       
-      // Silence the video element to prevent HeyGen's fallback voice from playing
+      // Mute the video element to prevent HeyGen's fallback voice from playing
       if (this.config.videoRef.current) {
         this.config.videoRef.current.muted = true;
       }
@@ -216,19 +216,11 @@ export class HeyGenDriver implements SessionDriver {
       audio.onended = () => {
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
-        // Restore video audio for next utterance or avatar switch
-        if (this.config.videoRef.current) {
-          this.config.videoRef.current.muted = false;
-        }
       };
 
       audio.onerror = () => {
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
-        // Restore video audio on error
-        if (this.config.videoRef.current) {
-          this.config.videoRef.current.muted = false;
-        }
       };
 
       await audio.play();

@@ -240,21 +240,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const rawApiKey = process.env.HEYGEN_API_KEY;
+      const apiKey = process.env.HEYGEN_API_KEY;
 
-      if (!rawApiKey) {
+      if (!apiKey) {
         log.error("HeyGen API key not configured");
         return res.status(500).json({
           error:
             "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable.",
         });
       }
-
-      // Trim whitespace/newlines that might have been accidentally included
-      const apiKey = rawApiKey.trim();
-      
-      // Check API key is present (don't log any part of it)
-      log.debug({ keyConfigured: true, keyLength: apiKey.length, wasTrimmed: rawApiKey.length !== apiKey.length }, "HeyGen API key loaded");
 
       log.debug("Creating HeyGen access token");
 

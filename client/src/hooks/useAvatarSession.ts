@@ -544,12 +544,7 @@ export function useAvatarSession({
                   console.log("🔄 Voice recognition restarted (throttled)");
                 } catch (e) {
                   recognitionRunningRef.current = false;
-                  // iOS Safari needs gesture - show tap button instead of silent failure
-                  if (isIOSSafari || isMobile) {
-                    setMicrophoneStatus('needs-gesture');
-                  } else {
-                    setMicrophoneStatus('stopped');
-                  }
+                  setMicrophoneStatus('stopped');
                 }
               }
             }, delayNeeded);
@@ -563,12 +558,7 @@ export function useAvatarSession({
               console.log("🔄 Voice recognition restarted");
             } catch (e) {
               recognitionRunningRef.current = false;
-              // iOS Safari needs gesture - show tap button instead of silent failure
-              if (isIOSSafari || isMobile) {
-                setMicrophoneStatus('needs-gesture');
-              } else {
-                setMicrophoneStatus('stopped');
-              }
+              setMicrophoneStatus('stopped');
             }
           }
         } else {
@@ -679,21 +669,14 @@ export function useAvatarSession({
     }
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
-  // Helper to speak with ElevenLabs voice AND HeyGen lip-sync in video mode
-  // For avatars without HeyGen voice: mute video, call avatar.speak() for lip-sync, play ElevenLabs audio
+  // Helper to speak with ElevenLabs in video mode (for avatars without HeyGen voice)
+  // This mirrors the AVATAR_START_TALKING/STOP_TALKING behavior from HeyGen sessions
   const speakWithElevenLabsInVideoMode = useCallback(async (text: string): Promise<void> => {
     try {
       // Stop any currently playing ElevenLabs audio
       if (elevenLabsVideoAudioRef.current) {
         elevenLabsVideoAudioRef.current.pause();
         elevenLabsVideoAudioRef.current = null;
-      }
-
-      // === MUTE VIDEO to prevent HeyGen's fallback voice from playing ===
-      // Using muted property (not volume) - this is the working pattern
-      if (videoRef.current) {
-        videoRef.current.muted = true;
-        console.log("🔇 Video muted for ElevenLabs voice (preventing HeyGen fallback audio)");
       }
 
       // === AVATAR_START_TALKING equivalent ===
@@ -713,18 +696,8 @@ export function useAvatarSession({
       isSpeakingRef.current = true;
       setIsSpeakingState(true);
       clearIdleTimeout(); // Clear idle timeout while speaking
-      console.log("🗣️ ElevenLabs avatar START talking with lip-sync (video mode)");
+      console.log("🗣️ ElevenLabs avatar START talking (video mode)");
 
-      // === TRIGGER HEYGEN LIP-SYNC ANIMATION ===
-      // Call avatar.speak() for text-based lip-sync (video is muted, so no HeyGen audio will be heard)
-      const lipSyncPromise = avatarRef.current?.speak({
-        text,
-        task_type: TaskType.REPEAT,
-      }).catch(e => {
-        console.warn("HeyGen lip-sync error (non-fatal):", e);
-      });
-
-      // === FETCH ELEVENLABS AUDIO ===
       const response = await fetch("/api/elevenlabs/tts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -803,13 +776,6 @@ export function useAvatarSession({
           }
           elevenLabsVideoAudioRef.current = null;
           
-          // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
-          // Set both muted=false AND volume=1 for iOS Safari compatibility
-          if (videoRef.current) {
-            videoRef.current.muted = false;
-            console.log("🔊 Video unmuted after ElevenLabs audio finished");
-          }
-          
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
           resumeRecognitionWithDelay();
           
@@ -831,11 +797,6 @@ export function useAvatarSession({
           }
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
-          
-          // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
-          if (videoRef.current) {
-            videoRef.current.muted = false;
-          }
           
           // Resume voice recognition with delay on error
           resumeRecognitionWithDelay();
@@ -866,11 +827,6 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
           
-          // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
-          if (videoRef.current) {
-            videoRef.current.muted = false;
-          }
-          
           // Resume voice recognition with delay on play error
           resumeRecognitionWithDelay();
           
@@ -885,11 +841,6 @@ export function useAvatarSession({
       isSpeakingRef.current = false;
       setIsSpeakingState(false);
       console.log("🗣️ ElevenLabs avatar STOP talking (fetch error - video mode)");
-      
-      // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
-      if (videoRef.current) {
-        videoRef.current.muted = false;
-      }
       
       // Resume voice recognition with delay on fetch error
       // Cancel any pending resume timeout to prevent racing
@@ -940,18 +891,10 @@ export function useAvatarSession({
 
       // Detect if this avatar should use ElevenLabs voice in video mode
       // (has ElevenLabs voice configured but no HeyGen voice)
-      // MOBILE FIX: Disable ElevenLabs voice on mobile devices - use HeyGen native voice instead
-      // ElevenLabs acknowledges mobile audio playback is a known issue on their platform
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      console.log(`🔍 Avatar voice config check: heygenVoiceId="${avatarConfig.heygenVoiceId}", elevenlabsVoiceId="${avatarConfig.elevenlabsVoiceId}", isMobile=${isMobile}`);
-      
-      // On mobile, always use HeyGen native voice for video mode (ElevenLabs has known mobile issues)
-      // On desktop, use ElevenLabs if avatar has no HeyGen voice but has ElevenLabs voice
-      useElevenLabsVoiceRef.current = !isMobile && !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId;
+      console.log(`🔍 Avatar voice config check: heygenVoiceId="${avatarConfig.heygenVoiceId}", elevenlabsVoiceId="${avatarConfig.elevenlabsVoiceId}"`);
+      useElevenLabsVoiceRef.current = !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId;
       console.log(`🎙️ useElevenLabsVoiceRef set to: ${useElevenLabsVoiceRef.current}`);
-      if (isMobile && !avatarConfig.heygenVoiceId && !!avatarConfig.elevenlabsVoiceId) {
-        console.log(`📱 Mobile detected - forcing HeyGen native voice for ${avatarConfig.name} (ElevenLabs has known mobile issues)`);
-      } else if (useElevenLabsVoiceRef.current) {
+      if (useElevenLabsVoiceRef.current) {
         console.log(`🎙️ Avatar ${avatarConfig.name} will use ElevenLabs voice in video mode (no HeyGen voice configured)`);
       }
 
@@ -969,11 +912,7 @@ export function useAvatarSession({
         console.log("Stream ready:", event.detail);
         if (videoRef.current) {
           videoRef.current.srcObject = event.detail;
-          // Simple play - this was the working pattern
-          // The video element already has autoPlay and playsInline attributes
-          videoRef.current.play().catch((err) => {
-            console.error("Video play error:", err);
-          });
+          videoRef.current.play().catch(console.error);
         }
         
         // Clear loading state and timeout as soon as stream is ready
@@ -991,9 +930,9 @@ export function useAvatarSession({
               const { greeting } = await greetingResponse.json();
               if (greeting && avatar) {
                 console.log("🗣️ Avatar greeting:", greeting);
-                // Use ElevenLabs voice with lip-sync if avatar doesn't have HeyGen voice configured
+                // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
                 if (useElevenLabsVoiceRef.current) {
-                  console.log("🎙️ Using ElevenLabs with lip-sync for greeting");
+                  console.log("🎙️ Using ElevenLabs for greeting (video mode with ElevenLabs voice)");
                   await speakWithElevenLabsInVideoMode(greeting);
                 } else {
                   await avatar.speak({
@@ -1282,55 +1221,22 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true);
     
-    // ✅ iOS SAFARI FIX: Unlock audio stack before starting voice recognition
-    // iOS Safari requires BOTH getUserMedia AND AudioContext.resume during a user gesture
-    // This MUST happen during the user tap/click event for iOS to allow audio
-    const userAgent = navigator.userAgent || '';
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
-    const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
-    const isIOSSafari = isIOS && isSafari;
-    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(userAgent);
-    
-    if (isMobile || isIOSSafari) {
+    // ✅ MOBILE FIX: Warm up microphone before starting voice recognition
+    // Mobile browsers (especially iOS Safari) require an active audio stream
+    // before Web Speech API will work properly
+    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
+    if (isMobile) {
       try {
-        console.log("📱 Mobile/iOS Safari detected - unlocking audio stack...");
-        
-        // Step 1: Resume AudioContext (required for iOS audio playback)
-        try {
-          const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-          if (AudioContextClass) {
-            const audioContext = new AudioContextClass();
-            await audioContext.resume();
-            console.log("🔊 AudioContext resumed successfully");
-            // Close it - we just needed to unlock the audio stack
-            audioContext.close().catch(() => {});
-          }
-        } catch (audioError) {
-          console.warn("🔊 AudioContext resume failed:", audioError);
-        }
-        
-        // Step 2: Request microphone permission via getUserMedia
+        console.log("📱 Mobile detected - warming up microphone...");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         // Keep stream active briefly to "warm up" the microphone
         await new Promise(resolve => setTimeout(resolve, 300));
         // Stop tracks - we just needed to activate the microphone
         stream.getTracks().forEach(track => track.stop());
-        console.log("📱 Microphone permission granted and warmed up");
-        
-        // Mark microphone as ready - this is critical for iOS Safari
-        setMicrophoneStatus('stopped'); // Will be set to 'listening' when recognition starts
-        
-      } catch (error: any) {
-        console.warn("📱 Audio stack unlock failed:", error);
-        // Check if it's a permission denied error
-        if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-          console.error("🚫 Microphone permission denied by user");
-          setMicrophoneStatus('permission-denied');
-          // Don't throw - let the session continue but voice won't work
-        } else {
-          // Other errors - still try voice recognition
-          console.log("📱 Continuing without microphone warm-up");
-        }
+        console.log("📱 Microphone warmed up successfully");
+      } catch (error) {
+        console.warn("📱 Microphone warm-up failed:", error);
+        // Continue anyway - voice recognition may still work
       }
     }
     
@@ -1751,18 +1657,8 @@ export function useAvatarSession({
       
       try {
         setIsLoading(true);
-        
-        // Add timeout for mode switch to prevent Safari from hanging indefinitely
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error("Video mode switch timed out after 25 seconds")), 25000);
-        });
-        
         // Pass skipGreeting=true for seamless mode switch - conversation is already in progress
-        await Promise.race([
-          startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true }),
-          timeoutPromise
-        ]);
-        
+        await startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true });
         setIsLoading(false);
         console.log("✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)");
         
@@ -1770,9 +1666,8 @@ export function useAvatarSession({
         // Voice recognition will be started by the STREAM_READY handler
         recognitionIntentionalStopRef.current = false;
         
-      } catch (error: any) {
+      } catch (error) {
         console.error("Error starting HeyGen for mode switch:", error);
-        console.error("Error details:", error?.message, error?.stack);
         setIsLoading(false);
         // Revert to audio mode on failure
         audioOnlyRef.current = true;
@@ -1780,7 +1675,7 @@ export function useAvatarSession({
           videoRef.current.style.display = 'none';
           videoRef.current.style.visibility = 'hidden';
         }
-        throw new Error(error?.message || "Failed to switch to video mode. Safari may have WebRTC restrictions.");
+        throw error;
       }
     }
     
@@ -2202,10 +2097,11 @@ export function useAvatarSession({
               if (sentence) {
                 isSpeakingQueueRef.current = true;
                 try {
-                  // Use ElevenLabs voice with lip-sync if avatar doesn't have HeyGen voice configured
+                  // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
                   if (useElevenLabsVoiceRef.current) {
                     await speakWithElevenLabsInVideoMode(sentence);
                   } else {
+                    // Wait for speak to complete before next sentence
                     await avatarRef.current.speak({
                       text: sentence,
                       task_type: TaskType.REPEAT,
@@ -2460,9 +2356,9 @@ export function useAvatarSession({
                 throw new Error("Avatar not available");
               }
               
-              // Use ElevenLabs voice with lip-sync if avatar doesn't have HeyGen voice configured
+              // Use ElevenLabs voice if avatar doesn't have HeyGen voice configured
               if (useElevenLabsVoiceRef.current) {
-                console.log("🎙️ Using ElevenLabs with lip-sync for response");
+                console.log("🎙️ Using ElevenLabs for response (video mode with ElevenLabs voice)");
                 await speakWithElevenLabsInVideoMode(claudeResponse);
               } else {
                 await avatarRef.current.speak({
@@ -2630,34 +2526,8 @@ export function useAvatarSession({
   }, []);
 
   // Manual voice start for mobile Safari (requires user gesture)
-  const manualStartVoice = useCallback(async () => {
+  const manualStartVoice = useCallback(() => {
     console.log("🎤 Manual voice start triggered (user gesture)");
-    
-    // iOS Safari requires audio stack unlock during user gesture
-    const userAgent = navigator.userAgent || '';
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
-    
-    if (isIOS) {
-      try {
-        // Step 1: Resume AudioContext during user gesture
-        const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (AudioContextClass) {
-          const audioContext = new AudioContextClass();
-          await audioContext.resume();
-          console.log("🔊 iOS AudioContext resumed during manual voice start");
-          audioContext.close().catch(() => {});
-        }
-        
-        // Step 2: Request microphone permission via getUserMedia
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        await new Promise(resolve => setTimeout(resolve, 200));
-        stream.getTracks().forEach(track => track.stop());
-        console.log("📱 iOS microphone warmed up during manual voice start");
-      } catch (e) {
-        console.warn("📱 iOS audio unlock failed during manual voice start:", e);
-      }
-    }
-    
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
