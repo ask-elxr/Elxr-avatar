@@ -29,6 +29,7 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 #### Avatar System
 -   **Multi-avatar Support**: Includes 10 active avatars with unique expertise, configurable settings, dedicated Pinecone knowledge base namespaces, and per-avatar research source toggles.
 -   **Dual HeyGen IDs**: Each avatar has both a LiveAvatar ID for streaming chat and an Instant/Public Avatar ID for video course generation.
+-   **Dual HeyGen API Keys**: System uses `HEYGEN_LIVE_API_KEY` for interactive streaming sessions and `HEYGEN_VIDEO_API_KEY` for video generation. Falls back to legacy `HEYGEN_API_KEY` if new keys not set.
 -   **Avatar Service**: Handles field-level merging where database values override defaults and manages active/inactive avatars.
 -   **Auto-Reconnection**: HeyGen WebRTC sessions automatically retry on disconnection.
 
