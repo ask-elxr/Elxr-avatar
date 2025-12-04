@@ -544,7 +544,12 @@ export function useAvatarSession({
                   console.log("🔄 Voice recognition restarted (throttled)");
                 } catch (e) {
                   recognitionRunningRef.current = false;
-                  setMicrophoneStatus('stopped');
+                  // iOS Safari needs gesture - show tap button instead of silent failure
+                  if (isIOSSafari || isMobile) {
+                    setMicrophoneStatus('needs-gesture');
+                  } else {
+                    setMicrophoneStatus('stopped');
+                  }
                 }
               }
             }, delayNeeded);
@@ -558,7 +563,12 @@ export function useAvatarSession({
               console.log("🔄 Voice recognition restarted");
             } catch (e) {
               recognitionRunningRef.current = false;
-              setMicrophoneStatus('stopped');
+              // iOS Safari needs gesture - show tap button instead of silent failure
+              if (isIOSSafari || isMobile) {
+                setMicrophoneStatus('needs-gesture');
+              } else {
+                setMicrophoneStatus('stopped');
+              }
             }
           }
         } else {
@@ -2620,8 +2630,34 @@ export function useAvatarSession({
   }, []);
 
   // Manual voice start for mobile Safari (requires user gesture)
-  const manualStartVoice = useCallback(() => {
+  const manualStartVoice = useCallback(async () => {
     console.log("🎤 Manual voice start triggered (user gesture)");
+    
+    // iOS Safari requires audio stack unlock during user gesture
+    const userAgent = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    
+    if (isIOS) {
+      try {
+        // Step 1: Resume AudioContext during user gesture
+        const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AudioContextClass) {
+          const audioContext = new AudioContextClass();
+          await audioContext.resume();
+          console.log("🔊 iOS AudioContext resumed during manual voice start");
+          audioContext.close().catch(() => {});
+        }
+        
+        // Step 2: Request microphone permission via getUserMedia
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        await new Promise(resolve => setTimeout(resolve, 200));
+        stream.getTracks().forEach(track => track.stop());
+        console.log("📱 iOS microphone warmed up during manual voice start");
+      } catch (e) {
+        console.warn("📱 iOS audio unlock failed during manual voice start:", e);
+      }
+    }
+    
     if (recognitionRef.current) {
       try {
         recognitionRef.current.abort();
