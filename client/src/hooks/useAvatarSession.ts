@@ -794,10 +794,12 @@ export function useAvatarSession({
           }
           elevenLabsVideoAudioRef.current = null;
           
-          // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
+          // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
+          // Set both muted=false AND volume=1 for iOS Safari compatibility
           if (videoRef.current) {
+            videoRef.current.muted = false;
             videoRef.current.volume = 1;
-            console.log("🔊 Video volume restored to 1 after ElevenLabs audio finished");
+            console.log("🔊 Video unmuted and volume restored after ElevenLabs audio finished");
           }
           
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
@@ -822,8 +824,9 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (error - video mode)");
           
-          // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
+          // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
+            videoRef.current.muted = false;
             videoRef.current.volume = 1;
           }
           
@@ -856,8 +859,9 @@ export function useAvatarSession({
           elevenLabsVideoAudioRef.current = null;
           console.log("🗣️ ElevenLabs avatar STOP talking (play error - video mode)");
           
-          // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
+          // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
           if (videoRef.current) {
+            videoRef.current.muted = false;
             videoRef.current.volume = 1;
           }
           
@@ -876,8 +880,9 @@ export function useAvatarSession({
       setIsSpeakingState(false);
       console.log("🗣️ ElevenLabs avatar STOP talking (fetch error - video mode)");
       
-      // Restore video volume for next avatar (in case user switches to HeyGen-voice avatar)
+      // Restore video audio for next avatar (in case user switches to HeyGen-voice avatar)
       if (videoRef.current) {
+        videoRef.current.muted = false;
         videoRef.current.volume = 1;
       }
       
@@ -959,6 +964,12 @@ export function useAvatarSession({
         console.log("Stream ready:", event.detail);
         if (videoRef.current) {
           videoRef.current.srcObject = event.detail;
+          // CRITICAL: Ensure video is unmuted and volume is up for HeyGen native audio
+          // iOS Safari autoplays videos muted - we must explicitly unmute after user interaction
+          // This handler runs after user clicked "Start" button, so unmuting should work
+          videoRef.current.muted = false;
+          videoRef.current.volume = 1;
+          console.log("🔊 Video unmuted and volume set to 1 for HeyGen audio");
           videoRef.current.play().catch(console.error);
         }
         
