@@ -81,7 +81,7 @@ export function PineconeNamespaceManager() {
   });
 
   const { data: vectorData, isLoading: vectorsLoading, refetch: refetchVectors } = useQuery<VectorListResponse>({
-    queryKey: ["/api/admin/pinecone/namespace", selectedNamespace, "vectors"],
+    queryKey: [`/api/admin/pinecone/namespace/${selectedNamespace}/vectors`],
     enabled: !!selectedNamespace,
   });
 
