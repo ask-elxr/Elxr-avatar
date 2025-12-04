@@ -8,7 +8,7 @@ import { formatVideoTitle } from "../utils/videoTitle";
 import { emailService } from "./email";
 import { getAvatarById } from "./avatars";
 
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY || process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
@@ -56,7 +56,7 @@ export class VideoGenerationService {
   private headers = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "X-Api-Key": HEYGEN_API_KEY || "",
+    "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
   };
 
   /**
@@ -108,7 +108,7 @@ export class VideoGenerationService {
           {
             headers: {
               ...formData.getHeaders(),
-              "X-Api-Key": HEYGEN_API_KEY || "",
+              "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
             },
           }
         );
@@ -128,7 +128,7 @@ export class VideoGenerationService {
           {
             headers: {
               ...fallbackFormData.getHeaders(),
-              "X-Api-Key": HEYGEN_API_KEY || "",
+              "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
             },
           }
         );
@@ -156,8 +156,8 @@ export class VideoGenerationService {
     error?: string;
   }> {
     try {
-      if (!HEYGEN_API_KEY) {
-        throw new Error("HEYGEN_API_KEY is not configured");
+      if (!HEYGEN_VIDEO_API_KEY) {
+        throw new Error("HEYGEN_VIDEO_API_KEY is not configured");
       }
 
       // Get lesson details

@@ -11,7 +11,7 @@ import { subscriptionService } from "./subscription";
 import { formatVideoTitle } from "../utils/videoTitle";
 import Anthropic from "@anthropic-ai/sdk";
 
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY || process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
@@ -49,7 +49,7 @@ export class ChatVideoService {
   private headers = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "X-Api-Key": HEYGEN_API_KEY || "",
+    "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
   };
 
   /**
@@ -101,7 +101,7 @@ export class ChatVideoService {
           {
             headers: {
               ...formData.getHeaders(),
-              "X-Api-Key": HEYGEN_API_KEY || "",
+              "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
             },
           }
         );
@@ -121,7 +121,7 @@ export class ChatVideoService {
           {
             headers: {
               ...fallbackFormData.getHeaders(),
-              "X-Api-Key": HEYGEN_API_KEY || "",
+              "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
             },
           }
         );
@@ -205,8 +205,8 @@ Provide a thorough but concise description that will help generate an engaging v
     imageMimeType?: string;
   }): Promise<{ success: boolean; videoRecordId?: string; error?: string }> {
     try {
-      if (!HEYGEN_API_KEY) {
-        throw new Error("HEYGEN_API_KEY is not configured");
+      if (!HEYGEN_VIDEO_API_KEY) {
+        throw new Error("HEYGEN_VIDEO_API_KEY is not configured");
       }
 
       const avatar = await getAvatarById(params.avatarId);

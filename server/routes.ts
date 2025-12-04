@@ -240,13 +240,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const apiKey = process.env.HEYGEN_API_KEY;
+      const apiKey = process.env.HEYGEN_LIVE_API_KEY || process.env.HEYGEN_API_KEY;
 
       if (!apiKey) {
-        log.error("HeyGen API key not configured");
+        log.error("HeyGen Live Avatar API key not configured");
         return res.status(500).json({
           error:
-            "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable.",
+            "HeyGen Live Avatar API key not configured. Please set HEYGEN_LIVE_API_KEY environment variable.",
         });
       }
 

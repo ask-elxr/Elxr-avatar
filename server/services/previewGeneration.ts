@@ -7,7 +7,7 @@ import { avatarProfiles } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger";
 
-const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
+const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY || process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 
 interface PreviewGenerationResult {
@@ -41,15 +41,15 @@ export class PreviewGenerationService {
   private headers = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "X-Api-Key": HEYGEN_API_KEY || "",
+    "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
   };
 
   private outputDir = path.join(process.cwd(), "attached_assets");
 
   async generatePreviewForAvatar(avatarId: string): Promise<PreviewGenerationResult> {
     try {
-      if (!HEYGEN_API_KEY) {
-        throw new Error("HEYGEN_API_KEY is not configured");
+      if (!HEYGEN_VIDEO_API_KEY) {
+        throw new Error("HEYGEN_VIDEO_API_KEY is not configured");
       }
 
       const [avatar] = await db
