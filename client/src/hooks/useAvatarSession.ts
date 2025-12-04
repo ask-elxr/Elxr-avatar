@@ -1182,6 +1182,31 @@ export function useAvatarSession({
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     setIsLoading(true);
     
+    // 🔊 MOBILE AUDIO UNLOCK: Interact with video element immediately during user gesture
+    // Mobile browsers require audio to be "unlocked" during a user interaction (click/tap)
+    // By interacting with the video element NOW (while still in the click handler call stack),
+    // we ensure audio will work when the HeyGen stream is ready later
+    if (videoRef.current) {
+      try {
+        // Set video to unmuted state during user gesture
+        videoRef.current.muted = false;
+        videoRef.current.volume = 1;
+        
+        // Try to play (even with no source) to unlock audio context
+        // This is a common mobile audio unlock pattern
+        const playPromise = videoRef.current.play();
+        if (playPromise) {
+          playPromise.catch(() => {
+            // Expected to fail with no source, but it still unlocks audio
+          });
+        }
+        console.log("🔊 Mobile audio unlock: Video element interacted during user gesture");
+      } catch (e) {
+        // Ignore errors - this is just for unlocking audio
+        console.log("🔊 Mobile audio unlock attempt (may have failed, continuing)");
+      }
+    }
+    
     reconnectAttemptsRef.current = 0;
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
