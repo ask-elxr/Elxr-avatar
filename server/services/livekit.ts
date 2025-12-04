@@ -128,7 +128,7 @@ export class LiveKitService {
       roomCreate: true, // Allow creating the room if it doesn't exist
       canPublish: true,
       canPublishData: true,
-      canSubscribe: false, // Avatar doesn't need to subscribe
+      canSubscribe: true, // LiveAvatar API requires canSubscribe permission
     });
     const avatarJwt = await avatarToken.toJwt();
     
