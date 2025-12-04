@@ -81,6 +81,7 @@
     "happy-dom": "^20.0.10",
     "input-otp": "^1.4.2",
     "ioredis": "^5.8.2",
+    "livekit-client": "^2.16.0",
     "livekit-server-sdk": "^2.14.2",
     "lucide-react": "^0.453.0",
     "mammoth": "^1.11.0",

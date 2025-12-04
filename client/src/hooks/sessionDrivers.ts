@@ -4,6 +4,15 @@ import {
   AgentEventsEnum,
   SessionState 
 } from "@heygen/liveavatar-web-sdk";
+import { 
+  Room, 
+  RoomEvent, 
+  Track, 
+  RemoteTrack,
+  RemoteTrackPublication,
+  RemoteParticipant,
+  ConnectionState
+} from "livekit-client";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -30,7 +39,7 @@ interface DriverConfig {
 
 /**
  * LiveAvatarDriver - Uses the new HeyGen LiveAvatar SDK for streaming avatar sessions
- * This replaces the older HeyGenDriver that used @heygen/streaming-avatar
+ * In CUSTOM mode, video is streamed through LiveKit room, not through the SDK
  */
 export class LiveAvatarDriver implements SessionDriver {
   private session: LiveAvatarSession | null = null;
@@ -40,13 +49,13 @@ export class LiveAvatarDriver implements SessionDriver {
   private languageCode: string = "en";
   private sessionId: string | null = null;
   private videoAttached: boolean = false;
+  private livekitRoom: Room | null = null;
+  private livekitCredentials: { url: string; room: string; token: string } | null = null;
 
   constructor(config: DriverConfig) {
     this.config = config;
     this.languageCode = config.languageCode || "en";
     
-    // Use ElevenLabs when avatar has ElevenLabs voice but no HeyGen voice
-    // This provides voice consistency between audio-only and video modes for avatars like Shawn, Judy, Kelsey
     this.useElevenLabsVoice = !config.avatarConfig.heygenVoiceId && 
                               !!config.avatarConfig.elevenlabsVoiceId;
     
@@ -57,16 +66,102 @@ export class LiveAvatarDriver implements SessionDriver {
     }
   }
 
-  private attachVideoElement(): void {
-    if (this.videoAttached || !this.session || !this.config.videoRef.current) {
+  private attachVideoTrack(track: RemoteTrack): void {
+    if (!this.config.videoRef.current) {
+      console.warn("⚠️ Video ref not available for track attachment");
       return;
     }
     
-    console.log("🎬 Attaching video element to LiveAvatar session");
-    this.session.attach(this.config.videoRef.current);
-    this.config.videoRef.current.play().catch(console.error);
+    console.log("🎬 Attaching LiveKit video track to video element");
+    const element = track.attach();
+    
+    if (element instanceof HTMLVideoElement) {
+      this.config.videoRef.current.srcObject = element.srcObject;
+      this.config.videoRef.current.play().catch(console.error);
+    } else {
+      track.attach(this.config.videoRef.current);
+      this.config.videoRef.current.play().catch(console.error);
+    }
+    
     this.videoAttached = true;
     this.config.onStreamReady?.();
+    console.log("✅ LiveKit video track attached successfully");
+  }
+
+  private async connectToLiveKitRoom(): Promise<void> {
+    if (!this.livekitCredentials) {
+      console.warn("⚠️ No LiveKit credentials available for CUSTOM mode");
+      return;
+    }
+
+    console.log("🔌 Connecting to LiveKit room for video stream...", {
+      room: this.livekitCredentials.room,
+      url: this.livekitCredentials.url.substring(0, 30) + "..."
+    });
+
+    this.livekitRoom = new Room({
+      adaptiveStream: true,
+      dynacast: true,
+      videoCaptureDefaults: {
+        resolution: { width: 1280, height: 720 }
+      }
+    });
+
+    this.livekitRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+      console.log("📺 LiveKit track subscribed:", {
+        kind: track.kind,
+        participantId: participant.identity,
+        trackSid: track.sid
+      });
+      
+      if (track.kind === Track.Kind.Video) {
+        this.attachVideoTrack(track);
+      }
+      
+      if (track.kind === Track.Kind.Audio) {
+        console.log("🔊 LiveKit audio track received - attaching");
+        track.attach();
+      }
+    });
+
+    this.livekitRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
+      console.log("📺 LiveKit track unsubscribed:", track.kind);
+      track.detach();
+    });
+
+    this.livekitRoom.on(RoomEvent.ConnectionStateChanged, (state: ConnectionState) => {
+      console.log("🔌 LiveKit connection state:", state);
+    });
+
+    this.livekitRoom.on(RoomEvent.Disconnected, () => {
+      console.log("📵 LiveKit room disconnected");
+      this.config.onStreamDisconnected?.();
+    });
+
+    this.livekitRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
+      console.log("👤 Participant connected:", participant.identity);
+    });
+
+    try {
+      await this.livekitRoom.connect(this.livekitCredentials.url, this.livekitCredentials.token);
+      console.log("✅ Connected to LiveKit room:", this.livekitCredentials.room);
+      
+      this.livekitRoom.remoteParticipants.forEach((participant) => {
+        participant.trackPublications.forEach((publication) => {
+          if (publication.track && publication.track.kind === Track.Kind.Video) {
+            console.log("📺 Found existing video track from:", participant.identity);
+            this.attachVideoTrack(publication.track as RemoteTrack);
+          }
+          if (publication.track && publication.track.kind === Track.Kind.Audio) {
+            console.log("🔊 Found existing audio track from:", participant.identity);
+            (publication.track as RemoteTrack).attach();
+          }
+        });
+      });
+    } catch (error) {
+      console.error("❌ Failed to connect to LiveKit room:", error);
+      throw error;
+    }
   }
 
   async start(): Promise<void> {
@@ -82,22 +177,14 @@ export class LiveAvatarDriver implements SessionDriver {
     });
     this.session = session;
 
-    // Listen for stream ready event
+    // Listen for stream ready event (informational in CUSTOM mode - video comes from LiveKit)
     session.on(SessionEvent.SESSION_STREAM_READY, () => {
-      console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
-      this.attachVideoElement();
+      console.log("🎬 LiveAvatar SESSION_STREAM_READY event received (CUSTOM mode uses LiveKit for video)");
     });
 
     // Listen for session state changes
     session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
       console.log("📊 LiveAvatar session state:", state);
-      
-      // In CUSTOM mode, SESSION_STREAM_READY may not fire, so attach on CONNECTED as fallback
-      if (state === SessionState.CONNECTED && !this.videoAttached) {
-        console.log("📺 CONNECTED state reached - attempting video attachment (CUSTOM mode fallback)");
-        // Small delay to allow SDK to fully initialize the stream
-        setTimeout(() => this.attachVideoElement(), 500);
-      }
     });
 
     // Listen for session disconnected
@@ -130,18 +217,34 @@ export class LiveAvatarDriver implements SessionDriver {
     
     if (this.useElevenLabsVoice) {
       console.log("✅ LiveAvatar session started - text-based lip-sync with ElevenLabs audio");
-      // Mute the video since we'll play ElevenLabs audio separately
       if (this.config.videoRef.current) {
         this.config.videoRef.current.muted = true;
       }
     } else {
       console.log("✅ LiveAvatar session started - using native HeyGen voice");
     }
+    
+    // Connect to LiveKit room for video streaming in CUSTOM mode
+    if (this.livekitCredentials) {
+      console.log("🔌 Connecting to LiveKit room for video stream (CUSTOM mode)...");
+      await this.connectToLiveKitRoom();
+    } else {
+      console.log("⚠️ No LiveKit credentials - falling back to SDK attach method");
+    }
   }
 
   async stop(): Promise<void> {
     this.stopCurrentAudio();
     this.videoAttached = false;
+    
+    // Disconnect from LiveKit room first
+    if (this.livekitRoom) {
+      console.log("📵 Disconnecting from LiveKit room...");
+      await this.livekitRoom.disconnect();
+      this.livekitRoom = null;
+    }
+    this.livekitCredentials = null;
+    
     if (this.session) {
       await this.session.stop();
       this.session = null;
@@ -265,6 +368,20 @@ export class LiveAvatarDriver implements SessionDriver {
     }
 
     const data = await response.json();
+    
+    // Store LiveKit credentials for CUSTOM mode video streaming
+    if (data.livekit) {
+      this.livekitCredentials = {
+        url: data.livekit.url,
+        room: data.livekit.room,
+        token: data.livekit.token,
+      };
+      console.log("📦 LiveKit credentials received for CUSTOM mode:", {
+        room: this.livekitCredentials.room,
+        hasToken: !!this.livekitCredentials.token
+      });
+    }
+    
     return {
       sessionId: data.sessionId || data.session_id,
       sessionToken: data.sessionToken || data.session_token,
