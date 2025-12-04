@@ -132,8 +132,8 @@ export class LiveKitService {
     });
     const avatarJwt = await avatarToken.toJwt();
     
-    // Generate token for the USER to subscribe to the room
-    // This token is used by the frontend to receive the avatar's stream
+    // Generate token for the USER to subscribe AND publish audio
+    // User needs canPublish: true to send audio for avatar lip-sync in CUSTOM mode
     const userToken = new AccessToken(this.config.apiKey, this.config.apiSecret, {
       identity: `user-${userId}`,
       name: `User-${userId}`,
@@ -142,7 +142,7 @@ export class LiveKitService {
     userToken.addGrant({
       room: roomName,
       roomJoin: true,
-      canPublish: false, // User doesn't need to publish
+      canPublish: true, // Required for lip-sync - publish audio to LiveKit for avatar
       canSubscribe: true,
       canPublishData: true,
     });

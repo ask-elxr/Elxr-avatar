@@ -350,8 +350,10 @@ export class LiveAvatarDriver implements SessionDriver {
             await this.livekitRoom.localParticipant.publishTrack(this.publishedAudioTrack);
             console.log("🎤 Published audio to LiveKit for lip-sync");
           }
-        } catch (pubError) {
-          console.warn("⚠️ Failed to publish audio to LiveKit:", pubError);
+        } catch (pubError: any) {
+          console.warn("⚠️ Failed to publish audio to LiveKit:", pubError?.message || pubError);
+          console.warn("⚠️ LiveKit room state:", this.livekitRoom?.state);
+          console.warn("⚠️ Local participant:", this.livekitRoom?.localParticipant?.identity);
           // Continue with local playback even if publishing fails
         }
       } else {
