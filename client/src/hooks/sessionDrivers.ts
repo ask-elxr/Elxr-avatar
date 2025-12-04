@@ -214,9 +214,10 @@ export class LiveAvatarDriver implements SessionDriver {
     
     console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken });
     
-    // Create LiveAvatarSession with sessionId, sessionToken, and config
-    // SDK signature: new LiveAvatarSession(sessionId: string, sessionToken: string, config?: SessionConfig)
-    const session = new LiveAvatarSession(sessionId, sessionToken, {
+    // Create LiveAvatarSession with sessionAccessToken and config
+    // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
+    // The session_token from API is used as the access token for SDK operations
+    const session = new LiveAvatarSession(sessionToken, {
       voiceChat: true, // Enable voice chat for voice input
     });
     this.session = session;
