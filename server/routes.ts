@@ -325,12 +325,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const apiKey = process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_LIVE_API_KEY || process.env.HEYGEN_API_KEY;
+      // LIVEAVATAR_API_KEY is used for streaming avatar chat
+      const apiKey = process.env.LIVEAVATAR_API_KEY;
       
       // Debug: log which key source is being used
-      const keySource = process.env.LIVEAVATAR_API_KEY ? 'LIVEAVATAR_API_KEY' : 
-                        process.env.HEYGEN_LIVE_API_KEY ? 'HEYGEN_LIVE_API_KEY' : 
-                        process.env.HEYGEN_API_KEY ? 'HEYGEN_API_KEY' : 'none';
+      const keySource = process.env.LIVEAVATAR_API_KEY ? 'LIVEAVATAR_API_KEY' : 'none';
 
       if (!apiKey) {
         log.error("LiveAvatar API key not configured");

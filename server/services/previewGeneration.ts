@@ -7,7 +7,8 @@ import { avatarProfiles } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger";
 
-const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY || process.env.HEYGEN_API_KEY;
+// HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
+const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 
 interface PreviewGenerationResult {
