@@ -23,6 +23,9 @@ interface FileInfo {
   name: string;
   mimeType: string;
   size?: string;
+  uploadable?: boolean;
+  skipReason?: string | null;
+  fileSizeFormatted?: string;
 }
 
 interface UploadStatus {
@@ -87,12 +90,15 @@ export function TopicFolderUpload() {
         headers,
       });
       const filesData = await filesResponse.json();
-      const files: FileInfo[] = filesData.files || [];
+      const allFiles: FileInfo[] = filesData.files || [];
+      
+      // Only upload files that are marked as uploadable
+      const files = allFiles.filter(f => f.uploadable !== false);
 
       if (files.length === 0) {
         toast({
           title: "No files to upload",
-          description: `${folder.name} has no supported files`,
+          description: `${folder.name} has no supported files (${allFiles.length} files skipped due to size or type)`,
           variant: "default",
         });
         setUploadStatuses(prev => ({
@@ -374,36 +380,73 @@ function FolderFiles({ folderId }: { folderId: string }) {
   if (!files || files.length === 0) {
     return (
       <div className="text-center py-4 text-white/50 text-sm">
-        No files found (large files &gt;3MB and archives are filtered out)
+        No files found in this folder
       </div>
     );
   }
 
+  const uploadableFiles = files.filter(f => f.uploadable !== false);
+  const skippedFiles = files.filter(f => f.uploadable === false);
+
   return (
-    <div className="space-y-2 pl-6">
-      <div className="text-xs text-white/40 mb-2">
-        Files under 3MB only (zip/rar excluded)
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {files.slice(0, 10).map(file => (
-          <div 
-            key={file.id} 
-            className="flex items-center gap-2 text-sm text-white/70 py-1"
-            data-testid={`file-item-${file.id}`}
-          >
-            <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
-            <span className="truncate flex-1">{file.name}</span>
-            {file.size && (
-              <span className="text-xs text-white/40 flex-shrink-0">
-                {formatFileSize(file.size)}
-              </span>
-            )}
+    <div className="space-y-3 pl-6">
+      {/* Uploadable files section */}
+      {uploadableFiles.length > 0 && (
+        <div>
+          <div className="text-xs text-green-400/70 mb-2 flex items-center gap-1">
+            <Check className="w-3 h-3" />
+            Ready to upload ({uploadableFiles.length})
           </div>
-        ))}
-      </div>
-      {files.length > 10 && (
-        <div className="text-xs text-white/40">
-          +{files.length - 10} more files
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {uploadableFiles.slice(0, 10).map(file => (
+              <div 
+                key={file.id} 
+                className="flex items-center gap-2 text-sm text-white/70 py-1"
+                data-testid={`file-item-${file.id}`}
+              >
+                <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
+                <span className="truncate flex-1">{file.name}</span>
+                <span className="text-xs text-white/40 flex-shrink-0">
+                  {file.fileSizeFormatted || formatFileSize(file.size)}
+                </span>
+              </div>
+            ))}
+          </div>
+          {uploadableFiles.length > 10 && (
+            <div className="text-xs text-white/40 mt-1">
+              +{uploadableFiles.length - 10} more uploadable files
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Skipped files section */}
+      {skippedFiles.length > 0 && (
+        <div>
+          <div className="text-xs text-orange-400/70 mb-2 flex items-center gap-1">
+            <AlertCircle className="w-3 h-3" />
+            Skipped ({skippedFiles.length})
+          </div>
+          <div className="grid grid-cols-1 gap-1">
+            {skippedFiles.slice(0, 5).map(file => (
+              <div 
+                key={file.id} 
+                className="flex items-center gap-2 text-sm text-white/40 py-1"
+                data-testid={`file-skipped-${file.id}`}
+              >
+                <FileText className="w-3 h-3 text-white/30 flex-shrink-0" />
+                <span className="truncate flex-1">{file.name}</span>
+                <span className="text-xs text-orange-400/50 flex-shrink-0">
+                  {file.skipReason || 'Not supported'}
+                </span>
+              </div>
+            ))}
+          </div>
+          {skippedFiles.length > 5 && (
+            <div className="text-xs text-white/30 mt-1">
+              +{skippedFiles.length - 5} more skipped files
+            </div>
+          )}
         </div>
       )}
     </div>

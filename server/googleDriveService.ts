@@ -429,7 +429,7 @@ export class GoogleDriveService {
       'application/vnd.google-apps.document'
     ];
     
-    // Exclude zip files and other archive types
+    // Exclude zip files and other archive types from upload
     const excludedMimeTypes = [
       'application/zip',
       'application/x-zip-compressed',
@@ -453,25 +453,41 @@ export class GoogleDriveService {
         // Skip folders
         if (file.mimeType === 'application/vnd.google-apps.folder') continue;
         
-        // Skip excluded types (zip, rar, etc.)
-        if (excludedMimeTypes.includes(file.mimeType || '')) continue;
-        if (file.name?.endsWith('.zip') || file.name?.endsWith('.rar') || file.name?.endsWith('.7z')) continue;
-        
-        // Check file size if available
         const fileSize = parseInt(file.size || '0', 10);
-        if (fileSize > maxFileSize) {
-          this.log.debug({ fileName: file.name, fileSize }, 'Skipping large file');
-          continue;
-        }
-        
-        const isSupportedFile = supportedMimeTypes.includes(file.mimeType || '') || 
+        const isArchive = excludedMimeTypes.includes(file.mimeType || '') ||
+          file.name?.endsWith('.zip') || 
+          file.name?.endsWith('.rar') || 
+          file.name?.endsWith('.7z') ||
+          file.name?.endsWith('.gzip') ||
+          file.name?.endsWith('.gz');
+        const isTooLarge = fileSize > maxFileSize;
+        const isSupportedType = supportedMimeTypes.includes(file.mimeType || '') || 
           file.name?.endsWith('.pdf') || 
           file.name?.endsWith('.docx') || 
           file.name?.endsWith('.txt');
         
-        if (isSupportedFile) {
-          allFiles.push(file);
+        // Determine upload eligibility and reason if not eligible
+        let uploadable = true;
+        let skipReason: string | null = null;
+        
+        if (isArchive) {
+          uploadable = false;
+          skipReason = 'Archive file (ZIP/RAR/7z) - cannot extract text';
+        } else if (isTooLarge) {
+          uploadable = false;
+          skipReason = `File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 3MB limit)`;
+        } else if (!isSupportedType) {
+          uploadable = false;
+          skipReason = 'Unsupported file type - only PDF, Word, and text files supported';
         }
+        
+        // Include ALL files with uploadability info
+        allFiles.push({
+          ...file,
+          uploadable,
+          skipReason,
+          fileSizeFormatted: fileSize > 0 ? `${(fileSize / 1024).toFixed(1)}KB` : 'Unknown'
+        });
       }
       
       pageToken = result.nextPageToken || undefined;
