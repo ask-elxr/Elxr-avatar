@@ -1,8 +1,9 @@
-import StreamingAvatar, {
-  AvatarQuality,
-  StreamingEvents,
-  TaskType,
-} from "@heygen/streaming-avatar";
+import { 
+  LiveAvatarSession, 
+  SessionEvent, 
+  AgentEventsEnum,
+  SessionState 
+} from "@heygen/liveavatar-web-sdk";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -27,8 +28,12 @@ interface DriverConfig {
   onUserMessage?: (message: string) => void;
 }
 
-export class HeyGenDriver implements SessionDriver {
-  private avatar: StreamingAvatar | null = null;
+/**
+ * LiveAvatarDriver - Uses the new HeyGen LiveAvatar SDK for streaming avatar sessions
+ * This replaces the older HeyGenDriver that used @heygen/streaming-avatar
+ */
+export class LiveAvatarDriver implements SessionDriver {
+  private session: LiveAvatarSession | null = null;
   private config: DriverConfig;
   private currentAudio: HTMLAudioElement | null = null;
   private useElevenLabsVoice: boolean = false;
@@ -45,115 +50,102 @@ export class HeyGenDriver implements SessionDriver {
                               !!config.avatarConfig.elevenlabsVoiceId;
     
     if (this.useElevenLabsVoice) {
-      console.log(`🎙️ HeyGenDriver: Using ElevenLabs voice with lip-sync for ${config.avatarConfig.name || config.avatarId}`);
+      console.log(`🎙️ LiveAvatarDriver: Using ElevenLabs voice with lip-sync for ${config.avatarConfig.name || config.avatarId}`);
     } else {
-      console.log(`🎙️ HeyGenDriver: Using HeyGen voice for ${config.avatarConfig.name || config.avatarId}`);
+      console.log(`🎙️ LiveAvatarDriver: Using HeyGen voice for ${config.avatarConfig.name || config.avatarId}`);
     }
   }
 
   async start(): Promise<void> {
-    const token = await this.fetchAccessToken();
-    const avatar = new StreamingAvatar({ token });
-    this.avatar = avatar;
+    // Fetch session credentials from the backend
+    const { sessionId, sessionToken } = await this.fetchSessionCredentials();
+    this.sessionId = sessionId;
+    
+    console.log("📋 Creating LiveAvatar session:", { sessionId });
+    
+    // Create LiveAvatarSession with the token
+    const session = new LiveAvatarSession(sessionToken, {
+      voiceChat: true, // Enable voice chat for voice input
+    });
+    this.session = session;
 
-    avatar.on(StreamingEvents.STREAM_READY, async (event) => {
-      console.log("Stream ready:", event.detail);
+    // Listen for stream ready event
+    session.on(SessionEvent.SESSION_STREAM_READY, () => {
+      console.log("🎬 LiveAvatar stream ready");
+      
+      // Attach the video element for the avatar stream
       if (this.config.videoRef.current) {
-        this.config.videoRef.current.srcObject = event.detail;
+        session.attach(this.config.videoRef.current);
         this.config.videoRef.current.play().catch(console.error);
       }
       
       this.config.onStreamReady?.();
     });
 
-    avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-      console.log("Stream disconnected");
+    // Listen for session state changes
+    session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
+      console.log("📊 LiveAvatar session state:", state);
+    });
+
+    // Listen for session disconnected
+    session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
+      console.log("📵 LiveAvatar stream disconnected:", reason);
       this.config.onStreamDisconnected?.();
     });
 
-    // Wire up HeyGen talking events for all avatars
-    // Since we now use avatar.speak(text) for lip-sync for all avatars, 
-    // HeyGen will emit these events for both native voice and ElevenLabs voice modes
-    avatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+    // Listen for avatar talking events
+    session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
+      console.log("🗣️ Avatar started speaking");
       this.config.onAvatarStartTalking?.();
     });
 
-    avatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+    session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+      console.log("🤫 Avatar stopped speaking");
       this.config.onAvatarStopTalking?.();
     });
 
-    avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
-      const userMessage = message?.detail?.message || message?.message || message;
-      if (userMessage && this.config.onUserMessage) {
-        this.config.onUserMessage(userMessage);
+    // Listen for user transcription (voice input)
+    session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
+      console.log("🎤 User transcription:", event.text);
+      if (event.text && this.config.onUserMessage) {
+        this.config.onUserMessage(event.text);
       }
     });
 
-    const avatarStartConfig: any = {
-      quality: this.config.audioOnly ? AvatarQuality.Low : AvatarQuality.High,
-      avatarName: this.config.avatarConfig.heygenAvatarId,
-      language: "en",
-      disableIdleTimeout: true,
-    };
-    
-    // Configure voice for HeyGen session
-    // For avatars with only ElevenLabs voice, we use a fallback voice for session init
-    // Actual audio will come via realtime WebSocket for lip-sync
-    const FALLBACK_HEYGEN_VOICE_ID = "1bd001e7e50f421d891986aad5158bc8"; // Wayne - neutral male voice
-    
-    if (this.config.avatarConfig.heygenVoiceId) {
-      // Use HeyGen's native voice with lip-sync
-      avatarStartConfig.voice = {
-        voiceId: this.config.avatarConfig.heygenVoiceId,
-        rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
-      };
-      console.log(`🎙️ HeyGenDriver: Using HeyGen native voice: ${this.config.avatarConfig.heygenVoiceId}`);
-    } else {
-      // Use fallback voice for session initialization
-      // ElevenLabs audio will be streamed via realtime WebSocket for lip-sync
-      avatarStartConfig.voice = {
-        voiceId: FALLBACK_HEYGEN_VOICE_ID,
-        rate: parseFloat(this.config.avatarConfig.voiceRate || "1.0"),
-      };
-      console.log(`🎙️ HeyGenDriver: Using fallback voice for init, ElevenLabs audio via realtime API`);
-    }
-    
-    const sessionInfo = await avatar.createStartAvatar(avatarStartConfig);
-    console.log("📋 HeyGen session info:", sessionInfo);
-    
-    // Store session ID for reference
-    if (sessionInfo) {
-      this.sessionId = (sessionInfo as any).session_id || (sessionInfo as any).sessionId || null;
-      console.log("📋 Session ID:", this.sessionId);
-    }
+    // Start the session
+    await session.start();
     
     if (this.useElevenLabsVoice) {
-      console.log("✅ HeyGen avatar started - text-based lip-sync with ElevenLabs audio");
+      console.log("✅ LiveAvatar session started - text-based lip-sync with ElevenLabs audio");
+      // Mute the video since we'll play ElevenLabs audio separately
+      if (this.config.videoRef.current) {
+        this.config.videoRef.current.muted = true;
+      }
     } else {
-      console.log("✅ HeyGen avatar started - using native HeyGen voice");
+      console.log("✅ LiveAvatar session started - using native HeyGen voice");
     }
   }
 
   async stop(): Promise<void> {
     this.stopCurrentAudio();
-    if (this.avatar) {
-      await this.avatar.stopAvatar().catch(console.error);
-      this.avatar = null;
+    if (this.session) {
+      await this.session.stop();
+      this.session = null;
     }
   }
 
   setLanguage(languageCode: string): void {
     this.languageCode = languageCode;
-    console.log(`🌐 HeyGenDriver language set to: ${languageCode}`);
+    console.log(`🌐 LiveAvatarDriver language set to: ${languageCode}`);
   }
 
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
-    if (!this.avatar) return;
+    if (!this.session) return;
 
     if (this.useElevenLabsVoice) {
       // For avatars with ElevenLabs voice but no HeyGen voice:
       // 1. Mute HeyGen video to prevent fallback voice from playing
-      // 2. Use avatar.speak(text) to animate the avatar's lips (HeyGen animates from text)
+      // 2. Use session.repeat(text) to animate the avatar's lips
       // 3. Play ElevenLabs audio separately for the actual voice
       console.log("🎙️ Using text-based lip-sync with ElevenLabs audio (HeyGen audio muted)");
       
@@ -162,33 +154,26 @@ export class HeyGenDriver implements SessionDriver {
         this.config.videoRef.current.muted = true;
       }
       
-      // Start lip-sync animation from text (HeyGen will animate but audio is muted)
-      const speakPromise = this.avatar.speak({
-        text,
-        task_type: TaskType.REPEAT,
-      });
+      // Start lip-sync animation from text using repeat (HeyGen will animate)
+      this.session.repeat(text);
       
       // Play ElevenLabs audio for the actual voice
-      this.playElevenLabsAudio(text, languageCodeOverride).catch(console.error);
-      
-      // Wait for lip-sync animation to complete
-      await speakPromise;
+      await this.playElevenLabsAudio(text, languageCodeOverride);
     } else {
-      // Use HeyGen's built-in TTS with lip-sync (for avatars with heygenVoiceId)
+      // Use LiveAvatar's built-in TTS with lip-sync (for avatars with heygenVoiceId)
       // Ensure video is unmuted for native HeyGen voice
       if (this.config.videoRef.current) {
         this.config.videoRef.current.muted = false;
       }
-      await this.avatar.speak({
-        text,
-        task_type: TaskType.REPEAT,
-      });
+      
+      // Use repeat() to make the avatar speak the text
+      this.session.repeat(text);
     }
   }
 
   /**
    * Play ElevenLabs audio for the avatar's voice
-   * This is used alongside avatar.speak(text) for text-based lip-sync
+   * This is used alongside session.repeat(text) for text-based lip-sync
    */
   private async playElevenLabsAudio(text: string, languageCodeOverride?: string): Promise<void> {
     try {
@@ -240,8 +225,8 @@ export class HeyGenDriver implements SessionDriver {
 
   async interrupt(): Promise<void> {
     this.stopCurrentAudio();
-    if (this.avatar) {
-      await this.avatar.interrupt().catch(() => {});
+    if (this.session) {
+      this.session.interrupt();
     }
   }
 
@@ -249,7 +234,7 @@ export class HeyGenDriver implements SessionDriver {
     return true;
   }
 
-  private async fetchAccessToken(): Promise<string> {
+  private async fetchSessionCredentials(): Promise<{ sessionId: string; sessionToken: string }> {
     const response = await fetch("/api/heygen/token", {
       method: "POST",
       headers: {
@@ -262,21 +247,27 @@ export class HeyGenDriver implements SessionDriver {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch access token");
+      throw new Error("Failed to fetch LiveAvatar session credentials");
     }
 
     const data = await response.json();
-    return data.token;
+    return {
+      sessionId: data.sessionId || data.session_id,
+      sessionToken: data.sessionToken || data.session_token,
+    };
   }
 
-  getAvatarInstance(): StreamingAvatar | null {
-    return this.avatar;
+  getSessionInstance(): LiveAvatarSession | null {
+    return this.session;
   }
 
   isUsingElevenLabsVoice(): boolean {
     return this.useElevenLabsVoice;
   }
 }
+
+// Alias for backwards compatibility
+export const HeyGenDriver = LiveAvatarDriver;
 
 export class AudioOnlyDriver implements SessionDriver {
   private config: DriverConfig;

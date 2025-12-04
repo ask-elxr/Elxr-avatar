@@ -56,17 +56,27 @@ import { chatVideoService } from "./services/chatVideo.js";
 import { subscriptionService } from "./services/subscription.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Create circuit breaker for HeyGen API
-  const heygenTokenBreaker = wrapServiceCall(
-    async (apiKey: string) => {
+  // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
+  // LiveAvatar uses a different API endpoint and response format than the old HeyGen Interactive Avatar
+  const liveAvatarTokenBreaker = wrapServiceCall(
+    async (apiKey: string, avatarConfig?: { avatarId?: string; voiceId?: string }) => {
+      // LiveAvatar API endpoint - different from old HeyGen streaming endpoint
       const response = await fetch(
-        "https://api.heygen.com/v1/streaming.create_token",
+        "https://api.liveavatar.com/v1/sessions/token",
         {
           method: "POST",
           headers: {
-            "x-api-key": apiKey,
+            "X-API-KEY": apiKey,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            mode: "FULL",
+            avatar_id: avatarConfig?.avatarId,
+            avatar_persona: avatarConfig?.voiceId ? {
+              voice_id: avatarConfig.voiceId,
+              language: "en"
+            } : undefined
+          }),
         },
       );
 
@@ -75,23 +85,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Log detailed error information
         logger.error({
-          service: 'heygen',
-          operation: 'create_token',
+          service: 'liveavatar',
+          operation: 'create_session_token',
           httpStatus: response.status,
           statusText: response.statusText,
           errorBody: errorText,
           url: response.url,
-        }, 'HeyGen API request failed');
+        }, 'LiveAvatar API request failed');
 
         throw new Error(
-          `HeyGen API error: ${response.status} ${response.statusText} - ${errorText}`,
+          `LiveAvatar API error: ${response.status} ${response.statusText} - ${errorText}`,
         );
       }
 
       return await response.json();
     },
-    "heygen",
-    { timeout: 10000, errorThresholdPercentage: 50 },
+    "liveavatar",
+    { timeout: 15000, errorThresholdPercentage: 50 },
   );
 
   // Auth middleware
@@ -255,18 +265,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Get avatar config for the LiveAvatar session
+      let avatarConfig: { avatarId?: string; voiceId?: string } | undefined;
+      if (avatarId) {
+        const avatar = await getAvatarById(avatarId);
+        if (avatar && avatar.heygenAvatarId) {
+          // Use the HeyGen avatar ID for LiveAvatar sessions
+          // LiveAvatar uses the same avatar IDs as HeyGen Interactive Avatar
+          avatarConfig = {
+            avatarId: avatar.heygenAvatarId,
+            voiceId: avatar.heygenVoiceId || undefined,
+          };
+        }
+      }
+
       log.debug({ 
         keySource,
         keyLength: apiKey.length,
-        keyPrefix: apiKey.substring(0, 8) + '...'
-      }, "Creating HeyGen access token");
+        keyPrefix: apiKey.substring(0, 8) + '...',
+        avatarConfig,
+      }, "Creating LiveAvatar session token");
 
       const startTime = Date.now();
       let tokenData;
       let successful = true;
 
       try {
-        tokenData = await heygenTokenBreaker.execute(apiKey);
+        // Use the new LiveAvatar API endpoint
+        tokenData = await liveAvatarTokenBreaker.execute(apiKey, avatarConfig);
       } catch (error: any) {
         successful = false;
         throw error;
@@ -278,8 +304,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         if (successful) {
           storage.logApiCall({
-            serviceName: 'heygen',
-            endpoint: 'streaming.create_token',
+            serviceName: 'liveavatar',
+            endpoint: 'sessions.token',
             userId: null,
             responseTimeMs: duration,
           }).catch((error) => {
@@ -288,10 +314,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      log.info("HeyGen token created successfully");
+      log.info({ sessionId: tokenData.session_id }, "LiveAvatar session token created successfully");
 
+      // Return both session_id and session_token for the new LiveAvatar SDK
+      // Also return legacy 'token' field for backwards compatibility
       res.json({
-        token: tokenData.data?.token || tokenData.token,
+        sessionId: tokenData.session_id,
+        sessionToken: tokenData.session_token,
+        token: tokenData.session_token, // Legacy compatibility
         ...tokenData,
       });
     } catch (error: any) {
@@ -300,9 +330,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         errorStack: error.stack,
         errorName: error.name,
         fullError: error.toString(),
-      }, "Error creating HeyGen token");
+      }, "Error creating LiveAvatar session token");
       res.status(500).json({
-        error: "Failed to create HeyGen access token",
+        error: "Failed to create LiveAvatar session token",
       });
     }
   });
