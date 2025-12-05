@@ -203,10 +203,12 @@ export class VideoGenerationService {
       // All avatars (public and custom) use production mode for watermark-free videos
       const useTestMode = false;
 
-      // Create voice config - prefer ElevenLabs if avatar has it configured
+      // Create voice config based on useHeygenVoiceForLive toggle
+      // false = use ElevenLabs (default), true = use HeyGen voice
       let voiceConfig: any;
+      const useHeygenVoice = avatar.useHeygenVoiceForLive === true;
       
-      if (avatar.elevenlabsVoiceId && elevenLabsClient) {
+      if (!useHeygenVoice && avatar.elevenlabsVoiceId && elevenLabsClient) {
         // Use ElevenLabs voice - generate audio and upload to HeyGen
         console.log(`🎙️ Using ElevenLabs voice for video (${avatar.name}): ${avatar.elevenlabsVoiceId}`);
         const audioAssetId = await this.generateElevenLabsAudio(
@@ -222,7 +224,7 @@ export class VideoGenerationService {
           };
           console.log(`✅ Using ElevenLabs audio asset: ${audioAssetId}`);
         } else {
-          // If avatar has ElevenLabs configured but it failed, check for HeyGen fallback
+          // If ElevenLabs failed, check for HeyGen fallback
           const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
           if (videoVoiceId) {
             voiceConfig = {
@@ -232,12 +234,11 @@ export class VideoGenerationService {
             };
             console.log(`⚠️ ElevenLabs failed, using avatar's HeyGen voice: ${videoVoiceId}`);
           } else {
-            // No fallback voice available - fail the video generation
             throw new Error(`ElevenLabs audio generation failed for ${avatar.name} and no HeyGen fallback voice is configured`);
           }
         }
-      } else if (avatar.elevenlabsVoiceId && !elevenLabsClient) {
-        // Avatar has ElevenLabs configured but client is not available
+      } else if (!useHeygenVoice && avatar.elevenlabsVoiceId && !elevenLabsClient) {
+        // Avatar wants ElevenLabs but client is not available
         const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
         if (videoVoiceId) {
           voiceConfig = {
@@ -250,7 +251,7 @@ export class VideoGenerationService {
           throw new Error(`ELEVENLABS_API_KEY not configured and no HeyGen fallback voice for ${avatar.name}`);
         }
       } else {
-        // Use HeyGen voice - video-specific voice ID if available
+        // Use HeyGen voice (either by toggle or no ElevenLabs configured)
         const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
         if (!videoVoiceId) {
           throw new Error(`No voice configured for avatar ${avatar.name}. Please set either elevenlabsVoiceId or heygenVideoVoiceId.`);
@@ -262,7 +263,7 @@ export class VideoGenerationService {
           voice_id: videoVoiceId,
         };
         
-        console.log(`🎙️ Using HeyGen voice for video (${avatar.name}): ${videoVoiceId}`);
+        console.log(`🎙️ Using HeyGen voice for video (${avatar.name}): ${videoVoiceId}${useHeygenVoice ? ' (toggle enabled)' : ''}`);
       }
 
       // Detect if this is a Talking Photo (requires different API format)
