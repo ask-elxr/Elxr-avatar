@@ -25,10 +25,14 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   API Endpoint: `POST /api/stt` - Accepts base64 audio, returns transcribed text
     -   UI: Push-to-talk button shown when Web Speech unavailable but MediaRecorder is supported
 -   **Audio/Video Mode Toggle**: Seamless switching between LiveAvatar video and ElevenLabs audio modes, preserving conversation context. An idle timeout is implemented only for video mode.
--   **Real-time Streaming Pipeline** (NEW): Low-latency voice conversation via WebSocket:
-    -   Hook: `client/src/hooks/useStreamingChat.ts` - Captures microphone audio, streams PCM16 binary frames
-    -   WebSocket: `/ws/streaming-chat` - Bidirectional streaming for STT, LLM, and TTS
-    -   Flow: Audio → ElevenLabs STT → Pinecone RAG + Mem0 → OpenAI Realtime API → Streaming TTS chunks
+-   **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket:
+    -   Hook: `client/src/hooks/useStreamingChat.ts` - Captures microphone audio (PCM16 16kHz), streams to server, plays back TTS audio
+    -   WebSocket: `/ws/streaming-chat` - Bidirectional streaming with three concurrent connections per session
+    -   Flow: Microphone → ElevenLabs Streaming STT → Pinecone RAG + Mem0 → OpenAI Realtime API → ElevenLabs Realtime TTS → Web Audio playback
+    -   **STT Stream**: Binary PCM16 audio chunks sent to ElevenLabs at 16kHz, partial and final transcripts returned
+    -   **LLM Stream**: OpenAI Realtime API processes text with RAG context, streams response word-by-word
+    -   **TTS Stream**: ElevenLabs Realtime TTS WebSocket (`stream-input` endpoint) receives text chunks, returns base64 PCM audio at 24kHz
+    -   **Audio Playback**: Web Audio API with scheduled buffer sources for gapless playback, PCM16→Float32 conversion
 
 #### Backend (Express + TypeScript + Python)
 -   **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
