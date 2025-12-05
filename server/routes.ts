@@ -6879,6 +6879,15 @@ This applies to EVERY response, regardless of conversation length.`;
   );
 
   const httpServer = createServer(app);
+  
+  // Setup streaming WebSocket for real-time STT and LLM responses
+  const { WebSocketServer } = await import('ws');
+  const { setupStreamingWebSocket } = await import('./streamingService.js');
+  
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws/streaming-chat' });
+  setupStreamingWebSocket(wss);
+  logger.info('Streaming WebSocket server initialized on /ws/streaming-chat');
+  
   return httpServer;
 }
 
