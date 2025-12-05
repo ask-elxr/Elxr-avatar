@@ -583,6 +583,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (avatarId) {
         const avatar = await getAvatarById(avatarId);
         if (avatar) {
+          // Check if video mode is enabled for this avatar
+          if (avatar.enableVideoMode === false) {
+            log.warn({ avatarId, userId }, "Video mode disabled for this avatar");
+            return res.status(403).json({
+              error: "Video mode is not enabled for this avatar",
+              avatarId,
+            });
+          }
+          
           // Prefer liveAvatarId for LiveAvatar sessions (new platform)
           // Fall back to heygenAvatarId for legacy compatibility
           const liveAvatarAvatarId = avatar.liveAvatarId || avatar.heygenAvatarId;
@@ -742,6 +751,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (pendingConfirmation) {
           // Check if user is confirming
           if (isVideoConfirmation(message)) {
+            // Verify video creation is still enabled for this avatar
+            if (avatarConfig.enableVideoCreation === false) {
+              clearPendingVideoConfirmation(userId);
+              log.info({ avatarId }, "Video creation disabled, cancelling pending confirmation");
+              const disabledMsg = "Sorry, video creation is currently not available for this avatar. How else can I help you?";
+              const audioBuffer = await elevenlabsService.generateSpeech(disabledMsg, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
+              res.setHeader("Content-Type", "audio/mpeg");
+              res.setHeader("Content-Length", audioBuffer.length.toString());
+              return res.send(audioBuffer);
+            }
+            
             clearPendingVideoConfirmation(userId);
             console.log(`✅ VIDEO CONFIRMED - Creating video about: "${pendingConfirmation.topic}"`);
             if (pendingConfirmation.imageBase64) {
@@ -830,7 +850,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const videoIntent = await detectVideoIntent(message);
       log.info({ videoIntent }, "Video intent detection result");
       
-      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
+      // Only process video intent if video creation is enabled for this avatar
+      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId && avatarConfig.enableVideoCreation !== false) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
         // Store pending confirmation instead of immediately generating
@@ -853,6 +874,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader("X-Video-Pending-Confirmation", "true");
         res.setHeader("X-Video-Topic", encodeURIComponent(topic || ""));
         return res.send(audioBuffer);
+      } else if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && avatarConfig.enableVideoCreation === false) {
+        log.info({ avatarId }, "Video creation disabled for this avatar, continuing with normal chat");
       }
 
       // ⚡ PARALLEL DATA FETCHING - Fetch memory and knowledge at the same time
@@ -2856,6 +2879,19 @@ This appears to be your first conversation with this person - no prior memories 
         if (pendingConfirmation) {
           // Check if user is confirming
           if (isVideoConfirmation(message)) {
+            // Verify video creation is still enabled for this avatar
+            if (avatarConfig.enableVideoCreation === false) {
+              clearPendingVideoConfirmation(userId);
+              logger.info({ avatarId }, "Video creation disabled, cancelling pending confirmation");
+              return res.json({
+                success: true,
+                message,
+                knowledgeResponse: "Sorry, video creation is currently not available for this avatar. How else can I help you?",
+                personalityUsed: avatarConfig.personalityPrompt,
+                usedClaude: false,
+              });
+            }
+            
             clearPendingVideoConfirmation(userId);
             console.log(`✅ VIDEO CONFIRMED (video mode) - Creating video about: "${pendingConfirmation.topic}"`);
             if (pendingConfirmation.imageBase64) {
@@ -2934,8 +2970,9 @@ This appears to be your first conversation with this person - no prior memories 
       }
 
       // Check for video request intent (video mode doesn't have image data in request)
+      // Only process if video creation is enabled for this avatar
       const videoIntent = await detectVideoIntent(message);
-      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
+      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId && avatarConfig.enableVideoCreation !== false) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
         // Store pending confirmation (no image data in video mode endpoint)
@@ -2953,6 +2990,8 @@ This appears to be your first conversation with this person - no prior memories 
           videoPendingConfirmation: true,
           videoTopic: topic,
         });
+      } else if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && avatarConfig.enableVideoCreation === false) {
+        logger.info({ avatarId }, "Video creation disabled for this avatar (video mode), continuing with normal chat");
       }
 
       // Update session activity to prevent premature cleanup
@@ -3628,6 +3667,20 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         if (pendingConfirmation) {
           // Check if user is confirming
           if (isVideoConfirmation(message)) {
+            // Verify video creation is still enabled for this avatar
+            if (avatarConfig.enableVideoCreation === false) {
+              clearPendingVideoConfirmation(userId);
+              log.info({ avatarId }, "Video creation disabled, cancelling pending confirmation");
+              res.setHeader('Content-Type', 'text/event-stream');
+              res.setHeader('Cache-Control', 'no-cache');
+              res.setHeader('Connection', 'keep-alive');
+              res.setHeader('X-Accel-Buffering', 'no');
+              const disabledMsg = "Sorry, video creation is currently not available for this avatar. How else can I help you?";
+              res.write(`event: sentence\ndata: ${JSON.stringify({ content: disabledMsg })}\n\n`);
+              res.write(`event: done\ndata: ${JSON.stringify({ fullResponse: disabledMsg })}\n\n`);
+              return res.end();
+            }
+            
             clearPendingVideoConfirmation(userId);
             console.log(`✅ VIDEO CONFIRMED (streaming mode) - Creating video about: "${pendingConfirmation.topic}"`);
             if (pendingConfirmation.imageBase64) {
@@ -3712,8 +3765,9 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       }
 
       // Check for video request intent (streaming mode)
+      // Only process if video creation is enabled for this avatar
       const videoIntent = await detectVideoIntent(message);
-      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId) {
+      if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && userId && avatarConfig.enableVideoCreation !== false) {
         const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
         
         // Store pending confirmation with image data if available
@@ -3734,6 +3788,8 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
           videoTopic: topic
         })}\n\n`);
         return res.end();
+      } else if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7 && avatarConfig.enableVideoCreation === false) {
+        log.info({ avatarId }, "Video creation disabled for this avatar (streaming mode), continuing with normal chat");
       }
 
       // Set up SSE headers
