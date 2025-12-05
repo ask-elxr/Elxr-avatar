@@ -6884,22 +6884,32 @@ This applies to EVERY response, regardless of conversation length.`;
   // Use noServer mode to avoid interfering with Vite's HMR WebSocket
   const { WebSocketServer } = await import('ws');
   const { setupStreamingWebSocket } = await import('./streamingService.js');
+  const { initWebRTCStreamingServer } = await import('./webrtcStreamingService.js');
   
   const wss = new WebSocketServer({ noServer: true });
   setupStreamingWebSocket(wss);
   
-  // Handle WebSocket upgrades manually for our streaming endpoint only
+  // Setup WebRTC streaming WebSocket (using LiveKit for transport)
+  const webrtcWss = new WebSocketServer({ noServer: true });
+  initWebRTCStreamingServer(webrtcWss);
+  
+  // Handle WebSocket upgrades manually for our streaming endpoints only
   httpServer.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url || '', `http://${request.headers.host}`);
     if (url.pathname === '/ws/streaming-chat') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
       });
+    } else if (url.pathname === '/ws/webrtc-streaming') {
+      webrtcWss.handleUpgrade(request, socket, head, (ws) => {
+        webrtcWss.emit('connection', ws, request);
+      });
     }
     // Let other upgrade requests (like Vite HMR) pass through to their handlers
   });
   
   logger.info('Streaming WebSocket server initialized on /ws/streaming-chat');
+  logger.info('WebRTC streaming WebSocket server initialized on /ws/webrtc-streaming');
   
   return httpServer;
 }

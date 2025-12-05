@@ -33,6 +33,12 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   **LLM Stream**: OpenAI Realtime API processes text with RAG context, streams response word-by-word
     -   **TTS Stream**: ElevenLabs Realtime TTS WebSocket (`stream-input` endpoint) receives text chunks, returns base64 PCM audio at 24kHz
     -   **Audio Playback**: Web Audio API with scheduled buffer sources for gapless playback, PCM16→Float32 conversion
+-   **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency:
+    -   Hook: `client/src/hooks/useWebRTCStreaming.ts` - Joins LiveKit room, publishes mic track, subscribes to agent audio
+    -   Service: `server/webrtcStreamingService.ts` - Bridges LiveKit to ElevenLabs STT/TTS and Claude AI
+    -   WebSocket: `/ws/webrtc-streaming` - Control channel for session management and transcript events
+    -   Flow: LiveKit audio track → ElevenLabs STT → Pinecone RAG + Mem0 → Claude AI → ElevenLabs TTS → Web Audio playback
+    -   Benefits: NAT traversal via STUN/TURN, better audio quality, lower latency than WebSocket
 
 #### Backend (Express + TypeScript + Python)
 -   **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
