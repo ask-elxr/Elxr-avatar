@@ -4,9 +4,53 @@ interface AudioVideoToggleProps {
   isVideoMode: boolean;
   onToggle: (isVideo: boolean) => void;
   disabled?: boolean;
+  enableAudioMode?: boolean;
+  enableVideoMode?: boolean;
 }
 
-export function AudioVideoToggle({ isVideoMode, onToggle, disabled = false }: AudioVideoToggleProps) {
+export function AudioVideoToggle({ 
+  isVideoMode, 
+  onToggle, 
+  disabled = false,
+  enableAudioMode = true,
+  enableVideoMode = true,
+}: AudioVideoToggleProps) {
+  // If both modes disabled or only one mode available, don't show toggle
+  const bothDisabled = !enableAudioMode && !enableVideoMode;
+  const onlyAudio = enableAudioMode && !enableVideoMode;
+  const onlyVideo = !enableAudioMode && enableVideoMode;
+  
+  // Don't render if both disabled
+  if (bothDisabled) {
+    return null;
+  }
+  
+  // If only one mode available, show a label instead of toggle
+  if (onlyAudio) {
+    return (
+      <div 
+        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20"
+        data-testid="audio-video-toggle"
+      >
+        <Volume2 className="w-4 h-4 text-white mr-2" />
+        <span className="text-sm font-medium text-white">Audio Only</span>
+      </div>
+    );
+  }
+  
+  if (onlyVideo) {
+    return (
+      <div 
+        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20"
+        data-testid="audio-video-toggle"
+      >
+        <Video className="w-4 h-4 text-white mr-2" />
+        <span className="text-sm font-medium text-white">Video Only</span>
+      </div>
+    );
+  }
+  
+  // Both modes available - show full toggle
   return (
     <div 
       className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full p-1 border border-white/20"

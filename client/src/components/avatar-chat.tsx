@@ -60,6 +60,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [elevenLabsLanguage, setElevenLabsLanguage] = useState("en");
+  const [avatarCapabilities, setAvatarCapabilities] = useState({
+    enableAudioMode: true,
+    enableVideoMode: true,
+    enableVideoCreation: true,
+  });
   const [pendingVideos, setPendingVideos] = useState<ChatGeneratedVideo[]>([]);
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
   const [attachedImage, setAttachedImage] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
@@ -87,18 +92,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setMemoryEnabled(memoryPref === 'true');
   }, []);
 
-  // Load avatar's language settings when avatar changes
+  // Load avatar's language settings and capabilities when avatar changes
   useEffect(() => {
     const abortController = new AbortController();
     const avatarIdAtFetch = selectedAvatarId;
     
-    const loadAvatarLanguage = async () => {
+    const loadAvatarConfig = async () => {
       try {
         const response = await fetch(`/api/avatar/config/${avatarIdAtFetch}`, {
           signal: abortController.signal
         });
         if (response.ok && avatarIdAtFetch === selectedAvatarId) {
           const avatar = await response.json();
+          // Load language settings
           if (avatar.languageCode) {
             setSelectedLanguage(avatar.languageCode);
             console.log(`🌐 Loaded avatar language: ${avatar.languageCode}`);
@@ -110,14 +116,31 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           } else {
             setElevenLabsLanguage("en");
           }
+          // Load capability settings
+          const capabilities = {
+            enableAudioMode: avatar.enableAudioMode ?? true,
+            enableVideoMode: avatar.enableVideoMode ?? true,
+            enableVideoCreation: avatar.enableVideoCreation ?? true,
+          };
+          setAvatarCapabilities(capabilities);
+          console.log(`🎛️ Loaded avatar capabilities:`, capabilities);
+          
+          // If current mode is disabled, switch to an available mode
+          if (audioOnly && !capabilities.enableAudioMode && capabilities.enableVideoMode) {
+            setAudioOnly(false);
+            console.log(`🔄 Audio disabled for ${avatarIdAtFetch}, switching to video mode`);
+          } else if (!audioOnly && !capabilities.enableVideoMode && capabilities.enableAudioMode) {
+            setAudioOnly(true);
+            console.log(`🔄 Video disabled for ${avatarIdAtFetch}, switching to audio mode`);
+          }
         }
       } catch (error: any) {
         if (error.name !== 'AbortError') {
-          console.warn("Failed to load avatar language settings:", error);
+          console.warn("Failed to load avatar config:", error);
         }
       }
     };
-    loadAvatarLanguage();
+    loadAvatarConfig();
     
     return () => {
       abortController.abort();
@@ -514,6 +537,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     const newAudioOnly = !isVideoMode;
     const previousAudioOnly = audioOnly;
     
+    // Check if the requested mode is enabled
+    if (isVideoMode && !avatarCapabilities.enableVideoMode) {
+      toast({
+        variant: "destructive",
+        title: "Video mode unavailable",
+        description: "Video mode is not enabled for this avatar.",
+      });
+      return;
+    }
+    if (!isVideoMode && !avatarCapabilities.enableAudioMode) {
+      toast({
+        variant: "destructive",
+        title: "Audio mode unavailable",
+        description: "Audio mode is not enabled for this avatar.",
+      });
+      return;
+    }
+    
     // If session is active, switch transport layer without restarting session
     if (sessionActive) {
       setIsModeSwitching(true);
@@ -643,6 +684,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   isVideoMode={!audioOnly}
                   onToggle={handleModeToggle}
                   disabled={isModeSwitching || isLoading}
+                  enableAudioMode={avatarCapabilities.enableAudioMode}
+                  enableVideoMode={avatarCapabilities.enableVideoMode}
                 />
                 <LanguageSelector
                   selectedLanguage={selectedLanguage}
