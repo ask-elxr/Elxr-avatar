@@ -138,9 +138,10 @@ export class LiveAvatarDriver implements SessionDriver {
         // Create LiveAvatarSession with sessionAccessToken and config
         // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
         // The SDK handles LiveKit connection internally when session.start() is called
-        // NOTE: Do NOT override apiUrl - SDK uses its own internal endpoint. Overriding causes 404 errors.
+        // NOTE: LiveAvatar is a separate service from HeyGen - must use LiveAvatar API endpoint
         const session = new LiveAvatarSession(sessionToken, {
           voiceChat: false, // Disable SDK's voice chat - we use our own Claude + ElevenLabs pipeline
+          apiUrl: "https://api.liveavatar.com", // LiveAvatar service endpoint (different from HeyGen)
         });
         this.session = session;
 
