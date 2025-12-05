@@ -159,6 +159,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   heygenVideoVoiceId: text("heygen_video_voice_id"), // Separate voice ID for video generation
   heygenKnowledgeId: text("heygen_knowledge_id"),
   elevenlabsVoiceId: text("elevenlabs_voice_id"),
+  useHeygenVoiceForLive: boolean("use_heygen_voice_for_live").default(false).notNull(), // Toggle between HeyGen voice (session.repeat) and ElevenLabs voice (session.repeatAudio) for live chat
   voiceRate: text("voice_rate").default("1.0"),
   // Language configuration
   languageCode: text("language_code").default("en-US"), // BCP-47 language code for HeyGen & speech recognition (e.g., "en-US", "es-ES", "fr-FR")

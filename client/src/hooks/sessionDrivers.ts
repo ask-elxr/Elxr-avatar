@@ -37,7 +37,7 @@ export class LiveAvatarDriver implements SessionDriver {
   private session: LiveAvatarSession | null = null;
   private config: DriverConfig;
   private currentAudio: HTMLAudioElement | null = null;
-  private useElevenLabsVoice: boolean = true; // Always use ElevenLabs in CUSTOM mode
+  private useHeygenVoice: boolean = false; // Toggle between HeyGen voice (repeat) and ElevenLabs voice (repeatAudio)
   private languageCode: string = "en";
   private sessionId: string | null = null;
   private videoAttached: boolean = false;
@@ -47,7 +47,11 @@ export class LiveAvatarDriver implements SessionDriver {
     this.config = config;
     this.languageCode = config.languageCode || "en";
     
-    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice with SDK lip-sync for ${config.avatarConfig.name || config.avatarId}`);
+    // Check avatar config for voice source preference
+    this.useHeygenVoice = config.avatarConfig?.useHeygenVoiceForLive === true;
+    
+    const voiceSource = this.useHeygenVoice ? "HeyGen voice (session.repeat)" : "ElevenLabs voice (session.repeatAudio)";
+    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ${voiceSource} for ${config.avatarConfig.name || config.avatarId}`);
   }
 
   /**
@@ -208,20 +212,40 @@ export class LiveAvatarDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     if (!this.session) return;
 
-    // In CUSTOM mode, get ElevenLabs audio and send to SDK for lip-sync
-    // SDK handles audio playback through WebRTC - video element must NOT be muted
-    console.log("🎙️ CUSTOM mode: Getting ElevenLabs audio for SDK lip-sync");
-    
     // Ensure video is unmuted - SDK plays audio through WebRTC stream
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
     }
     
-    await this.sendAudioToSDKForLipSync(text, languageCodeOverride);
+    if (this.useHeygenVoice) {
+      // Use HeyGen's built-in voice via session.repeat(text)
+      console.log("🎙️ CUSTOM mode: Using HeyGen voice via session.repeat()");
+      await this.speakWithHeygenVoice(text);
+    } else {
+      // Use ElevenLabs voice via session.repeatAudio(base64)
+      console.log("🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()");
+      await this.speakWithElevenLabsVoice(text, languageCodeOverride);
+    }
   }
 
   /**
-   * Send ElevenLabs audio to SDK for lip-sync
+   * Speak using HeyGen's built-in voice
+   * Uses session.repeat(text) - HeyGen handles TTS and lip-sync
+   */
+  private async speakWithHeygenVoice(text: string): Promise<void> {
+    try {
+      if (this.session) {
+        console.log(`🗣️ HeyGen voice speaking: "${text.substring(0, 50)}..."`);
+        this.session.repeat(text);
+        console.log("🔊 Text sent to HeyGen for TTS and lip-sync");
+      }
+    } catch (error) {
+      console.error("Error speaking with HeyGen voice:", error);
+    }
+  }
+
+  /**
+   * Speak using ElevenLabs voice with SDK lip-sync
    * SDK handles both lip-sync animation AND audio playback through WebRTC
    * 
    * CRITICAL: SDK requires PCM 24kHz base64 audio format
@@ -229,7 +253,7 @@ export class LiveAvatarDriver implements SessionDriver {
    * 
    * Following official demo pattern: just call repeatAudio() - SDK handles everything
    */
-  private async sendAudioToSDKForLipSync(text: string, languageCodeOverride?: string): Promise<void> {
+  private async speakWithElevenLabsVoice(text: string, languageCodeOverride?: string): Promise<void> {
     try {
       // Get base64 PCM audio from ElevenLabs (SDK-compatible format)
       const response = await fetch("/api/elevenlabs/tts-base64", {
@@ -263,7 +287,7 @@ export class LiveAvatarDriver implements SessionDriver {
       }
       
     } catch (error) {
-      console.error("Error sending audio to SDK:", error);
+      console.error("Error speaking with ElevenLabs voice:", error);
     }
   }
 
@@ -334,7 +358,7 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   isUsingElevenLabsVoice(): boolean {
-    return this.useElevenLabsVoice;
+    return !this.useHeygenVoice;
   }
 }
 
