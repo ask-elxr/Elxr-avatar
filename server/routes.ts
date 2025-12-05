@@ -600,15 +600,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           streamingPlatform = (avatar.streamingPlatform as 'liveavatar' | 'heygen') || 'liveavatar';
           useHeygenVoiceForInteractive = avatar.useHeygenVoiceForInteractive || false;
           
-          // Select avatar ID based on streaming platform
-          let selectedAvatarId: string | null = null;
-          if (streamingPlatform === 'liveavatar') {
-            // LiveAvatar platform: prefer liveAvatarId, fallback to heygenAvatarId
-            selectedAvatarId = avatar.liveAvatarId || avatar.heygenAvatarId;
-          } else {
-            // HeyGen platform: prefer heygenAvatarId, fallback to liveAvatarId
-            selectedAvatarId = avatar.heygenAvatarId || avatar.liveAvatarId;
-          }
+          // For LiveAvatar API: ALWAYS use liveAvatarId (API only accepts LiveAvatar-specific IDs)
+          // The platform setting is for future HeyGen streaming API support
+          // HeyGen avatar IDs (heygenAvatarId) are NOT compatible with LiveAvatar API
+          let selectedAvatarId: string | null = avatar.liveAvatarId || avatar.heygenAvatarId;
           
           if (selectedAvatarId) {
             avatarConfig = {
