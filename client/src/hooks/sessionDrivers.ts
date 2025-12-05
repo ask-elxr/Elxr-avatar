@@ -48,7 +48,8 @@ export class LiveAvatarDriver implements SessionDriver {
     this.languageCode = config.languageCode || "en";
     
     // Check avatar config for voice source preference
-    this.useHeygenVoice = config.avatarConfig?.useHeygenVoiceForLive === true;
+    // Use the INTERACTIVE voice setting (not the video creation one)
+    this.useHeygenVoice = config.avatarConfig?.useHeygenVoiceForInteractive === true;
     
     const voiceSource = this.useHeygenVoice ? "HeyGen voice (session.repeat)" : "ElevenLabs voice (session.repeatAudio)";
     console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ${voiceSource} for ${config.avatarConfig.name || config.avatarId}`);

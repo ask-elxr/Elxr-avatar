@@ -895,6 +895,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // ⚡ PARALLEL DATA FETCHING - Fetch memory and knowledge at the same time
+      const requestStartTime = Date.now();
+      const timings: Record<string, number> = {};
+      
       const perfStart = Date.now();
       const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
       
@@ -971,6 +974,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       const dataFetchTime = Date.now() - perfStart;
+      timings.dataFetch = dataFetchTime;
       log.info({ dataFetchMs: dataFetchTime }, "Parallel data fetch completed");
 
       // Process results
@@ -1137,6 +1141,7 @@ This appears to be your first conversation with this person - no prior memories 
 
       // Generate Claude response with enhanced personality
       // isVoiceMode=true for audio mode - ensures ultra-concise responses (1-2 sentences, <30 words)
+      const claudeStart = Date.now();
       const claudeResponseResult = await claudeService.generateEnhancedResponse(
         message || 'What do you see in this image?', // Default message if only image is provided
         knowledgeContext,
@@ -1148,6 +1153,8 @@ This appears to be your first conversation with this person - no prior memories 
         imageMimeType // Image MIME type
       );
 
+      timings.claude = Date.now() - claudeStart;
+      
       const responseText = typeof claudeResponseResult === 'string' 
         ? claudeResponseResult 
         : ((claudeResponseResult as any)?.text || "");
@@ -1186,9 +1193,20 @@ This appears to be your first conversation with this person - no prior memories 
       }
 
       log.debug({ textLength: responseText.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating TTS audio");
+      const ttsStart = Date.now();
       const audioBuffer = await elevenlabsService.generateSpeech(responseText, avatarConfig.elevenlabsVoiceId, effectiveLanguageCode);
+      timings.elevenlabs = Date.now() - ttsStart;
 
       log.info({ audioSize: audioBuffer.length }, "Audio generated successfully");
+      
+      // Calculate total request time and log detailed timing breakdown
+      timings.total = Date.now() - requestStartTime;
+      console.log(`\n⏱️ RESPONSE TIMING BREAKDOWN:`);
+      console.log(`   📊 Data Fetch (Memory + Pinecone + History): ${timings.dataFetch}ms`);
+      console.log(`   🤖 Claude AI Response: ${timings.claude}ms`);
+      console.log(`   🔊 ElevenLabs TTS: ${timings.elevenlabs}ms`);
+      console.log(`   ⏰ TOTAL: ${timings.total}ms`);
+      log.info({ timings }, "Request timing breakdown");
       console.log(`🔊 Audio generated: ${(audioBuffer.length / 1024).toFixed(1)} KB`);
       console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
 
