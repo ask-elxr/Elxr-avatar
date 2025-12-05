@@ -172,13 +172,17 @@ export class LiveAvatarDriver implements SessionDriver {
 
     // Start the session - SDK handles LiveKit connection internally
     console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
-    await session.start();
-    console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
-    
-    // Mute the video element since we play ElevenLabs audio separately
-    if (this.config.videoRef.current) {
-      this.config.videoRef.current.muted = true;
+    try {
+      await session.start();
+      console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
+    } catch (startError: any) {
+      console.error("❌ Error starting LiveAvatar session:", startError?.message || startError, startError);
+      // Re-throw to let the caller handle it
+      throw startError;
     }
+    
+    // Note: Do NOT mute the video element - SDK handles audio through WebRTC stream
+    // The attachVideoWithRetry method sets muted=false for SDK audio playback
     console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
   }
 

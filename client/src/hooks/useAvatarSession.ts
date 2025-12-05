@@ -1609,6 +1609,10 @@ export function useAvatarSession({
       
       try {
         setIsLoading(true);
+        
+        // Small delay to ensure video element is rendered and DOM is updated
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Pass skipGreeting=true for seamless mode switch - conversation is already in progress
         await startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true });
         setIsLoading(false);
