@@ -1442,6 +1442,126 @@ This appears to be your first conversation with this person - no prior memories 
     }
   });
 
+  // Speech-to-Text endpoint for mobile browsers that don't support Web Speech API
+  // Uses ElevenLabs Scribe v1 for transcription
+  // Protected by session-based rate limiting and daily quotas
+  const sttRateLimitMap = new Map<string, { count: number; resetTime: number }>();
+  const sttDailyQuotaMap = new Map<string, { count: number; resetDay: number }>();
+  const STT_RATE_LIMIT = 20; // Max 20 requests per minute (stricter for STT)
+  const STT_RATE_WINDOW = 60 * 1000; // 1 minute window
+  const STT_DAILY_QUOTA = 200; // Max 200 transcriptions per day per session
+
+  app.post("/api/stt", async (req: any, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "speechToText" });
+    
+    try {
+      // Get session ID - prefer Memberstack, then anonymous session, then generate temporary
+      const sessionId = req.session?.memberstackId || req.session?.anonymousId;
+      
+      // Require a valid session for STT access (prevents totally anonymous abuse)
+      if (!sessionId) {
+        log.warn({ ip: req.ip }, "STT request without session ID rejected");
+        return res.status(401).json({ 
+          error: "Session required for voice input. Please refresh the page." 
+        });
+      }
+      
+      // Rate limiting based on session ID (not IP, since sessions are more reliable)
+      const rateLimitKey = sessionId;
+      const now = Date.now();
+      const currentDay = Math.floor(now / (24 * 60 * 60 * 1000)); // Day number
+      
+      // Check daily quota first
+      const dailyQuota = sttDailyQuotaMap.get(rateLimitKey);
+      if (dailyQuota) {
+        if (dailyQuota.resetDay === currentDay) {
+          if (dailyQuota.count >= STT_DAILY_QUOTA) {
+            log.warn({ rateLimitKey, count: dailyQuota.count }, "STT daily quota exceeded");
+            return res.status(429).json({ 
+              error: "Daily voice input limit reached. Please try again tomorrow or type your messages." 
+            });
+          }
+        } else {
+          // New day, reset quota
+          sttDailyQuotaMap.set(rateLimitKey, { count: 0, resetDay: currentDay });
+        }
+      } else {
+        sttDailyQuotaMap.set(rateLimitKey, { count: 0, resetDay: currentDay });
+      }
+      
+      // Check per-minute rate limit
+      const rateLimit = sttRateLimitMap.get(rateLimitKey);
+      if (rateLimit) {
+        if (now < rateLimit.resetTime) {
+          if (rateLimit.count >= STT_RATE_LIMIT) {
+            log.warn({ rateLimitKey, count: rateLimit.count }, "STT rate limit exceeded");
+            return res.status(429).json({ error: "Too many requests. Please wait a moment." });
+          }
+          rateLimit.count++;
+        } else {
+          // Reset window
+          sttRateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + STT_RATE_WINDOW });
+        }
+      } else {
+        sttRateLimitMap.set(rateLimitKey, { count: 1, resetTime: now + STT_RATE_WINDOW });
+      }
+      
+      // Increment daily quota
+      const quota = sttDailyQuotaMap.get(rateLimitKey);
+      if (quota) {
+        quota.count++;
+      }
+
+      // Expect base64 encoded audio in the request body
+      const { audio, mimeType, languageCode } = req.body;
+      
+      if (!audio) {
+        return res.status(400).json({ error: "Audio data is required" });
+      }
+
+      if (!elevenlabsService.isSTTAvailable()) {
+        return res.status(500).json({ error: "ElevenLabs STT service not available" });
+      }
+
+      // Decode base64 audio to buffer
+      const audioBuffer = Buffer.from(audio, 'base64');
+      
+      // Validate audio size (max 10MB to prevent abuse)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (audioBuffer.length > maxSize) {
+        return res.status(400).json({ error: "Audio file too large (max 10MB)" });
+      }
+      
+      log.debug({ 
+        audioSize: audioBuffer.length,
+        mimeType: mimeType || 'audio/webm',
+        languageCode,
+        sessionId
+      }, "Received audio for transcription");
+
+      // Transcribe using ElevenLabs
+      const transcribedText = await elevenlabsService.transcribeSpeech(
+        audioBuffer,
+        mimeType || 'audio/webm',
+        languageCode,
+        sessionId
+      );
+
+      log.info({ 
+        textLength: transcribedText.length,
+        sessionId
+      }, "Audio transcribed successfully");
+
+      res.json({ 
+        success: true, 
+        text: transcribedText 
+      });
+    } catch (error: any) {
+      log.error({ error: error.message, stack: error.stack }, "Error transcribing audio");
+      res.status(500).json({ error: "Failed to transcribe audio" });
+    }
+  });
+
   // Pinecone conversation endpoints
   app.post("/api/conversations", async (req, res) => {
     try {

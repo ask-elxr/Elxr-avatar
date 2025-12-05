@@ -20,6 +20,10 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 -   **Mobile Fullscreen Support**: Adaptive fullscreen modes for iOS Safari, Android Chrome, and a CSS fallback with safe area handling.
 -   **Microphone Permission**: Explicit user permission request for improved UX.
 -   **Voice Recognition**: Throttled auto-restart to prevent rapid restart loops. Recognition pauses during avatar speech and resumes with platform-aware delays.
+-   **Mobile STT Fallback**: ElevenLabs Speech-to-Text API used as fallback for browsers that don't support Web Speech API (e.g., iOS Chrome). Push-to-talk interface for mobile users.
+    -   Hook: `client/src/hooks/useMobileSTT.ts` - MediaRecorder-based audio capture with server-side transcription
+    -   API Endpoint: `POST /api/stt` - Accepts base64 audio, returns transcribed text
+    -   UI: Push-to-talk button shown when Web Speech unavailable but MediaRecorder is supported
 -   **Audio/Video Mode Toggle**: Seamless switching between LiveAvatar video and ElevenLabs audio modes, preserving conversation context. An idle timeout is implemented only for video mode.
 
 #### Backend (Express + TypeScript + Python)

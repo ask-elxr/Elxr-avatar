@@ -389,6 +389,127 @@ class ElevenLabsService {
     
     return hasAvatarCache;
   }
+
+  /**
+   * Transcribe audio to text using ElevenLabs Speech-to-Text API (Scribe v1)
+   * This is used as a fallback for mobile browsers that don't support Web Speech API
+   * @param audioBuffer - Audio data as Buffer (supports various formats: mp3, wav, webm, mp4, etc.)
+   * @param mimeType - MIME type of the audio (e.g., 'audio/webm', 'audio/mp4')
+   * @param languageCode - Optional ISO 639-1 language code (e.g., 'en', 'es')
+   * @param userId - Optional user ID for logging
+   * @returns Transcribed text
+   */
+  async transcribeSpeech(
+    audioBuffer: Buffer,
+    mimeType: string = 'audio/webm',
+    languageCode?: string,
+    userId?: string,
+  ): Promise<string> {
+    if (!this.apiKey) {
+      throw new Error(
+        "ElevenLabs API key not configured - check ELEVENLABS_API_KEY",
+      );
+    }
+
+    const log = logger.child({
+      service: "elevenlabs",
+      operation: "transcribeSpeech",
+      audioSize: audioBuffer.length,
+      mimeType,
+      languageCode,
+      userId,
+    });
+
+    try {
+      log.debug("Transcribing audio with ElevenLabs STT");
+      const startTime = Date.now();
+
+      // Normalize MIME type by removing codec suffix (e.g., 'audio/mp4;codecs=mp4a.40.2' -> 'audio/mp4')
+      const baseMimeType = mimeType.split(';')[0].trim().toLowerCase();
+      
+      // Determine file extension from base MIME type
+      const extensionMap: Record<string, string> = {
+        'audio/webm': 'webm',
+        'audio/mp4': 'm4a',
+        'audio/mpeg': 'mp3',
+        'audio/wav': 'wav',
+        'audio/ogg': 'ogg',
+        'audio/x-m4a': 'm4a',
+        'audio/aac': 'aac',
+      };
+      const extension = extensionMap[baseMimeType] || 'webm';
+      const filename = `audio.${extension}`;
+      
+      log.debug({ originalMimeType: mimeType, baseMimeType, extension }, "Normalized MIME type");
+
+      // Create form data with the audio file
+      const formData = new FormData();
+      
+      // Create a Blob from the buffer for FormData with correct MIME type
+      const audioBlob = new Blob([audioBuffer], { type: mimeType });
+      formData.append('file', audioBlob, filename);
+      formData.append('model_id', 'scribe_v1');
+      
+      if (languageCode) {
+        formData.append('language_code', languageCode);
+      }
+
+      const response = await fetch(
+        'https://api.elevenlabs.io/v1/speech-to-text',
+        {
+          method: 'POST',
+          headers: {
+            'xi-api-key': this.apiKey,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs STT API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      const transcribedText = data.text || '';
+
+      const duration = Date.now() - startTime;
+      log.info(
+        { duration, textLength: transcribedText.length, filename },
+        "Audio transcribed successfully",
+      );
+      
+      // Record metrics
+      metrics.recordElevenLabsTTS(duration); // Reuse TTS metric for now
+
+      // Log API call for cost tracking
+      storage
+        .logApiCall({
+          serviceName: "elevenlabs",
+          endpoint: "speech-to-text",
+          userId: userId || null,
+          responseTimeMs: duration,
+        })
+        .catch((error) => {
+          log.error({ error: error.message }, "Failed to log API call");
+        });
+
+      return transcribedText;
+    } catch (error: any) {
+      log.error(
+        { error: error.message, stack: error.stack },
+        "Error transcribing audio with ElevenLabs",
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Check if STT is available (requires API key)
+   */
+  isSTTAvailable(): boolean {
+    return !!this.apiKey;
+  }
 }
 
 export const elevenlabsService = new ElevenLabsService();
