@@ -117,73 +117,101 @@ export class LiveAvatarDriver implements SessionDriver {
   async start(): Promise<void> {
     console.log("🚀 LiveAvatarDriver.start() called for:", this.config.avatarId);
     
-    // Fetch session credentials from the backend
-    const { sessionId, sessionToken } = await this.fetchSessionCredentials();
-    this.sessionId = sessionId;
+    // Retry logic for transient HeyGen service errors (404/500)
+    const MAX_RETRIES = 1;
+    let lastError: any = null;
     
-    console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken });
-    
-    // Create LiveAvatarSession with sessionAccessToken and config
-    // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
-    // The SDK handles LiveKit connection internally when session.start() is called
-    const session = new LiveAvatarSession(sessionToken, {
-      voiceChat: false, // Disable SDK's voice chat - we use our own Claude + ElevenLabs pipeline
-      apiUrl: "https://api.liveavatar.com",
-    });
-    this.session = session;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`🔄 Retry attempt ${attempt + 1}/${MAX_RETRIES + 1} with fresh token...`);
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+        
+        // Fetch session credentials from the backend (fresh token on each attempt)
+        const { sessionId, sessionToken } = await this.fetchSessionCredentials();
+        this.sessionId = sessionId;
+        
+        console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken, attempt: attempt + 1 });
+        
+        // Create LiveAvatarSession with sessionAccessToken and config
+        // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
+        // The SDK handles LiveKit connection internally when session.start() is called
+        // NOTE: Do NOT override apiUrl - SDK uses its own internal endpoint. Overriding causes 404 errors.
+        const session = new LiveAvatarSession(sessionToken, {
+          voiceChat: false, // Disable SDK's voice chat - we use our own Claude + ElevenLabs pipeline
+        });
+        this.session = session;
 
-    // Listen for stream ready event - this is when we attach the video element
-    session.on(SessionEvent.SESSION_STREAM_READY, () => {
-      console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
-      // Use SDK's attach() method to connect video element
-      // Retry with increasing delays if video element is not yet rendered
-      this.attachVideoWithRetry(5);
-    });
+        // Listen for stream ready event - this is when we attach the video element
+        session.on(SessionEvent.SESSION_STREAM_READY, () => {
+          console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
+          // Use SDK's attach() method to connect video element
+          // Retry with increasing delays if video element is not yet rendered
+          this.attachVideoWithRetry(5);
+        });
 
-    // Listen for session state changes
-    session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
-      console.log("📊 LiveAvatar session state:", state);
-    });
+        // Listen for session state changes
+        session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
+          console.log("📊 LiveAvatar session state:", state);
+        });
 
-    // Listen for session disconnected
-    session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
-      console.log("📵 LiveAvatar stream disconnected:", reason);
-      this.config.onStreamDisconnected?.();
-    });
+        // Listen for session disconnected
+        session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
+          console.log("📵 LiveAvatar stream disconnected:", reason);
+          this.config.onStreamDisconnected?.();
+        });
 
-    // Listen for avatar talking events
-    session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
-      console.log("🗣️ Avatar started speaking");
-      this.config.onAvatarStartTalking?.();
-    });
+        // Listen for avatar talking events
+        session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
+          console.log("🗣️ Avatar started speaking");
+          this.config.onAvatarStartTalking?.();
+        });
 
-    session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
-      console.log("🤫 Avatar stopped speaking");
-      this.config.onAvatarStopTalking?.();
-    });
+        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+          console.log("🤫 Avatar stopped speaking");
+          this.config.onAvatarStopTalking?.();
+        });
 
-    // Listen for user transcription (voice input)
-    session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
-      console.log("🎤 User transcription:", event.text);
-      if (event.text && this.config.onUserMessage) {
-        this.config.onUserMessage(event.text);
+        // Listen for user transcription (voice input)
+        session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
+          console.log("🎤 User transcription:", event.text);
+          if (event.text && this.config.onUserMessage) {
+            this.config.onUserMessage(event.text);
+          }
+        });
+
+        // Start the session - SDK handles LiveKit connection internally
+        console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
+        await session.start();
+        console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
+        
+        // Success - exit retry loop
+        console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
+        return;
+        
+      } catch (startError: any) {
+        lastError = startError;
+        console.error(`❌ Error starting LiveAvatar session (attempt ${attempt + 1}):`, startError?.message || startError, startError);
+        
+        // Clean up failed session before retry
+        if (this.session) {
+          try {
+            await this.session.stop();
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+          this.session = null;
+        }
+        
+        // If this was the last attempt, throw the error
+        if (attempt >= MAX_RETRIES) {
+          throw lastError;
+        }
+        // Otherwise, continue to next retry iteration
       }
-    });
-
-    // Start the session - SDK handles LiveKit connection internally
-    console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
-    try {
-      await session.start();
-      console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
-    } catch (startError: any) {
-      console.error("❌ Error starting LiveAvatar session:", startError?.message || startError, startError);
-      // Re-throw to let the caller handle it
-      throw startError;
     }
-    
-    // Note: Do NOT mute the video element - SDK handles audio through WebRTC stream
-    // The attachVideoWithRetry method sets muted=false for SDK audio playback
-    console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
   }
 
   async stop(): Promise<void> {
