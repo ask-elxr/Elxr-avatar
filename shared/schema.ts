@@ -147,19 +147,26 @@ export type ChatSession = typeof chatSessions.$inferSelect;
 export type InsertJob = z.infer<typeof insertJobSchema>;
 export type Job = typeof jobs.$inferSelect;
 
+// Streaming platform enum for interactive avatars
+export const streamingPlatformEnum = ["liveavatar", "heygen"] as const;
+export type StreamingPlatform = typeof streamingPlatformEnum[number];
+
 export const avatarProfiles = pgTable("avatar_profiles", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description").notNull(),
   profileImageUrl: text("profile_image_url"),
-  heygenAvatarId: text("heygen_avatar_id"),
-  liveAvatarId: text("live_avatar_id"), // LiveAvatar platform ID (different from HeyGen Interactive Avatar ID)
+  // Interactive streaming configuration
+  streamingPlatform: text("streaming_platform").default("liveavatar").notNull(), // 'liveavatar' or 'heygen' for interactive streaming
+  useHeygenVoiceForInteractive: boolean("use_heygen_voice_for_interactive").default(false).notNull(), // Toggle for interactive: false = ElevenLabs, true = HeyGen voice
+  heygenAvatarId: text("heygen_avatar_id"), // HeyGen Streaming Avatar ID (used when platform = heygen)
+  liveAvatarId: text("live_avatar_id"), // LiveAvatar platform ID (used when platform = liveavatar)
   heygenVideoAvatarId: text("heygen_video_avatar_id"), // Separate ID for video generation (Instant Avatars)
-  heygenVoiceId: text("heygen_voice_id"),
+  heygenVoiceId: text("heygen_voice_id"), // HeyGen voice ID for interactive mode (when useHeygenVoiceForInteractive = true)
   heygenVideoVoiceId: text("heygen_video_voice_id"), // Separate voice ID for video generation
   heygenKnowledgeId: text("heygen_knowledge_id"),
-  elevenlabsVoiceId: text("elevenlabs_voice_id"),
-  useHeygenVoiceForLive: boolean("use_heygen_voice_for_live").default(false).notNull(), // Toggle for video generation: false = ElevenLabs voice, true = HeyGen voice (interactive chat always uses ElevenLabs)
+  elevenlabsVoiceId: text("elevenlabs_voice_id"), // ElevenLabs voice ID (used when useHeygenVoiceForInteractive = false)
+  useHeygenVoiceForLive: boolean("use_heygen_voice_for_live").default(false).notNull(), // Toggle for video generation: false = ElevenLabs voice, true = HeyGen voice
   voiceRate: text("voice_rate").default("1.0"),
   // Language configuration
   languageCode: text("language_code").default("en-US"), // BCP-47 language code for HeyGen & speech recognition (e.g., "en-US", "es-ES", "fr-FR")

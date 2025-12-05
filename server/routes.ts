@@ -580,6 +580,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Default to CUSTOM mode (our AI pipeline)
       const mode: 'CUSTOM' | 'FULL' = (req.body.mode as 'CUSTOM' | 'FULL') || 'CUSTOM';
       
+      // Track platform and voice settings for response
+      let streamingPlatform: 'liveavatar' | 'heygen' = 'liveavatar';
+      let useHeygenVoiceForInteractive = false;
+      
       if (avatarId) {
         const avatar = await getAvatarById(avatarId);
         if (avatar) {
@@ -592,22 +596,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
-          // Prefer liveAvatarId for LiveAvatar sessions (new platform)
-          // Fall back to heygenAvatarId for legacy compatibility
-          const liveAvatarAvatarId = avatar.liveAvatarId || avatar.heygenAvatarId;
-          if (liveAvatarAvatarId) {
+          // Get platform and voice settings from avatar config
+          streamingPlatform = (avatar.streamingPlatform as 'liveavatar' | 'heygen') || 'liveavatar';
+          useHeygenVoiceForInteractive = avatar.useHeygenVoiceForInteractive || false;
+          
+          // Select avatar ID based on streaming platform
+          let selectedAvatarId: string | null = null;
+          if (streamingPlatform === 'liveavatar') {
+            // LiveAvatar platform: prefer liveAvatarId, fallback to heygenAvatarId
+            selectedAvatarId = avatar.liveAvatarId || avatar.heygenAvatarId;
+          } else {
+            // HeyGen platform: prefer heygenAvatarId, fallback to liveAvatarId
+            selectedAvatarId = avatar.heygenAvatarId || avatar.liveAvatarId;
+          }
+          
+          if (selectedAvatarId) {
             avatarConfig = {
-              avatarId: liveAvatarAvatarId,
-              voiceId: avatar.heygenVoiceId || undefined,
+              avatarId: selectedAvatarId,
+              voiceId: useHeygenVoiceForInteractive ? (avatar.heygenVoiceId || undefined) : undefined,
               mode,
             };
             log.debug({
               appAvatarId: avatarId,
+              streamingPlatform,
               liveAvatarId: avatar.liveAvatarId,
               heygenAvatarId: avatar.heygenAvatarId,
-              usedId: liveAvatarAvatarId,
+              selectedAvatarId,
+              useHeygenVoiceForInteractive,
               mode,
-            }, 'Resolved avatar ID for LiveAvatar session');
+            }, 'Resolved avatar ID for streaming session');
           }
         }
       } else {
@@ -653,6 +670,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log.info({ 
         sessionId: tokenData?.data?.session_id || tokenData.session_id,
         mode,
+        streamingPlatform,
+        useHeygenVoiceForInteractive,
       }, "LiveAvatar session token created successfully");
 
       // Extract session data from API response (wrapped in 'data' field)
@@ -663,6 +682,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         session_id: sessionData.session_id,
         session_token: sessionData.session_token,
         mode, // Tell frontend which mode is active
+        streamingPlatform, // Tell frontend which platform to use
+        useHeygenVoiceForInteractive, // Tell frontend which voice source to use
         ...sessionData,
       };
       

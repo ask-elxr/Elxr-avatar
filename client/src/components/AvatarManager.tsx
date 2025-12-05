@@ -44,6 +44,8 @@ export function AvatarManager() {
     id: "",
     name: "",
     description: "",
+    streamingPlatform: "liveavatar",
+    useHeygenVoiceForInteractive: false,
     liveAvatarId: null,
     heygenAvatarId: null,
     heygenVoiceId: null,
@@ -143,6 +145,8 @@ export function AvatarManager() {
       name: "",
       description: "",
       profileImageUrl: null,
+      streamingPlatform: "liveavatar",
+      useHeygenVoiceForInteractive: false,
       liveAvatarId: null,
       heygenAvatarId: null,
       heygenVoiceId: null,
@@ -174,6 +178,8 @@ export function AvatarManager() {
       name: avatar.name,
       description: avatar.description,
       profileImageUrl: avatar.profileImageUrl || null,
+      streamingPlatform: avatar.streamingPlatform || "liveavatar",
+      useHeygenVoiceForInteractive: avatar.useHeygenVoiceForInteractive || false,
       liveAvatarId: avatar.liveAvatarId,
       heygenAvatarId: avatar.heygenAvatarId,
       heygenVoiceId: avatar.heygenVoiceId,
@@ -291,6 +297,8 @@ export function AvatarManager() {
       description: formData.description.trim(),
       personalityPrompt: formData.personalityPrompt.trim(),
       profileImageUrl: formData.profileImageUrl?.trim() || null,
+      streamingPlatform: formData.streamingPlatform || "liveavatar",
+      useHeygenVoiceForInteractive: formData.useHeygenVoiceForInteractive || false,
       liveAvatarId: formData.liveAvatarId?.trim() || null,
       heygenAvatarId: formData.heygenAvatarId?.trim() || null,
       heygenVoiceId: formData.heygenVoiceId?.trim() || null,
@@ -510,33 +518,138 @@ export function AvatarManager() {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                   <span className="text-sm font-medium text-blue-400">Interactive Chat Mode</span>
-                  <span className="text-xs text-muted-foreground">(Live video streaming - ElevenLabs voice only)</span>
+                  <span className="text-xs text-muted-foreground">(Live video streaming)</span>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Live Avatar ID */}
-                  <div className="space-y-2">
-                    <Label htmlFor="liveAvatarId" className="text-xs">Live Avatar ID</Label>
-                    <Input
-                      id="liveAvatarId"
-                      value={formData.liveAvatarId || ""}
-                      onChange={(e) => setFormData({ ...formData, liveAvatarId: e.target.value || null })}
-                      placeholder="LiveAvatar or HeyGen avatar ID"
-                      className="text-sm"
-                      data-testid="input-live-avatar-id"
-                    />
+                
+                {/* Platform Selection */}
+                <div className="p-3 rounded-md bg-background/50 border mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <span className="text-xs font-medium">Streaming Platform</span>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.streamingPlatform === "liveavatar" 
+                          ? "Using LiveAvatar platform for interactive streaming" 
+                          : "Using HeyGen Streaming Avatar for interactive streaming"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${formData.streamingPlatform === "liveavatar" ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>LiveAvatar</span>
+                      <Switch
+                        checked={formData.streamingPlatform === "heygen"}
+                        onCheckedChange={(checked) => setFormData({ ...formData, streamingPlatform: checked ? "heygen" : "liveavatar" })}
+                        data-testid="switch-streaming-platform"
+                      />
+                      <span className={`text-xs ${formData.streamingPlatform === "heygen" ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>HeyGen</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Avatar ID based on platform */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  {formData.streamingPlatform === "liveavatar" ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="liveAvatarId" className="text-xs">LiveAvatar ID</Label>
+                      <Input
+                        id="liveAvatarId"
+                        value={formData.liveAvatarId || ""}
+                        onChange={(e) => setFormData({ ...formData, liveAvatarId: e.target.value || null })}
+                        placeholder="LiveAvatar platform ID"
+                        className="text-sm"
+                        data-testid="input-live-avatar-id"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="heygenAvatarId" className="text-xs">HeyGen Streaming Avatar ID</Label>
+                      <Input
+                        id="heygenAvatarId"
+                        value={formData.heygenAvatarId || ""}
+                        onChange={(e) => setFormData({ ...formData, heygenAvatarId: e.target.value || null })}
+                        placeholder="HeyGen streaming avatar ID"
+                        className="text-sm"
+                        data-testid="input-heygen-avatar-id"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Show the other ID field as secondary */}
+                  {formData.streamingPlatform === "liveavatar" ? (
+                    <div className="space-y-2 opacity-40">
+                      <Label htmlFor="heygenAvatarIdAlt" className="text-xs">HeyGen Avatar ID (alternate)</Label>
+                      <Input
+                        id="heygenAvatarIdAlt"
+                        value={formData.heygenAvatarId || ""}
+                        onChange={(e) => setFormData({ ...formData, heygenAvatarId: e.target.value || null })}
+                        placeholder="HeyGen streaming avatar ID"
+                        className="text-sm"
+                        data-testid="input-heygen-avatar-id-alt"
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2 opacity-40">
+                      <Label htmlFor="liveAvatarIdAlt" className="text-xs">LiveAvatar ID (alternate)</Label>
+                      <Input
+                        id="liveAvatarIdAlt"
+                        value={formData.liveAvatarId || ""}
+                        onChange={(e) => setFormData({ ...formData, liveAvatarId: e.target.value || null })}
+                        placeholder="LiveAvatar platform ID"
+                        className="text-sm"
+                        data-testid="input-live-avatar-id-alt"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Voice Source Toggle for Interactive */}
+                <div className="p-3 rounded-md bg-background/50 border">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <span className="text-xs font-medium">Interactive Voice Source</span>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.useHeygenVoiceForInteractive 
+                          ? "Using HeyGen's built-in voice for chat" 
+                          : "Using ElevenLabs voice for chat"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${!formData.useHeygenVoiceForInteractive ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>ElevenLabs</span>
+                      <Switch
+                        checked={formData.useHeygenVoiceForInteractive || false}
+                        onCheckedChange={(checked) => setFormData({ ...formData, useHeygenVoiceForInteractive: checked })}
+                        data-testid="switch-interactive-voice-source"
+                      />
+                      <span className={`text-xs ${formData.useHeygenVoiceForInteractive ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>HeyGen</span>
+                    </div>
                   </div>
                   
-                  {/* ElevenLabs Voice ID */}
-                  <div className="space-y-2">
-                    <Label htmlFor="elevenlabsVoiceIdLive" className="text-xs">ElevenLabs Voice ID</Label>
-                    <Input
-                      id="elevenlabsVoiceIdLive"
-                      value={formData.elevenlabsVoiceId || ""}
-                      onChange={(e) => setFormData({ ...formData, elevenlabsVoiceId: e.target.value || null })}
-                      placeholder="ElevenLabs voice ID"
-                      className="text-sm"
-                      data-testid="input-elevenlabs-voice-id-live"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* ElevenLabs Voice ID - for interactive when using ElevenLabs */}
+                    <div className={`space-y-2 transition-opacity ${formData.useHeygenVoiceForInteractive ? 'opacity-40' : ''}`}>
+                      <Label htmlFor="elevenlabsVoiceIdLive" className="text-xs">ElevenLabs Voice ID</Label>
+                      <Input
+                        id="elevenlabsVoiceIdLive"
+                        value={formData.elevenlabsVoiceId || ""}
+                        onChange={(e) => setFormData({ ...formData, elevenlabsVoiceId: e.target.value || null })}
+                        placeholder="ElevenLabs voice ID"
+                        className="text-sm"
+                        disabled={formData.useHeygenVoiceForInteractive}
+                        data-testid="input-elevenlabs-voice-id-live"
+                      />
+                    </div>
+                    
+                    {/* HeyGen Voice ID - for interactive when using HeyGen */}
+                    <div className={`space-y-2 transition-opacity ${!formData.useHeygenVoiceForInteractive ? 'opacity-40' : ''}`}>
+                      <Label htmlFor="heygenVoiceId" className="text-xs">HeyGen Voice ID</Label>
+                      <Input
+                        id="heygenVoiceId"
+                        value={formData.heygenVoiceId || ""}
+                        onChange={(e) => setFormData({ ...formData, heygenVoiceId: e.target.value || null })}
+                        placeholder="HeyGen voice ID"
+                        className="text-sm"
+                        disabled={!formData.useHeygenVoiceForInteractive}
+                        data-testid="input-heygen-voice-id"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>

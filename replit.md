@@ -36,9 +36,11 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 -   **Two HeyGen API Keys** (clean setup, no legacy fallbacks):
     -   `LIVEAVATAR_API_KEY`: For interactive streaming avatar chat sessions (LiveAvatar platform)
     -   `HEYGEN_VIDEO_API_KEY`: For video generation (courses, chat videos - HeyGen Video API)
--   **Voice Configuration**:
-    -   Interactive Chat Mode: Always uses ElevenLabs voice with SDK lip-sync (no toggle needed)
-    -   Video Creation Mode: Toggle between ElevenLabs and HeyGen voices via `useHeygenVoiceForLive` field
+-   **Platform & Voice Configuration**:
+    -   **Streaming Platform Selection**: Per-avatar toggle between LiveAvatar and HeyGen platforms via `streamingPlatform` field ('liveavatar' | 'heygen')
+    -   **Interactive Voice Toggle**: Per-avatar voice source selection via `useHeygenVoiceForInteractive` (false = ElevenLabs, true = HeyGen voice)
+    -   **Video Creation Voice Toggle**: Toggle between ElevenLabs and HeyGen voices via `useHeygenVoiceForLive` field
+    -   **Avatar ID Selection**: Platform-aware ID selection (liveAvatarId for LiveAvatar, heygenAvatarId for HeyGen)
 -   **Avatar Service**: Handles field-level merging where database values override defaults and manages active/inactive avatars.
 -   **Auto-Reconnection**: HeyGen WebRTC sessions automatically retry on disconnection.
 
