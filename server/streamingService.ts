@@ -8,17 +8,21 @@ import { storage } from './storage';
 const log = logger.child({ service: 'streaming' });
 
 const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/realtime';
+const ELEVENLABS_TTS_URL = 'wss://api.elevenlabs.io/v1/text-to-speech';
 const OPENAI_REALTIME_URL = 'wss://api.openai.com/v1/realtime';
 
 interface StreamingSession {
   sttWs: WebSocket | null;
+  ttsWs: WebSocket | null;
   openaiWs: WebSocket | null;
   clientWs: WebSocket;
   avatarId: string;
   userId: string;
   languageCode: string;
+  voiceId: string;
   accumulatedText: string;
   isProcessing: boolean;
+  ttsReady: boolean;
 }
 
 const activeSessions = new Map<string, StreamingSession>();
@@ -44,18 +48,26 @@ async function handleStreamingChat(clientWs: WebSocket, url: URL): Promise<void>
   
   log.info({ avatarId, userId, sessionId }, 'New streaming chat session');
   
+  const avatar = await storage.getAvatar(avatarId);
+  const voiceId = avatar?.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
+  
   const session: StreamingSession = {
     sttWs: null,
+    ttsWs: null,
     openaiWs: null,
     clientWs,
     avatarId,
     userId,
     languageCode,
+    voiceId,
     accumulatedText: '',
     isProcessing: false,
+    ttsReady: false,
   };
   
   activeSessions.set(sessionId, session);
+  
+  await startTTSStream(session);
   
   clientWs.on('message', async (data: Buffer | string) => {
     try {
@@ -170,6 +182,98 @@ async function startSTTStream(session: StreamingSession): Promise<void> {
   }
 }
 
+async function startTTSStream(session: StreamingSession): Promise<void> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) {
+    log.warn('ElevenLabs API key not configured, TTS will not work');
+    return;
+  }
+  
+  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=3`;
+  
+  try {
+    const ttsWs = new WebSocket(ttsUrl, {
+      headers: { 'xi-api-key': apiKey },
+    });
+    session.ttsWs = ttsWs;
+    
+    ttsWs.on('open', () => {
+      log.info({ voiceId: session.voiceId }, 'ElevenLabs TTS WebSocket connected');
+      
+      ttsWs.send(JSON.stringify({
+        text: ' ',
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.8,
+          speed: 1.0,
+        },
+        generation_config: {
+          chunk_length_schedule: [50, 90, 120, 150, 200],
+        },
+      }));
+      
+      session.ttsReady = true;
+      session.clientWs.send(JSON.stringify({ type: 'tts_ready' }));
+    });
+    
+    ttsWs.on('message', (data: Buffer) => {
+      try {
+        const event = JSON.parse(data.toString());
+        
+        if (event.audio) {
+          session.clientWs.send(JSON.stringify({
+            type: 'audio_chunk',
+            audio: event.audio,
+            isFinal: event.isFinal || false,
+          }));
+        }
+        
+        if (event.alignment) {
+          session.clientWs.send(JSON.stringify({
+            type: 'audio_alignment',
+            alignment: event.alignment,
+          }));
+        }
+        
+      } catch (error) {
+        log.error({ error }, 'Error parsing TTS message');
+      }
+    });
+    
+    ttsWs.on('error', (error) => {
+      log.error({ error }, 'TTS WebSocket error');
+      session.ttsReady = false;
+    });
+    
+    ttsWs.on('close', () => {
+      log.info('TTS WebSocket closed');
+      session.ttsReady = false;
+    });
+    
+  } catch (error) {
+    log.error({ error }, 'Failed to connect to ElevenLabs TTS');
+  }
+}
+
+function sendTextToTTS(session: StreamingSession, text: string, flush: boolean = false): void {
+  if (!session.ttsWs || session.ttsWs.readyState !== WebSocket.OPEN || !session.ttsReady) {
+    log.warn('TTS WebSocket not ready, cannot send text');
+    return;
+  }
+  
+  session.ttsWs.send(JSON.stringify({
+    text: text,
+    try_trigger_generation: true,
+    flush: flush,
+  }));
+}
+
+function closeTTSGeneration(session: StreamingSession): void {
+  if (session.ttsWs && session.ttsWs.readyState === WebSocket.OPEN) {
+    session.ttsWs.send(JSON.stringify({ text: '' }));
+  }
+}
+
 async function processUserMessage(session: StreamingSession, userText: string): Promise<void> {
   if (session.isProcessing) {
     session.clientWs.send(JSON.stringify({ type: 'busy', message: 'Still processing previous message' }));
@@ -202,7 +306,7 @@ async function processUserMessage(session: StreamingSession, userText: string): 
     
     const systemPrompt = buildSystemPrompt(avatar, memoryContext, knowledgeContext);
     
-    await streamOpenAIResponse(session, systemPrompt, userText, avatar.elevenlabsVoiceId || '');
+    await streamOpenAIResponse(session, systemPrompt, userText);
     
     if (mem0Service.isAvailable()) {
       mem0Service.addMemory(session.userId, userText).catch(err => 
@@ -252,8 +356,7 @@ CRITICAL VOICE MODE RULES:
 async function streamOpenAIResponse(
   session: StreamingSession,
   systemPrompt: string,
-  userText: string,
-  voiceId: string
+  userText: string
 ): Promise<void> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -274,8 +377,7 @@ async function streamOpenAIResponse(
     
     session.openaiWs = openaiWs;
     let fullResponse = '';
-    let textBuffer = '';
-    const CHUNK_SIZE = 50;
+    let wordBuffer = '';
     
     openaiWs.on('open', () => {
       log.info('OpenAI Realtime WebSocket connected');
@@ -309,7 +411,7 @@ async function streamOpenAIResponse(
         if (event.type === 'response.text.delta') {
           const delta = event.delta || '';
           fullResponse += delta;
-          textBuffer += delta;
+          wordBuffer += delta;
           
           session.clientWs.send(JSON.stringify({
             type: 'llm_delta',
@@ -317,30 +419,22 @@ async function streamOpenAIResponse(
             accumulated: fullResponse,
           }));
           
-          if (textBuffer.length >= CHUNK_SIZE || 
-              textBuffer.includes('.') || 
-              textBuffer.includes('!') || 
-              textBuffer.includes('?')) {
+          if (wordBuffer.includes(' ') || 
+              wordBuffer.includes('.') || 
+              wordBuffer.includes(',') ||
+              wordBuffer.includes('!') || 
+              wordBuffer.includes('?')) {
             
-            const chunkToSpeak = textBuffer.trim();
-            if (chunkToSpeak) {
-              session.clientWs.send(JSON.stringify({
-                type: 'tts_chunk',
-                text: chunkToSpeak,
-                voiceId,
-              }));
-            }
-            textBuffer = '';
+            sendTextToTTS(session, wordBuffer, false);
+            wordBuffer = '';
           }
         }
         
         if (event.type === 'response.text.done') {
-          if (textBuffer.trim()) {
-            session.clientWs.send(JSON.stringify({
-              type: 'tts_chunk',
-              text: textBuffer.trim(),
-              voiceId,
-            }));
+          if (wordBuffer.trim()) {
+            sendTextToTTS(session, wordBuffer, true);
+          } else {
+            sendTextToTTS(session, ' ', true);
           }
           
           session.clientWs.send(JSON.stringify({
@@ -385,6 +479,10 @@ function cleanupSession(sessionId: string): void {
   if (session) {
     if (session.sttWs?.readyState === WebSocket.OPEN) {
       session.sttWs.close();
+    }
+    if (session.ttsWs?.readyState === WebSocket.OPEN) {
+      closeTTSGeneration(session);
+      session.ttsWs.close();
     }
     if (session.openaiWs?.readyState === WebSocket.OPEN) {
       session.openaiWs.close();

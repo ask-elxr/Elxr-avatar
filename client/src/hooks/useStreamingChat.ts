@@ -8,16 +8,19 @@ interface StreamingChatConfig {
   onFinalTranscript?: (text: string) => void;
   onLLMDelta?: (delta: string, accumulated: string) => void;
   onLLMComplete?: (fullText: string) => void;
-  onTTSChunk?: (text: string, voiceId: string) => void;
+  onAudioChunk?: (audioData: string) => void;
   onError?: (error: string) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  onSpeakingStart?: () => void;
+  onSpeakingEnd?: () => void;
 }
 
 interface StreamingChatState {
   isConnected: boolean;
   isListening: boolean;
   isProcessing: boolean;
+  isSpeaking: boolean;
   partialTranscript: string;
   fullTranscript: string;
 }
@@ -27,6 +30,7 @@ export function useStreamingChat(config: StreamingChatConfig) {
     isConnected: false,
     isListening: false,
     isProcessing: false,
+    isSpeaking: false,
     partialTranscript: '',
     fullTranscript: '',
   });
@@ -36,6 +40,11 @@ export function useStreamingChat(config: StreamingChatConfig) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  
+  const playbackContextRef = useRef<AudioContext | null>(null);
+  const audioQueueRef = useRef<Float32Array[]>([]);
+  const isPlayingRef = useRef<boolean>(false);
+  const nextPlayTimeRef = useRef<number>(0);
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -75,10 +84,61 @@ export function useStreamingChat(config: StreamingChatConfig) {
     };
   }, [config.avatarId, config.userId, config.languageCode]);
 
+  const playAudioChunk = useCallback((base64Audio: string, isFinal: boolean) => {
+    if (!playbackContextRef.current) {
+      playbackContextRef.current = new AudioContext({ sampleRate: 24000 });
+    }
+    
+    const ctx = playbackContextRef.current;
+    
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    const pcm16 = new Int16Array(bytes.buffer);
+    const float32 = new Float32Array(pcm16.length);
+    for (let i = 0; i < pcm16.length; i++) {
+      float32[i] = pcm16[i] / 32768;
+    }
+    
+    const buffer = ctx.createBuffer(1, float32.length, 24000);
+    buffer.copyToChannel(float32, 0);
+    
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    
+    const currentTime = ctx.currentTime;
+    const startTime = Math.max(currentTime, nextPlayTimeRef.current);
+    
+    if (!isPlayingRef.current) {
+      isPlayingRef.current = true;
+      setState(s => ({ ...s, isSpeaking: true }));
+      config.onSpeakingStart?.();
+    }
+    
+    source.start(startTime);
+    nextPlayTimeRef.current = startTime + buffer.duration;
+    
+    source.onended = () => {
+      if (isFinal && ctx.currentTime >= nextPlayTimeRef.current - 0.1) {
+        isPlayingRef.current = false;
+        setState(s => ({ ...s, isSpeaking: false }));
+        config.onSpeakingEnd?.();
+      }
+    };
+  }, [config]);
+
   const handleMessage = useCallback((message: any) => {
     switch (message.type) {
       case 'connected':
         console.log('📡 Session connected:', message.sessionId);
+        break;
+
+      case 'tts_ready':
+        console.log('🔊 TTS stream ready');
         break;
 
       case 'stt_ready':
@@ -97,7 +157,7 @@ export function useStreamingChat(config: StreamingChatConfig) {
           fullTranscript: message.accumulated,
           partialTranscript: '',
         }));
-        config.onFinalTranscript?.(message.final);
+        config.onFinalTranscript?.(message.accumulated);
         break;
 
       case 'llm_delta':
@@ -109,8 +169,9 @@ export function useStreamingChat(config: StreamingChatConfig) {
         config.onLLMComplete?.(message.fullText);
         break;
 
-      case 'tts_chunk':
-        config.onTTSChunk?.(message.text, message.voiceId);
+      case 'audio_chunk':
+        playAudioChunk(message.audio, message.isFinal);
+        config.onAudioChunk?.(message.audio);
         break;
 
       case 'response_complete':
@@ -126,7 +187,7 @@ export function useStreamingChat(config: StreamingChatConfig) {
         console.warn('Server busy:', message.message);
         break;
     }
-  }, [config]);
+  }, [config, playAudioChunk]);
 
   const startListening = useCallback(async () => {
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
@@ -218,6 +279,12 @@ export function useStreamingChat(config: StreamingChatConfig) {
       wsRef.current.close();
       wsRef.current = null;
     }
+    if (playbackContextRef.current) {
+      playbackContextRef.current.close();
+      playbackContextRef.current = null;
+    }
+    isPlayingRef.current = false;
+    nextPlayTimeRef.current = 0;
   }, [stopListening]);
 
   useEffect(() => {
