@@ -12,140 +12,80 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 ### System Architecture
 
 #### Frontend (React + TypeScript)
--   **Core Features**: Avatar selection, LiveAvatar video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
--   **SessionDriver Pattern**: Unified abstraction for avatar sessions via `client/src/hooks/sessionDrivers.ts`:
-    -   `LiveAvatarDriver`: Uses HeyGen LiveAvatar SDK with CUSTOM mode for video streaming while preserving Claude + RAG + ElevenLabs pipeline.
-    -   `AudioOnlyDriver`: Audio-only mode using ElevenLabs TTS without video session.
-    -   Common interface: `start()`, `stop()`, `speak(text, languageCode?)`, `interrupt()`, `supportsVoiceInput()`.
--   **Mobile Fullscreen Support**: Adaptive fullscreen modes for iOS Safari, Android Chrome, and a CSS fallback with safe area handling.
--   **Microphone Permission**: Explicit user permission request for improved UX.
--   **Voice Recognition**: Throttled auto-restart to prevent rapid restart loops. Recognition pauses during avatar speech and resumes with platform-aware delays.
--   **Mobile STT Fallback**: ElevenLabs Speech-to-Text API used as fallback for browsers that don't support Web Speech API (e.g., iOS Chrome). Push-to-talk interface for mobile users.
-    -   Hook: `client/src/hooks/useMobileSTT.ts` - MediaRecorder-based audio capture with server-side transcription
-    -   API Endpoint: `POST /api/stt` - Accepts base64 audio, returns transcribed text
-    -   UI: Push-to-talk button shown when Web Speech unavailable but MediaRecorder is supported
--   **Audio/Video Mode Toggle**: Seamless switching between LiveAvatar video and ElevenLabs audio modes, preserving conversation context. An idle timeout is implemented only for video mode.
--   **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket:
-    -   Hook: `client/src/hooks/useStreamingChat.ts` - Captures microphone audio (PCM16 16kHz), streams to server, plays back TTS audio
-    -   WebSocket: `/ws/streaming-chat` - Bidirectional streaming with three concurrent connections per session
-    -   Flow: Microphone → ElevenLabs Streaming STT → Pinecone RAG + Mem0 → OpenAI Realtime API → ElevenLabs Realtime TTS → Web Audio playback
-    -   **STT Stream**: Binary PCM16 audio chunks sent to ElevenLabs at 16kHz, partial and final transcripts returned
-    -   **LLM Stream**: OpenAI Realtime API processes text with RAG context, streams response word-by-word
-    -   **TTS Stream**: ElevenLabs Realtime TTS WebSocket (`stream-input` endpoint) receives text chunks, returns base64 PCM audio at 24kHz
-    -   **Audio Playback**: Web Audio API with scheduled buffer sources for gapless playback, PCM16→Float32 conversion
--   **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency:
-    -   Hook: `client/src/hooks/useWebRTCStreaming.ts` - Joins LiveKit room, publishes mic track, subscribes to agent audio
-    -   Service: `server/webrtcStreamingService.ts` - Bridges LiveKit to ElevenLabs STT/TTS and Claude AI
-    -   WebSocket: `/ws/webrtc-streaming` - Control channel for session management and transcript events
-    -   Flow: LiveKit audio track → ElevenLabs STT → Pinecone RAG + Mem0 → Claude AI → ElevenLabs TTS → Web Audio playback
-    -   Benefits: NAT traversal via STUN/TURN, better audio quality, lower latency than WebSocket
--   **True Streaming Optimization**: Zero buffering for minimum latency:
-    -   LLM tokens streamed immediately to TTS (no word buffering)
-    -   TTS `chunk_length_schedule: [50]` for fastest audio generation start
-    -   `optimize_streaming_latency=4` (maximum) on ElevenLabs TTS
-    -   STT partial transcripts sent to client in real-time
+- **Core Features**: Avatar selection, LiveAvatar video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
+- **SessionDriver Pattern**: Unified abstraction for avatar sessions (`LiveAvatarDriver`, `AudioOnlyDriver`) with a common interface.
+- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT, Pinecone RAG, Mem0, OpenAI Realtime API, and ElevenLabs Realtime TTS.
+- **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency audio, bridging to ElevenLabs STT/TTS and Claude AI.
+- **True Streaming Optimization**: Designed for zero buffering and minimum latency across LLM, TTS, and STT streams.
+- **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately and conditionally including context in the LLM prompt.
 
 #### Backend (Express + TypeScript + Python)
--   **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
--   **Python Integration**: Pipecat bot service for conversational AI.
+- **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
+- **Python Integration**: Pipecat bot service for conversational AI.
 
 #### Database (PostgreSQL + Drizzle ORM)
--   **Schema**: Defined in `shared/schema.ts`.
--   **Key Tables**: `avatar_profiles` (avatar configurations), `conversations` (chat history), `courses`, `lessons`, `generated_videos` (video course system), `chat_generated_videos` (chat video-on-demand), `mood_entries` (mood tracker), `subscription_plans`, `user_subscriptions`, `usage_periods` (subscription system).
+- **Schema**: Defined in `shared/schema.ts`, including tables for `avatar_profiles`, `conversations`, `courses`, `lessons`, `generated_videos`, `mood_entries`, and a subscription system.
 
 #### Avatar System
--   **Multi-avatar Support**: Includes 10 active avatars with unique expertise, configurable settings, dedicated Pinecone knowledge base namespaces, and per-avatar research source toggles.
--   **Dual HeyGen IDs**: Each avatar has both a LiveAvatar ID for streaming chat and an Instant/Public Avatar ID for video course generation.
--   **Two HeyGen API Keys** (clean setup, no legacy fallbacks):
-    -   `LIVEAVATAR_API_KEY`: For interactive streaming avatar chat sessions (LiveAvatar platform)
-    -   `HEYGEN_VIDEO_API_KEY`: For video generation (courses, chat videos - HeyGen Video API)
--   **Platform & Voice Configuration**:
-    -   **Streaming Platform Selection**: Per-avatar toggle between LiveAvatar and HeyGen platforms via `streamingPlatform` field ('liveavatar' | 'heygen')
-    -   **Interactive Voice Toggle**: Per-avatar voice source selection via `useHeygenVoiceForInteractive` (false = ElevenLabs, true = HeyGen voice)
-    -   **Video Creation Voice Toggle**: Toggle between ElevenLabs and HeyGen voices via `useHeygenVoiceForLive` field
-    -   **Avatar ID Selection**: Platform-aware ID selection (liveAvatarId for LiveAvatar, heygenAvatarId for HeyGen)
--   **Avatar Service**: Handles field-level merging where database values override defaults and manages active/inactive avatars.
--   **Auto-Reconnection**: HeyGen WebRTC sessions automatically retry on disconnection.
+- **Multi-avatar Support**: Includes 10 active avatars with unique expertise, configurable settings, dedicated Pinecone knowledge bases, and per-avatar research source toggles.
+- **HeyGen Integration**: Utilizes dual HeyGen IDs (LiveAvatar for streaming, Instant/Public for video generation) and separate API keys.
+- **Platform & Voice Configuration**: Per-avatar selection for streaming platform (LiveAvatar/HeyGen) and voice source (ElevenLabs/HeyGen).
+- **Avatar Service**: Manages field-level merging and active/inactive avatar states.
 
 #### Video Course System
--   **Workflow**: Users create courses, add lessons, and generate videos via HeyGen.
--   **AI Script Generation**: Scripts can be auto-generated using the avatar's Pinecone knowledge base and Claude AI, with configurable duration.
--   **Video Modes**: Supports watermarked test videos (Instant Avatars) and watermark-free production videos (Public Avatars), with automatic detection.
--   **Robust Video Status Monitoring**: Includes polling timeouts, startup recovery, orphaned lesson detection, and background checking for completion.
+- **Workflow**: Users create courses, add lessons, and generate videos via HeyGen, with optional AI script generation using Claude AI and Pinecone knowledge.
+- **Video Modes**: Supports watermarked test videos (Instant Avatars) and watermark-free production videos (Public Avatars).
+- **Robust Video Status Monitoring**: Includes polling, startup recovery, and orphaned lesson detection.
 
 #### Chat Video-on-Demand System
--   **Feature**: Users can request videos during chat via intent detection.
--   **Process**: Extracts topic, retrieves knowledge, generates script using Claude AI, and creates video asynchronously via HeyGen.
--   **Global Notification System**: App-wide polling for video status changes, with local storage tracking to prevent duplicate notifications.
+- **Feature**: Users can request videos during chat via intent detection, generating scripts with Claude AI and creating videos asynchronously via HeyGen.
+- **Global Notification System**: App-wide polling for video status changes with local storage tracking.
 
 #### Mood Tracker System
--   **Feature**: Users log emotional states (joyful, anxious, etc.) with intensity.
--   **AI Integration**: Claude AI generates personalized, empathetic responses based on mood and avatar personality.
+- **Feature**: Users log emotional states, with Claude AI generating personalized, empathetic responses.
 
 #### Subscription System
--   **Tiers**: Free Trial, Basic, and Full plans with varying limits on avatars, videos, and chat sessions.
--   **Management**: Handles plan activation, usage tracking, limit enforcement, and admin user statistics.
+- **Tiers**: Free Trial, Basic, and Full plans with varying limits.
+- **Management**: Handles plan activation, usage tracking, and limit enforcement.
 
 #### Role-Based Access Control (RBAC)
--   **Roles**: `admin` and `user`.
--   **Backend Protection**: `requireAdmin` middleware for admin-only routes (e.g., document uploads, knowledge base management, analytics, user management).
--   **Frontend Guards**: UI elements and pages are conditionally rendered based on user role.
+- **Roles**: `admin` and `user`.
+- **Protection**: Backend middleware for admin-only routes and frontend guards for UI elements.
 
 #### Webflow Embedding Mode
--   **Anonymous Access**: Authentication is bypassed for all user-facing routes. Users are automatically assigned anonymous session IDs (format: `webflow_[timestamp]_[random]`).
--   **Admin Secret Authentication**: Admin routes are protected by `X-Admin-Secret` header (set via `ADMIN_SECRET` environment variable). The admin page prompts for the secret if not provided.
--   **Secret Storage**: Admin secret can be provided via URL parameter (`?admin_secret=...`) or entered in the admin login form. It is persisted in `localStorage` for convenience.
--   **CORS & CSP**: Configured to allow embedding from any origin with `frame-ancestors *` header.
--   **Hidden Auth UI**: Login/logout buttons are hidden in the embedded mode since authentication is handled externally by Webflow.
--   **Embed-Only Routes**: Chrome-free pages for iframe embedding without navigation sidebars:
-    -   User Routes: `/embed/dashboard`, `/embed/chat`, `/embed/chat/:avatarId`, `/embed/videos`, `/embed/courses`, `/embed/mood`, `/embed/plan`, `/embed/credits`, `/embed/settings`
-    -   Admin Routes: `/embed/admin`, `/embed/admin/avatars`, `/embed/admin/knowledge`, `/embed/admin/courses`, `/embed/admin/users`, `/embed/admin/analytics`, `/embed/admin/credits`
--   **Implementation**: Embed pages reuse Dashboard/Admin components with `isEmbed={true}` prop that hides sidebar, mobile header, and floating orbs.
+- **Anonymous Access**: Bypasses authentication for user-facing routes, assigning anonymous session IDs.
+- **Admin Secret Authentication**: Admin routes protected by `X-Admin-Secret` header, with UI for input and `localStorage` persistence.
+- **CORS & CSP**: Configured for embedding from any origin.
+- **Hidden Auth UI**: Login/logout buttons are hidden.
+- **Embed-Only Routes**: Chrome-free pages for iframe embedding without navigation sidebars.
 
 #### Avatar-Namespace Matrix Visualization
--   **Component**: `AvatarNamespaceMatrix.tsx` provides interactive visualization of avatar-to-Pinecone namespace relationships.
--   **Views**: Toggle between matrix grid view (avatars × namespaces) and list view (namespace cards with connected avatars).
--   **Detail Panel**: Click any namespace to see vector counts, connected avatars, content source breakdown, and sample content previews.
--   **Data-testid Coverage**: Comprehensive test instrumentation for all dynamic elements (summary stats, matrix cells, footer totals, list badges, detail panels).
--   **Integration**: Available in Knowledge Base admin page under "Mapping" tab.
--   **API Endpoints**:
-    -   `GET /api/pinecone/namespaces` - List all namespaces with vector counts
-    -   `GET /api/pinecone/namespaces/:namespace` - Get namespace details with sample vectors
-    -   `GET /api/pinecone/avatar-connections` - Get avatar-namespace mapping
+- **Component**: `AvatarNamespaceMatrix.tsx` provides interactive visualization of avatar-to-Pinecone namespace relationships with matrix and list views, detail panels, and API endpoints.
 
 #### Google Drive Topic Folders Integration
--   **Source Folder**: `0AL_h7e92I2C8Uk9PVA` contains pre-organized topic folders for Pinecone namespace population.
--   **Folder-to-Namespace Mapping**: Configured in `shared/pineconeCategories.ts` with case-insensitive folder name matching.
--   **Topic Folders**: Addiction, Body, Career→WORK, grief→GRIEF, life→LIFE, longevity→LONGEVITY, Mark Kohl Brain→MARK_KOHL, Mind, movement→MOVEMENT, Nigel Williams→NIGEL_WILLIAMS, Nutrition, Sleep, Spirituality, Transitions, Willie Gault→WILLIE_GAULT.
--   **Admin UI**: KnowledgeBase page has "Topic Folders" tab for bulk uploads. Shows file sizes and filtering info.
--   **API Endpoints** (admin-only with `requireAdmin` middleware):
-    -   `GET /api/google-drive/topic-folders` - List all topic folders with file counts
-    -   `GET /api/google-drive/topic-folder/:folderId/files` - List files in a topic folder
-    -   `POST /api/google-drive/topic-upload-single` - Upload single file to namespace
--   **Memory Optimization**: 
-    -   File size limit: 3MB max per file (files >3MB auto-skipped)
-    -   Archives excluded: zip, rar, 7z, gzip files filtered out
-    -   Text limit: 200KB max extracted text per document
-    -   Chunk limit: 15 max chunks per document
-    -   Sequential processing: One chunk at a time to minimize memory
+- **Source**: Integrates with Google Drive topic folders for Pinecone namespace population.
+- **Mapping**: Configured in `shared/pineconeCategories.ts` with case-insensitive folder name matching.
+- **Admin UI**: KnowledgeBase page offers a "Topic Folders" tab for bulk uploads.
+- **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially to minimize memory usage.
 
 #### Technical Implementations
--   **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent conversation memory.
--   **Pinecone**: Direct namespace-based vector queries for cost-effective knowledge retrieval. Namespace normalization converts uppercase categories (ADDICTION, MARK_KOHL) to lowercase (addiction, mark-kohl).
--   **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
--   **Anonymous Sessions**: Support for persistent anonymous user sessions.
+- **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
+- **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
+- **Pinecone**: Direct namespace-based vector queries with namespace normalization.
+- **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
+- **Anonymous Sessions**: Supports persistent anonymous user sessions.
 
 ### External Dependencies
 
--   **HeyGen**: Video avatar service.
--   **Anthropic (Claude AI)**: Primary Large Language Model.
--   **Pinecone**: Vector database.
--   **Mem0**: Persistent memory service.
--   **PubMed**: Medical and scientific research source.
--   **Wikipedia**: General knowledge source.
--   **Google Search**: Web search.
--   **PostgreSQL**: Relational database.
--   **Drizzle ORM**: TypeScript ORM.
--   **OpenAI**: For embeddings (if configured).
--   **ElevenLabs**: Alternative TTS service.
--   **Redis (Upstash)**: For background job queuing.
+- **HeyGen**: Video avatar service.
+- **Anthropic (Claude AI)**: Primary Large Language Model.
+- **Pinecone**: Vector database.
+- **Mem0**: Persistent memory service.
+- **PubMed**: Medical and scientific research source.
+- **Wikipedia**: General knowledge source.
+- **Google Search**: Web search.
+- **PostgreSQL**: Relational database.
+- **Drizzle ORM**: TypeScript ORM.
+- **OpenAI**: For embeddings (if configured).
+- **ElevenLabs**: Alternative TTS service.
+- **Redis (Upstash)**: For background job queuing.

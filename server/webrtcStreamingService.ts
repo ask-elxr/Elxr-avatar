@@ -330,43 +330,56 @@ async function processUserInput(session: WebRTCSession, userText: string): Promi
   if (session.isProcessing || !userText.trim()) return;
   
   session.isProcessing = true;
+  const startTime = Date.now();
   
   try {
-    let ragContext = '';
-    if (pineconeNamespaceService.isAvailable() && session.pineconeNamespaces.length > 0) {
-      try {
-        const results = await pineconeNamespaceService.retrieveContext(userText, 3, session.pineconeNamespaces);
-        if (results.length > 0) {
-          ragContext = results.map((r: { text: string; score: number }) => r.text).join('\n\n');
-        }
-      } catch (error) {
-        log.error({ error }, 'RAG query failed');
-      }
-    }
+    // Start RAG and Mem0 searches immediately (parallel, non-blocking)
+    const ragPromise = (pineconeNamespaceService.isAvailable() && session.pineconeNamespaces.length > 0)
+      ? pineconeNamespaceService.retrieveContext(userText, 3, session.pineconeNamespaces)
+          .catch(err => { log.warn({ err }, 'RAG query failed'); return []; })
+      : Promise.resolve([]);
     
+    const memoryPromise = mem0Service.isAvailable()
+      ? mem0Service.searchMemories(session.userId, userText, 3)
+          .catch(err => { log.warn({ err }, 'Memory query failed'); return []; })
+      : Promise.resolve([]);
+    
+    // Race: wait max 250ms for context, then start LLM regardless
+    // Most RAG queries complete within 200ms, so this balances latency vs accuracy
+    const CONTEXT_TIMEOUT_MS = 250;
+    
+    let ragContext = '';
     let memoryContext = '';
-    if (mem0Service.isAvailable()) {
-      try {
-        const memories = await mem0Service.searchMemories(session.userId, userText, 3);
-        if (memories.length > 0) {
-          memoryContext = memories.map((m: { memory: string }) => m.memory).join('\n');
-        }
-      } catch (error) {
-        log.error({ error }, 'Memory retrieval failed');
+    
+    const contextResult = await Promise.race([
+      Promise.all([ragPromise, memoryPromise]).then(([rag, mem]) => ({ rag, mem, complete: true })),
+      new Promise<{ rag: any[], mem: any[], complete: boolean }>(resolve => 
+        setTimeout(() => resolve({ rag: [], mem: [], complete: false }), CONTEXT_TIMEOUT_MS)
+      )
+    ]);
+    
+    if (contextResult.complete) {
+      if (contextResult.rag.length > 0) {
+        ragContext = contextResult.rag.map((r: { text: string }) => r.text).join('\n\n');
       }
+      if (contextResult.mem.length > 0) {
+        memoryContext = contextResult.mem.map((m: { memory: string }) => m.memory).join('\n');
+      }
+      log.debug({ ragLen: ragContext.length, memLen: memoryContext.length, ms: Date.now() - startTime }, 'Context ready before timeout');
+    } else {
+      log.debug({ ms: CONTEXT_TIMEOUT_MS }, 'Starting LLM without full context (timeout exceeded)');
     }
     
     const systemPrompt = `${session.systemPrompt}
+${ragContext ? `\nRELEVANT KNOWLEDGE:\n${ragContext}` : ''}
+${memoryContext ? `\nUSER CONTEXT:\n${memoryContext}` : ''}
 
-${ragContext ? `RELEVANT KNOWLEDGE:\n${ragContext}\n` : ''}
-${memoryContext ? `PREVIOUS CONVERSATIONS:\n${memoryContext}\n` : ''}
-
-Respond naturally and conversationally. Keep responses concise for voice interaction.`;
+Respond naturally and conversationally. Keep responses concise for voice.`;
 
     const anthropic = new Anthropic();
-    
     let fullResponse = '';
     
+    // Start LLM streaming immediately
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
@@ -406,12 +419,12 @@ Respond naturally and conversationally. Keep responses concise for voice interac
         fullText: fullResponse,
       }));
       
+      log.info({ totalMs: Date.now() - startTime }, 'Response complete');
+      
+      // Save memory in background (non-blocking)
       if (mem0Service.isAvailable()) {
-        try {
-          await mem0Service.addMemory(session.userId, userText);
-        } catch (error) {
-          log.error({ error }, 'Failed to save memory');
-        }
+        mem0Service.addConversationMemory(session.userId, userText, fullResponse)
+          .catch(err => log.warn({ err }, 'Failed to save memory'));
       }
     });
     

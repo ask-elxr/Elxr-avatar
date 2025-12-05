@@ -282,6 +282,7 @@ async function processUserMessage(session: StreamingSession, userText: string): 
   
   session.isProcessing = true;
   session.accumulatedText = '';
+  const startTime = Date.now();
   
   try {
     const avatar = await storage.getAvatar(session.avatarId);
@@ -289,29 +290,48 @@ async function processUserMessage(session: StreamingSession, userText: string): 
       throw new Error('Avatar not found');
     }
     
-    const [memories, knowledgeText] = await Promise.all([
-      mem0Service.isAvailable() 
-        ? mem0Service.searchMemories(session.userId, userText, 3)
-        : Promise.resolve([]),
-      searchPineconeNamespaces(avatar.pineconeNamespaces || [], userText),
+    // Start RAG and Mem0 searches immediately (parallel, non-blocking)
+    const ragPromise = searchPineconeNamespaces(avatar.pineconeNamespaces || [], userText);
+    const memoryPromise = mem0Service.isAvailable() 
+      ? mem0Service.searchMemories(session.userId, userText, 3).catch(() => [])
+      : Promise.resolve([]);
+    
+    // Race: wait max 250ms for context, then start LLM regardless
+    // Most RAG queries complete within 200ms, so this balances latency vs accuracy
+    const CONTEXT_TIMEOUT_MS = 250;
+    
+    let memoryContext = '';
+    let knowledgeContext = '';
+    
+    const contextResult = await Promise.race([
+      Promise.all([memoryPromise, ragPromise]).then(([mem, rag]) => ({ mem, rag, complete: true })),
+      new Promise<{ mem: any[], rag: string, complete: boolean }>(resolve => 
+        setTimeout(() => resolve({ mem: [], rag: '', complete: false }), CONTEXT_TIMEOUT_MS)
+      )
     ]);
     
-    const memoryContext = memories.length > 0
-      ? `\n\nUser's relevant memories:\n${memories.map((m: { memory: string }) => `- ${m.memory}`).join('\n')}`
-      : '';
-    
-    const knowledgeContext = knowledgeText 
-      ? `\n\nRelevant knowledge:\n${knowledgeText}`
-      : '';
+    if (contextResult.complete) {
+      if (contextResult.mem.length > 0) {
+        memoryContext = `\n\nUser's relevant memories:\n${contextResult.mem.map((m: { memory: string }) => `- ${m.memory}`).join('\n')}`;
+      }
+      if (contextResult.rag) {
+        knowledgeContext = `\n\nRelevant knowledge:\n${contextResult.rag}`;
+      }
+      log.debug({ memLen: memoryContext.length, ragLen: knowledgeContext.length, ms: Date.now() - startTime }, 'Context ready before timeout');
+    } else {
+      log.debug({ ms: CONTEXT_TIMEOUT_MS }, 'Starting LLM without waiting for full context');
+    }
     
     const systemPrompt = buildSystemPrompt(avatar, memoryContext, knowledgeContext);
     
-    await streamOpenAIResponse(session, systemPrompt, userText);
+    const fullResponse = await streamOpenAIResponse(session, systemPrompt, userText);
     
-    if (mem0Service.isAvailable()) {
-      mem0Service.addMemory(session.userId, userText).catch(err => 
-        log.error({ err }, 'Failed to save memory')
-      );
+    log.info({ totalMs: Date.now() - startTime }, 'Response complete');
+    
+    // Save memory in background (non-blocking) with full conversation
+    if (mem0Service.isAvailable() && fullResponse) {
+      mem0Service.addConversationMemory(session.userId, userText, fullResponse)
+        .catch(err => log.warn({ err }, 'Failed to save memory'));
     }
     
   } catch (error) {
@@ -357,11 +377,11 @@ async function streamOpenAIResponse(
   session: StreamingSession,
   systemPrompt: string,
   userText: string
-): Promise<void> {
+): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     session.clientWs.send(JSON.stringify({ type: 'error', message: 'OpenAI not configured' }));
-    return;
+    return '';
   }
   
   return new Promise((resolve, reject) => {
@@ -432,7 +452,7 @@ async function streamOpenAIResponse(
         if (event.type === 'response.done') {
           session.clientWs.send(JSON.stringify({ type: 'response_complete' }));
           openaiWs.close();
-          resolve();
+          resolve(fullResponse);
         }
         
         if (event.type === 'error') {
