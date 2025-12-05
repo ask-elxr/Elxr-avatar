@@ -25,6 +25,10 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   API Endpoint: `POST /api/stt` - Accepts base64 audio, returns transcribed text
     -   UI: Push-to-talk button shown when Web Speech unavailable but MediaRecorder is supported
 -   **Audio/Video Mode Toggle**: Seamless switching between LiveAvatar video and ElevenLabs audio modes, preserving conversation context. An idle timeout is implemented only for video mode.
+-   **Real-time Streaming Pipeline** (NEW): Low-latency voice conversation via WebSocket:
+    -   Hook: `client/src/hooks/useStreamingChat.ts` - Captures microphone audio, streams PCM16 binary frames
+    -   WebSocket: `/ws/streaming-chat` - Bidirectional streaming for STT, LLM, and TTS
+    -   Flow: Audio → ElevenLabs STT → Pinecone RAG + Mem0 → OpenAI Realtime API → Streaming TTS chunks
 
 #### Backend (Express + TypeScript + Python)
 -   **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
