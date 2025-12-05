@@ -44,6 +44,7 @@ export function AvatarManager() {
     id: "",
     name: "",
     description: "",
+    liveAvatarId: null,
     heygenAvatarId: null,
     heygenVoiceId: null,
     heygenVideoAvatarId: null,
@@ -142,6 +143,7 @@ export function AvatarManager() {
       name: "",
       description: "",
       profileImageUrl: null,
+      liveAvatarId: null,
       heygenAvatarId: null,
       heygenVoiceId: null,
       heygenVideoAvatarId: null,
@@ -172,6 +174,7 @@ export function AvatarManager() {
       name: avatar.name,
       description: avatar.description,
       profileImageUrl: avatar.profileImageUrl || null,
+      liveAvatarId: avatar.liveAvatarId,
       heygenAvatarId: avatar.heygenAvatarId,
       heygenVoiceId: avatar.heygenVoiceId,
       heygenVideoAvatarId: avatar.heygenVideoAvatarId,
@@ -288,8 +291,11 @@ export function AvatarManager() {
       description: formData.description.trim(),
       personalityPrompt: formData.personalityPrompt.trim(),
       profileImageUrl: formData.profileImageUrl?.trim() || null,
+      liveAvatarId: formData.liveAvatarId?.trim() || null,
       heygenAvatarId: formData.heygenAvatarId?.trim() || null,
       heygenVoiceId: formData.heygenVoiceId?.trim() || null,
+      heygenVideoAvatarId: formData.heygenVideoAvatarId?.trim() || null,
+      heygenVideoVoiceId: formData.heygenVideoVoiceId?.trim() || null,
       heygenKnowledgeId: formData.heygenKnowledgeId?.trim() || null,
       elevenlabsVoiceId: formData.elevenlabsVoiceId?.trim() || null,
       voiceRate: formData.voiceRate?.trim() || null,
@@ -509,14 +515,14 @@ export function AvatarManager() {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Live Avatar ID */}
                   <div className="space-y-2">
-                    <Label htmlFor="heygenAvatarId" className="text-xs">Live Avatar ID</Label>
+                    <Label htmlFor="liveAvatarId" className="text-xs">Live Avatar ID</Label>
                     <Input
-                      id="heygenAvatarId"
-                      value={formData.heygenAvatarId || ""}
-                      onChange={(e) => setFormData({ ...formData, heygenAvatarId: e.target.value || null })}
-                      placeholder="Interactive avatar ID"
+                      id="liveAvatarId"
+                      value={formData.liveAvatarId || ""}
+                      onChange={(e) => setFormData({ ...formData, liveAvatarId: e.target.value || null })}
+                      placeholder="LiveAvatar or HeyGen avatar ID"
                       className="text-sm"
-                      data-testid="input-heygen-avatar-id"
+                      data-testid="input-live-avatar-id"
                     />
                   </div>
                   

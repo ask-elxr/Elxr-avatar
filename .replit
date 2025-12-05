@@ -43,47 +43,7 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 33415
-externalPort = 3001
-
-[[ports]]
-localPort = 36789
-externalPort = 4200
-
-[[ports]]
-localPort = 38749
-externalPort = 5000
-
-[[ports]]
-localPort = 38851
-externalPort = 3002
-
-[[ports]]
-localPort = 38965
-externalPort = 8000
-
-[[ports]]
-localPort = 39685
-externalPort = 5173
-
-[[ports]]
-localPort = 40185
-externalPort = 6800
-
-[[ports]]
-localPort = 42787
-externalPort = 3003
-
-[[ports]]
-localPort = 43189
-externalPort = 8008
-
-[[ports]]
-localPort = 44787
-externalPort = 6000
-
-[[ports]]
-localPort = 46653
+localPort = 34671
 externalPort = 3000
 
 [userenv]
