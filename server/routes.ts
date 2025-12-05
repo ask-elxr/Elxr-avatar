@@ -6881,11 +6881,24 @@ This applies to EVERY response, regardless of conversation length.`;
   const httpServer = createServer(app);
   
   // Setup streaming WebSocket for real-time STT and LLM responses
+  // Use noServer mode to avoid interfering with Vite's HMR WebSocket
   const { WebSocketServer } = await import('ws');
   const { setupStreamingWebSocket } = await import('./streamingService.js');
   
-  const wss = new WebSocketServer({ server: httpServer, path: '/ws/streaming-chat' });
+  const wss = new WebSocketServer({ noServer: true });
   setupStreamingWebSocket(wss);
+  
+  // Handle WebSocket upgrades manually for our streaming endpoint only
+  httpServer.on('upgrade', (request, socket, head) => {
+    const url = new URL(request.url || '', `http://${request.headers.host}`);
+    if (url.pathname === '/ws/streaming-chat') {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit('connection', ws, request);
+      });
+    }
+    // Let other upgrade requests (like Vite HMR) pass through to their handlers
+  });
+  
   logger.info('Streaming WebSocket server initialized on /ws/streaming-chat');
   
   return httpServer;
