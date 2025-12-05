@@ -1444,18 +1444,29 @@ This appears to be your first conversation with this person - no prior memories 
 
   // Speech-to-Text endpoint for mobile browsers that don't support Web Speech API
   // Uses ElevenLabs Scribe v1 for transcription
-  // Protected by session-based rate limiting and daily quotas
+  // Protected by session-based rate limiting, daily quotas, and kill switch
   const sttRateLimitMap = new Map<string, { count: number; resetTime: number }>();
   const sttDailyQuotaMap = new Map<string, { count: number; resetDay: number }>();
   const STT_RATE_LIMIT = 20; // Max 20 requests per minute (stricter for STT)
   const STT_RATE_WINDOW = 60 * 1000; // 1 minute window
   const STT_DAILY_QUOTA = 200; // Max 200 transcriptions per day per session
+  
+  // Kill switch - set STT_DISABLED=true to disable this endpoint if abuse is detected
+  const isSTTDisabled = () => process.env.STT_DISABLED === 'true';
 
   app.post("/api/stt", async (req: any, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "speechToText" });
     
     try {
-      // Get session ID - prefer Memberstack, then anonymous session, then generate temporary
+      // Kill switch check - allows ops to disable STT quickly if abuse is detected
+      if (isSTTDisabled()) {
+        log.warn("STT endpoint disabled via kill switch");
+        return res.status(503).json({ 
+          error: "Voice input temporarily unavailable. Please type your message instead." 
+        });
+      }
+      
+      // Get session ID - prefer Memberstack, then anonymous session
       const sessionId = req.session?.memberstackId || req.session?.anonymousId;
       
       // Require a valid session for STT access (prevents totally anonymous abuse)
@@ -1477,6 +1488,13 @@ This appears to be your first conversation with this person - no prior memories 
         if (dailyQuota.resetDay === currentDay) {
           if (dailyQuota.count >= STT_DAILY_QUOTA) {
             log.warn({ rateLimitKey, count: dailyQuota.count }, "STT daily quota exceeded");
+            // Log quota exhaustion for monitoring
+            await storage.logApiCall({
+              serviceName: 'elevenlabs_stt',
+              endpoint: '/api/stt',
+              userId: sessionId.startsWith('webflow_') ? null : sessionId,
+              responseTimeMs: 0,
+            }).catch(() => {}); // Don't fail on logging errors
             return res.status(429).json({ 
               error: "Daily voice input limit reached. Please try again tomorrow or type your messages." 
             });
