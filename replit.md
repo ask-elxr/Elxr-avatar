@@ -39,6 +39,11 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   WebSocket: `/ws/webrtc-streaming` - Control channel for session management and transcript events
     -   Flow: LiveKit audio track → ElevenLabs STT → Pinecone RAG + Mem0 → Claude AI → ElevenLabs TTS → Web Audio playback
     -   Benefits: NAT traversal via STUN/TURN, better audio quality, lower latency than WebSocket
+-   **True Streaming Optimization**: Zero buffering for minimum latency:
+    -   LLM tokens streamed immediately to TTS (no word buffering)
+    -   TTS `chunk_length_schedule: [50]` for fastest audio generation start
+    -   `optimize_streaming_latency=4` (maximum) on ElevenLabs TTS
+    -   STT partial transcripts sent to client in real-time
 
 #### Backend (Express + TypeScript + Python)
 -   **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.

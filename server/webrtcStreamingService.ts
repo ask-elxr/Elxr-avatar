@@ -258,7 +258,7 @@ async function startTTSStream(session: WebRTCSession): Promise<void> {
     return;
   }
   
-  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=3`;
+  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
   
   try {
     const ttsWs = new WebSocket(ttsUrl, {
@@ -277,7 +277,7 @@ async function startTTSStream(session: WebRTCSession): Promise<void> {
           speed: 1.0,
         },
         generation_config: {
-          chunk_length_schedule: [50, 90, 120, 150, 200],
+          chunk_length_schedule: [50],
         },
       }));
       
@@ -374,13 +374,10 @@ Respond naturally and conversationally. Keep responses concise for voice interac
       messages: [{ role: 'user', content: userText }],
     });
     
-    let wordBuffer = '';
-    
     stream.on('text', (text) => {
       if (!session.isProcessing) return;
       
       fullResponse += text;
-      wordBuffer += text;
       
       session.clientWs.send(JSON.stringify({
         type: 'llm_delta',
@@ -388,34 +385,21 @@ Respond naturally and conversationally. Keep responses concise for voice interac
         accumulated: fullResponse,
       }));
       
-      const words = wordBuffer.split(/(\s+)/);
-      while (words.length > 1) {
-        const word = words.shift()!;
-        if (word.trim() && session.ttsWs?.readyState === WebSocket.OPEN) {
-          const needsFlush = /[.!?;:,]$/.test(word);
-          session.ttsWs.send(JSON.stringify({
-            text: word + ' ',
-            try_trigger_generation: true,
-            flush: needsFlush,
-          }));
-        }
+      if (session.ttsWs?.readyState === WebSocket.OPEN) {
+        session.ttsWs.send(JSON.stringify({
+          text: text,
+          try_trigger_generation: true,
+        }));
       }
-      wordBuffer = words.join('');
     });
     
     stream.on('end', async () => {
-      if (wordBuffer.trim() && session.ttsWs?.readyState === WebSocket.OPEN) {
+      if (session.ttsWs?.readyState === WebSocket.OPEN) {
         session.ttsWs.send(JSON.stringify({
-          text: wordBuffer,
-          try_trigger_generation: true,
+          text: '',
           flush: true,
         }));
       }
-      
-      session.ttsWs?.send(JSON.stringify({
-        text: '',
-        flush: true,
-      }));
       
       session.clientWs.send(JSON.stringify({
         type: 'llm_complete',

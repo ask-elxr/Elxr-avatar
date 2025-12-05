@@ -189,7 +189,7 @@ async function startTTSStream(session: StreamingSession): Promise<void> {
     return;
   }
   
-  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=3`;
+  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
   
   try {
     const ttsWs = new WebSocket(ttsUrl, {
@@ -208,7 +208,7 @@ async function startTTSStream(session: StreamingSession): Promise<void> {
           speed: 1.0,
         },
         generation_config: {
-          chunk_length_schedule: [50, 90, 120, 150, 200],
+          chunk_length_schedule: [50],
         },
       }));
       
@@ -377,7 +377,6 @@ async function streamOpenAIResponse(
     
     session.openaiWs = openaiWs;
     let fullResponse = '';
-    let wordBuffer = '';
     
     openaiWs.on('open', () => {
       log.info('OpenAI Realtime WebSocket connected');
@@ -411,7 +410,6 @@ async function streamOpenAIResponse(
         if (event.type === 'response.text.delta') {
           const delta = event.delta || '';
           fullResponse += delta;
-          wordBuffer += delta;
           
           session.clientWs.send(JSON.stringify({
             type: 'llm_delta',
@@ -419,23 +417,11 @@ async function streamOpenAIResponse(
             accumulated: fullResponse,
           }));
           
-          if (wordBuffer.includes(' ') || 
-              wordBuffer.includes('.') || 
-              wordBuffer.includes(',') ||
-              wordBuffer.includes('!') || 
-              wordBuffer.includes('?')) {
-            
-            sendTextToTTS(session, wordBuffer, false);
-            wordBuffer = '';
-          }
+          sendTextToTTS(session, delta, false);
         }
         
         if (event.type === 'response.text.done') {
-          if (wordBuffer.trim()) {
-            sendTextToTTS(session, wordBuffer, true);
-          } else {
-            sendTextToTTS(session, ' ', true);
-          }
+          sendTextToTTS(session, '', true);
           
           session.clientWs.send(JSON.stringify({
             type: 'llm_complete',
