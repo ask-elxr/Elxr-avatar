@@ -170,6 +170,10 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   usePubMed: boolean("use_pubmed").default(false).notNull(),
   useWikipedia: boolean("use_wikipedia").default(false).notNull(),
   useGoogleSearch: boolean("use_google_search").default(false).notNull(),
+  // Capability toggles - control what modes are available for each avatar
+  enableAudioMode: boolean("enable_audio_mode").default(true).notNull(), // Enable/disable audio-only chat
+  enableVideoMode: boolean("enable_video_mode").default(true).notNull(), // Enable/disable video streaming chat
+  enableVideoCreation: boolean("enable_video_creation").default(true).notNull(), // Enable/disable video/course generation
   isActive: boolean("is_active").default(true).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow(),

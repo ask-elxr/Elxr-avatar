@@ -59,6 +59,9 @@ export function AvatarManager() {
     usePubMed: false,
     useWikipedia: false,
     useGoogleSearch: false,
+    enableAudioMode: true,
+    enableVideoMode: true,
+    enableVideoCreation: true,
     isActive: true,
   });
 
@@ -154,6 +157,9 @@ export function AvatarManager() {
       usePubMed: false,
       useWikipedia: false,
       useGoogleSearch: false,
+      enableAudioMode: true,
+      enableVideoMode: true,
+      enableVideoCreation: true,
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -181,6 +187,9 @@ export function AvatarManager() {
       usePubMed: avatar.usePubMed || false,
       useWikipedia: avatar.useWikipedia || false,
       useGoogleSearch: avatar.useGoogleSearch || false,
+      enableAudioMode: avatar.enableAudioMode ?? true,
+      enableVideoMode: avatar.enableVideoMode ?? true,
+      enableVideoCreation: avatar.enableVideoCreation ?? true,
       isActive: avatar.isActive,
     });
     setIsDialogOpen(true);
@@ -795,6 +804,47 @@ export function AvatarManager() {
                   data-testid="switch-use-google-search"
                 />
                 <Label htmlFor="useGoogleSearch" className="font-normal">Google Search</Label>
+              </div>
+            </div>
+
+            {/* Capability Toggles */}
+            <div className="space-y-3 p-4 border rounded-lg bg-yellow-500/5 border-yellow-500/20">
+              <Label className="text-sm font-medium text-yellow-400">Enabled Capabilities</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Control which features are available for this avatar
+              </p>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="enableAudioMode"
+                  checked={formData.enableAudioMode}
+                  onCheckedChange={(checked) => setFormData({ ...formData, enableAudioMode: checked })}
+                  data-testid="switch-enable-audio-mode"
+                />
+                <Label htmlFor="enableAudioMode" className="font-normal">Audio Chat</Label>
+                <span className="text-xs text-muted-foreground">(Audio-only conversations)</span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="enableVideoMode"
+                  checked={formData.enableVideoMode}
+                  onCheckedChange={(checked) => setFormData({ ...formData, enableVideoMode: checked })}
+                  data-testid="switch-enable-video-mode"
+                />
+                <Label htmlFor="enableVideoMode" className="font-normal">Video Chat</Label>
+                <span className="text-xs text-muted-foreground">(Live video streaming)</span>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="enableVideoCreation"
+                  checked={formData.enableVideoCreation}
+                  onCheckedChange={(checked) => setFormData({ ...formData, enableVideoCreation: checked })}
+                  data-testid="switch-enable-video-creation"
+                />
+                <Label htmlFor="enableVideoCreation" className="font-normal">Video Creation</Label>
+                <span className="text-xs text-muted-foreground">(Generate videos & courses)</span>
               </div>
             </div>
 
