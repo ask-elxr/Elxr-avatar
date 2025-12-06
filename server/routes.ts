@@ -6885,6 +6885,7 @@ This applies to EVERY response, regardless of conversation length.`;
   const { WebSocketServer } = await import('ws');
   const { setupStreamingWebSocket } = await import('./streamingService.js');
   const { initWebRTCStreamingServer } = await import('./webrtcStreamingService.js');
+  const { initElevenLabsSttServer } = await import('./elevenlabsSttService.js');
   
   const wss = new WebSocketServer({ noServer: true });
   setupStreamingWebSocket(wss);
@@ -6892,6 +6893,10 @@ This applies to EVERY response, regardless of conversation length.`;
   // Setup WebRTC streaming WebSocket (using LiveKit for transport)
   const webrtcWss = new WebSocketServer({ noServer: true });
   initWebRTCStreamingServer(webrtcWss);
+  
+  // Setup ElevenLabs STT WebSocket for mobile voice input
+  const sttWss = new WebSocketServer({ noServer: true });
+  initElevenLabsSttServer(sttWss);
   
   // Handle WebSocket upgrades manually for our streaming endpoints only
   httpServer.on('upgrade', (request, socket, head) => {
@@ -6904,12 +6909,17 @@ This applies to EVERY response, regardless of conversation length.`;
       webrtcWss.handleUpgrade(request, socket, head, (ws) => {
         webrtcWss.emit('connection', ws, request);
       });
+    } else if (url.pathname === '/ws/elevenlabs-stt') {
+      sttWss.handleUpgrade(request, socket, head, (ws) => {
+        sttWss.emit('connection', ws, request);
+      });
     }
     // Let other upgrade requests (like Vite HMR) pass through to their handlers
   });
   
   logger.info('Streaming WebSocket server initialized on /ws/streaming-chat');
   logger.info('WebRTC streaming WebSocket server initialized on /ws/webrtc-streaming');
+  logger.info('ElevenLabs STT WebSocket server initialized on /ws/elevenlabs-stt');
   
   return httpServer;
 }
