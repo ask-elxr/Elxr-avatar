@@ -1,11 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Room, RoomEvent, createLocalAudioTrack } from 'livekit-client';
 import type { LocalAudioTrack } from 'livekit-client';
+import type { SessionDriver } from './sessionDrivers';
 
 interface WebRTCStreamingConfig {
   avatarId: string;
   userId: string;
   languageCode?: string;
+  sessionDriver?: SessionDriver | null; // Optional: connect to LiveAvatarDriver for lip-sync
   onPartialTranscript?: (text: string) => void;
   onFinalTranscript?: (text: string) => void;
   onLLMDelta?: (delta: string, accumulated: string) => void;
@@ -42,7 +44,37 @@ export function useWebRTCStreaming(config: WebRTCStreamingConfig) {
   const nextPlayTimeRef = useRef<number>(0);
   const isPlayingRef = useRef<boolean>(false);
 
+  // Ref to track if we've started streaming to the avatar driver
+  const avatarStreamingStartedRef = useRef<boolean>(false);
+  
   const playAudioChunk = useCallback((base64Audio: string, isFinal: boolean) => {
+    // If session driver is available, use it for lip-sync (SDK handles audio playback)
+    if (config.sessionDriver?.addAudioChunk) {
+      // Start streaming audio if not already started
+      if (!avatarStreamingStartedRef.current && config.sessionDriver.startStreamingAudio) {
+        config.sessionDriver.startStreamingAudio();
+        avatarStreamingStartedRef.current = true;
+        setState(s => ({ ...s, isSpeaking: true }));
+        config.onSpeakingStart?.();
+      }
+      
+      // Send chunk to driver for lip-sync
+      config.sessionDriver.addAudioChunk(base64Audio);
+      
+      // End streaming if this is the final chunk
+      if (isFinal && config.sessionDriver.endStreamingAudio) {
+        config.sessionDriver.endStreamingAudio();
+        avatarStreamingStartedRef.current = false;
+        setState(s => ({ ...s, isSpeaking: false }));
+        config.onSpeakingEnd?.();
+      }
+      
+      // Note: onAudioChunk callback is NOT called here to avoid duplicate events
+      // The audio is routed to SDK for lip-sync, not played via Web Audio
+      return;
+    }
+    
+    // Fallback: play audio directly via Web Audio API (no avatar lip-sync)
     if (!playbackContextRef.current) {
       playbackContextRef.current = new AudioContext({ sampleRate: 24000 });
     }

@@ -12,6 +12,11 @@ export interface SessionDriver {
   interrupt(): Promise<void>;
   supportsVoiceInput(): boolean;
   setLanguage?(languageCode: string): void;
+  // Streaming audio methods for real-time lip-sync
+  startStreamingAudio?(): void;
+  addAudioChunk?(base64Audio: string): void;
+  endStreamingAudio?(): void;
+  isStreamingAudioActive?(): boolean;
 }
 
 interface DriverConfig {
@@ -42,6 +47,14 @@ export class LiveAvatarDriver implements SessionDriver {
   private sessionId: string | null = null;
   private videoAttached: boolean = false;
   private audioContext: AudioContext | null = null;
+  
+  // Streaming audio accumulator for real-time lip-sync
+  private audioChunkBuffer: Uint8Array[] = [];
+  private audioBufferSize: number = 0;
+  private isStreamingAudio: boolean = false;
+  private streamingFlushTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly STREAMING_BUFFER_THRESHOLD = 12000; // ~0.5s of 24kHz PCM audio (24000 samples/s * 2 bytes * 0.25s)
+  private readonly STREAMING_FLUSH_DELAY = 200; // ms - flush buffer after no new chunks for this duration
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -393,6 +406,124 @@ export class LiveAvatarDriver implements SessionDriver {
 
   isUsingElevenLabsVoice(): boolean {
     return !this.useHeygenVoice;
+  }
+
+  /**
+   * Start streaming audio mode - prepares buffer for incoming audio chunks
+   */
+  startStreamingAudio(): void {
+    this.isStreamingAudio = true;
+    this.audioChunkBuffer = [];
+    this.audioBufferSize = 0;
+    if (this.streamingFlushTimer) {
+      clearTimeout(this.streamingFlushTimer);
+      this.streamingFlushTimer = null;
+    }
+    console.log("🎵 Started streaming audio accumulation for lip-sync");
+    
+    // Ensure video is unmuted for SDK audio playback
+    if (this.config.videoRef.current) {
+      this.config.videoRef.current.muted = false;
+    }
+    
+    this.config.onAvatarStartTalking?.();
+  }
+
+  /**
+   * Add an audio chunk to the buffer - sends to SDK when threshold reached
+   * @param base64Audio Base64 encoded PCM audio chunk (24kHz, 16-bit)
+   */
+  addAudioChunk(base64Audio: string): void {
+    if (!this.isStreamingAudio || !this.session) return;
+    
+    // Decode base64 to binary
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    this.audioChunkBuffer.push(bytes);
+    this.audioBufferSize += bytes.length;
+    
+    // Clear previous flush timer
+    if (this.streamingFlushTimer) {
+      clearTimeout(this.streamingFlushTimer);
+    }
+    
+    // Check if we have enough audio to send to SDK for lip-sync
+    if (this.audioBufferSize >= this.STREAMING_BUFFER_THRESHOLD) {
+      this.flushAudioBuffer();
+    } else {
+      // Set a timer to flush if no more chunks arrive
+      this.streamingFlushTimer = setTimeout(() => {
+        if (this.audioBufferSize > 0) {
+          this.flushAudioBuffer();
+        }
+      }, this.STREAMING_FLUSH_DELAY);
+    }
+  }
+
+  /**
+   * Flush accumulated audio buffer to SDK for lip-sync playback
+   */
+  private flushAudioBuffer(): void {
+    if (!this.session || this.audioChunkBuffer.length === 0) return;
+    
+    // Combine all chunks into one buffer
+    const totalLength = this.audioChunkBuffer.reduce((sum, chunk) => sum + chunk.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of this.audioChunkBuffer) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    // Convert to base64 for SDK
+    let binary = '';
+    for (let i = 0; i < combined.length; i++) {
+      binary += String.fromCharCode(combined[i]);
+    }
+    const base64Audio = btoa(binary);
+    
+    console.log(`🔊 Sending ${totalLength} bytes (${(totalLength / 48000 * 1000).toFixed(0)}ms) to SDK for lip-sync`);
+    
+    // Send to SDK for lip-sync + audio playback
+    this.session.repeatAudio(base64Audio);
+    
+    // Clear buffer
+    this.audioChunkBuffer = [];
+    this.audioBufferSize = 0;
+  }
+
+  /**
+   * End streaming audio mode - flushes remaining buffer
+   */
+  endStreamingAudio(): void {
+    if (this.streamingFlushTimer) {
+      clearTimeout(this.streamingFlushTimer);
+      this.streamingFlushTimer = null;
+    }
+    
+    // Flush any remaining audio
+    if (this.audioBufferSize > 0) {
+      this.flushAudioBuffer();
+    }
+    
+    this.isStreamingAudio = false;
+    console.log("🎵 Ended streaming audio mode");
+    
+    // Delay the stop talking callback to allow SDK to finish playback
+    setTimeout(() => {
+      this.config.onAvatarStopTalking?.();
+    }, 500);
+  }
+
+  /**
+   * Check if streaming audio mode is active
+   */
+  isStreamingAudioActive(): boolean {
+    return this.isStreamingAudio;
   }
 }
 

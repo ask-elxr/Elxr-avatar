@@ -18,6 +18,13 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency audio, bridging to ElevenLabs STT/TTS and Claude AI.
 - **True Streaming Optimization**: Designed for zero buffering and minimum latency across LLM, TTS, and STT streams.
 - **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately and conditionally including context in the LLM prompt.
+- **End-to-End Streaming Pipeline**:
+    -   User audio → STT streaming (partial transcripts ~100ms)
+    -   STT final → LLM streaming (token-by-token to TTS)
+    -   LLM tokens → TTS streaming (audio chunks ~50ms)
+    -   TTS audio → Avatar SDK (`repeatAudio()` for lip-sync)
+    -   `LiveAvatarDriver` accumulates streaming audio (12KB threshold / 200ms timeout)
+    -   Batched audio sent to SDK for synchronized lip animation
 
 #### Backend (Express + TypeScript + Python)
 - **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
