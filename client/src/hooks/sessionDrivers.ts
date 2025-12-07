@@ -49,6 +49,7 @@ export class LiveAvatarDriver implements SessionDriver {
   private sessionId: string | null = null;
   private videoAttached: boolean = false;
   private audioContext: AudioContext | null = null;
+  private enableMobileVoiceChat: boolean = false; // Track if mobile voice chat is enabled
   
   // Streaming audio accumulator for real-time lip-sync
   private audioChunkBuffer: Uint8Array[] = [];
@@ -159,21 +160,46 @@ export class LiveAvatarDriver implements SessionDriver {
         // Enable voice chat for mobile devices - uses LiveKit WebRTC for microphone capture
         // This works in iframes on mobile (unlike WebSocket or Web Speech API)
         // USER_TRANSCRIPTION events will be routed to our Claude + ElevenLabs pipeline
-        const enableVoiceChat = this.config.enableMobileVoiceChat === true;
-        console.log(`🎤 LiveAvatar voiceChat: ${enableVoiceChat ? 'ENABLED (mobile mode - using LiveKit WebRTC)' : 'DISABLED (using Web Speech API)'}`);
+        this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
+        console.log(`🎤 LiveAvatar voiceChat: ${this.enableMobileVoiceChat ? 'ENABLED (mobile mode - using LiveKit WebRTC)' : 'DISABLED (using Web Speech API)'}`);
         
         const session = new LiveAvatarSession(sessionToken, {
-          voiceChat: enableVoiceChat, // Enable for mobile - uses LiveKit for microphone capture
+          voiceChat: this.enableMobileVoiceChat, // Enable for mobile - uses LiveKit for microphone capture
           apiUrl: "https://api.liveavatar.com", // LiveAvatar service endpoint (different from HeyGen)
         });
         this.session = session;
 
-        // Listen for stream ready event - this is when we attach the video element
-        session.on(SessionEvent.SESSION_STREAM_READY, () => {
+        // Listen for stream ready event - this is when we attach the video element and start voice chat
+        session.on(SessionEvent.SESSION_STREAM_READY, async () => {
           console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
           // Use SDK's attach() method to connect video element
           // Retry with increasing delays if video element is not yet rendered
           this.attachVideoWithRetry(5);
+          
+          // Start voice chat after stream is ready (for mobile devices)
+          if (this.enableMobileVoiceChat && this.session) {
+            console.log("🎤 Starting SDK voice chat after stream ready (LiveKit microphone capture)...");
+            try {
+              // First, explicitly start the voiceChat microphone capture
+              // This uses LiveKit to capture audio via WebRTC (works in mobile iframes)
+              const voiceChat = this.session.voiceChat;
+              console.log("🎤 VoiceChat state:", voiceChat?.state);
+              
+              if (voiceChat && voiceChat.state !== 'ACTIVE') {
+                console.log("🎤 Starting voiceChat.start() for microphone capture...");
+                await voiceChat.start({ defaultMuted: false });
+                console.log("✅ VoiceChat microphone capture started, state:", voiceChat.state);
+              }
+              
+              // Then tell the avatar to start listening for speech
+              this.session.startListening();
+              console.log("✅ SDK startListening() called - avatar is now listening");
+              this.config.onVoiceChatReady?.();
+            } catch (voiceChatError: any) {
+              console.warn("⚠️ Failed to start SDK voice chat:", voiceChatError?.message || voiceChatError);
+              // If voiceChat fails (e.g., permission denied), the UI should show a message
+            }
+          }
         });
 
         // Listen for session state changes
@@ -198,6 +224,15 @@ export class LiveAvatarDriver implements SessionDriver {
           this.config.onAvatarStopTalking?.();
         });
 
+        // Listen for user speaking events (for debugging voice input)
+        session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
+          console.log("🎤 User started speaking (SDK voice detection)");
+        });
+
+        session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
+          console.log("🎤 User stopped speaking (SDK voice detection)");
+        });
+
         // Listen for user transcription (voice input)
         session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
           console.log("🎤 User transcription:", event.text);
@@ -210,6 +245,7 @@ export class LiveAvatarDriver implements SessionDriver {
         console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
         await session.start();
         console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
+        // Note: startListening() is called in SESSION_STREAM_READY handler (after stream is ready)
         
         // Success - exit retry loop
         console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
