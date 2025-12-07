@@ -628,19 +628,36 @@ export function useAvatarSession({
       console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, iOSSafari=${isIOSSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
       console.log(`📱 UserAgent: ${userAgent.substring(0, 100)}...`);
       
-      // 🎤 MOBILE FIX: Use ElevenLabs realtime STT for ALL mobile devices
-      // Web Speech API is unreliable on mobile (iOS Safari sometimes works, but Android and other iOS browsers don't)
+      // 🎤 MOBILE FIX: Try Web Speech API first on mobile Safari (works better in iframes)
+      // WebSocket-based ElevenLabs STT is blocked in iframes on mobile Safari
       if (isMobile) {
-        console.log("📱 Mobile device detected - using ElevenLabs realtime STT instead of Web Speech API");
-        useElevenLabsSttRef.current = true;
-        startElevenLabsSTT();
-        return;
+        console.log("📱 Mobile device detected - checking Web Speech API availability first");
+        
+        // On iOS Safari, Web Speech API works better than WebSocket in iframes
+        if (SpeechRecognition && isIOSSafari) {
+          console.log("📱 iOS Safari detected - using native Web Speech API");
+          // Don't use ElevenLabs STT on iOS Safari in iframes (WebSocket blocked)
+          useElevenLabsSttRef.current = false;
+          // Continue to Web Speech API setup below
+        } else if (SpeechRecognition) {
+          // Android or other mobile - try Web Speech API first
+          console.log("📱 Mobile browser with Web Speech API - trying native speech recognition");
+          useElevenLabsSttRef.current = false;
+          // Continue to Web Speech API setup below
+        } else {
+          // No Web Speech API - try ElevenLabs as fallback
+          console.log("📱 No Web Speech API - trying ElevenLabs STT");
+          useElevenLabsSttRef.current = true;
+          startElevenLabsSTT();
+          return;
+        }
       }
       
       // Chrome on iOS does NOT support Web Speech API (Apple restricts it)
-      // Only Safari can use it on iOS - but we now use ElevenLabs STT for all mobile anyway
+      // Only Safari can use it on iOS - fallback to ElevenLabs STT (may not work in iframes)
       if (isChromeIOS || isFirefoxIOS) {
-        console.warn("⚠️ Voice input not supported in Chrome/Firefox on iOS - using ElevenLabs STT");
+        console.warn("⚠️ Voice input not supported in Chrome/Firefox on iOS");
+        console.warn("⚠️ Trying ElevenLabs STT (may be blocked in iframes)");
         useElevenLabsSttRef.current = true;
         startElevenLabsSTT();
         return;
