@@ -43,10 +43,19 @@ interface ChatMessage {
 }
 
 export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
+  // Detect mobile device for default mode selection
+  // On mobile, video mode works better because HeyGen's LiveKit handles mic capture
+  const isMobileDevice = typeof window !== 'undefined' && (
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    ('ontouchstart' in window && window.innerWidth < 768)
+  );
+  
   // UI-only state
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
-  const [audioOnly, setAudioOnly] = useState(true); // Default to audio mode
+  // On mobile, default to video mode (HeyGen LiveKit handles voice better)
+  // On desktop, default to audio mode (saves HeyGen credits)
+  const [audioOnly, setAudioOnly] = useState(!isMobileDevice); // Mobile: video, Desktop: audio
   const [isModeSwitching, setIsModeSwitching] = useState(false);
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean | null>(null);
   const [requestingMicPermission, setRequestingMicPermission] = useState(false);
@@ -90,6 +99,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     const memoryPref = localStorage.getItem('memory-enabled');
     console.log("🧠 Loading memory preference from localStorage:", memoryPref);
     setMemoryEnabled(memoryPref === 'true');
+  }, []);
+  
+  // Log mobile detection and mode selection
+  useEffect(() => {
+    console.log(`📱 Mobile device detected: ${isMobileDevice}`);
+    console.log(`🎬 Default mode: ${audioOnly ? 'audio-only' : 'video'} (mobile gets video for better voice input)`);
   }, []);
 
   // Load avatar's language settings and capabilities when avatar changes
