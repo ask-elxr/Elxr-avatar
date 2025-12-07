@@ -435,8 +435,10 @@ export function useAvatarSession({
     };
     
     ws.onerror = (error) => {
-      console.error("🎤 ElevenLabs STT WebSocket error:", error);
-      setMicrophoneStatus('not-supported');
+      console.error("🎤 ElevenLabs STT WebSocket error - falling back to Web Speech API:", error);
+      useElevenLabsSttRef.current = false;
+      // Try Web Speech API as fallback
+      tryWebSpeechApiFallback();
     };
     
     ws.onclose = () => {
@@ -447,6 +449,82 @@ export function useAvatarSession({
       }
     };
   }, [stopElevenLabsSTT, handleElevenLabsSttTranscript]);
+
+  // Fallback to Web Speech API if ElevenLabs STT fails (mobile Safari iframe restrictions)
+  const tryWebSpeechApiFallback = useCallback(() => {
+    console.log("🎤 Attempting Web Speech API fallback...");
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      console.error("🎤 Web Speech API not available either - voice not supported");
+      setMicrophoneStatus('not-supported');
+      return;
+    }
+    
+    // Try to use Web Speech API even on mobile as fallback
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false; // Non-continuous for mobile reliability
+      recognition.interimResults = false;
+      recognition.lang = languageCodeRef.current;
+      recognition.maxAlternatives = 1;
+      
+      recognition.onstart = () => {
+        setMicrophoneStatus('listening');
+        console.log("🎤 Web Speech API fallback listening");
+      };
+      
+      recognition.onresult = (event: any) => {
+        const results = event.results;
+        if (results.length > 0) {
+          const transcript = results[results.length - 1][0].transcript;
+          if (transcript && transcript.trim()) {
+            console.log("🎤 Web Speech API fallback transcript:", transcript);
+            handleSubmitMessageRef.current?.(transcript.trim());
+          }
+        }
+        // Restart for continuous listening
+        if (sessionActiveRef.current && !isSpeakingRef.current) {
+          setTimeout(() => {
+            try { recognition.start(); } catch (e) {}
+          }, 100);
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error("🎤 Web Speech API fallback error:", event.error);
+        if (event.error === 'not-allowed') {
+          setMicrophoneStatus('permission-denied');
+        } else if (event.error === 'no-speech') {
+          // Restart on no-speech
+          if (sessionActiveRef.current && !isSpeakingRef.current) {
+            setTimeout(() => {
+              try { recognition.start(); } catch (e) {}
+            }, 100);
+          }
+        } else {
+          setMicrophoneStatus('not-supported');
+        }
+      };
+      
+      recognition.onend = () => {
+        // Restart if session still active
+        if (sessionActiveRef.current && !isSpeakingRef.current && !recognitionIntentionalStopRef.current) {
+          setTimeout(() => {
+            try { recognition.start(); } catch (e) {}
+          }, 100);
+        }
+      };
+      
+      recognitionRef.current = recognition;
+      recognition.start();
+      recognitionRunningRef.current = true;
+      console.log("🎤 Web Speech API fallback started successfully");
+    } catch (error) {
+      console.error("🎤 Web Speech API fallback failed:", error);
+      setMicrophoneStatus('not-supported');
+    }
+  }, []);
   
   // Start microphone capture for ElevenLabs STT
   const startMicrophoneForElevenLabsSTT = useCallback(async () => {
