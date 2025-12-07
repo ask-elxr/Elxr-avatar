@@ -26,12 +26,14 @@ interface DriverConfig {
   avatarId: string;
   userId: string;
   languageCode?: string;
+  enableMobileVoiceChat?: boolean; // Enable HeyGen's built-in voice chat for mobile (uses LiveKit WebRTC)
   onStreamReady?: () => void;
   onStreamDisconnected?: () => void;
   onAvatarStartTalking?: () => void;
   onAvatarStopTalking?: () => void;
   onUserMessage?: (message: string) => void;
   onVideoReady?: () => void; // Called when LiveKit video track is attached and playing
+  onVoiceChatReady?: () => void; // Called when SDK's voice chat is ready for microphone input
 }
 
 /**
@@ -153,8 +155,15 @@ export class LiveAvatarDriver implements SessionDriver {
         // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
         // The SDK handles LiveKit connection internally when session.start() is called
         // NOTE: LiveAvatar is a separate service from HeyGen - must use LiveAvatar API endpoint
+        
+        // Enable voice chat for mobile devices - uses LiveKit WebRTC for microphone capture
+        // This works in iframes on mobile (unlike WebSocket or Web Speech API)
+        // USER_TRANSCRIPTION events will be routed to our Claude + ElevenLabs pipeline
+        const enableVoiceChat = this.config.enableMobileVoiceChat === true;
+        console.log(`🎤 LiveAvatar voiceChat: ${enableVoiceChat ? 'ENABLED (mobile mode - using LiveKit WebRTC)' : 'DISABLED (using Web Speech API)'}`);
+        
         const session = new LiveAvatarSession(sessionToken, {
-          voiceChat: false, // Disable SDK's voice chat - we use our own Claude + ElevenLabs pipeline
+          voiceChat: enableVoiceChat, // Enable for mobile - uses LiveKit for microphone capture
           apiUrl: "https://api.liveavatar.com", // LiveAvatar service endpoint (different from HeyGen)
         });
         this.session = session;

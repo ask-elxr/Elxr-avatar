@@ -111,6 +111,7 @@ export function useAvatarSession({
   const elevenLabsSttProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const elevenLabsSttStreamRef = useRef<MediaStream | null>(null);
   const useElevenLabsSttRef = useRef(false); // Track if we're using ElevenLabs STT instead of Web Speech API
+  const usingHeygenMobileVoiceChatRef = useRef(false); // Track if we're using HeyGen's built-in voice chat (LiveKit WebRTC) for mobile
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -583,6 +584,13 @@ export function useAvatarSession({
   const handleSubmitMessageRef = useRef<((message: string) => Promise<void>) | null>(null);
 
   const startVoiceRecognition = useCallback(() => {
+    // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
+    // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
+    if (usingHeygenMobileVoiceChatRef.current) {
+      console.log("⏭️ Skipping Web Speech API - using HeyGen's built-in voice chat (LiveKit WebRTC)");
+      return;
+    }
+    
     // Skip if already initialized AND running
     if (recognitionRef.current && recognitionRunningRef.current) {
       console.log("⏭️ Voice recognition already active");
@@ -1218,6 +1226,16 @@ export function useAvatarSession({
         console.log(`🎙️ Avatar ${avatarConfig.name} will use ElevenLabs voice in video mode (no HeyGen voice configured)`);
       }
 
+      // Detect mobile for voice chat mode
+      // On mobile, use HeyGen's built-in voice chat (LiveKit WebRTC) which works better in iframes
+      const userAgent = navigator.userAgent || '';
+      const isMobile = /iPad|iPhone|iPod|android|mobile|phone/i.test(userAgent) || 
+                       (('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 768);
+      console.log(`📱 Mobile detection for voice chat: ${isMobile}`);
+      
+      // Track that we're using HeyGen's voice chat (so we don't start our own voice recognition)
+      usingHeygenMobileVoiceChatRef.current = isMobile;
+
       // Create LiveAvatarDriver with callbacks wired to existing logic
       const driver = new LiveAvatarDriver({
         avatarConfig,
@@ -1226,6 +1244,7 @@ export function useAvatarSession({
         avatarId: activeAvatarId,
         userId,
         languageCode: languageCodeRef.current,
+        enableMobileVoiceChat: isMobile, // Enable HeyGen's built-in voice chat on mobile (uses LiveKit WebRTC)
         
         // Video ready callback - called when LiveKit video track is attached
         onVideoReady: () => {
@@ -1244,6 +1263,13 @@ export function useAvatarSession({
           }
           setIsLoading(false);
           setHeygenSessionActive(true);
+          
+          // If using HeyGen's mobile voice chat, set microphone status to listening
+          // The SDK handles microphone capture via LiveKit WebRTC
+          if (usingHeygenMobileVoiceChatRef.current) {
+            console.log("🎤 HeyGen mobile voice chat active - microphone handled by SDK");
+            setMicrophoneStatus('listening');
+          }
           
           // 🎤 Avatar speaks first with a personalized greeting (only for fresh starts, not mode switches)
           if (!skipGreeting) {
@@ -1279,6 +1305,7 @@ export function useAvatarSession({
           intentionalStopRef.current = false;
           isSpeakingRef.current = false;
           sessionDriverRef.current = null;
+          usingHeygenMobileVoiceChatRef.current = false; // Reset mobile voice chat flag
           setHeygenSessionActive(false);
           setVideoReady(false); // Reset video ready state on disconnect
           clearIdleTimeout();
