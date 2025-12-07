@@ -378,20 +378,26 @@ export function useAvatarSession({
       return;
     }
     
-    console.log("🎤 Starting ElevenLabs STT for mobile...");
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/elevenlabs-stt`;
+    console.log("🎤 Starting ElevenLabs STT for mobile...", { wsUrl, host: window.location.host, protocol: window.location.protocol });
     useElevenLabsSttRef.current = true;
     
     // Cleanup any existing connection
     stopElevenLabsSTT();
     
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/elevenlabs-stt`;
-    
-    const ws = new WebSocket(wsUrl);
-    elevenLabsSttWsRef.current = ws;
+    let ws: WebSocket;
+    try {
+      ws = new WebSocket(wsUrl);
+      elevenLabsSttWsRef.current = ws;
+    } catch (wsError) {
+      console.error("🎤 ElevenLabs STT WebSocket creation failed:", wsError);
+      setMicrophoneStatus('not-supported');
+      return;
+    }
     
     ws.onopen = () => {
-      console.log("🎤 ElevenLabs STT WebSocket connected");
+      console.log("🎤 ElevenLabs STT WebSocket connected successfully");
       ws.send(JSON.stringify({
         type: 'start',
         languageCode: elevenLabsLanguageCodeRef.current || 'en',
