@@ -1484,11 +1484,22 @@ This appears to be your first conversation with this person - no prior memories 
         });
       }
       
-      // Get session ID - prefer Memberstack, then anonymous session
-      const sessionId = req.session?.memberstackId || req.session?.anonymousId;
+      // Get session ID - prefer Memberstack, then anonymous session (which uses userId field)
+      // Anonymous users get webflow_* or temp_* IDs stored in session.userId
+      const sessionId = req.session?.memberstackId || req.session?.userId;
+      
+      // Create anonymous session if none exists (for mobile browsers that may not have session yet)
+      if (!sessionId && req.session) {
+        const newSessionId = `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+        req.session.userId = newSessionId;
+        log.info({ newSessionId, ip: req.ip }, "Created anonymous session for STT");
+      }
+      
+      // Get the potentially newly-created session ID
+      const finalSessionId = req.session?.memberstackId || req.session?.userId;
       
       // Require a valid session for STT access (prevents totally anonymous abuse)
-      if (!sessionId) {
+      if (!finalSessionId) {
         log.warn({ ip: req.ip }, "STT request without session ID rejected");
         return res.status(401).json({ 
           error: "Session required for voice input. Please refresh the page." 
@@ -1496,7 +1507,7 @@ This appears to be your first conversation with this person - no prior memories 
       }
       
       // Rate limiting based on session ID (not IP, since sessions are more reliable)
-      const rateLimitKey = sessionId;
+      const rateLimitKey = finalSessionId;
       const now = Date.now();
       const currentDay = Math.floor(now / (24 * 60 * 60 * 1000)); // Day number
       
@@ -1510,7 +1521,7 @@ This appears to be your first conversation with this person - no prior memories 
             await storage.logApiCall({
               serviceName: 'elevenlabs_stt',
               endpoint: '/api/stt',
-              userId: sessionId.startsWith('webflow_') ? null : sessionId,
+              userId: finalSessionId.startsWith('webflow_') ? null : finalSessionId,
               responseTimeMs: 0,
             }).catch(() => {}); // Don't fail on logging errors
             return res.status(429).json({ 
