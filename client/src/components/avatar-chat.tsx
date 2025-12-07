@@ -8,7 +8,6 @@ import { queryClient } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
-import { useMobileSTT } from "@/hooks/useMobileSTT";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
@@ -252,35 +251,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
   });
 
-  // Hook for Mobile STT (ElevenLabs) - fallback when Web Speech API is not supported
-  const handleMobileTranscript = useCallback((text: string) => {
-    if (text && sessionActive) {
-      console.log("🎙️ Mobile STT transcript received:", text);
-      originalHandleSubmitMessage(text);
-    }
-  }, [sessionActive, originalHandleSubmitMessage]);
-
-  const handleMobileSTTError = useCallback((error: string) => {
-    console.error("🎙️ Mobile STT error:", error);
-    toast({
-      title: "Voice Error",
-      description: error,
-      variant: "destructive",
-    });
-  }, [toast]);
-
-  const {
-    isRecording: isMobileRecording,
-    isProcessing: isMobileProcessing,
-    startRecording: startMobileRecording,
-    stopRecording: stopMobileRecording,
-    cancelRecording: cancelMobileRecording,
-    isSupported: isMobileSTTSupported,
-  } = useMobileSTT({
-    onTranscript: handleMobileTranscript,
-    onError: handleMobileSTTError,
-    languageCode: elevenLabsLanguage,
-  });
   
   // Sync isSpeaking state from hook
   useEffect(() => {
@@ -652,10 +622,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   };
 
   const endChat = async () => {
-    // Cancel any ongoing mobile recording
-    if (isMobileRecording) {
-      cancelMobileRecording();
-    }
     await endSession();
     setChatHistory([]); // Clear chat history on end
   };
@@ -810,67 +776,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
             )}
             
-            {/* Voice Not Supported - show push-to-talk button using ElevenLabs STT */}
-            {microphoneStatus === 'not-supported' && isMobileSTTSupported && !isSpeaking && (
-              <button
-                onTouchStart={(e) => {
-                  e.preventDefault();
-                  if (!isMobileRecording && !isMobileProcessing) {
-                    startMobileRecording();
-                  }
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  if (isMobileRecording) {
-                    stopMobileRecording();
-                  }
-                }}
-                onMouseDown={() => {
-                  if (!isMobileRecording && !isMobileProcessing) {
-                    startMobileRecording();
-                  }
-                }}
-                onMouseUp={() => {
-                  if (isMobileRecording) {
-                    stopMobileRecording();
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (isMobileRecording) {
-                    cancelMobileRecording();
-                  }
-                }}
-                disabled={isMobileProcessing}
-                className={`absolute top-20 right-4 flex items-center gap-2 px-4 py-3 rounded-full backdrop-blur-sm z-30 transition-all select-none touch-none ${
-                  isMobileRecording 
-                    ? 'bg-red-500/80 border-2 border-red-400 animate-pulse scale-110' 
-                    : isMobileProcessing
-                      ? 'bg-blue-500/50 border border-blue-400/60'
-                      : 'bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/60 active:scale-95'
-                }`}
-                data-testid="button-push-to-talk"
-              >
-                {isMobileProcessing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 text-blue-300 animate-spin" />
-                    <span className="text-sm text-blue-300 font-medium">Processing...</span>
-                  </>
-                ) : isMobileRecording ? (
-                  <>
-                    <Mic className="w-5 h-5 text-white" />
-                    <span className="text-sm text-white font-medium">Release to send</span>
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-5 h-5 text-blue-400" />
-                    <span className="text-sm text-blue-300 font-medium">Hold to speak</span>
-                  </>
-                )}
-              </button>
-            )}
-            
-            {/* Voice Not Supported and Mobile STT not available - show text-only message */}
-            {microphoneStatus === 'not-supported' && !isMobileSTTSupported && (
+            {/* Voice Not Supported - ElevenLabs WebSocket STT handles this automatically via useAvatarSession */}
+            {microphoneStatus === 'not-supported' && (
               <div className="absolute top-20 right-4 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
                 <div className="flex items-center gap-2">
                   <MicOff className="w-4 h-4 text-amber-400" />
