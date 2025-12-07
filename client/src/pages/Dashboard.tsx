@@ -820,7 +820,12 @@ export default function Dashboard({
                       </p>
                       <Button
                         className="w-full"
-                        onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}
+                        onClick={() => {
+                          console.log("🚀 Start Chatting clicked, isEmbed:", isEmbed);
+                          const targetPath = isEmbed ? "/embed/chat" : "/dashboard/chat";
+                          console.log("🚀 Navigating to:", targetPath);
+                          setLocation(targetPath);
+                        }}
                         data-testid="button-start-chat"
                       >
                         <MessageSquare className="w-4 h-4 mr-2" />
