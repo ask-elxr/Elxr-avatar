@@ -584,6 +584,9 @@ export function useAvatarSession({
   const handleSubmitMessageRef = useRef<((message: string) => Promise<void>) | null>(null);
 
   const startVoiceRecognition = useCallback(() => {
+    // Version check - helps verify fresh code is loaded
+    console.log("🔧 Voice recognition code version: 2024-12-07-v2");
+    
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
     if (usingHeygenMobileVoiceChatRef.current) {
@@ -1231,6 +1234,7 @@ export function useAvatarSession({
       const userAgent = navigator.userAgent || '';
       const isMobile = /iPad|iPhone|iPod|android|mobile|phone/i.test(userAgent) || 
                        (('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 768);
+      console.log("🔧 Session start code version: 2024-12-07-v2");
       console.log(`📱 Mobile detection for voice chat: ${isMobile}`);
       
       // Track that we're using HeyGen's voice chat (so we don't start our own voice recognition)

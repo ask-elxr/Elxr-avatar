@@ -161,6 +161,7 @@ export class LiveAvatarDriver implements SessionDriver {
         // This works in iframes on mobile (unlike WebSocket or Web Speech API)
         // USER_TRANSCRIPTION events will be routed to our Claude + ElevenLabs pipeline
         this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
+        console.log("🔧 LiveAvatarDriver code version: 2024-12-07-v2");
         console.log(`🎤 LiveAvatar voiceChat: ${this.enableMobileVoiceChat ? 'ENABLED (mobile mode - using LiveKit WebRTC)' : 'DISABLED (using Web Speech API)'}`);
         
         const session = new LiveAvatarSession(sessionToken, {
