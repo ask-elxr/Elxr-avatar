@@ -286,7 +286,7 @@ class ElevenLabsService {
     });
 
     try {
-      log.debug("Generating PCM speech for LiveAvatar SDK (raw PCM 24kHz 16-bit)");
+      log.debug("Generating WAV speech for LiveAvatar SDK (WAV container, 24kHz, 16-bit)");
       const startTime = Date.now();
 
       const response = await fetch(
@@ -319,14 +319,16 @@ class ElevenLabsService {
       const arrayBuffer = await response.arrayBuffer();
       const pcmBuffer = Buffer.from(arrayBuffer);
       
-      // HeyGen SDK expects RAW PCM (24kHz, 16-bit, mono), NOT WAV with headers
-      // The SDK's repeatAudio() method handles the raw PCM directly
-      const audioBase64 = pcmBuffer.toString('base64');
+      // HeyGen SDK requires WAV container (not raw PCM) so it understands sample metadata
+      // WAV header: RIFF + fmt chunk (24kHz, mono, 16-bit LE) + data chunk
+      // Without WAV headers, HeyGen misinterprets the audio causing muffled playback
+      const wavBuffer = this.createWavBuffer(pcmBuffer, 24000, 1, 16);
+      const audioBase64 = wavBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
-        { duration, pcmSize: pcmBuffer.length, format: "pcm_24000_base64" },
-        "PCM speech generated for LiveAvatar SDK",
+        { duration, pcmSize: pcmBuffer.length, wavSize: wavBuffer.length, format: "wav_24000_base64" },
+        "WAV speech generated for LiveAvatar SDK (continuous playback)",
       );
       metrics.recordElevenLabsTTS(duration);
 
