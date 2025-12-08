@@ -12,9 +12,9 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 ### System Architecture
 
 #### Frontend (React + TypeScript)
-- **Core Features**: Avatar selection, LiveAvatar video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
+- **Core Features**: Avatar selection, LiveAvatar video streaming, ElevenLabs STT for voice recognition (exclusive, no Web Speech API), real-time chat with memory, document upload, and an admin dashboard.
 - **SessionDriver Pattern**: Unified abstraction for avatar sessions (`LiveAvatarDriver`, `AudioOnlyDriver`) with a common interface.
-- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT, Pinecone RAG, Mem0, OpenAI Realtime API, and ElevenLabs Realtime TTS.
+- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT (exclusive), Pinecone RAG, Mem0, and ElevenLabs Realtime TTS.
 - **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency audio, bridging to ElevenLabs STT/TTS and Claude AI.
 - **True Streaming Optimization**: Designed for zero buffering and minimum latency across LLM, TTS, and STT streams.
 - **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately and conditionally including context in the LLM prompt.
@@ -79,7 +79,8 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
 - **Pinecone**: Direct namespace-based vector queries with namespace normalization.
-- **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
+- **Real-time Voice**: HeyGen for video/audio synthesis, ElevenLabs STT for voice recognition (exclusive - no Web Speech API).
+- **Streaming Audio Pipeline**: Sub-1-second first audio latency via aggressive timer-based flushing (100ms first chunk, 200ms subsequent).
 - **Anonymous Sessions**: Supports persistent anonymous user sessions.
 
 ### External Dependencies
