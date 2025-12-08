@@ -184,12 +184,12 @@ export class GoogleDriveService {
       const mimeType = metadata.data.mimeType || 'application/octet-stream';
       const fileSize = parseInt(metadata.data.size || '0', 10);
 
-      // MEMORY SAFETY: Check file size before downloading (max 50MB to support larger files)
-      const maxDownloadSize = 50 * 1024 * 1024; // 50MB
+      // MEMORY SAFETY: Check file size before downloading (max 2MB to prevent OOM)
+      const maxDownloadSize = 2 * 1024 * 1024; // 2MB
       if (fileSize > maxDownloadSize && !mimeType.startsWith('application/vnd.google-apps.')) {
         this.log.warn({ fileId, fileName, fileSize, maxSize: maxDownloadSize }, 
           'File too large to download - skipping to prevent memory issues');
-        throw new Error(`File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 50MB limit)`);
+        throw new Error(`File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 2MB limit)`);
       }
 
       this.log.info({ fileId, fileName, mimeType, fileSize }, 'File metadata retrieved');
@@ -366,15 +366,17 @@ export class GoogleDriveService {
         'application/vnd.google-apps.document'
       ];
       
-      // Exclude only truly unsupported archive formats (ZIP is now supported!)
+      // Exclude zip files and archives
       const excludedMimeTypes = [
+        'application/zip',
+        'application/x-zip-compressed',
         'application/x-rar-compressed',
         'application/x-7z-compressed',
         'application/gzip'
       ];
       
-      // Max file size: 50MB (increased to support larger documents and ZIP files)
-      const maxFileSize = 50 * 1024 * 1024;
+      // Max file size: 3MB
+      const maxFileSize = 3 * 1024 * 1024;
       
       const topicFolders: TopicFolder[] = [];
       
@@ -385,19 +387,18 @@ export class GoogleDriveService {
         
         const { files: folderFiles } = await this.listFolderContents(folder.id);
         
-        // Filter to uploadable files (including ZIP files which will be extracted)
+        // Filter to only uploadable files (no zips, no large files)
         const uploadableFiles = folderFiles.filter(f => {
           // Skip folders
           if (f.mimeType === 'application/vnd.google-apps.folder') return false;
-          // Skip unsupported archives (RAR, 7z) but allow ZIP
+          // Skip archives
           if (excludedMimeTypes.includes(f.mimeType || '')) return false;
-          if (f.name?.endsWith('.rar') || f.name?.endsWith('.7z')) return false;
+          if (f.name?.endsWith('.zip') || f.name?.endsWith('.rar') || f.name?.endsWith('.7z')) return false;
           // Skip large files
           const fileSize = parseInt(f.size || '0', 10);
           if (fileSize > maxFileSize) return false;
-          // Check if supported type (now includes ZIP)
-          const isZip = f.mimeType === 'application/zip' || f.mimeType === 'application/x-zip-compressed' || f.name?.endsWith('.zip');
-          return isZip || supportedMimeTypes.includes(f.mimeType || '') || 
+          // Check if supported type
+          return supportedMimeTypes.includes(f.mimeType || '') || 
             f.name?.endsWith('.pdf') || 
             f.name?.endsWith('.docx') || 
             f.name?.endsWith('.txt');
@@ -428,15 +429,17 @@ export class GoogleDriveService {
       'application/vnd.google-apps.document'
     ];
     
-    // Exclude only unsupported archive formats (ZIP is now supported and will be extracted)
+    // Exclude zip files and other archive types from upload
     const excludedMimeTypes = [
+      'application/zip',
+      'application/x-zip-compressed',
       'application/x-rar-compressed',
       'application/x-7z-compressed',
       'application/gzip'
     ];
     
-    // Max file size: 50MB (increased to support larger documents and ZIP files)
-    const maxFileSize = 50 * 1024 * 1024;
+    // Max file size: 3MB (to ensure memory safety)
+    const maxFileSize = 3 * 1024 * 1024;
     
     const allFiles: any[] = [];
     let pageToken: string | undefined;
@@ -451,16 +454,14 @@ export class GoogleDriveService {
         if (file.mimeType === 'application/vnd.google-apps.folder') continue;
         
         const fileSize = parseInt(file.size || '0', 10);
-        // ZIP files are now supported - only exclude RAR, 7z, gzip
         const isArchive = excludedMimeTypes.includes(file.mimeType || '') ||
+          file.name?.endsWith('.zip') || 
           file.name?.endsWith('.rar') || 
           file.name?.endsWith('.7z') ||
           file.name?.endsWith('.gzip') ||
           file.name?.endsWith('.gz');
         const isTooLarge = fileSize > maxFileSize;
-        // ZIP files are now a supported type
-        const isZip = file.mimeType === 'application/zip' || file.mimeType === 'application/x-zip-compressed' || file.name?.endsWith('.zip');
-        const isSupportedType = isZip || supportedMimeTypes.includes(file.mimeType || '') || 
+        const isSupportedType = supportedMimeTypes.includes(file.mimeType || '') || 
           file.name?.endsWith('.pdf') || 
           file.name?.endsWith('.docx') || 
           file.name?.endsWith('.txt');
@@ -471,10 +472,10 @@ export class GoogleDriveService {
         
         if (isArchive) {
           uploadable = false;
-          skipReason = 'Unsupported archive format (RAR/7z) - only ZIP files are supported';
+          skipReason = 'Archive file (ZIP/RAR/7z) - cannot extract text';
         } else if (isTooLarge) {
           uploadable = false;
-          skipReason = `File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 50MB limit)`;
+          skipReason = `File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 3MB limit)`;
         } else if (!isSupportedType) {
           uploadable = false;
           skipReason = 'Unsupported file type - only PDF, Word, and text files supported';

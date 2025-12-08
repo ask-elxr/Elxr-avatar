@@ -4319,12 +4319,12 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
-  // ===== NON-STREAMING AVATAR RESPONSE =====
-  // Completely synchronous: LLM → TTS → Single JSON response
-  // No WebSockets, no SSE, just one complete response with text and audio
-  // Use this for smooth avatar playback without streaming artifacts
-  app.post("/api/avatar/response/nonstream", isAuthenticated, async (req: any, res) => {
-    const log = logger.child({ service: 'avatar-nonstream', operation: 'nonstreamResponse' });
+  // FULL STREAMING AVATAR RESPONSE with STREAMING TTS
+  // Streams Claude tokens → ElevenLabs TTS WebSocket → Audio chunks via SSE
+  // This provides minimum latency by streaming audio as it's generated
+  app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: 'avatar-stream-audio', operation: 'streamAudioResponse' });
+    const WebSocket = (await import('ws')).default;
     
     try {
       const { message, avatarId, memoryEnabled = false, languageCode } = req.body;
@@ -4335,189 +4335,6 @@ This applies to EVERY response, regardless of conversation length.`;
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
-      }
-
-      const pipelineStart = Date.now();
-      console.log(`\n⏱️ ===== NON-STREAMING PIPELINE START: "${message.substring(0, 50)}" =====`);
-
-      const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
-      if (!avatarConfig) {
-        return res.status(404).json({ error: "Avatar not found" });
-      }
-
-      const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
-      const perfTimings: Record<string, number> = {};
-
-      // Step 1: Fetch RAG context and memory (parallel)
-      const dataFetchStart = Date.now();
-      let combinedContext = '';
-      let memories: any[] = [];
-
-      try {
-        const [ragResult, memoryResult] = await Promise.allSettled([
-          pineconeService.isConfigured() ? pineconeService.queryContext(message, avatarConfig.pineconeNamespace || avatarId) : Promise.resolve({ context: '', sources: [] }),
-          memoryEnabled && userId && memoryService.isAvailable() ? memoryService.getMemories(userId, 10) : Promise.resolve({ memories: [] })
-        ]);
-
-        if (ragResult.status === 'fulfilled' && ragResult.value.context) {
-          combinedContext = ragResult.value.context;
-        }
-        if (memoryResult.status === 'fulfilled' && memoryResult.value.memories) {
-          memories = memoryResult.value.memories;
-        }
-      } catch (e) {
-        log.warn('Data fetch error, continuing without context');
-      }
-
-      perfTimings.dataFetch = Date.now() - dataFetchStart;
-      console.log(`⏱️ [T+${perfTimings.dataFetch}ms] Data fetch complete`);
-
-      // Step 2: Generate Claude response (NON-STREAMING)
-      const claudeStart = Date.now();
-      console.log(`⏱️ [T+${claudeStart - pipelineStart}ms] Starting Claude (non-streaming)...`);
-
-      const conversationHistory = await storage.getConversationHistory(userId, avatarId, 10);
-      const systemPrompt = avatarConfig.systemPrompt || `You are ${avatarConfig.name}, an AI assistant. Be helpful and conversational.`;
-      
-      // Add memory context if available
-      let fullContext = combinedContext;
-      if (memories.length > 0) {
-        const memoryText = memories.map((m: any) => m.memory || m.text).join('\n');
-        fullContext = fullContext ? `${fullContext}\n\nUser memories:\n${memoryText}` : `User memories:\n${memoryText}`;
-      }
-
-      let fullResponse = '';
-      try {
-        fullResponse = await claudeService.generateResponse(
-          message,
-          fullContext,
-          conversationHistory,
-          systemPrompt
-        );
-      } catch (claudeError: any) {
-        log.error({ error: claudeError.message }, 'Claude generation failed');
-        return res.status(500).json({ error: 'AI generation failed' });
-      }
-
-      perfTimings.claude = Date.now() - claudeStart;
-      console.log(`⏱️ [T+${Date.now() - pipelineStart}ms] Claude complete (${fullResponse.length} chars, ${perfTimings.claude}ms)`);
-
-      // Step 3: Generate TTS audio (NON-STREAMING)
-      const ttsStart = Date.now();
-      console.log(`⏱️ [T+${ttsStart - pipelineStart}ms] Starting TTS (non-streaming)...`);
-
-      let audioBase64 = '';
-      try {
-        const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
-        audioBase64 = await elevenlabsService.generateSpeechBase64(
-          fullResponse,
-          voiceId,
-          effectiveLanguageCode
-        );
-      } catch (ttsError: any) {
-        log.error({ error: ttsError.message }, 'TTS generation failed');
-        return res.status(500).json({ error: 'TTS generation failed' });
-      }
-
-      perfTimings.tts = Date.now() - ttsStart;
-      perfTimings.total = Date.now() - pipelineStart;
-      console.log(`⏱️ [T+${perfTimings.total}ms] TTS complete (${audioBase64.length} chars, ${perfTimings.tts}ms)`);
-      console.log(`⏱️ ===== NON-STREAMING PIPELINE COMPLETE: ${perfTimings.total}ms =====\n`);
-
-      // Save conversation history
-      if (userId) {
-        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
-        await storage.saveConversation({ userId, avatarId, role: 'assistant', text: fullResponse }).catch(() => {});
-      }
-
-      // Store in memory if enabled
-      if (memoryEnabled && userId && memoryService.isAvailable() && fullResponse) {
-        const conversationText = `User asked: "${message}"\nAssistant responded: "${fullResponse}"`;
-        await memoryService.addMemory(conversationText, userId, MemoryType.NOTE, {
-          timestamp: new Date().toISOString(),
-          avatarId,
-        }).catch(() => {});
-      }
-
-      console.log('📝 USER MESSAGE:', message);
-      console.log('🤖 CLAUDE RESPONSE:', fullResponse);
-
-      // Return single JSON response with complete data
-      res.json({
-        text: fullResponse,
-        audioBase64,
-        performance: {
-          totalMs: perfTimings.total,
-          dataFetchMs: perfTimings.dataFetch,
-          claudeMs: perfTimings.claude,
-          ttsMs: perfTimings.tts,
-        }
-      });
-
-    } catch (error: any) {
-      log.error({ error: error.message }, 'Non-streaming endpoint error');
-      res.status(500).json({ error: 'Request failed' });
-    }
-  });
-
-  // FULL STREAMING AVATAR RESPONSE with STREAMING TTS
-  // Streams Claude tokens → ElevenLabs TTS WebSocket → Audio chunks via SSE
-  // This provides minimum latency by streaming audio as it's generated
-  app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
-    const log = logger.child({ service: 'avatar-stream-audio', operation: 'streamAudioResponse' });
-    const WebSocket = (await import('ws')).default;
-    
-    try {
-      const { message, avatarId, memoryEnabled = false, languageCode, bypass } = req.body;
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
-
-      if (!message) {
-        return res.status(400).json({ error: "Message is required" });
-      }
-
-      // ⏱️ PIPELINE TIMESTAMPS for latency debugging
-      const pipelineStart = Date.now();
-      const timestamps: Record<string, number> = {
-        requestReceived: 0, // T+0ms
-      };
-      console.log(`\n⏱️ ===== PIPELINE START: "${message.substring(0, 50)}" (bypass=${bypass || 'none'}) =====`);
-      console.log(`⏱️ [T+0ms] Speech input received`);
-
-      // Set up SSE headers with explicit no-buffering for real-time streaming
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no');
-      res.setHeader('Transfer-Encoding', 'chunked');
-      res.flushHeaders(); // Force headers to be sent immediately
-      
-      // Write initial keep-alive to prevent buffering
-      res.write(':ok\n\n');
-
-      const sendEvent = (eventType: string, data: any) => {
-        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
-      };
-
-      // 🧪 BYPASS MODE: Skip everything and return hardcoded response
-      if (bypass === 'all') {
-        console.log(`⏱️ [BYPASS=all] Returning hardcoded "Hello!" - skipping LLM/RAG/Mem0/TTS`);
-        const hardcodedAudio = ""; // Empty audio - just test network/SSE latency
-        sendEvent('status', { phase: 'generating', message: 'Bypass mode...' });
-        sendEvent('text', { content: 'Hello! This is a bypass test.' });
-        sendEvent('timing', { firstAudioMs: Date.now() - pipelineStart });
-        // Send a tiny silent audio chunk (base64 of minimal PCM)
-        const silentPCM = Buffer.alloc(480).toString('base64'); // 10ms of silence at 24kHz
-        sendEvent('audio', { chunk: silentPCM, index: 1, isFinal: false, serverTimestamp: Date.now() });
-        sendEvent('done', { 
-          fullResponse: 'Hello! This is a bypass test.',
-          audioChunks: 1,
-          performance: { totalMs: Date.now() - pipelineStart, bypass: 'all' }
-        });
-        console.log(`⏱️ ===== BYPASS COMPLETE: ${Date.now() - pipelineStart}ms total =====\n`);
-        return res.end();
       }
 
       const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
@@ -4532,77 +4349,30 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(500).json({ error: "ElevenLabs API key not configured" });
       }
 
-      // 🧪 BYPASS MODE: Skip TTS, just stream text from LLM
-      if (bypass === 'tts') {
-        console.log(`⏱️ [BYPASS=tts] Streaming LLM text only - skipping TTS`);
-        sendEvent('status', { phase: 'generating', message: 'Testing LLM only...' });
-        
-        // Simple query detection for instant response
-        const simplePatterns = [/^(hi|hey|hello)[\s!.,?]*$/i];
-        const isSimple = simplePatterns.some(p => p.test(message.trim()));
-        
-        timestamps.ragMemoDone = Date.now() - pipelineStart;
-        console.log(`⏱️ [T+${timestamps.ragMemoDone}ms] RAG/Mem0 skipped (bypass=tts)`);
-        
-        let fullResponse = '';
-        let firstToken = false;
-        
-        try {
-          for await (const chunk of claudeService.streamResponse(
-            message,
-            '',
-            [],
-            `You are a helpful assistant. Keep responses very short (1-2 sentences).`,
-            undefined,
-            undefined,
-            true
-          )) {
-            if (chunk.type === 'text') {
-              if (!firstToken) {
-                firstToken = true;
-                timestamps.firstLLMToken = Date.now() - pipelineStart;
-                console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token emitted`);
-                // Send fake audio event to trigger frontend processing timer
-                sendEvent('audio', { chunk: '', index: 1, isFinal: false, serverTimestamp: Date.now() });
-              }
-              fullResponse += chunk.content;
-              sendEvent('text', { content: chunk.content });
-            }
-          }
-        } catch (e: any) {
-          console.error('LLM bypass error:', e.message);
-        }
-        
-        const pipelineEnd = Date.now() - pipelineStart;
-        console.log(`⏱️ ===== BYPASS=TTS COMPLETE: ${pipelineEnd}ms total =====`);
-        console.log(`⏱️ TIMELINE: RAG=${timestamps.ragMemoDone}ms, FirstToken=${timestamps.firstLLMToken}ms, Total=${pipelineEnd}ms\n`);
-        
-        sendEvent('done', { 
-          fullResponse,
-          audioChunks: 0,
-          performance: { totalMs: pipelineEnd, bypass: 'tts', firstLLMTokenMs: timestamps.firstLLMToken }
-        });
-        return res.end();
-      }
+      // Set up SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+
+      const sendEvent = (eventType: string, data: any) => {
+        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+      };
 
       // Performance timing
       const perfStart = Date.now();
       const perfTimings: Record<string, number> = {};
 
-      // PRE-CONNECT TTS STRATEGY FOR MINIMUM LATENCY
-      // Connect TTS immediately in parallel with data fetch, use heartbeats to keep alive
-      // optimize_streaming_latency=1 is FASTEST mode (lowest latency, slightly lower quality)
-      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=1`;
+      sendEvent('status', { phase: 'connecting_tts', message: 'Connecting to TTS...' });
+
+      // Connect to ElevenLabs TTS WebSocket
+      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
       
       let ttsWs: InstanceType<typeof WebSocket> | null = null;
       let ttsReady = false;
       let audioChunkCount = 0;
       let firstAudioTime = 0;
-      let heartbeatInterval: NodeJS.Timeout | null = null;
-      let firstTextSent = false;
-      let directModeUsed = false; // Flag to prevent streaming TTS after direct TTS is used
       
-      // Pre-connect TTS WebSocket immediately (in parallel with data fetch)
       const ttsConnectPromise = new Promise<void>((resolve, reject) => {
         ttsWs = new WebSocket(ttsUrl, {
           headers: { 'xi-api-key': elevenLabsApiKey },
@@ -4612,109 +4382,108 @@ This applies to EVERY response, regardless of conversation length.`;
         
         ttsWs.on('open', () => {
           clearTimeout(timeout);
-          perfTimings.ttsConnect = Date.now() - perfStart;
-          log.info({ voiceId, connectMs: perfTimings.ttsConnect }, 'ElevenLabs TTS WebSocket pre-connected');
+          log.info({ voiceId }, 'ElevenLabs TTS WebSocket connected for streaming');
           
-          // Send BOS (beginning of stream) with voice settings
-          // Fast chunk schedule: [50, 80, 120] for quick first audio (minimum 50 required by API)
+          // Initialize TTS stream with voice settings
           ttsWs!.send(JSON.stringify({
             text: ' ',
             voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
+              stability: 0.7,
+              similarity_boost: 0.65,
               speed: 1.0,
             },
             generation_config: {
-              chunk_length_schedule: [50, 80, 120], // Fast first chunk (50 is API minimum)
+              chunk_length_schedule: [50], // Small chunks for low latency
             },
           }));
           
           ttsReady = true;
           sendEvent('tts_ready', { connected: true });
-          
-          // Start heartbeat to keep connection alive (every 400ms)
-          heartbeatInterval = setInterval(() => {
-            if (ttsWs && ttsWs.readyState === 1 && !firstTextSent) {
-              ttsWs.send(JSON.stringify({ text: ' ' }));
-            }
-          }, 400);
-          
           resolve();
         });
         
         ttsWs.on('message', (data: Buffer) => {
           try {
-            const dataStr = data.toString();
-            const event = JSON.parse(dataStr);
-            
-            if (event.error) {
-              log.error({ error: event.error, message: event.message }, 'ElevenLabs TTS error');
-            }
+            const event = JSON.parse(data.toString());
             
             if (event.audio) {
               audioChunkCount++;
               if (audioChunkCount === 1) {
                 firstAudioTime = Date.now();
                 const latency = firstAudioTime - perfStart;
-                timestamps.firstAudioChunkSent = latency;
-                console.log(`⏱️ [T+${latency}ms] First TTS audio chunk sent to frontend`);
                 log.info({ latencyMs: latency }, 'First audio chunk received');
                 sendEvent('timing', { firstAudioMs: latency });
               }
               
+              // Send audio chunk to client for immediate playback
               sendEvent('audio', { 
                 chunk: event.audio, 
                 index: audioChunkCount,
-                isFinal: event.isFinal || false,
-                serverTimestamp: Date.now()
+                isFinal: event.isFinal || false 
               });
             }
           } catch (error) {
-            log.debug({ dataLength: data.length }, 'TTS binary/unparseable message');
+            // Binary data or parse error - ignore
           }
         });
         
         ttsWs.on('error', (error) => {
           log.error({ error }, 'TTS WebSocket error');
           clearTimeout(timeout);
-          if (heartbeatInterval) clearInterval(heartbeatInterval);
           reject(error);
         });
         
-        ttsWs.on('close', (code) => {
-          log.info({ audioChunkCount, closeCode: code }, 'TTS WebSocket closed');
+        ttsWs.on('close', () => {
+          log.info({ audioChunkCount }, 'TTS WebSocket closed');
           ttsReady = false;
-          if (heartbeatInterval) clearInterval(heartbeatInterval);
         });
       });
 
-      // QUERY CLASSIFICATION: Skip RAG/Mem0 for simple queries
-      // This provides instant responses for greetings and simple questions
-      const simpleQueryPatterns = [
-        /^(hi|hey|hello|howdy|hola|sup|yo)[\s!.,?]*$/i,
-        /^(good\s*(morning|afternoon|evening|night))[\s!.,?]*$/i,
-        /^(how\s*are\s*you|how('s| is)\s*it\s*going|what('s| is)\s*up)[\s!.,?]*$/i,
-        /^(thanks|thank\s*you|thx|ty)[\s!.,?]*$/i,
-        /^(bye|goodbye|see\s*you|later|cya)[\s!.,?]*$/i,
-        /^(ok|okay|sure|yes|no|yeah|yep|nope|alright)[\s!.,?]*$/i,
-        /^(who\s*are\s*you|what('s| is)\s*your\s*name)[\s!.,?]*$/i,
-        /^(nice|cool|great|awesome|amazing)[\s!.,?]*$/i,
-      ];
-      
-      const isSimpleQuery = simpleQueryPatterns.some(pattern => pattern.test(message.trim()));
-      const skipContextFetch = isSimpleQuery;
-      
-      if (skipContextFetch) {
-        log.info({ message: message.substring(0, 50) }, 'Simple query detected - skipping RAG/Mem0 for instant response');
-        sendEvent('status', { phase: 'generating', message: 'Responding...' });
-      } else {
-        sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
+      try {
+        await ttsConnectPromise;
+      } catch (error: any) {
+        log.error({ error: error.message }, 'Failed to connect to TTS');
+        sendEvent('error', { message: 'TTS connection failed' });
+        return res.end();
       }
+
+      perfTimings.ttsConnect = Date.now() - perfStart;
+
+      // Parallel data fetching (simplified for low latency)
+      sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
       
       const dataFetchStart = Date.now();
       const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
-      const CONTEXT_TIMEOUT_MS = 200; // Max time to wait for context before starting LLM
       
+      const [knowledgeResult, memoryResult] = await Promise.allSettled([
+        (async () => {
+          const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+          if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
+          const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
+          return results.length > 0 ? results[0].text : null;
+        })(),
+        (async () => {
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
+          const result = await memoryService.searchMemories(message, userId, { limit: 3 });
+          return result.memories || [];
+        })()
+      ]);
+
+      perfTimings.dataFetch = Date.now() - dataFetchStart;
+      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch });
+
+      // Build context
+      let combinedContext = '';
+      if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
+        combinedContext = knowledgeResult.value;
+      }
+      
+      let memoryContext = '';
+      if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
+        memoryContext = "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
+        combinedContext += memoryContext;
+      }
+
       // Build personality prompt (simplified for voice mode)
       const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
       const voiceModePrompt = `${personalityPrompt}
@@ -4726,52 +4495,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 - Never say "I can help you with that" - just help
 - Respond as if speaking aloud`;
 
-      // Start context fetching (non-blocking) - SKIP for simple queries
-      let combinedContext = '';
-      let contextReady = skipContextFetch; // Already "ready" if we're skipping
-      
-      const contextPromise = skipContextFetch 
-        ? Promise.resolve('') // Skip expensive lookups for simple queries
-        : (async () => {
-            const [knowledgeResult, memoryResult] = await Promise.allSettled([
-              (async () => {
-                const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
-                if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
-                const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
-                return results.length > 0 ? results[0].text : null;
-              })(),
-              (async () => {
-                if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
-                const result = await memoryService.searchMemories(message, userId, { limit: 3 });
-                return result.memories || [];
-              })()
-            ]);
-            
-            if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
-              combinedContext = knowledgeResult.value;
-            }
-            if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
-              combinedContext += "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
-            }
-            contextReady = true;
-            return combinedContext;
-          })();
-
-      // Race: wait for context OR timeout (skip race for simple queries)
-      if (!skipContextFetch) {
-        await Promise.race([
-          contextPromise,
-          new Promise(resolve => setTimeout(resolve, CONTEXT_TIMEOUT_MS))
-        ]);
-      }
-      
-      perfTimings.dataFetch = Date.now() - dataFetchStart;
-      timestamps.ragMemoDone = Date.now() - pipelineStart;
-      console.log(`⏱️ [T+${timestamps.ragMemoDone}ms] RAG/Mem0 done (skipped: ${skipContextFetch}, context: ${combinedContext.length} chars)`);
-      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch, contextIncluded: contextReady, simpleQuery: skipContextFetch });
-      log.info({ contextReady, contextLength: combinedContext.length, waitMs: perfTimings.dataFetch, simpleQuery: skipContextFetch }, 'Context phase completed');
-
-      // Get conversation history (fast, local DB)
+      // Get conversation history
       let dbConversationHistory: any[] = [];
       if (userId) {
         try {
@@ -4780,72 +4504,40 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         } catch (error) { }
       }
 
-      // Save user message (fire and forget)
+      // Save user message
       if (userId) {
-        storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
+        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
       }
 
-      sendEvent('status', { phase: 'generating', message: 'AI is thinking...', stage: 1 });
-
-      // Wait for TTS to be ready (should be fast since pre-connected in parallel)
-      try {
-        await Promise.race([
-          ttsConnectPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('TTS wait timeout')), 5000))
-        ]);
-      } catch (error: any) {
-        log.error({ error: error.message }, 'TTS pre-connection failed');
-        sendEvent('error', { message: 'Voice service connection failed' });
-        return res.end();
-      }
+      sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
       // Stream Claude response and pipe to TTS
       const claudeStart = Date.now();
       let fullResponse = '';
       let sentenceCount = 0;
       let textBuffer = '';
-      let firstTextReceived = false;
 
-      // Function to send text to TTS (TTS is already connected)
-      const sendToTTS = async (text: string, flush: boolean = false) => {
-        // Guard: Don't use streaming TTS if direct mode was used
-        if (directModeUsed) {
-          console.log(`⏭️ [STREAMING] Skipping sendToTTS - direct mode was used`);
+      // Function to send text to TTS when we have enough
+      const sendToTTS = (text: string, flush: boolean = false) => {
+        if (!ttsWs || ttsWs.readyState !== WebSocket.OPEN || !ttsReady) {
+          log.warn('TTS WebSocket not ready', { readyState: ttsWs?.readyState, ttsReady });
           return;
         }
         
-        if (ttsWs && ttsWs.readyState === 1 && ttsReady) {
-          // Stop heartbeat on first real text
-          if (!firstTextSent && text.trim()) {
-            firstTextSent = true;
-            if (heartbeatInterval) {
-              clearInterval(heartbeatInterval);
-              heartbeatInterval = null;
-            }
-          }
-          
-          if (text.trim() || flush) {
-            log.debug({ textLength: text.length, flush }, 'Sending text to TTS');
-          }
-          
-          ttsWs.send(JSON.stringify({
-            text: text,
-            try_trigger_generation: true,
-            flush: flush,
-          }));
-          sendEvent('text', { content: text });
-        } else {
-          log.warn('TTS WebSocket not ready', { readyState: ttsWs?.readyState, ttsReady });
+        if (text.trim() || flush) {
+          log.debug({ textLength: text.length, flush }, 'Sending text to TTS');
         }
+        
+        ttsWs.send(JSON.stringify({
+          text: text,
+          try_trigger_generation: true,
+          flush: flush,
+        }));
       };
       
       // Cleanup function to ensure WebSocket is closed
       const cleanupTTS = () => {
-        if (heartbeatInterval) {
-          clearInterval(heartbeatInterval);
-          heartbeatInterval = null;
-        }
-        if (ttsWs && ttsWs.readyState === 1) {
+        if (ttsWs && ttsWs.readyState === WebSocket.OPEN) {
           try {
             ttsWs.close();
           } catch (e) {
@@ -4854,34 +4546,19 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       };
 
-      // BALANCED TTS STREAMING: Fast first response + smooth subsequent audio
-      // Claude API takes 2.8-3s for first token - we can't optimize that
-      // But we CAN minimize the time between first token and first audio
-      // Strategy: Send first sentence ASAP (low threshold), then batch subsequent
+      // Flush timer for aggressive low-latency TTS
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_FLUSH_TIMEOUT = 150; // Fast first flush (150ms)
-      const SUBSEQUENT_FLUSH_TIMEOUT = 300; // Moderate subsequent
-      const FIRST_WORD_COUNT = 6; // First sentence: 6 words is enough
-      const SUBSEQUENT_WORD_COUNT = 12; // Subsequent: accumulate more
-      let sentencesSent = 0;
+      const FIRST_CHUNK_DELAY = 100; // Send first chunk after just 100ms
+      const SUBSEQUENT_CHUNK_DELAY = 200; // Subsequent chunks after 200ms
+      let chunksSent = 0;
       
-      // flushTextBuffer: sends accumulated text to TTS with flush=true
-      let firstTTSTextSent = false;
-      const flushTextBuffer = async (forceFlush: boolean = false) => {
+      const flushTextBuffer = () => {
         if (textBuffer.length > 0) {
-          const textToSend = textBuffer;
+          sendToTTS(textBuffer, false);
+          sendEvent('text', { content: textBuffer });
           fullResponse += textBuffer;
           textBuffer = '';
-          sentencesSent++;
-          
-          if (!firstTTSTextSent) {
-            firstTTSTextSent = true;
-            timestamps.firstTTSTextSent = Date.now() - pipelineStart;
-            console.log(`⏱️ [T+${timestamps.firstTTSTextSent}ms] First TTS text sent: "${textToSend.substring(0, 30)}..."`);
-          }
-          
-          log.debug({ textLength: textToSend.length, sentencesSent }, 'Flushing sentence to TTS');
-          await sendToTTS(textToSend, true); // Always flush sentences
+          chunksSent++;
         }
         if (flushTimer) {
           clearTimeout(flushTimer);
@@ -4889,27 +4566,12 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       };
       
-      // Helper: count words in buffer
-      const countWords = (text: string) => text.trim().split(/\s+/).filter(w => w.length > 0).length;
-      
       const scheduleFlush = () => {
         if (flushTimer) clearTimeout(flushTimer);
-        const timeout = sentencesSent === 0 ? FIRST_FLUSH_TIMEOUT : SUBSEQUENT_FLUSH_TIMEOUT;
-        flushTimer = setTimeout(() => flushTextBuffer(true), timeout);
+        const delay = chunksSent === 0 ? FIRST_CHUNK_DELAY : SUBSEQUENT_CHUNK_DELAY;
+        flushTimer = setTimeout(flushTextBuffer, delay);
       };
 
-      // ADAPTIVE HYBRID APPROACH: Decision based on RESPONSE length, not just user query
-      // - Collect tokens first, then decide streaming vs non-streaming based on actual response
-      // - Short responses (< 50 words): Single TTS call for smoother audio
-      // - Long responses (> 50 words): Progressive streaming with sentence batching
-      
-      const WORD_THRESHOLD_FOR_STREAMING = 50; // Switch to streaming if response exceeds this
-      let accumulatedResponse = '';
-      let decidedMode: 'streaming' | 'non-streaming' | 'pending' = isSimpleQuery ? 'non-streaming' : 'pending';
-      let streamingStarted = false;
-      
-      console.log(`🎯 [HYBRID] Initial mode: ${decidedMode} (isSimpleQuery: ${isSimpleQuery})`);
-      
       try {
         for await (const chunk of claudeService.streamResponse(
           message,
@@ -4921,156 +4583,47 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
           true // isVoiceMode = true for short responses
         )) {
           if (chunk.type === 'text') {
-            if (!firstTextReceived) {
-              firstTextReceived = true;
-              timestamps.firstLLMToken = Date.now() - pipelineStart;
-              console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token received`);
-              sendEvent('status', { phase: 'speaking', message: 'Preparing voice...', stage: 2 });
-            }
+            textBuffer += chunk.content;
             
-            // Route chunk based on current mode
-            if (decidedMode === 'streaming' && streamingStarted) {
-              // Already in streaming mode - use sentence-based batching
-              textBuffer += chunk.content;
-              fullResponse += chunk.content; // Keep accumulating for final response
-              const bufferWordCount = countWords(textBuffer);
-              const wordThreshold = sentencesSent === 0 ? FIRST_WORD_COUNT : SUBSEQUENT_WORD_COUNT;
-              
-              if (/[.!?]\s*$/.test(textBuffer)) {
-                await flushTextBuffer(true);
-              } else if (bufferWordCount >= wordThreshold) {
-                await flushTextBuffer(true);
-              } else {
-                scheduleFlush();
-              }
+            // For minimum latency: flush on punctuation OR after timer
+            // First chunk flushes very quickly (100ms) to start audio ASAP
+            // Subsequent chunks can wait a bit longer for natural phrasing
+            if (/[.!?]\s*$/.test(textBuffer)) {
+              // Immediate flush on sentence-ending punctuation
+              flushTextBuffer();
+            } else if (textBuffer.length > 50) {
+              // Flush larger buffers immediately
+              flushTextBuffer();
             } else {
-              // Pending or non-streaming mode - accumulate for decision
-              accumulatedResponse += chunk.content;
-              const wordCount = countWords(accumulatedResponse);
-              
-              // Decision point: If response exceeds threshold, switch to streaming mode
-              if (decidedMode === 'pending' && wordCount > WORD_THRESHOLD_FOR_STREAMING) {
-                decidedMode = 'streaming';
-                console.log(`🎯 [HYBRID] Switched to STREAMING mode (${wordCount} words > ${WORD_THRESHOLD_FOR_STREAMING})`);
-                sendEvent('mode', { hybrid: true, streaming: true, reason: 'long_response' });
-                
-                // Send accumulated text as first batch
-                if (accumulatedResponse.trim()) {
-                  firstTTSTextSent = true;
-                  if (heartbeatInterval) {
-                    clearInterval(heartbeatInterval);
-                    heartbeatInterval = null;
-                  }
-                  timestamps.firstTTSTextSent = Date.now() - pipelineStart;
-                  console.log(`⏱️ [T+${timestamps.firstTTSTextSent}ms] First TTS text sent (accumulated): "${accumulatedResponse.substring(0, 30)}..."`);
-                  await sendToTTS(accumulatedResponse, true);
-                  fullResponse = accumulatedResponse;
-                  accumulatedResponse = '';
-                  sentencesSent++;
-                }
-                streamingStarted = true;
-              }
-              // Otherwise, keep accumulating - will decide on 'done' event
+              // Schedule a flush after a short delay
+              scheduleFlush();
             }
-            
           } else if (chunk.type === 'sentence') {
-            if (decidedMode === 'streaming' && streamingStarted) {
-              sentenceCount++;
-              await flushTextBuffer(true);
-            }
+            sentenceCount++;
+            // Sentence boundaries trigger immediate flush
+            flushTextBuffer();
           } else if (chunk.type === 'done') {
-            // Response complete - finalize based on mode
-            
-            if (decidedMode === 'pending' || decidedMode === 'non-streaming') {
-              // Short response detected - use DIRECT TTS call (not streaming) for smooth audio
-              const wasSimpleQuery = decidedMode === 'non-streaming';
-              decidedMode = 'non-streaming';
-              const finalWordCount = countWords(accumulatedResponse);
-              const modeReason = wasSimpleQuery ? 'simple_query' : 'short_response';
-              console.log(`🎯 [HYBRID] Using NON-STREAMING mode (${finalWordCount} words - ${modeReason})`);
-              sendEvent('mode', { hybrid: true, streaming: false, reason: modeReason });
-              
-              fullResponse = accumulatedResponse;
-              
-              // SWITCH TO DIRECT MODE: Disable streaming transport BEFORE calling direct TTS
-              // This prevents any race conditions with flush timers or heartbeats
-              directModeUsed = true;
-              
-              // Stop heartbeat immediately
-              if (heartbeatInterval) {
-                clearInterval(heartbeatInterval);
-                heartbeatInterval = null;
-              }
-              
-              // Close streaming WebSocket immediately (we won't need it)
-              if (ttsWs) {
-                console.log(`⏱️ [NON-STREAMING] Closing streaming WebSocket (switching to direct mode)`);
-                try {
-                  if (ttsWs.readyState === 1) {
-                    ttsWs.send(JSON.stringify({ text: '' })); // EOS
-                  }
-                  ttsWs.close();
-                  ttsWs = null;
-                } catch (e) {}
-              }
-              
-              // IMPORTANT: Use direct TTS API (not streaming WebSocket) for non-streaming mode
-              // This generates complete audio in one call for smooth playback
-              try {
-                const ttsStart = Date.now();
-                console.log(`⏱️ [T+${ttsStart - pipelineStart}ms] [NON-STREAMING] Calling direct TTS API for complete audio...`);
-                
-                const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
-                const audioBase64 = await elevenlabsService.generateSpeechBase64(
-                  fullResponse, 
-                  voiceId,
-                  effectiveLanguageCode
-                );
-                
-                const ttsDone = Date.now();
-                firstAudioTime = ttsDone;
-                audioChunkCount = 1;
-                console.log(`⏱️ [T+${ttsDone - pipelineStart}ms] [NON-STREAMING] Direct TTS complete (${audioBase64.length} chars)`);
-                
-                sendEvent('timing', { 
-                  firstAudioMs: ttsDone - pipelineStart,
-                  mode: 'direct'
-                });
-                
-                // Send complete audio as single chunk
-                sendEvent('audio', { 
-                  chunk: audioBase64, 
-                  index: 1, 
-                  isFinal: true, 
-                  serverTimestamp: Date.now(),
-                  mode: 'direct'
-                });
-                
-              } catch (ttsError: any) {
-                console.error(`❌ [NON-STREAMING] Direct TTS failed:`, ttsError.message);
-                sendEvent('error', { message: 'TTS generation failed' });
-              }
-            } else {
-              // Streaming mode - flush any remaining text
-              await flushTextBuffer(true);
-              await sendToTTS('', true); // Signal end of stream
-            }
+            // Flush any remaining text
+            flushTextBuffer();
+            // Close TTS generation
+            sendToTTS('', true);
           }
         }
       } catch (streamError: any) {
         if (flushTimer) clearTimeout(flushTimer);
-        log.error({ error: streamError.message }, 'Claude hybrid streaming error');
+        log.error({ error: streamError.message }, 'Claude streaming error');
         sendEvent('error', { message: 'AI generation failed' });
         cleanupTTS();
         return res.end();
       }
       
+      // Clean up timer
       if (flushTimer) clearTimeout(flushTimer);
 
       perfTimings.claude = Date.now() - claudeStart;
 
-      // Wait for final audio chunks (reduced from 1500ms)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait a bit for final audio chunks to come through
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       // Clean up TTS WebSocket
       cleanupTTS();
@@ -5104,16 +4657,6 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       });
 
-      const pipelineEnd = Date.now() - pipelineStart;
-      console.log(`⏱️ ===== PIPELINE COMPLETE: ${pipelineEnd}ms total =====`);
-      console.log(`⏱️ TIMELINE SUMMARY:`);
-      console.log(`   T+0ms      → Speech received`);
-      console.log(`   T+${timestamps.ragMemoDone || '?'}ms   → RAG/Mem0 done`);
-      console.log(`   T+${timestamps.firstLLMToken || '?'}ms   → First LLM token`);
-      console.log(`   T+${timestamps.firstTTSTextSent || '?'}ms   → First TTS text sent`);
-      console.log(`   T+${timestamps.firstAudioChunkSent || '?'}ms   → First audio sent to frontend`);
-      console.log(`   T+${pipelineEnd}ms   → Pipeline complete\n`);
-
       log.info({ 
         userId, 
         avatarId, 
@@ -5121,7 +4664,6 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         sentenceCount,
         audioChunks: audioChunkCount,
         firstAudioLatency: firstAudioTime > 0 ? firstAudioTime - perfStart : null,
-        timestamps,
       }, '🎵 Streaming audio response completed');
       
       res.end();
@@ -5713,61 +5255,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       
       const { buffer, mimeType, fileName: processedFileName } = downloadResult;
 
-      // Handle ZIP files specially - extract and process all contained documents
-      const isZipFile = mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed' || 
-        (processedFileName && processedFileName.toLowerCase().endsWith('.zip'));
-      
-      if (isZipFile) {
-        log.info({ fileName: processedFileName }, "Processing ZIP file - extracting contents");
-        
-        // Save buffer to temp file for ZIP extraction
-        const os = await import('os');
-        const fs = await import('fs');
-        const path = await import('path');
-        const tempZipPath = path.default.join(os.default.tmpdir(), `gdrive_zip_${Date.now()}.zip`);
-        
-        try {
-          fs.default.writeFileSync(tempZipPath, buffer);
-          
-          const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-          
-          // Process ZIP using documentProcessor
-          const zipResult = await documentProcessor.processZipFile(tempZipPath, normalizedNamespace, {
-            userId,
-            category: normalizedNamespace,
-            source: 'google-drive-topic-zip',
-            originalZipFile: fileName || processedFileName
-          });
-          
-          // Cleanup temp file
-          try { fs.default.unlinkSync(tempZipPath); } catch (e) {}
-          
-          log.info({ 
-            fileName: processedFileName, 
-            filesProcessed: zipResult.filesProcessed,
-            filesSkipped: zipResult.filesSkipped,
-            totalFiles: zipResult.totalFiles
-          }, "ZIP file processed successfully");
-          
-          return res.json({
-            success: true,
-            message: `ZIP file processed: ${zipResult.filesProcessed} files uploaded, ${zipResult.filesSkipped} skipped`,
-            fileName: processedFileName,
-            namespace: normalizedNamespace,
-            isZip: true,
-            zipResults: zipResult
-          });
-        } catch (zipError: any) {
-          // Cleanup temp file on error
-          try { 
-            const fs = await import('fs');
-            fs.default.unlinkSync(tempZipPath); 
-          } catch (e) {}
-          throw zipError;
-        }
-      }
-
-      // Extract text directly from buffer without saving to disk (for non-ZIP files)
+      // Extract text directly from buffer without saving to disk
       let text = '';
       try {
         if (mimeType === 'text/plain') {

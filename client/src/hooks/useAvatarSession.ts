@@ -25,8 +25,6 @@ interface AvatarSessionReturn {
   isLoading: boolean;
   showReconnect: boolean;
   videoReady: boolean; // True when LiveKit video track is attached and playing
-  isProcessing: boolean; // AI is thinking/generating response
-  processingStage: number; // 0=idle, 1=thinking, 2=preparing voice
   startSession: (options?: StartSessionOptions) => Promise<void>;
   endSession: () => Promise<void>;
   endSessionShowReconnect: () => Promise<void>;
@@ -64,8 +62,6 @@ export function useAvatarSession({
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // AI thinking state
-  const [processingStage, setProcessingStage] = useState<number>(0); // 0=idle, 1=thinking, 2=preparing voice
   const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
   const [videoReady, setVideoReady] = useState(false); // Track when LiveKit video track is attached
 
@@ -590,24 +586,24 @@ export function useAvatarSession({
 
   const startVoiceRecognition = useCallback(() => {
     // Version check - helps verify fresh code is loaded
-    console.log("🔧 Voice recognition code version: 2024-12-08-v1 (ElevenLabs STT only)");
+    console.log("🔧 Voice recognition code version: 2024-12-07-v2");
     
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
     if (usingHeygenMobileVoiceChatRef.current) {
-      console.log("⏭️ Skipping - using HeyGen's built-in voice chat (LiveKit WebRTC)");
+      console.log("⏭️ Skipping Web Speech API - using HeyGen's built-in voice chat (LiveKit WebRTC)");
       return;
     }
     
-    // Skip if ElevenLabs STT already running
-    if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current && recognitionRunningRef.current) {
-      console.log("⏭️ ElevenLabs STT already active");
+    // Skip if already initialized AND running
+    if (recognitionRef.current && recognitionRunningRef.current) {
+      console.log("⏭️ Voice recognition already active");
       return;
     }
     
-    // Clean up any stale Web Speech API reference
-    if (recognitionRef.current) {
-      console.log("🔄 Cleaning up legacy Web Speech API reference");
+    // If we have a stale reference that's not running, clean it up
+    if (recognitionRef.current && !recognitionRunningRef.current) {
+      console.log("🔄 Cleaning up stale voice recognition reference");
       try {
         recognitionRef.current.abort();
       } catch (e) {}
@@ -620,15 +616,7 @@ export function useAvatarSession({
       recognitionStuckTimeoutRef.current = null;
     }
 
-    // ✅ ALWAYS use ElevenLabs STT for better quality and consistency
-    // ElevenLabs STT provides: streaming transcription, better accuracy, works everywhere
-    console.log("🎤 Starting ElevenLabs STT (primary speech recognition)");
-    useElevenLabsSttRef.current = true;
-    startElevenLabsSTT();
-    return;
-    
-    // LEGACY CODE BELOW - kept for reference but never executed
-    // ----------------------------------------------------------------
+    // ✅ Initialize Web Speech API for voice input
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
@@ -2198,11 +2186,6 @@ export function useAvatarSession({
       return;
     }
 
-    // 🤔 THINKING STATE: Show processing indicator immediately
-    setIsProcessing(true);
-    setProcessingStage(1); // Stage 1: AI thinking
-    console.log("🤔 AI is thinking...");
-
     // 🔇 CRITICAL: Set speaking flag FIRST to prevent recognition auto-restart race condition
     isSpeakingRef.current = true;
     setIsSpeakingState(true);
@@ -2429,14 +2412,22 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Check if session driver supports direct audio playback
+        // Check if session driver supports streaming audio (LiveAvatarDriver)
         const driver = sessionDriverRef.current;
-        const supportsDirectAudio = driver && 'playAudioDirect' in driver;
+        const supportsAudioStreaming = driver && 'startStreamingAudio' in driver;
         
-        // NON-STREAMING MODE: Complete LLM + TTS in one request
-        // Returns single JSON with text and audioBase64 for smooth playback
-        if (supportsDirectAudio && driver) {
-          console.log("🎵 [NON-STREAMING] Using synchronous LLM + TTS pipeline...");
+        // FULL AUDIO STREAMING MODE: LLM → TTS → Avatar all streaming in real-time
+        // This provides minimum latency by streaming audio chunks as they're generated
+        if (audioStreamingEnabledRef.current && supportsAudioStreaming && driver) {
+          console.log("🎵 [AUDIO STREAMING] Using full audio streaming mode for minimum latency");
+          
+          let fullResponse = '';
+          let firstAudioTime = 0;
+          let audioChunkCount = 0;
+          let performanceData: any = null;
+          
+          // Start streaming audio mode on the driver
+          (driver as any).startStreamingAudio();
           
           try {
             const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -2445,8 +2436,7 @@ export function useAvatarSession({
               headers['X-Member-Id'] = memberstackId;
             }
             
-            // Call non-streaming endpoint - returns single JSON with complete text and audio
-            const response = await fetch("/api/avatar/response/nonstream", {
+            const response = await fetch("/api/avatar/response/stream-audio", {
               method: "POST",
               headers,
               body: JSON.stringify({
@@ -2460,71 +2450,120 @@ export function useAvatarSession({
             });
             
             if (!response.ok) {
-              const errorData = await response.json().catch(() => ({}));
-              throw new Error(errorData.error || `Request failed: ${response.status}`);
+              throw new Error(`Stream-audio failed: ${response.status}`);
             }
             
-            const data = await response.json();
-            const receiveTime = performance.now();
-            const totalLatency = (receiveTime - apiStartTime).toFixed(0);
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
             
-            console.log(`⏱️ [T+${totalLatency}ms] Received complete response`);
-            console.log(`📦 [NON-STREAMING] Text: ${data.text?.length || 0} chars, Audio: ${data.audioBase64?.length || 0} chars`);
-            
-            if (data.performance) {
-              console.log(`📦 [NON-STREAMING] Backend timings:`, data.performance);
+            if (reader) {
+              let pendingEventType: string | null = null;
+              
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                
+                for (const line of lines) {
+                  if (!line.trim()) {
+                    pendingEventType = null;
+                    continue;
+                  }
+                  
+                  if (line.startsWith('event: ')) {
+                    pendingEventType = line.slice(7).trim();
+                  } else if (line.startsWith('data: ') && pendingEventType) {
+                    try {
+                      const data = JSON.parse(line.slice(6));
+                      const eventType = pendingEventType;
+                      pendingEventType = null;
+                        
+                      if (eventType === 'audio') {
+                        audioChunkCount++;
+                        if (audioChunkCount === 1) {
+                          firstAudioTime = performance.now();
+                          console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${(firstAudioTime - apiStartTime).toFixed(0)}ms`);
+                        }
+                        
+                        // Send audio chunk to driver for lip-sync playback
+                        if (data.chunk) {
+                          (driver as any).addAudioChunk(data.chunk);
+                        }
+                      } else if (eventType === 'text') {
+                        // Accumulate text response
+                        fullResponse += data.content || '';
+                      } else if (eventType === 'timing') {
+                        if (data.firstAudioMs) {
+                          console.log(`🎵 [AUDIO STREAMING] Backend first audio: ${data.firstAudioMs}ms`);
+                        }
+                        if (data.dataFetchMs) {
+                          console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetchMs}ms`);
+                        }
+                      } else if (eventType === 'done') {
+                        fullResponse = data.fullResponse || fullResponse;
+                        performanceData = data.performance;
+                        const totalTime = performance.now() - flowStartTime;
+                        console.log(`🎵 [AUDIO STREAMING] === COMPLETE ===`);
+                        console.log(`🎵 [AUDIO STREAMING] Audio chunks: ${audioChunkCount}`);
+                        console.log(`🎵 [AUDIO STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
+                        console.log(`🎵 [AUDIO STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
+                        if (performanceData) {
+                          console.log(`🎵 [AUDIO STREAMING] Backend breakdown:`, performanceData);
+                        }
+                        console.log(`📝 USER MESSAGE: ${message}`);
+                        console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
+                      } else if (eventType === 'status') {
+                        console.log(`🎵 [AUDIO STREAMING] Status: ${data.phase} - ${data.message}`);
+                      } else if (eventType === 'tts_ready') {
+                        console.log(`🎵 [AUDIO STREAMING] TTS connected`);
+                      } else if (eventType === 'error') {
+                        console.error(`🎵 [AUDIO STREAMING] Error: ${data.message}`);
+                        throw new Error(data.message);
+                      }
+                    } catch (e) {
+                      if (e instanceof Error && e.message !== 'AI generation failed') {
+                        // JSON parse error, skip silently
+                      } else {
+                        throw e;
+                      }
+                    }
+                  }
+                }
+              }
             }
             
-            // Done thinking, now speaking
-            setIsProcessing(false);
-            setProcessingStage(0);
-            
-            // Check if external audio is supported by the SDK
-            const supportsExternal = 'supportsExternalAudio' in driver && (driver as any).supportsExternalAudio();
-            console.log(`📊 [NON-STREAMING] SDK supports external audio: ${supportsExternal}`);
-            
-            // Try external audio first, fall back to HeyGen's built-in TTS
-            if (data.audioBase64 && 'playAudioDirect' in driver && supportsExternal) {
-              console.log(`🔊 [DIRECT] Playing complete audio (${data.audioBase64.length} chars) via repeatAudio()`);
-              (driver as any).playAudioDirect(data.audioBase64);
-            } else if (data.text && 'speakWithBuiltinTTS' in driver) {
-              // Fallback: Use HeyGen's built-in TTS when external audio isn't supported
-              console.log(`🗣️ [FALLBACK] Using HeyGen's built-in TTS (external audio not supported)`);
-              (driver as any).speakWithBuiltinTTS(data.text);
-            } else if (data.audioBase64 && 'playAudioDirect' in driver) {
-              // Try external audio anyway if no fallback available
-              console.log(`🔊 [DIRECT] Attempting external audio (supportsExternal: ${supportsExternal})`);
-              (driver as any).playAudioDirect(data.audioBase64);
-            }
-            
-            // Log the conversation
-            console.log(`📝 USER MESSAGE: ${message}`);
-            console.log(`🤖 CLAUDE RESPONSE: ${data.text}`);
+            // End streaming audio mode
+            (driver as any).endStreamingAudio();
             
             // Post-response cleanup
             onResetInactivityTimer?.();
             clearIdleTimeout();
             
-            const totalTime = performance.now() - flowStartTime;
-            console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${totalTime.toFixed(0)}ms ===`);
+            console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
             
-            if (data.text) {
-              return; // Success
+            if (fullResponse) {
+              return; // Audio streaming succeeded
             }
             
-          } catch (nonStreamError) {
-            if (nonStreamError instanceof Error && nonStreamError.name !== "AbortError") {
-              console.error("Non-streaming request failed:", nonStreamError);
-              setIsProcessing(false);
-              setProcessingStage(0);
+          } catch (streamError) {
+            // End streaming mode on error
+            (driver as any).endStreamingAudio();
+            
+            if (streamError instanceof Error && streamError.name !== "AbortError") {
+              console.error("Audio streaming error, falling back to sentence streaming:", streamError);
+              audioStreamingEnabledRef.current = false;
+            } else {
+              throw streamError;
             }
-            throw nonStreamError;
           }
         }
         
-        // Legacy streaming mode (only used if non-streaming is not available)
-        // This is kept as fallback but should not be reached in normal operation
-        if (!supportsDirectAudio && streamingEnabledRef.current && sessionDriverRef.current) {
+        // Use streaming mode for faster perceived response
+        if (streamingEnabledRef.current && sessionDriverRef.current) {
           console.log("🚀 [STREAMING] Using streaming mode for faster response");
           
           let fullResponse = '';
@@ -3006,8 +3045,6 @@ export function useAvatarSession({
     isLoading,
     showReconnect,
     videoReady, // True when LiveKit video track is attached and playing
-    isProcessing, // AI is thinking/generating response
-    processingStage, // 0=idle, 1=thinking, 2=preparing voice
     startSession,
     endSession,
     endSessionShowReconnect,

@@ -6,8 +6,6 @@ import { logger } from './logger.js';
 import { metrics } from './metrics.js';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as os from 'os';
-import unzipper from 'unzipper';
 // PDF parsing will be loaded dynamically to avoid import issues
 import * as mammoth from 'mammoth';
 
@@ -95,9 +93,6 @@ class DocumentProcessor {
       } else if (fileType.startsWith('audio/')) {
         // Audio transcription using OpenAI Whisper
         return await this.transcribeAudio(filePath);
-      } else if (fileType === 'application/zip' || fileType === 'application/x-zip-compressed' || filePath.endsWith('.zip')) {
-        // ZIP files are handled separately via extractZipContents method
-        throw new Error('ZIP files should be processed via processZipFile method');
       } else {
         throw new Error(`Unsupported file type: ${fileType}`);
       }
@@ -105,132 +100,6 @@ class DocumentProcessor {
       logger.error({ error: error.message, filePath, fileType }, 'Error extracting text from file');
       throw error;
     }
-  }
-
-  // Extract and process ZIP file contents
-  async processZipFile(zipFilePath: string, namespace: string, baseMetadata: any = {}): Promise<{
-    filesProcessed: number;
-    filesSkipped: number;
-    totalFiles: number;
-    results: Array<{ file: string; success: boolean; error?: string; chunksProcessed?: number }>;
-  }> {
-    const log = logger.child({
-      service: 'documentProcessor',
-      operation: 'processZipFile',
-      zipFile: path.basename(zipFilePath),
-      namespace
-    });
-
-    const results: Array<{ file: string; success: boolean; error?: string; chunksProcessed?: number }> = [];
-    let filesProcessed = 0;
-    let filesSkipped = 0;
-    let totalFiles = 0;
-
-    // Create temp directory for extraction
-    const tempDir = path.join(os.tmpdir(), `zip_extract_${Date.now()}`);
-    
-    try {
-      log.info('Extracting ZIP file contents');
-      
-      // Create temp directory
-      if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-      }
-
-      // Extract ZIP contents
-      await fs.createReadStream(zipFilePath)
-        .pipe(unzipper.Extract({ path: tempDir }))
-        .promise();
-
-      // Get list of extracted files
-      const extractedFiles = this.getFilesRecursively(tempDir);
-      totalFiles = extractedFiles.length;
-      log.info({ totalFiles }, 'ZIP file extracted');
-
-      // Supported file types for processing
-      const supportedExtensions = ['.pdf', '.docx', '.txt'];
-
-      for (const filePath of extractedFiles) {
-        const ext = path.extname(filePath).toLowerCase();
-        const fileName = path.basename(filePath);
-
-        // Skip unsupported files
-        if (!supportedExtensions.includes(ext)) {
-          log.debug({ fileName, ext }, 'Skipping unsupported file type');
-          filesSkipped++;
-          results.push({ file: fileName, success: false, error: 'Unsupported file type' });
-          continue;
-        }
-
-        // Determine file type
-        let fileType = 'text/plain';
-        if (ext === '.pdf') fileType = 'application/pdf';
-        else if (ext === '.docx') fileType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-
-        try {
-          // Generate unique document ID
-          const documentId = `zip_${Date.now()}_${fileName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-          
-          // Process the document
-          const result = await this.processDocument(filePath, fileType, documentId, {
-            ...baseMetadata,
-            namespace,
-            sourceZip: path.basename(zipFilePath),
-            originalFileName: fileName
-          });
-
-          if ((result as any).skipped) {
-            filesSkipped++;
-            results.push({ file: fileName, success: false, error: (result as any).reason });
-          } else {
-            filesProcessed++;
-            results.push({ file: fileName, success: true, chunksProcessed: result.chunksProcessed });
-          }
-
-          log.debug({ fileName, chunksProcessed: result.chunksProcessed }, 'File from ZIP processed');
-        } catch (error: any) {
-          log.warn({ fileName, error: error.message }, 'Failed to process file from ZIP');
-          filesSkipped++;
-          results.push({ file: fileName, success: false, error: error.message });
-        }
-      }
-
-      log.info({ filesProcessed, filesSkipped, totalFiles }, 'ZIP file processing completed');
-
-    } finally {
-      // Clean up temp directory
-      try {
-        if (fs.existsSync(tempDir)) {
-          fs.rmSync(tempDir, { recursive: true, force: true });
-        }
-      } catch (cleanupError: any) {
-        log.warn({ error: cleanupError.message }, 'Failed to clean up temp directory');
-      }
-    }
-
-    return { filesProcessed, filesSkipped, totalFiles, results };
-  }
-
-  // Recursively get all files in a directory
-  private getFilesRecursively(dir: string): string[] {
-    const files: string[] = [];
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        // Skip __MACOSX and other system directories
-        if (entry.name.startsWith('__') || entry.name.startsWith('.')) continue;
-        files.push(...this.getFilesRecursively(fullPath));
-      } else {
-        // Skip hidden files
-        if (!entry.name.startsWith('.')) {
-          files.push(fullPath);
-        }
-      }
-    }
-    
-    return files;
   }
 
   // Transcribe audio using OpenAI Whisper
@@ -299,8 +168,6 @@ class DocumentProcessor {
     documentId: string;
     chunksProcessed: number;
     totalChunks: number;
-    skipped?: boolean;
-    reason?: string;
   }> {
     const log = logger.child({ 
       service: 'documentProcessor', 
@@ -312,9 +179,9 @@ class DocumentProcessor {
     try {
       log.info({ filePath }, 'Processing document');
       
-      // Check file size before processing (max 50MB for documents)
+      // Check file size before processing (max 5MB for documents)
       const stats = fs.statSync(filePath);
-      const maxFileSize = 50 * 1024 * 1024; // 50MB
+      const maxFileSize = 5 * 1024 * 1024; // 5MB
       if (stats.size > maxFileSize) {
         log.warn({ fileSize: stats.size, maxSize: maxFileSize }, 
           'File too large, skipping to prevent memory issues');
@@ -323,7 +190,7 @@ class DocumentProcessor {
           chunksProcessed: 0,
           totalChunks: 0,
           skipped: true,
-          reason: 'File too large (max 50MB)'
+          reason: 'File too large (max 5MB)'
         };
       }
       

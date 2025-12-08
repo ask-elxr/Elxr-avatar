@@ -28,32 +28,6 @@ export interface UserPlanInfo {
 }
 
 class SubscriptionService {
-  /**
-   * Ensures the user exists in the database before creating subscriptions.
-   * This handles anonymous users (webflow_xxx, temp_xxx) who don't have DB records yet.
-   */
-  private async ensureUserExists(userId: string): Promise<void> {
-    const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId));
-    
-    if (!existingUser) {
-      // Create a minimal user record for anonymous users
-      const isAnonymous = userId.startsWith('webflow_') || userId.startsWith('temp_') || userId.startsWith('anon_');
-      const email = isAnonymous ? `${userId}@anonymous.local` : null;
-      
-      await db.insert(users).values({
-        id: userId,
-        email,
-        firstName: isAnonymous ? 'Anonymous' : null,
-        role: 'user',
-        currentPlanSlug: 'free',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
-      
-      logger.info({ userId, isAnonymous }, "Created user record for subscription");
-    }
-  }
-
   async initializePlans(): Promise<void> {
     const existingPlans = await db.select().from(subscriptionPlans);
     if (existingPlans.length > 0) {
@@ -253,9 +227,6 @@ class SubscriptionService {
       throw new Error("User already has a subscription");
     }
 
-    // Ensure user exists in the database (handles anonymous users)
-    await this.ensureUserExists(userId);
-
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (freePlan.durationHours || 1) * 60 * 60 * 1000);
 
@@ -407,9 +378,6 @@ class SubscriptionService {
     if (!plan) {
       throw new Error(`Plan ${planSlug} not found`);
     }
-
-    // Ensure user exists in the database (handles anonymous users)
-    await this.ensureUserExists(userId);
 
     const existingSubscription = await this.getUserSubscription(userId);
     

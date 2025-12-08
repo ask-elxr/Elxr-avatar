@@ -17,12 +17,6 @@ export interface SessionDriver {
   addAudioChunk?(base64Audio: string): void;
   endStreamingAudio?(): void;
   isStreamingAudioActive?(): boolean;
-  // Direct audio playback (non-streaming) - sends complete audio clip to SDK
-  playAudioDirect?(base64Audio: string): void;
-  // Fallback: Use HeyGen's built-in TTS instead of external audio
-  speakWithBuiltinTTS?(text: string): void;
-  // Check if external audio playback is supported
-  supportsExternalAudio?(): boolean;
 }
 
 interface DriverConfig {
@@ -62,27 +56,12 @@ export class LiveAvatarDriver implements SessionDriver {
   private audioBufferSize: number = 0;
   private isStreamingAudio: boolean = false;
   private streamingFlushTimer: ReturnType<typeof setTimeout> | null = null;
-  private isFirstAudioChunk: boolean = true;
-  private readonly FIRST_AUDIO_THRESHOLD = 4000; // ~80ms - send first audio ASAP for faster perceived latency
-  private readonly STREAMING_BUFFER_THRESHOLD = 8000; // ~170ms of 24kHz PCM audio for subsequent chunks
-  private readonly STREAMING_FLUSH_DELAY = 150; // ms - flush buffer after no new chunks for this duration
+  private readonly STREAMING_BUFFER_THRESHOLD = 12000; // ~0.5s of 24kHz PCM audio (24000 samples/s * 2 bytes * 0.25s)
+  private readonly STREAMING_FLUSH_DELAY = 200; // ms - flush buffer after no new chunks for this duration
 
   // Promise resolver for waiting on speech completion
   private speechCompleteResolver: (() => void) | null = null;
   private isSpeaking: boolean = false;
-  
-  // Debounce timer for AVATAR_SPEAK_ENDED events
-  // SDK fires multiple start/end events for long audio - debounce to get single callback
-  // SDK can have gaps >300ms between internal chunks, so use 800ms to be safe
-  private speechEndDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly SPEECH_END_DEBOUNCE_MS = 800; // Wait 800ms after last ENDED event before triggering callback
-  
-  // Track audio playback state to filter phantom SDK events
-  // SDK fires phantom AVATAR_SPEAK_STARTED/ENDED events even after audio finishes
-  // We only want to process events when we've actually sent audio
-  private audioPlaybackActive: boolean = false;
-  private audioSentTimestamp: number = 0;
-  private readonly AUDIO_PLAYBACK_TIMEOUT_MS = 60000; // Max 60 seconds for audio playback
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -250,88 +229,36 @@ export class LiveAvatarDriver implements SessionDriver {
         });
 
         // Listen for avatar talking events
-        // NOTE: SDK fires multiple STARTED/ENDED events for long audio clips (internal chunking)
-        // SDK also fires PHANTOM events after audio finishes - we filter these out
-        // We debounce ENDED events to only trigger callback once when speech truly ends
         session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
-          const now = Date.now();
-          const timeSinceAudioSent = now - this.audioSentTimestamp;
-          
-          // Filter phantom events: only process if we're in active audio playback
-          // or if audio was sent recently (within timeout window)
-          if (!this.audioPlaybackActive && timeSinceAudioSent > this.AUDIO_PLAYBACK_TIMEOUT_MS) {
-            console.log("👻 Ignoring phantom AVATAR_SPEAK_STARTED (no active audio, sent", timeSinceAudioSent, "ms ago)");
-            return;
-          }
-          
-          console.log("🗣️ Avatar started speaking (SDK event) - timeSinceAudioSent:", timeSinceAudioSent, "ms");
-          
-          // Cancel any pending speech-end debounce timer
-          // This prevents false "stopped speaking" callbacks during SDK chunking
-          if (this.speechEndDebounceTimer) {
-            console.log("⏱️ Cancelling speech-end debounce (new chunk started)");
-            clearTimeout(this.speechEndDebounceTimer);
-            this.speechEndDebounceTimer = null;
-          }
-          
-          // Only call onAvatarStartTalking once (when speech first begins)
-          if (!this.isSpeaking) {
-            this.isSpeaking = true;
-            this.config.onAvatarStartTalking?.();
-          }
+          console.log("🗣️ Avatar started speaking");
+          this.isSpeaking = true;
+          this.config.onAvatarStartTalking?.();
         });
 
         session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, async () => {
-          const now = Date.now();
-          const timeSinceAudioSent = now - this.audioSentTimestamp;
+          console.log("🤫 Avatar stopped speaking");
+          this.isSpeaking = false;
+          this.config.onAvatarStopTalking?.();
           
-          // Filter phantom events: only process if we're in active audio playback
-          if (!this.audioPlaybackActive && timeSinceAudioSent > this.AUDIO_PLAYBACK_TIMEOUT_MS) {
-            console.log("👻 Ignoring phantom AVATAR_SPEAK_ENDED (no active audio, sent", timeSinceAudioSent, "ms ago)");
-            return;
+          // Resolve any pending speech completion promise
+          if (this.speechCompleteResolver) {
+            const resolver = this.speechCompleteResolver;
+            this.speechCompleteResolver = null;
+            resolver();
           }
           
-          console.log("🤫 Avatar chunk ended (SDK event) - debouncing...", "timeSinceAudioSent:", timeSinceAudioSent, "ms");
-          
-          // Cancel any existing debounce timer
-          if (this.speechEndDebounceTimer) {
-            clearTimeout(this.speechEndDebounceTimer);
+          // Resume listening after avatar stops speaking (for HeyGen voice chat)
+          if (this.enableMobileVoiceChat && this.session) {
+            // Small delay to prevent echo feedback
+            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log("🎤 Resuming SDK listening after avatar finished speaking...");
+            try {
+              this.session.startListening();
+              console.log("✅ SDK startListening() called - avatar is listening again");
+            } catch (e: any) {
+              console.warn("⚠️ Failed to resume listening:", e?.message || e);
+            }
           }
-          
-          // Set debounce timer - only trigger callback if no new STARTED event within delay
-          this.speechEndDebounceTimer = setTimeout(async () => {
-            // Double-check we still have active audio (could have been cleared by a new audio send)
-            if (!this.audioPlaybackActive) {
-              console.log("👻 Ignoring debounced AVATAR_SPEAK_ENDED (audio no longer active)");
-              return;
-            }
-            
-            console.log("✅ Speech truly ended (debounce complete) - clearing audioPlaybackActive");
-            this.speechEndDebounceTimer = null;
-            this.isSpeaking = false;
-            this.audioPlaybackActive = false; // Mark audio playback as complete
-            this.config.onAvatarStopTalking?.();
-            
-            // Resolve any pending speech completion promise
-            if (this.speechCompleteResolver) {
-              const resolver = this.speechCompleteResolver;
-              this.speechCompleteResolver = null;
-              resolver();
-            }
-            
-            // Resume listening after avatar stops speaking (for HeyGen voice chat)
-            if (this.enableMobileVoiceChat && this.session) {
-              // Small delay to prevent echo feedback
-              await new Promise(resolve => setTimeout(resolve, 500));
-              console.log("🎤 Resuming SDK listening after avatar finished speaking...");
-              try {
-                this.session.startListening();
-                console.log("✅ SDK startListening() called - avatar is listening again");
-              } catch (e: any) {
-                console.warn("⚠️ Failed to resume listening:", e?.message || e);
-              }
-            }
-          }, this.SPEECH_END_DEBOUNCE_MS);
         });
 
         // Listen for ALL agent events for debugging
@@ -406,12 +333,6 @@ export class LiveAvatarDriver implements SessionDriver {
   async stop(): Promise<void> {
     this.stopCurrentAudio();
     this.videoAttached = false;
-    
-    // Clean up speech end debounce timer
-    if (this.speechEndDebounceTimer) {
-      clearTimeout(this.speechEndDebounceTimer);
-      this.speechEndDebounceTimer = null;
-    }
     
     // Clean up debug interval
     if ((this as any).voiceChatDebugInterval) {
@@ -568,14 +489,8 @@ export class LiveAvatarDriver implements SessionDriver {
 
   async interrupt(): Promise<void> {
     this.stopCurrentAudio();
-    // Only call SDK interrupt if session is fully connected
-    // Calling interrupt on a connecting/disconnected session throws "Session is not connected"
-    if (this.session && this.session.connectionState === 'CONNECTED') {
-      try {
-        this.session.interrupt();
-      } catch (err) {
-        console.warn("⚠️ interrupt() failed (session may be disconnecting):", err);
-      }
+    if (this.session) {
+      this.session.interrupt();
     }
   }
 
@@ -629,14 +544,13 @@ export class LiveAvatarDriver implements SessionDriver {
    */
   startStreamingAudio(): void {
     this.isStreamingAudio = true;
-    this.isFirstAudioChunk = true; // Reset for each new stream
     this.audioChunkBuffer = [];
     this.audioBufferSize = 0;
     if (this.streamingFlushTimer) {
       clearTimeout(this.streamingFlushTimer);
       this.streamingFlushTimer = null;
     }
-    console.log("🎵 Started streaming audio accumulation for lip-sync (fast first-chunk mode)");
+    console.log("🎵 Started streaming audio accumulation for lip-sync");
     
     // Ensure video is unmuted for SDK audio playback
     if (this.config.videoRef.current) {
@@ -647,27 +561,37 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   /**
-   * Add an audio chunk and send IMMEDIATELY to SDK for playback
-   * No buffering - each chunk plays as soon as it arrives for minimum latency
+   * Add an audio chunk to the buffer - sends to SDK when threshold reached
    * @param base64Audio Base64 encoded PCM audio chunk (24kHz, 16-bit)
    */
   addAudioChunk(base64Audio: string): void {
     if (!this.isStreamingAudio || !this.session) return;
     
-    // DIRECT SDK PASSTHROUGH: Send each chunk directly to avoid buffering delays
-    // The SDK handles audio queuing internally - no need for client-side buffering
-    // This gives us the lowest latency possible
-    
-    if (this.isFirstAudioChunk) {
-      console.log(`🔊 First audio chunk received (${base64Audio.length} chars) - sending to SDK`);
-      this.isFirstAudioChunk = false;
+    // Decode base64 to binary
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
     
-    // Send directly to SDK - it handles audio playback and lip-sync queuing
-    try {
-      this.session.repeatAudio(base64Audio);
-    } catch (err) {
-      console.error(`❌ repeatAudio error:`, err);
+    this.audioChunkBuffer.push(bytes);
+    this.audioBufferSize += bytes.length;
+    
+    // Clear previous flush timer
+    if (this.streamingFlushTimer) {
+      clearTimeout(this.streamingFlushTimer);
+    }
+    
+    // Check if we have enough audio to send to SDK for lip-sync
+    if (this.audioBufferSize >= this.STREAMING_BUFFER_THRESHOLD) {
+      this.flushAudioBuffer();
+    } else {
+      // Set a timer to flush if no more chunks arrive
+      this.streamingFlushTimer = setTimeout(() => {
+        if (this.audioBufferSize > 0) {
+          this.flushAudioBuffer();
+        }
+      }, this.STREAMING_FLUSH_DELAY);
     }
   }
 
@@ -731,141 +655,6 @@ export class LiveAvatarDriver implements SessionDriver {
    */
   isStreamingAudioActive(): boolean {
     return this.isStreamingAudio;
-  }
-
-  /**
-   * Play audio directly (non-streaming) - sends complete audio clip to SDK
-   * This bypasses the streaming buffer and sends the audio immediately for lip-sync
-   * Use this for short responses where we have the complete audio upfront
-   */
-  /**
-   * Check if external audio playback is supported by checking SDK internal WebSocket
-   */
-  supportsExternalAudio(): boolean {
-    if (!this.session) return false;
-    const sessionAny = this.session as any;
-    return !!sessionAny._sessionEventSocket;
-  }
-
-  /**
-   * Speak using HeyGen's built-in TTS (fallback when external audio doesn't work)
-   * Uses session.repeat(text) - HeyGen handles TTS and lip-sync internally
-   */
-  speakWithBuiltinTTS(text: string): void {
-    if (!this.session) {
-      console.error("❌ Cannot speak - no session");
-      return;
-    }
-    
-    console.log(`🗣️ [BUILTIN-TTS] Using HeyGen's built-in TTS for: "${text.substring(0, 50)}..."`);
-    
-    // Mark as speaking
-    this.isSpeaking = true;
-    this.audioPlaybackActive = true;
-    this.audioSentTimestamp = Date.now();
-    this.config.onAvatarStartTalking?.();
-    
-    try {
-      // Use HeyGen's built-in TTS via session.repeat(text)
-      this.session.repeat(text);
-      console.log("✅ [BUILTIN-TTS] Text sent to HeyGen for TTS and lip-sync");
-    } catch (err) {
-      console.error("❌ [BUILTIN-TTS] repeat error:", err);
-      this.isSpeaking = false;
-      this.audioPlaybackActive = false;
-      this.config.onAvatarStopTalking?.();
-    }
-  }
-
-  playAudioDirect(base64Audio: string): void {
-    if (!this.session) {
-      console.error("❌ Cannot play audio - no session");
-      return;
-    }
-    
-    // CRITICAL: Cancel any pending debounce timer from previous audio
-    // This prevents the old timer from clearing audioPlaybackActive for new audio
-    if (this.speechEndDebounceTimer) {
-      console.log("🔄 [DIRECT] Cancelling old debounce timer before sending new audio");
-      clearTimeout(this.speechEndDebounceTimer);
-      this.speechEndDebounceTimer = null;
-    }
-    
-    // Reset speaking state for new audio
-    this.isSpeaking = false;
-    
-    // Mark audio playback as active BEFORE sending to SDK
-    // This allows event handlers to properly filter phantom events
-    this.audioPlaybackActive = true;
-    this.audioSentTimestamp = Date.now();
-    console.log("🎵 [DIRECT] Starting audio playback tracking, timestamp:", this.audioSentTimestamp);
-    
-    // Check video element state for debugging
-    if (this.config.videoRef.current) {
-      const v = this.config.videoRef.current;
-      console.log(`📺 [DIRECT] Video state before playAudio:`, {
-        srcObject: v.srcObject ? "present" : "null",
-        readyState: v.readyState,
-        paused: v.paused,
-        videoWidth: v.videoWidth,
-        videoHeight: v.videoHeight,
-        muted: v.muted
-      });
-      
-      // Ensure video is unmuted - SDK plays audio through WebRTC stream
-      if (v.muted) {
-        console.log("🔊 [DIRECT] Unmuting video element for audio playback");
-        v.muted = false;
-      }
-    }
-    
-    // Calculate estimated audio duration for debugging
-    // base64 is ~4/3 of raw bytes, PCM 24kHz 16-bit = 48000 bytes/sec
-    const estimatedBytes = Math.floor(base64Audio.length * 3 / 4);
-    const estimatedDurationSec = (estimatedBytes / 48000).toFixed(2);
-    console.log(`🔊 [DIRECT] Playing complete audio clip (${base64Audio.length} chars, ~${estimatedBytes} bytes, ~${estimatedDurationSec}s) via repeatAudio()`);
-    
-    // Validate audio data format (first few bytes for debugging)
-    try {
-      const decoded = atob(base64Audio.substring(0, 100));
-      const firstBytes = Array.from(decoded).slice(0, 10).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-      console.log(`🔊 [DIRECT] Audio first 10 bytes (hex): ${firstBytes}`);
-    } catch (e) {
-      console.error("❌ [DIRECT] Failed to decode audio for validation:", e);
-    }
-    
-    // Check SDK session state and internal socket availability
-    console.log(`📊 [DIRECT] SDK session state: ${this.session.state || 'unknown'}`);
-    
-    // Check if SDK has internal WebSocket for audio (CRITICAL for repeatAudio to work)
-    // The SDK internally checks for _sessionEventSocket before sending audio
-    const sessionAny = this.session as any;
-    const hasEventSocket = !!sessionAny._sessionEventSocket;
-    console.log(`📊 [DIRECT] SDK _sessionEventSocket available: ${hasEventSocket}`);
-    if (!hasEventSocket) {
-      console.warn("⚠️ [DIRECT] SDK WebSocket not available - repeatAudio may not work in this mode!");
-    }
-    
-    // Notify that avatar is starting to talk (manual fallback in case SDK events don't fire)
-    // SDK will also fire AVATAR_SPEAK_STARTED which our debounced handler manages
-    if (!this.isSpeaking) {
-      this.isSpeaking = true;
-      this.config.onAvatarStartTalking?.();
-    }
-    
-    // Send directly to SDK - single complete clip for smooth playback
-    try {
-      console.log(`🕐 [DIRECT] Calling repeatAudio at timestamp: ${Date.now()}`);
-      const result = this.session.repeatAudio(base64Audio);
-      console.log("✅ [DIRECT] Audio sent to SDK for lip-sync playback, result:", result);
-      console.log(`🕐 [DIRECT] repeatAudio returned at timestamp: ${Date.now()}`);
-    } catch (err) {
-      console.error("❌ [DIRECT] repeatAudio error:", err);
-      // Reset speaking state on error
-      this.isSpeaking = false;
-      this.audioPlaybackActive = false;
-      this.config.onAvatarStopTalking?.();
-    }
   }
 }
 

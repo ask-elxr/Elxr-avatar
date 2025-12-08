@@ -78,7 +78,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
   const [attachedImage, setAttachedImage] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
-  const [sendButtonPop, setSendButtonPop] = useState(false);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -232,8 +231,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     isLoading,
     showReconnect,
     videoReady, // True when LiveKit video track is attached and playing
-    isProcessing, // AI is thinking/generating response
-    processingStage, // 0=idle, 1=thinking, 2=preparing voice
     startSession,
     endSession,
     endSessionShowReconnect,
@@ -444,10 +441,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   // Wrapped handleSubmitMessage that adds to chat history
   const handleSubmitMessage = async (message: string, imageData?: { base64: string; mimeType: string }) => {
-    // Trigger pop animation on send button
-    setSendButtonPop(true);
-    setTimeout(() => setSendButtonPop(false), 300);
-    
     // Send to AI with optional image
     await originalHandleSubmitMessage(message, imageData);
     
@@ -692,23 +685,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           
           {audioOnly && !heygenSessionActive && (
             <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
-          )}
-          
-          {/* Thinking Indicator - Shows when AI is processing with stage-based feedback */}
-          {isProcessing && sessionActive && (
-            <div 
-              className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full backdrop-blur-sm"
-              data-testid="thinking-indicator"
-            >
-              <div className="flex gap-1">
-                <div className={`w-2 h-2 rounded-full animate-bounce ${processingStage >= 2 ? 'bg-green-400' : 'bg-blue-400'}`} style={{ animationDelay: '0ms' }} />
-                <div className={`w-2 h-2 rounded-full animate-bounce ${processingStage >= 2 ? 'bg-green-400' : 'bg-blue-400'}`} style={{ animationDelay: '150ms' }} />
-                <div className={`w-2 h-2 rounded-full animate-bounce ${processingStage >= 2 ? 'bg-green-400' : 'bg-blue-400'}`} style={{ animationDelay: '300ms' }} />
-              </div>
-              <span className="text-white/80 text-sm">
-                {processingStage === 1 ? 'Thinking...' : processingStage === 2 ? 'Preparing voice...' : 'Processing...'}
-              </span>
-            </div>
           )}
         </div>
 
@@ -1138,21 +1114,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               <Button
                 type="submit"
                 disabled={(!inputMessage.trim() && !attachedImage) || !sessionActive || isPaused}
-                className={`bg-primary hover:bg-primary/90 text-white transition-transform ${sendButtonPop ? 'animate-send-pop' : ''}`}
+                className="bg-primary hover:bg-primary/90 text-white"
                 data-testid="button-send-message"
               >
                 <Send className="w-4 h-4" />
               </Button>
-              <style>{`
-                @keyframes send-pop {
-                  0% { transform: scale(1); }
-                  50% { transform: scale(1.25); }
-                  100% { transform: scale(1); }
-                }
-                .animate-send-pop {
-                  animation: send-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                }
-              `}</style>
             </form>
           </div>
         )}
