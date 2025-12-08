@@ -14,17 +14,13 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 #### Frontend (React + TypeScript)
 - **Core Features**: Avatar selection, LiveAvatar video streaming, ElevenLabs STT for voice recognition (exclusive, no Web Speech API), real-time chat with memory, document upload, and an admin dashboard.
 - **SessionDriver Pattern**: Unified abstraction for avatar sessions (`LiveAvatarDriver`, `AudioOnlyDriver`) with a common interface.
-- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT (exclusive), Pinecone RAG, Mem0, and ElevenLabs Realtime TTS.
-- **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency audio, bridging to ElevenLabs STT/TTS and Claude AI.
-- **True Streaming Optimization**: Designed for zero buffering and minimum latency across LLM, TTS, and STT streams.
+- **Non-Streaming Architecture**: Uses batch processing for LLM and TTS (higher latency ~4-6s, simpler implementation).
 - **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately and conditionally including context in the LLM prompt.
-- **End-to-End Streaming Pipeline**:
-    -   User audio → STT streaming (partial transcripts ~100ms)
-    -   STT final → LLM streaming (token-by-token to TTS)
-    -   LLM tokens → TTS streaming (audio chunks ~50ms)
-    -   TTS audio → Avatar SDK (`repeatAudio()` for lip-sync)
-    -   `LiveAvatarDriver` accumulates streaming audio (12KB threshold / 200ms timeout)
-    -   Batched audio sent to SDK for synchronized lip animation
+- **Batch Audio Pipeline**:
+    -   User audio → ElevenLabs STT (non-streaming, final transcript only)
+    -   Full transcript → Claude LLM (non-streaming, full response)
+    -   Full response → ElevenLabs TTS (non-streaming, full audio base64)
+    -   Full audio → Avatar SDK (`repeatAudio()` for lip-sync)
 
 #### Backend (Express + TypeScript + Python)
 - **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
@@ -76,11 +72,11 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially to minimize memory usage.
 
 #### Technical Implementations
-- **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
+- **AI Integration**: Primary LLM is Claude Sonnet 4.5 (non-streaming), integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
 - **Pinecone**: Direct namespace-based vector queries with namespace normalization.
 - **Real-time Voice**: HeyGen for video/audio synthesis, ElevenLabs STT for voice recognition (exclusive - no Web Speech API).
-- **Streaming Audio Pipeline**: Sub-1-second first audio latency via aggressive timer-based flushing (100ms first chunk, 200ms subsequent).
+- **Non-Streaming Audio Pipeline**: Uses batch processing for Claude LLM and ElevenLabs TTS (latency ~4-6s, simpler implementation than streaming).
 - **Anonymous Sessions**: Supports persistent anonymous user sessions.
 
 ### External Dependencies

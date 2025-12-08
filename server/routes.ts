@@ -4231,32 +4231,26 @@ This applies to EVERY response, regardless of conversation length.`;
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
-      // Stream Claude response
+      // Generate non-streaming Claude response
       const claudeStart = Date.now();
       let fullResponse = '';
-      let sentenceCount = 0;
 
       try {
-        for await (const chunk of claudeService.streamResponse(
+        fullResponse = await claudeService.generateEnhancedResponse(
           message || 'What do you see in this image?',
           combinedContext,
+          '', // webSearchResults
           dbConversationHistory.length > 0 ? dbConversationHistory : conversationHistory,
           enhancedPersonality,
+          false, // isVoiceMode = false for video mode (allows longer text responses)
           imageBase64,
-          imageMimeType,
-          false // isVoiceMode = false for video streaming (allows longer text responses)
-        )) {
-          if (chunk.type === 'text') {
-            sendEvent('text', { content: chunk.content });
-          } else if (chunk.type === 'sentence') {
-            sentenceCount++;
-            sendEvent('sentence', { content: chunk.content, index: sentenceCount });
-          } else if (chunk.type === 'done') {
-            fullResponse = chunk.content;
-          }
-        }
-      } catch (streamError: any) {
-        log.error({ error: streamError.message }, 'Claude streaming error');
+          imageMimeType
+        );
+        
+        // Send the full response as a single sentence event
+        sendEvent('sentence', { content: fullResponse, index: 1 });
+      } catch (claudeError: any) {
+        log.error({ error: claudeError.message }, 'Claude generation error');
         sendEvent('error', { message: 'AI generation failed' });
         return res.end();
       }
@@ -4294,12 +4288,11 @@ This applies to EVERY response, regardless of conversation length.`;
         userId, 
         avatarId, 
         perfTimings, 
-        sentenceCount,
         userMessage: message,
         claudeResponse: fullResponse.substring(0, 500) + (fullResponse.length > 500 ? '...' : ''),
         responseLength: fullResponse.length,
         contextLength: combinedContext?.length || 0,
-      }, '🤖 Claude streaming response completed');
+      }, '🤖 Claude non-streaming response completed');
       
       // Also log full response to console for easy viewing in dev
       console.log('\n📝 USER MESSAGE:', message);

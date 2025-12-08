@@ -104,7 +104,7 @@ export function useAvatarSession({
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
   
-  // ElevenLabs STT refs for voice input (exclusive STT solution - no Web Speech API)
+  // ElevenLabs STT refs for voice input (used for audio-only mode)
   const elevenLabsSttWsRef = useRef<WebSocket | null>(null);
   const elevenLabsSttReadyRef = useRef(false);
   const elevenLabsSttAudioContextRef = useRef<AudioContext | null>(null);
@@ -112,6 +112,10 @@ export function useAvatarSession({
   const elevenLabsSttStreamRef = useRef<MediaStream | null>(null);
   const useElevenLabsSttRef = useRef(false); // Tracks if ElevenLabs STT is currently active
   const usingHeygenMobileVoiceChatRef = useRef(false); // Track if we're using HeyGen's built-in voice chat (LiveKit WebRTC) for mobile
+  
+  // Web Speech API ref for video mode on desktop (more reliable for stopping/resuming)
+  const webSpeechRecognitionRef = useRef<any>(null);
+  const useWebSpeechRef = useRef(false); // Tracks if Web Speech API is currently active
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -1978,18 +1982,10 @@ export function useAvatarSession({
         const driver = sessionDriverRef.current;
         const supportsAudioStreaming = driver && 'startStreamingAudio' in driver;
         
-        // FULL AUDIO STREAMING MODE: LLM → TTS → Avatar all streaming in real-time
-        // This provides minimum latency by streaming audio chunks as they're generated
+        // NON-STREAMING AUDIO MODE: Full LLM response → Full TTS audio → Send to Avatar
+        // This has higher latency (~4-6s) but is simpler than streaming
         if (audioStreamingEnabledRef.current && supportsAudioStreaming && driver) {
-          console.log("🎵 [AUDIO STREAMING] Using full audio streaming mode for minimum latency");
-          
-          let fullResponse = '';
-          let firstAudioTime = 0;
-          let audioChunkCount = 0;
-          let performanceData: any = null;
-          
-          // Start streaming audio mode on the driver
-          (driver as any).startStreamingAudio();
+          console.log("🎵 [BATCH AUDIO] Using non-streaming batch audio mode");
           
           try {
             const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -2012,94 +2008,26 @@ export function useAvatarSession({
             });
             
             if (!response.ok) {
-              throw new Error(`Stream-audio failed: ${response.status}`);
+              throw new Error(`Batch-audio failed: ${response.status}`);
             }
             
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-            let buffer = '';
+            const data = await response.json();
+            const { fullResponse, audioBase64, performance: performanceData } = data;
             
-            if (reader) {
-              let pendingEventType: string | null = null;
-              
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-                
-                for (const line of lines) {
-                  if (!line.trim()) {
-                    pendingEventType = null;
-                    continue;
-                  }
-                  
-                  if (line.startsWith('event: ')) {
-                    pendingEventType = line.slice(7).trim();
-                  } else if (line.startsWith('data: ') && pendingEventType) {
-                    try {
-                      const data = JSON.parse(line.slice(6));
-                      const eventType = pendingEventType;
-                      pendingEventType = null;
-                        
-                      if (eventType === 'audio') {
-                        audioChunkCount++;
-                        if (audioChunkCount === 1) {
-                          firstAudioTime = performance.now();
-                          console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${(firstAudioTime - apiStartTime).toFixed(0)}ms`);
-                        }
-                        
-                        // Send audio chunk to driver for lip-sync playback
-                        if (data.chunk) {
-                          (driver as any).addAudioChunk(data.chunk);
-                        }
-                      } else if (eventType === 'text') {
-                        // Accumulate text response
-                        fullResponse += data.content || '';
-                      } else if (eventType === 'timing') {
-                        if (data.firstAudioMs) {
-                          console.log(`🎵 [AUDIO STREAMING] Backend first audio: ${data.firstAudioMs}ms`);
-                        }
-                        if (data.dataFetchMs) {
-                          console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetchMs}ms`);
-                        }
-                      } else if (eventType === 'done') {
-                        fullResponse = data.fullResponse || fullResponse;
-                        performanceData = data.performance;
-                        const totalTime = performance.now() - flowStartTime;
-                        console.log(`🎵 [AUDIO STREAMING] === COMPLETE ===`);
-                        console.log(`🎵 [AUDIO STREAMING] Audio chunks: ${audioChunkCount}`);
-                        console.log(`🎵 [AUDIO STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
-                        console.log(`🎵 [AUDIO STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
-                        if (performanceData) {
-                          console.log(`🎵 [AUDIO STREAMING] Backend breakdown:`, performanceData);
-                        }
-                        console.log(`📝 USER MESSAGE: ${message}`);
-                        console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
-                      } else if (eventType === 'status') {
-                        console.log(`🎵 [AUDIO STREAMING] Status: ${data.phase} - ${data.message}`);
-                      } else if (eventType === 'tts_ready') {
-                        console.log(`🎵 [AUDIO STREAMING] TTS connected`);
-                      } else if (eventType === 'error') {
-                        console.error(`🎵 [AUDIO STREAMING] Error: ${data.message}`);
-                        throw new Error(data.message);
-                      }
-                    } catch (e) {
-                      if (e instanceof Error && e.message !== 'AI generation failed') {
-                        // JSON parse error, skip silently
-                      } else {
-                        throw e;
-                      }
-                    }
-                  }
-                }
-              }
+            const totalTime = performance.now() - flowStartTime;
+            console.log(`🎵 [BATCH AUDIO] === COMPLETE ===`);
+            console.log(`🎵 [BATCH AUDIO] Total time: ${totalTime.toFixed(0)}ms`);
+            if (performanceData) {
+              console.log(`🎵 [BATCH AUDIO] Backend breakdown:`, performanceData);
             }
+            console.log(`📝 USER MESSAGE: ${message}`);
+            console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
             
-            // End streaming audio mode
-            (driver as any).endStreamingAudio();
+            // Send full audio to driver for lip-sync playback
+            if (audioBase64 && driver) {
+              console.log(`🔊 Sending ${audioBase64.length} chars of audio to SDK for lip-sync`);
+              await (driver as any).repeatAudio(audioBase64);
+            }
             
             // Post-response cleanup
             onResetInactivityTimer?.();
@@ -2108,18 +2036,15 @@ export function useAvatarSession({
             console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
             
             if (fullResponse) {
-              return; // Audio streaming succeeded
+              return; // Batch audio succeeded
             }
             
-          } catch (streamError) {
-            // End streaming mode on error
-            (driver as any).endStreamingAudio();
-            
-            if (streamError instanceof Error && streamError.name !== "AbortError") {
-              console.error("Audio streaming error, falling back to sentence streaming:", streamError);
+          } catch (batchError) {
+            if (batchError instanceof Error && batchError.name !== "AbortError") {
+              console.error("Batch audio error, falling back to sentence streaming:", batchError);
               audioStreamingEnabledRef.current = false;
             } else {
-              throw streamError;
+              throw batchError;
             }
           }
         }
