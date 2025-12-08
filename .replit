@@ -49,5 +49,5 @@ externalPort = 3000
 [userenv]
 
 [userenv.shared]
-HEYGEN_CREDIT_LIMIT = "1000"
+HEYGEN_CREDIT_LIMIT = "0"
 NODE_OPTIONS = "--max-old-space-size=4096"
