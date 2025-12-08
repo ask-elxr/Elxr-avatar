@@ -69,8 +69,9 @@ export class LiveAvatarDriver implements SessionDriver {
   
   // Debounce timer for AVATAR_SPEAK_ENDED events
   // SDK fires multiple start/end events for long audio - debounce to get single callback
+  // SDK can have gaps >300ms between internal chunks, so use 800ms to be safe
   private speechEndDebounceTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly SPEECH_END_DEBOUNCE_MS = 300; // Wait 300ms after last ENDED event before triggering callback
+  private readonly SPEECH_END_DEBOUNCE_MS = 800; // Wait 800ms after last ENDED event before triggering callback
 
   constructor(config: DriverConfig) {
     this.config = config;
