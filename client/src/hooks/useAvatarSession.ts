@@ -1884,6 +1884,10 @@ export function useAvatarSession({
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    
+    // Re-enable streaming for this new message (batch audio will disable it if successful)
+    streamingEnabledRef.current = true;
+    sentenceQueueRef.current = []; // Clear any leftover sentences from previous messages
 
     try {
       // Audio-only mode: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
@@ -2062,13 +2066,13 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Check if session driver supports streaming audio (LiveAvatarDriver)
+        // Check if session driver supports batch audio playback (repeatAudio method)
         const driver = sessionDriverRef.current;
-        const supportsAudioStreaming = driver && 'startStreamingAudio' in driver;
+        const supportsBatchAudio = driver && 'repeatAudio' in driver;
         
         // NON-STREAMING AUDIO MODE: Full LLM response → Full TTS audio → Send to Avatar
         // This has higher latency (~4-6s) but is simpler than streaming
-        if (audioStreamingEnabledRef.current && supportsAudioStreaming && driver) {
+        if (audioStreamingEnabledRef.current && supportsBatchAudio && driver) {
           console.log("🎵 [BATCH AUDIO] Using non-streaming batch audio mode");
           
           try {
@@ -2113,6 +2117,14 @@ export function useAvatarSession({
               await driver.repeatAudio(audioBase64);
             }
             
+            // CRITICAL: Disable streaming mode after successful batch playback
+            // This prevents any residual deltas from triggering sentence-by-sentence playback
+            streamingEnabledRef.current = false;
+            
+            // Clear any residual sentence queue to prevent duplicate speech
+            sentenceQueueRef.current = [];
+            isSpeakingQueueRef.current = false;
+            
             // Post-response cleanup
             onResetInactivityTimer?.();
             clearIdleTimeout();
@@ -2120,7 +2132,8 @@ export function useAvatarSession({
             console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
             
             if (fullResponse) {
-              return; // Batch audio succeeded
+              console.log(`🎵 [BATCH AUDIO] Batch mode succeeded - streaming disabled, skipping to end`);
+              return; // Batch audio succeeded - skip streaming entirely
             }
             
           } catch (batchError) {
@@ -2150,6 +2163,12 @@ export function useAvatarSession({
           // Helper to speak all sentences sequentially - waits for each to complete
           const processSentenceQueue = async () => {
             while (sentenceQueueRef.current.length > 0 || !streamingComplete) {
+              // GUARD: Exit if streaming was disabled (batch audio took over)
+              if (!streamingEnabledRef.current) {
+                console.log("🚀 [STREAMING] Exiting queue processor - streaming disabled (batch audio active)");
+                return;
+              }
+              
               // Wait for more sentences if queue is empty but stream isn't complete
               if (sentenceQueueRef.current.length === 0) {
                 await new Promise(resolve => setTimeout(resolve, 100));
