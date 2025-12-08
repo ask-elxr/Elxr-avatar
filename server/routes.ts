@@ -4474,17 +4474,16 @@ This applies to EVERY response, regardless of conversation length.`;
           log.info({ voiceId, connectMs: perfTimings.ttsConnect }, 'ElevenLabs TTS WebSocket pre-connected');
           
           // Send BOS (beginning of stream) with voice settings
-          // ULTRA-AGGRESSIVE chunk schedule: [20, 50, 100] for fastest possible first audio
-          // Lower values = faster first chunk but slightly choppier audio
+          // Fast chunk schedule: [50, 80, 120] for quick first audio (minimum 50 required by API)
           ttsWs!.send(JSON.stringify({
             text: ' ',
             voice_settings: {
-              stability: 0.4, // Slightly lower for faster generation
-              similarity_boost: 0.7,
-              speed: 1.05, // Slightly faster speech
+              stability: 0.5,
+              similarity_boost: 0.75,
+              speed: 1.0,
             },
             generation_config: {
-              chunk_length_schedule: [20, 50, 100], // Ultra-fast first chunk
+              chunk_length_schedule: [50, 80, 120], // Fast first chunk (50 is API minimum)
             },
           }));
           
