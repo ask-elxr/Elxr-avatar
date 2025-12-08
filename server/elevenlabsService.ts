@@ -210,7 +210,7 @@ class ElevenLabsService {
 
   /**
    * Generate PCM 24kHz audio as base64 for LiveAvatar SDK's repeatAudio()
-   * Uses /with-timestamps endpoint which returns audio_base64 directly
+   * Uses standard TTS endpoint and converts raw PCM to base64
    * This is the exact format required by LiveAvatar SDK for lip-sync
    */
   async generateSpeechBase64(
@@ -233,11 +233,13 @@ class ElevenLabsService {
     });
 
     try {
-      log.debug("Generating base64 PCM speech for LiveAvatar SDK");
+      log.debug("Generating base64 PCM speech for LiveAvatar SDK (using standard TTS endpoint)");
       const startTime = Date.now();
 
+      // Use standard TTS endpoint (not /with-timestamps) for raw PCM audio
+      // This is the same format that was working before streaming implementation
       const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
         {
           method: "POST",
           headers: {
@@ -263,24 +265,22 @@ class ElevenLabsService {
         throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
-      const audioBase64 = data.audio_base64;
-
-      if (!audioBase64) {
-        throw new Error("ElevenLabs API did not return audio_base64");
-      }
+      // Get raw PCM audio buffer and convert to base64
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = Buffer.from(arrayBuffer);
+      const audioBase64 = audioBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
-        { duration, audioLength: audioBase64.length, format: "pcm_24000_base64" },
-        "Base64 PCM speech generated for LiveAvatar",
+        { duration, audioLength: audioBase64.length, pcmSize: audioBuffer.length, format: "pcm_24000_base64" },
+        "Base64 PCM speech generated for LiveAvatar (standard endpoint)",
       );
       metrics.recordElevenLabsTTS(duration);
 
       storage
         .logApiCall({
           serviceName: "elevenlabs",
-          endpoint: "textToSpeech/with-timestamps",
+          endpoint: "textToSpeech",
           userId: null,
           responseTimeMs: duration,
         })
