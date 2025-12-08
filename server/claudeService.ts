@@ -373,7 +373,7 @@ RESPONSE REQUIREMENTS:
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 150, // Keep responses SHORT for voice mode (~50-75 words max)
+        max_tokens: 80, // Strict limit for voice mode (~30-40 words max)
         messages: messages,
         system: systemPrompt
       });
@@ -393,7 +393,14 @@ RESPONSE REQUIREMENTS:
 
       const content = response.content[0];
       if (content && content.type === 'text') {
-        return content.text;
+        // Post-process: enforce 2 sentence max for voice mode
+        let responseText = content.text;
+        const sentences = responseText.match(/[^.!?]+[.!?]+/g) || [responseText];
+        if (sentences.length > 2) {
+          responseText = sentences.slice(0, 2).join(' ').trim();
+          log.info({ originalSentences: sentences.length, trimmedTo: 2 }, 'Trimmed response to 2 sentences for voice mode');
+        }
+        return responseText;
       }
       return 'I apologize, but I was unable to generate a response at this time.';
     } catch (error: any) {
