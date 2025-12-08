@@ -564,8 +564,8 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   /**
-   * Add an audio chunk to the buffer - sends to SDK when threshold reached
-   * Uses smaller threshold for first chunk to minimize time-to-first-audio
+   * Add an audio chunk and send IMMEDIATELY to SDK for playback
+   * No buffering - each chunk plays as soon as it arrives for minimum latency
    * @param base64Audio Base64 encoded PCM audio chunk (24kHz, 16-bit)
    */
   addAudioChunk(base64Audio: string): void {
@@ -578,30 +578,24 @@ export class LiveAvatarDriver implements SessionDriver {
       bytes[i] = binaryString.charCodeAt(i);
     }
     
-    this.audioChunkBuffer.push(bytes);
-    this.audioBufferSize += bytes.length;
+    // IMMEDIATE PLAYBACK: Send each chunk directly to SDK without buffering
+    // This provides minimum latency - audio plays as soon as it arrives
+    const audioMs = (bytes.length / 48000 * 1000).toFixed(0);
     
-    // Clear previous flush timer
-    if (this.streamingFlushTimer) {
-      clearTimeout(this.streamingFlushTimer);
+    if (this.isFirstAudioChunk) {
+      console.log(`🔊 First audio chunk received (${bytes.length} bytes, ~${audioMs}ms) - playing immediately`);
+      this.isFirstAudioChunk = false;
     }
     
-    // Use smaller threshold for first audio to minimize time-to-first-audio
-    const threshold = this.isFirstAudioChunk ? this.FIRST_AUDIO_THRESHOLD : this.STREAMING_BUFFER_THRESHOLD;
-    
-    // Check if we have enough audio to send to SDK for lip-sync
-    if (this.audioBufferSize >= threshold) {
-      this.flushAudioBuffer();
-      this.isFirstAudioChunk = false; // Subsequent chunks use larger threshold
-    } else {
-      // Set a timer to flush if no more chunks arrive
-      this.streamingFlushTimer = setTimeout(() => {
-        if (this.audioBufferSize > 0) {
-          this.flushAudioBuffer();
-          this.isFirstAudioChunk = false;
-        }
-      }, this.STREAMING_FLUSH_DELAY);
+    // Convert to base64 for SDK
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
     }
+    const base64ForSdk = btoa(binary);
+    
+    // Send directly to SDK for immediate lip-sync playback
+    this.session.repeatAudio(base64ForSdk);
   }
 
   /**
