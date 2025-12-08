@@ -4462,9 +4462,28 @@ This applies to EVERY response, regardless of conversation length.`;
         });
       });
 
-      // EARLY-START LLM STRATEGY: Race context loading against a timeout
-      // Start LLM immediately if context takes too long (200ms max wait)
-      sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
+      // QUERY CLASSIFICATION: Skip RAG/Mem0 for simple queries
+      // This provides instant responses for greetings and simple questions
+      const simpleQueryPatterns = [
+        /^(hi|hey|hello|howdy|hola|sup|yo)[\s!.,?]*$/i,
+        /^(good\s*(morning|afternoon|evening|night))[\s!.,?]*$/i,
+        /^(how\s*are\s*you|how('s| is)\s*it\s*going|what('s| is)\s*up)[\s!.,?]*$/i,
+        /^(thanks|thank\s*you|thx|ty)[\s!.,?]*$/i,
+        /^(bye|goodbye|see\s*you|later|cya)[\s!.,?]*$/i,
+        /^(ok|okay|sure|yes|no|yeah|yep|nope|alright)[\s!.,?]*$/i,
+        /^(who\s*are\s*you|what('s| is)\s*your\s*name)[\s!.,?]*$/i,
+        /^(nice|cool|great|awesome|amazing)[\s!.,?]*$/i,
+      ];
+      
+      const isSimpleQuery = simpleQueryPatterns.some(pattern => pattern.test(message.trim()));
+      const skipContextFetch = isSimpleQuery;
+      
+      if (skipContextFetch) {
+        log.info({ message: message.substring(0, 50) }, 'Simple query detected - skipping RAG/Mem0 for instant response');
+        sendEvent('status', { phase: 'generating', message: 'Responding...' });
+      } else {
+        sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
+      }
       
       const dataFetchStart = Date.now();
       const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
@@ -4481,44 +4500,48 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 - Never say "I can help you with that" - just help
 - Respond as if speaking aloud`;
 
-      // Start context fetching (non-blocking)
+      // Start context fetching (non-blocking) - SKIP for simple queries
       let combinedContext = '';
-      let contextReady = false;
+      let contextReady = skipContextFetch; // Already "ready" if we're skipping
       
-      const contextPromise = (async () => {
-        const [knowledgeResult, memoryResult] = await Promise.allSettled([
-          (async () => {
-            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
-            if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
-            const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
-            return results.length > 0 ? results[0].text : null;
-          })(),
-          (async () => {
-            if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
-            const result = await memoryService.searchMemories(message, userId, { limit: 3 });
-            return result.memories || [];
-          })()
-        ]);
-        
-        if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
-          combinedContext = knowledgeResult.value;
-        }
-        if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
-          combinedContext += "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
-        }
-        contextReady = true;
-        return combinedContext;
-      })();
+      const contextPromise = skipContextFetch 
+        ? Promise.resolve('') // Skip expensive lookups for simple queries
+        : (async () => {
+            const [knowledgeResult, memoryResult] = await Promise.allSettled([
+              (async () => {
+                const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+                if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
+                const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
+                return results.length > 0 ? results[0].text : null;
+              })(),
+              (async () => {
+                if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
+                const result = await memoryService.searchMemories(message, userId, { limit: 3 });
+                return result.memories || [];
+              })()
+            ]);
+            
+            if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
+              combinedContext = knowledgeResult.value;
+            }
+            if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
+              combinedContext += "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
+            }
+            contextReady = true;
+            return combinedContext;
+          })();
 
-      // Race: wait for context OR timeout (whichever comes first)
-      await Promise.race([
-        contextPromise,
-        new Promise(resolve => setTimeout(resolve, CONTEXT_TIMEOUT_MS))
-      ]);
+      // Race: wait for context OR timeout (skip race for simple queries)
+      if (!skipContextFetch) {
+        await Promise.race([
+          contextPromise,
+          new Promise(resolve => setTimeout(resolve, CONTEXT_TIMEOUT_MS))
+        ]);
+      }
       
       perfTimings.dataFetch = Date.now() - dataFetchStart;
-      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch, contextIncluded: contextReady });
-      log.info({ contextReady, contextLength: combinedContext.length, waitMs: perfTimings.dataFetch }, 'Context race completed');
+      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch, contextIncluded: contextReady, simpleQuery: skipContextFetch });
+      log.info({ contextReady, contextLength: combinedContext.length, waitMs: perfTimings.dataFetch, simpleQuery: skipContextFetch }, 'Context phase completed');
 
       // Get conversation history (fast, local DB)
       let dbConversationHistory: any[] = [];
