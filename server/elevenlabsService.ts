@@ -210,8 +210,8 @@ class ElevenLabsService {
 
   /**
    * Generate PCM 24kHz audio as base64 for LiveAvatar SDK's repeatAudio()
-   * Uses /with-timestamps endpoint which returns audio_base64 directly
-   * This is the exact format required by LiveAvatar SDK for lip-sync
+   * Uses standard TTS endpoint (NOT /with-timestamps which adds timing pauses)
+   * Returns raw PCM audio as base64 - the exact format required by LiveAvatar SDK
    */
   async generateSpeechBase64(
     text: string,
@@ -237,7 +237,7 @@ class ElevenLabsService {
       const startTime = Date.now();
 
       const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
         {
           method: "POST",
           headers: {
@@ -263,12 +263,9 @@ class ElevenLabsService {
         throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
       }
 
-      const data = await response.json();
-      const audioBase64 = data.audio_base64;
-
-      if (!audioBase64) {
-        throw new Error("ElevenLabs API did not return audio_base64");
-      }
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = Buffer.from(arrayBuffer);
+      const audioBase64 = audioBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
@@ -280,7 +277,7 @@ class ElevenLabsService {
       storage
         .logApiCall({
           serviceName: "elevenlabs",
-          endpoint: "textToSpeech/with-timestamps",
+          endpoint: "textToSpeech",
           userId: null,
           responseTimeMs: duration,
         })
