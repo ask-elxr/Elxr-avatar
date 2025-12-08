@@ -4319,6 +4319,365 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // FULL STREAMING AVATAR RESPONSE with STREAMING TTS
+  // Streams Claude tokens → ElevenLabs TTS WebSocket → Audio chunks via SSE
+  // This provides minimum latency by streaming audio as it's generated
+  app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: 'avatar-stream-audio', operation: 'streamAudioResponse' });
+    const WebSocket = (await import('ws')).default;
+    
+    try {
+      const { message, avatarId, memoryEnabled = false, languageCode } = req.body;
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
+      const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+      
+      if (!elevenLabsApiKey) {
+        return res.status(500).json({ error: "ElevenLabs API key not configured" });
+      }
+
+      // Set up SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+
+      const sendEvent = (eventType: string, data: any) => {
+        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+      };
+
+      // Performance timing
+      const perfStart = Date.now();
+      const perfTimings: Record<string, number> = {};
+
+      sendEvent('status', { phase: 'connecting_tts', message: 'Connecting to TTS...' });
+
+      // Connect to ElevenLabs TTS WebSocket
+      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
+      
+      let ttsWs: InstanceType<typeof WebSocket> | null = null;
+      let ttsReady = false;
+      let audioChunkCount = 0;
+      let firstAudioTime = 0;
+      
+      const ttsConnectPromise = new Promise<void>((resolve, reject) => {
+        ttsWs = new WebSocket(ttsUrl, {
+          headers: { 'xi-api-key': elevenLabsApiKey },
+        });
+        
+        const timeout = setTimeout(() => reject(new Error('TTS connection timeout')), 10000);
+        
+        ttsWs.on('open', () => {
+          clearTimeout(timeout);
+          log.info({ voiceId }, 'ElevenLabs TTS WebSocket connected for streaming');
+          
+          // Initialize TTS stream with voice settings
+          ttsWs!.send(JSON.stringify({
+            text: ' ',
+            voice_settings: {
+              stability: 0.7,
+              similarity_boost: 0.65,
+              speed: 1.0,
+            },
+            generation_config: {
+              chunk_length_schedule: [50], // Small chunks for low latency
+            },
+          }));
+          
+          ttsReady = true;
+          sendEvent('tts_ready', { connected: true });
+          resolve();
+        });
+        
+        ttsWs.on('message', (data: Buffer) => {
+          try {
+            const event = JSON.parse(data.toString());
+            
+            if (event.audio) {
+              audioChunkCount++;
+              if (audioChunkCount === 1) {
+                firstAudioTime = Date.now();
+                const latency = firstAudioTime - perfStart;
+                log.info({ latencyMs: latency }, 'First audio chunk received');
+                sendEvent('timing', { firstAudioMs: latency });
+              }
+              
+              // Send audio chunk to client for immediate playback
+              sendEvent('audio', { 
+                chunk: event.audio, 
+                index: audioChunkCount,
+                isFinal: event.isFinal || false 
+              });
+            }
+          } catch (error) {
+            // Binary data or parse error - ignore
+          }
+        });
+        
+        ttsWs.on('error', (error) => {
+          log.error({ error }, 'TTS WebSocket error');
+          clearTimeout(timeout);
+          reject(error);
+        });
+        
+        ttsWs.on('close', () => {
+          log.info({ audioChunkCount }, 'TTS WebSocket closed');
+          ttsReady = false;
+        });
+      });
+
+      try {
+        await ttsConnectPromise;
+      } catch (error: any) {
+        log.error({ error: error.message }, 'Failed to connect to TTS');
+        sendEvent('error', { message: 'TTS connection failed' });
+        return res.end();
+      }
+
+      perfTimings.ttsConnect = Date.now() - perfStart;
+
+      // Parallel data fetching (simplified for low latency)
+      sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
+      
+      const dataFetchStart = Date.now();
+      const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
+      
+      const [knowledgeResult, memoryResult] = await Promise.allSettled([
+        (async () => {
+          const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+          if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
+          const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
+          return results.length > 0 ? results[0].text : null;
+        })(),
+        (async () => {
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
+          const result = await memoryService.searchMemories(message, userId, { limit: 3 });
+          return result.memories || [];
+        })()
+      ]);
+
+      perfTimings.dataFetch = Date.now() - dataFetchStart;
+      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch });
+
+      // Build context
+      let combinedContext = '';
+      if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
+        combinedContext = knowledgeResult.value;
+      }
+      
+      let memoryContext = '';
+      if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
+        memoryContext = "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
+        combinedContext += memoryContext;
+      }
+
+      // Build personality prompt (simplified for voice mode)
+      const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
+      const voiceModePrompt = `${personalityPrompt}
+
+VOICE CONVERSATION MODE - CRITICAL RULES:
+- Keep responses SHORT (2-3 sentences max, under 50 words)
+- Be natural and conversational, like a friend talking
+- Never use bullet points, lists, or markdown formatting
+- Never say "I can help you with that" - just help
+- Respond as if speaking aloud`;
+
+      // Get conversation history
+      let dbConversationHistory: any[] = [];
+      if (userId) {
+        try {
+          const records = await storage.getConversationHistory(userId, avatarId, 4);
+          dbConversationHistory = records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
+        } catch (error) { }
+      }
+
+      // Save user message
+      if (userId) {
+        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
+      }
+
+      sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
+
+      // Stream Claude response and pipe to TTS
+      const claudeStart = Date.now();
+      let fullResponse = '';
+      let sentenceCount = 0;
+      let textBuffer = '';
+
+      // Function to send text to TTS when we have enough
+      const sendToTTS = (text: string, flush: boolean = false) => {
+        if (!ttsWs || ttsWs.readyState !== WebSocket.OPEN || !ttsReady) {
+          log.warn('TTS WebSocket not ready', { readyState: ttsWs?.readyState, ttsReady });
+          return;
+        }
+        
+        if (text.trim() || flush) {
+          log.debug({ textLength: text.length, flush }, 'Sending text to TTS');
+        }
+        
+        ttsWs.send(JSON.stringify({
+          text: text,
+          try_trigger_generation: true,
+          flush: flush,
+        }));
+      };
+      
+      // Cleanup function to ensure WebSocket is closed
+      const cleanupTTS = () => {
+        if (ttsWs && ttsWs.readyState === WebSocket.OPEN) {
+          try {
+            ttsWs.close();
+          } catch (e) {
+            // Ignore close errors
+          }
+        }
+      };
+
+      // Flush timer for aggressive low-latency TTS
+      let flushTimer: NodeJS.Timeout | null = null;
+      const FIRST_CHUNK_DELAY = 100; // Send first chunk after just 100ms
+      const SUBSEQUENT_CHUNK_DELAY = 200; // Subsequent chunks after 200ms
+      let chunksSent = 0;
+      
+      const flushTextBuffer = () => {
+        if (textBuffer.length > 0) {
+          sendToTTS(textBuffer, false);
+          sendEvent('text', { content: textBuffer });
+          fullResponse += textBuffer;
+          textBuffer = '';
+          chunksSent++;
+        }
+        if (flushTimer) {
+          clearTimeout(flushTimer);
+          flushTimer = null;
+        }
+      };
+      
+      const scheduleFlush = () => {
+        if (flushTimer) clearTimeout(flushTimer);
+        const delay = chunksSent === 0 ? FIRST_CHUNK_DELAY : SUBSEQUENT_CHUNK_DELAY;
+        flushTimer = setTimeout(flushTextBuffer, delay);
+      };
+
+      try {
+        for await (const chunk of claudeService.streamResponse(
+          message,
+          combinedContext,
+          dbConversationHistory,
+          voiceModePrompt,
+          undefined,
+          undefined,
+          true // isVoiceMode = true for short responses
+        )) {
+          if (chunk.type === 'text') {
+            textBuffer += chunk.content;
+            
+            // For minimum latency: flush on punctuation OR after timer
+            // First chunk flushes very quickly (100ms) to start audio ASAP
+            // Subsequent chunks can wait a bit longer for natural phrasing
+            if (/[.!?]\s*$/.test(textBuffer)) {
+              // Immediate flush on sentence-ending punctuation
+              flushTextBuffer();
+            } else if (textBuffer.length > 50) {
+              // Flush larger buffers immediately
+              flushTextBuffer();
+            } else {
+              // Schedule a flush after a short delay
+              scheduleFlush();
+            }
+          } else if (chunk.type === 'sentence') {
+            sentenceCount++;
+            // Sentence boundaries trigger immediate flush
+            flushTextBuffer();
+          } else if (chunk.type === 'done') {
+            // Flush any remaining text
+            flushTextBuffer();
+            // Close TTS generation
+            sendToTTS('', true);
+          }
+        }
+      } catch (streamError: any) {
+        if (flushTimer) clearTimeout(flushTimer);
+        log.error({ error: streamError.message }, 'Claude streaming error');
+        sendEvent('error', { message: 'AI generation failed' });
+        cleanupTTS();
+        return res.end();
+      }
+      
+      // Clean up timer
+      if (flushTimer) clearTimeout(flushTimer);
+
+      perfTimings.claude = Date.now() - claudeStart;
+
+      // Wait a bit for final audio chunks to come through
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Clean up TTS WebSocket
+      cleanupTTS();
+
+      perfTimings.total = Date.now() - perfStart;
+
+      // Save assistant response
+      if (userId && fullResponse) {
+        await storage.saveConversation({ userId, avatarId, role: 'assistant', text: fullResponse }).catch(() => {});
+      }
+
+      // Store in memory if enabled
+      if (memoryEnabled && userId && memoryService.isAvailable() && fullResponse) {
+        const conversationText = `User asked: "${message}"\nAssistant responded: "${fullResponse}"`;
+        await memoryService.addMemory(conversationText, userId, MemoryType.NOTE, {
+          timestamp: new Date().toISOString(),
+          avatarId,
+        }).catch(() => {});
+      }
+
+      // Send completion event
+      sendEvent('done', {
+        fullResponse,
+        audioChunks: audioChunkCount,
+        performance: {
+          totalMs: perfTimings.total,
+          dataFetchMs: perfTimings.dataFetch,
+          claudeMs: perfTimings.claude,
+          ttsConnectMs: perfTimings.ttsConnect,
+          firstAudioMs: firstAudioTime > 0 ? firstAudioTime - perfStart : null,
+        }
+      });
+
+      log.info({ 
+        userId, 
+        avatarId, 
+        perfTimings, 
+        sentenceCount,
+        audioChunks: audioChunkCount,
+        firstAudioLatency: firstAudioTime > 0 ? firstAudioTime - perfStart : null,
+      }, '🎵 Streaming audio response completed');
+      
+      res.end();
+
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Stream-audio endpoint error');
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Streaming failed' });
+      } else {
+        res.write(`event: error\ndata: ${JSON.stringify({ message: error.message })}\n\n`);
+        res.end();
+      }
+    }
+  });
 
   // Configure multer for file uploads
   const upload = multer({ 

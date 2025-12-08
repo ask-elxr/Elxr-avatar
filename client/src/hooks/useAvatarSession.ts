@@ -96,6 +96,7 @@ export function useAvatarSession({
   const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
   const currentAcknowledgmentRef = useRef<HTMLAudioElement | null>(null); // Currently playing acknowledgment (for stopping)
   const streamingEnabledRef = useRef(true); // Enable streaming mode by default for faster responses
+  const audioStreamingEnabledRef = useRef(true); // Enable full audio streaming mode (LLM → TTS → Avatar all streaming)
   const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
   const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
@@ -2410,6 +2411,156 @@ export function useAvatarSession({
         // ⏱️ TIMING: API call
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
+        
+        // Check if session driver supports streaming audio (LiveAvatarDriver)
+        const driver = sessionDriverRef.current;
+        const supportsAudioStreaming = driver && 'startStreamingAudio' in driver;
+        
+        // FULL AUDIO STREAMING MODE: LLM → TTS → Avatar all streaming in real-time
+        // This provides minimum latency by streaming audio chunks as they're generated
+        if (audioStreamingEnabledRef.current && supportsAudioStreaming && driver) {
+          console.log("🎵 [AUDIO STREAMING] Using full audio streaming mode for minimum latency");
+          
+          let fullResponse = '';
+          let firstAudioTime = 0;
+          let audioChunkCount = 0;
+          let performanceData: any = null;
+          
+          // Start streaming audio mode on the driver
+          (driver as any).startStreamingAudio();
+          
+          try {
+            const headers: Record<string, string> = { "Content-Type": "application/json" };
+            const memberstackId = getMemberstackId();
+            if (memberstackId) {
+              headers['X-Member-Id'] = memberstackId;
+            }
+            
+            const response = await fetch("/api/avatar/response/stream-audio", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({
+                message,
+                userId: memoryEnabledRef.current ? userId : undefined,
+                avatarId: currentAvatarIdRef.current,
+                memoryEnabled: memoryEnabledRef.current,
+                languageCode: elevenLabsLanguageCodeRef.current,
+              }),
+              signal: controller.signal,
+            });
+            
+            if (!response.ok) {
+              throw new Error(`Stream-audio failed: ${response.status}`);
+            }
+            
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            
+            if (reader) {
+              let pendingEventType: string | null = null;
+              
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop() || '';
+                
+                for (const line of lines) {
+                  if (!line.trim()) {
+                    pendingEventType = null;
+                    continue;
+                  }
+                  
+                  if (line.startsWith('event: ')) {
+                    pendingEventType = line.slice(7).trim();
+                  } else if (line.startsWith('data: ') && pendingEventType) {
+                    try {
+                      const data = JSON.parse(line.slice(6));
+                      const eventType = pendingEventType;
+                      pendingEventType = null;
+                        
+                      if (eventType === 'audio') {
+                        audioChunkCount++;
+                        if (audioChunkCount === 1) {
+                          firstAudioTime = performance.now();
+                          console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${(firstAudioTime - apiStartTime).toFixed(0)}ms`);
+                        }
+                        
+                        // Send audio chunk to driver for lip-sync playback
+                        if (data.chunk) {
+                          (driver as any).addAudioChunk(data.chunk);
+                        }
+                      } else if (eventType === 'text') {
+                        // Accumulate text response
+                        fullResponse += data.content || '';
+                      } else if (eventType === 'timing') {
+                        if (data.firstAudioMs) {
+                          console.log(`🎵 [AUDIO STREAMING] Backend first audio: ${data.firstAudioMs}ms`);
+                        }
+                        if (data.dataFetchMs) {
+                          console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetchMs}ms`);
+                        }
+                      } else if (eventType === 'done') {
+                        fullResponse = data.fullResponse || fullResponse;
+                        performanceData = data.performance;
+                        const totalTime = performance.now() - flowStartTime;
+                        console.log(`🎵 [AUDIO STREAMING] === COMPLETE ===`);
+                        console.log(`🎵 [AUDIO STREAMING] Audio chunks: ${audioChunkCount}`);
+                        console.log(`🎵 [AUDIO STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
+                        console.log(`🎵 [AUDIO STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
+                        if (performanceData) {
+                          console.log(`🎵 [AUDIO STREAMING] Backend breakdown:`, performanceData);
+                        }
+                        console.log(`📝 USER MESSAGE: ${message}`);
+                        console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
+                      } else if (eventType === 'status') {
+                        console.log(`🎵 [AUDIO STREAMING] Status: ${data.phase} - ${data.message}`);
+                      } else if (eventType === 'tts_ready') {
+                        console.log(`🎵 [AUDIO STREAMING] TTS connected`);
+                      } else if (eventType === 'error') {
+                        console.error(`🎵 [AUDIO STREAMING] Error: ${data.message}`);
+                        throw new Error(data.message);
+                      }
+                    } catch (e) {
+                      if (e instanceof Error && e.message !== 'AI generation failed') {
+                        // JSON parse error, skip silently
+                      } else {
+                        throw e;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            
+            // End streaming audio mode
+            (driver as any).endStreamingAudio();
+            
+            // Post-response cleanup
+            onResetInactivityTimer?.();
+            clearIdleTimeout();
+            
+            console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
+            
+            if (fullResponse) {
+              return; // Audio streaming succeeded
+            }
+            
+          } catch (streamError) {
+            // End streaming mode on error
+            (driver as any).endStreamingAudio();
+            
+            if (streamError instanceof Error && streamError.name !== "AbortError") {
+              console.error("Audio streaming error, falling back to sentence streaming:", streamError);
+              audioStreamingEnabledRef.current = false;
+            } else {
+              throw streamError;
+            }
+          }
+        }
         
         // Use streaming mode for faster perceived response
         if (streamingEnabledRef.current && sessionDriverRef.current) {
