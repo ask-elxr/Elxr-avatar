@@ -59,6 +59,10 @@ export class LiveAvatarDriver implements SessionDriver {
   private readonly STREAMING_BUFFER_THRESHOLD = 12000; // ~0.5s of 24kHz PCM audio (24000 samples/s * 2 bytes * 0.25s)
   private readonly STREAMING_FLUSH_DELAY = 200; // ms - flush buffer after no new chunks for this duration
 
+  // Promise resolver for waiting on speech completion
+  private speechCompleteResolver: (() => void) | null = null;
+  private isSpeaking: boolean = false;
+
   constructor(config: DriverConfig) {
     this.config = config;
     this.languageCode = config.languageCode || "en";
@@ -227,12 +231,21 @@ export class LiveAvatarDriver implements SessionDriver {
         // Listen for avatar talking events
         session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
           console.log("🗣️ Avatar started speaking");
+          this.isSpeaking = true;
           this.config.onAvatarStartTalking?.();
         });
 
         session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, async () => {
           console.log("🤫 Avatar stopped speaking");
+          this.isSpeaking = false;
           this.config.onAvatarStopTalking?.();
+          
+          // Resolve any pending speech completion promise
+          if (this.speechCompleteResolver) {
+            const resolver = this.speechCompleteResolver;
+            this.speechCompleteResolver = null;
+            resolver();
+          }
           
           // Resume listening after avatar stops speaking (for HeyGen voice chat)
           if (this.enableMobileVoiceChat && this.session) {
@@ -358,6 +371,25 @@ export class LiveAvatarDriver implements SessionDriver {
       this.config.videoRef.current.muted = false;
     }
     
+    // Create promise to wait for speech completion
+    const speechCompletePromise = new Promise<void>((resolve) => {
+      this.speechCompleteResolver = resolve;
+    });
+    
+    // Set timeout to avoid hanging indefinitely if SDK event doesn't fire
+    const timeoutPromise = new Promise<void>((resolve) => {
+      // Estimate duration: ~150ms per word + 2s buffer
+      const wordCount = text.split(/\s+/).length;
+      const estimatedMs = Math.max(3000, wordCount * 150 + 2000);
+      setTimeout(() => {
+        if (this.speechCompleteResolver) {
+          console.warn(`⚠️ Speech timeout after ${estimatedMs}ms - SDK AVATAR_SPEAK_ENDED not received`);
+          this.speechCompleteResolver = null;
+          resolve();
+        }
+      }, estimatedMs);
+    });
+    
     if (this.useHeygenVoice) {
       // Use HeyGen's built-in voice via session.repeat(text)
       console.log("🎙️ CUSTOM mode: Using HeyGen voice via session.repeat()");
@@ -367,6 +399,11 @@ export class LiveAvatarDriver implements SessionDriver {
       console.log("🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()");
       await this.speakWithElevenLabsVoice(text, languageCodeOverride);
     }
+    
+    // Wait for speech to complete (or timeout)
+    console.log("⏳ Waiting for avatar to finish speaking...");
+    await Promise.race([speechCompletePromise, timeoutPromise]);
+    console.log("✅ Avatar finished speaking (or timeout reached)");
   }
 
   /**
