@@ -17,8 +17,6 @@ export interface SessionDriver {
   addAudioChunk?(base64Audio: string): void;
   endStreamingAudio?(): void;
   isStreamingAudioActive?(): boolean;
-  // Direct audio playback for batch audio mode
-  repeatAudio?(base64Audio: string): Promise<void>;
 }
 
 interface DriverConfig {
@@ -60,10 +58,6 @@ export class LiveAvatarDriver implements SessionDriver {
   private streamingFlushTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly STREAMING_BUFFER_THRESHOLD = 12000; // ~0.5s of 24kHz PCM audio (24000 samples/s * 2 bytes * 0.25s)
   private readonly STREAMING_FLUSH_DELAY = 200; // ms - flush buffer after no new chunks for this duration
-
-  // Promise resolver for waiting on speech completion
-  private speechCompleteResolver: (() => void) | null = null;
-  private isSpeaking: boolean = false;
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -176,52 +170,42 @@ export class LiveAvatarDriver implements SessionDriver {
         });
         this.session = session;
 
-        // Track if we've already started voice chat to avoid duplicates
-        let voiceChatStarted = false;
-        
-        // Helper function to start voice chat - called when session is fully connected
-        const startVoiceChatIfReady = async () => {
-          if (voiceChatStarted || !this.enableMobileVoiceChat || !this.session) return;
-          
-          console.log("🎤 Starting SDK voice chat (LiveKit microphone capture)...");
-          try {
-            const voiceChat = this.session.voiceChat;
-            console.log("🎤 VoiceChat state:", voiceChat?.state);
-            
-            if (voiceChat && voiceChat.state !== 'ACTIVE') {
-              console.log("🎤 Starting voiceChat.start() for microphone capture...");
-              await voiceChat.start({ defaultMuted: false });
-              console.log("✅ VoiceChat microphone capture started, state:", voiceChat.state);
-            }
-            
-            // Then tell the avatar to start listening for speech
-            this.session.startListening();
-            console.log("✅ SDK startListening() called - avatar is now listening");
-            voiceChatStarted = true;
-            this.config.onVoiceChatReady?.();
-          } catch (voiceChatError: any) {
-            console.warn("⚠️ Failed to start SDK voice chat:", voiceChatError?.message || voiceChatError);
-          }
-        };
-        
-        // Listen for stream ready event - attach video element
+        // Listen for stream ready event - this is when we attach the video element and start voice chat
         session.on(SessionEvent.SESSION_STREAM_READY, async () => {
           console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
           // Use SDK's attach() method to connect video element
+          // Retry with increasing delays if video element is not yet rendered
           this.attachVideoWithRetry(5);
+          
+          // Start voice chat after stream is ready (for mobile devices)
+          if (this.enableMobileVoiceChat && this.session) {
+            console.log("🎤 Starting SDK voice chat after stream ready (LiveKit microphone capture)...");
+            try {
+              // First, explicitly start the voiceChat microphone capture
+              // This uses LiveKit to capture audio via WebRTC (works in mobile iframes)
+              const voiceChat = this.session.voiceChat;
+              console.log("🎤 VoiceChat state:", voiceChat?.state);
+              
+              if (voiceChat && voiceChat.state !== 'ACTIVE') {
+                console.log("🎤 Starting voiceChat.start() for microphone capture...");
+                await voiceChat.start({ defaultMuted: false });
+                console.log("✅ VoiceChat microphone capture started, state:", voiceChat.state);
+              }
+              
+              // Then tell the avatar to start listening for speech
+              this.session.startListening();
+              console.log("✅ SDK startListening() called - avatar is now listening");
+              this.config.onVoiceChatReady?.();
+            } catch (voiceChatError: any) {
+              console.warn("⚠️ Failed to start SDK voice chat:", voiceChatError?.message || voiceChatError);
+              // If voiceChat fails (e.g., permission denied), the UI should show a message
+            }
+          }
         });
 
-        // Listen for session state changes - start voice chat when CONNECTED
-        session.on(SessionEvent.SESSION_STATE_CHANGED, async (state: SessionState) => {
+        // Listen for session state changes
+        session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
           console.log("📊 LiveAvatar session state:", state);
-          
-          // Only start voice chat once session is fully connected
-          if (state === SessionState.CONNECTED && this.enableMobileVoiceChat) {
-            console.log("🎤 Session CONNECTED - now starting voice chat...");
-            // Small delay to ensure everything is ready
-            await new Promise(resolve => setTimeout(resolve, 500));
-            await startVoiceChatIfReady();
-          }
         });
 
         // Listen for session disconnected
@@ -233,71 +217,30 @@ export class LiveAvatarDriver implements SessionDriver {
         // Listen for avatar talking events
         session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
           console.log("🗣️ Avatar started speaking");
-          this.isSpeaking = true;
           this.config.onAvatarStartTalking?.();
         });
 
-        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, async () => {
+        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
           console.log("🤫 Avatar stopped speaking");
-          this.isSpeaking = false;
           this.config.onAvatarStopTalking?.();
-          
-          // Resolve any pending speech completion promise
-          if (this.speechCompleteResolver) {
-            const resolver = this.speechCompleteResolver;
-            this.speechCompleteResolver = null;
-            resolver();
-          }
-          
-          // Resume listening after avatar stops speaking (for HeyGen voice chat)
-          if (this.enableMobileVoiceChat && this.session) {
-            // Small delay to prevent echo feedback
-            await new Promise(resolve => setTimeout(resolve, 500));
-            console.log("🎤 Resuming SDK listening after avatar finished speaking...");
-            try {
-              this.session.startListening();
-              console.log("✅ SDK startListening() called - avatar is listening again");
-            } catch (e: any) {
-              console.warn("⚠️ Failed to resume listening:", e?.message || e);
-            }
-          }
         });
 
-        // Listen for ALL agent events for debugging
-        console.log("🔧 Available AgentEventsEnum keys:", Object.keys(AgentEventsEnum));
-        
         // Listen for user speaking events (for debugging voice input)
         session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-          console.log("🎤 USER_SPEAK_STARTED - User started speaking (SDK voice detection)");
+          console.log("🎤 User started speaking (SDK voice detection)");
         });
 
         session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
-          console.log("🎤 USER_SPEAK_ENDED - User stopped speaking (SDK voice detection)");
+          console.log("🎤 User stopped speaking (SDK voice detection)");
         });
 
         // Listen for user transcription (voice input)
         session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
-          console.log("🎤 USER_TRANSCRIPTION event received:", event);
-          console.log("🎤 User transcription text:", event?.text);
-          if (event?.text && this.config.onUserMessage) {
-            console.log("🎤 Forwarding user message to pipeline:", event.text);
+          console.log("🎤 User transcription:", event.text);
+          if (event.text && this.config.onUserMessage) {
             this.config.onUserMessage(event.text);
           }
         });
-        
-        // Log voiceChat state periodically for debugging
-        if (this.enableMobileVoiceChat) {
-          const voiceChatDebugInterval = setInterval(() => {
-            if (!this.session) {
-              clearInterval(voiceChatDebugInterval);
-              return;
-            }
-            const vc = this.session.voiceChat;
-            console.log("🎤 VoiceChat debug - state:", vc?.state, "isListening:", (this.session as any)?.isListening);
-          }, 5000);
-          // Store interval for cleanup
-          (this as any).voiceChatDebugInterval = voiceChatDebugInterval;
-        }
 
         // Start the session - SDK handles LiveKit connection internally
         console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
@@ -336,12 +279,6 @@ export class LiveAvatarDriver implements SessionDriver {
     this.stopCurrentAudio();
     this.videoAttached = false;
     
-    // Clean up debug interval
-    if ((this as any).voiceChatDebugInterval) {
-      clearInterval((this as any).voiceChatDebugInterval);
-      (this as any).voiceChatDebugInterval = null;
-    }
-    
     // Clean up audio context
     if (this.audioContext) {
       try {
@@ -373,27 +310,6 @@ export class LiveAvatarDriver implements SessionDriver {
       this.config.videoRef.current.muted = false;
     }
     
-    // Create promise to wait for speech completion
-    const speechCompletePromise = new Promise<void>((resolve) => {
-      this.speechCompleteResolver = resolve;
-    });
-    
-    // Set timeout to avoid hanging indefinitely if SDK event doesn't fire
-    const timeoutPromise = new Promise<void>((resolve) => {
-      // Estimate duration: ~200ms per word + 10s buffer for network/processing
-      // Long responses with ElevenLabs audio need more time for transmission and processing
-      const wordCount = text.split(/\s+/).length;
-      const estimatedMs = Math.max(15000, wordCount * 200 + 10000);
-      console.log(`⏱️ Speech timeout set to ${(estimatedMs/1000).toFixed(1)}s for ${wordCount} words`);
-      setTimeout(() => {
-        if (this.speechCompleteResolver) {
-          console.warn(`⚠️ Speech timeout after ${estimatedMs}ms - SDK AVATAR_SPEAK_ENDED not received`);
-          this.speechCompleteResolver = null;
-          resolve();
-        }
-      }, estimatedMs);
-    });
-    
     if (this.useHeygenVoice) {
       // Use HeyGen's built-in voice via session.repeat(text)
       console.log("🎙️ CUSTOM mode: Using HeyGen voice via session.repeat()");
@@ -403,11 +319,6 @@ export class LiveAvatarDriver implements SessionDriver {
       console.log("🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()");
       await this.speakWithElevenLabsVoice(text, languageCodeOverride);
     }
-    
-    // Wait for speech to complete (or timeout)
-    console.log("⏳ Waiting for avatar to finish speaking...");
-    await Promise.race([speechCompletePromise, timeoutPromise]);
-    console.log("✅ Avatar finished speaking (or timeout reached)");
   }
 
   /**
@@ -430,13 +341,14 @@ export class LiveAvatarDriver implements SessionDriver {
    * Speak using ElevenLabs voice with SDK lip-sync
    * SDK handles both lip-sync animation AND audio playback through WebRTC
    * 
-   * Backend returns raw PCM (24kHz, mono, 16-bit) with SSML for natural pauses
-   * Uses SINGLE TTS call for full text - no sentence splitting
+   * CRITICAL: SDK requires PCM 24kHz base64 audio format
+   * Uses /api/elevenlabs/tts-base64 which returns audio in this exact format
    * 
    * Following official demo pattern: just call repeatAudio() - SDK handles everything
    */
   private async speakWithElevenLabsVoice(text: string, languageCodeOverride?: string): Promise<void> {
     try {
+      // Get base64 PCM audio from ElevenLabs (SDK-compatible format)
       const response = await fetch("/api/elevenlabs/tts-base64", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -452,17 +364,19 @@ export class LiveAvatarDriver implements SessionDriver {
       }
 
       const data = await response.json();
-      const pcmBase64 = data.audio;
+      const base64Audio = data.audio;
       
-      if (!pcmBase64) {
+      if (!base64Audio) {
         throw new Error("No audio data in response");
       }
       
-      console.log(`🎤 Got raw PCM audio (${pcmBase64.length} chars), sending to SDK...`);
+      console.log(`🎤 Got base64 PCM audio (${base64Audio.length} chars), sending to SDK...`);
       
+      // Send base64 PCM audio to SDK - SDK handles BOTH lip-sync AND audio playback
+      // The audio comes through the WebRTC video stream (video element must be unmuted)
       if (this.session) {
-        this.session.repeatAudio(pcmBase64);
-        console.log("🔊 Raw PCM audio sent to SDK for seamless lip-sync playback");
+        this.session.repeatAudio(base64Audio);
+        console.log("🔊 Audio sent to SDK for lip-sync playback");
       }
       
     } catch (error) {
@@ -657,83 +571,6 @@ export class LiveAvatarDriver implements SessionDriver {
   isStreamingAudioActive(): boolean {
     return this.isStreamingAudio;
   }
-
-  /**
-   * Helper to create a WAV header for PCM data
-   */
-  private createWavHeader(dataSize: number, sampleRate: number = 24000, channels: number = 1, bitsPerSample: number = 16): Uint8Array {
-    const byteRate = sampleRate * channels * (bitsPerSample / 8);
-    const blockAlign = channels * (bitsPerSample / 8);
-    const headerSize = 44;
-    const fileSize = headerSize + dataSize - 8;
-    
-    const header = new Uint8Array(headerSize);
-    const view = new DataView(header.buffer);
-    
-    // RIFF header
-    header.set([0x52, 0x49, 0x46, 0x46], 0); // "RIFF"
-    view.setUint32(4, fileSize, true);
-    header.set([0x57, 0x41, 0x56, 0x45], 8); // "WAVE"
-    
-    // fmt subchunk
-    header.set([0x66, 0x6D, 0x74, 0x20], 12); // "fmt "
-    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-    view.setUint16(20, 1, true); // AudioFormat (1 = PCM)
-    view.setUint16(22, channels, true);
-    view.setUint32(24, sampleRate, true);
-    view.setUint32(28, byteRate, true);
-    view.setUint16(32, blockAlign, true);
-    view.setUint16(34, bitsPerSample, true);
-    
-    // data subchunk
-    header.set([0x64, 0x61, 0x74, 0x61], 36); // "data"
-    view.setUint32(40, dataSize, true);
-    
-    return header;
-  }
-
-  /**
-   * Directly send base64 audio to the SDK for lip-sync playback
-   * Used by batch audio mode for complete audio responses
-   * 
-   * NOTE: Backend returns raw PCM (24kHz, mono, 16-bit) with SSML processing
-   * Uses SINGLE TTS call for full text - sends complete audio in ONE call!
-   */
-  async repeatAudio(base64Audio: string): Promise<void> {
-    if (!this.session) {
-      console.warn("Cannot repeat audio - session not initialized");
-      return;
-    }
-    
-    console.log(`🎤 [repeatAudio] Sending ${base64Audio.length} chars of raw PCM audio to SDK`);
-    
-    return new Promise((resolve) => {
-      this.speechCompleteResolver = () => {
-        console.log("✅ [repeatAudio] Avatar finished speaking");
-        resolve();
-      };
-      
-      this.session!.repeatAudio(base64Audio);
-      console.log("🔊 [repeatAudio] Raw PCM audio sent to SDK for seamless playback");
-      
-      // Set a timeout in case the SDK doesn't fire the completion event
-      const timeout = setTimeout(() => {
-        console.warn("⚠️ [repeatAudio] Speech timeout - resolving anyway");
-        if (this.speechCompleteResolver) {
-          this.speechCompleteResolver();
-          this.speechCompleteResolver = null;
-        }
-      }, 60000); // 60 second timeout for long responses
-      
-      // Clean up timeout when speech completes naturally
-      const originalResolver = this.speechCompleteResolver;
-      this.speechCompleteResolver = () => {
-        clearTimeout(timeout);
-        originalResolver?.();
-        this.speechCompleteResolver = null;
-      };
-    });
-  }
 }
 
 // Alias for backwards compatibility
@@ -744,45 +581,19 @@ export class AudioOnlyDriver implements SessionDriver {
   private currentAudio: HTMLAudioElement | null = null;
   private avatarId: string;
   private languageCode: string;
-  private audioContext: AudioContext | null = null;
-  private currentSource: AudioBufferSourceNode | null = null;
-  private playbackEndedNotified: boolean = true; // Track if stop callback has been sent (start true = no active playback)
 
   constructor(config: DriverConfig, avatarId: string, languageCode: string = "en") {
     this.config = config;
     this.avatarId = avatarId;
     this.languageCode = languageCode;
   }
-  
-  /**
-   * Helper to ensure onAvatarStopTalking is called exactly once per playback
-   */
-  private notifyStopped(): void {
-    if (!this.playbackEndedNotified) {
-      this.playbackEndedNotified = true;
-      this.config.onAvatarStopTalking?.();
-    }
-  }
 
   async start(): Promise<void> {
     console.log("Audio-only mode started - no HeyGen session created");
-    // Create AudioContext lazily on first use to avoid Safari limits
-    if (!this.audioContext) {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
   }
 
   async stop(): Promise<void> {
     this.stopCurrentAudio();
-    // Close AudioContext on full stop
-    if (this.audioContext && this.audioContext.state !== 'closed') {
-      try {
-        await this.audioContext.close();
-      } catch (e) {
-        // Already closed
-      }
-      this.audioContext = null;
-    }
   }
 
   setLanguage(languageCode: string): void {
@@ -793,9 +604,6 @@ export class AudioOnlyDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     try {
       this.stopCurrentAudio();
-      
-      // Mark that we're starting new playback (callback not yet sent)
-      this.playbackEndedNotified = false;
 
       this.config.onAvatarStartTalking?.();
 
@@ -819,21 +627,21 @@ export class AudioOnlyDriver implements SessionDriver {
       this.currentAudio = audio;
 
       audio.onended = () => {
+        this.config.onAvatarStopTalking?.();
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
-        this.notifyStopped();
       };
 
       audio.onerror = () => {
+        this.config.onAvatarStopTalking?.();
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
-        this.notifyStopped();
       };
 
       await audio.play();
     } catch (error) {
       console.error("Error playing TTS:", error);
-      this.notifyStopped();
+      this.config.onAvatarStopTalking?.();
     }
   }
 
@@ -845,99 +653,11 @@ export class AudioOnlyDriver implements SessionDriver {
     return false;
   }
 
-  /**
-   * Play base64-encoded PCM audio directly using Web Audio API
-   * Used by batch audio mode for complete audio responses
-   * PCM format: 16-bit signed little-endian mono at 24kHz
-   */
-  async repeatAudio(base64Audio: string): Promise<void> {
-    try {
-      // Stop any existing audio before starting new playback
-      this.stopCurrentAudio();
-      
-      // Mark that we're starting new playback (callback not yet sent)
-      this.playbackEndedNotified = false;
-      
-      this.config.onAvatarStartTalking?.();
-      console.log(`🔊 [AudioOnlyDriver] Playing ${base64Audio.length} chars of base64 PCM audio`);
-      
-      // Decode base64 to bytes
-      const binaryString = atob(base64Audio);
-      const len = binaryString.length;
-      const pcmBytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        pcmBytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      console.log(`🔊 [AudioOnlyDriver] Decoded ${pcmBytes.length} bytes of PCM data`);
-      
-      // Use the single persistent AudioContext created in start()
-      // If closed, we should not be receiving playback requests (session should be active)
-      if (!this.audioContext || this.audioContext.state === 'closed') {
-        throw new Error("AudioContext not available - ensure start() was called and session is active");
-      }
-      
-      // Resume AudioContext if suspended (browser autoplay policy)
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-      
-      const sampleRate = 24000;
-      const numSamples = Math.floor(pcmBytes.length / 2); // 16-bit = 2 bytes per sample
-      
-      // Create audio buffer
-      const audioBuffer = this.audioContext.createBuffer(1, numSamples, sampleRate);
-      const channelData = audioBuffer.getChannelData(0);
-      
-      // Convert 16-bit PCM to float32 (range -1.0 to 1.0)
-      const pcmView = new DataView(pcmBytes.buffer);
-      for (let i = 0; i < numSamples; i++) {
-        const sample = pcmView.getInt16(i * 2, true); // true = little-endian
-        channelData[i] = sample / 32768; // Normalize to -1.0 to 1.0
-      }
-      
-      // Create source and track it for interrupt/stop capability
-      const source = this.audioContext.createBufferSource();
-      this.currentSource = source;
-      source.buffer = audioBuffer;
-      source.connect(this.audioContext.destination);
-      
-      return new Promise<void>((resolve) => {
-        source.onended = () => {
-          console.log("✅ [AudioOnlyDriver] Web Audio playback ended");
-          this.currentSource = null;
-          this.notifyStopped(); // Safe to call multiple times - only fires once per playback
-          resolve();
-        };
-        
-        source.start(0);
-        console.log(`🔊 [AudioOnlyDriver] Started playback: ${numSamples} samples at ${sampleRate}Hz = ${(numSamples / sampleRate).toFixed(1)}s`);
-      });
-    } catch (error) {
-      console.error("❌ [AudioOnlyDriver] repeatAudio error:", error);
-      this.currentSource = null;
-      this.notifyStopped();
-    }
-  }
-
   private stopCurrentAudio(): void {
-    // Stop Web Audio playback
-    if (this.currentSource) {
-      try {
-        this.currentSource.stop();
-      } catch (e) {
-        // Already stopped
-      }
-      this.currentSource = null;
-    }
-    
-    // Stop HTMLAudioElement playback
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio = null;
+      this.config.onAvatarStopTalking?.();
     }
-    
-    // Notify that playback has stopped (safe to call multiple times)
-    this.notifyStopped();
   }
 }

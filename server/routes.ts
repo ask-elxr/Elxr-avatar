@@ -4231,26 +4231,32 @@ This applies to EVERY response, regardless of conversation length.`;
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
-      // Generate non-streaming Claude response
+      // Stream Claude response
       const claudeStart = Date.now();
       let fullResponse = '';
+      let sentenceCount = 0;
 
       try {
-        fullResponse = await claudeService.generateEnhancedResponse(
+        for await (const chunk of claudeService.streamResponse(
           message || 'What do you see in this image?',
           combinedContext,
-          '', // webSearchResults
           dbConversationHistory.length > 0 ? dbConversationHistory : conversationHistory,
           enhancedPersonality,
-          false, // isVoiceMode = false for video mode (allows longer text responses)
           imageBase64,
-          imageMimeType
-        );
-        
-        // Send the full response as a single sentence event
-        sendEvent('sentence', { content: fullResponse, index: 1 });
-      } catch (claudeError: any) {
-        log.error({ error: claudeError.message }, 'Claude generation error');
+          imageMimeType,
+          false // isVoiceMode = false for video streaming (allows longer text responses)
+        )) {
+          if (chunk.type === 'text') {
+            sendEvent('text', { content: chunk.content });
+          } else if (chunk.type === 'sentence') {
+            sentenceCount++;
+            sendEvent('sentence', { content: chunk.content, index: sentenceCount });
+          } else if (chunk.type === 'done') {
+            fullResponse = chunk.content;
+          }
+        }
+      } catch (streamError: any) {
+        log.error({ error: streamError.message }, 'Claude streaming error');
         sendEvent('error', { message: 'AI generation failed' });
         return res.end();
       }
@@ -4288,11 +4294,12 @@ This applies to EVERY response, regardless of conversation length.`;
         userId, 
         avatarId, 
         perfTimings, 
+        sentenceCount,
         userMessage: message,
         claudeResponse: fullResponse.substring(0, 500) + (fullResponse.length > 500 ? '...' : ''),
         responseLength: fullResponse.length,
         contextLength: combinedContext?.length || 0,
-      }, '🤖 Claude non-streaming response completed');
+      }, '🤖 Claude streaming response completed');
       
       // Also log full response to console for easy viewing in dev
       console.log('\n📝 USER MESSAGE:', message);
@@ -4312,163 +4319,6 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
-  // NON-STREAMING AVATAR RESPONSE with BATCH TTS
-  // Generates full Claude response, then full TTS audio, returns as single response
-  // Note: This has higher latency (~4-6s) compared to streaming (~1-2s) but is simpler
-  app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
-    const log = logger.child({ service: 'avatar-batch-audio', operation: 'batchAudioResponse' });
-    
-    try {
-      const { message, avatarId, memoryEnabled = false, languageCode } = req.body;
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
-
-      if (!message) {
-        return res.status(400).json({ error: "Message is required" });
-      }
-
-      const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
-      if (!avatarConfig) {
-        return res.status(404).json({ error: "Avatar not found" });
-      }
-
-      const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
-
-      // Performance timing
-      const perfStart = Date.now();
-      const perfTimings: Record<string, number> = {};
-
-      // Parallel data fetching
-      const dataFetchStart = Date.now();
-      const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
-      
-      const [knowledgeResult, memoryResult] = await Promise.allSettled([
-        (async () => {
-          const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
-          if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
-          const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
-          return results.length > 0 ? results[0].text : null;
-        })(),
-        (async () => {
-          if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
-          const result = await memoryService.searchMemories(message, userId, { limit: 3 });
-          return result.memories || [];
-        })()
-      ]);
-
-      perfTimings.dataFetch = Date.now() - dataFetchStart;
-
-      // Build context
-      let combinedContext = '';
-      if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
-        combinedContext = knowledgeResult.value;
-      }
-      
-      let memoryContext = '';
-      if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
-        memoryContext = "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
-        combinedContext += memoryContext;
-      }
-
-      // Build personality prompt (simplified for voice mode)
-      const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
-      const voiceModePrompt = `${personalityPrompt}
-
-VOICE CONVERSATION MODE - CRITICAL RULES:
-- MAXIMUM 2 sentences, under 30 words total
-- Be direct and conversational
-- No bullet points, lists, or formatting
-- Respond naturally as if speaking aloud
-- Give a simple, clear answer - don't over-explain`;
-
-      // Get conversation history
-      let dbConversationHistory: any[] = [];
-      if (userId) {
-        try {
-          const records = await storage.getConversationHistory(userId, avatarId, 4);
-          dbConversationHistory = records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
-        } catch (error) { }
-      }
-
-      // Save user message
-      if (userId) {
-        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
-      }
-
-      // Generate full Claude response (non-streaming)
-      const claudeStart = Date.now();
-      log.info({ message, avatarId }, 'Generating non-streaming Claude response');
-      
-      const fullResponse = await claudeService.generateResponse(
-        message,
-        combinedContext,
-        dbConversationHistory,
-        voiceModePrompt
-      );
-
-      perfTimings.claude = Date.now() - claudeStart;
-      const wordCount = fullResponse.split(/\s+/).length;
-      log.info({ 
-        claudeMs: perfTimings.claude, 
-        responseLength: fullResponse.length,
-        wordCount,
-        response: fullResponse.substring(0, 100) + '...'
-      }, '🎤 Claude voice response generated (max 2 sentences, 30 words)');
-
-      // Generate full TTS audio (non-streaming)
-      const ttsStart = Date.now();
-      log.info({ voiceId, textLength: fullResponse.length }, 'Generating non-streaming TTS audio');
-      
-      const audioBase64 = await elevenlabsService.generateSpeechBase64(
-        fullResponse,
-        voiceId,
-        languageCode
-      );
-
-      perfTimings.tts = Date.now() - ttsStart;
-      perfTimings.total = Date.now() - perfStart;
-
-      log.info({ ttsMs: perfTimings.tts, audioLength: audioBase64.length }, 'TTS audio generated');
-
-      // Save assistant response
-      if (userId && fullResponse) {
-        await storage.saveConversation({ userId, avatarId, role: 'assistant', text: fullResponse }).catch(() => {});
-      }
-
-      // Store in memory if enabled
-      if (memoryEnabled && userId && memoryService.isAvailable() && fullResponse) {
-        const conversationText = `User asked: "${message}"\nAssistant responded: "${fullResponse}"`;
-        await memoryService.addMemory(conversationText, userId, MemoryType.NOTE, {
-          timestamp: new Date().toISOString(),
-          avatarId,
-        }).catch(() => {});
-      }
-
-      log.info({ 
-        userId, 
-        avatarId, 
-        perfTimings, 
-      }, '🎵 Non-streaming audio response completed');
-
-      // Return single JSON response with text and audio
-      res.json({
-        fullResponse,
-        audioBase64,
-        performance: {
-          totalMs: perfTimings.total,
-          dataFetchMs: perfTimings.dataFetch,
-          claudeMs: perfTimings.claude,
-          ttsMs: perfTimings.tts,
-        }
-      });
-
-    } catch (error: any) {
-      log.error({ error: error.message }, 'Batch-audio endpoint error');
-      res.status(500).json({ error: 'Audio generation failed', message: error.message });
-    }
-  });
 
   // Configure multer for file uploads
   const upload = multer({ 

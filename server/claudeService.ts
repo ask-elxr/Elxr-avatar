@@ -373,7 +373,7 @@ RESPONSE REQUIREMENTS:
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 50, // Strict limit for voice mode (~15-25 words max)
+        max_tokens: 4096, // ✅ Increased from 350 to allow full, detailed responses
         messages: messages,
         system: systemPrompt
       });
@@ -393,50 +393,7 @@ RESPONSE REQUIREMENTS:
 
       const content = response.content[0];
       if (content && content.type === 'text') {
-        // Post-process: enforce 2 sentence max AND 35 word limit for voice mode
-        let responseText = content.text.trim();
-        
-        // Split by sentence boundaries (handles . ! ? followed by space, newline, or end)
-        // Also handles newlines as potential sentence separators
-        const sentencePattern = /[.!?]+[\s\n]+|[\n]+/g;
-        let sentences = responseText.split(sentencePattern)
-          .map((s: string) => s.trim())
-          .filter((s: string) => s.length > 0);
-        
-        // If splitting failed, try simpler approach
-        if (sentences.length <= 1 && responseText.length > 50) {
-          sentences = responseText.match(/[^.!?\n]+[.!?]*/g) || [responseText];
-          sentences = sentences.map((s: string) => s.trim()).filter((s: string) => s.length > 0);
-        }
-        
-        // Take max 2 sentences
-        if (sentences.length > 2) {
-          responseText = sentences.slice(0, 2).join(' ').trim();
-          // Add period if missing
-          if (!/[.!?]$/.test(responseText)) {
-            responseText += '.';
-          }
-          log.info({ originalSentences: sentences.length, trimmedTo: 2 }, 'Trimmed response to 2 sentences');
-        }
-        
-        // Enforce max 35 word limit
-        const words = responseText.split(/\s+/);
-        if (words.length > 35) {
-          // Find a natural break point (end of sentence) within word limit
-          let truncated = words.slice(0, 35).join(' ');
-          // Try to end at a sentence boundary
-          const lastPunctuation = truncated.match(/.*[.!?]/);
-          if (lastPunctuation) {
-            truncated = lastPunctuation[0];
-          } else {
-            truncated += '...';
-          }
-          log.info({ originalWords: words.length, trimmedTo: truncated.split(/\s+/).length }, 'Trimmed response to 35 words');
-          responseText = truncated;
-        }
-        
-        log.info({ finalWordCount: responseText.split(/\s+/).length, finalLength: responseText.length }, 'Final voice response');
-        return responseText;
+        return content.text;
       }
       return 'I apologize, but I was unable to generate a response at this time.';
     } catch (error: any) {

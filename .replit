@@ -43,20 +43,11 @@ localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 33863
+localPort = 35727
 externalPort = 3000
-
-[[ports]]
-localPort = 40851
-externalPort = 3001
-
-[[ports]]
-localPort = 43983
-externalPort = 3002
 
 [userenv]
 
 [userenv.shared]
 HEYGEN_CREDIT_LIMIT = "1000"
 NODE_OPTIONS = "--max-old-space-size=4096"
-HEYGEN_CRITICAL_THRESHOLD = "0"

@@ -60,18 +60,12 @@ class ElevenLabsService {
       );
     }
 
-    // Normalize language code - ElevenLabs eleven_turbo_v2_5 only accepts ISO 639-1 codes (e.g., 'en', 'es')
-    // Convert 'en-US', 'en-GB', etc. to 'en'
-    const normalizedLanguageCode = languageCode 
-      ? languageCode.split('-')[0].toLowerCase() 
-      : undefined;
-
     const log = logger.child({
       service: "elevenlabs",
       operation: "generateSpeech",
       textLength: text.length,
       voiceId,
-      languageCode: normalizedLanguageCode,
+      languageCode,
     });
 
     try {
@@ -90,8 +84,8 @@ class ElevenLabsService {
       };
 
       // Add language code if specified (for multilingual models)
-      if (normalizedLanguageCode) {
-        options.language_code = normalizedLanguageCode;
+      if (languageCode) {
+        options.language_code = languageCode;
       }
 
       const audioStream = await this.ttsBreaker.execute({
@@ -154,18 +148,12 @@ class ElevenLabsService {
       );
     }
 
-    // Normalize language code - ElevenLabs eleven_turbo_v2_5 only accepts ISO 639-1 codes (e.g., 'en', 'es')
-    // Convert 'en-US', 'en-GB', etc. to 'en'
-    const normalizedLanguageCode = languageCode 
-      ? languageCode.split('-')[0].toLowerCase() 
-      : undefined;
-
     const log = logger.child({
       service: "elevenlabs",
       operation: "generateSpeechPCM",
       textLength: text.length,
       voiceId,
-      languageCode: normalizedLanguageCode,
+      languageCode,
     });
 
     try {
@@ -190,7 +178,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
+            ...(languageCode && { language_code: languageCode }),
           }),
         }
       );
@@ -221,62 +209,9 @@ class ElevenLabsService {
   }
 
   /**
-   * Helper to create WAV headers for PCM data
-   * HeyGen repeatAudio() needs WAV format to play audio as single continuous clip
-   */
-  private createWavBuffer(pcmData: Buffer, sampleRate: number = 24000, channels: number = 1, bitsPerSample: number = 16): Buffer {
-    const dataSize = pcmData.length;
-    const headerSize = 44;
-    const fileSize = headerSize + dataSize - 8;
-    const byteRate = sampleRate * channels * (bitsPerSample / 8);
-    const blockAlign = channels * (bitsPerSample / 8);
-    
-    const header = Buffer.alloc(headerSize);
-    
-    // RIFF header
-    header.write('RIFF', 0);
-    header.writeUInt32LE(fileSize, 4);
-    header.write('WAVE', 8);
-    
-    // fmt subchunk
-    header.write('fmt ', 12);
-    header.writeUInt32LE(16, 16); // Subchunk1Size (16 for PCM)
-    header.writeUInt16LE(1, 20); // AudioFormat (1 = PCM)
-    header.writeUInt16LE(channels, 22);
-    header.writeUInt32LE(sampleRate, 24);
-    header.writeUInt32LE(byteRate, 28);
-    header.writeUInt16LE(blockAlign, 32);
-    header.writeUInt16LE(bitsPerSample, 34);
-    
-    // data subchunk
-    header.write('data', 36);
-    header.writeUInt32LE(dataSize, 40);
-    
-    return Buffer.concat([header, pcmData]);
-  }
-
-  /**
-   * Convert plain text to SSML with short inter-sentence pauses
-   * ElevenLabs inserts automatic silence after punctuation (., !, ?)
-   * We replace punctuation+whitespace with punctuation+SSML break (70ms)
-   * This gives smooth, continuous speech with natural short pauses
-   */
-  private textToSSML(text: string): string {
-    // Replace punctuation followed by space/newline with punctuation + short SSML break
-    // Using 70ms break for natural flow without long pauses
-    const ssmlText = text
-      .replace(/\.[\s\n]+/g, '.<break time="70ms"/>')   // Period + space/newline
-      .replace(/![\s\n]+/g, '!<break time="70ms"/>')    // Exclamation + space/newline
-      .replace(/\?[\s\n]+/g, '?<break time="70ms"/>');  // Question mark + space/newline
-    
-    return `<speak>${ssmlText}</speak>`;
-  }
-
-  /**
-   * Generate WAV audio as base64 for LiveAvatar SDK's repeatAudio()
-   * Makes a SINGLE TTS call for the FULL text - no sentence splitting
-   * Uses SSML to reduce inter-sentence pauses for natural speech flow
-   * Returns WAV format (24kHz, mono, 16-bit) with proper header
+   * Generate PCM 24kHz audio as base64 for LiveAvatar SDK's repeatAudio()
+   * Uses /with-timestamps endpoint which returns audio_base64 directly
+   * This is the exact format required by LiveAvatar SDK for lip-sync
    */
   async generateSpeechBase64(
     text: string,
@@ -289,27 +224,20 @@ class ElevenLabsService {
       );
     }
 
-    const normalizedLanguageCode = languageCode 
-      ? languageCode.split('-')[0].toLowerCase() 
-      : undefined;
-
     const log = logger.child({
       service: "elevenlabs",
       operation: "generateSpeechBase64",
       textLength: text.length,
       voiceId,
-      languageCode: normalizedLanguageCode,
+      languageCode,
     });
 
     try {
+      log.debug("Generating base64 PCM speech for LiveAvatar SDK");
       const startTime = Date.now();
-      
-      // Convert to SSML with reduced inter-sentence breaks
-      const ssmlText = this.textToSSML(text);
-      log.debug({ ssmlLength: ssmlText.length }, "Generating SINGLE TTS call with SSML (reduced sentence pauses)");
 
       const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
         {
           method: "POST",
           headers: {
@@ -317,7 +245,7 @@ class ElevenLabsService {
             "xi-api-key": this.apiKey,
           },
           body: JSON.stringify({
-            text: ssmlText,
+            text,
             model_id: "eleven_turbo_v2_5",
             voice_settings: {
               stability: 0.7,
@@ -325,8 +253,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            use_ssml: true,
-            ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
+            ...(languageCode && { language_code: languageCode }),
           }),
         }
       );
@@ -336,28 +263,24 @@ class ElevenLabsService {
         throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const pcmBuffer = Buffer.from(arrayBuffer);
-      
-      // Return raw PCM (no WAV header) - HeyGen SDK and Web Audio API both handle raw PCM
-      // Format: 24kHz, mono, 16-bit signed little-endian
-      const audioBase64 = pcmBuffer.toString('base64');
+      const data = await response.json();
+      const audioBase64 = data.audio_base64;
+
+      if (!audioBase64) {
+        throw new Error("ElevenLabs API did not return audio_base64");
+      }
 
       const duration = Date.now() - startTime;
       log.info(
-        { 
-          duration, 
-          pcmSize: pcmBuffer.length,
-          format: "pcm_24000_base64" 
-        },
-        "Single-call raw PCM audio generated with SSML (no WAV header)",
+        { duration, audioLength: audioBase64.length, format: "pcm_24000_base64" },
+        "Base64 PCM speech generated for LiveAvatar",
       );
       metrics.recordElevenLabsTTS(duration);
 
       storage
         .logApiCall({
           serviceName: "elevenlabs",
-          endpoint: "textToSpeech",
+          endpoint: "textToSpeech/with-timestamps",
           userId: null,
           responseTimeMs: duration,
         })
@@ -369,7 +292,7 @@ class ElevenLabsService {
     } catch (error: any) {
       log.error(
         { error: error.message, stack: error.stack },
-        "Error generating WAV speech",
+        "Error generating base64 speech with ElevenLabs",
       );
       throw error;
     }
@@ -488,18 +411,12 @@ class ElevenLabsService {
       );
     }
 
-    // Normalize language code - ElevenLabs scribe_v1 accepts ISO 639-1 codes (e.g., 'en', 'es')
-    // Convert 'en-US', 'en-GB', etc. to 'en'
-    const normalizedLanguageCode = languageCode 
-      ? languageCode.split('-')[0].toLowerCase() 
-      : undefined;
-
     const log = logger.child({
       service: "elevenlabs",
       operation: "transcribeSpeech",
       audioSize: audioBuffer.length,
       mimeType,
-      languageCode: normalizedLanguageCode,
+      languageCode,
       userId,
     });
 
@@ -533,8 +450,8 @@ class ElevenLabsService {
       formData.append('file', audioBlob, filename);
       formData.append('model_id', 'scribe_v1');
       
-      if (normalizedLanguageCode) {
-        formData.append('language_code', normalizedLanguageCode);
+      if (languageCode) {
+        formData.append('language_code', languageCode);
       }
 
       const response = await fetch(

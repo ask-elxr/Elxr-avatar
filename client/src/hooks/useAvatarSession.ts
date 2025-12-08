@@ -81,6 +81,7 @@ export function useAvatarSession({
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const recognitionRef = useRef<any>(null); // Web Speech API for voice input
   const lastTranscriptRef = useRef<string>(""); // For deduplication
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
   const recognitionRunningRef = useRef(false); // Track if recognition is currently running
@@ -94,8 +95,7 @@ export function useAvatarSession({
   const acknowledgmentAudioRef = useRef<HTMLAudioElement | null>(null); // Cached acknowledgment audio
   const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
   const currentAcknowledgmentRef = useRef<HTMLAudioElement | null>(null); // Currently playing acknowledgment (for stopping)
-  const streamingEnabledRef = useRef(false); // DISABLED: Use batch audio mode (Claude → ElevenLabs TTS → HeyGen repeatAudio)
-  const audioStreamingEnabledRef = useRef(false); // DISABLED: Use batch audio mode (not streaming)
+  const streamingEnabledRef = useRef(true); // Enable streaming mode by default for faster responses
   const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
   const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
@@ -104,18 +104,14 @@ export function useAvatarSession({
   const MAX_AUTO_RECONNECT_ATTEMPTS = 3; // Max auto-reconnect before showing manual button
   const MIN_RESTART_INTERVAL_MS = 2000; // Minimum 2 seconds between recognition restarts
   
-  // ElevenLabs STT refs for voice input (used for audio-only mode)
+  // ElevenLabs STT refs for mobile voice input (Web Speech API doesn't work reliably on mobile)
   const elevenLabsSttWsRef = useRef<WebSocket | null>(null);
   const elevenLabsSttReadyRef = useRef(false);
   const elevenLabsSttAudioContextRef = useRef<AudioContext | null>(null);
   const elevenLabsSttProcessorRef = useRef<ScriptProcessorNode | null>(null);
   const elevenLabsSttStreamRef = useRef<MediaStream | null>(null);
-  const useElevenLabsSttRef = useRef(false); // Tracks if ElevenLabs STT is currently active
+  const useElevenLabsSttRef = useRef(false); // Track if we're using ElevenLabs STT instead of Web Speech API
   const usingHeygenMobileVoiceChatRef = useRef(false); // Track if we're using HeyGen's built-in voice chat (LiveKit WebRTC) for mobile
-  
-  // Web Speech API ref for video mode on desktop (more reliable for stopping/resuming)
-  const webSpeechRecognitionRef = useRef<any>(null);
-  const useWebSpeechRef = useRef(false); // Tracks if Web Speech API is currently active
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -135,9 +131,11 @@ export function useAvatarSession({
   // Sync language refs with props
   useEffect(() => {
     languageCodeRef.current = languageCode;
-    // ElevenLabs STT doesn't need runtime language updates - it's set on connection
-    // If we need to change language, we would need to restart the STT session
-    console.log(`🌐 Language code updated to: ${languageCode}`);
+    // Update recognition language if active
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = languageCode;
+      console.log(`🌐 Updated speech recognition language to: ${languageCode}`);
+    }
   }, [languageCode]);
 
   useEffect(() => {
@@ -438,9 +436,10 @@ export function useAvatarSession({
     };
     
     ws.onerror = (error) => {
-      console.error("🎤 ElevenLabs STT WebSocket error:", error);
-      setMicrophoneStatus('not-supported');
-      // No fallback - ElevenLabs STT is the exclusive STT solution
+      console.error("🎤 ElevenLabs STT WebSocket error - falling back to Web Speech API:", error);
+      useElevenLabsSttRef.current = false;
+      // Try Web Speech API as fallback
+      tryWebSpeechApiFallback();
     };
     
     ws.onclose = () => {
@@ -451,6 +450,82 @@ export function useAvatarSession({
       }
     };
   }, [stopElevenLabsSTT, handleElevenLabsSttTranscript]);
+
+  // Fallback to Web Speech API if ElevenLabs STT fails (mobile Safari iframe restrictions)
+  const tryWebSpeechApiFallback = useCallback(() => {
+    console.log("🎤 Attempting Web Speech API fallback...");
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      console.error("🎤 Web Speech API not available either - voice not supported");
+      setMicrophoneStatus('not-supported');
+      return;
+    }
+    
+    // Try to use Web Speech API even on mobile as fallback
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false; // Non-continuous for mobile reliability
+      recognition.interimResults = false;
+      recognition.lang = languageCodeRef.current;
+      recognition.maxAlternatives = 1;
+      
+      recognition.onstart = () => {
+        setMicrophoneStatus('listening');
+        console.log("🎤 Web Speech API fallback listening");
+      };
+      
+      recognition.onresult = (event: any) => {
+        const results = event.results;
+        if (results.length > 0) {
+          const transcript = results[results.length - 1][0].transcript;
+          if (transcript && transcript.trim()) {
+            console.log("🎤 Web Speech API fallback transcript:", transcript);
+            handleSubmitMessageRef.current?.(transcript.trim());
+          }
+        }
+        // Restart for continuous listening
+        if (sessionActiveRef.current && !isSpeakingRef.current) {
+          setTimeout(() => {
+            try { recognition.start(); } catch (e) {}
+          }, 100);
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error("🎤 Web Speech API fallback error:", event.error);
+        if (event.error === 'not-allowed') {
+          setMicrophoneStatus('permission-denied');
+        } else if (event.error === 'no-speech') {
+          // Restart on no-speech
+          if (sessionActiveRef.current && !isSpeakingRef.current) {
+            setTimeout(() => {
+              try { recognition.start(); } catch (e) {}
+            }, 100);
+          }
+        } else {
+          setMicrophoneStatus('not-supported');
+        }
+      };
+      
+      recognition.onend = () => {
+        // Restart if session still active
+        if (sessionActiveRef.current && !isSpeakingRef.current && !recognitionIntentionalStopRef.current) {
+          setTimeout(() => {
+            try { recognition.start(); } catch (e) {}
+          }, 100);
+        }
+      };
+      
+      recognitionRef.current = recognition;
+      recognition.start();
+      recognitionRunningRef.current = true;
+      console.log("🎤 Web Speech API fallback started successfully");
+    } catch (error) {
+      console.error("🎤 Web Speech API fallback failed:", error);
+      setMicrophoneStatus('not-supported');
+    }
+  }, []);
   
   // Start microphone capture for ElevenLabs STT
   const startMicrophoneForElevenLabsSTT = useCallback(async () => {
@@ -508,85 +583,373 @@ export function useAvatarSession({
   // Reference to handleSubmitMessage for use in callbacks (avoids circular dependency)
   const handleSubmitMessageRef = useRef<((message: string) => Promise<void>) | null>(null);
 
-  // Stop Web Speech API recognition
-  const stopWebSpeechRecognition = useCallback(() => {
-    if (webSpeechRecognitionRef.current) {
-      try {
-        webSpeechRecognitionRef.current.stop();
-      } catch (e) {
-        // Ignore errors when stopping
-      }
-      webSpeechRecognitionRef.current = null;
-      useWebSpeechRef.current = false;
-    }
-  }, []);
-
   const startVoiceRecognition = useCallback(() => {
     // Version check - helps verify fresh code is loaded
-    console.log("🔧 Voice recognition code version: 2024-12-08-v3 (ElevenLabs STT for audio-only/mobile, Web Speech for desktop video)");
+    console.log("🔧 Voice recognition code version: 2024-12-07-v2");
     
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
     if (usingHeygenMobileVoiceChatRef.current) {
-      console.log("⏭️ Skipping voice recognition - using HeyGen's built-in voice chat (LiveKit WebRTC)");
+      console.log("⏭️ Skipping Web Speech API - using HeyGen's built-in voice chat (LiveKit WebRTC)");
       return;
     }
     
+    // Skip if already initialized AND running
+    if (recognitionRef.current && recognitionRunningRef.current) {
+      console.log("⏭️ Voice recognition already active");
+      return;
+    }
+    
+    // If we have a stale reference that's not running, clean it up
+    if (recognitionRef.current && !recognitionRunningRef.current) {
+      console.log("🔄 Cleaning up stale voice recognition reference");
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
     // Clear any stuck timeout from previous instance
     if (recognitionStuckTimeoutRef.current) {
       clearTimeout(recognitionStuckTimeoutRef.current);
       recognitionStuckTimeoutRef.current = null;
     }
 
-    // Log browser info for debugging
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
-    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
-    const isAndroid = /android/i.test(userAgent);
-    const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
-    const isIOSSafari = isIOS && isSafari;
-    const isChrome = /chrome/i.test(userAgent) && !/edge|edg/i.test(userAgent);
-    const isChromeIOS = isIOS && /crios/i.test(userAgent);
-    const isChromeMobile = isChrome && /mobile/i.test(userAgent);
-    const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-    const isSmallScreen = window.innerWidth <= 768;
-    const hasMobileKeyword = /mobile|phone/i.test(userAgent);
-    const isMobile = isIOS || isAndroid || hasMobileKeyword || (hasTouchScreen && isSmallScreen);
-    
-    console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, iOSSafari=${isIOSSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
-    console.log(`📱 UserAgent: ${userAgent.substring(0, 100)}...`);
-    
-    // Check if Web Speech API is available
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    console.log(`📱 SpeechRecognition available: ${!!SpeechRecognition}`);
-    
-    // Decision: ALWAYS use ElevenLabs STT for voice recognition
-    // This provides consistent, high-quality transcription across all modes and devices
-    // Web Speech API is no longer used per project requirements
-    
-    // Ensure Web Speech is fully disabled (legacy cleanup)
-    useWebSpeechRef.current = false;
-    if (webSpeechRecognitionRef.current) {
-      try {
-        webSpeechRecognitionRef.current.stop();
-      } catch (e) {
-        // Ignore errors
+    // ✅ Initialize Web Speech API for voice input
+    try {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      
+      // Enhanced mobile browser detection
+      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+      const isAndroid = /android/i.test(userAgent);
+      // Better mobile detection: check for mobile keyword, touch capability, and small screen
+      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      const isSmallScreen = window.innerWidth <= 768;
+      const hasMobileKeyword = /mobile|phone/i.test(userAgent);
+      const isMobile = isIOS || isAndroid || hasMobileKeyword || (hasTouchScreen && isSmallScreen);
+      // More reliable Safari detection for iOS
+      const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
+      const isIOSSafari = isIOS && isSafari;
+      const isChrome = /Chrome/.test(userAgent) && !/Edg/.test(userAgent);
+      const isChromeIOS = isIOS && /CriOS/i.test(userAgent);
+      const isFirefoxIOS = isIOS && /FxiOS/i.test(userAgent);
+      const isChromeMobile = isChrome && (isAndroid || hasMobileKeyword);
+      
+      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, iOSSafari=${isIOSSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
+      console.log(`📱 UserAgent: ${userAgent.substring(0, 100)}...`);
+      console.log(`📱 SpeechRecognition available: ${!!SpeechRecognition}`);
+      
+      // 🎤 MOBILE BROWSER HANDLING
+      // Chrome on iOS does NOT support Web Speech API (Apple restricts it to Safari only)
+      // WebSocket connections are often blocked in cross-origin iframes on mobile
+      if (isChromeIOS || isFirefoxIOS) {
+        console.warn("⚠️ Voice input limited in Chrome/Firefox on iOS - Safari recommended for voice");
+        // iOS Chrome/Firefox has no Web Speech API, and WebSocket likely blocked in iframe
+        // Try ElevenLabs STT but expect it to fail in iframes
+        useElevenLabsSttRef.current = true;
+        startElevenLabsSTT();
+        return;
       }
-      webSpeechRecognitionRef.current = null;
+      
+      // For other mobile browsers, try Web Speech API first (more reliable in iframes)
+      if (isMobile) {
+        console.log("📱 Mobile device detected - checking Web Speech API availability");
+        
+        if (SpeechRecognition) {
+          // Mobile browser with Web Speech API (iOS Safari, Android Chrome/Firefox)
+          console.log("📱 Web Speech API available on mobile - using native speech recognition");
+          useElevenLabsSttRef.current = false;
+          // Continue to Web Speech API setup below
+        } else {
+          // No Web Speech API - try ElevenLabs as fallback (will likely fail in iframe)
+          console.log("📱 No Web Speech API available - trying ElevenLabs STT (may fail in iframe)");
+          useElevenLabsSttRef.current = true;
+          startElevenLabsSTT();
+          return;
+        }
+      }
+      
+      if (!SpeechRecognition) {
+        console.warn("⚠️ Web Speech API not supported in this browser - trying ElevenLabs STT");
+        // Try ElevenLabs STT as fallback
+        useElevenLabsSttRef.current = true;
+        startElevenLabsSTT();
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      
+      // MOBILE/SAFARI FIX: Use non-continuous mode for better reliability
+      // Safari (both iOS and macOS) and mobile browsers have issues with continuous mode
+      const useContinuous = !isMobile && !isSafari;
+      recognition.continuous = useContinuous;
+      recognition.interimResults = false; // Only get final results
+      recognition.lang = languageCodeRef.current;
+      recognition.maxAlternatives = 1; // Only get best match
+      
+      console.log(`🎤 Voice recognition config: continuous=${useContinuous}, mobile=${isMobile}, safari=${isSafari}, lang=${recognition.lang}`);
+      
+      // Mobile/Safari stuck detection - recreate if no results for 15 seconds
+      const resetStuckTimeout = () => {
+        if (recognitionStuckTimeoutRef.current) {
+          clearTimeout(recognitionStuckTimeoutRef.current);
+        }
+        // Apply stuck detection for mobile AND Safari (both can get stuck)
+        if ((isMobile || isSafari) && sessionActiveRef.current && !isSpeakingRef.current) {
+          recognitionStuckTimeoutRef.current = setTimeout(() => {
+            console.log("⚠️ Recognition appears stuck (mobile/Safari), recreating...");
+            if (recognitionRef.current && !recognitionIntentionalStopRef.current && !isSpeakingRef.current) {
+              try {
+                recognitionRef.current.abort();
+              } catch (e) {}
+              recognitionRef.current = null;
+              recognitionRunningRef.current = false;
+              // Recreate after a brief delay
+              setTimeout(() => {
+                if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current) {
+                  startVoiceRecognition();
+                }
+              }, 500);
+            }
+          }, 15000); // 15 seconds stuck detection
+        }
+      };
+      
+      recognition.onstart = () => {
+        setMicrophoneStatus('listening');
+        console.log("🎤 Microphone listening" + (isMobile ? " (mobile mode)" : ""));
+        resetStuckTimeout(); // Start stuck detection
+      };
+      
+      // MOBILE FIX: Handle audio start/end events for Safari iOS
+      recognition.onaudiostart = () => {
+        console.log("🔊 Audio capture started");
+      };
+      
+      recognition.onaudioend = () => {
+        console.log("🔊 Audio capture ended");
+      };
+      
+      recognition.onspeechstart = () => {
+        console.log("🗣️ Speech detected");
+      };
+      
+      recognition.onspeechend = () => {
+        console.log("🗣️ Speech ended");
+        // SAFARI FIX: Force proper stop on speech end (both iOS and macOS Safari)
+        if (isSafari) {
+          try {
+            // This counterintuitive pattern helps Safari properly end recognition
+            recognition.stop();
+          } catch (e) {}
+        }
+      };
+      
+      recognition.onresult = (event: any) => {
+        resetStuckTimeout(); // Reset stuck timeout on any result
+        
+        // Only process final results (not interim)
+        const result = event.results[event.results.length - 1];
+        if (!result.isFinal) return;
+        
+        const transcript = result[0].transcript.trim();
+        
+        // 🔇 ECHO PROTECTION: Block transcripts while audio is playing in audio-only mode
+        // This prevents the avatar from hearing its own voice through the speaker
+        if (audioOnlyRef.current && currentAudioRef.current) {
+          console.log("🔇 ECHO BLOCKED: Ignoring transcript while audio playing:", transcript.substring(0, 50));
+          return;
+        }
+        
+        // 🔇 ECHO PROTECTION: If avatar is speaking (video mode), allow interrupts
+        if (isSpeakingRef.current && !audioOnlyRef.current) {
+          // In video mode, user can interrupt by speaking
+          if (!sessionDriverRef.current) {
+            console.log("🔇 ECHO BLOCKED: Ignoring transcript while avatar speaking (no active session):", transcript.substring(0, 50));
+            return;
+          }
+        }
+        
+        // Deduplicate (Web Speech can fire same result multiple times)
+        if (transcript && transcript !== lastTranscriptRef.current) {
+          lastTranscriptRef.current = transcript;
+          // ⏱️ TIMING: Mark when voice input was captured
+          const voiceInputTime = performance.now();
+          console.log("⏱️ [TIMING] === VOICE INPUT CAPTURED ===");
+          console.log("🎤 Voice input (final):", transcript);
+          console.log("⏱️ [TIMING] STT completed at:", new Date().toISOString());
+          
+          // If avatar is speaking in audio mode, interrupt it
+          if (isSpeakingRef.current && currentAudioRef.current) {
+            console.log("🛑 Interrupting audio - user is speaking");
+            try {
+              currentAudioRef.current.pause();
+              currentAudioRef.current.currentTime = 0;
+              currentAudioRef.current.src = '';
+              currentAudioRef.current.load();
+              currentAudioRef.current = null;
+            } catch (e) {
+              console.warn("Error interrupting audio:", e);
+              currentAudioRef.current = null;
+            }
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+          }
+          
+          // If avatar is speaking in video mode, interrupt it
+          if (isSpeakingRef.current && sessionDriverRef.current && !audioOnlyRef.current) {
+            console.log("🛑 Interrupting avatar - user is speaking");
+            sessionDriverRef.current.interrupt().catch(() => {});
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+          }
+          
+          // Process the message (always process after interrupting)
+          console.log("🎤 Submitting voice transcript:", transcript, "isSpeaking:", isSpeakingRef.current);
+          handleSubmitMessage(transcript);
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.log(`🎤 Speech recognition error: ${event.error} (mobile=${isMobile}, iOS=${isIOS})`);
+        
+        if (event.error === 'not-allowed') {
+          console.error("🎤 Microphone permission denied - use text input instead");
+          setMicrophoneStatus('permission-denied');
+          // Clear stuck timeout on permission error
+          if (recognitionStuckTimeoutRef.current) {
+            clearTimeout(recognitionStuckTimeoutRef.current);
+            recognitionStuckTimeoutRef.current = null;
+          }
+        } else if (event.error === 'service-not-allowed') {
+          // This happens on iOS when using non-Safari browsers or in PWA mode
+          console.error("🎤 Speech recognition service not allowed - may be browser limitation");
+          setMicrophoneStatus('not-supported');
+        } else if (event.error === 'network') {
+          // Network required for speech recognition (it's server-based)
+          console.error("🎤 Network error - check internet connection");
+          // Try to restart after a delay
+          if (!recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+            setTimeout(() => {
+              if (!recognitionIntentionalStopRef.current && sessionActiveRef.current && !recognitionRunningRef.current) {
+                console.log("🔄 Retrying voice recognition after network error...");
+                startVoiceRecognition();
+              }
+            }, 3000);
+          }
+        } else if (event.error === 'audio-capture') {
+          // Microphone not available or in use by another app
+          console.error("🎤 Audio capture failed - microphone may be in use");
+          setMicrophoneStatus('permission-denied');
+        } else if (event.error !== 'no-speech' && event.error !== 'aborted') {
+          console.error("🎤 Speech recognition error:", event.error);
+        }
+        // 'no-speech' and 'aborted' are normal events, don't log as errors
+      };
+      
+      recognition.onend = () => {
+        recognitionRunningRef.current = false;
+        
+        // Clear any pending restart timeout
+        if (recognitionRestartTimeoutRef.current) {
+          clearTimeout(recognitionRestartTimeoutRef.current);
+          recognitionRestartTimeoutRef.current = null;
+        }
+        
+        // Auto-restart unless intentionally stopped, avatar is speaking, or audio is playing
+        // Use ref instead of state to get current value in closure
+        // 🔇 ECHO FIX: Don't restart while audio is playing in audio-only mode
+        if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current && !currentAudioRef.current) {
+          // Throttle restarts to prevent rapid loop (min 2 seconds between restarts)
+          const now = Date.now();
+          const timeSinceLastRestart = now - lastRecognitionRestartRef.current;
+          const delayNeeded = Math.max(0, MIN_RESTART_INTERVAL_MS - timeSinceLastRestart);
+          
+          if (delayNeeded > 0) {
+            // Schedule delayed restart
+            recognitionRestartTimeoutRef.current = setTimeout(() => {
+              // 🔇 ECHO FIX: Don't restart while audio is playing
+              if (!recognitionIntentionalStopRef.current && !isSpeakingRef.current && sessionActiveRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
+                try {
+                  setMicrophoneStatus('listening');
+                  recognition.start();
+                  recognitionRunningRef.current = true;
+                  lastRecognitionRestartRef.current = Date.now();
+                  console.log("🔄 Voice recognition restarted (throttled)");
+                } catch (e) {
+                  recognitionRunningRef.current = false;
+                  setMicrophoneStatus('stopped');
+                }
+              }
+            }, delayNeeded);
+          } else {
+            // Restart immediately if enough time has passed
+            try {
+              setMicrophoneStatus('listening');
+              recognition.start();
+              recognitionRunningRef.current = true;
+              lastRecognitionRestartRef.current = now;
+              console.log("🔄 Voice recognition restarted");
+            } catch (e) {
+              recognitionRunningRef.current = false;
+              setMicrophoneStatus('stopped');
+            }
+          }
+        } else {
+          setMicrophoneStatus('stopped');
+          // Clear stuck timeout when stopping
+          if (recognitionStuckTimeoutRef.current) {
+            clearTimeout(recognitionStuckTimeoutRef.current);
+            recognitionStuckTimeoutRef.current = null;
+          }
+        }
+      };
+      
+      recognitionRef.current = recognition;
+      recognitionIntentionalStopRef.current = false;
+      lastRecognitionRestartRef.current = Date.now(); // Initialize last restart time
+      
+      setMicrophoneStatus('listening'); // Set immediately before first start
+      
+      try {
+        recognition.start();
+        recognitionRunningRef.current = true;
+        console.log("✅ Web Speech API started for voice input");
+      } catch (startError: any) {
+        // iOS Safari often requires user gesture for first start
+        console.warn("⚠️ Failed to start speech recognition:", startError?.message || startError);
+        recognitionRunningRef.current = false;
+        
+        // On iOS Safari, offer tap-to-enable (user gesture required)
+        if (isIOSSafari) {
+          console.log("📱 iOS Safari detected - need user gesture to start voice");
+          setMicrophoneStatus('needs-gesture');
+        } else if (isMobile) {
+          // Other mobile browsers might also need gesture
+          console.log("📱 Mobile browser detected - offering tap to enable");
+          setMicrophoneStatus('needs-gesture');
+        } else {
+          setMicrophoneStatus('stopped');
+        }
+      }
+    } catch (error: any) {
+      console.error("❌ Error initializing Web Speech API:", error?.message || error);
+      
+      // Check if this is iOS Safari - offer tap-to-enable even on error
+      const userAgent = navigator.userAgent || '';
+      const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+      const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
+      const isIOSSafariOuter = isIOS && isSafari;
+      
+      if (isIOSSafariOuter) {
+        console.log("📱 iOS Safari error - offering tap to enable voice");
+        setMicrophoneStatus('needs-gesture');
+      } else {
+        setMicrophoneStatus('not-supported');
+      }
     }
-    
-    // Skip if already running
-    if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
-      console.log("⏭️ ElevenLabs STT already active");
-      return;
-    }
-    
-    const mode = audioOnlyRef.current ? 'audio-only' : 'video';
-    const device = isMobile ? 'mobile' : 'desktop';
-    console.log(`🎤 Starting ElevenLabs STT (${mode} mode, ${device})`);
-    useElevenLabsSttRef.current = true;
-    useWebSpeechRef.current = false;
-    startElevenLabsSTT();
-  }, [startElevenLabsSTT, stopElevenLabsSTT, stopWebSpeechRecognition]);
+  }, [startElevenLabsSTT]); // Need startElevenLabsSTT for mobile fallback
 
   const stopHeyGenSession = useCallback(async () => {
     if (!sessionDriverRef.current || !heygenSessionActive) return;
@@ -648,28 +1011,14 @@ export function useAvatarSession({
       }
 
       // === AVATAR_START_TALKING equivalent ===
-      // Pause voice recognition while speaking (Web Speech API or ElevenLabs STT)
-      recognitionIntentionalStopRef.current = true;
-      
-      // Pause Web Speech API if active (video mode)
-      if (useWebSpeechRef.current && webSpeechRecognitionRef.current) {
+      // Pause voice recognition while speaking
+      if (recognitionRef.current && recognitionRunningRef.current) {
         try {
-          webSpeechRecognitionRef.current.stop();
+          recognitionIntentionalStopRef.current = true;
+          recognitionRef.current.stop();
           recognitionRunningRef.current = false;
           setMicrophoneStatus('stopped');
-          console.log("🔇 Web Speech paused for speech (video mode)");
-        } catch (e) {
-          // Ignore errors
-        }
-      }
-      
-      // Pause ElevenLabs STT if active (fallback)
-      if (useElevenLabsSttRef.current && recognitionRunningRef.current) {
-        try {
-          stopElevenLabsSTT();
-          recognitionRunningRef.current = false;
-          setMicrophoneStatus('stopped');
-          console.log("🔇 ElevenLabs STT paused for speech (video mode)");
+          console.log("🔇 Voice recognition paused for ElevenLabs speech (video mode)");
         } catch (e) {
           // Ignore errors
         }
@@ -1015,12 +1364,12 @@ export function useAvatarSession({
           setIsSpeakingState(true);
           clearIdleTimeout();
           
-          // 🎤 Pause ElevenLabs STT while avatar is speaking to prevent feedback loop
-          if (useElevenLabsSttRef.current && recognitionRunningRef.current) {
+          // 🎤 Pause voice recognition while avatar is speaking to prevent feedback loop
+          if (recognitionRef.current && recognitionRunningRef.current) {
             try {
-              stopElevenLabsSTT();
+              recognitionRef.current.stop();
               recognitionRunningRef.current = false;
-              console.log("🔇 ElevenLabs STT paused (avatar speaking)");
+              console.log("🔇 Voice recognition paused (avatar speaking)");
             } catch (e) {
               // Ignore errors if already stopped
               recognitionRunningRef.current = false;
@@ -1061,14 +1410,6 @@ export function useAvatarSession({
         onUserMessage: (message: string) => {
           console.log("🎤 User message from LiveAvatar:", message);
           handleSubmitMessage(message);
-        },
-        
-        // Voice chat ready callback (for HeyGen mobile voice chat)
-        onVoiceChatReady: () => {
-          console.log("🎤 HeyGen mobile voice chat active - microphone handled by SDK");
-          // Set microphone status to listening so UI shows voice is active
-          setMicrophoneStatus('listening');
-          recognitionRunningRef.current = true; // Mark as running so we don't try to start Web Speech API
         },
       });
       
@@ -1209,9 +1550,8 @@ export function useAvatarSession({
       }
     }
     
-    // ✅ Start ElevenLabs STT voice recognition for ALL modes
-    // ElevenLabs STT is now the exclusive speech-to-text provider per project requirements
-    console.log(`🎤 Starting ElevenLabs STT for ${audioOnly ? 'audio-only' : 'video'} mode on ${isMobile ? 'mobile' : 'desktop'}`);
+    // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
+    // This allows users to speak even before video loads or in audio-only mode
     startVoiceRecognition();
     
     // Start HeyGen immediately in video mode for instant avatar appearance
@@ -1233,37 +1573,7 @@ export function useAvatarSession({
         throw error;
       }
     } else {
-      // Audio mode: Create AudioOnlyDriver for ElevenLabs TTS playback
-      const audioDriver = new AudioOnlyDriver(
-        {
-          avatarConfig: { id: activeAvatarId } as any,
-          audioOnly: true,
-          videoRef,
-          avatarId: activeAvatarId,
-          userId: userId || '',
-          languageCode: languageCodeRef.current,
-          onAvatarStartTalking: () => {
-            isSpeakingRef.current = true;
-            setIsSpeakingState(true);
-          },
-          onAvatarStopTalking: () => {
-            isSpeakingRef.current = false;
-            setIsSpeakingState(false);
-            // Resume voice recognition after speaking
-            setTimeout(() => {
-              if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
-                startVoiceRecognition();
-              }
-            }, 500);
-          },
-        },
-        activeAvatarId,
-        languageCodeRef.current
-      );
-      sessionDriverRef.current = audioDriver;
-      await audioDriver.start();
-      console.log("🔊 AudioOnlyDriver created and started for audio-only mode");
-      
+      // Audio mode: HeyGen will start on first message (lazy loading)
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
         loadingTimeoutRef.current = null;
@@ -1281,12 +1591,12 @@ export function useAvatarSession({
           if (greeting) {
             console.log("🗣️ Audio-only greeting:", greeting);
             
-            // 🔇 Pause ElevenLabs STT while greeting plays to prevent feedback
-            if (useElevenLabsSttRef.current && recognitionRunningRef.current) {
+            // 🔇 Pause voice recognition while greeting plays to prevent feedback
+            if (recognitionRef.current && recognitionRunningRef.current) {
               try {
-                stopElevenLabsSTT();
+                recognitionRef.current.stop();
                 recognitionRunningRef.current = false;
-                console.log("🔇 ElevenLabs STT paused (greeting playing)");
+                console.log("🔇 Voice recognition paused (greeting playing)");
               } catch (e) {
                 recognitionRunningRef.current = false;
               }
@@ -1394,17 +1704,16 @@ export function useAvatarSession({
       clearTimeout(recognitionRestartTimeoutRef.current);
       recognitionRestartTimeoutRef.current = null;
     }
-    // Stop Web Speech API if active
-    if (useWebSpeechRef.current && webSpeechRecognitionRef.current) {
-      stopWebSpeechRecognition();
-      console.log("✅ Web Speech stopped");
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        console.log("✅ Voice recognition stopped");
+      } catch (error) {
+        console.warn("Error stopping speech recognition:", error);
+      }
     }
-    // Stop ElevenLabs STT
-    if (useElevenLabsSttRef.current) {
-      stopElevenLabsSTT();
-      console.log("✅ ElevenLabs STT stopped");
-    }
-    // Always reset microphone status to stopped
+    // Always reset microphone status to stopped, even if recognition was never initialized
     setMicrophoneStatus('stopped');
 
     if (sessionDriverRef.current) {
@@ -1454,7 +1763,7 @@ export function useAvatarSession({
     onSessionActiveChange?.(false);
     
     endSessionOnServer();
-  }, [videoRef, onSessionActiveChange, stopWebSpeechRecognition]);
+  }, [videoRef, onSessionActiveChange]);
 
   const endSession = useCallback(async () => {
     if (abortControllerRef.current) {
@@ -1474,17 +1783,16 @@ export function useAvatarSession({
       clearTimeout(recognitionRestartTimeoutRef.current);
       recognitionRestartTimeoutRef.current = null;
     }
-    // Stop Web Speech API if active
-    if (useWebSpeechRef.current && webSpeechRecognitionRef.current) {
-      stopWebSpeechRecognition();
-      console.log("✅ Web Speech stopped");
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        console.log("✅ Voice recognition stopped");
+      } catch (error) {
+        console.warn("Error stopping speech recognition:", error);
+      }
     }
-    // Stop ElevenLabs STT
-    if (useElevenLabsSttRef.current) {
-      stopElevenLabsSTT();
-      console.log("✅ ElevenLabs STT stopped");
-    }
-    // Always reset microphone status to stopped
+    // Always reset microphone status to stopped, even if recognition was never initialized
     setMicrophoneStatus('stopped');
 
     if (sessionDriverRef.current) {
@@ -1520,7 +1828,7 @@ export function useAvatarSession({
     onSessionActiveChange?.(false);
     
     await endSessionOnServer();
-  }, [videoRef, onSessionActiveChange, clearIdleTimeout, stopWebSpeechRecognition]);
+  }, [videoRef, onSessionActiveChange, clearIdleTimeout]);
 
   const reconnect = useCallback(async () => {
     setShowReconnect(false);
@@ -1556,9 +1864,9 @@ export function useAvatarSession({
     // and calling stopHeyGenSession which would clear sessionIdRef
     clearIdleTimeout();
     
-    // CRITICAL: Stop ElevenLabs STT IMMEDIATELY to prevent processing queued audio
+    // CRITICAL: Stop voice recognition IMMEDIATELY to prevent processing queued audio
     // This ensures no messages from the old mode leak into the new mode
-    if (useElevenLabsSttRef.current) {
+    if (recognitionRef.current) {
       try {
         recognitionIntentionalStopRef.current = true;
         recognitionRunningRef.current = false;
@@ -1566,10 +1874,12 @@ export function useAvatarSession({
           clearTimeout(recognitionRestartTimeoutRef.current);
           recognitionRestartTimeoutRef.current = null;
         }
-        stopElevenLabsSTT();
-        console.log("🛑 ElevenLabs STT stopped for seamless mode switch");
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+        console.log("🛑 Voice recognition stopped for seamless mode switch");
       } catch (e) {
-        console.warn("Error stopping ElevenLabs STT during mode switch:", e);
+        console.warn("Error stopping voice recognition during mode switch:", e);
+        recognitionRef.current = null;
       }
     }
     setMicrophoneStatus('stopped');
@@ -1738,10 +2048,14 @@ export function useAvatarSession({
         clearTimeout(recognitionRestartTimeoutRef.current);
         recognitionRestartTimeoutRef.current = null;
       }
-      // Stop ElevenLabs STT
-      if (useElevenLabsSttRef.current) {
-        stopElevenLabsSTT();
-        console.log("✅ ElevenLabs STT stopped on pause");
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+          console.log("✅ Voice recognition stopped on pause");
+        } catch (error) {
+          console.warn("Error stopping speech recognition on pause:", error);
+        }
       }
       setMicrophoneStatus('stopped');
 
@@ -1815,10 +2129,20 @@ export function useAvatarSession({
         }
       }
       
-      // Stop ElevenLabs STT on cleanup
+      // Stop voice recognition (Web Speech API or ElevenLabs STT)
       if (useElevenLabsSttRef.current) {
         stopElevenLabsSTT();
         console.log("🛑 ElevenLabs STT stopped on cleanup");
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionIntentionalStopRef.current = true;
+          recognitionRef.current.stop();
+          recognitionRef.current = null;
+          console.log("🛑 Voice recognition stopped on cleanup");
+        } catch (e) {
+          console.warn("Error stopping voice recognition on cleanup:", e);
+        }
       }
       
       if (sessionDriverRef.current) {
@@ -1848,7 +2172,7 @@ export function useAvatarSession({
     isSpeakingRef.current = true;
     setIsSpeakingState(true);
     
-    // 🔇 Then pause ElevenLabs STT microphone to prevent echo/feedback
+    // 🔇 Then stop voice recognition to prevent echo/feedback (Web Speech API or ElevenLabs STT)
     if (useElevenLabsSttRef.current && elevenLabsSttReadyRef.current) {
       // For ElevenLabs STT: just pause the microphone, keep connection alive for quick resume
       if (elevenLabsSttProcessorRef.current) {
@@ -1857,6 +2181,14 @@ export function useAvatarSession({
       }
       recognitionRunningRef.current = false;
       console.log("🔇 ElevenLabs STT microphone paused (processing user message)");
+    } else if (recognitionRef.current && recognitionRunningRef.current) {
+      try {
+        recognitionRef.current.stop();
+        recognitionRunningRef.current = false;
+        console.log("🔇 Voice recognition stopped (processing user message)");
+      } catch (e) {
+        recognitionRunningRef.current = false;
+      }
     }
 
     // Clear idle timeout immediately to prevent mid-conversation shutdowns
@@ -1884,10 +2216,6 @@ export function useAvatarSession({
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
-    
-    // Re-enable streaming for this new message (batch audio will disable it if successful)
-    streamingEnabledRef.current = true;
-    sentenceQueueRef.current = []; // Clear any leftover sentences from previous messages
 
     try {
       // Audio-only mode: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
@@ -2066,117 +2394,7 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Re-check driver after session start (it gets set asynchronously in startHeyGenSession)
-        const driver = sessionDriverRef.current;
-        const supportsBatchAudio = driver && 'repeatAudio' in driver;
-        
-        console.log(`🎵 [BATCH CHECK] driver exists: ${!!driver}, supportsBatchAudio: ${supportsBatchAudio}, audioStreamingEnabled: ${audioStreamingEnabledRef.current}`);
-        
-        // NON-STREAMING BATCH AUDIO MODE: Full LLM response → Full TTS audio → Send to Avatar
-        // When audioStreamingEnabledRef is FALSE, we use batch audio (not sentence-by-sentence streaming)
-        // This workflow: Claude (full response) → ElevenLabs TTS (full audio) → HeyGen repeatAudio() (full lip-sync)
-        if (!audioStreamingEnabledRef.current && supportsBatchAudio && driver) {
-          console.log("🎵 [BATCH AUDIO] Using non-streaming batch audio mode (full response → full audio → full lip-sync)");
-          
-          try {
-            const headers: Record<string, string> = { "Content-Type": "application/json" };
-            const memberstackId = getMemberstackId();
-            if (memberstackId) {
-              headers['X-Member-Id'] = memberstackId;
-            }
-            
-            const response = await fetch("/api/avatar/response/stream-audio", {
-              method: "POST",
-              headers,
-              body: JSON.stringify({
-                message,
-                userId: memoryEnabledRef.current ? userId : undefined,
-                avatarId: currentAvatarIdRef.current,
-                memoryEnabled: memoryEnabledRef.current,
-                languageCode: elevenLabsLanguageCodeRef.current,
-              }),
-              signal: controller.signal,
-            });
-            
-            if (!response.ok) {
-              throw new Error(`Batch-audio failed: ${response.status}`);
-            }
-            
-            const data = await response.json();
-            const { fullResponse, audioBase64, performance: performanceData } = data;
-            
-            const totalTime = performance.now() - flowStartTime;
-            console.log(`🎵 [BATCH AUDIO] === COMPLETE ===`);
-            console.log(`🎵 [BATCH AUDIO] Total frontend time: ${totalTime.toFixed(0)}ms`);
-            
-            // Display detailed timing breakdown
-            if (performanceData) {
-              const { totalMs, dataFetchMs, claudeMs, ttsMs } = performanceData;
-              console.log(`⏱️ ═══════════════════════════════════════════════`);
-              console.log(`⏱️ TIMING BREAKDOWN (Server-side):`);
-              console.log(`⏱️   1. RAG Data Fetch:    ${dataFetchMs}ms`);
-              console.log(`⏱️   2. Claude LLM:        ${claudeMs}ms`);
-              console.log(`⏱️   3. ElevenLabs TTS:    ${ttsMs}ms`);
-              console.log(`⏱️   Total Backend:        ${totalMs}ms`);
-              console.log(`⏱️   Network Overhead:     ${(totalTime - totalMs).toFixed(0)}ms`);
-              console.log(`⏱️ ═══════════════════════════════════════════════`);
-            }
-            
-            // Show response details
-            const wordCount = fullResponse ? fullResponse.split(/\s+/).length : 0;
-            console.log(`📝 USER: ${message}`);
-            console.log(`🤖 CLAUDE (${wordCount} words): ${fullResponse}`);
-            
-            // Use driver.repeatAudio() DIRECTLY with the audio we already received from the backend
-            // This avoids a SECOND TTS call and reduces latency significantly
-            // Backend already generated sentence-buffered raw PCM audio - use it directly!
-            if (audioBase64 && driver && driver.repeatAudio) {
-              const heygenStart = performance.now();
-              console.log(`🔊 Using driver.repeatAudio() directly with backend-generated audio (no extra TTS call)...`);
-              console.log(`🎤 Audio size: ${audioBase64.length} chars of raw PCM`);
-              
-              // Send the audio directly to HeyGen SDK for lip-sync
-              // The backend already generated sentence-buffered raw PCM audio
-              await driver.repeatAudio(audioBase64);
-              
-              const heygenTime = performance.now() - heygenStart;
-              console.log(`⏱️   4. HeyGen Lip-sync:   ${heygenTime.toFixed(0)}ms`);
-            } else {
-              console.warn(`⚠️ Cannot speak: audioBase64=${!!audioBase64}, driver=${!!driver}, repeatAudio=${!!driver?.repeatAudio}`);
-            }
-            
-            // CRITICAL: Disable streaming mode after successful batch playback
-            // This prevents any residual deltas from triggering sentence-by-sentence playback
-            streamingEnabledRef.current = false;
-            
-            // Clear any residual sentence queue to prevent duplicate speech
-            sentenceQueueRef.current = [];
-            isSpeakingQueueRef.current = false;
-            
-            // Post-response cleanup
-            onResetInactivityTimer?.();
-            clearIdleTimeout();
-            
-            console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
-            
-            if (audioBase64) {
-              console.log(`🎵 [BATCH AUDIO] Batch mode succeeded - streaming disabled, skipping to end`);
-              return; // Batch audio succeeded - skip streaming entirely
-            }
-            
-          } catch (batchError) {
-            if (batchError instanceof Error && batchError.name !== "AbortError") {
-              console.error("Batch audio error, falling back to sentence streaming:", batchError);
-              // Enable streaming as fallback when batch audio fails
-              audioStreamingEnabledRef.current = true; // Disable batch mode
-              streamingEnabledRef.current = true; // Enable streaming fallback
-            } else {
-              throw batchError;
-            }
-          }
-        }
-        
-        // Use streaming mode for faster perceived response (only if batch mode is disabled or failed)
+        // Use streaming mode for faster perceived response
         if (streamingEnabledRef.current && sessionDriverRef.current) {
           console.log("🚀 [STREAMING] Using streaming mode for faster response");
           
@@ -2193,12 +2411,6 @@ export function useAvatarSession({
           // Helper to speak all sentences sequentially - waits for each to complete
           const processSentenceQueue = async () => {
             while (sentenceQueueRef.current.length > 0 || !streamingComplete) {
-              // GUARD: Exit if streaming was disabled (batch audio took over)
-              if (!streamingEnabledRef.current) {
-                console.log("🚀 [STREAMING] Exiting queue processor - streaming disabled (batch audio active)");
-                return;
-              }
-              
               // Wait for more sentences if queue is empty but stream isn't complete
               if (sentenceQueueRef.current.length === 0) {
                 await new Promise(resolve => setTimeout(resolve, 100));
@@ -2625,15 +2837,6 @@ export function useAvatarSession({
         clearTimeout(idleTimeoutRef.current);
         idleTimeoutRef.current = null;
       }
-      // Cleanup Web Speech API on unmount
-      if (webSpeechRecognitionRef.current) {
-        try {
-          webSpeechRecognitionRef.current.stop();
-        } catch (e) {
-          // Ignore errors
-        }
-        webSpeechRecognitionRef.current = null;
-      }
       // Cleanup ElevenLabs STT on unmount
       if (elevenLabsSttWsRef.current) {
         elevenLabsSttWsRef.current.close();
@@ -2653,18 +2856,20 @@ export function useAvatarSession({
   // Manual voice start for mobile Safari (requires user gesture)
   const manualStartVoice = useCallback(() => {
     console.log("🎤 Manual voice start triggered (user gesture)");
-    // Clean up any existing Web Speech recognition
-    if (useWebSpeechRef.current) {
-      stopWebSpeechRecognition();
-    }
-    // Clean up any existing ElevenLabs STT connection
+    // Clean up any existing recognition
     if (useElevenLabsSttRef.current) {
       stopElevenLabsSTT();
+    }
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
     }
     recognitionRunningRef.current = false;
     recognitionIntentionalStopRef.current = false;
     startVoiceRecognition();
-  }, [startVoiceRecognition, stopElevenLabsSTT, stopWebSpeechRecognition]);
+  }, [startVoiceRecognition, stopElevenLabsSTT]);
 
   return {
     sessionActive,
