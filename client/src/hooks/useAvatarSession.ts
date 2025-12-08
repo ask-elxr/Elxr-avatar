@@ -25,6 +25,7 @@ interface AvatarSessionReturn {
   isLoading: boolean;
   showReconnect: boolean;
   videoReady: boolean; // True when LiveKit video track is attached and playing
+  isProcessing: boolean; // AI is thinking/generating response
   startSession: (options?: StartSessionOptions) => Promise<void>;
   endSession: () => Promise<void>;
   endSessionShowReconnect: () => Promise<void>;
@@ -62,6 +63,7 @@ export function useAvatarSession({
   const [showReconnect, setShowReconnect] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false); // AI thinking state
   const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
   const [videoReady, setVideoReady] = useState(false); // Track when LiveKit video track is attached
 
@@ -2194,6 +2196,10 @@ export function useAvatarSession({
       return;
     }
 
+    // 🤔 THINKING STATE: Show processing indicator immediately
+    setIsProcessing(true);
+    console.log("🤔 AI is thinking...");
+
     // 🔇 CRITICAL: Set speaking flag FIRST to prevent recognition auto-restart race condition
     isSpeakingRef.current = true;
     setIsSpeakingState(true);
@@ -2495,6 +2501,8 @@ export function useAvatarSession({
                         if (audioChunkCount === 1) {
                           firstAudioTime = performance.now();
                           console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${(firstAudioTime - apiStartTime).toFixed(0)}ms`);
+                          // 🤔 -> 🗣️ AI done thinking, now speaking
+                          setIsProcessing(false);
                         }
                         
                         // Send audio chunk to driver for lip-sync playback
@@ -3053,6 +3061,7 @@ export function useAvatarSession({
     isLoading,
     showReconnect,
     videoReady, // True when LiveKit video track is attached and playing
+    isProcessing, // AI is thinking/generating response
     startSession,
     endSession,
     endSessionShowReconnect,

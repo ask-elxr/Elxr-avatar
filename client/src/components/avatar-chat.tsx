@@ -232,6 +232,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     isLoading,
     showReconnect,
     videoReady, // True when LiveKit video track is attached and playing
+    isProcessing, // AI is thinking/generating response
     startSession,
     endSession,
     endSessionShowReconnect,
@@ -690,6 +691,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           
           {audioOnly && !heygenSessionActive && (
             <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
+          )}
+          
+          {/* Thinking Indicator - Shows when AI is processing */}
+          {isProcessing && sessionActive && (
+            <div 
+              className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full backdrop-blur-sm"
+              data-testid="thinking-indicator"
+            >
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
+              <span className="text-white/80 text-sm">Thinking...</span>
+            </div>
           )}
         </div>
 
