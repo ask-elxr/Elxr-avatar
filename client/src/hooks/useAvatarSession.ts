@@ -95,7 +95,7 @@ export function useAvatarSession({
   const acknowledgmentAudioRef = useRef<HTMLAudioElement | null>(null); // Cached acknowledgment audio
   const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
   const currentAcknowledgmentRef = useRef<HTMLAudioElement | null>(null); // Currently playing acknowledgment (for stopping)
-  const streamingEnabledRef = useRef(true); // Enable streaming mode by default for faster responses
+  const streamingEnabledRef = useRef(false); // Disable streaming mode - avatar speaks full response at once
   const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
   const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
