@@ -2066,9 +2066,11 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Check if session driver supports batch audio playback (repeatAudio method)
+        // Re-check driver after session start (it gets set asynchronously in startHeyGenSession)
         const driver = sessionDriverRef.current;
         const supportsBatchAudio = driver && 'repeatAudio' in driver;
+        
+        console.log(`🎵 [BATCH CHECK] driver exists: ${!!driver}, supportsBatchAudio: ${supportsBatchAudio}, audioStreamingEnabled: ${audioStreamingEnabledRef.current}`);
         
         // NON-STREAMING BATCH AUDIO MODE: Full LLM response → Full TTS audio → Send to Avatar
         // When audioStreamingEnabledRef is FALSE, we use batch audio (not sentence-by-sentence streaming)
