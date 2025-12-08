@@ -4319,12 +4319,11 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
-  // FULL STREAMING AVATAR RESPONSE with STREAMING TTS
-  // Streams Claude tokens → ElevenLabs TTS WebSocket → Audio chunks via SSE
-  // This provides minimum latency by streaming audio as it's generated
+  // NON-STREAMING AVATAR RESPONSE with BATCH TTS
+  // Generates full Claude response, then full TTS audio, returns as single response
+  // Note: This has higher latency (~4-6s) compared to streaming (~1-2s) but is simpler
   app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
-    const log = logger.child({ service: 'avatar-stream-audio', operation: 'streamAudioResponse' });
-    const WebSocket = (await import('ws')).default;
+    const log = logger.child({ service: 'avatar-batch-audio', operation: 'batchAudioResponse' });
     
     try {
       const { message, avatarId, memoryEnabled = false, languageCode } = req.body;
@@ -4343,115 +4342,12 @@ This applies to EVERY response, regardless of conversation length.`;
       }
 
       const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
-      const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
-      
-      if (!elevenLabsApiKey) {
-        return res.status(500).json({ error: "ElevenLabs API key not configured" });
-      }
-
-      // Set up SSE headers
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no');
-
-      const sendEvent = (eventType: string, data: any) => {
-        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
-      };
 
       // Performance timing
       const perfStart = Date.now();
       const perfTimings: Record<string, number> = {};
 
-      sendEvent('status', { phase: 'connecting_tts', message: 'Connecting to TTS...' });
-
-      // Connect to ElevenLabs TTS WebSocket
-      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
-      
-      let ttsWs: InstanceType<typeof WebSocket> | null = null;
-      let ttsReady = false;
-      let audioChunkCount = 0;
-      let firstAudioTime = 0;
-      
-      const ttsConnectPromise = new Promise<void>((resolve, reject) => {
-        ttsWs = new WebSocket(ttsUrl, {
-          headers: { 'xi-api-key': elevenLabsApiKey },
-        });
-        
-        const timeout = setTimeout(() => reject(new Error('TTS connection timeout')), 10000);
-        
-        ttsWs.on('open', () => {
-          clearTimeout(timeout);
-          log.info({ voiceId }, 'ElevenLabs TTS WebSocket connected for streaming');
-          
-          // Initialize TTS stream with voice settings
-          ttsWs!.send(JSON.stringify({
-            text: ' ',
-            voice_settings: {
-              stability: 0.7,
-              similarity_boost: 0.65,
-              speed: 1.0,
-            },
-            generation_config: {
-              chunk_length_schedule: [50], // Small chunks for low latency
-            },
-          }));
-          
-          ttsReady = true;
-          sendEvent('tts_ready', { connected: true });
-          resolve();
-        });
-        
-        ttsWs.on('message', (data: Buffer) => {
-          try {
-            const event = JSON.parse(data.toString());
-            
-            if (event.audio) {
-              audioChunkCount++;
-              if (audioChunkCount === 1) {
-                firstAudioTime = Date.now();
-                const latency = firstAudioTime - perfStart;
-                log.info({ latencyMs: latency }, 'First audio chunk received');
-                sendEvent('timing', { firstAudioMs: latency });
-              }
-              
-              // Send audio chunk to client for immediate playback
-              sendEvent('audio', { 
-                chunk: event.audio, 
-                index: audioChunkCount,
-                isFinal: event.isFinal || false 
-              });
-            }
-          } catch (error) {
-            // Binary data or parse error - ignore
-          }
-        });
-        
-        ttsWs.on('error', (error) => {
-          log.error({ error }, 'TTS WebSocket error');
-          clearTimeout(timeout);
-          reject(error);
-        });
-        
-        ttsWs.on('close', () => {
-          log.info({ audioChunkCount }, 'TTS WebSocket closed');
-          ttsReady = false;
-        });
-      });
-
-      try {
-        await ttsConnectPromise;
-      } catch (error: any) {
-        log.error({ error: error.message }, 'Failed to connect to TTS');
-        sendEvent('error', { message: 'TTS connection failed' });
-        return res.end();
-      }
-
-      perfTimings.ttsConnect = Date.now() - perfStart;
-
-      // Parallel data fetching (simplified for low latency)
-      sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
-      
+      // Parallel data fetching
       const dataFetchStart = Date.now();
       const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
       
@@ -4470,7 +4366,6 @@ This applies to EVERY response, regardless of conversation length.`;
       ]);
 
       perfTimings.dataFetch = Date.now() - dataFetchStart;
-      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch });
 
       // Build context
       let combinedContext = '';
@@ -4509,126 +4404,34 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
       }
 
-      sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
-
-      // Stream Claude response and pipe to TTS
+      // Generate full Claude response (non-streaming)
       const claudeStart = Date.now();
-      let fullResponse = '';
-      let sentenceCount = 0;
-      let textBuffer = '';
-
-      // Function to send text to TTS when we have enough
-      const sendToTTS = (text: string, flush: boolean = false) => {
-        if (!ttsWs || ttsWs.readyState !== WebSocket.OPEN || !ttsReady) {
-          log.warn('TTS WebSocket not ready', { readyState: ttsWs?.readyState, ttsReady });
-          return;
-        }
-        
-        if (text.trim() || flush) {
-          log.debug({ textLength: text.length, flush }, 'Sending text to TTS');
-        }
-        
-        ttsWs.send(JSON.stringify({
-          text: text,
-          try_trigger_generation: true,
-          flush: flush,
-        }));
-      };
+      log.info({ message, avatarId }, 'Generating non-streaming Claude response');
       
-      // Cleanup function to ensure WebSocket is closed
-      const cleanupTTS = () => {
-        if (ttsWs && ttsWs.readyState === WebSocket.OPEN) {
-          try {
-            ttsWs.close();
-          } catch (e) {
-            // Ignore close errors
-          }
-        }
-      };
-
-      // Flush timer for aggressive low-latency TTS
-      let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_CHUNK_DELAY = 100; // Send first chunk after just 100ms
-      const SUBSEQUENT_CHUNK_DELAY = 200; // Subsequent chunks after 200ms
-      let chunksSent = 0;
-      
-      const flushTextBuffer = () => {
-        if (textBuffer.length > 0) {
-          sendToTTS(textBuffer, false);
-          sendEvent('text', { content: textBuffer });
-          fullResponse += textBuffer;
-          textBuffer = '';
-          chunksSent++;
-        }
-        if (flushTimer) {
-          clearTimeout(flushTimer);
-          flushTimer = null;
-        }
-      };
-      
-      const scheduleFlush = () => {
-        if (flushTimer) clearTimeout(flushTimer);
-        const delay = chunksSent === 0 ? FIRST_CHUNK_DELAY : SUBSEQUENT_CHUNK_DELAY;
-        flushTimer = setTimeout(flushTextBuffer, delay);
-      };
-
-      try {
-        for await (const chunk of claudeService.streamResponse(
-          message,
-          combinedContext,
-          dbConversationHistory,
-          voiceModePrompt,
-          undefined,
-          undefined,
-          true // isVoiceMode = true for short responses
-        )) {
-          if (chunk.type === 'text') {
-            textBuffer += chunk.content;
-            
-            // For minimum latency: flush on punctuation OR after timer
-            // First chunk flushes very quickly (100ms) to start audio ASAP
-            // Subsequent chunks can wait a bit longer for natural phrasing
-            if (/[.!?]\s*$/.test(textBuffer)) {
-              // Immediate flush on sentence-ending punctuation
-              flushTextBuffer();
-            } else if (textBuffer.length > 50) {
-              // Flush larger buffers immediately
-              flushTextBuffer();
-            } else {
-              // Schedule a flush after a short delay
-              scheduleFlush();
-            }
-          } else if (chunk.type === 'sentence') {
-            sentenceCount++;
-            // Sentence boundaries trigger immediate flush
-            flushTextBuffer();
-          } else if (chunk.type === 'done') {
-            // Flush any remaining text
-            flushTextBuffer();
-            // Close TTS generation
-            sendToTTS('', true);
-          }
-        }
-      } catch (streamError: any) {
-        if (flushTimer) clearTimeout(flushTimer);
-        log.error({ error: streamError.message }, 'Claude streaming error');
-        sendEvent('error', { message: 'AI generation failed' });
-        cleanupTTS();
-        return res.end();
-      }
-      
-      // Clean up timer
-      if (flushTimer) clearTimeout(flushTimer);
+      const fullResponse = await claudeService.generateResponse(
+        message,
+        combinedContext,
+        dbConversationHistory,
+        voiceModePrompt
+      );
 
       perfTimings.claude = Date.now() - claudeStart;
+      log.info({ claudeMs: perfTimings.claude, responseLength: fullResponse.length }, 'Claude response generated');
 
-      // Wait a bit for final audio chunks to come through
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Generate full TTS audio (non-streaming)
+      const ttsStart = Date.now();
+      log.info({ voiceId, textLength: fullResponse.length }, 'Generating non-streaming TTS audio');
       
-      // Clean up TTS WebSocket
-      cleanupTTS();
+      const audioBase64 = await elevenlabsService.generateSpeechBase64(
+        fullResponse,
+        voiceId,
+        languageCode
+      );
 
+      perfTimings.tts = Date.now() - ttsStart;
       perfTimings.total = Date.now() - perfStart;
+
+      log.info({ ttsMs: perfTimings.tts, audioLength: audioBase64.length }, 'TTS audio generated');
 
       // Save assistant response
       if (userId && fullResponse) {
@@ -4644,38 +4447,27 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }).catch(() => {});
       }
 
-      // Send completion event
-      sendEvent('done', {
-        fullResponse,
-        audioChunks: audioChunkCount,
-        performance: {
-          totalMs: perfTimings.total,
-          dataFetchMs: perfTimings.dataFetch,
-          claudeMs: perfTimings.claude,
-          ttsConnectMs: perfTimings.ttsConnect,
-          firstAudioMs: firstAudioTime > 0 ? firstAudioTime - perfStart : null,
-        }
-      });
-
       log.info({ 
         userId, 
         avatarId, 
         perfTimings, 
-        sentenceCount,
-        audioChunks: audioChunkCount,
-        firstAudioLatency: firstAudioTime > 0 ? firstAudioTime - perfStart : null,
-      }, '🎵 Streaming audio response completed');
-      
-      res.end();
+      }, '🎵 Non-streaming audio response completed');
+
+      // Return single JSON response with text and audio
+      res.json({
+        fullResponse,
+        audioBase64,
+        performance: {
+          totalMs: perfTimings.total,
+          dataFetchMs: perfTimings.dataFetch,
+          claudeMs: perfTimings.claude,
+          ttsMs: perfTimings.tts,
+        }
+      });
 
     } catch (error: any) {
-      log.error({ error: error.message }, 'Stream-audio endpoint error');
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'Streaming failed' });
-      } else {
-        res.write(`event: error\ndata: ${JSON.stringify({ message: error.message })}\n\n`);
-        res.end();
-      }
+      log.error({ error: error.message }, 'Batch-audio endpoint error');
+      res.status(500).json({ error: 'Audio generation failed', message: error.message });
     }
   });
 
