@@ -72,6 +72,13 @@ export class LiveAvatarDriver implements SessionDriver {
   // SDK can have gaps >300ms between internal chunks, so use 800ms to be safe
   private speechEndDebounceTimer: ReturnType<typeof setTimeout> | null = null;
   private readonly SPEECH_END_DEBOUNCE_MS = 800; // Wait 800ms after last ENDED event before triggering callback
+  
+  // Track audio playback state to filter phantom SDK events
+  // SDK fires phantom AVATAR_SPEAK_STARTED/ENDED events even after audio finishes
+  // We only want to process events when we've actually sent audio
+  private audioPlaybackActive: boolean = false;
+  private audioSentTimestamp: number = 0;
+  private readonly AUDIO_PLAYBACK_TIMEOUT_MS = 60000; // Max 60 seconds for audio playback
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -240,9 +247,20 @@ export class LiveAvatarDriver implements SessionDriver {
 
         // Listen for avatar talking events
         // NOTE: SDK fires multiple STARTED/ENDED events for long audio clips (internal chunking)
+        // SDK also fires PHANTOM events after audio finishes - we filter these out
         // We debounce ENDED events to only trigger callback once when speech truly ends
         session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
-          console.log("🗣️ Avatar started speaking (SDK event)");
+          const now = Date.now();
+          const timeSinceAudioSent = now - this.audioSentTimestamp;
+          
+          // Filter phantom events: only process if we're in active audio playback
+          // or if audio was sent recently (within timeout window)
+          if (!this.audioPlaybackActive && timeSinceAudioSent > this.AUDIO_PLAYBACK_TIMEOUT_MS) {
+            console.log("👻 Ignoring phantom AVATAR_SPEAK_STARTED (no active audio, sent", timeSinceAudioSent, "ms ago)");
+            return;
+          }
+          
+          console.log("🗣️ Avatar started speaking (SDK event) - timeSinceAudioSent:", timeSinceAudioSent, "ms");
           
           // Cancel any pending speech-end debounce timer
           // This prevents false "stopped speaking" callbacks during SDK chunking
@@ -260,7 +278,16 @@ export class LiveAvatarDriver implements SessionDriver {
         });
 
         session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, async () => {
-          console.log("🤫 Avatar chunk ended (SDK event) - debouncing...");
+          const now = Date.now();
+          const timeSinceAudioSent = now - this.audioSentTimestamp;
+          
+          // Filter phantom events: only process if we're in active audio playback
+          if (!this.audioPlaybackActive && timeSinceAudioSent > this.AUDIO_PLAYBACK_TIMEOUT_MS) {
+            console.log("👻 Ignoring phantom AVATAR_SPEAK_ENDED (no active audio, sent", timeSinceAudioSent, "ms ago)");
+            return;
+          }
+          
+          console.log("🤫 Avatar chunk ended (SDK event) - debouncing...", "timeSinceAudioSent:", timeSinceAudioSent, "ms");
           
           // Cancel any existing debounce timer
           if (this.speechEndDebounceTimer) {
@@ -269,9 +296,16 @@ export class LiveAvatarDriver implements SessionDriver {
           
           // Set debounce timer - only trigger callback if no new STARTED event within delay
           this.speechEndDebounceTimer = setTimeout(async () => {
-            console.log("✅ Speech truly ended (debounce complete)");
+            // Double-check we still have active audio (could have been cleared by a new audio send)
+            if (!this.audioPlaybackActive) {
+              console.log("👻 Ignoring debounced AVATAR_SPEAK_ENDED (audio no longer active)");
+              return;
+            }
+            
+            console.log("✅ Speech truly ended (debounce complete) - clearing audioPlaybackActive");
             this.speechEndDebounceTimer = null;
             this.isSpeaking = false;
+            this.audioPlaybackActive = false; // Mark audio playback as complete
             this.config.onAvatarStopTalking?.();
             
             // Resolve any pending speech completion promise
@@ -706,6 +740,12 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
+    // Mark audio playback as active BEFORE sending to SDK
+    // This allows event handlers to properly filter phantom events
+    this.audioPlaybackActive = true;
+    this.audioSentTimestamp = Date.now();
+    console.log("🎵 [DIRECT] Starting audio playback tracking, timestamp:", this.audioSentTimestamp);
+    
     // Check video element state for debugging
     if (this.config.videoRef.current) {
       const v = this.config.videoRef.current;
@@ -742,6 +782,7 @@ export class LiveAvatarDriver implements SessionDriver {
       console.error("❌ [DIRECT] repeatAudio error:", err);
       // Reset speaking state on error
       this.isSpeaking = false;
+      this.audioPlaybackActive = false;
       this.config.onAvatarStopTalking?.();
     }
   }
