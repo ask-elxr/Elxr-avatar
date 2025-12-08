@@ -4459,6 +4459,7 @@ This applies to EVERY response, regardless of conversation length.`;
       let firstAudioTime = 0;
       let heartbeatInterval: NodeJS.Timeout | null = null;
       let firstTextSent = false;
+      let directModeUsed = false; // Flag to prevent streaming TTS after direct TTS is used
       
       // Pre-connect TTS WebSocket immediately (in parallel with data fetch)
       const ttsConnectPromise = new Promise<void>((resolve, reject) => {
@@ -4666,6 +4667,12 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 
       // Function to send text to TTS (TTS is already connected)
       const sendToTTS = async (text: string, flush: boolean = false) => {
+        // Guard: Don't use streaming TTS if direct mode was used
+        if (directModeUsed) {
+          console.log(`⏭️ [STREAMING] Skipping sendToTTS - direct mode was used`);
+          return;
+        }
+        
         if (ttsWs && ttsWs.readyState === 1 && ttsReady) {
           // Stop heartbeat on first real text
           if (!firstTextSent && text.trim()) {
@@ -4834,7 +4841,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             // Response complete - finalize based on mode
             
             if (decidedMode === 'pending' || decidedMode === 'non-streaming') {
-              // Short response detected - use single TTS call for smooth audio
+              // Short response detected - use DIRECT TTS call (not streaming) for smooth audio
               const wasSimpleQuery = decidedMode === 'non-streaming';
               decidedMode = 'non-streaming';
               const finalWordCount = countWords(accumulatedResponse);
@@ -4844,17 +4851,64 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
               
               fullResponse = accumulatedResponse;
               
-              // Properly handle TTS bookkeeping
-              firstTTSTextSent = true;
+              // SWITCH TO DIRECT MODE: Disable streaming transport BEFORE calling direct TTS
+              // This prevents any race conditions with flush timers or heartbeats
+              directModeUsed = true;
+              
+              // Stop heartbeat immediately
               if (heartbeatInterval) {
                 clearInterval(heartbeatInterval);
                 heartbeatInterval = null;
               }
-              timestamps.firstTTSTextSent = Date.now() - pipelineStart;
-              console.log(`⏱️ [T+${timestamps.firstTTSTextSent}ms] Sending FULL text to TTS: "${fullResponse.substring(0, 50)}..."`);
               
-              await sendToTTS(fullResponse, true);
-              await sendToTTS('', true); // Signal end of stream
+              // Close streaming WebSocket immediately (we won't need it)
+              if (ttsWs) {
+                console.log(`⏱️ [NON-STREAMING] Closing streaming WebSocket (switching to direct mode)`);
+                try {
+                  if (ttsWs.readyState === 1) {
+                    ttsWs.send(JSON.stringify({ text: '' })); // EOS
+                  }
+                  ttsWs.close();
+                  ttsWs = null;
+                } catch (e) {}
+              }
+              
+              // IMPORTANT: Use direct TTS API (not streaming WebSocket) for non-streaming mode
+              // This generates complete audio in one call for smooth playback
+              try {
+                const ttsStart = Date.now();
+                console.log(`⏱️ [T+${ttsStart - pipelineStart}ms] [NON-STREAMING] Calling direct TTS API for complete audio...`);
+                
+                const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
+                const audioBase64 = await elevenlabsService.generateSpeechBase64(
+                  fullResponse, 
+                  voiceId,
+                  effectiveLanguageCode
+                );
+                
+                const ttsDone = Date.now();
+                firstAudioTime = ttsDone;
+                audioChunkCount = 1;
+                console.log(`⏱️ [T+${ttsDone - pipelineStart}ms] [NON-STREAMING] Direct TTS complete (${audioBase64.length} chars)`);
+                
+                sendEvent('timing', { 
+                  firstAudioMs: ttsDone - pipelineStart,
+                  mode: 'direct'
+                });
+                
+                // Send complete audio as single chunk
+                sendEvent('audio', { 
+                  chunk: audioBase64, 
+                  index: 1, 
+                  isFinal: true, 
+                  serverTimestamp: Date.now(),
+                  mode: 'direct'
+                });
+                
+              } catch (ttsError: any) {
+                console.error(`❌ [NON-STREAMING] Direct TTS failed:`, ttsError.message);
+                sendEvent('error', { message: 'TTS generation failed' });
+              }
             } else {
               // Streaming mode - flush any remaining text
               await flushTextBuffer(true);
