@@ -256,9 +256,61 @@ class ElevenLabsService {
   }
 
   /**
-   * Generate WAV audio as base64 for LiveAvatar SDK's repeatAudio()
-   * Wraps PCM in WAV container so HeyGen plays it as single continuous clip
-   * (Raw PCM causes HeyGen to chunk audio word-by-word)
+   * Split text into sentences for sentence-by-sentence TTS
+   */
+  private splitIntoSentences(text: string): string[] {
+    const sentences = text
+      .split(/(?<=[.!?])\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+    return sentences.length > 0 ? sentences : [text];
+  }
+
+  /**
+   * Generate raw PCM audio for a single text chunk (no WAV header)
+   */
+  private async generateRawPCM(
+    text: string,
+    voiceId: string,
+    languageCode?: string,
+  ): Promise<Buffer> {
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": this.apiKey,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_turbo_v2_5",
+          voice_settings: {
+            stability: 0.7,
+            similarity_boost: 0.65,
+            style: 0.0,
+            use_speaker_boost: true,
+          },
+          ...(languageCode && { language_code: languageCode }),
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  }
+
+  /**
+   * Generate PCM audio as base64 for LiveAvatar SDK's repeatAudio()
+   * Generates TTS for each sentence separately, then concatenates into one continuous stream
+   * This produces smoother audio without inter-word gaps
+   * 
+   * Returns RAW PCM (no WAV header) - frontend strips header anyway
    */
   async generateSpeechBase64(
     text: string,
@@ -271,8 +323,6 @@ class ElevenLabsService {
       );
     }
 
-    // Normalize language code - ElevenLabs eleven_turbo_v2_5 only accepts ISO 639-1 codes (e.g., 'en', 'es')
-    // Convert 'en-US', 'en-GB', etc. to 'en'
     const normalizedLanguageCode = languageCode 
       ? languageCode.split('-')[0].toLowerCase() 
       : undefined;
@@ -286,49 +336,28 @@ class ElevenLabsService {
     });
 
     try {
-      log.debug("Generating WAV speech for LiveAvatar SDK (WAV container, 24kHz, 16-bit)");
       const startTime = Date.now();
+      
+      const sentences = this.splitIntoSentences(text);
+      log.debug({ sentenceCount: sentences.length }, "Generating sentence-by-sentence TTS for seamless playback");
 
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "xi-api-key": this.apiKey,
-          },
-          body: JSON.stringify({
-            text,
-            model_id: "eleven_turbo_v2_5",
-            voice_settings: {
-              stability: 0.7,
-              similarity_boost: 0.65,
-              style: 0.0,
-              use_speaker_boost: true,
-            },
-            ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
-          }),
-        }
+      const pcmBuffers = await Promise.all(
+        sentences.map(sentence => this.generateRawPCM(sentence, voiceId, normalizedLanguageCode))
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const pcmBuffer = Buffer.from(arrayBuffer);
+      const combinedPcm = Buffer.concat(pcmBuffers);
       
-      // HeyGen SDK requires WAV container (not raw PCM) so it understands sample metadata
-      // WAV header: RIFF + fmt chunk (24kHz, mono, 16-bit LE) + data chunk
-      // Without WAV headers, HeyGen misinterprets the audio causing muffled playback
-      const wavBuffer = this.createWavBuffer(pcmBuffer, 24000, 1, 16);
-      const audioBase64 = wavBuffer.toString('base64');
+      const audioBase64 = combinedPcm.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
-        { duration, pcmSize: pcmBuffer.length, wavSize: wavBuffer.length, format: "wav_24000_base64" },
-        "WAV speech generated for LiveAvatar SDK (continuous playback)",
+        { 
+          duration, 
+          sentenceCount: sentences.length,
+          pcmSize: combinedPcm.length, 
+          format: "raw_pcm_24000_base64" 
+        },
+        "Sentence-buffered PCM audio generated (no WAV header, seamless playback)",
       );
       metrics.recordElevenLabsTTS(duration);
 
@@ -347,7 +376,7 @@ class ElevenLabsService {
     } catch (error: any) {
       log.error(
         { error: error.message, stack: error.stack },
-        "Error generating PCM speech with ElevenLabs",
+        "Error generating sentence-buffered PCM speech",
       );
       throw error;
     }

@@ -427,38 +427,11 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   /**
-   * Strip WAV header from base64 audio to get raw PCM
-   * HeyGen SDK expects raw PCM 24kHz 16-bit, NOT WAV-wrapped data
-   * WAV header is 44 bytes, which when base64 decoded and re-encoded becomes ~59 chars
-   */
-  private stripWavHeaderFromBase64(wavBase64: string): string {
-    try {
-      const binaryString = atob(wavBase64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      
-      const pcmBytes = bytes.slice(44);
-      
-      let pcmBinaryString = '';
-      for (let i = 0; i < pcmBytes.length; i++) {
-        pcmBinaryString += String.fromCharCode(pcmBytes[i]);
-      }
-      
-      return btoa(pcmBinaryString);
-    } catch (error) {
-      console.error("Error stripping WAV header:", error);
-      return wavBase64;
-    }
-  }
-
-  /**
    * Speak using ElevenLabs voice with SDK lip-sync
    * SDK handles both lip-sync animation AND audio playback through WebRTC
    * 
    * CRITICAL: SDK requires raw PCM 24kHz 16-bit audio (NO WAV header)
-   * Uses /api/elevenlabs/tts-base64 which returns WAV, then we strip the header
+   * Backend now returns sentence-buffered raw PCM (no header) for seamless playback
    * 
    * Following official demo pattern: just call repeatAudio() - SDK handles everything
    */
@@ -479,18 +452,17 @@ export class LiveAvatarDriver implements SessionDriver {
       }
 
       const data = await response.json();
-      const wavBase64 = data.audio;
+      const pcmBase64 = data.audio;
       
-      if (!wavBase64) {
+      if (!pcmBase64) {
         throw new Error("No audio data in response");
       }
       
-      const pcmBase64 = this.stripWavHeaderFromBase64(wavBase64);
-      console.log(`🎤 Got WAV audio (${wavBase64.length} chars), stripped header → raw PCM (${pcmBase64.length} chars)`);
+      console.log(`🎤 Got sentence-buffered raw PCM audio (${pcmBase64.length} chars), sending to SDK...`);
       
       if (this.session) {
         this.session.repeatAudio(pcmBase64);
-        console.log("🔊 Raw PCM audio sent to SDK for lip-sync playback (no WAV header)");
+        console.log("🔊 Raw PCM audio sent to SDK for seamless lip-sync playback");
       }
       
     } catch (error) {
@@ -724,9 +696,8 @@ export class LiveAvatarDriver implements SessionDriver {
    * Directly send base64 audio to the SDK for lip-sync playback
    * Used by batch audio mode for complete audio responses
    * 
-   * NOTE: Sends complete audio in ONE call - no chunking!
-   * The greeting path sends 400KB+ audio this way and it works perfectly.
-   * Chunking causes split playback because each repeatAudio() starts new playback.
+   * NOTE: Backend now returns sentence-buffered raw PCM (no WAV header)
+   * Sends complete audio in ONE call - no chunking!
    */
   async repeatAudio(base64Audio: string): Promise<void> {
     if (!this.session) {
@@ -734,8 +705,7 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
-    const pcmBase64 = this.stripWavHeaderFromBase64(base64Audio);
-    console.log(`🎤 [repeatAudio] WAV (${base64Audio.length} chars) → raw PCM (${pcmBase64.length} chars)`);
+    console.log(`🎤 [repeatAudio] Sending ${base64Audio.length} chars of raw PCM to SDK`);
     
     return new Promise((resolve) => {
       this.speechCompleteResolver = () => {
@@ -743,8 +713,8 @@ export class LiveAvatarDriver implements SessionDriver {
         resolve();
       };
       
-      this.session!.repeatAudio(pcmBase64);
-      console.log("🔊 [repeatAudio] Raw PCM audio sent to SDK (no WAV header)");
+      this.session!.repeatAudio(base64Audio);
+      console.log("🔊 [repeatAudio] Raw PCM audio sent to SDK for seamless playback");
       
       // Set a timeout in case the SDK doesn't fire the completion event
       const timeout = setTimeout(() => {
