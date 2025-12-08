@@ -437,10 +437,9 @@ export function useAvatarSession({
     };
     
     ws.onerror = (error) => {
-      console.error("🎤 ElevenLabs STT WebSocket error - falling back to Web Speech API:", error);
-      useElevenLabsSttRef.current = false;
-      // Try Web Speech API as fallback
-      tryWebSpeechApiFallback();
+      console.error("🎤 ElevenLabs STT WebSocket error:", error);
+      setMicrophoneStatus('not-supported');
+      // No fallback - ElevenLabs STT is the exclusive STT solution
     };
     
     ws.onclose = () => {
@@ -586,110 +585,44 @@ export function useAvatarSession({
 
   const startVoiceRecognition = useCallback(() => {
     // Version check - helps verify fresh code is loaded
-    console.log("🔧 Voice recognition code version: 2024-12-07-v2");
+    console.log("🔧 Voice recognition code version: 2024-12-08-elevenlabs-only");
     
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
     if (usingHeygenMobileVoiceChatRef.current) {
-      console.log("⏭️ Skipping Web Speech API - using HeyGen's built-in voice chat (LiveKit WebRTC)");
+      console.log("⏭️ Skipping ElevenLabs STT - using HeyGen's built-in voice chat (LiveKit WebRTC)");
       return;
     }
     
-    // Skip if already initialized AND running
-    if (recognitionRef.current && recognitionRunningRef.current) {
-      console.log("⏭️ Voice recognition already active");
+    // Skip if ElevenLabs STT already running
+    if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
+      console.log("⏭️ ElevenLabs STT already active");
       return;
     }
     
-    // If we have a stale reference that's not running, clean it up
-    if (recognitionRef.current && !recognitionRunningRef.current) {
-      console.log("🔄 Cleaning up stale voice recognition reference");
-      try {
-        recognitionRef.current.abort();
-      } catch (e) {}
-      recognitionRef.current = null;
-    }
-
     // Clear any stuck timeout from previous instance
     if (recognitionStuckTimeoutRef.current) {
       clearTimeout(recognitionStuckTimeoutRef.current);
       recognitionStuckTimeoutRef.current = null;
     }
 
-    // ✅ Initialize Web Speech API for voice input
-    try {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      // Enhanced mobile browser detection
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
-      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
-      const isAndroid = /android/i.test(userAgent);
-      // Better mobile detection: check for mobile keyword, touch capability, and small screen
-      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const isSmallScreen = window.innerWidth <= 768;
-      const hasMobileKeyword = /mobile|phone/i.test(userAgent);
-      const isMobile = isIOS || isAndroid || hasMobileKeyword || (hasTouchScreen && isSmallScreen);
-      // More reliable Safari detection for iOS
-      const isSafari = /Safari/.test(userAgent) && !/Chrome|CriOS|FxiOS|Edg/.test(userAgent);
-      const isIOSSafari = isIOS && isSafari;
-      const isChrome = /Chrome/.test(userAgent) && !/Edg/.test(userAgent);
-      const isChromeIOS = isIOS && /CriOS/i.test(userAgent);
-      const isFirefoxIOS = isIOS && /FxiOS/i.test(userAgent);
-      const isChromeMobile = isChrome && (isAndroid || hasMobileKeyword);
-      
-      console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, Safari=${isSafari}, iOSSafari=${isIOSSafari}, Chrome=${isChrome}, ChromeIOS=${isChromeIOS}, ChromeMobile=${isChromeMobile}, touch=${hasTouchScreen}, smallScreen=${isSmallScreen}`);
-      console.log(`📱 UserAgent: ${userAgent.substring(0, 100)}...`);
-      console.log(`📱 SpeechRecognition available: ${!!SpeechRecognition}`);
-      
-      // 🎤 MOBILE BROWSER HANDLING
-      // Chrome on iOS does NOT support Web Speech API (Apple restricts it to Safari only)
-      // WebSocket connections are often blocked in cross-origin iframes on mobile
-      if (isChromeIOS || isFirefoxIOS) {
-        console.warn("⚠️ Voice input limited in Chrome/Firefox on iOS - Safari recommended for voice");
-        // iOS Chrome/Firefox has no Web Speech API, and WebSocket likely blocked in iframe
-        // Try ElevenLabs STT but expect it to fail in iframes
-        useElevenLabsSttRef.current = true;
-        startElevenLabsSTT();
-        return;
-      }
-      
-      // For other mobile browsers, try Web Speech API first (more reliable in iframes)
-      if (isMobile) {
-        console.log("📱 Mobile device detected - checking Web Speech API availability");
-        
-        if (SpeechRecognition) {
-          // Mobile browser with Web Speech API (iOS Safari, Android Chrome/Firefox)
-          console.log("📱 Web Speech API available on mobile - using native speech recognition");
-          useElevenLabsSttRef.current = false;
-          // Continue to Web Speech API setup below
-        } else {
-          // No Web Speech API - try ElevenLabs as fallback (will likely fail in iframe)
-          console.log("📱 No Web Speech API available - trying ElevenLabs STT (may fail in iframe)");
-          useElevenLabsSttRef.current = true;
-          startElevenLabsSTT();
-          return;
-        }
-      }
-      
-      if (!SpeechRecognition) {
-        console.warn("⚠️ Web Speech API not supported in this browser - trying ElevenLabs STT");
-        // Try ElevenLabs STT as fallback
-        useElevenLabsSttRef.current = true;
-        startElevenLabsSTT();
-        return;
-      }
-
-      const recognition = new SpeechRecognition();
-      
-      // MOBILE/SAFARI FIX: Use non-continuous mode for better reliability
-      // Safari (both iOS and macOS) and mobile browsers have issues with continuous mode
-      const useContinuous = !isMobile && !isSafari;
-      recognition.continuous = useContinuous;
-      recognition.interimResults = false; // Only get final results
-      recognition.lang = languageCodeRef.current;
-      recognition.maxAlternatives = 1; // Only get best match
-      
-      console.log(`🎤 Voice recognition config: continuous=${useContinuous}, mobile=${isMobile}, safari=${isSafari}, lang=${recognition.lang}`);
+    // Log browser info for debugging
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera || '';
+    const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream;
+    const isAndroid = /android/i.test(userAgent);
+    const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallScreen = window.innerWidth <= 768;
+    const hasMobileKeyword = /mobile|phone/i.test(userAgent);
+    const isMobile = isIOS || isAndroid || hasMobileKeyword || (hasTouchScreen && isSmallScreen);
+    
+    console.log(`📱 Browser detection: iOS=${isIOS}, Android=${isAndroid}, mobile=${isMobile}`);
+    console.log(`📱 UserAgent: ${userAgent.substring(0, 100)}...`);
+    
+    // 🎤 ALWAYS USE ELEVENLABS STT - no Web Speech API
+    // ElevenLabs STT provides better quality and consistent behavior across all browsers
+    console.log("🎤 Starting ElevenLabs STT (exclusive STT solution)");
+    useElevenLabsSttRef.current = true;
+    startElevenLabsSTT();
       
       // Mobile/Safari stuck detection - recreate if no results for 15 seconds
       const resetStuckTimeout = () => {
