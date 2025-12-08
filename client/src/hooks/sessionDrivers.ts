@@ -662,8 +662,45 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   /**
+   * Helper to create a WAV header for PCM data
+   */
+  private createWavHeader(dataSize: number, sampleRate: number = 24000, channels: number = 1, bitsPerSample: number = 16): Uint8Array {
+    const byteRate = sampleRate * channels * (bitsPerSample / 8);
+    const blockAlign = channels * (bitsPerSample / 8);
+    const headerSize = 44;
+    const fileSize = headerSize + dataSize - 8;
+    
+    const header = new Uint8Array(headerSize);
+    const view = new DataView(header.buffer);
+    
+    // RIFF header
+    header.set([0x52, 0x49, 0x46, 0x46], 0); // "RIFF"
+    view.setUint32(4, fileSize, true);
+    header.set([0x57, 0x41, 0x56, 0x45], 8); // "WAVE"
+    
+    // fmt subchunk
+    header.set([0x66, 0x6D, 0x74, 0x20], 12); // "fmt "
+    view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
+    view.setUint16(20, 1, true); // AudioFormat (1 = PCM)
+    view.setUint16(22, channels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+    
+    // data subchunk
+    header.set([0x64, 0x61, 0x74, 0x61], 36); // "data"
+    view.setUint32(40, dataSize, true);
+    
+    return header;
+  }
+
+  /**
    * Directly send base64 PCM audio to the SDK for lip-sync playback
    * Used by batch audio mode for complete audio responses
+   * 
+   * IMPORTANT: WebRTC data channel has ~64KB message limit, so we must chunk
+   * large audio into smaller segments. Each chunk is a complete WAV file.
    */
   async repeatAudio(base64Audio: string): Promise<void> {
     if (!this.session) {
@@ -671,7 +708,13 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
-    console.log(`🎤 [repeatAudio] Sending ${base64Audio.length} chars of base64 PCM audio to SDK`);
+    // WebRTC data channel limit is ~64KB, use 48KB base64 to be safe
+    // 48KB base64 = ~36KB binary = ~750ms of 24kHz 16-bit audio
+    const MAX_BASE64_SIZE = 48000;
+    
+    const totalLength = base64Audio.length;
+    
+    console.log(`🎤 [repeatAudio] Processing ${totalLength} chars of base64 WAV audio`);
     
     return new Promise((resolve) => {
       // Set up completion handler
@@ -680,9 +723,74 @@ export class LiveAvatarDriver implements SessionDriver {
         resolve();
       };
       
-      // Send audio to SDK
-      this.session!.repeatAudio(base64Audio);
-      console.log("🔊 [repeatAudio] Audio sent to SDK");
+      // Check if small enough to send in one piece
+      if (totalLength <= MAX_BASE64_SIZE) {
+        this.session!.repeatAudio(base64Audio);
+        console.log("🔊 [repeatAudio] Single chunk sent to SDK");
+      } else {
+        // Need to chunk the audio into multiple valid WAV files
+        // Decode the full WAV to extract PCM data (skip 44-byte header)
+        const binaryString = atob(base64Audio);
+        const fullWav = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+          fullWav[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Extract PCM data (skip 44-byte WAV header)
+        const pcmData = fullWav.slice(44);
+        
+        // Calculate chunk size: ~36KB PCM per chunk (allows ~750ms of audio)
+        // This gives us ~48KB base64 after adding WAV header
+        const PCM_CHUNK_SIZE = 35000; // bytes of PCM per chunk (must be even for 16-bit samples)
+        const numChunks = Math.ceil(pcmData.length / PCM_CHUNK_SIZE);
+        
+        console.log(`🎤 [repeatAudio] Splitting ${pcmData.length} bytes PCM into ${numChunks} WAV chunks`);
+        
+        // Create array of WAV chunk base64 strings
+        const wavChunks: string[] = [];
+        for (let i = 0; i < numChunks; i++) {
+          const start = i * PCM_CHUNK_SIZE;
+          const end = Math.min(start + PCM_CHUNK_SIZE, pcmData.length);
+          const chunkPcm = pcmData.slice(start, end);
+          
+          // Create WAV header for this chunk
+          const header = this.createWavHeader(chunkPcm.length);
+          
+          // Combine header + PCM
+          const wavChunk = new Uint8Array(header.length + chunkPcm.length);
+          wavChunk.set(header, 0);
+          wavChunk.set(chunkPcm, header.length);
+          
+          // Convert to base64
+          let binary = '';
+          for (let j = 0; j < wavChunk.length; j++) {
+            binary += String.fromCharCode(wavChunk[j]);
+          }
+          wavChunks.push(btoa(binary));
+        }
+        
+        // Send chunks sequentially with delays to let SDK process
+        let chunkIndex = 0;
+        const sendNextChunk = () => {
+          if (chunkIndex >= wavChunks.length) {
+            console.log("🔊 [repeatAudio] All chunks sent to SDK");
+            return;
+          }
+          
+          const chunk = wavChunks[chunkIndex];
+          this.session!.repeatAudio(chunk);
+          console.log(`🔊 [repeatAudio] Chunk ${chunkIndex + 1}/${wavChunks.length} sent (${chunk.length} base64 chars)`);
+          
+          chunkIndex++;
+          
+          // Small delay between chunks to let SDK queue them
+          if (chunkIndex < wavChunks.length) {
+            setTimeout(sendNextChunk, 100);
+          }
+        };
+        
+        sendNextChunk();
+      }
       
       // Set a timeout in case the SDK doesn't fire the completion event
       const timeout = setTimeout(() => {
