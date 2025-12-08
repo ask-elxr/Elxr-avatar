@@ -256,9 +256,25 @@ class ElevenLabsService {
   }
 
   /**
+   * Convert plain text to SSML with reduced inter-sentence pauses
+   * ElevenLabs inserts automatic silence after punctuation - SSML overrides this
+   */
+  private textToSSML(text: string): string {
+    // Replace sentence-ending punctuation with punctuation + short break
+    // Using 80ms break instead of ElevenLabs' default ~500ms pause
+    const ssmlText = text
+      .replace(/\.\s+/g, '.<break time="80ms"/> ')
+      .replace(/!\s+/g, '!<break time="80ms"/> ')
+      .replace(/\?\s+/g, '?<break time="80ms"/> ');
+    
+    return `<speak>${ssmlText}</speak>`;
+  }
+
+  /**
    * Generate WAV audio as base64 for LiveAvatar SDK's repeatAudio()
    * Makes a SINGLE TTS call for the FULL text - no sentence splitting
-   * Returns WAV format (24kHz, mono, 16-bit) with proper header so HeyGen understands the format
+   * Uses SSML to reduce inter-sentence pauses for natural speech flow
+   * Returns WAV format (24kHz, mono, 16-bit) with proper header
    */
   async generateSpeechBase64(
     text: string,
@@ -285,7 +301,10 @@ class ElevenLabsService {
 
     try {
       const startTime = Date.now();
-      log.debug("Generating SINGLE TTS call for full text (no sentence splitting)");
+      
+      // Convert to SSML with reduced inter-sentence breaks
+      const ssmlText = this.textToSSML(text);
+      log.debug({ ssmlLength: ssmlText.length }, "Generating SINGLE TTS call with SSML (reduced sentence pauses)");
 
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
@@ -296,7 +315,7 @@ class ElevenLabsService {
             "xi-api-key": this.apiKey,
           },
           body: JSON.stringify({
-            text,
+            text: ssmlText,
             model_id: "eleven_turbo_v2_5",
             voice_settings: {
               stability: 0.7,
@@ -304,6 +323,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
+            use_ssml: true,
             ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
           }),
         }
