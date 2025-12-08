@@ -4377,11 +4377,11 @@ This applies to EVERY response, regardless of conversation length.`;
       const voiceModePrompt = `${personalityPrompt}
 
 VOICE CONVERSATION MODE - CRITICAL RULES:
-- Keep responses SHORT (2-3 sentences max, under 50 words)
-- Be natural and conversational, like a friend talking
-- Never use bullet points, lists, or markdown formatting
-- Never say "I can help you with that" - just help
-- Respond as if speaking aloud`;
+- MAXIMUM 2 sentences, under 30 words total
+- Be direct and conversational
+- No bullet points, lists, or formatting
+- Respond naturally as if speaking aloud
+- Give a simple, clear answer - don't over-explain`;
 
       // Get conversation history
       let dbConversationHistory: any[] = [];
