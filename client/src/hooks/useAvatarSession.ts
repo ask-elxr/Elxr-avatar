@@ -586,24 +586,24 @@ export function useAvatarSession({
 
   const startVoiceRecognition = useCallback(() => {
     // Version check - helps verify fresh code is loaded
-    console.log("🔧 Voice recognition code version: 2024-12-07-v2");
+    console.log("🔧 Voice recognition code version: 2024-12-08-v1 (ElevenLabs STT only)");
     
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
     if (usingHeygenMobileVoiceChatRef.current) {
-      console.log("⏭️ Skipping Web Speech API - using HeyGen's built-in voice chat (LiveKit WebRTC)");
+      console.log("⏭️ Skipping - using HeyGen's built-in voice chat (LiveKit WebRTC)");
       return;
     }
     
-    // Skip if already initialized AND running
-    if (recognitionRef.current && recognitionRunningRef.current) {
-      console.log("⏭️ Voice recognition already active");
+    // Skip if ElevenLabs STT already running
+    if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current && recognitionRunningRef.current) {
+      console.log("⏭️ ElevenLabs STT already active");
       return;
     }
     
-    // If we have a stale reference that's not running, clean it up
-    if (recognitionRef.current && !recognitionRunningRef.current) {
-      console.log("🔄 Cleaning up stale voice recognition reference");
+    // Clean up any stale Web Speech API reference
+    if (recognitionRef.current) {
+      console.log("🔄 Cleaning up legacy Web Speech API reference");
       try {
         recognitionRef.current.abort();
       } catch (e) {}
@@ -616,7 +616,15 @@ export function useAvatarSession({
       recognitionStuckTimeoutRef.current = null;
     }
 
-    // ✅ Initialize Web Speech API for voice input
+    // ✅ ALWAYS use ElevenLabs STT for better quality and consistency
+    // ElevenLabs STT provides: streaming transcription, better accuracy, works everywhere
+    console.log("🎤 Starting ElevenLabs STT (primary speech recognition)");
+    useElevenLabsSttRef.current = true;
+    startElevenLabsSTT();
+    return;
+    
+    // LEGACY CODE BELOW - kept for reference but never executed
+    // ----------------------------------------------------------------
     try {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       
