@@ -3,7 +3,7 @@ import { logger } from './logger.js';
 
 const log = logger.child({ service: 'elevenlabs-stt' });
 
-const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/stream';
+const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/realtime';
 
 interface STTSession {
   sessionId: string;
@@ -84,10 +84,7 @@ async function handleControlMessage(
     }
     
     case 'stop': {
-      const session = activeSessions.get(sessionId);
-      if (session?.sttWs?.readyState === WebSocket.OPEN) {
-        session.sttWs.send(JSON.stringify({ type: 'close_stream' }));
-      }
+      // Just close the connection - new API doesn't need close_stream message
       cleanupSession(sessionId);
       clientWs.send(JSON.stringify({ type: 'stopped' }));
       break;
@@ -100,7 +97,14 @@ async function handleAudioData(sessionId: string, audioData: Buffer): Promise<vo
   if (!session) return;
   
   if (session.sttWs?.readyState === WebSocket.OPEN && session.sttReady) {
-    session.sttWs.send(audioData);
+    // New ElevenLabs realtime API requires audio as base64 JSON message
+    const audioBase64 = audioData.toString('base64');
+    session.sttWs.send(JSON.stringify({
+      message_type: 'input_audio_chunk',
+      audio_base_64: audioBase64,
+      commit: false,
+      sample_rate: 16000,
+    }));
   }
 }
 
@@ -111,7 +115,9 @@ async function startSTTStream(session: STTSession): Promise<void> {
     throw new Error('ELEVENLABS_API_KEY not configured');
   }
   
-  const sttUrl = `${ELEVENLABS_STT_URL}?model_id=scribe_v1&language_code=${session.languageCode}`;
+  // Use scribe_v2_realtime model for lower latency and better quality
+  // Enable VAD for automatic commit on silence
+  const sttUrl = `${ELEVENLABS_STT_URL}?model_id=scribe_v2_realtime&language_code=${session.languageCode}&sample_rate=16000&audio_format=pcm_16000&vad_commit_strategy=true&vad_silence_threshold_secs=0.8`;
   
   return new Promise((resolve, reject) => {
     try {
@@ -130,18 +136,10 @@ async function startSTTStream(session: STTSession): Promise<void> {
       
       sttWs.on('open', () => {
         log.info({ sessionId: session.sessionId }, 'ElevenLabs STT WebSocket connected');
-        
-        sttWs.send(JSON.stringify({
-          type: 'config',
-          format: 'pcm_16000',
-          sample_rate: 16000,
-          channels: 1,
-          encoding: 'pcm_s16le',
-        }));
-        
+        // New API doesn't require sending a config message - config is in URL params
+        // Mark as ready immediately on connection
         session.sttReady = true;
         clearTimeout(connectionTimeout);
-        
         session.clientWs.send(JSON.stringify({ type: 'stt_ready' }));
         resolve();
       });
@@ -150,18 +148,38 @@ async function startSTTStream(session: STTSession): Promise<void> {
         try {
           const event = JSON.parse(data.toString());
           
-          if (event.type === 'transcript') {
-            if (event.is_final) {
-              session.clientWs.send(JSON.stringify({
-                type: 'final',
-                text: event.text,
-              }));
-            } else {
-              session.clientWs.send(JSON.stringify({
-                type: 'partial',
-                text: event.text,
-              }));
-            }
+          // Handle new ElevenLabs realtime API message types
+          switch (event.message_type) {
+            case 'session_started':
+              log.info({ sessionId: session.sessionId, config: event.config }, 'STT session started');
+              break;
+              
+            case 'partial_transcript':
+              // Send partial transcript to client
+              if (event.text) {
+                session.clientWs.send(JSON.stringify({
+                  type: 'partial',
+                  text: event.text,
+                }));
+              }
+              break;
+              
+            case 'committed_transcript':
+            case 'committed_transcript_with_timestamps':
+              // Send final transcript to client
+              if (event.text) {
+                log.info({ sessionId: session.sessionId, text: event.text.substring(0, 50) }, 'STT final transcript');
+                session.clientWs.send(JSON.stringify({
+                  type: 'final',
+                  text: event.text,
+                }));
+              }
+              break;
+              
+            case 'error':
+              log.error({ sessionId: session.sessionId, error: event }, 'STT API error');
+              session.clientWs.send(JSON.stringify({ type: 'error', message: event.message || 'STT error' }));
+              break;
           }
         } catch (error) {
           log.error({ sessionId: session.sessionId, error }, 'Error parsing STT message');
