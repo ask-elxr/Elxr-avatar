@@ -4458,16 +4458,16 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             log.info({ voiceId, initialTextLength: initialText.length }, 'ElevenLabs TTS WebSocket connected - sending BOS then initial text');
             
             // ElevenLabs requires BOS (beginning of stream) message FIRST with voice_settings
-            // Then send actual text separately
+            // Use MINIMAL chunk schedule for fastest first audio (lower = faster but choppier)
             ttsWs!.send(JSON.stringify({
               text: ' ',
               voice_settings: {
                 stability: 0.5,
-                similarity_boost: 0.5,
+                similarity_boost: 0.75,
                 speed: 1.0,
               },
               generation_config: {
-                chunk_length_schedule: [50, 100, 150],
+                chunk_length_schedule: [25, 50, 75],
               },
             }));
             
@@ -4664,11 +4664,11 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             if (/[.!?]\s*$/.test(textBuffer)) {
               // Immediate flush with force=true on sentence-ending punctuation
               await flushTextBuffer(true);
-            } else if (/[,;:]\s*$/.test(textBuffer) && textBuffer.length >= 15) {
-              // Flush on clause boundaries (comma, semicolon) if we have enough text
+            } else if (/[,;:]\s*$/.test(textBuffer) && textBuffer.length >= 10) {
+              // Flush on clause boundaries (comma, semicolon) with minimal text
               await flushTextBuffer(true);
-            } else if (textBuffer.length > 40) {
-              // Flush larger buffers immediately with force
+            } else if (textBuffer.length > 25) {
+              // Flush smaller buffers for faster streaming
               await flushTextBuffer(true);
             } else {
               // Schedule a flush after a short delay
