@@ -4518,11 +4518,32 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
+      // CRITICAL: Keep TTS WebSocket alive while waiting for Claude's first token
+      // ElevenLabs has aggressive ~1 second inactivity timeout
+      // Send periodic spaces to prevent timeout (they don't produce audio)
+      let keepAliveInterval: NodeJS.Timeout | null = setInterval(() => {
+        if (ttsWs && ttsWs.readyState === WebSocket.OPEN && ttsReady) {
+          log.debug('Sending TTS keep-alive');
+          ttsWs.send(JSON.stringify({
+            text: ' ',
+            try_trigger_generation: false, // Don't generate audio for spaces
+          }));
+        }
+      }, 400); // Send every 400ms to stay well under the ~1s timeout
+      
+      const stopKeepAlive = () => {
+        if (keepAliveInterval) {
+          clearInterval(keepAliveInterval);
+          keepAliveInterval = null;
+        }
+      };
+
       // Stream Claude response and pipe to TTS
       const claudeStart = Date.now();
       let fullResponse = '';
       let sentenceCount = 0;
       let textBuffer = '';
+      let firstTextReceived = false;
 
       // Function to send text to TTS when we have enough
       const sendToTTS = (text: string, flush: boolean = false) => {
@@ -4603,6 +4624,12 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
           true // isVoiceMode = true for short responses
         )) {
           if (chunk.type === 'text') {
+            // Stop keep-alive on first actual text from Claude
+            if (!firstTextReceived) {
+              firstTextReceived = true;
+              stopKeepAlive();
+              log.debug('Stopped TTS keep-alive - first Claude text received');
+            }
             textBuffer += chunk.content;
             
             // For minimum latency: flush on punctuation OR after timer
@@ -4633,6 +4660,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
           }
         }
       } catch (streamError: any) {
+        stopKeepAlive();
         if (flushTimer) clearTimeout(flushTimer);
         log.error({ error: streamError.message }, 'Claude streaming error');
         sendEvent('error', { message: 'AI generation failed' });
@@ -4640,7 +4668,8 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         return res.end();
       }
       
-      // Clean up timer
+      // Clean up timers
+      stopKeepAlive();
       if (flushTimer) clearTimeout(flushTimer);
 
       perfTimings.claude = Date.now() - claudeStart;
