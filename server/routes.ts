@@ -4363,94 +4363,10 @@ This applies to EVERY response, regardless of conversation length.`;
       const perfStart = Date.now();
       const perfTimings: Record<string, number> = {};
 
-      sendEvent('status', { phase: 'connecting_tts', message: 'Connecting to TTS...' });
-
-      // Connect to ElevenLabs TTS WebSocket
-      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
+      // IMPORTANT: Fetch data FIRST before connecting to TTS
+      // ElevenLabs WebSocket has aggressive timeout (~1s of inactivity)
+      // So we connect to TTS right before Claude starts streaming
       
-      let ttsWs: InstanceType<typeof WebSocket> | null = null;
-      let ttsReady = false;
-      let audioChunkCount = 0;
-      let firstAudioTime = 0;
-      
-      const ttsConnectPromise = new Promise<void>((resolve, reject) => {
-        ttsWs = new WebSocket(ttsUrl, {
-          headers: { 'xi-api-key': elevenLabsApiKey },
-        });
-        
-        const timeout = setTimeout(() => reject(new Error('TTS connection timeout')), 10000);
-        
-        ttsWs.on('open', () => {
-          clearTimeout(timeout);
-          log.info({ voiceId }, 'ElevenLabs TTS WebSocket connected for streaming');
-          
-          // Initialize TTS stream with voice settings
-          // chunk_length_schedule: [20] means generate audio after just 20 characters
-          // This is aggressive for minimum latency - starts speaking faster
-          ttsWs!.send(JSON.stringify({
-            text: ' ',
-            voice_settings: {
-              stability: 0.5, // Lower stability = faster, more natural speech
-              similarity_boost: 0.5,
-              speed: 1.0,
-            },
-            generation_config: {
-              chunk_length_schedule: [20, 50, 100], // Generate after 20 chars, then 50, then 100
-            },
-          }));
-          
-          ttsReady = true;
-          sendEvent('tts_ready', { connected: true });
-          resolve();
-        });
-        
-        ttsWs.on('message', (data: Buffer) => {
-          try {
-            const event = JSON.parse(data.toString());
-            
-            if (event.audio) {
-              audioChunkCount++;
-              if (audioChunkCount === 1) {
-                firstAudioTime = Date.now();
-                const latency = firstAudioTime - perfStart;
-                log.info({ latencyMs: latency }, 'First audio chunk received');
-                sendEvent('timing', { firstAudioMs: latency });
-              }
-              
-              // Send audio chunk to client for immediate playback
-              sendEvent('audio', { 
-                chunk: event.audio, 
-                index: audioChunkCount,
-                isFinal: event.isFinal || false 
-              });
-            }
-          } catch (error) {
-            // Binary data or parse error - ignore
-          }
-        });
-        
-        ttsWs.on('error', (error) => {
-          log.error({ error }, 'TTS WebSocket error');
-          clearTimeout(timeout);
-          reject(error);
-        });
-        
-        ttsWs.on('close', () => {
-          log.info({ audioChunkCount }, 'TTS WebSocket closed');
-          ttsReady = false;
-        });
-      });
-
-      try {
-        await ttsConnectPromise;
-      } catch (error: any) {
-        log.error({ error: error.message }, 'Failed to connect to TTS');
-        sendEvent('error', { message: 'TTS connection failed' });
-        return res.end();
-      }
-
-      perfTimings.ttsConnect = Date.now() - perfStart;
-
       // Parallel data fetching (simplified for low latency)
       sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
       
@@ -4510,6 +4426,95 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       if (userId) {
         await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
       }
+
+      // NOW connect to ElevenLabs TTS WebSocket (after data fetch to avoid timeout)
+      // ElevenLabs WebSocket has aggressive timeout (~1s of inactivity)
+      // So we connect right before Claude starts streaming
+      sendEvent('status', { phase: 'connecting_tts', message: 'Connecting to TTS...' });
+      
+      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
+      
+      let ttsWs: InstanceType<typeof WebSocket> | null = null;
+      let ttsReady = false;
+      let audioChunkCount = 0;
+      let firstAudioTime = 0;
+      
+      const ttsConnectPromise = new Promise<void>((resolve, reject) => {
+        ttsWs = new WebSocket(ttsUrl, {
+          headers: { 'xi-api-key': elevenLabsApiKey },
+        });
+        
+        const timeout = setTimeout(() => reject(new Error('TTS connection timeout')), 10000);
+        
+        ttsWs.on('open', () => {
+          clearTimeout(timeout);
+          log.info({ voiceId }, 'ElevenLabs TTS WebSocket connected for streaming');
+          
+          // Initialize TTS stream with voice settings
+          // chunk_length_schedule: [20] means generate audio after just 20 characters
+          // This is aggressive for minimum latency - starts speaking faster
+          ttsWs!.send(JSON.stringify({
+            text: ' ',
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.5,
+              speed: 1.0,
+            },
+            generation_config: {
+              chunk_length_schedule: [20, 50, 100],
+            },
+          }));
+          
+          ttsReady = true;
+          sendEvent('tts_ready', { connected: true });
+          resolve();
+        });
+        
+        ttsWs.on('message', (data: Buffer) => {
+          try {
+            const event = JSON.parse(data.toString());
+            
+            if (event.audio) {
+              audioChunkCount++;
+              if (audioChunkCount === 1) {
+                firstAudioTime = Date.now();
+                const latency = firstAudioTime - perfStart;
+                log.info({ latencyMs: latency }, 'First audio chunk received');
+                sendEvent('timing', { firstAudioMs: latency });
+              }
+              
+              sendEvent('audio', { 
+                chunk: event.audio, 
+                index: audioChunkCount,
+                isFinal: event.isFinal || false 
+              });
+            }
+          } catch (error) {
+            // Binary data or parse error - ignore
+          }
+        });
+        
+        ttsWs.on('error', (error) => {
+          log.error({ error }, 'TTS WebSocket error');
+          clearTimeout(timeout);
+          reject(error);
+        });
+        
+        ttsWs.on('close', () => {
+          log.info({ audioChunkCount }, 'TTS WebSocket closed');
+          ttsReady = false;
+        });
+      });
+
+      try {
+        await ttsConnectPromise;
+      } catch (error: any) {
+        log.error({ error: error.message }, 'Failed to connect to TTS');
+        sendEvent('error', { message: 'TTS connection failed' });
+        return res.end();
+      }
+
+      perfTimings.ttsConnect = Date.now() - perfStart;
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
