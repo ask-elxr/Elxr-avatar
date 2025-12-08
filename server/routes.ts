@@ -4708,13 +4708,13 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 
       // SENTENCE-BASED TTS STREAMING for smooth audio playback
       // Key insight: Too-small audio chunks cause word splitting and gaps
-      // Strategy: Wait for complete sentences to produce natural-sounding audio
-      // Fallback: If no sentence after 8+ words, flush to prevent long delays
+      // Strategy: ONLY flush on complete sentences - never mid-sentence
+      // The SDK queues audio internally, so larger chunks = smoother playback
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_FLUSH_TIMEOUT = 300; // Wait 300ms for first sentence
-      const SUBSEQUENT_FLUSH_TIMEOUT = 400; // Wait 400ms for subsequent
-      const FIRST_WORD_COUNT = 8; // Flush after 8 words if no sentence boundary
-      const SUBSEQUENT_WORD_COUNT = 10; // Subsequent flushes after 10 words
+      const FIRST_FLUSH_TIMEOUT = 500; // Wait 500ms for first sentence
+      const SUBSEQUENT_FLUSH_TIMEOUT = 600; // Wait 600ms for subsequent
+      const FIRST_WORD_COUNT = 15; // Only flush after 15+ words if no sentence
+      const SUBSEQUENT_WORD_COUNT = 20; // Subsequent: 20+ words
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true

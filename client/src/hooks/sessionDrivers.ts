@@ -491,8 +491,14 @@ export class LiveAvatarDriver implements SessionDriver {
 
   async interrupt(): Promise<void> {
     this.stopCurrentAudio();
-    if (this.session) {
-      this.session.interrupt();
+    // Only call SDK interrupt if session is fully connected
+    // Calling interrupt on a connecting/disconnected session throws "Session is not connected"
+    if (this.session && this.session.connectionState === 'CONNECTED') {
+      try {
+        this.session.interrupt();
+      } catch (err) {
+        console.warn("⚠️ interrupt() failed (session may be disconnecting):", err);
+      }
     }
   }
 
@@ -571,15 +577,16 @@ export class LiveAvatarDriver implements SessionDriver {
   addAudioChunk(base64Audio: string): void {
     if (!this.isStreamingAudio || !this.session) return;
     
-    // ZERO-COPY PLAYBACK: Pass base64 directly to SDK without any conversion
-    // The previous code was decoding and re-encoding, adding 4+ seconds of delay!
+    // DIRECT SDK PASSTHROUGH: Send each chunk directly to avoid buffering delays
+    // The SDK handles audio queuing internally - no need for client-side buffering
+    // This gives us the lowest latency possible
     
     if (this.isFirstAudioChunk) {
-      console.log(`🔊 First audio chunk received (${base64Audio.length} chars base64) - playing immediately`);
+      console.log(`🔊 First audio chunk received (${base64Audio.length} chars) - sending to SDK`);
       this.isFirstAudioChunk = false;
     }
     
-    // Send directly to SDK - NO decode/re-encode cycle
+    // Send directly to SDK - it handles audio playback and lip-sync queuing
     try {
       this.session.repeatAudio(base64Audio);
     } catch (err) {
