@@ -712,19 +712,45 @@ export class AudioOnlyDriver implements SessionDriver {
   private currentAudio: HTMLAudioElement | null = null;
   private avatarId: string;
   private languageCode: string;
+  private audioContext: AudioContext | null = null;
+  private currentSource: AudioBufferSourceNode | null = null;
+  private playbackEndedNotified: boolean = true; // Track if stop callback has been sent (start true = no active playback)
 
   constructor(config: DriverConfig, avatarId: string, languageCode: string = "en") {
     this.config = config;
     this.avatarId = avatarId;
     this.languageCode = languageCode;
   }
+  
+  /**
+   * Helper to ensure onAvatarStopTalking is called exactly once per playback
+   */
+  private notifyStopped(): void {
+    if (!this.playbackEndedNotified) {
+      this.playbackEndedNotified = true;
+      this.config.onAvatarStopTalking?.();
+    }
+  }
 
   async start(): Promise<void> {
     console.log("Audio-only mode started - no HeyGen session created");
+    // Create AudioContext lazily on first use to avoid Safari limits
+    if (!this.audioContext) {
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
   }
 
   async stop(): Promise<void> {
     this.stopCurrentAudio();
+    // Close AudioContext on full stop
+    if (this.audioContext && this.audioContext.state !== 'closed') {
+      try {
+        await this.audioContext.close();
+      } catch (e) {
+        // Already closed
+      }
+      this.audioContext = null;
+    }
   }
 
   setLanguage(languageCode: string): void {
@@ -735,6 +761,9 @@ export class AudioOnlyDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     try {
       this.stopCurrentAudio();
+      
+      // Mark that we're starting new playback (callback not yet sent)
+      this.playbackEndedNotified = false;
 
       this.config.onAvatarStartTalking?.();
 
@@ -758,21 +787,21 @@ export class AudioOnlyDriver implements SessionDriver {
       this.currentAudio = audio;
 
       audio.onended = () => {
-        this.config.onAvatarStopTalking?.();
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
+        this.notifyStopped();
       };
 
       audio.onerror = () => {
-        this.config.onAvatarStopTalking?.();
         URL.revokeObjectURL(audioUrl);
         this.currentAudio = null;
+        this.notifyStopped();
       };
 
       await audio.play();
     } catch (error) {
       console.error("Error playing TTS:", error);
-      this.config.onAvatarStopTalking?.();
+      this.notifyStopped();
     }
   }
 
@@ -784,11 +813,99 @@ export class AudioOnlyDriver implements SessionDriver {
     return false;
   }
 
+  /**
+   * Play base64-encoded PCM audio directly using Web Audio API
+   * Used by batch audio mode for complete audio responses
+   * PCM format: 16-bit signed little-endian mono at 24kHz
+   */
+  async repeatAudio(base64Audio: string): Promise<void> {
+    try {
+      // Stop any existing audio before starting new playback
+      this.stopCurrentAudio();
+      
+      // Mark that we're starting new playback (callback not yet sent)
+      this.playbackEndedNotified = false;
+      
+      this.config.onAvatarStartTalking?.();
+      console.log(`🔊 [AudioOnlyDriver] Playing ${base64Audio.length} chars of base64 PCM audio`);
+      
+      // Decode base64 to bytes
+      const binaryString = atob(base64Audio);
+      const len = binaryString.length;
+      const pcmBytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        pcmBytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      console.log(`🔊 [AudioOnlyDriver] Decoded ${pcmBytes.length} bytes of PCM data`);
+      
+      // Use the single persistent AudioContext created in start()
+      // If closed, we should not be receiving playback requests (session should be active)
+      if (!this.audioContext || this.audioContext.state === 'closed') {
+        throw new Error("AudioContext not available - ensure start() was called and session is active");
+      }
+      
+      // Resume AudioContext if suspended (browser autoplay policy)
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+      }
+      
+      const sampleRate = 24000;
+      const numSamples = Math.floor(pcmBytes.length / 2); // 16-bit = 2 bytes per sample
+      
+      // Create audio buffer
+      const audioBuffer = this.audioContext.createBuffer(1, numSamples, sampleRate);
+      const channelData = audioBuffer.getChannelData(0);
+      
+      // Convert 16-bit PCM to float32 (range -1.0 to 1.0)
+      const pcmView = new DataView(pcmBytes.buffer);
+      for (let i = 0; i < numSamples; i++) {
+        const sample = pcmView.getInt16(i * 2, true); // true = little-endian
+        channelData[i] = sample / 32768; // Normalize to -1.0 to 1.0
+      }
+      
+      // Create source and track it for interrupt/stop capability
+      const source = this.audioContext.createBufferSource();
+      this.currentSource = source;
+      source.buffer = audioBuffer;
+      source.connect(this.audioContext.destination);
+      
+      return new Promise<void>((resolve) => {
+        source.onended = () => {
+          console.log("✅ [AudioOnlyDriver] Web Audio playback ended");
+          this.currentSource = null;
+          this.notifyStopped(); // Safe to call multiple times - only fires once per playback
+          resolve();
+        };
+        
+        source.start(0);
+        console.log(`🔊 [AudioOnlyDriver] Started playback: ${numSamples} samples at ${sampleRate}Hz = ${(numSamples / sampleRate).toFixed(1)}s`);
+      });
+    } catch (error) {
+      console.error("❌ [AudioOnlyDriver] repeatAudio error:", error);
+      this.currentSource = null;
+      this.notifyStopped();
+    }
+  }
+
   private stopCurrentAudio(): void {
+    // Stop Web Audio playback
+    if (this.currentSource) {
+      try {
+        this.currentSource.stop();
+      } catch (e) {
+        // Already stopped
+      }
+      this.currentSource = null;
+    }
+    
+    // Stop HTMLAudioElement playback
     if (this.currentAudio) {
       this.currentAudio.pause();
       this.currentAudio = null;
-      this.config.onAvatarStopTalking?.();
     }
+    
+    // Notify that playback has stopped (safe to call multiple times)
+    this.notifyStopped();
   }
 }
