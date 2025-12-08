@@ -78,6 +78,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
   const [attachedImage, setAttachedImage] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [sendButtonPop, setSendButtonPop] = useState(false);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -441,6 +442,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   // Wrapped handleSubmitMessage that adds to chat history
   const handleSubmitMessage = async (message: string, imageData?: { base64: string; mimeType: string }) => {
+    // Trigger pop animation on send button
+    setSendButtonPop(true);
+    setTimeout(() => setSendButtonPop(false), 300);
+    
     // Send to AI with optional image
     await originalHandleSubmitMessage(message, imageData);
     
@@ -1114,11 +1119,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               <Button
                 type="submit"
                 disabled={(!inputMessage.trim() && !attachedImage) || !sessionActive || isPaused}
-                className="bg-primary hover:bg-primary/90 text-white"
+                className={`bg-primary hover:bg-primary/90 text-white transition-transform ${sendButtonPop ? 'animate-send-pop' : ''}`}
                 data-testid="button-send-message"
               >
                 <Send className="w-4 h-4" />
               </Button>
+              <style>{`
+                @keyframes send-pop {
+                  0% { transform: scale(1); }
+                  50% { transform: scale(1.25); }
+                  100% { transform: scale(1); }
+                }
+                .animate-send-pop {
+                  animation: send-pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                }
+              `}</style>
             </form>
           </div>
         )}
