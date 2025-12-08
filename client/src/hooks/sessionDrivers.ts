@@ -699,9 +699,6 @@ export class LiveAvatarDriver implements SessionDriver {
    * Play audio directly (non-streaming) - sends complete audio clip to SDK
    * This bypasses the streaming buffer and sends the audio immediately for lip-sync
    * Use this for short responses where we have the complete audio upfront
-   * 
-   * NOTE: We do NOT manually call onAvatarStartTalking here - the SDK will fire
-   * AVATAR_SPEAK_STARTED events which are now properly debounced to give a single callback
    */
   playAudioDirect(base64Audio: string): void {
     if (!this.session) {
@@ -709,15 +706,43 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
+    // Check video element state for debugging
+    if (this.config.videoRef.current) {
+      const v = this.config.videoRef.current;
+      console.log(`📺 [DIRECT] Video state before playAudio:`, {
+        srcObject: v.srcObject ? "present" : "null",
+        readyState: v.readyState,
+        paused: v.paused,
+        videoWidth: v.videoWidth,
+        videoHeight: v.videoHeight,
+        muted: v.muted
+      });
+      
+      // Ensure video is unmuted - SDK plays audio through WebRTC stream
+      if (v.muted) {
+        console.log("🔊 [DIRECT] Unmuting video element for audio playback");
+        v.muted = false;
+      }
+    }
+    
     console.log(`🔊 [DIRECT] Playing complete audio clip (${base64Audio.length} chars) via repeatAudio()`);
     
+    // Notify that avatar is starting to talk (manual fallback in case SDK events don't fire)
+    // SDK will also fire AVATAR_SPEAK_STARTED which our debounced handler manages
+    if (!this.isSpeaking) {
+      this.isSpeaking = true;
+      this.config.onAvatarStartTalking?.();
+    }
+    
     // Send directly to SDK - single complete clip for smooth playback
-    // SDK fires AVATAR_SPEAK_STARTED/ENDED events which are debounced in our event handlers
     try {
-      this.session.repeatAudio(base64Audio);
-      console.log("✅ [DIRECT] Audio sent to SDK for lip-sync playback");
+      const result = this.session.repeatAudio(base64Audio);
+      console.log("✅ [DIRECT] Audio sent to SDK for lip-sync playback, result:", result);
     } catch (err) {
       console.error("❌ [DIRECT] repeatAudio error:", err);
+      // Reset speaking state on error
+      this.isSpeaking = false;
+      this.config.onAvatarStopTalking?.();
     }
   }
 }
