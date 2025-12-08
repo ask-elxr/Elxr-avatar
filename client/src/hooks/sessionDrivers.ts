@@ -571,34 +571,17 @@ export class LiveAvatarDriver implements SessionDriver {
   addAudioChunk(base64Audio: string): void {
     if (!this.isStreamingAudio || !this.session) return;
     
-    // Decode base64 to binary
-    const binaryString = atob(base64Audio);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
-    // IMMEDIATE PLAYBACK: Send each chunk directly to SDK without buffering
-    // This provides minimum latency - audio plays as soon as it arrives
-    const audioMs = (bytes.length / 48000 * 1000).toFixed(0);
+    // ZERO-COPY PLAYBACK: Pass base64 directly to SDK without any conversion
+    // The previous code was decoding and re-encoding, adding 4+ seconds of delay!
     
     if (this.isFirstAudioChunk) {
-      console.log(`🔊 First audio chunk received (${bytes.length} bytes, ~${audioMs}ms) - playing immediately`);
+      console.log(`🔊 First audio chunk received (${base64Audio.length} chars base64) - playing immediately`);
       this.isFirstAudioChunk = false;
     }
     
-    // Convert to base64 for SDK
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    const base64ForSdk = btoa(binary);
-    
-    // Send directly to SDK for immediate lip-sync playback
+    // Send directly to SDK - NO decode/re-encode cycle
     try {
-      console.log(`🎙️ Calling repeatAudio with ${base64ForSdk.length} chars base64`);
-      this.session.repeatAudio(base64ForSdk);
-      console.log(`✅ repeatAudio called successfully`);
+      this.session.repeatAudio(base64Audio);
     } catch (err) {
       console.error(`❌ repeatAudio error:`, err);
     }

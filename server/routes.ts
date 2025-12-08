@@ -4709,12 +4709,13 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       // AGGRESSIVE WORD-BASED TTS STREAMING for minimum latency
       // Flush text to TTS as soon as we have enough words for natural speech
       // First chunk: flush after 3-4 words to start audio ASAP
-      // Subsequent: flush on sentences or after ~6 words
+      // ULTRA-AGGRESSIVE STREAMING: Flush IMMEDIATELY on first words
+      // This is the key to sub-1-second first audio
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_FLUSH_TIMEOUT = 80; // Ultra-fast first flush (80ms)
-      const SUBSEQUENT_FLUSH_TIMEOUT = 200; // Faster subsequent flushes
-      const FIRST_WORD_COUNT = 4; // Flush after 4 words for first chunk
-      const SUBSEQUENT_WORD_COUNT = 8; // Flush after 8 words for subsequent
+      const FIRST_FLUSH_TIMEOUT = 50; // Ultra-fast first flush (50ms)
+      const SUBSEQUENT_FLUSH_TIMEOUT = 100; // Fast subsequent flushes
+      const FIRST_WORD_COUNT = 1; // Flush on FIRST WORD for instant response
+      const SUBSEQUENT_WORD_COUNT = 3; // Flush frequently for smooth audio
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true

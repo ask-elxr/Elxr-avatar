@@ -196,14 +196,18 @@ This is a voice conversation. Users are LISTENING, not reading. You MUST be extr
       - Think "helpful friend" not "encyclopedia"`;
 
     // Use lower max_tokens for faster response in voice mode, higher when details requested
-    const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 300 : 1000);
+    // VOICE MODE OPTIMIZATION: Use 120 tokens max for ultra-fast first response
+    const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 120 : 1000);
+    // Lower temperature for faster, more deterministic responses in voice mode
+    const temperature = isVoiceMode ? 0.5 : 0.7;
 
     let stream;
     try {
-      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages, max_tokens:', maxTokens);
+      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages, max_tokens:', maxTokens, 'temp:', temperature);
       stream = await this.anthropic.messages.stream({
         model: DEFAULT_MODEL_STR,
         max_tokens: maxTokens,
+        temperature: temperature,
         messages: messages,
         system: systemPrompt
       });
