@@ -4458,7 +4458,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             log.info({ voiceId, initialTextLength: initialText.length }, 'ElevenLabs TTS WebSocket connected - sending BOS then initial text');
             
             // ElevenLabs requires BOS (beginning of stream) message FIRST with voice_settings
-            // Use MINIMAL chunk schedule for fastest first audio (lower = faster but choppier)
+            // Balanced chunk schedule for stability + reasonable latency
             ttsWs!.send(JSON.stringify({
               text: ' ',
               voice_settings: {
@@ -4467,7 +4467,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
                 speed: 1.0,
               },
               generation_config: {
-                chunk_length_schedule: [25, 50, 75],
+                chunk_length_schedule: [50, 120, 200],
               },
             }));
             
