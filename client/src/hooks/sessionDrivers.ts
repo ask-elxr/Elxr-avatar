@@ -595,7 +595,13 @@ export class LiveAvatarDriver implements SessionDriver {
     const base64ForSdk = btoa(binary);
     
     // Send directly to SDK for immediate lip-sync playback
-    this.session.repeatAudio(base64ForSdk);
+    try {
+      console.log(`🎙️ Calling repeatAudio with ${base64ForSdk.length} chars base64`);
+      this.session.repeatAudio(base64ForSdk);
+      console.log(`✅ repeatAudio called successfully`);
+    } catch (err) {
+      console.error(`❌ repeatAudio error:`, err);
+    }
   }
 
   /**
