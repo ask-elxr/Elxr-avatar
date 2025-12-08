@@ -66,6 +66,11 @@ export class LiveAvatarDriver implements SessionDriver {
   // Promise resolver for waiting on speech completion
   private speechCompleteResolver: (() => void) | null = null;
   private isSpeaking: boolean = false;
+  
+  // Debounce timer for AVATAR_SPEAK_ENDED events
+  // SDK fires multiple start/end events for long audio - debounce to get single callback
+  private speechEndDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private readonly SPEECH_END_DEBOUNCE_MS = 300; // Wait 300ms after last ENDED event before triggering callback
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -233,36 +238,61 @@ export class LiveAvatarDriver implements SessionDriver {
         });
 
         // Listen for avatar talking events
+        // NOTE: SDK fires multiple STARTED/ENDED events for long audio clips (internal chunking)
+        // We debounce ENDED events to only trigger callback once when speech truly ends
         session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
-          console.log("🗣️ Avatar started speaking");
-          this.isSpeaking = true;
-          this.config.onAvatarStartTalking?.();
+          console.log("🗣️ Avatar started speaking (SDK event)");
+          
+          // Cancel any pending speech-end debounce timer
+          // This prevents false "stopped speaking" callbacks during SDK chunking
+          if (this.speechEndDebounceTimer) {
+            console.log("⏱️ Cancelling speech-end debounce (new chunk started)");
+            clearTimeout(this.speechEndDebounceTimer);
+            this.speechEndDebounceTimer = null;
+          }
+          
+          // Only call onAvatarStartTalking once (when speech first begins)
+          if (!this.isSpeaking) {
+            this.isSpeaking = true;
+            this.config.onAvatarStartTalking?.();
+          }
         });
 
         session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, async () => {
-          console.log("🤫 Avatar stopped speaking");
-          this.isSpeaking = false;
-          this.config.onAvatarStopTalking?.();
+          console.log("🤫 Avatar chunk ended (SDK event) - debouncing...");
           
-          // Resolve any pending speech completion promise
-          if (this.speechCompleteResolver) {
-            const resolver = this.speechCompleteResolver;
-            this.speechCompleteResolver = null;
-            resolver();
+          // Cancel any existing debounce timer
+          if (this.speechEndDebounceTimer) {
+            clearTimeout(this.speechEndDebounceTimer);
           }
           
-          // Resume listening after avatar stops speaking (for HeyGen voice chat)
-          if (this.enableMobileVoiceChat && this.session) {
-            // Small delay to prevent echo feedback
-            await new Promise(resolve => setTimeout(resolve, 500));
-            console.log("🎤 Resuming SDK listening after avatar finished speaking...");
-            try {
-              this.session.startListening();
-              console.log("✅ SDK startListening() called - avatar is listening again");
-            } catch (e: any) {
-              console.warn("⚠️ Failed to resume listening:", e?.message || e);
+          // Set debounce timer - only trigger callback if no new STARTED event within delay
+          this.speechEndDebounceTimer = setTimeout(async () => {
+            console.log("✅ Speech truly ended (debounce complete)");
+            this.speechEndDebounceTimer = null;
+            this.isSpeaking = false;
+            this.config.onAvatarStopTalking?.();
+            
+            // Resolve any pending speech completion promise
+            if (this.speechCompleteResolver) {
+              const resolver = this.speechCompleteResolver;
+              this.speechCompleteResolver = null;
+              resolver();
             }
-          }
+            
+            // Resume listening after avatar stops speaking (for HeyGen voice chat)
+            if (this.enableMobileVoiceChat && this.session) {
+              // Small delay to prevent echo feedback
+              await new Promise(resolve => setTimeout(resolve, 500));
+              console.log("🎤 Resuming SDK listening after avatar finished speaking...");
+              try {
+                this.session.startListening();
+                console.log("✅ SDK startListening() called - avatar is listening again");
+              } catch (e: any) {
+                console.warn("⚠️ Failed to resume listening:", e?.message || e);
+              }
+            }
+          }, this.SPEECH_END_DEBOUNCE_MS);
         });
 
         // Listen for ALL agent events for debugging
@@ -337,6 +367,12 @@ export class LiveAvatarDriver implements SessionDriver {
   async stop(): Promise<void> {
     this.stopCurrentAudio();
     this.videoAttached = false;
+    
+    // Clean up speech end debounce timer
+    if (this.speechEndDebounceTimer) {
+      clearTimeout(this.speechEndDebounceTimer);
+      this.speechEndDebounceTimer = null;
+    }
     
     // Clean up debug interval
     if ((this as any).voiceChatDebugInterval) {
@@ -662,6 +698,9 @@ export class LiveAvatarDriver implements SessionDriver {
    * Play audio directly (non-streaming) - sends complete audio clip to SDK
    * This bypasses the streaming buffer and sends the audio immediately for lip-sync
    * Use this for short responses where we have the complete audio upfront
+   * 
+   * NOTE: We do NOT manually call onAvatarStartTalking here - the SDK will fire
+   * AVATAR_SPEAK_STARTED events which are now properly debounced to give a single callback
    */
   playAudioDirect(base64Audio: string): void {
     if (!this.session) {
@@ -671,10 +710,8 @@ export class LiveAvatarDriver implements SessionDriver {
     
     console.log(`🔊 [DIRECT] Playing complete audio clip (${base64Audio.length} chars) via repeatAudio()`);
     
-    // Notify that avatar is starting to talk
-    this.config.onAvatarStartTalking?.();
-    
     // Send directly to SDK - single complete clip for smooth playback
+    // SDK fires AVATAR_SPEAK_STARTED/ENDED events which are debounced in our event handlers
     try {
       this.session.repeatAudio(base64Audio);
       console.log("✅ [DIRECT] Audio sent to SDK for lip-sync playback");
