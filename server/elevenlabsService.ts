@@ -256,21 +256,18 @@ class ElevenLabsService {
   }
 
   /**
-   * Convert plain text to SSML with NO inter-sentence pauses
+   * Convert plain text to SSML with short inter-sentence pauses
    * ElevenLabs inserts automatic silence after punctuation (., !, ?)
-   * We REMOVE the punctuation entirely so ElevenLabs can't add pauses
-   * The text flows continuously with no sentence breaks
+   * We replace punctuation+whitespace with punctuation+SSML break (70ms)
+   * This gives smooth, continuous speech with natural short pauses
    */
   private textToSSML(text: string): string {
-    // Remove sentence-ending punctuation entirely to eliminate ElevenLabs' default pauses
-    // Replace with a tiny pause (or none) to get continuous speech
+    // Replace punctuation followed by space/newline with punctuation + short SSML break
+    // Using 70ms break for natural flow without long pauses
     const ssmlText = text
-      .replace(/\.\s+/g, ', ')   // Period → comma (minimal pause, not a sentence break)
-      .replace(/!\s+/g, ', ')    // Exclamation → comma
-      .replace(/\?\s+/g, ', ')   // Question mark → comma
-      .replace(/\.$/, '')        // Remove trailing period
-      .replace(/!$/, '')         // Remove trailing exclamation
-      .replace(/\?$/, '');       // Remove trailing question mark
+      .replace(/\.[\s\n]+/g, '.<break time="70ms"/>')   // Period + space/newline
+      .replace(/![\s\n]+/g, '!<break time="70ms"/>')    // Exclamation + space/newline
+      .replace(/\?[\s\n]+/g, '?<break time="70ms"/>');  // Question mark + space/newline
     
     return `<speak>${ssmlText}</speak>`;
   }
