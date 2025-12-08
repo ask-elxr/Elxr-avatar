@@ -1,0 +1,229 @@
+https://logs.browser-intake-us5-datadoghq.com/api/v2/logs?ddsource=browser&ddtags=sdk_version%3A4.46.0%2Capi%3Afetch%2Cenv%3Aproduction%2Cservice%3Awebsite%2Cversion%3A8176d2fb&dd-api-key=pub31a5047a3a4692afb84a423db984dc57&dd-evp-origin-version=4.46.0&dd-evp-origin=browser&dd-request-id=8214b7ba-e93a-4b94-ad32-53f14017c391 408 (Request Timeout)
+(anonymous) @ 9b98f07a9ccd789e.js:2
+n @ f698d540dd37d36f.js:2
+rr @ f698d540dd37d36f.js:2
+rt @ f698d540dd37d36f.js:2
+send @ f698d540dd37d36f.js:2
+e.flush @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+e.notify @ f698d540dd37d36f.js:2
+u @ f698d540dd37d36f.js:2
+notifyBeforeAddMessage @ f698d540dd37d36f.js:2
+e.push @ f698d540dd37d36f.js:2
+e.addOrUpdate @ f698d540dd37d36f.js:2
+e.add @ f698d540dd37d36f.js:2
+add @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+e.notify @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+e.notify @ f698d540dd37d36f.js:2
+handleLog @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+e.log @ f698d540dd37d36f.js:2
+M @ f698d540dd37d36f.js:2
+(anonymous) @ f698d540dd37d36f.js:2
+P.o.value @ f698d540dd37d36f.js:2
+e.info @ f698d540dd37d36f.js:2
+info @ f698d540dd37d36f.js:2
+T @ b4b82e29c31a919b.js:2
+value @ b4b82e29c31a919b.js:2
+(anonymous) @ b4b82e29c31a919b.js:2
+e4 @ b4b82e29c31a919b.js:2
+value @ b4b82e29c31a919b.js:2
+value @ b4b82e29c31a919b.js:2
+k @ b4b82e29c31a919b.js:2
+(anonymous) @ b4b82e29c31a919b.js:2
+o @ 9b98f07a9ccd789e.js:2
+setTimeout
+(anonymous) @ 9b98f07a9ccd789e.js:2
+E @ b4b82e29c31a919b.js:2
+value @ b4b82e29c31a919b.js:2
+value @ b4b82e29c31a919b.js:2
+value @ b4b82e29c31a919b.js:2
+onSessionGracePeriodElapsed @ b4b82e29c31a919b.js:2
+(anonymous) @ b4b82e29c31a919b.js:2
+o @ 9b98f07a9ccd789e.js:2
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🎬 LiveAvatar SESSION_STREAM_READY event received
+injected.js:37 📺 Attaching video element via session.attach()...
+injected.js:37 🎬 LiveAvatar stream ready
+injected.js:37 ⏭️ Skipping greeting - mode switch (seamless transition)
+injected.js:37 📺 Video track ready - updating videoReady state
+injected.js:37 ✅ Video element attached via SDK - stream should be visible
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 setStreamState active
+injected.js:37 📺 Video element state after attach: {srcObject: 'present', readyState: 4, paused: false, videoWidth: 1280, videoHeight: 720, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📊 LiveAvatar session state: CONNECTED
+injected.js:37 ✅ session.start() completed - waiting for SESSION_STREAM_READY event
+injected.js:37 ✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+injected.js:37 ✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+injected.js:37 ✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hello', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🤔 AI is thinking...
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17652156907470.hdufreg3xjs
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🎵 [NON-STREAMING] Using synchronous LLM + TTS pipeline...
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [T+9156ms] Received complete response
+injected.js:37 📦 [NON-STREAMING] Text: 32 chars, Audio: 107000 chars
+injected.js:37 📦 [NON-STREAMING] Backend timings: {totalMs: 2439, dataFetchMs: 0, claudeMs: 2026, ttsMs: 283}
+injected.js:37 🔊 [DIRECT] Playing complete audio (107000 chars) via repeatAudio()
+injected.js:37 🎵 [DIRECT] Starting audio playback tracking, timestamp: 1765215699908
+injected.js:37 📺 [DIRECT] Video state before playAudio: {srcObject: 'present', readyState: 4, paused: false, videoWidth: 1280, videoHeight: 720, …}
+injected.js:37 🔊 [DIRECT] Playing complete audio clip (107000 chars, ~80250 bytes, ~1.67s) via repeatAudio()
+injected.js:37 🔊 [DIRECT] Audio first 10 bytes (hex): ca ff d0 ff d2 ff d8 ff d9 ff
+injected.js:37 📊 [DIRECT] SDK session state: CONNECTED
+injected.js:37 🕐 [DIRECT] Calling repeatAudio at timestamp: 1765215699908
+injected.js:37 ✅ [DIRECT] Audio sent to SDK for lip-sync playback, result: undefined
+injected.js:37 🕐 [DIRECT] repeatAudio returned at timestamp: 1765215699911
+injected.js:37 📝 USER MESSAGE: hello
+injected.js:37 🤖 CLAUDE RESPONSE: Hello! How can I help you today?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 9160ms ===
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking (SDK event) - timeSinceAudioSent: 7958 ms
+injected.js:37 🤫 Avatar chunk ended (SDK event) - debouncing... timeSinceAudioSent: 8359 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ✅ Speech truly ended (debounce complete) - clearing audioPlaybackActive
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔧 Voice recognition code version: 2024-12-08-v1 (ElevenLabs STT only)
+injected.js:37 🎤 Starting ElevenLabs STT (primary speech recognition)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📝 handleSubmitMessage called with: {message: 'how is it going today', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🤔 AI is thinking...
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17652157390340.h9b7xuieaqn
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🎵 [NON-STREAMING] Using synchronous LLM + TTS pipeline...
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [T+22409ms] Received complete response
+injected.js:37 📦 [NON-STREAMING] Text: 211 chars, Audio: 811400 chars
+injected.js:37 📦 [NON-STREAMING] Backend timings: {totalMs: 5300, dataFetchMs: 0, claudeMs: 4474, ttsMs: 697}
+injected.js:37 🔊 [DIRECT] Playing complete audio (811400 chars) via repeatAudio()
+injected.js:37 🎵 [DIRECT] Starting audio playback tracking, timestamp: 1765215761446
+injected.js:37 📺 [DIRECT] Video state before playAudio: {srcObject: 'present', readyState: 4, paused: false, videoWidth: 1280, videoHeight: 720, …}
+injected.js:37 🔊 [DIRECT] Playing complete audio clip (811400 chars, ~608550 bytes, ~12.68s) via repeatAudio()
+injected.js:37 🔊 [DIRECT] Audio first 10 bytes (hex): 8c ff 9b ff a5 ff a7 ff a9 ff
+injected.js:37 📊 [DIRECT] SDK session state: CONNECTED
+injected.js:37 🕐 [DIRECT] Calling repeatAudio at timestamp: 1765215761447
+injected.js:37 ✅ [DIRECT] Audio sent to SDK for lip-sync playback, result: undefined
+injected.js:37 🕐 [DIRECT] repeatAudio returned at timestamp: 1765215761461
+injected.js:37 📝 USER MESSAGE: how is it going today
+injected.js:37 🤖 CLAUDE RESPONSE: Hey there! I'm doing well, thanks for asking! I'm here and ready to help with whatever you need today.
+
+How about you? How's your day going so far? Is there anything on your mind or anything I can help you with?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 22425ms ===
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}

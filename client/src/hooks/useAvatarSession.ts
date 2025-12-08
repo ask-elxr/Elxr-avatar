@@ -2479,9 +2479,21 @@ export function useAvatarSession({
             setIsProcessing(false);
             setProcessingStage(0);
             
-            // Play the complete audio via repeatAudio()
-            if (data.audioBase64 && 'playAudioDirect' in driver) {
+            // Check if external audio is supported by the SDK
+            const supportsExternal = 'supportsExternalAudio' in driver && (driver as any).supportsExternalAudio();
+            console.log(`📊 [NON-STREAMING] SDK supports external audio: ${supportsExternal}`);
+            
+            // Try external audio first, fall back to HeyGen's built-in TTS
+            if (data.audioBase64 && 'playAudioDirect' in driver && supportsExternal) {
               console.log(`🔊 [DIRECT] Playing complete audio (${data.audioBase64.length} chars) via repeatAudio()`);
+              (driver as any).playAudioDirect(data.audioBase64);
+            } else if (data.text && 'speakWithBuiltinTTS' in driver) {
+              // Fallback: Use HeyGen's built-in TTS when external audio isn't supported
+              console.log(`🗣️ [FALLBACK] Using HeyGen's built-in TTS (external audio not supported)`);
+              (driver as any).speakWithBuiltinTTS(data.text);
+            } else if (data.audioBase64 && 'playAudioDirect' in driver) {
+              // Try external audio anyway if no fallback available
+              console.log(`🔊 [DIRECT] Attempting external audio (supportsExternal: ${supportsExternal})`);
               (driver as any).playAudioDirect(data.audioBase64);
             }
             

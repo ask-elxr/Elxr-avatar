@@ -19,6 +19,10 @@ export interface SessionDriver {
   isStreamingAudioActive?(): boolean;
   // Direct audio playback (non-streaming) - sends complete audio clip to SDK
   playAudioDirect?(base64Audio: string): void;
+  // Fallback: Use HeyGen's built-in TTS instead of external audio
+  speakWithBuiltinTTS?(text: string): void;
+  // Check if external audio playback is supported
+  supportsExternalAudio?(): boolean;
 }
 
 interface DriverConfig {
@@ -734,6 +738,45 @@ export class LiveAvatarDriver implements SessionDriver {
    * This bypasses the streaming buffer and sends the audio immediately for lip-sync
    * Use this for short responses where we have the complete audio upfront
    */
+  /**
+   * Check if external audio playback is supported by checking SDK internal WebSocket
+   */
+  supportsExternalAudio(): boolean {
+    if (!this.session) return false;
+    const sessionAny = this.session as any;
+    return !!sessionAny._sessionEventSocket;
+  }
+
+  /**
+   * Speak using HeyGen's built-in TTS (fallback when external audio doesn't work)
+   * Uses session.repeat(text) - HeyGen handles TTS and lip-sync internally
+   */
+  speakWithBuiltinTTS(text: string): void {
+    if (!this.session) {
+      console.error("❌ Cannot speak - no session");
+      return;
+    }
+    
+    console.log(`🗣️ [BUILTIN-TTS] Using HeyGen's built-in TTS for: "${text.substring(0, 50)}..."`);
+    
+    // Mark as speaking
+    this.isSpeaking = true;
+    this.audioPlaybackActive = true;
+    this.audioSentTimestamp = Date.now();
+    this.config.onAvatarStartTalking?.();
+    
+    try {
+      // Use HeyGen's built-in TTS via session.repeat(text)
+      this.session.repeat(text);
+      console.log("✅ [BUILTIN-TTS] Text sent to HeyGen for TTS and lip-sync");
+    } catch (err) {
+      console.error("❌ [BUILTIN-TTS] repeat error:", err);
+      this.isSpeaking = false;
+      this.audioPlaybackActive = false;
+      this.config.onAvatarStopTalking?.();
+    }
+  }
+
   playAudioDirect(base64Audio: string): void {
     if (!this.session) {
       console.error("❌ Cannot play audio - no session");
@@ -791,8 +834,17 @@ export class LiveAvatarDriver implements SessionDriver {
       console.error("❌ [DIRECT] Failed to decode audio for validation:", e);
     }
     
-    // Check SDK session state
+    // Check SDK session state and internal socket availability
     console.log(`📊 [DIRECT] SDK session state: ${this.session.state || 'unknown'}`);
+    
+    // Check if SDK has internal WebSocket for audio (CRITICAL for repeatAudio to work)
+    // The SDK internally checks for _sessionEventSocket before sending audio
+    const sessionAny = this.session as any;
+    const hasEventSocket = !!sessionAny._sessionEventSocket;
+    console.log(`📊 [DIRECT] SDK _sessionEventSocket available: ${hasEventSocket}`);
+    if (!hasEventSocket) {
+      console.warn("⚠️ [DIRECT] SDK WebSocket not available - repeatAudio may not work in this mode!");
+    }
     
     // Notify that avatar is starting to talk (manual fallback in case SDK events don't fire)
     // SDK will also fire AVATAR_SPEAK_STARTED which our debounced handler manages
