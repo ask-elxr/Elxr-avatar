@@ -170,42 +170,52 @@ export class LiveAvatarDriver implements SessionDriver {
         });
         this.session = session;
 
-        // Listen for stream ready event - this is when we attach the video element and start voice chat
+        // Track if we've already started voice chat to avoid duplicates
+        let voiceChatStarted = false;
+        
+        // Helper function to start voice chat - called when session is fully connected
+        const startVoiceChatIfReady = async () => {
+          if (voiceChatStarted || !this.enableMobileVoiceChat || !this.session) return;
+          
+          console.log("🎤 Starting SDK voice chat (LiveKit microphone capture)...");
+          try {
+            const voiceChat = this.session.voiceChat;
+            console.log("🎤 VoiceChat state:", voiceChat?.state);
+            
+            if (voiceChat && voiceChat.state !== 'ACTIVE') {
+              console.log("🎤 Starting voiceChat.start() for microphone capture...");
+              await voiceChat.start({ defaultMuted: false });
+              console.log("✅ VoiceChat microphone capture started, state:", voiceChat.state);
+            }
+            
+            // Then tell the avatar to start listening for speech
+            this.session.startListening();
+            console.log("✅ SDK startListening() called - avatar is now listening");
+            voiceChatStarted = true;
+            this.config.onVoiceChatReady?.();
+          } catch (voiceChatError: any) {
+            console.warn("⚠️ Failed to start SDK voice chat:", voiceChatError?.message || voiceChatError);
+          }
+        };
+        
+        // Listen for stream ready event - attach video element
         session.on(SessionEvent.SESSION_STREAM_READY, async () => {
           console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
           // Use SDK's attach() method to connect video element
-          // Retry with increasing delays if video element is not yet rendered
           this.attachVideoWithRetry(5);
-          
-          // Start voice chat after stream is ready (for mobile devices)
-          if (this.enableMobileVoiceChat && this.session) {
-            console.log("🎤 Starting SDK voice chat after stream ready (LiveKit microphone capture)...");
-            try {
-              // First, explicitly start the voiceChat microphone capture
-              // This uses LiveKit to capture audio via WebRTC (works in mobile iframes)
-              const voiceChat = this.session.voiceChat;
-              console.log("🎤 VoiceChat state:", voiceChat?.state);
-              
-              if (voiceChat && voiceChat.state !== 'ACTIVE') {
-                console.log("🎤 Starting voiceChat.start() for microphone capture...");
-                await voiceChat.start({ defaultMuted: false });
-                console.log("✅ VoiceChat microphone capture started, state:", voiceChat.state);
-              }
-              
-              // Then tell the avatar to start listening for speech
-              this.session.startListening();
-              console.log("✅ SDK startListening() called - avatar is now listening");
-              this.config.onVoiceChatReady?.();
-            } catch (voiceChatError: any) {
-              console.warn("⚠️ Failed to start SDK voice chat:", voiceChatError?.message || voiceChatError);
-              // If voiceChat fails (e.g., permission denied), the UI should show a message
-            }
-          }
         });
 
-        // Listen for session state changes
-        session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
+        // Listen for session state changes - start voice chat when CONNECTED
+        session.on(SessionEvent.SESSION_STATE_CHANGED, async (state: SessionState) => {
           console.log("📊 LiveAvatar session state:", state);
+          
+          // Only start voice chat once session is fully connected
+          if (state === SessionState.CONNECTED && this.enableMobileVoiceChat) {
+            console.log("🎤 Session CONNECTED - now starting voice chat...");
+            // Small delay to ensure everything is ready
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await startVoiceChatIfReady();
+          }
         });
 
         // Listen for session disconnected
