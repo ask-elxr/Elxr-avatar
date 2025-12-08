@@ -4319,6 +4319,147 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // ===== NON-STREAMING AVATAR RESPONSE =====
+  // Completely synchronous: LLM → TTS → Single JSON response
+  // No WebSockets, no SSE, just one complete response with text and audio
+  // Use this for smooth avatar playback without streaming artifacts
+  app.post("/api/avatar/response/nonstream", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: 'avatar-nonstream', operation: 'nonstreamResponse' });
+    
+    try {
+      const { message, avatarId, memoryEnabled = false, languageCode } = req.body;
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
+
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      const pipelineStart = Date.now();
+      console.log(`\n⏱️ ===== NON-STREAMING PIPELINE START: "${message.substring(0, 50)}" =====`);
+
+      const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
+      const perfTimings: Record<string, number> = {};
+
+      // Step 1: Fetch RAG context and memory (parallel)
+      const dataFetchStart = Date.now();
+      let combinedContext = '';
+      let memories: any[] = [];
+
+      try {
+        const [ragResult, memoryResult] = await Promise.allSettled([
+          pineconeService.isConfigured() ? pineconeService.queryContext(message, avatarConfig.pineconeNamespace || avatarId) : Promise.resolve({ context: '', sources: [] }),
+          memoryEnabled && userId && memoryService.isAvailable() ? memoryService.getMemories(userId, 10) : Promise.resolve({ memories: [] })
+        ]);
+
+        if (ragResult.status === 'fulfilled' && ragResult.value.context) {
+          combinedContext = ragResult.value.context;
+        }
+        if (memoryResult.status === 'fulfilled' && memoryResult.value.memories) {
+          memories = memoryResult.value.memories;
+        }
+      } catch (e) {
+        log.warn('Data fetch error, continuing without context');
+      }
+
+      perfTimings.dataFetch = Date.now() - dataFetchStart;
+      console.log(`⏱️ [T+${perfTimings.dataFetch}ms] Data fetch complete`);
+
+      // Step 2: Generate Claude response (NON-STREAMING)
+      const claudeStart = Date.now();
+      console.log(`⏱️ [T+${claudeStart - pipelineStart}ms] Starting Claude (non-streaming)...`);
+
+      const conversationHistory = await storage.getConversationHistory(userId, avatarId, 10);
+      const systemPrompt = avatarConfig.systemPrompt || `You are ${avatarConfig.name}, an AI assistant. Be helpful and conversational.`;
+      
+      // Add memory context if available
+      let fullContext = combinedContext;
+      if (memories.length > 0) {
+        const memoryText = memories.map((m: any) => m.memory || m.text).join('\n');
+        fullContext = fullContext ? `${fullContext}\n\nUser memories:\n${memoryText}` : `User memories:\n${memoryText}`;
+      }
+
+      let fullResponse = '';
+      try {
+        fullResponse = await claudeService.generateResponse(
+          message,
+          fullContext,
+          conversationHistory,
+          systemPrompt
+        );
+      } catch (claudeError: any) {
+        log.error({ error: claudeError.message }, 'Claude generation failed');
+        return res.status(500).json({ error: 'AI generation failed' });
+      }
+
+      perfTimings.claude = Date.now() - claudeStart;
+      console.log(`⏱️ [T+${Date.now() - pipelineStart}ms] Claude complete (${fullResponse.length} chars, ${perfTimings.claude}ms)`);
+
+      // Step 3: Generate TTS audio (NON-STREAMING)
+      const ttsStart = Date.now();
+      console.log(`⏱️ [T+${ttsStart - pipelineStart}ms] Starting TTS (non-streaming)...`);
+
+      let audioBase64 = '';
+      try {
+        const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
+        audioBase64 = await elevenlabsService.generateSpeechBase64(
+          fullResponse,
+          voiceId,
+          effectiveLanguageCode
+        );
+      } catch (ttsError: any) {
+        log.error({ error: ttsError.message }, 'TTS generation failed');
+        return res.status(500).json({ error: 'TTS generation failed' });
+      }
+
+      perfTimings.tts = Date.now() - ttsStart;
+      perfTimings.total = Date.now() - pipelineStart;
+      console.log(`⏱️ [T+${perfTimings.total}ms] TTS complete (${audioBase64.length} chars, ${perfTimings.tts}ms)`);
+      console.log(`⏱️ ===== NON-STREAMING PIPELINE COMPLETE: ${perfTimings.total}ms =====\n`);
+
+      // Save conversation history
+      if (userId) {
+        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
+        await storage.saveConversation({ userId, avatarId, role: 'assistant', text: fullResponse }).catch(() => {});
+      }
+
+      // Store in memory if enabled
+      if (memoryEnabled && userId && memoryService.isAvailable() && fullResponse) {
+        const conversationText = `User asked: "${message}"\nAssistant responded: "${fullResponse}"`;
+        await memoryService.addMemory(conversationText, userId, MemoryType.NOTE, {
+          timestamp: new Date().toISOString(),
+          avatarId,
+        }).catch(() => {});
+      }
+
+      console.log('📝 USER MESSAGE:', message);
+      console.log('🤖 CLAUDE RESPONSE:', fullResponse);
+
+      // Return single JSON response with complete data
+      res.json({
+        text: fullResponse,
+        audioBase64,
+        performance: {
+          totalMs: perfTimings.total,
+          dataFetchMs: perfTimings.dataFetch,
+          claudeMs: perfTimings.claude,
+          ttsMs: perfTimings.tts,
+        }
+      });
+
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Non-streaming endpoint error');
+      res.status(500).json({ error: 'Request failed' });
+    }
+  });
+
   // FULL STREAMING AVATAR RESPONSE with STREAMING TTS
   // Streams Claude tokens → ElevenLabs TTS WebSocket → Audio chunks via SSE
   // This provides minimum latency by streaming audio as it's generated
