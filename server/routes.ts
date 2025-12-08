@@ -4706,16 +4706,15 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       };
 
-      // AGGRESSIVE WORD-BASED TTS STREAMING for minimum latency
-      // Flush text to TTS as soon as we have enough words for natural speech
-      // First chunk: flush after 3-4 words to start audio ASAP
-      // ULTRA-AGGRESSIVE STREAMING: Flush IMMEDIATELY on first words
-      // This is the key to sub-1-second first audio
+      // SENTENCE-BASED TTS STREAMING for smooth audio playback
+      // Key insight: Too-small audio chunks cause word splitting and gaps
+      // Strategy: Wait for complete sentences to produce natural-sounding audio
+      // Fallback: If no sentence after 8+ words, flush to prevent long delays
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_FLUSH_TIMEOUT = 50; // Ultra-fast first flush (50ms)
-      const SUBSEQUENT_FLUSH_TIMEOUT = 100; // Fast subsequent flushes
-      const FIRST_WORD_COUNT = 1; // Flush on FIRST WORD for instant response
-      const SUBSEQUENT_WORD_COUNT = 3; // Flush frequently for smooth audio
+      const FIRST_FLUSH_TIMEOUT = 300; // Wait 300ms for first sentence
+      const SUBSEQUENT_FLUSH_TIMEOUT = 400; // Wait 400ms for subsequent
+      const FIRST_WORD_COUNT = 8; // Flush after 8 words if no sentence boundary
+      const SUBSEQUENT_WORD_COUNT = 10; // Subsequent flushes after 10 words
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true
@@ -4774,19 +4773,16 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             const wordCount = countWords(textBuffer);
             const wordThreshold = sentencesSent === 0 ? FIRST_WORD_COUNT : SUBSEQUENT_WORD_COUNT;
             
-            // AGGRESSIVE WORD-BASED FLUSHING for minimum latency
-            // Priority: complete sentences > word count threshold > length threshold
+            // SENTENCE-BASED FLUSHING for smooth audio
+            // Priority: complete sentences first, then word threshold as fallback
             if (/[.!?]\s*$/.test(textBuffer)) {
-              // Complete sentence - flush immediately
+              // Complete sentence - flush immediately for natural speech
               await flushTextBuffer(true);
             } else if (wordCount >= wordThreshold) {
-              // Hit word count threshold - flush for faster response
-              await flushTextBuffer(true);
-            } else if (/[,;:—]\s*$/.test(textBuffer) && wordCount >= 3) {
-              // Clause with pause punctuation and enough words - flush
+              // Fallback: flush if we have enough words (prevents long delays)
               await flushTextBuffer(true);
             } else {
-              // Keep buffering, but set fast timeout as fallback
+              // Keep buffering - wait for sentence completion
               scheduleFlush();
             }
           } else if (chunk.type === 'sentence') {

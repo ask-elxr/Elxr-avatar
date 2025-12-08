@@ -1,0 +1,18 @@
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}audioOnly: falsegifShouldShow: falseheygenSessionActive: trueisLoading: falseshowReconnect: falsevideoReady: truevideoShouldShow: true[[Prototype]]: Object
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔧 Voice recognition code version: 2024-12-08-v1 (ElevenLabs STT only)
+injected.js:37 🎤 Starting ElevenLabs STT (primary speech recognition)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
