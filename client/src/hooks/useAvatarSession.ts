@@ -2433,15 +2433,17 @@ export function useAvatarSession({
         const driver = sessionDriverRef.current;
         const supportsAudioStreaming = driver && 'startStreamingAudio' in driver;
         
-        // FULL AUDIO STREAMING MODE: LLM → TTS → Avatar all streaming in real-time
-        // This provides minimum latency by streaming audio chunks as they're generated
+        // HYBRID AUDIO MODE: Backend decides streaming vs non-streaming based on response length
+        // Short responses (<50 words) use single TTS call for smooth audio
+        // Long responses (>50 words) use streaming for progressive feedback
         if (audioStreamingEnabledRef.current && supportsAudioStreaming && driver) {
-          console.log("🎵 [AUDIO STREAMING] Using full audio streaming mode for minimum latency");
+          console.log("🎵 Started streaming audio accumulation for lip-sync (fast first-chunk mode)");
           
           let fullResponse = '';
           let firstAudioTime = 0;
           let audioChunkCount = 0;
           let performanceData: any = null;
+          let actualMode: 'streaming' | 'non-streaming' | 'pending' = 'pending';
           
           // Start streaming audio mode on the driver
           (driver as any).startStreamingAudio();
@@ -2534,7 +2536,9 @@ export function useAvatarSession({
                         // Accumulate text response
                         fullResponse += data.content || '';
                       } else if (eventType === 'mode') {
-                        console.log(`🎯 [HYBRID MODE] streaming=${data.streaming}, reason=${data.reason}`);
+                        actualMode = data.streaming ? 'streaming' : 'non-streaming';
+                        const modeLabel = data.streaming ? '🔄 STREAMING (progressive audio)' : '📦 NON-STREAMING (single audio clip)';
+                        console.log(`🎯 [HYBRID MODE] ${modeLabel} - reason: ${data.reason}`);
                       } else if (eventType === 'timing') {
                         if (data.firstAudioMs) {
                           console.log(`🎵 [AUDIO STREAMING] Backend first audio: ${data.firstAudioMs}ms`);
@@ -2546,12 +2550,13 @@ export function useAvatarSession({
                         fullResponse = data.fullResponse || fullResponse;
                         performanceData = data.performance;
                         const totalTime = performance.now() - flowStartTime;
-                        console.log(`🎵 [AUDIO STREAMING] === COMPLETE ===`);
-                        console.log(`🎵 [AUDIO STREAMING] Audio chunks: ${audioChunkCount}`);
-                        console.log(`🎵 [AUDIO STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
-                        console.log(`🎵 [AUDIO STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
+                        const modeIcon = actualMode === 'streaming' ? '🔄' : '📦';
+                        console.log(`${modeIcon} [${actualMode.toUpperCase()}] === COMPLETE ===`);
+                        console.log(`${modeIcon} [${actualMode.toUpperCase()}] Audio chunks: ${audioChunkCount}`);
+                        console.log(`${modeIcon} [${actualMode.toUpperCase()}] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
+                        console.log(`${modeIcon} [${actualMode.toUpperCase()}] Total time: ${totalTime.toFixed(0)}ms`);
                         if (performanceData) {
-                          console.log(`🎵 [AUDIO STREAMING] Backend breakdown:`, performanceData);
+                          console.log(`${modeIcon} [${actualMode.toUpperCase()}] Backend breakdown:`, performanceData);
                         }
                         console.log(`📝 USER MESSAGE: ${message}`);
                         console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
