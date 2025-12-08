@@ -2127,23 +2127,22 @@ export function useAvatarSession({
             console.log(`📝 USER: ${message}`);
             console.log(`🤖 CLAUDE (${wordCount} words): ${fullResponse}`);
             
-            // Use driver.speak() which uses the SAME WORKING PATH as greetings
-            // speak() → speakWithElevenLabsVoice() → fetch /api/elevenlabs/tts-base64 → session.repeatAudio()
-            // This bypasses potential issues with server-side TTS and uses the proven greeting flow
-            if (fullResponse && driver && driver.speak) {
+            // Use driver.repeatAudio() DIRECTLY with the audio we already received from the backend
+            // This avoids a SECOND TTS call and reduces latency significantly
+            // Backend already generated sentence-buffered raw PCM audio - use it directly!
+            if (audioBase64 && driver && driver.repeatAudio) {
               const heygenStart = performance.now();
-              console.log(`🔊 Using driver.speak() for TTS + lip-sync (same path as working greeting)...`);
+              console.log(`🔊 Using driver.repeatAudio() directly with backend-generated audio (no extra TTS call)...`);
+              console.log(`🎤 Audio size: ${audioBase64.length} chars of raw PCM`);
               
-              // Call driver.speak() which internally:
-              // 1. Fetches PCM audio from /api/elevenlabs/tts-base64
-              // 2. Calls session.repeatAudio() directly (no chunking)
-              // This is the EXACT SAME PATH as the working greeting
-              await driver.speak(fullResponse, elevenLabsLanguageCodeRef.current);
+              // Send the audio directly to HeyGen SDK for lip-sync
+              // The backend already generated sentence-buffered raw PCM audio
+              await driver.repeatAudio(audioBase64);
               
               const heygenTime = performance.now() - heygenStart;
               console.log(`⏱️   4. HeyGen Lip-sync:   ${heygenTime.toFixed(0)}ms`);
             } else {
-              console.warn(`⚠️ Cannot speak: fullResponse=${!!fullResponse}, driver=${!!driver}, speak=${!!driver?.speak}`);
+              console.warn(`⚠️ Cannot speak: audioBase64=${!!audioBase64}, driver=${!!driver}, repeatAudio=${!!driver?.repeatAudio}`);
             }
             
             // CRITICAL: Disable streaming mode after successful batch playback
@@ -2160,7 +2159,7 @@ export function useAvatarSession({
             
             console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
             
-            if (fullResponse) {
+            if (audioBase64) {
               console.log(`🎵 [BATCH AUDIO] Batch mode succeeded - streaming disabled, skipping to end`);
               return; // Batch audio succeeded - skip streaming entirely
             }
