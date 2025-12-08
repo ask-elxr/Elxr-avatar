@@ -523,7 +523,7 @@ export function useAvatarSession({
 
   const startVoiceRecognition = useCallback(() => {
     // Version check - helps verify fresh code is loaded
-    console.log("🔧 Voice recognition code version: 2024-12-08-v2 (ElevenLabs STT for audio-only, Web Speech for video)");
+    console.log("🔧 Voice recognition code version: 2024-12-08-v3 (ElevenLabs STT for audio-only/mobile, Web Speech for desktop video)");
     
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
@@ -561,21 +561,29 @@ export function useAvatarSession({
     
     // Decision: Which voice input method to use
     // - Audio-only mode: Use ElevenLabs STT (more reliable for this flow)
+    // - Video mode on mobile: Use ElevenLabs STT (Web Speech API doesn't work on mobile)
     // - Video mode on desktop: Use Web Speech API (simpler stop/resume, better for HeyGen integration)
-    // - Mobile: Handled by HeyGen's built-in voice chat (already checked above)
     
-    if (audioOnlyRef.current) {
-      // Audio-only mode: Use ElevenLabs STT
+    // Use ElevenLabs STT for: audio-only mode OR mobile devices (in any mode)
+    const useElevenLabsForThisSession = audioOnlyRef.current || isMobile;
+    
+    if (useElevenLabsForThisSession) {
+      // Audio-only mode OR mobile: Use ElevenLabs STT
+      // Stop Web Speech if it was running
+      if (useWebSpeechRef.current) {
+        stopWebSpeechRecognition();
+      }
+      
       // Skip if already running
       if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
         console.log("⏭️ ElevenLabs STT already active");
         return;
       }
       
-      console.log("🎤 Starting ElevenLabs STT (audio-only mode)");
+      const reason = audioOnlyRef.current ? 'audio-only mode' : 'mobile device';
+      console.log(`🎤 Starting ElevenLabs STT (${reason})`);
       useElevenLabsSttRef.current = true;
       useWebSpeechRef.current = false;
-      stopWebSpeechRecognition();
       startElevenLabsSTT();
     } else {
       // Video mode on desktop: Use Web Speech API for easier stop/resume with HeyGen
