@@ -4349,11 +4349,16 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(500).json({ error: "ElevenLabs API key not configured" });
       }
 
-      // Set up SSE headers
+      // Set up SSE headers with explicit no-buffering for real-time streaming
       res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.flushHeaders(); // Force headers to be sent immediately
+      
+      // Write initial keep-alive to prevent buffering
+      res.write(':ok\n\n');
 
       const sendEvent = (eventType: string, data: any) => {
         res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
@@ -4363,16 +4368,107 @@ This applies to EVERY response, regardless of conversation length.`;
       const perfStart = Date.now();
       const perfTimings: Record<string, number> = {};
 
-      // IMPORTANT: Fetch data FIRST before connecting to TTS
-      // ElevenLabs WebSocket has aggressive timeout (~1s of inactivity)
-      // So we connect to TTS right before Claude starts streaming
+      // PRE-CONNECT TTS STRATEGY FOR MINIMUM LATENCY
+      // Connect TTS immediately in parallel with data fetch, use heartbeats to keep alive
+      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
       
-      // Parallel data fetching (simplified for low latency)
+      let ttsWs: InstanceType<typeof WebSocket> | null = null;
+      let ttsReady = false;
+      let audioChunkCount = 0;
+      let firstAudioTime = 0;
+      let heartbeatInterval: NodeJS.Timeout | null = null;
+      let firstTextSent = false;
+      
+      // Pre-connect TTS WebSocket immediately (in parallel with data fetch)
+      const ttsConnectPromise = new Promise<void>((resolve, reject) => {
+        ttsWs = new WebSocket(ttsUrl, {
+          headers: { 'xi-api-key': elevenLabsApiKey },
+        });
+        
+        const timeout = setTimeout(() => reject(new Error('TTS connection timeout')), 10000);
+        
+        ttsWs.on('open', () => {
+          clearTimeout(timeout);
+          perfTimings.ttsConnect = Date.now() - perfStart;
+          log.info({ voiceId, connectMs: perfTimings.ttsConnect }, 'ElevenLabs TTS WebSocket pre-connected');
+          
+          // Send BOS (beginning of stream) with voice settings
+          // Use aggressive chunk schedule for fastest first audio
+          ttsWs!.send(JSON.stringify({
+            text: ' ',
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              speed: 1.0,
+            },
+            generation_config: {
+              chunk_length_schedule: [30, 80, 150],
+            },
+          }));
+          
+          ttsReady = true;
+          sendEvent('tts_ready', { connected: true });
+          
+          // Start heartbeat to keep connection alive (every 400ms)
+          heartbeatInterval = setInterval(() => {
+            if (ttsWs && ttsWs.readyState === 1 && !firstTextSent) {
+              ttsWs.send(JSON.stringify({ text: ' ' }));
+            }
+          }, 400);
+          
+          resolve();
+        });
+        
+        ttsWs.on('message', (data: Buffer) => {
+          try {
+            const dataStr = data.toString();
+            const event = JSON.parse(dataStr);
+            
+            if (event.error) {
+              log.error({ error: event.error, message: event.message }, 'ElevenLabs TTS error');
+            }
+            
+            if (event.audio) {
+              audioChunkCount++;
+              if (audioChunkCount === 1) {
+                firstAudioTime = Date.now();
+                const latency = firstAudioTime - perfStart;
+                log.info({ latencyMs: latency }, 'First audio chunk received');
+                sendEvent('timing', { firstAudioMs: latency });
+              }
+              
+              sendEvent('audio', { 
+                chunk: event.audio, 
+                index: audioChunkCount,
+                isFinal: event.isFinal || false 
+              });
+            }
+          } catch (error) {
+            log.debug({ dataLength: data.length }, 'TTS binary/unparseable message');
+          }
+        });
+        
+        ttsWs.on('error', (error) => {
+          log.error({ error }, 'TTS WebSocket error');
+          clearTimeout(timeout);
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+          reject(error);
+        });
+        
+        ttsWs.on('close', (code) => {
+          log.info({ audioChunkCount, closeCode: code }, 'TTS WebSocket closed');
+          ttsReady = false;
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+        });
+      });
+
+      // Parallel data fetching AND TTS connection for minimum latency
       sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
       
       const dataFetchStart = Date.now();
       const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
       
+      // Run data fetch in parallel with TTS connection (already started above)
       const [knowledgeResult, memoryResult] = await Promise.allSettled([
         (async () => {
           const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
@@ -4429,120 +4525,17 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
-      // LATE TTS CONNECTION STRATEGY
-      // ElevenLabs WebSocket has aggressive ~1 second inactivity timeout
-      // So we DON'T connect until Claude produces text - then connect and immediately send
-      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
-      
-      let ttsWs: InstanceType<typeof WebSocket> | null = null;
-      let ttsReady = false;
-      let audioChunkCount = 0;
-      let firstAudioTime = 0;
-      let ttsConnecting = false;
-      let pendingTextQueue: Array<{ text: string; flush: boolean }> = [];
-      
-      // Function to connect TTS and immediately send queued text
-      const connectTTSAndSend = (initialText: string): Promise<void> => {
-        if (ttsConnecting || ttsReady) return Promise.resolve();
-        ttsConnecting = true;
-        
-        return new Promise<void>((resolve, reject) => {
-          ttsWs = new WebSocket(ttsUrl, {
-            headers: { 'xi-api-key': elevenLabsApiKey },
-          });
-          
-          const timeout = setTimeout(() => reject(new Error('TTS connection timeout')), 10000);
-          
-          ttsWs.on('open', () => {
-            clearTimeout(timeout);
-            log.info({ voiceId, initialTextLength: initialText.length }, 'ElevenLabs TTS WebSocket connected - sending BOS then initial text');
-            
-            // ElevenLabs requires BOS (beginning of stream) message FIRST with voice_settings
-            // Balanced chunk schedule for stability + reasonable latency
-            ttsWs!.send(JSON.stringify({
-              text: ' ',
-              voice_settings: {
-                stability: 0.5,
-                similarity_boost: 0.75,
-                speed: 1.0,
-              },
-              generation_config: {
-                chunk_length_schedule: [50, 120, 200],
-              },
-            }));
-            
-            // Now send the actual initial text
-            ttsWs!.send(JSON.stringify({
-              text: initialText,
-              try_trigger_generation: true,
-              flush: true,
-            }));
-            
-            ttsReady = true;
-            ttsConnecting = false;
-            sendEvent('tts_ready', { connected: true });
-            
-            // Send any queued text
-            for (const item of pendingTextQueue) {
-              ttsWs!.send(JSON.stringify({
-                text: item.text,
-                try_trigger_generation: true,
-                flush: item.flush,
-              }));
-            }
-            pendingTextQueue = [];
-            
-            resolve();
-          });
-          
-          ttsWs.on('message', (data: Buffer) => {
-            try {
-              const dataStr = data.toString();
-              const event = JSON.parse(dataStr);
-              
-              // Log all event types for debugging
-              if (event.error) {
-                log.error({ error: event.error, message: event.message }, 'ElevenLabs TTS error');
-              }
-              
-              if (event.audio) {
-                audioChunkCount++;
-                if (audioChunkCount === 1) {
-                  firstAudioTime = Date.now();
-                  const latency = firstAudioTime - perfStart;
-                  log.info({ latencyMs: latency }, 'First audio chunk received');
-                  sendEvent('timing', { firstAudioMs: latency });
-                }
-                
-                sendEvent('audio', { 
-                  chunk: event.audio, 
-                  index: audioChunkCount,
-                  isFinal: event.isFinal || false 
-                });
-              } else if (!event.audio && !event.isFinal) {
-                // Log non-audio messages for debugging
-                log.debug({ eventKeys: Object.keys(event) }, 'TTS non-audio message received');
-              }
-            } catch (error) {
-              // Log binary data for debugging
-              log.debug({ dataLength: data.length, isBuffer: Buffer.isBuffer(data) }, 'TTS binary/unparseable message');
-            }
-          });
-          
-          ttsWs.on('error', (error) => {
-            log.error({ error }, 'TTS WebSocket error');
-            clearTimeout(timeout);
-            ttsConnecting = false;
-            reject(error);
-          });
-          
-          ttsWs.on('close', () => {
-            log.info({ audioChunkCount }, 'TTS WebSocket closed');
-            ttsReady = false;
-            ttsConnecting = false;
-          });
-        });
-      };
+      // Wait for TTS to be ready (should be fast since pre-connected in parallel)
+      try {
+        await Promise.race([
+          ttsConnectPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('TTS wait timeout')), 5000))
+        ]);
+      } catch (error: any) {
+        log.error({ error: error.message }, 'TTS pre-connection failed');
+        sendEvent('error', { message: 'Voice service connection failed' });
+        return res.end();
+      }
 
       // Stream Claude response and pipe to TTS
       const claudeStart = Date.now();
@@ -4551,29 +4544,18 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       let textBuffer = '';
       let firstTextReceived = false;
 
-      // Function to send text to TTS when we have enough
+      // Function to send text to TTS (TTS is already connected)
       const sendToTTS = async (text: string, flush: boolean = false) => {
-        // If TTS not connected yet, connect and send
-        if (!ttsReady && !ttsConnecting) {
-          log.debug({ textLength: text.length }, 'First text - connecting TTS and sending immediately');
-          try {
-            await connectTTSAndSend(text);
-            sendEvent('text', { content: text });
-          } catch (error: any) {
-            log.error({ error: error.message }, 'Failed to connect TTS on first text');
+        if (ttsWs && ttsWs.readyState === 1 && ttsReady) {
+          // Stop heartbeat on first real text
+          if (!firstTextSent && text.trim()) {
+            firstTextSent = true;
+            if (heartbeatInterval) {
+              clearInterval(heartbeatInterval);
+              heartbeatInterval = null;
+            }
           }
-          return;
-        }
-        
-        // If TTS is connecting, queue the text
-        if (ttsConnecting && !ttsReady) {
-          pendingTextQueue.push({ text, flush });
-          sendEvent('text', { content: text });
-          return;
-        }
-        
-        // TTS is ready, send directly
-        if (ttsWs && ttsWs.readyState === WebSocket.OPEN && ttsReady) {
+          
           if (text.trim() || flush) {
             log.debug({ textLength: text.length, flush }, 'Sending text to TTS');
           }
@@ -4591,7 +4573,11 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       
       // Cleanup function to ensure WebSocket is closed
       const cleanupTTS = () => {
-        if (ttsWs && ttsWs.readyState === WebSocket.OPEN) {
+        if (heartbeatInterval) {
+          clearInterval(heartbeatInterval);
+          heartbeatInterval = null;
+        }
+        if (ttsWs && ttsWs.readyState === 1) {
           try {
             ttsWs.close();
           } catch (e) {
