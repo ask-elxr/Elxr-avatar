@@ -2127,15 +2127,57 @@ export function useAvatarSession({
             console.log(`📝 USER: ${message}`);
             console.log(`🤖 CLAUDE (${wordCount} words): ${fullResponse}`);
             
-            // Send full audio to driver for lip-sync playback
-            if (audioBase64 && driver && driver.repeatAudio) {
+            // Send full audio to driver for lip-sync playback using streaming transport
+            // The streaming transport chunks audio under 60KB to respect WebRTC data channel limits
+            if (audioBase64 && driver && driver.startStreamingAudio && driver.addAudioChunk && driver.endStreamingAudio) {
+              const heygenStart = performance.now();
+              console.log(`🔊 Sending ${audioBase64.length} chars of WAV audio to HeyGen SDK via streaming transport...`);
+              
+              // Use streaming transport which handles chunking properly
+              // This avoids the 64KB WebRTC data channel message limit
+              driver.startStreamingAudio();
+              
+              // Decode base64 to get raw audio bytes (strip WAV header for streaming)
+              const binaryString = atob(audioBase64);
+              const audioBytes = new Uint8Array(binaryString.length);
+              for (let i = 0; i < binaryString.length; i++) {
+                audioBytes[i] = binaryString.charCodeAt(i);
+              }
+              
+              // Skip WAV header (44 bytes) and send PCM data in chunks
+              const pcmData = audioBytes.slice(44);
+              const CHUNK_SIZE = 36000; // ~750ms of audio at 24kHz 16-bit, under 48KB base64
+              
+              console.log(`🔊 Splitting ${pcmData.length} bytes PCM into chunks of ${CHUNK_SIZE} bytes`);
+              
+              for (let offset = 0; offset < pcmData.length; offset += CHUNK_SIZE) {
+                const end = Math.min(offset + CHUNK_SIZE, pcmData.length);
+                const chunk = pcmData.slice(offset, end);
+                
+                // Convert chunk to base64
+                let binary = '';
+                for (let i = 0; i < chunk.length; i++) {
+                  binary += String.fromCharCode(chunk[i]);
+                }
+                const chunkBase64 = btoa(binary);
+                
+                driver.addAudioChunk(chunkBase64);
+              }
+              
+              // End streaming - flushes any remaining buffer
+              driver.endStreamingAudio();
+              
+              const heygenTime = performance.now() - heygenStart;
+              console.log(`⏱️   4. HeyGen Lip-sync:   ${heygenTime.toFixed(0)}ms`);
+            } else if (audioBase64 && driver && driver.repeatAudio) {
+              // Fallback to repeatAudio if streaming not available (e.g., AudioOnlyDriver)
               const heygenStart = performance.now();
               console.log(`🔊 Sending ${audioBase64.length} chars of WAV audio to HeyGen SDK for lip-sync...`);
               await driver.repeatAudio(audioBase64);
               const heygenTime = performance.now() - heygenStart;
               console.log(`⏱️   4. HeyGen Lip-sync:   ${heygenTime.toFixed(0)}ms`);
             } else {
-              console.warn(`⚠️ Cannot send audio: audioBase64=${!!audioBase64}, driver=${!!driver}, repeatAudio=${!!driver?.repeatAudio}`);
+              console.warn(`⚠️ Cannot send audio: audioBase64=${!!audioBase64}, driver=${!!driver}`);
             }
             
             // CRITICAL: Disable streaming mode after successful batch playback
