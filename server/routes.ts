@@ -4370,7 +4370,8 @@ This applies to EVERY response, regardless of conversation length.`;
 
       // PRE-CONNECT TTS STRATEGY FOR MINIMUM LATENCY
       // Connect TTS immediately in parallel with data fetch, use heartbeats to keep alive
-      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
+      // optimize_streaming_latency=1 is FASTEST mode (lowest latency, slightly lower quality)
+      const ttsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=1`;
       
       let ttsWs: InstanceType<typeof WebSocket> | null = null;
       let ttsReady = false;
@@ -4621,10 +4622,11 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       };
 
       // SENTENCE-BASED TTS BUFFERING for better prosody
-      // Buffer until sentence-ending punctuation for natural speech flow
+      // Buffer until sentence-ending punctuation (.?!) for natural speech flow
+      // Send to ElevenLabs as soon as sentence is complete for minimum latency
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_SENTENCE_TIMEOUT = 500; // Max wait for first sentence (faster start)
-      const SENTENCE_TIMEOUT = 800; // Max wait between sentences
+      const FIRST_SENTENCE_TIMEOUT = 300; // Max wait for first sentence (faster start)
+      const SENTENCE_TIMEOUT = 500; // Max wait between sentences
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true
