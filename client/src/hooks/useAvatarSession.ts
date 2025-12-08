@@ -2129,8 +2129,13 @@ export function useAvatarSession({
             
             // Send full audio to driver for lip-sync playback
             if (audioBase64 && driver && driver.repeatAudio) {
-              console.log(`🔊 Sending ${audioBase64.length} chars of audio to SDK for lip-sync`);
+              const heygenStart = performance.now();
+              console.log(`🔊 Sending ${audioBase64.length} chars of WAV audio to HeyGen SDK for lip-sync...`);
               await driver.repeatAudio(audioBase64);
+              const heygenTime = performance.now() - heygenStart;
+              console.log(`⏱️   4. HeyGen Lip-sync:   ${heygenTime.toFixed(0)}ms`);
+            } else {
+              console.warn(`⚠️ Cannot send audio: audioBase64=${!!audioBase64}, driver=${!!driver}, repeatAudio=${!!driver?.repeatAudio}`);
             }
             
             // CRITICAL: Disable streaming mode after successful batch playback
