@@ -225,22 +225,41 @@ export class LiveAvatarDriver implements SessionDriver {
           this.config.onAvatarStopTalking?.();
         });
 
+        // Listen for ALL agent events for debugging
+        console.log("🔧 Available AgentEventsEnum keys:", Object.keys(AgentEventsEnum));
+        
         // Listen for user speaking events (for debugging voice input)
         session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-          console.log("🎤 User started speaking (SDK voice detection)");
+          console.log("🎤 USER_SPEAK_STARTED - User started speaking (SDK voice detection)");
         });
 
         session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
-          console.log("🎤 User stopped speaking (SDK voice detection)");
+          console.log("🎤 USER_SPEAK_ENDED - User stopped speaking (SDK voice detection)");
         });
 
         // Listen for user transcription (voice input)
         session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
-          console.log("🎤 User transcription:", event.text);
-          if (event.text && this.config.onUserMessage) {
+          console.log("🎤 USER_TRANSCRIPTION event received:", event);
+          console.log("🎤 User transcription text:", event?.text);
+          if (event?.text && this.config.onUserMessage) {
+            console.log("🎤 Forwarding user message to pipeline:", event.text);
             this.config.onUserMessage(event.text);
           }
         });
+        
+        // Log voiceChat state periodically for debugging
+        if (this.enableMobileVoiceChat) {
+          const voiceChatDebugInterval = setInterval(() => {
+            if (!this.session) {
+              clearInterval(voiceChatDebugInterval);
+              return;
+            }
+            const vc = this.session.voiceChat;
+            console.log("🎤 VoiceChat debug - state:", vc?.state, "isListening:", (this.session as any)?.isListening);
+          }, 5000);
+          // Store interval for cleanup
+          (this as any).voiceChatDebugInterval = voiceChatDebugInterval;
+        }
 
         // Start the session - SDK handles LiveKit connection internally
         console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
@@ -278,6 +297,12 @@ export class LiveAvatarDriver implements SessionDriver {
   async stop(): Promise<void> {
     this.stopCurrentAudio();
     this.videoAttached = false;
+    
+    // Clean up debug interval
+    if ((this as any).voiceChatDebugInterval) {
+      clearInterval((this as any).voiceChatDebugInterval);
+      (this as any).voiceChatDebugInterval = null;
+    }
     
     // Clean up audio context
     if (this.audioContext) {
