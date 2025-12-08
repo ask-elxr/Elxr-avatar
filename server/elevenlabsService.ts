@@ -60,12 +60,18 @@ class ElevenLabsService {
       );
     }
 
+    // Normalize language code - ElevenLabs eleven_turbo_v2_5 only accepts ISO 639-1 codes (e.g., 'en', 'es')
+    // Convert 'en-US', 'en-GB', etc. to 'en'
+    const normalizedLanguageCode = languageCode 
+      ? languageCode.split('-')[0].toLowerCase() 
+      : undefined;
+
     const log = logger.child({
       service: "elevenlabs",
       operation: "generateSpeech",
       textLength: text.length,
       voiceId,
-      languageCode,
+      languageCode: normalizedLanguageCode,
     });
 
     try {
@@ -84,8 +90,8 @@ class ElevenLabsService {
       };
 
       // Add language code if specified (for multilingual models)
-      if (languageCode) {
-        options.language_code = languageCode;
+      if (normalizedLanguageCode) {
+        options.language_code = normalizedLanguageCode;
       }
 
       const audioStream = await this.ttsBreaker.execute({
@@ -148,12 +154,18 @@ class ElevenLabsService {
       );
     }
 
+    // Normalize language code - ElevenLabs eleven_turbo_v2_5 only accepts ISO 639-1 codes (e.g., 'en', 'es')
+    // Convert 'en-US', 'en-GB', etc. to 'en'
+    const normalizedLanguageCode = languageCode 
+      ? languageCode.split('-')[0].toLowerCase() 
+      : undefined;
+
     const log = logger.child({
       service: "elevenlabs",
       operation: "generateSpeechPCM",
       textLength: text.length,
       voiceId,
-      languageCode,
+      languageCode: normalizedLanguageCode,
     });
 
     try {
@@ -178,7 +190,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            ...(languageCode && { language_code: languageCode }),
+            ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
           }),
         }
       );
@@ -224,12 +236,18 @@ class ElevenLabsService {
       );
     }
 
+    // Normalize language code - ElevenLabs eleven_turbo_v2_5 only accepts ISO 639-1 codes (e.g., 'en', 'es')
+    // Convert 'en-US', 'en-GB', etc. to 'en'
+    const normalizedLanguageCode = languageCode 
+      ? languageCode.split('-')[0].toLowerCase() 
+      : undefined;
+
     const log = logger.child({
       service: "elevenlabs",
       operation: "generateSpeechBase64",
       textLength: text.length,
       voiceId,
-      languageCode,
+      languageCode: normalizedLanguageCode,
     });
 
     try {
@@ -253,7 +271,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            ...(languageCode && { language_code: languageCode }),
+            ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
           }),
         }
       );
@@ -408,12 +426,18 @@ class ElevenLabsService {
       );
     }
 
+    // Normalize language code - ElevenLabs scribe_v1 accepts ISO 639-1 codes (e.g., 'en', 'es')
+    // Convert 'en-US', 'en-GB', etc. to 'en'
+    const normalizedLanguageCode = languageCode 
+      ? languageCode.split('-')[0].toLowerCase() 
+      : undefined;
+
     const log = logger.child({
       service: "elevenlabs",
       operation: "transcribeSpeech",
       audioSize: audioBuffer.length,
       mimeType,
-      languageCode,
+      languageCode: normalizedLanguageCode,
       userId,
     });
 
@@ -447,8 +471,8 @@ class ElevenLabsService {
       formData.append('file', audioBlob, filename);
       formData.append('model_id', 'scribe_v1');
       
-      if (languageCode) {
-        formData.append('language_code', languageCode);
+      if (normalizedLanguageCode) {
+        formData.append('language_code', normalizedLanguageCode);
       }
 
       const response = await fetch(

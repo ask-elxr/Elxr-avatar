@@ -373,7 +373,7 @@ RESPONSE REQUIREMENTS:
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
-        max_tokens: 4096, // ✅ Increased from 350 to allow full, detailed responses
+        max_tokens: 500, // Limit response length for voice mode (concise, spoken responses)
         messages: messages,
         system: systemPrompt
       });
