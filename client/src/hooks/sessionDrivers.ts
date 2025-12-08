@@ -696,11 +696,12 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   /**
-   * Directly send base64 PCM audio to the SDK for lip-sync playback
+   * Directly send base64 WAV audio to the SDK for lip-sync playback
    * Used by batch audio mode for complete audio responses
    * 
-   * IMPORTANT: WebRTC data channel has ~64KB message limit, so we must chunk
-   * large audio into smaller segments. Each chunk is a complete WAV file.
+   * NOTE: Sends complete audio in ONE call - no chunking!
+   * The greeting path sends 400KB+ audio this way and it works perfectly.
+   * Chunking causes split playback because each repeatAudio() starts new playback.
    */
   async repeatAudio(base64Audio: string): Promise<void> {
     if (!this.session) {
@@ -708,13 +709,8 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
-    // WebRTC data channel limit is ~64KB, use 48KB base64 to be safe
-    // 48KB base64 = ~36KB binary = ~750ms of 24kHz 16-bit audio
-    const MAX_BASE64_SIZE = 48000;
-    
     const totalLength = base64Audio.length;
-    
-    console.log(`🎤 [repeatAudio] Processing ${totalLength} chars of base64 WAV audio`);
+    console.log(`🎤 [repeatAudio] Sending ${totalLength} chars of base64 WAV audio to SDK (single call, no chunking)`);
     
     return new Promise((resolve) => {
       // Set up completion handler
@@ -723,74 +719,10 @@ export class LiveAvatarDriver implements SessionDriver {
         resolve();
       };
       
-      // Check if small enough to send in one piece
-      if (totalLength <= MAX_BASE64_SIZE) {
-        this.session!.repeatAudio(base64Audio);
-        console.log("🔊 [repeatAudio] Single chunk sent to SDK");
-      } else {
-        // Need to chunk the audio into multiple valid WAV files
-        // Decode the full WAV to extract PCM data (skip 44-byte header)
-        const binaryString = atob(base64Audio);
-        const fullWav = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          fullWav[i] = binaryString.charCodeAt(i);
-        }
-        
-        // Extract PCM data (skip 44-byte WAV header)
-        const pcmData = fullWav.slice(44);
-        
-        // Calculate chunk size: ~36KB PCM per chunk (allows ~750ms of audio)
-        // This gives us ~48KB base64 after adding WAV header
-        const PCM_CHUNK_SIZE = 35000; // bytes of PCM per chunk (must be even for 16-bit samples)
-        const numChunks = Math.ceil(pcmData.length / PCM_CHUNK_SIZE);
-        
-        console.log(`🎤 [repeatAudio] Splitting ${pcmData.length} bytes PCM into ${numChunks} WAV chunks`);
-        
-        // Create array of WAV chunk base64 strings
-        const wavChunks: string[] = [];
-        for (let i = 0; i < numChunks; i++) {
-          const start = i * PCM_CHUNK_SIZE;
-          const end = Math.min(start + PCM_CHUNK_SIZE, pcmData.length);
-          const chunkPcm = pcmData.slice(start, end);
-          
-          // Create WAV header for this chunk
-          const header = this.createWavHeader(chunkPcm.length);
-          
-          // Combine header + PCM
-          const wavChunk = new Uint8Array(header.length + chunkPcm.length);
-          wavChunk.set(header, 0);
-          wavChunk.set(chunkPcm, header.length);
-          
-          // Convert to base64
-          let binary = '';
-          for (let j = 0; j < wavChunk.length; j++) {
-            binary += String.fromCharCode(wavChunk[j]);
-          }
-          wavChunks.push(btoa(binary));
-        }
-        
-        // Send chunks sequentially with delays to let SDK process
-        let chunkIndex = 0;
-        const sendNextChunk = () => {
-          if (chunkIndex >= wavChunks.length) {
-            console.log("🔊 [repeatAudio] All chunks sent to SDK");
-            return;
-          }
-          
-          const chunk = wavChunks[chunkIndex];
-          this.session!.repeatAudio(chunk);
-          console.log(`🔊 [repeatAudio] Chunk ${chunkIndex + 1}/${wavChunks.length} sent (${chunk.length} base64 chars)`);
-          
-          chunkIndex++;
-          
-          // Small delay between chunks to let SDK queue them
-          if (chunkIndex < wavChunks.length) {
-            setTimeout(sendNextChunk, 100);
-          }
-        };
-        
-        sendNextChunk();
-      }
+      // Send full audio in one call - same as working greeting path
+      // This matches speakWithElevenLabsVoice() which works for 400KB+ audio
+      this.session!.repeatAudio(base64Audio);
+      console.log("🔊 [repeatAudio] Full audio sent to SDK - awaiting playback completion");
       
       // Set a timeout in case the SDK doesn't fire the completion event
       const timeout = setTimeout(() => {
