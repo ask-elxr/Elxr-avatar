@@ -4455,22 +4455,27 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
           
           ttsWs.on('open', () => {
             clearTimeout(timeout);
-            log.info({ voiceId, initialTextLength: initialText.length }, 'ElevenLabs TTS WebSocket connected - sending initial text immediately');
+            log.info({ voiceId, initialTextLength: initialText.length }, 'ElevenLabs TTS WebSocket connected - sending BOS then initial text');
             
-            // Initialize TTS stream with voice settings AND the initial text in same message
-            // This ensures text flows immediately after connection
+            // ElevenLabs requires BOS (beginning of stream) message FIRST with voice_settings
+            // Then send actual text separately
             ttsWs!.send(JSON.stringify({
-              text: initialText,
+              text: ' ',
               voice_settings: {
                 stability: 0.5,
                 similarity_boost: 0.5,
                 speed: 1.0,
               },
               generation_config: {
-                chunk_length_schedule: [20, 50, 100],
+                chunk_length_schedule: [50, 100, 150],
               },
+            }));
+            
+            // Now send the actual initial text
+            ttsWs!.send(JSON.stringify({
+              text: initialText,
               try_trigger_generation: true,
-              flush: true, // Force immediate audio generation
+              flush: true,
             }));
             
             ttsReady = true;
@@ -4492,7 +4497,13 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
           
           ttsWs.on('message', (data: Buffer) => {
             try {
-              const event = JSON.parse(data.toString());
+              const dataStr = data.toString();
+              const event = JSON.parse(dataStr);
+              
+              // Log all event types for debugging
+              if (event.error) {
+                log.error({ error: event.error, message: event.message }, 'ElevenLabs TTS error');
+              }
               
               if (event.audio) {
                 audioChunkCount++;
@@ -4508,9 +4519,13 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
                   index: audioChunkCount,
                   isFinal: event.isFinal || false 
                 });
+              } else if (!event.audio && !event.isFinal) {
+                // Log non-audio messages for debugging
+                log.debug({ eventKeys: Object.keys(event) }, 'TTS non-audio message received');
               }
             } catch (error) {
-              // Binary data or parse error - ignore
+              // Log binary data for debugging
+              log.debug({ dataLength: data.length, isBuffer: Buffer.isBuffer(data) }, 'TTS binary/unparseable message');
             }
           });
           
