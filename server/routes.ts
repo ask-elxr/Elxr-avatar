@@ -4409,7 +4409,13 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       );
 
       perfTimings.claude = Date.now() - claudeStart;
-      log.info({ claudeMs: perfTimings.claude, responseLength: fullResponse.length }, 'Claude response generated');
+      const wordCount = fullResponse.split(/\s+/).length;
+      log.info({ 
+        claudeMs: perfTimings.claude, 
+        responseLength: fullResponse.length,
+        wordCount,
+        response: fullResponse.substring(0, 100) + '...'
+      }, '🎤 Claude voice response generated (max 2 sentences, 30 words)');
 
       // Generate full TTS audio (non-streaming)
       const ttsStart = Date.now();
