@@ -230,9 +230,22 @@ export class LiveAvatarDriver implements SessionDriver {
           this.config.onAvatarStartTalking?.();
         });
 
-        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+        session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, async () => {
           console.log("🤫 Avatar stopped speaking");
           this.config.onAvatarStopTalking?.();
+          
+          // Resume listening after avatar stops speaking (for HeyGen voice chat)
+          if (this.enableMobileVoiceChat && this.session) {
+            // Small delay to prevent echo feedback
+            await new Promise(resolve => setTimeout(resolve, 500));
+            console.log("🎤 Resuming SDK listening after avatar finished speaking...");
+            try {
+              this.session.startListening();
+              console.log("✅ SDK startListening() called - avatar is listening again");
+            } catch (e: any) {
+              console.warn("⚠️ Failed to resume listening:", e?.message || e);
+            }
+          }
         });
 
         // Listen for ALL agent events for debugging
