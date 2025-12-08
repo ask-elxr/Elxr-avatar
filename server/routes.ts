@@ -4327,7 +4327,7 @@ This applies to EVERY response, regardless of conversation length.`;
     const WebSocket = (await import('ws')).default;
     
     try {
-      const { message, avatarId, memoryEnabled = false, languageCode } = req.body;
+      const { message, avatarId, memoryEnabled = false, languageCode, bypass } = req.body;
       let userId = req.user?.claims?.sub || null;
       if (!userId && req.body.userId?.startsWith('temp_')) {
         userId = req.body.userId;
@@ -4342,20 +4342,8 @@ This applies to EVERY response, regardless of conversation length.`;
       const timestamps: Record<string, number> = {
         requestReceived: 0, // T+0ms
       };
-      console.log(`\n⏱️ ===== PIPELINE START: "${message.substring(0, 50)}" =====`);
+      console.log(`\n⏱️ ===== PIPELINE START: "${message.substring(0, 50)}" (bypass=${bypass || 'none'}) =====`);
       console.log(`⏱️ [T+0ms] Speech input received`);
-
-      const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
-      if (!avatarConfig) {
-        return res.status(404).json({ error: "Avatar not found" });
-      }
-
-      const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
-      const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
-      
-      if (!elevenLabsApiKey) {
-        return res.status(500).json({ error: "ElevenLabs API key not configured" });
-      }
 
       // Set up SSE headers with explicit no-buffering for real-time streaming
       res.setHeader('Content-Type', 'text/event-stream');
@@ -4371,6 +4359,90 @@ This applies to EVERY response, regardless of conversation length.`;
       const sendEvent = (eventType: string, data: any) => {
         res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
       };
+
+      // 🧪 BYPASS MODE: Skip everything and return hardcoded response
+      if (bypass === 'all') {
+        console.log(`⏱️ [BYPASS=all] Returning hardcoded "Hello!" - skipping LLM/RAG/Mem0/TTS`);
+        const hardcodedAudio = ""; // Empty audio - just test network/SSE latency
+        sendEvent('status', { phase: 'generating', message: 'Bypass mode...' });
+        sendEvent('text', { content: 'Hello! This is a bypass test.' });
+        sendEvent('timing', { firstAudioMs: Date.now() - pipelineStart });
+        // Send a tiny silent audio chunk (base64 of minimal PCM)
+        const silentPCM = Buffer.alloc(480).toString('base64'); // 10ms of silence at 24kHz
+        sendEvent('audio', { chunk: silentPCM, index: 1, isFinal: false, serverTimestamp: Date.now() });
+        sendEvent('done', { 
+          fullResponse: 'Hello! This is a bypass test.',
+          audioChunks: 1,
+          performance: { totalMs: Date.now() - pipelineStart, bypass: 'all' }
+        });
+        console.log(`⏱️ ===== BYPASS COMPLETE: ${Date.now() - pipelineStart}ms total =====\n`);
+        return res.end();
+      }
+
+      const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      const voiceId = avatarConfig.elevenlabsVoiceId || 'EXAVITQu4vr4xnSDxMaL';
+      const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
+      
+      if (!elevenLabsApiKey) {
+        return res.status(500).json({ error: "ElevenLabs API key not configured" });
+      }
+
+      // 🧪 BYPASS MODE: Skip TTS, just stream text from LLM
+      if (bypass === 'tts') {
+        console.log(`⏱️ [BYPASS=tts] Streaming LLM text only - skipping TTS`);
+        sendEvent('status', { phase: 'generating', message: 'Testing LLM only...' });
+        
+        // Simple query detection for instant response
+        const simplePatterns = [/^(hi|hey|hello)[\s!.,?]*$/i];
+        const isSimple = simplePatterns.some(p => p.test(message.trim()));
+        
+        timestamps.ragMemoDone = Date.now() - pipelineStart;
+        console.log(`⏱️ [T+${timestamps.ragMemoDone}ms] RAG/Mem0 skipped (bypass=tts)`);
+        
+        let fullResponse = '';
+        let firstToken = false;
+        
+        try {
+          for await (const chunk of claudeService.streamResponse(
+            message,
+            '',
+            [],
+            `You are a helpful assistant. Keep responses very short (1-2 sentences).`,
+            undefined,
+            undefined,
+            true
+          )) {
+            if (chunk.type === 'text') {
+              if (!firstToken) {
+                firstToken = true;
+                timestamps.firstLLMToken = Date.now() - pipelineStart;
+                console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token emitted`);
+                // Send fake audio event to trigger frontend processing timer
+                sendEvent('audio', { chunk: '', index: 1, isFinal: false, serverTimestamp: Date.now() });
+              }
+              fullResponse += chunk.content;
+              sendEvent('text', { content: chunk.content });
+            }
+          }
+        } catch (e: any) {
+          console.error('LLM bypass error:', e.message);
+        }
+        
+        const pipelineEnd = Date.now() - pipelineStart;
+        console.log(`⏱️ ===== BYPASS=TTS COMPLETE: ${pipelineEnd}ms total =====`);
+        console.log(`⏱️ TIMELINE: RAG=${timestamps.ragMemoDone}ms, FirstToken=${timestamps.firstLLMToken}ms, Total=${pipelineEnd}ms\n`);
+        
+        sendEvent('done', { 
+          fullResponse,
+          audioChunks: 0,
+          performance: { totalMs: pipelineEnd, bypass: 'tts', firstLLMTokenMs: timestamps.firstLLMToken }
+        });
+        return res.end();
+      }
 
       // Performance timing
       const perfStart = Date.now();

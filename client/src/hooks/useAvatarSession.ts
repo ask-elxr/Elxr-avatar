@@ -2450,6 +2450,15 @@ export function useAvatarSession({
               headers['X-Member-Id'] = memberstackId;
             }
             
+            // 🧪 BYPASS MODE: Check URL params for latency testing
+            // ?bypass=all - Skip everything, hardcoded response
+            // ?bypass=tts - Skip TTS, just stream LLM text
+            const urlParams = new URLSearchParams(window.location.search);
+            const bypassMode = urlParams.get('bypass');
+            if (bypassMode) {
+              console.log(`🧪 [BYPASS MODE] bypass=${bypassMode} - Testing latency`);
+            }
+            
             const response = await fetch("/api/avatar/response/stream-audio", {
               method: "POST",
               headers,
@@ -2459,6 +2468,7 @@ export function useAvatarSession({
                 avatarId: currentAvatarIdRef.current,
                 memoryEnabled: memoryEnabledRef.current,
                 languageCode: elevenLabsLanguageCodeRef.current,
+                bypass: bypassMode || undefined,
               }),
               signal: controller.signal,
             });
