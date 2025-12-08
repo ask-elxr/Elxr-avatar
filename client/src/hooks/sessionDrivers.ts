@@ -56,8 +56,10 @@ export class LiveAvatarDriver implements SessionDriver {
   private audioBufferSize: number = 0;
   private isStreamingAudio: boolean = false;
   private streamingFlushTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly STREAMING_BUFFER_THRESHOLD = 12000; // ~0.5s of 24kHz PCM audio (24000 samples/s * 2 bytes * 0.25s)
-  private readonly STREAMING_FLUSH_DELAY = 200; // ms - flush buffer after no new chunks for this duration
+  private isFirstAudioChunk: boolean = true;
+  private readonly FIRST_AUDIO_THRESHOLD = 4000; // ~80ms - send first audio ASAP for faster perceived latency
+  private readonly STREAMING_BUFFER_THRESHOLD = 8000; // ~170ms of 24kHz PCM audio for subsequent chunks
+  private readonly STREAMING_FLUSH_DELAY = 150; // ms - flush buffer after no new chunks for this duration
 
   // Promise resolver for waiting on speech completion
   private speechCompleteResolver: (() => void) | null = null;
@@ -544,13 +546,14 @@ export class LiveAvatarDriver implements SessionDriver {
    */
   startStreamingAudio(): void {
     this.isStreamingAudio = true;
+    this.isFirstAudioChunk = true; // Reset for each new stream
     this.audioChunkBuffer = [];
     this.audioBufferSize = 0;
     if (this.streamingFlushTimer) {
       clearTimeout(this.streamingFlushTimer);
       this.streamingFlushTimer = null;
     }
-    console.log("🎵 Started streaming audio accumulation for lip-sync");
+    console.log("🎵 Started streaming audio accumulation for lip-sync (fast first-chunk mode)");
     
     // Ensure video is unmuted for SDK audio playback
     if (this.config.videoRef.current) {
@@ -562,6 +565,7 @@ export class LiveAvatarDriver implements SessionDriver {
 
   /**
    * Add an audio chunk to the buffer - sends to SDK when threshold reached
+   * Uses smaller threshold for first chunk to minimize time-to-first-audio
    * @param base64Audio Base64 encoded PCM audio chunk (24kHz, 16-bit)
    */
   addAudioChunk(base64Audio: string): void {
@@ -582,14 +586,19 @@ export class LiveAvatarDriver implements SessionDriver {
       clearTimeout(this.streamingFlushTimer);
     }
     
+    // Use smaller threshold for first audio to minimize time-to-first-audio
+    const threshold = this.isFirstAudioChunk ? this.FIRST_AUDIO_THRESHOLD : this.STREAMING_BUFFER_THRESHOLD;
+    
     // Check if we have enough audio to send to SDK for lip-sync
-    if (this.audioBufferSize >= this.STREAMING_BUFFER_THRESHOLD) {
+    if (this.audioBufferSize >= threshold) {
       this.flushAudioBuffer();
+      this.isFirstAudioChunk = false; // Subsequent chunks use larger threshold
     } else {
       // Set a timer to flush if no more chunks arrive
       this.streamingFlushTimer = setTimeout(() => {
         if (this.audioBufferSize > 0) {
           this.flushAudioBuffer();
+          this.isFirstAudioChunk = false;
         }
       }, this.STREAMING_FLUSH_DELAY);
     }
