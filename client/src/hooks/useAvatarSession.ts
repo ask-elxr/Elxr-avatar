@@ -2070,10 +2070,11 @@ export function useAvatarSession({
         const driver = sessionDriverRef.current;
         const supportsBatchAudio = driver && 'repeatAudio' in driver;
         
-        // NON-STREAMING AUDIO MODE: Full LLM response → Full TTS audio → Send to Avatar
-        // This has higher latency (~4-6s) but is simpler than streaming
-        if (audioStreamingEnabledRef.current && supportsBatchAudio && driver) {
-          console.log("🎵 [BATCH AUDIO] Using non-streaming batch audio mode");
+        // NON-STREAMING BATCH AUDIO MODE: Full LLM response → Full TTS audio → Send to Avatar
+        // When audioStreamingEnabledRef is FALSE, we use batch audio (not sentence-by-sentence streaming)
+        // This workflow: Claude (full response) → ElevenLabs TTS (full audio) → HeyGen repeatAudio() (full lip-sync)
+        if (!audioStreamingEnabledRef.current && supportsBatchAudio && driver) {
+          console.log("🎵 [BATCH AUDIO] Using non-streaming batch audio mode (full response → full audio → full lip-sync)");
           
           try {
             const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -2139,14 +2140,16 @@ export function useAvatarSession({
           } catch (batchError) {
             if (batchError instanceof Error && batchError.name !== "AbortError") {
               console.error("Batch audio error, falling back to sentence streaming:", batchError);
-              audioStreamingEnabledRef.current = false;
+              // Enable streaming as fallback when batch audio fails
+              audioStreamingEnabledRef.current = true; // Disable batch mode
+              streamingEnabledRef.current = true; // Enable streaming fallback
             } else {
               throw batchError;
             }
           }
         }
         
-        // Use streaming mode for faster perceived response
+        // Use streaming mode for faster perceived response (only if batch mode is disabled or failed)
         if (streamingEnabledRef.current && sessionDriverRef.current) {
           console.log("🚀 [STREAMING] Using streaming mode for faster response");
           
