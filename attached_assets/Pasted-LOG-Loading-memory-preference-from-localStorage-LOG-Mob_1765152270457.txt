@@ -1,0 +1,132 @@
+LOG🧠 Loading memory preference from localStorage: 
+LOG📱 Mobile device detected: true
+LOG🎬 Default mode: video (mobile gets video for better voice input)
+LOG🧠 memoryEnabled state is now: false
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🌐 Loaded avatar language: en-US
+LOG🎛️ Loaded avatar capabilities: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOGVideo mode: UI ready, HeyGen will start on first message
+LOG📱 Mobile detected - warming up microphone...
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer started for first time
+LOG🖼️ Render state: [object Object]
+LOG📱 Microphone warmed up successfully
+LOG🔧 Voice recognition code version: 2024-12-07-v2
+LOG📱 Browser detection: iOS=true, Android=false, Safari=false, iOSSafari=false, Chrome=false, ChromeIOS=true, ChromeMobile=false, touch=true, smallScreen=true
+LOG📱 UserAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 26_2_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Cr...
+LOG📱 SpeechRecognition available: true
+WARNING⚠️ Voice input limited in Chrome/Firefox on iOS - Safari recommended for voice
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOGStarting LiveAvatar session (fresh start)
+LOG🔍 Avatar voice config check: heygenVoiceId="fWUVBoxa3cvv6VWj6VRS", elevenlabsVoiceId="fWUVBoxa3cvv6VWj6VRS"
+LOG🎙️ useElevenLabsVoiceRef set to: false
+LOG🔧 Session start code version: 2024-12-07-v2
+LOG📱 Mobile detection for voice chat: true
+LOG🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Nigel
+LOG🚀 LiveAvatarDriver.start() called for: nigel
+LOG🔑 Fetching LiveAvatar session credentials for: nigel
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+ERROR🎤 ElevenLabs STT error: STT connection error
+ERROR🎤 ElevenLabs STT error: Failed to start STT session
+LOG🖼️ Render state: [object Object]
+LOG📦 LiveAvatar session credentials received: [object Object]
+LOG📋 Creating LiveAvatar session: [object Object]
+LOG🔧 LiveAvatarDriver code version: 2024-12-07-v2
+LOG🎤 LiveAvatar voiceChat: ENABLED (mobile mode - using LiveKit WebRTC)
+LOG🔄 Calling session.start() - SDK will connect to LiveKit...
+LOG📊 LiveAvatar session state: CONNECTING
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎬 LiveAvatar SESSION_STREAM_READY event received
+LOG📺 Attaching video element via session.attach()...
+LOG🎬 LiveAvatar stream ready
+LOG🎤 HeyGen mobile voice chat active - microphone handled by SDK
+LOG📺 Video track ready - updating videoReady state
+LOG✅ Video element attached via SDK - stream should be visible
+LOG🎤 Starting SDK voice chat after stream ready (LiveKit microphone capture)...
+LOG🎤 VoiceChat state: INACTIVE
+LOG🎤 Starting voiceChat.start() for microphone capture...
+LOG🖼️ Render state: [object Object]
+LOG🗣️ Avatar greeting: Good to have you here. I'm Nigel. Don't be shy about interrupting - that's fine. What's the edge you're working on?
+LOG🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()
+WARNINGVoice chat is already started
+LOG📊 LiveAvatar session state: CONNECTED
+LOG✅ session.start() completed - waiting for SESSION_STREAM_READY event
+LOG✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+LOG✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+LOG✅ VoiceChat microphone capture started, state: ACTIVE
+LOG✅ SDK startListening() called - avatar is now listening
+LOGsetStreamState active
+LOGInactivity timer cleared and reset
+LOG📺 Video element state after attach: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎤 Got base64 PCM audio (309104 chars), sending to SDK...
+LOG🔊 Audio sent to SDK for lip-sync playback
+LOG🗣️ Avatar started speaking
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🤫 Avatar stopped speaking
+LOG🎤 Avatar stopped talking, will resume voice recognition in 3500 ms
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔊 Resuming voice recognition (avatar finished speaking)
+LOG🔧 Voice recognition code version: 2024-12-07-v2
+LOG⏭️ Skipping Web Speech API - using HeyGen's built-in voice chat (LiveKit WebRTC)
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔄 Switching transport: Video → Audio
+LOG📵 Stopping LiveAvatar session...
+LOG📊 LiveAvatar session state: DISCONNECTING
+LOG📊 LiveAvatar session state: DISCONNECTED
+LOG📵 LiveAvatar stream disconnected: CLIENT_INITIATED
+LOG📵 Stream disconnected - intentionalStop flag: true
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+INFOdisconnect from room [object Object]
+LOG✅ Avatar stopped - switched to audio mode (session preserved)
+LOG🎤 Restarting voice recognition after audio mode switch
+LOG🔧 Voice recognition code version: 2024-12-07-v2
+LOG📱 Browser detection: iOS=true, Android=false, Safari=false, iOSSafari=false, Chrome=false, ChromeIOS=true, ChromeMobile=false, touch=true, smallScreen=true
+LOG📱 UserAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 26_2_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Cr...
+LOG📱 SpeechRecognition available: true
+WARNING⚠️ Voice input limited in Chrome/Firefox on iOS - Safari recommended for voice
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+ERROR🎤 ElevenLabs STT error: STT connection error
+ERROR🎤 ElevenLabs STT error: Failed to start STT session
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
