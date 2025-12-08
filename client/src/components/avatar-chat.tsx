@@ -233,6 +233,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     showReconnect,
     videoReady, // True when LiveKit video track is attached and playing
     isProcessing, // AI is thinking/generating response
+    processingStage, // 0=idle, 1=thinking, 2=preparing voice
     startSession,
     endSession,
     endSessionShowReconnect,
@@ -693,18 +694,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
           )}
           
-          {/* Thinking Indicator - Shows when AI is processing */}
+          {/* Thinking Indicator - Shows when AI is processing with stage-based feedback */}
           {isProcessing && sessionActive && (
             <div 
               className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-20 flex items-center gap-2 bg-black/60 px-4 py-2 rounded-full backdrop-blur-sm"
               data-testid="thinking-indicator"
             >
               <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className={`w-2 h-2 rounded-full animate-bounce ${processingStage >= 2 ? 'bg-green-400' : 'bg-blue-400'}`} style={{ animationDelay: '0ms' }} />
+                <div className={`w-2 h-2 rounded-full animate-bounce ${processingStage >= 2 ? 'bg-green-400' : 'bg-blue-400'}`} style={{ animationDelay: '150ms' }} />
+                <div className={`w-2 h-2 rounded-full animate-bounce ${processingStage >= 2 ? 'bg-green-400' : 'bg-blue-400'}`} style={{ animationDelay: '300ms' }} />
               </div>
-              <span className="text-white/80 text-sm">Thinking...</span>
+              <span className="text-white/80 text-sm">
+                {processingStage === 1 ? 'Thinking...' : processingStage === 2 ? 'Preparing voice...' : 'Processing...'}
+              </span>
             </div>
           )}
         </div>

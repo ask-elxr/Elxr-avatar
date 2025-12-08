@@ -4474,16 +4474,17 @@ This applies to EVERY response, regardless of conversation length.`;
           log.info({ voiceId, connectMs: perfTimings.ttsConnect }, 'ElevenLabs TTS WebSocket pre-connected');
           
           // Send BOS (beginning of stream) with voice settings
-          // Use aggressive chunk schedule for fastest first audio
+          // ULTRA-AGGRESSIVE chunk schedule: [20, 50, 100] for fastest possible first audio
+          // Lower values = faster first chunk but slightly choppier audio
           ttsWs!.send(JSON.stringify({
             text: ' ',
             voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-              speed: 1.0,
+              stability: 0.4, // Slightly lower for faster generation
+              similarity_boost: 0.7,
+              speed: 1.05, // Slightly faster speech
             },
             generation_config: {
-              chunk_length_schedule: [30, 80, 150],
+              chunk_length_schedule: [20, 50, 100], // Ultra-fast first chunk
             },
           }));
           
@@ -4643,7 +4644,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
       }
 
-      sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
+      sendEvent('status', { phase: 'generating', message: 'AI is thinking...', stage: 1 });
 
       // Wait for TTS to be ready (should be fast since pre-connected in parallel)
       try {
@@ -4706,12 +4707,15 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       };
 
-      // SENTENCE-BASED TTS BUFFERING for better prosody
-      // Buffer until sentence-ending punctuation (.?!) for natural speech flow
-      // Send to ElevenLabs as soon as sentence is complete for minimum latency
+      // AGGRESSIVE WORD-BASED TTS STREAMING for minimum latency
+      // Flush text to TTS as soon as we have enough words for natural speech
+      // First chunk: flush after 3-4 words to start audio ASAP
+      // Subsequent: flush on sentences or after ~6 words
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_SENTENCE_TIMEOUT = 300; // Max wait for first sentence (faster start)
-      const SENTENCE_TIMEOUT = 500; // Max wait between sentences
+      const FIRST_FLUSH_TIMEOUT = 80; // Ultra-fast first flush (80ms)
+      const SUBSEQUENT_FLUSH_TIMEOUT = 200; // Faster subsequent flushes
+      const FIRST_WORD_COUNT = 4; // Flush after 4 words for first chunk
+      const SUBSEQUENT_WORD_COUNT = 8; // Flush after 8 words for subsequent
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true
@@ -4738,9 +4742,12 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       };
       
+      // Helper: count words in buffer
+      const countWords = (text: string) => text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      
       const scheduleFlush = () => {
         if (flushTimer) clearTimeout(flushTimer);
-        const timeout = sentencesSent === 0 ? FIRST_SENTENCE_TIMEOUT : SENTENCE_TIMEOUT;
+        const timeout = sentencesSent === 0 ? FIRST_FLUSH_TIMEOUT : SUBSEQUENT_FLUSH_TIMEOUT;
         flushTimer = setTimeout(() => flushTextBuffer(true), timeout);
       };
 
@@ -4760,22 +4767,26 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
               timestamps.firstLLMToken = Date.now() - pipelineStart;
               console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token emitted`);
               log.debug('First Claude text received');
+              // UX: Notify frontend that AI started responding
+              sendEvent('status', { phase: 'speaking', message: 'Preparing voice...', stage: 2 });
             }
             textBuffer += chunk.content;
+            const wordCount = countWords(textBuffer);
+            const wordThreshold = sentencesSent === 0 ? FIRST_WORD_COUNT : SUBSEQUENT_WORD_COUNT;
             
-            // SENTENCE-BASED FLUSHING for better TTS prosody
-            // Wait for complete sentences or clauses before sending to TTS
+            // AGGRESSIVE WORD-BASED FLUSHING for minimum latency
+            // Priority: complete sentences > word count threshold > length threshold
             if (/[.!?]\s*$/.test(textBuffer)) {
               // Complete sentence - flush immediately
               await flushTextBuffer(true);
-            } else if (/[,;:—]\s*$/.test(textBuffer) && textBuffer.length >= 40) {
-              // Long clause with pause punctuation - flush for natural break
+            } else if (wordCount >= wordThreshold) {
+              // Hit word count threshold - flush for faster response
               await flushTextBuffer(true);
-            } else if (textBuffer.length > 80) {
-              // Very long without punctuation - flush to prevent delay
+            } else if (/[,;:—]\s*$/.test(textBuffer) && wordCount >= 3) {
+              // Clause with pause punctuation and enough words - flush
               await flushTextBuffer(true);
             } else {
-              // Keep buffering, but set timeout as fallback
+              // Keep buffering, but set fast timeout as fallback
               scheduleFlush();
             }
           } else if (chunk.type === 'sentence') {

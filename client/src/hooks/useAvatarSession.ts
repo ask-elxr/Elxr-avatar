@@ -26,6 +26,7 @@ interface AvatarSessionReturn {
   showReconnect: boolean;
   videoReady: boolean; // True when LiveKit video track is attached and playing
   isProcessing: boolean; // AI is thinking/generating response
+  processingStage: number; // 0=idle, 1=thinking, 2=preparing voice
   startSession: (options?: StartSessionOptions) => Promise<void>;
   endSession: () => Promise<void>;
   endSessionShowReconnect: () => Promise<void>;
@@ -64,6 +65,7 @@ export function useAvatarSession({
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false); // AI thinking state
+  const [processingStage, setProcessingStage] = useState<number>(0); // 0=idle, 1=thinking, 2=preparing voice
   const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
   const [videoReady, setVideoReady] = useState(false); // Track when LiveKit video track is attached
 
@@ -2198,6 +2200,7 @@ export function useAvatarSession({
 
     // 🤔 THINKING STATE: Show processing indicator immediately
     setIsProcessing(true);
+    setProcessingStage(1); // Stage 1: AI thinking
     console.log("🤔 AI is thinking...");
 
     // 🔇 CRITICAL: Set speaking flag FIRST to prevent recognition auto-restart race condition
@@ -2520,6 +2523,7 @@ export function useAvatarSession({
                           }
                           // 🤔 -> 🗣️ AI done thinking, now speaking
                           setIsProcessing(false);
+                          setProcessingStage(0);
                         }
                         
                         // Send audio chunk to driver for lip-sync playback
@@ -2550,7 +2554,11 @@ export function useAvatarSession({
                         console.log(`📝 USER MESSAGE: ${message}`);
                         console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
                       } else if (eventType === 'status') {
-                        console.log(`🎵 [AUDIO STREAMING] Status: ${data.phase} - ${data.message}`);
+                        console.log(`🎵 [AUDIO STREAMING] Status: ${data.phase} - ${data.message} (stage ${data.stage || '?'})`);
+                        // Update processing stage for granular UX feedback
+                        if (data.stage) {
+                          setProcessingStage?.(data.stage);
+                        }
                       } else if (eventType === 'tts_ready') {
                         console.log(`🎵 [AUDIO STREAMING] TTS connected`);
                       } else if (eventType === 'error') {
@@ -3079,6 +3087,7 @@ export function useAvatarSession({
     showReconnect,
     videoReady, // True when LiveKit video track is attached and playing
     isProcessing, // AI is thinking/generating response
+    processingStage, // 0=idle, 1=thinking, 2=preparing voice
     startSession,
     endSession,
     endSessionShowReconnect,
