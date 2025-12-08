@@ -1411,6 +1411,14 @@ export function useAvatarSession({
           console.log("🎤 User message from LiveAvatar:", message);
           handleSubmitMessage(message);
         },
+        
+        // Voice chat ready callback (for HeyGen mobile voice chat)
+        onVoiceChatReady: () => {
+          console.log("🎤 HeyGen mobile voice chat active - microphone handled by SDK");
+          // Set microphone status to listening so UI shows voice is active
+          setMicrophoneStatus('listening');
+          recognitionRunningRef.current = true; // Mark as running so we don't try to start Web Speech API
+        },
       });
       
       sessionDriverRef.current = driver;
@@ -1550,9 +1558,18 @@ export function useAvatarSession({
       }
     }
     
-    // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
-    // This allows users to speak even before video loads or in audio-only mode
-    startVoiceRecognition();
+    // ✅ Start voice recognition for audio-only mode or desktop video mode
+    // On mobile VIDEO mode, HeyGen's built-in voice chat handles microphone (via LiveKit WebRTC)
+    // which works better in iframes than Web Speech API or ElevenLabs STT
+    if (audioOnly || !isMobile) {
+      startVoiceRecognition();
+    } else {
+      console.log("📱 Mobile video mode - skipping Web Speech API, HeyGen will handle voice input");
+      // Set a temporary status while waiting for HeyGen voice chat to activate
+      // This prevents the "voice not found" message from showing
+      setMicrophoneStatus('stopped');
+      usingHeygenMobileVoiceChatRef.current = true;
+    }
     
     // Start HeyGen immediately in video mode for instant avatar appearance
     if (!audioOnly) {
