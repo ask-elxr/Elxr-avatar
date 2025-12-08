@@ -256,61 +256,9 @@ class ElevenLabsService {
   }
 
   /**
-   * Split text into sentences for sentence-by-sentence TTS
-   */
-  private splitIntoSentences(text: string): string[] {
-    const sentences = text
-      .split(/(?<=[.!?])\s+/)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
-    return sentences.length > 0 ? sentences : [text];
-  }
-
-  /**
-   * Generate raw PCM audio for a single text chunk (no WAV header)
-   */
-  private async generateRawPCM(
-    text: string,
-    voiceId: string,
-    languageCode?: string,
-  ): Promise<Buffer> {
-    const response = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "xi-api-key": this.apiKey,
-        },
-        body: JSON.stringify({
-          text,
-          model_id: "eleven_turbo_v2_5",
-          voice_settings: {
-            stability: 0.7,
-            similarity_boost: 0.65,
-            style: 0.0,
-            use_speaker_boost: true,
-          },
-          ...(languageCode && { language_code: languageCode }),
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
-    }
-
-    const arrayBuffer = await response.arrayBuffer();
-    return Buffer.from(arrayBuffer);
-  }
-
-  /**
-   * Generate PCM audio as base64 for LiveAvatar SDK's repeatAudio()
-   * Generates TTS for each sentence separately, then concatenates into one continuous stream
-   * This produces smoother audio without inter-word gaps
-   * 
-   * Returns RAW PCM (no WAV header) - frontend strips header anyway
+   * Generate raw PCM audio as base64 for LiveAvatar SDK's repeatAudio()
+   * Makes a SINGLE TTS call for the FULL text - no sentence splitting
+   * Returns RAW PCM (24kHz, mono, 16-bit, no WAV header)
    */
   async generateSpeechBase64(
     text: string,
@@ -337,27 +285,47 @@ class ElevenLabsService {
 
     try {
       const startTime = Date.now();
-      
-      const sentences = this.splitIntoSentences(text);
-      log.debug({ sentenceCount: sentences.length }, "Generating sentence-by-sentence TTS for seamless playback");
+      log.debug("Generating SINGLE TTS call for full text (no sentence splitting)");
 
-      const pcmBuffers = await Promise.all(
-        sentences.map(sentence => this.generateRawPCM(sentence, voiceId, normalizedLanguageCode))
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": this.apiKey,
+          },
+          body: JSON.stringify({
+            text,
+            model_id: "eleven_turbo_v2_5",
+            voice_settings: {
+              stability: 0.7,
+              similarity_boost: 0.65,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+            ...(normalizedLanguageCode && { language_code: normalizedLanguageCode }),
+          }),
+        }
       );
 
-      const combinedPcm = Buffer.concat(pcmBuffers);
-      
-      const audioBase64 = combinedPcm.toString('base64');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const pcmBuffer = Buffer.from(arrayBuffer);
+      const audioBase64 = pcmBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
         { 
           duration, 
-          sentenceCount: sentences.length,
-          pcmSize: combinedPcm.length, 
+          pcmSize: pcmBuffer.length, 
           format: "raw_pcm_24000_base64" 
         },
-        "Sentence-buffered PCM audio generated (no WAV header, seamless playback)",
+        "Single-call raw PCM audio generated (no WAV header, continuous playback)",
       );
       metrics.recordElevenLabsTTS(duration);
 
@@ -376,7 +344,7 @@ class ElevenLabsService {
     } catch (error: any) {
       log.error(
         { error: error.message, stack: error.stack },
-        "Error generating sentence-buffered PCM speech",
+        "Error generating raw PCM speech",
       );
       throw error;
     }
