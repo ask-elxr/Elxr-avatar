@@ -4750,6 +4750,18 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         flushTimer = setTimeout(() => flushTextBuffer(true), timeout);
       };
 
+      // ADAPTIVE HYBRID APPROACH: Decision based on RESPONSE length, not just user query
+      // - Collect tokens first, then decide streaming vs non-streaming based on actual response
+      // - Short responses (< 50 words): Single TTS call for smoother audio
+      // - Long responses (> 50 words): Progressive streaming with sentence batching
+      
+      const WORD_THRESHOLD_FOR_STREAMING = 50; // Switch to streaming if response exceeds this
+      let accumulatedResponse = '';
+      let decidedMode: 'streaming' | 'non-streaming' | 'pending' = isSimpleQuery ? 'non-streaming' : 'pending';
+      let streamingStarted = false;
+      
+      console.log(`🎯 [HYBRID] Initial mode: ${decidedMode} (isSimpleQuery: ${isSimpleQuery})`);
+      
       try {
         for await (const chunk of claudeService.streamResponse(
           message,
@@ -4764,38 +4776,95 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             if (!firstTextReceived) {
               firstTextReceived = true;
               timestamps.firstLLMToken = Date.now() - pipelineStart;
-              console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token emitted`);
-              log.debug('First Claude text received');
-              // UX: Notify frontend that AI started responding
+              console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token received`);
               sendEvent('status', { phase: 'speaking', message: 'Preparing voice...', stage: 2 });
             }
-            textBuffer += chunk.content;
-            const wordCount = countWords(textBuffer);
-            const wordThreshold = sentencesSent === 0 ? FIRST_WORD_COUNT : SUBSEQUENT_WORD_COUNT;
             
-            // SENTENCE-BASED FLUSHING for smooth audio
-            // Priority: complete sentences first, then word threshold as fallback
-            if (/[.!?]\s*$/.test(textBuffer)) {
-              // Complete sentence - flush immediately for natural speech
-              await flushTextBuffer(true);
-            } else if (wordCount >= wordThreshold) {
-              // Fallback: flush if we have enough words (prevents long delays)
-              await flushTextBuffer(true);
+            // Route chunk based on current mode
+            if (decidedMode === 'streaming' && streamingStarted) {
+              // Already in streaming mode - use sentence-based batching
+              textBuffer += chunk.content;
+              fullResponse += chunk.content; // Keep accumulating for final response
+              const bufferWordCount = countWords(textBuffer);
+              const wordThreshold = sentencesSent === 0 ? FIRST_WORD_COUNT : SUBSEQUENT_WORD_COUNT;
+              
+              if (/[.!?]\s*$/.test(textBuffer)) {
+                await flushTextBuffer(true);
+              } else if (bufferWordCount >= wordThreshold) {
+                await flushTextBuffer(true);
+              } else {
+                scheduleFlush();
+              }
             } else {
-              // Keep buffering - wait for sentence completion
-              scheduleFlush();
+              // Pending or non-streaming mode - accumulate for decision
+              accumulatedResponse += chunk.content;
+              const wordCount = countWords(accumulatedResponse);
+              
+              // Decision point: If response exceeds threshold, switch to streaming mode
+              if (decidedMode === 'pending' && wordCount > WORD_THRESHOLD_FOR_STREAMING) {
+                decidedMode = 'streaming';
+                console.log(`🎯 [HYBRID] Switched to STREAMING mode (${wordCount} words > ${WORD_THRESHOLD_FOR_STREAMING})`);
+                sendEvent('mode', { hybrid: true, streaming: true, reason: 'long_response' });
+                
+                // Send accumulated text as first batch
+                if (accumulatedResponse.trim()) {
+                  firstTTSTextSent = true;
+                  if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                  }
+                  timestamps.firstTTSTextSent = Date.now() - pipelineStart;
+                  console.log(`⏱️ [T+${timestamps.firstTTSTextSent}ms] First TTS text sent (accumulated): "${accumulatedResponse.substring(0, 30)}..."`);
+                  await sendToTTS(accumulatedResponse, true);
+                  fullResponse = accumulatedResponse;
+                  accumulatedResponse = '';
+                  sentencesSent++;
+                }
+                streamingStarted = true;
+              }
+              // Otherwise, keep accumulating - will decide on 'done' event
             }
+            
           } else if (chunk.type === 'sentence') {
-            sentenceCount++;
-            await flushTextBuffer(true);
+            if (decidedMode === 'streaming' && streamingStarted) {
+              sentenceCount++;
+              await flushTextBuffer(true);
+            }
           } else if (chunk.type === 'done') {
-            await flushTextBuffer(true);
-            await sendToTTS('', true); // Signal end of stream
+            // Response complete - finalize based on mode
+            
+            if (decidedMode === 'pending' || decidedMode === 'non-streaming') {
+              // Short response detected - use single TTS call for smooth audio
+              const wasSimpleQuery = decidedMode === 'non-streaming';
+              decidedMode = 'non-streaming';
+              const finalWordCount = countWords(accumulatedResponse);
+              const modeReason = wasSimpleQuery ? 'simple_query' : 'short_response';
+              console.log(`🎯 [HYBRID] Using NON-STREAMING mode (${finalWordCount} words - ${modeReason})`);
+              sendEvent('mode', { hybrid: true, streaming: false, reason: modeReason });
+              
+              fullResponse = accumulatedResponse;
+              
+              // Properly handle TTS bookkeeping
+              firstTTSTextSent = true;
+              if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+              }
+              timestamps.firstTTSTextSent = Date.now() - pipelineStart;
+              console.log(`⏱️ [T+${timestamps.firstTTSTextSent}ms] Sending FULL text to TTS: "${fullResponse.substring(0, 50)}..."`);
+              
+              await sendToTTS(fullResponse, true);
+              await sendToTTS('', true); // Signal end of stream
+            } else {
+              // Streaming mode - flush any remaining text
+              await flushTextBuffer(true);
+              await sendToTTS('', true); // Signal end of stream
+            }
           }
         }
       } catch (streamError: any) {
         if (flushTimer) clearTimeout(flushTimer);
-        log.error({ error: streamError.message }, 'Claude streaming error');
+        log.error({ error: streamError.message }, 'Claude hybrid streaming error');
         sendEvent('error', { message: 'AI generation failed' });
         cleanupTTS();
         return res.end();

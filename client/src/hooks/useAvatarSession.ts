@@ -2533,6 +2533,8 @@ export function useAvatarSession({
                       } else if (eventType === 'text') {
                         // Accumulate text response
                         fullResponse += data.content || '';
+                      } else if (eventType === 'mode') {
+                        console.log(`🎯 [HYBRID MODE] streaming=${data.streaming}, reason=${data.reason}`);
                       } else if (eventType === 'timing') {
                         if (data.firstAudioMs) {
                           console.log(`🎵 [AUDIO STREAMING] Backend first audio: ${data.firstAudioMs}ms`);
