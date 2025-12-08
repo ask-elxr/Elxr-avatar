@@ -2498,9 +2498,16 @@ export function useAvatarSession({
                         
                       if (eventType === 'audio') {
                         audioChunkCount++;
+                        const frontendReceiveTime = performance.now();
                         if (audioChunkCount === 1) {
-                          firstAudioTime = performance.now();
-                          console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${(firstAudioTime - apiStartTime).toFixed(0)}ms`);
+                          firstAudioTime = frontendReceiveTime;
+                          const totalLatency = (firstAudioTime - apiStartTime).toFixed(0);
+                          console.log(`⏱️ [T+${totalLatency}ms] Frontend received first audio chunk`);
+                          console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${totalLatency}ms from API call`);
+                          if (data.serverTimestamp) {
+                            const networkDelay = Date.now() - data.serverTimestamp;
+                            console.log(`⏱️ [NETWORK] Server→Frontend delay: ${networkDelay}ms`);
+                          }
                           // 🤔 -> 🗣️ AI done thinking, now speaking
                           setIsProcessing(false);
                         }

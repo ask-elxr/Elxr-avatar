@@ -4337,6 +4337,14 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(400).json({ error: "Message is required" });
       }
 
+      // ⏱️ PIPELINE TIMESTAMPS for latency debugging
+      const pipelineStart = Date.now();
+      const timestamps: Record<string, number> = {
+        requestReceived: 0, // T+0ms
+      };
+      console.log(`\n⏱️ ===== PIPELINE START: "${message.substring(0, 50)}" =====`);
+      console.log(`⏱️ [T+0ms] Speech input received`);
+
       const avatarConfig = await getAvatarById(avatarId || "mark-kohl");
       if (!avatarConfig) {
         return res.status(404).json({ error: "Avatar not found" });
@@ -4434,6 +4442,8 @@ This applies to EVERY response, regardless of conversation length.`;
               if (audioChunkCount === 1) {
                 firstAudioTime = Date.now();
                 const latency = firstAudioTime - perfStart;
+                timestamps.firstAudioChunkSent = latency;
+                console.log(`⏱️ [T+${latency}ms] First TTS audio chunk sent to frontend`);
                 log.info({ latencyMs: latency }, 'First audio chunk received');
                 sendEvent('timing', { firstAudioMs: latency });
               }
@@ -4441,7 +4451,8 @@ This applies to EVERY response, regardless of conversation length.`;
               sendEvent('audio', { 
                 chunk: event.audio, 
                 index: audioChunkCount,
-                isFinal: event.isFinal || false 
+                isFinal: event.isFinal || false,
+                serverTimestamp: Date.now()
               });
             }
           } catch (error) {
@@ -4541,6 +4552,8 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       }
       
       perfTimings.dataFetch = Date.now() - dataFetchStart;
+      timestamps.ragMemoDone = Date.now() - pipelineStart;
+      console.log(`⏱️ [T+${timestamps.ragMemoDone}ms] RAG/Mem0 done (skipped: ${skipContextFetch}, context: ${combinedContext.length} chars)`);
       sendEvent('timing', { dataFetchMs: perfTimings.dataFetch, contextIncluded: contextReady, simpleQuery: skipContextFetch });
       log.info({ contextReady, contextLength: combinedContext.length, waitMs: perfTimings.dataFetch, simpleQuery: skipContextFetch }, 'Context phase completed');
 
@@ -4630,12 +4643,19 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true
+      let firstTTSTextSent = false;
       const flushTextBuffer = async (forceFlush: boolean = false) => {
         if (textBuffer.length > 0) {
           const textToSend = textBuffer;
           fullResponse += textBuffer;
           textBuffer = '';
           sentencesSent++;
+          
+          if (!firstTTSTextSent) {
+            firstTTSTextSent = true;
+            timestamps.firstTTSTextSent = Date.now() - pipelineStart;
+            console.log(`⏱️ [T+${timestamps.firstTTSTextSent}ms] First TTS text sent: "${textToSend.substring(0, 30)}..."`);
+          }
           
           log.debug({ textLength: textToSend.length, sentencesSent }, 'Flushing sentence to TTS');
           await sendToTTS(textToSend, true); // Always flush sentences
@@ -4665,6 +4685,8 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
           if (chunk.type === 'text') {
             if (!firstTextReceived) {
               firstTextReceived = true;
+              timestamps.firstLLMToken = Date.now() - pipelineStart;
+              console.log(`⏱️ [T+${timestamps.firstLLMToken}ms] First LLM token emitted`);
               log.debug('First Claude text received');
             }
             textBuffer += chunk.content;
@@ -4739,6 +4761,16 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       });
 
+      const pipelineEnd = Date.now() - pipelineStart;
+      console.log(`⏱️ ===== PIPELINE COMPLETE: ${pipelineEnd}ms total =====`);
+      console.log(`⏱️ TIMELINE SUMMARY:`);
+      console.log(`   T+0ms      → Speech received`);
+      console.log(`   T+${timestamps.ragMemoDone || '?'}ms   → RAG/Mem0 done`);
+      console.log(`   T+${timestamps.firstLLMToken || '?'}ms   → First LLM token`);
+      console.log(`   T+${timestamps.firstTTSTextSent || '?'}ms   → First TTS text sent`);
+      console.log(`   T+${timestamps.firstAudioChunkSent || '?'}ms   → First audio sent to frontend`);
+      console.log(`   T+${pipelineEnd}ms   → Pipeline complete\n`);
+
       log.info({ 
         userId, 
         avatarId, 
@@ -4746,6 +4778,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         sentenceCount,
         audioChunks: audioChunkCount,
         firstAudioLatency: firstAudioTime > 0 ? firstAudioTime - perfStart : null,
+        timestamps,
       }, '🎵 Streaming audio response completed');
       
       res.end();
