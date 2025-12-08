@@ -4385,15 +4385,17 @@ This applies to EVERY response, regardless of conversation length.`;
           log.info({ voiceId }, 'ElevenLabs TTS WebSocket connected for streaming');
           
           // Initialize TTS stream with voice settings
+          // chunk_length_schedule: [20] means generate audio after just 20 characters
+          // This is aggressive for minimum latency - starts speaking faster
           ttsWs!.send(JSON.stringify({
             text: ' ',
             voice_settings: {
-              stability: 0.7,
-              similarity_boost: 0.65,
+              stability: 0.5, // Lower stability = faster, more natural speech
+              similarity_boost: 0.5,
               speed: 1.0,
             },
             generation_config: {
-              chunk_length_schedule: [50], // Small chunks for low latency
+              chunk_length_schedule: [20, 50, 100], // Generate after 20 chars, then 50, then 100
             },
           }));
           
@@ -4548,17 +4550,30 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 
       // Flush timer for aggressive low-latency TTS
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_CHUNK_DELAY = 100; // Send first chunk after just 100ms
-      const SUBSEQUENT_CHUNK_DELAY = 200; // Subsequent chunks after 200ms
+      const FIRST_CHUNK_DELAY = 80; // Send first chunk after just 80ms for faster start
+      const SUBSEQUENT_CHUNK_DELAY = 150; // Subsequent chunks after 150ms
       let chunksSent = 0;
+      let totalCharsSent = 0;
       
-      const flushTextBuffer = () => {
+      // flushTextBuffer: doFlush=true sends flush:true to ElevenLabs to FORCE audio generation
+      // This is critical - without flush:true, ElevenLabs buffers until chunk_length_schedule threshold
+      const flushTextBuffer = (forceFlush: boolean = false) => {
         if (textBuffer.length > 0) {
-          sendToTTS(textBuffer, false);
+          // CRITICAL: For first chunk, always flush to get audio ASAP
+          // For subsequent chunks, flush on punctuation or every ~30 chars
+          const shouldFlush = forceFlush || chunksSent === 0 || totalCharsSent + textBuffer.length >= 30;
+          
+          sendToTTS(textBuffer, shouldFlush);
           sendEvent('text', { content: textBuffer });
           fullResponse += textBuffer;
+          totalCharsSent += textBuffer.length;
           textBuffer = '';
           chunksSent++;
+          
+          // Reset char counter after flush to track next phrase
+          if (shouldFlush) {
+            totalCharsSent = 0;
+          }
         }
         if (flushTimer) {
           clearTimeout(flushTimer);
@@ -4569,7 +4584,7 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       const scheduleFlush = () => {
         if (flushTimer) clearTimeout(flushTimer);
         const delay = chunksSent === 0 ? FIRST_CHUNK_DELAY : SUBSEQUENT_CHUNK_DELAY;
-        flushTimer = setTimeout(flushTextBuffer, delay);
+        flushTimer = setTimeout(() => flushTextBuffer(true), delay); // Timer always forces flush
       };
 
       try {
@@ -4586,25 +4601,28 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
             textBuffer += chunk.content;
             
             // For minimum latency: flush on punctuation OR after timer
-            // First chunk flushes very quickly (100ms) to start audio ASAP
+            // First chunk flushes very quickly (80ms) to start audio ASAP
             // Subsequent chunks can wait a bit longer for natural phrasing
             if (/[.!?]\s*$/.test(textBuffer)) {
-              // Immediate flush on sentence-ending punctuation
-              flushTextBuffer();
-            } else if (textBuffer.length > 50) {
-              // Flush larger buffers immediately
-              flushTextBuffer();
+              // Immediate flush with force=true on sentence-ending punctuation
+              flushTextBuffer(true);
+            } else if (/[,;:]\s*$/.test(textBuffer) && textBuffer.length >= 15) {
+              // Flush on clause boundaries (comma, semicolon) if we have enough text
+              flushTextBuffer(true);
+            } else if (textBuffer.length > 40) {
+              // Flush larger buffers immediately with force
+              flushTextBuffer(true);
             } else {
               // Schedule a flush after a short delay
               scheduleFlush();
             }
           } else if (chunk.type === 'sentence') {
             sentenceCount++;
-            // Sentence boundaries trigger immediate flush
-            flushTextBuffer();
+            // Sentence boundaries trigger immediate flush with force
+            flushTextBuffer(true);
           } else if (chunk.type === 'done') {
-            // Flush any remaining text
-            flushTextBuffer();
+            // Flush any remaining text with force
+            flushTextBuffer(true);
             // Close TTS generation
             sendToTTS('', true);
           }
