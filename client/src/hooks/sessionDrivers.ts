@@ -430,7 +430,7 @@ export class LiveAvatarDriver implements SessionDriver {
    * Speak using ElevenLabs voice with SDK lip-sync
    * SDK handles both lip-sync animation AND audio playback through WebRTC
    * 
-   * Backend returns WAV format (24kHz, mono, 16-bit) with header for HeyGen SDK
+   * Backend returns raw PCM (24kHz, mono, 16-bit) with SSML for natural pauses
    * Uses SINGLE TTS call for full text - no sentence splitting
    * 
    * Following official demo pattern: just call repeatAudio() - SDK handles everything
@@ -452,17 +452,17 @@ export class LiveAvatarDriver implements SessionDriver {
       }
 
       const data = await response.json();
-      const wavBase64 = data.audio;
+      const pcmBase64 = data.audio;
       
-      if (!wavBase64) {
+      if (!pcmBase64) {
         throw new Error("No audio data in response");
       }
       
-      console.log(`🎤 Got WAV audio (${wavBase64.length} chars), sending to SDK...`);
+      console.log(`🎤 Got raw PCM audio (${pcmBase64.length} chars), sending to SDK...`);
       
       if (this.session) {
-        this.session.repeatAudio(wavBase64);
-        console.log("🔊 WAV audio sent to SDK for seamless lip-sync playback");
+        this.session.repeatAudio(pcmBase64);
+        console.log("🔊 Raw PCM audio sent to SDK for seamless lip-sync playback");
       }
       
     } catch (error) {
@@ -696,7 +696,7 @@ export class LiveAvatarDriver implements SessionDriver {
    * Directly send base64 audio to the SDK for lip-sync playback
    * Used by batch audio mode for complete audio responses
    * 
-   * NOTE: Backend returns WAV format (24kHz, mono, 16-bit) with header
+   * NOTE: Backend returns raw PCM (24kHz, mono, 16-bit) with SSML processing
    * Uses SINGLE TTS call for full text - sends complete audio in ONE call!
    */
   async repeatAudio(base64Audio: string): Promise<void> {
@@ -705,7 +705,7 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
-    console.log(`🎤 [repeatAudio] Sending ${base64Audio.length} chars of WAV audio to SDK`);
+    console.log(`🎤 [repeatAudio] Sending ${base64Audio.length} chars of raw PCM audio to SDK`);
     
     return new Promise((resolve) => {
       this.speechCompleteResolver = () => {

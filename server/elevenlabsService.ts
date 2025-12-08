@@ -339,20 +339,18 @@ class ElevenLabsService {
       const arrayBuffer = await response.arrayBuffer();
       const pcmBuffer = Buffer.from(arrayBuffer);
       
-      // Wrap PCM in WAV container so HeyGen SDK understands the audio format
-      // WAV header contains sample rate (24kHz), bit depth (16-bit), channels (mono)
-      const wavBuffer = this.createWavBuffer(pcmBuffer, 24000, 1, 16);
-      const audioBase64 = wavBuffer.toString('base64');
+      // Return raw PCM (no WAV header) - HeyGen SDK and Web Audio API both handle raw PCM
+      // Format: 24kHz, mono, 16-bit signed little-endian
+      const audioBase64 = pcmBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
         { 
           duration, 
           pcmSize: pcmBuffer.length,
-          wavSize: wavBuffer.length,
-          format: "wav_24000_base64" 
+          format: "pcm_24000_base64" 
         },
-        "Single-call WAV audio generated (with header for HeyGen SDK)",
+        "Single-call raw PCM audio generated with SSML (no WAV header)",
       );
       metrics.recordElevenLabsTTS(duration);
 
