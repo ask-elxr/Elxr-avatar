@@ -2107,12 +2107,25 @@ export function useAvatarSession({
             
             const totalTime = performance.now() - flowStartTime;
             console.log(`🎵 [BATCH AUDIO] === COMPLETE ===`);
-            console.log(`🎵 [BATCH AUDIO] Total time: ${totalTime.toFixed(0)}ms`);
+            console.log(`🎵 [BATCH AUDIO] Total frontend time: ${totalTime.toFixed(0)}ms`);
+            
+            // Display detailed timing breakdown
             if (performanceData) {
-              console.log(`🎵 [BATCH AUDIO] Backend breakdown:`, performanceData);
+              const { totalMs, dataFetchMs, claudeMs, ttsMs } = performanceData;
+              console.log(`⏱️ ═══════════════════════════════════════════════`);
+              console.log(`⏱️ TIMING BREAKDOWN (Server-side):`);
+              console.log(`⏱️   1. RAG Data Fetch:    ${dataFetchMs}ms`);
+              console.log(`⏱️   2. Claude LLM:        ${claudeMs}ms`);
+              console.log(`⏱️   3. ElevenLabs TTS:    ${ttsMs}ms`);
+              console.log(`⏱️   Total Backend:        ${totalMs}ms`);
+              console.log(`⏱️   Network Overhead:     ${(totalTime - totalMs).toFixed(0)}ms`);
+              console.log(`⏱️ ═══════════════════════════════════════════════`);
             }
-            console.log(`📝 USER MESSAGE: ${message}`);
-            console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
+            
+            // Show response details
+            const wordCount = fullResponse ? fullResponse.split(/\s+/).length : 0;
+            console.log(`📝 USER: ${message}`);
+            console.log(`🤖 CLAUDE (${wordCount} words): ${fullResponse}`);
             
             // Send full audio to driver for lip-sync playback
             if (audioBase64 && driver && driver.repeatAudio) {
