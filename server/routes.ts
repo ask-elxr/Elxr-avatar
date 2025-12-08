@@ -4706,15 +4706,15 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         }
       };
 
-      // SENTENCE-BASED TTS STREAMING for smooth audio playback
-      // Key insight: Too-small audio chunks cause word splitting and gaps
-      // Strategy: ONLY flush on complete sentences - never mid-sentence
-      // The SDK queues audio internally, so larger chunks = smoother playback
+      // BALANCED TTS STREAMING: Fast first response + smooth subsequent audio
+      // Claude API takes 2.8-3s for first token - we can't optimize that
+      // But we CAN minimize the time between first token and first audio
+      // Strategy: Send first sentence ASAP (low threshold), then batch subsequent
       let flushTimer: NodeJS.Timeout | null = null;
-      const FIRST_FLUSH_TIMEOUT = 500; // Wait 500ms for first sentence
-      const SUBSEQUENT_FLUSH_TIMEOUT = 600; // Wait 600ms for subsequent
-      const FIRST_WORD_COUNT = 15; // Only flush after 15+ words if no sentence
-      const SUBSEQUENT_WORD_COUNT = 20; // Subsequent: 20+ words
+      const FIRST_FLUSH_TIMEOUT = 150; // Fast first flush (150ms)
+      const SUBSEQUENT_FLUSH_TIMEOUT = 300; // Moderate subsequent
+      const FIRST_WORD_COUNT = 6; // First sentence: 6 words is enough
+      const SUBSEQUENT_WORD_COUNT = 12; // Subsequent: accumulate more
       let sentencesSent = 0;
       
       // flushTextBuffer: sends accumulated text to TTS with flush=true
