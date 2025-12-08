@@ -2127,20 +2127,23 @@ export function useAvatarSession({
             console.log(`📝 USER: ${message}`);
             console.log(`🤖 CLAUDE (${wordCount} words): ${fullResponse}`);
             
-            // Send full audio to driver for lip-sync playback via single repeatAudio call
-            // This matches the working greeting path - single call, no chunking
-            if (audioBase64 && driver && driver.repeatAudio) {
+            // Use driver.speak() which uses the SAME WORKING PATH as greetings
+            // speak() → speakWithElevenLabsVoice() → fetch /api/elevenlabs/tts-base64 → session.repeatAudio()
+            // This bypasses potential issues with server-side TTS and uses the proven greeting flow
+            if (fullResponse && driver && driver.speak) {
               const heygenStart = performance.now();
-              console.log(`🔊 Sending ${audioBase64.length} chars of WAV audio to HeyGen SDK via single repeatAudio()...`);
+              console.log(`🔊 Using driver.speak() for TTS + lip-sync (same path as working greeting)...`);
               
-              // Use single repeatAudio call like the working greeting path
-              // The greeting successfully sends 400KB+ audio this way
-              await driver.repeatAudio(audioBase64);
+              // Call driver.speak() which internally:
+              // 1. Fetches PCM audio from /api/elevenlabs/tts-base64
+              // 2. Calls session.repeatAudio() directly (no chunking)
+              // This is the EXACT SAME PATH as the working greeting
+              await driver.speak(fullResponse, elevenLabsLanguageCodeRef.current);
               
               const heygenTime = performance.now() - heygenStart;
               console.log(`⏱️   4. HeyGen Lip-sync:   ${heygenTime.toFixed(0)}ms`);
             } else {
-              console.warn(`⚠️ Cannot send audio: audioBase64=${!!audioBase64}, driver=${!!driver}, repeatAudio=${!!driver?.repeatAudio}`);
+              console.warn(`⚠️ Cannot speak: fullResponse=${!!fullResponse}, driver=${!!driver}, speak=${!!driver?.speak}`);
             }
             
             // CRITICAL: Disable streaming mode after successful batch playback
