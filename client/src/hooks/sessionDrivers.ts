@@ -17,6 +17,8 @@ export interface SessionDriver {
   addAudioChunk?(base64Audio: string): void;
   endStreamingAudio?(): void;
   isStreamingAudioActive?(): boolean;
+  // Direct audio playback (non-streaming) - sends complete audio clip to SDK
+  playAudioDirect?(base64Audio: string): void;
 }
 
 interface DriverConfig {
@@ -654,6 +656,31 @@ export class LiveAvatarDriver implements SessionDriver {
    */
   isStreamingAudioActive(): boolean {
     return this.isStreamingAudio;
+  }
+
+  /**
+   * Play audio directly (non-streaming) - sends complete audio clip to SDK
+   * This bypasses the streaming buffer and sends the audio immediately for lip-sync
+   * Use this for short responses where we have the complete audio upfront
+   */
+  playAudioDirect(base64Audio: string): void {
+    if (!this.session) {
+      console.error("❌ Cannot play audio - no session");
+      return;
+    }
+    
+    console.log(`🔊 [DIRECT] Playing complete audio clip (${base64Audio.length} chars) via repeatAudio()`);
+    
+    // Notify that avatar is starting to talk
+    this.config.onAvatarStartTalking?.();
+    
+    // Send directly to SDK - single complete clip for smooth playback
+    try {
+      this.session.repeatAudio(base64Audio);
+      console.log("✅ [DIRECT] Audio sent to SDK for lip-sync playback");
+    } catch (err) {
+      console.error("❌ [DIRECT] repeatAudio error:", err);
+    }
   }
 }
 

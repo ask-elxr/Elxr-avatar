@@ -2437,16 +2437,15 @@ export function useAvatarSession({
         // Short responses (<50 words) use single TTS call for smooth audio
         // Long responses (>50 words) use streaming for progressive feedback
         if (audioStreamingEnabledRef.current && supportsAudioStreaming && driver) {
-          console.log("🎵 Started streaming audio accumulation for lip-sync (fast first-chunk mode)");
+          console.log("🎵 [HYBRID] Waiting for backend mode decision...");
           
           let fullResponse = '';
           let firstAudioTime = 0;
           let audioChunkCount = 0;
           let performanceData: any = null;
           let actualMode: 'streaming' | 'non-streaming' | 'pending' = 'pending';
-          
-          // Start streaming audio mode on the driver
-          (driver as any).startStreamingAudio();
+          let streamingStarted = false; // Track if we've started streaming mode
+          let accumulatedAudio: string[] = []; // Buffer audio until we know the mode
           
           try {
             const headers: Record<string, string> = { "Content-Type": "application/json" };
@@ -2511,14 +2510,43 @@ export function useAvatarSession({
                       const eventType = pendingEventType;
                       pendingEventType = null;
                         
-                      if (eventType === 'audio') {
+                      if (eventType === 'mode') {
+                        // Mode decision from backend - this MUST come before audio
+                        actualMode = data.streaming ? 'streaming' : 'non-streaming';
+                        const modeLabel = data.streaming ? '🔄 STREAMING (progressive audio)' : '📦 NON-STREAMING (single audio clip)';
+                        console.log(`🎯 [HYBRID MODE] ${modeLabel} - reason: ${data.reason}`);
+                        
+                        if (actualMode === 'streaming' && !streamingStarted) {
+                          // Start streaming mode for progressive audio
+                          try {
+                            (driver as any).startStreamingAudio();
+                            streamingStarted = true;
+                            console.log("🎵 [STREAMING] Started streaming audio mode");
+                          } catch (err) {
+                            console.error("❌ Failed to start streaming audio:", err);
+                          }
+                          
+                          // Flush any buffered audio that arrived before mode decision
+                          for (const chunk of accumulatedAudio) {
+                            (driver as any).addAudioChunk(chunk);
+                          }
+                          accumulatedAudio = [];
+                        } else if (actualMode === 'non-streaming' && accumulatedAudio.length > 0) {
+                          // Non-streaming with buffered audio - play it now
+                          console.log(`📦 [DIRECT] Flushing ${accumulatedAudio.length} buffered audio chunk(s)`);
+                          const combinedAudio = accumulatedAudio.join('');
+                          if ('playAudioDirect' in driver) {
+                            (driver as any).playAudioDirect(combinedAudio);
+                          }
+                          accumulatedAudio = [];
+                        }
+                      } else if (eventType === 'audio') {
                         audioChunkCount++;
                         const frontendReceiveTime = performance.now();
                         if (audioChunkCount === 1) {
                           firstAudioTime = frontendReceiveTime;
                           const totalLatency = (firstAudioTime - apiStartTime).toFixed(0);
                           console.log(`⏱️ [T+${totalLatency}ms] Frontend received first audio chunk`);
-                          console.log(`🎵 [AUDIO STREAMING] First audio chunk: ${totalLatency}ms from API call`);
                           if (data.serverTimestamp) {
                             const networkDelay = Date.now() - data.serverTimestamp;
                             console.log(`⏱️ [NETWORK] Server→Frontend delay: ${networkDelay}ms`);
@@ -2528,17 +2556,30 @@ export function useAvatarSession({
                           setProcessingStage(0);
                         }
                         
-                        // Send audio chunk to driver for lip-sync playback
+                        // Route audio based on mode
                         if (data.chunk) {
-                          (driver as any).addAudioChunk(data.chunk);
+                          if (actualMode === 'non-streaming') {
+                            // Non-streaming: Play complete audio directly via SDK (only once)
+                            if (audioChunkCount === 1) {
+                              console.log(`🔊 [DIRECT] Received complete audio (${data.chunk.length} chars) - playing via repeatAudio()`);
+                              if ('playAudioDirect' in driver) {
+                                (driver as any).playAudioDirect(data.chunk);
+                              }
+                            } else {
+                              console.log(`⚠️ [DIRECT] Ignoring extra audio chunk #${audioChunkCount} in non-streaming mode`);
+                            }
+                          } else if (actualMode === 'streaming') {
+                            // Streaming: Add to streaming buffer
+                            (driver as any).addAudioChunk(data.chunk);
+                          } else {
+                            // Mode not yet decided - buffer the audio
+                            console.log(`⏳ [PENDING] Buffering audio chunk (mode not yet decided)`);
+                            accumulatedAudio.push(data.chunk);
+                          }
                         }
                       } else if (eventType === 'text') {
                         // Accumulate text response
                         fullResponse += data.content || '';
-                      } else if (eventType === 'mode') {
-                        actualMode = data.streaming ? 'streaming' : 'non-streaming';
-                        const modeLabel = data.streaming ? '🔄 STREAMING (progressive audio)' : '📦 NON-STREAMING (single audio clip)';
-                        console.log(`🎯 [HYBRID MODE] ${modeLabel} - reason: ${data.reason}`);
                       } else if (eventType === 'timing') {
                         if (data.firstAudioMs) {
                           console.log(`🎵 [AUDIO STREAMING] Backend first audio: ${data.firstAudioMs}ms`);
@@ -2584,8 +2625,14 @@ export function useAvatarSession({
               }
             }
             
-            // End streaming audio mode
-            (driver as any).endStreamingAudio();
+            // End streaming audio mode (only if we started it)
+            if (streamingStarted && 'endStreamingAudio' in driver) {
+              try {
+                (driver as any).endStreamingAudio();
+              } catch (err) {
+                console.error("❌ Failed to end streaming audio:", err);
+              }
+            }
             
             // Post-response cleanup
             onResetInactivityTimer?.();
@@ -2594,12 +2641,18 @@ export function useAvatarSession({
             console.log(`⏱️ [TIMING] === TOTAL FLOW TIME: ${(performance.now() - flowStartTime).toFixed(0)}ms ===`);
             
             if (fullResponse) {
-              return; // Audio streaming succeeded
+              return; // Audio succeeded
             }
             
           } catch (streamError) {
-            // End streaming mode on error
-            (driver as any).endStreamingAudio();
+            // End streaming mode on error (only if we started it)
+            if (streamingStarted && 'endStreamingAudio' in driver) {
+              try {
+                (driver as any).endStreamingAudio();
+              } catch (err) {
+                console.error("❌ Failed to end streaming audio on error:", err);
+              }
+            }
             
             if (streamError instanceof Error && streamError.name !== "AbortError") {
               console.error("Audio streaming error, falling back to sentence streaming:", streamError);
