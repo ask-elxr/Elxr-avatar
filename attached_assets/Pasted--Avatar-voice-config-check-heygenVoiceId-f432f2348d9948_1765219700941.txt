@@ -1,0 +1,374 @@
+🔍 Avatar voice config check: heygenVoiceId="f432f2348d9948c6a5be7da8d0e06bda", elevenlabsVoiceId="Am7G7QzYkKkdR8bmdQqY"
+injected.js:37 🎙️ useElevenLabsVoiceRef set to: false
+injected.js:37 🔧 Session start code version: 2024-12-07-v2
+injected.js:37 📱 Mobile detection for voice chat: false
+injected.js:37 🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Mark Kohl
+injected.js:37 🚀 LiveAvatarDriver.start() called for: mark-kohl
+injected.js:37 🔑 Fetching LiveAvatar session credentials for: mark-kohl
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 📦 LiveAvatar session credentials received: {sessionId: '1ae451b7-089a-4775-a8c6-bd31db4c59a4', hasToken: true, mode: 'CUSTOM'}
+injected.js:37 📋 Creating LiveAvatar session: {sessionId: '1ae451b7-089a-4775-a8c6-bd31db4c59a4', hasToken: true, attempt: 1}
+injected.js:37 🔧 LiveAvatarDriver code version: 2024-12-07-v2
+injected.js:37 🎤 LiveAvatar voiceChat: DISABLED (using Web Speech API)
+injected.js:37 🔧 Available AgentEventsEnum keys: (8) ['SESSION_UPDATED', 'SESSION_STATE_UPDATED', 'USER_SPEAK_STARTED', 'USER_SPEAK_ENDED', 'USER_TRANSCRIPTION', 'AVATAR_TRANSCRIPTION', 'AVATAR_SPEAK_STARTED', 'AVATAR_SPEAK_ENDED']
+injected.js:37 🔄 Calling session.start() - SDK will connect to LiveKit...
+injected.js:37 📊 LiveAvatar session state: CONNECTING
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🔊 Acknowledgment audio preloaded for: mark-kohl
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🎬 LiveAvatar SESSION_STREAM_READY event received
+injected.js:37 📺 Attaching video element via session.attach()...
+injected.js:37 🎬 LiveAvatar stream ready
+injected.js:37 ⏭️ Skipping greeting - mode switch (seamless transition)
+injected.js:37 🎤 Starting voice recognition after seamless mode switch
+injected.js:37 🔧 Voice recognition code version: 2024-12-08-v3 (ElevenLabs STT for audio-only/mobile, Web Speech for desktop video)
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.0.0 Sa...
+injected.js:37 📱 SpeechRecognition available: true
+injected.js:37 🎤 Stopping ElevenLabs STT...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input (video mode)
+injected.js:37 🔊 Audio capture started (Web Speech)
+injected.js:37 📺 Video track ready - updating videoReady state
+injected.js:37 ✅ Video element attached via SDK - stream should be visible
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 setStreamState active
+injected.js:37 📺 Video element state after attach: {srcObject: 'present', readyState: 4, paused: false, videoWidth: 1280, videoHeight: 720, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📊 LiveAvatar session state: CONNECTED
+injected.js:37 ✅ session.start() completed - waiting for SESSION_STREAM_READY event
+injected.js:37 ✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+injected.js:37 ✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+injected.js:37 ✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hello', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17652196055560.mmohg1slhs
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🎵 [BATCH AUDIO] Using non-streaming batch audio mode
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+useAvatarSession.ts:394 WebSocket connection to 'wss://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/ws/elevenlabs-stt' failed: 
+(anonymous) @ useAvatarSession.ts:394
+(anonymous) @ useAvatarSession.ts:587
+(anonymous) @ useAvatarSession.ts:1357
+injected.js:37 🎤 ElevenLabs STT WebSocket error: Event {isTrusted: true, type: 'error', target: WebSocket, currentTarget: WebSocket, eventPhase: 2, …}
+(anonymous) @ injected.js:37
+ws.onerror @ useAvatarSession.ts:441
+injected.js:37 🎤 ElevenLabs STT WebSocket closed
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎵 [BATCH AUDIO] === COMPLETE ===
+injected.js:37 🎵 [BATCH AUDIO] Total time: 32587ms
+injected.js:37 🎵 [BATCH AUDIO] Backend breakdown: {totalMs: 7613, dataFetchMs: 1838, claudeMs: 4664, ttsMs: 781}
+injected.js:37 📝 USER MESSAGE: hello
+injected.js:37 🤖 CLAUDE RESPONSE: Hey again. I notice you're still circling - which is totally fine. Sometimes people need a minute before they're ready to talk about what's really going on.
+
+I'm here when you're ready. Whether it's about sleep, recovery, change, or something else entirely - just let me know what you need.
+injected.js:37 🔊 Sending 1049172 chars of audio to SDK for lip-sync
+injected.js:37 Batch audio error, falling back to sentence streaming: TypeError: driver.repeatAudio is not a function
+    at useAvatarSession.ts:2232:37
+    at async handleSubmitMessage (avatar-chat.tsx:445:5)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:2247
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:445
+onSubmit @ avatar-chat.tsx:1048
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] Data fetch: 312ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 39434ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "Hey. I'm noticing a pattern here - you've said "he..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 1
+injected.js:37 🚀 [STREAMING] First sentence delay: 39434ms
+injected.js:37 🚀 [STREAMING] Total time: 39434ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 5871, dataFetchMs: 312, claudeMs: 5425, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: hello
+injected.js:37 🤖 CLAUDE RESPONSE: Hey. I'm noticing a pattern here - you've said "hello" three times now without moving forward. That's not random. That's circling.
+
+Sometimes people do this when they're not sure how to start, or when what they actually want to talk about feels big or uncomfortable. Maybe you're testing whether I'm actually here. Maybe you're working up to something.
+
+Either way, I'm listening. No judgment, no rush.
+
+What's really going on?
+injected.js:37 ---
+injected.js:37 🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hello', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17652196520910.rwhwh82hqua
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⚠️ Speech timeout after 12500ms - SDK AVATAR_SPEAK_ENDED not received
+(anonymous) @ injected.js:37
+(anonymous) @ sessionDrivers.ts:386
+setTimeout
+(anonymous) @ sessionDrivers.ts:384
+speak @ sessionDrivers.ts:380
+processSentenceQueue @ useAvatarSession.ts:2285
+await in processSentenceQueue
+(anonymous) @ useAvatarSession.ts:2298
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:445
+onSubmit @ avatar-chat.tsx:1048
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] Data fetch: 1007ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 9517ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "Alright. I'm noticing something here - you've said..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 1
+injected.js:37 🚀 [STREAMING] First sentence delay: 9517ms
+injected.js:37 🚀 [STREAMING] Total time: 9518ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 8158, dataFetchMs: 1007, claudeMs: 7019, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: hello
+injected.js:37 🤖 CLAUDE RESPONSE: Alright. I'm noticing something here - you've said "hello" four times in a row now. That's not small talk anymore. That's a pattern.
+
+Here's what I'm seeing: Either you're testing if I'm actually present and listening, or there's something you want to talk about but you're not sure how to start. Maybe both.
+
+The knowledge base just pulled up sleep hygiene information, transformation stories, and the hero's journey - which tells me the system thinks you might be dealing with something related to change, difficulty, or being stuck.
+
+So let me ask directly: What's actually going on? What are you trying to work up the courage to say?
+
+I'm here. No judgment. Just listening.
+injected.js:37 ---
+injected.js:37 🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Got base64 PCM audio (1622800 chars), sending to SDK...
+injected.js:37 🔊 Audio sent to SDK for lip-sync playback
+injected.js:37 ⏳ Waiting for avatar to finish speaking...
+injected.js:37 ✅ Avatar finished speaking (or timeout reached)
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 65669ms ===
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Web Speech recognition error: no-speech
+(anonymous) @ injected.js:37
+recognition.onerror @ useAvatarSession.ts:659
+injected.js:37 🔄 No speech detected - restarting recognition
+injected.js:37 🎤 Web Speech recognition ended
+injected.js:37 🔄 Auto-restarting Web Speech recognition
+injected.js:37 ⚠️ Speech timeout after 19100ms - SDK AVATAR_SPEAK_ENDED not received
+(anonymous) @ injected.js:37
+(anonymous) @ sessionDrivers.ts:386
+setTimeout
+(anonymous) @ sessionDrivers.ts:384
+speak @ sessionDrivers.ts:380
+processSentenceQueue @ useAvatarSession.ts:2285
+await in processSentenceQueue
+(anonymous) @ useAvatarSession.ts:2298
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:445
+onSubmit @ avatar-chat.tsx:1048
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 ✅ Web Speech recognition restarted
+injected.js:37 🎤 Microphone listening (Web Speech)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Voice recognition already running
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: 

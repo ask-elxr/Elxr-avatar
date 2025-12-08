@@ -2227,9 +2227,9 @@ export function useAvatarSession({
             console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
             
             // Send full audio to driver for lip-sync playback
-            if (audioBase64 && driver) {
+            if (audioBase64 && driver && driver.repeatAudio) {
               console.log(`🔊 Sending ${audioBase64.length} chars of audio to SDK for lip-sync`);
-              await (driver as any).repeatAudio(audioBase64);
+              await driver.repeatAudio(audioBase64);
             }
             
             // Post-response cleanup

@@ -17,6 +17,8 @@ export interface SessionDriver {
   addAudioChunk?(base64Audio: string): void;
   endStreamingAudio?(): void;
   isStreamingAudioActive?(): boolean;
+  // Direct audio playback for batch audio mode
+  repeatAudio?(base64Audio: string): Promise<void>;
 }
 
 interface DriverConfig {
@@ -378,9 +380,11 @@ export class LiveAvatarDriver implements SessionDriver {
     
     // Set timeout to avoid hanging indefinitely if SDK event doesn't fire
     const timeoutPromise = new Promise<void>((resolve) => {
-      // Estimate duration: ~150ms per word + 2s buffer
+      // Estimate duration: ~200ms per word + 10s buffer for network/processing
+      // Long responses with ElevenLabs audio need more time for transmission and processing
       const wordCount = text.split(/\s+/).length;
-      const estimatedMs = Math.max(3000, wordCount * 150 + 2000);
+      const estimatedMs = Math.max(15000, wordCount * 200 + 10000);
+      console.log(`⏱️ Speech timeout set to ${(estimatedMs/1000).toFixed(1)}s for ${wordCount} words`);
       setTimeout(() => {
         if (this.speechCompleteResolver) {
           console.warn(`⚠️ Speech timeout after ${estimatedMs}ms - SDK AVATAR_SPEAK_ENDED not received`);
@@ -655,6 +659,48 @@ export class LiveAvatarDriver implements SessionDriver {
    */
   isStreamingAudioActive(): boolean {
     return this.isStreamingAudio;
+  }
+
+  /**
+   * Directly send base64 PCM audio to the SDK for lip-sync playback
+   * Used by batch audio mode for complete audio responses
+   */
+  async repeatAudio(base64Audio: string): Promise<void> {
+    if (!this.session) {
+      console.warn("Cannot repeat audio - session not initialized");
+      return;
+    }
+    
+    console.log(`🎤 [repeatAudio] Sending ${base64Audio.length} chars of base64 PCM audio to SDK`);
+    
+    return new Promise((resolve) => {
+      // Set up completion handler
+      this.speechCompleteResolver = () => {
+        console.log("✅ [repeatAudio] Avatar finished speaking");
+        resolve();
+      };
+      
+      // Send audio to SDK
+      this.session!.repeatAudio(base64Audio);
+      console.log("🔊 [repeatAudio] Audio sent to SDK");
+      
+      // Set a timeout in case the SDK doesn't fire the completion event
+      const timeout = setTimeout(() => {
+        console.warn("⚠️ [repeatAudio] Speech timeout - resolving anyway");
+        if (this.speechCompleteResolver) {
+          this.speechCompleteResolver();
+          this.speechCompleteResolver = null;
+        }
+      }, 60000); // 60 second timeout for long responses
+      
+      // Clean up timeout when speech completes naturally
+      const originalResolver = this.speechCompleteResolver;
+      this.speechCompleteResolver = () => {
+        clearTimeout(timeout);
+        originalResolver?.();
+        this.speechCompleteResolver = null;
+      };
+    });
   }
 }
 
