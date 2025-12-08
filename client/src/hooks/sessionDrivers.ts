@@ -740,6 +740,17 @@ export class LiveAvatarDriver implements SessionDriver {
       return;
     }
     
+    // CRITICAL: Cancel any pending debounce timer from previous audio
+    // This prevents the old timer from clearing audioPlaybackActive for new audio
+    if (this.speechEndDebounceTimer) {
+      console.log("🔄 [DIRECT] Cancelling old debounce timer before sending new audio");
+      clearTimeout(this.speechEndDebounceTimer);
+      this.speechEndDebounceTimer = null;
+    }
+    
+    // Reset speaking state for new audio
+    this.isSpeaking = false;
+    
     // Mark audio playback as active BEFORE sending to SDK
     // This allows event handlers to properly filter phantom events
     this.audioPlaybackActive = true;
@@ -765,7 +776,23 @@ export class LiveAvatarDriver implements SessionDriver {
       }
     }
     
-    console.log(`🔊 [DIRECT] Playing complete audio clip (${base64Audio.length} chars) via repeatAudio()`);
+    // Calculate estimated audio duration for debugging
+    // base64 is ~4/3 of raw bytes, PCM 24kHz 16-bit = 48000 bytes/sec
+    const estimatedBytes = Math.floor(base64Audio.length * 3 / 4);
+    const estimatedDurationSec = (estimatedBytes / 48000).toFixed(2);
+    console.log(`🔊 [DIRECT] Playing complete audio clip (${base64Audio.length} chars, ~${estimatedBytes} bytes, ~${estimatedDurationSec}s) via repeatAudio()`);
+    
+    // Validate audio data format (first few bytes for debugging)
+    try {
+      const decoded = atob(base64Audio.substring(0, 100));
+      const firstBytes = Array.from(decoded).slice(0, 10).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+      console.log(`🔊 [DIRECT] Audio first 10 bytes (hex): ${firstBytes}`);
+    } catch (e) {
+      console.error("❌ [DIRECT] Failed to decode audio for validation:", e);
+    }
+    
+    // Check SDK session state
+    console.log(`📊 [DIRECT] SDK session state: ${this.session.state || 'unknown'}`);
     
     // Notify that avatar is starting to talk (manual fallback in case SDK events don't fire)
     // SDK will also fire AVATAR_SPEAK_STARTED which our debounced handler manages
@@ -776,8 +803,10 @@ export class LiveAvatarDriver implements SessionDriver {
     
     // Send directly to SDK - single complete clip for smooth playback
     try {
+      console.log(`🕐 [DIRECT] Calling repeatAudio at timestamp: ${Date.now()}`);
       const result = this.session.repeatAudio(base64Audio);
       console.log("✅ [DIRECT] Audio sent to SDK for lip-sync playback, result:", result);
+      console.log(`🕐 [DIRECT] repeatAudio returned at timestamp: ${Date.now()}`);
     } catch (err) {
       console.error("❌ [DIRECT] repeatAudio error:", err);
       // Reset speaking state on error
