@@ -256,9 +256,9 @@ class ElevenLabsService {
   }
 
   /**
-   * Generate raw PCM audio as base64 for LiveAvatar SDK's repeatAudio()
+   * Generate WAV audio as base64 for LiveAvatar SDK's repeatAudio()
    * Makes a SINGLE TTS call for the FULL text - no sentence splitting
-   * Returns RAW PCM (24kHz, mono, 16-bit, no WAV header)
+   * Returns WAV format (24kHz, mono, 16-bit) with proper header so HeyGen understands the format
    */
   async generateSpeechBase64(
     text: string,
@@ -316,16 +316,21 @@ class ElevenLabsService {
 
       const arrayBuffer = await response.arrayBuffer();
       const pcmBuffer = Buffer.from(arrayBuffer);
-      const audioBase64 = pcmBuffer.toString('base64');
+      
+      // Wrap PCM in WAV container so HeyGen SDK understands the audio format
+      // WAV header contains sample rate (24kHz), bit depth (16-bit), channels (mono)
+      const wavBuffer = this.createWavBuffer(pcmBuffer, 24000, 1, 16);
+      const audioBase64 = wavBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
         { 
           duration, 
-          pcmSize: pcmBuffer.length, 
-          format: "raw_pcm_24000_base64" 
+          pcmSize: pcmBuffer.length,
+          wavSize: wavBuffer.length,
+          format: "wav_24000_base64" 
         },
-        "Single-call raw PCM audio generated (no WAV header, continuous playback)",
+        "Single-call WAV audio generated (with header for HeyGen SDK)",
       );
       metrics.recordElevenLabsTTS(duration);
 
@@ -344,7 +349,7 @@ class ElevenLabsService {
     } catch (error: any) {
       log.error(
         { error: error.message, stack: error.stack },
-        "Error generating raw PCM speech",
+        "Error generating WAV speech",
       );
       throw error;
     }
