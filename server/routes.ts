@@ -4462,42 +4462,14 @@ This applies to EVERY response, regardless of conversation length.`;
         });
       });
 
-      // Parallel data fetching AND TTS connection for minimum latency
+      // EARLY-START LLM STRATEGY: Race context loading against a timeout
+      // Start LLM immediately if context takes too long (200ms max wait)
       sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
       
       const dataFetchStart = Date.now();
       const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
+      const CONTEXT_TIMEOUT_MS = 200; // Max time to wait for context before starting LLM
       
-      // Run data fetch in parallel with TTS connection (already started above)
-      const [knowledgeResult, memoryResult] = await Promise.allSettled([
-        (async () => {
-          const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
-          if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
-          const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
-          return results.length > 0 ? results[0].text : null;
-        })(),
-        (async () => {
-          if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
-          const result = await memoryService.searchMemories(message, userId, { limit: 3 });
-          return result.memories || [];
-        })()
-      ]);
-
-      perfTimings.dataFetch = Date.now() - dataFetchStart;
-      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch });
-
-      // Build context
-      let combinedContext = '';
-      if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
-        combinedContext = knowledgeResult.value;
-      }
-      
-      let memoryContext = '';
-      if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
-        memoryContext = "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
-        combinedContext += memoryContext;
-      }
-
       // Build personality prompt (simplified for voice mode)
       const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
       const voiceModePrompt = `${personalityPrompt}
@@ -4509,7 +4481,46 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
 - Never say "I can help you with that" - just help
 - Respond as if speaking aloud`;
 
-      // Get conversation history
+      // Start context fetching (non-blocking)
+      let combinedContext = '';
+      let contextReady = false;
+      
+      const contextPromise = (async () => {
+        const [knowledgeResult, memoryResult] = await Promise.allSettled([
+          (async () => {
+            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+            if (!pineconeNamespaceService.isAvailable() || avatarNamespaces.length === 0) return null;
+            const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
+            return results.length > 0 ? results[0].text : null;
+          })(),
+          (async () => {
+            if (!memoryEnabled || !userId || !memoryService.isAvailable()) return [];
+            const result = await memoryService.searchMemories(message, userId, { limit: 3 });
+            return result.memories || [];
+          })()
+        ]);
+        
+        if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
+          combinedContext = knowledgeResult.value;
+        }
+        if (memoryResult.status === 'fulfilled' && memoryResult.value.length > 0) {
+          combinedContext += "\n\nRELEVANT MEMORIES:\n" + (memoryResult.value as any[]).map((m: any) => `- ${m.content}`).join("\n");
+        }
+        contextReady = true;
+        return combinedContext;
+      })();
+
+      // Race: wait for context OR timeout (whichever comes first)
+      await Promise.race([
+        contextPromise,
+        new Promise(resolve => setTimeout(resolve, CONTEXT_TIMEOUT_MS))
+      ]);
+      
+      perfTimings.dataFetch = Date.now() - dataFetchStart;
+      sendEvent('timing', { dataFetchMs: perfTimings.dataFetch, contextIncluded: contextReady });
+      log.info({ contextReady, contextLength: combinedContext.length, waitMs: perfTimings.dataFetch }, 'Context race completed');
+
+      // Get conversation history (fast, local DB)
       let dbConversationHistory: any[] = [];
       if (userId) {
         try {
@@ -4518,9 +4529,9 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
         } catch (error) { }
       }
 
-      // Save user message
+      // Save user message (fire and forget)
       if (userId) {
-        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
+        storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
       }
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
