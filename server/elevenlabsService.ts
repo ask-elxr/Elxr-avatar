@@ -286,7 +286,7 @@ class ElevenLabsService {
     });
 
     try {
-      log.debug("Generating WAV speech for LiveAvatar SDK");
+      log.debug("Generating PCM speech for LiveAvatar SDK (raw PCM 24kHz 16-bit)");
       const startTime = Date.now();
 
       const response = await fetch(
@@ -319,14 +319,14 @@ class ElevenLabsService {
       const arrayBuffer = await response.arrayBuffer();
       const pcmBuffer = Buffer.from(arrayBuffer);
       
-      // Wrap PCM in WAV container so HeyGen plays as single continuous clip
-      const wavBuffer = this.createWavBuffer(pcmBuffer, 24000, 1, 16);
-      const audioBase64 = wavBuffer.toString('base64');
+      // HeyGen SDK expects RAW PCM (24kHz, 16-bit, mono), NOT WAV with headers
+      // The SDK's repeatAudio() method handles the raw PCM directly
+      const audioBase64 = pcmBuffer.toString('base64');
 
       const duration = Date.now() - startTime;
       log.info(
-        { duration, pcmSize: pcmBuffer.length, wavSize: wavBuffer.length, format: "wav_24000_base64" },
-        "WAV speech generated for LiveAvatar (continuous playback)",
+        { duration, pcmSize: pcmBuffer.length, format: "pcm_24000_base64" },
+        "PCM speech generated for LiveAvatar SDK",
       );
       metrics.recordElevenLabsTTS(duration);
 
@@ -345,7 +345,7 @@ class ElevenLabsService {
     } catch (error: any) {
       log.error(
         { error: error.message, stack: error.stack },
-        "Error generating WAV speech with ElevenLabs",
+        "Error generating PCM speech with ElevenLabs",
       );
       throw error;
     }
