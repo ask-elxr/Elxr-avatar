@@ -237,7 +237,7 @@ export function TopicFolderUpload() {
             </CardTitle>
             <CardDescription className="text-white/70">
               Upload documents from organized topic folders to their Pinecone namespaces.
-              <span className="block text-xs mt-1 text-white/50">Files &gt;3MB and archives (zip/rar) are automatically filtered out for stability.</span>
+              <span className="block text-xs mt-1 text-white/50">Supports PDF, Word, TXT, and ZIP files up to 50MB. ZIP files are automatically extracted.</span>
             </CardDescription>
           </div>
           <Button
@@ -331,7 +331,7 @@ export function TopicFolderUpload() {
                         <FolderFiles folderId={folder.id} />
                       ) : (
                         <div className="text-center py-4 text-white/40 text-sm">
-                          No uploadable files (all files may be &gt;3MB or archives)
+                          No uploadable files (all files may be &gt;50MB or unsupported formats)
                         </div>
                       )}
                     </CollapsibleContent>

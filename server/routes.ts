@@ -5273,7 +5273,61 @@ VOICE CONVERSATION MODE - CRITICAL RULES:
       
       const { buffer, mimeType, fileName: processedFileName } = downloadResult;
 
-      // Extract text directly from buffer without saving to disk
+      // Handle ZIP files specially - extract and process all contained documents
+      const isZipFile = mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed' || 
+        (processedFileName && processedFileName.toLowerCase().endsWith('.zip'));
+      
+      if (isZipFile) {
+        log.info({ fileName: processedFileName }, "Processing ZIP file - extracting contents");
+        
+        // Save buffer to temp file for ZIP extraction
+        const os = await import('os');
+        const fs = await import('fs');
+        const path = await import('path');
+        const tempZipPath = path.default.join(os.default.tmpdir(), `gdrive_zip_${Date.now()}.zip`);
+        
+        try {
+          fs.default.writeFileSync(tempZipPath, buffer);
+          
+          const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+          
+          // Process ZIP using documentProcessor
+          const zipResult = await documentProcessor.processZipFile(tempZipPath, normalizedNamespace, {
+            userId,
+            category: normalizedNamespace,
+            source: 'google-drive-topic-zip',
+            originalZipFile: fileName || processedFileName
+          });
+          
+          // Cleanup temp file
+          try { fs.default.unlinkSync(tempZipPath); } catch (e) {}
+          
+          log.info({ 
+            fileName: processedFileName, 
+            filesProcessed: zipResult.filesProcessed,
+            filesSkipped: zipResult.filesSkipped,
+            totalFiles: zipResult.totalFiles
+          }, "ZIP file processed successfully");
+          
+          return res.json({
+            success: true,
+            message: `ZIP file processed: ${zipResult.filesProcessed} files uploaded, ${zipResult.filesSkipped} skipped`,
+            fileName: processedFileName,
+            namespace: normalizedNamespace,
+            isZip: true,
+            zipResults: zipResult
+          });
+        } catch (zipError: any) {
+          // Cleanup temp file on error
+          try { 
+            const fs = await import('fs');
+            fs.default.unlinkSync(tempZipPath); 
+          } catch (e) {}
+          throw zipError;
+        }
+      }
+
+      // Extract text directly from buffer without saving to disk (for non-ZIP files)
       let text = '';
       try {
         if (mimeType === 'text/plain') {
