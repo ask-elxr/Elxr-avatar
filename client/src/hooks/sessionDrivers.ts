@@ -171,9 +171,10 @@ export class LiveAvatarDriver implements SessionDriver {
         console.log("🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)");
         console.log(`🎤 Voice input: ${this.enableMobileVoiceChat ? 'ENABLED (using ElevenLabs STT)' : 'DISABLED (using Web Speech API)'}`);
         
+        // Create session with just the token - SDK handles LiveKit connection internally
+        // DO NOT pass apiUrl - it causes CORS issues when SDK tries to make direct API calls
         const session = new LiveAvatarSession(sessionToken, {
           voiceChat: false, // DISABLED - using ElevenLabs STT instead of HeyGen's built-in STT
-          apiUrl: "https://api.liveavatar.com", // LiveAvatar service endpoint (different from HeyGen)
         });
         this.session = session;
 

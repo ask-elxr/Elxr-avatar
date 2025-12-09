@@ -1,0 +1,1383 @@
+🔊 Acknowledgment pre-cache triggered for: thad (caching started)
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🔄 Switching transport: Audio → Video
+injected.js:37 🛑 Voice recognition stopped for seamless mode switch
+injected.js:37 🛑 Stopped audio playback for mode switch
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 Starting LiveAvatar session (mode switch - no greeting)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔍 Avatar voice config check: heygenVoiceId="736ca8f646f5469c8a846b5f04bef43d", elevenlabsVoiceId="QF9HJC7XWnue5c9W3LkY"
+injected.js:37 🎙️ useElevenLabsVoiceRef set to: false
+injected.js:37 🔧 Session start code version: 2024-12-07-v2
+injected.js:37 📱 Mobile detection for voice chat: false
+injected.js:37 🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Thad
+injected.js:37 🚀 LiveAvatarDriver.start() called for: thad
+injected.js:37 🔑 Fetching LiveAvatar session credentials for: thad
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 📦 LiveAvatar session credentials received: {sessionId: '6b38377f-e211-455a-b8e1-1eec783d548b', hasToken: true, mode: 'CUSTOM'}
+injected.js:37 📋 Creating LiveAvatar session: {sessionId: '6b38377f-e211-455a-b8e1-1eec783d548b', hasToken: true, attempt: 1}
+injected.js:37 🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)
+injected.js:37 🎤 Voice input: DISABLED (using Web Speech API)
+injected.js:37 🔄 Calling session.start() - SDK will connect to LiveKit...
+injected.js:37 📊 LiveAvatar session state: CONNECTING
+injected.js:37 🔊 Acknowledgment audio preloaded for: thad
+thad:1 Access to fetch at 'https://api.liveavatar.com/v1/sessions/start' from origin 'https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/start net::ERR_FAILED 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24627
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+startSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24626
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24694
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session start failed: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24710
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 📊 LiveAvatar session state: DISCONNECTED
+injected.js:37 📵 LiveAvatar stream disconnected: SESSION_START_FAILED
+injected.js:37 📵 Stream disconnected - intentionalStop flag: false
+injected.js:37 🔄 Auto-reconnecting attempt 1/3 in 1000ms...
+injected.js:37 ❌ Error starting LiveAvatar session (attempt 1): API request failed SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+start @ sessionDrivers.ts:237
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session is not connected
+(anonymous) @ injected.js:37
+assertConnected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:25046
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24719
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24718
+start @ sessionDrivers.ts:242
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🔄 Retry attempt 2/2 with fresh token...
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/stop 404 (Not Found)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610 Uncaught (in promise) SessionApiError: API request failed with status 404
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610:17)
+    at Generator.next (<anonymous>)
+    at fulfilled (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24090:24)
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24610
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🔑 Fetching LiveAvatar session credentials for: thad
+injected.js:37 🔄 Executing auto-reconnect attempt 1...
+injected.js:37 Starting LiveAvatar session (fresh start)
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 🔍 Avatar voice config check: heygenVoiceId="736ca8f646f5469c8a846b5f04bef43d", elevenlabsVoiceId="QF9HJC7XWnue5c9W3LkY"
+injected.js:37 🎙️ useElevenLabsVoiceRef set to: false
+injected.js:37 🔧 Session start code version: 2024-12-07-v2
+injected.js:37 📱 Mobile detection for voice chat: false
+injected.js:37 🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Thad
+injected.js:37 🚀 LiveAvatarDriver.start() called for: thad
+injected.js:37 🔑 Fetching LiveAvatar session credentials for: thad
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: false, videoReady: false, isLoading: true, showReconnect: false, …}
+injected.js:37 📦 LiveAvatar session credentials received: {sessionId: '46f8d2a5-b95c-4e72-8d8a-00d75fbc6d33', hasToken: true, mode: 'CUSTOM'}
+injected.js:37 📋 Creating LiveAvatar session: {sessionId: '46f8d2a5-b95c-4e72-8d8a-00d75fbc6d33', hasToken: true, attempt: 2}
+injected.js:37 🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)
+injected.js:37 🎤 Voice input: DISABLED (using Web Speech API)
+injected.js:37 🔄 Calling session.start() - SDK will connect to LiveKit...
+injected.js:37 📊 LiveAvatar session state: CONNECTING
+thad:1 Access to fetch at 'https://api.liveavatar.com/v1/sessions/start' from origin 'https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/start net::ERR_FAILED 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24627
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+startSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24626
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24694
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session start failed: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24710
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 📊 LiveAvatar session state: DISCONNECTED
+injected.js:37 📵 LiveAvatar stream disconnected: SESSION_START_FAILED
+injected.js:37 📵 Stream disconnected - intentionalStop flag: false
+injected.js:37 🔄 Auto-reconnecting attempt 2/3 in 2000ms...
+injected.js:37 ❌ Error starting LiveAvatar session (attempt 2): API request failed SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+start @ sessionDrivers.ts:237
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session is not connected
+(anonymous) @ injected.js:37
+assertConnected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:25046
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24719
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24718
+start @ sessionDrivers.ts:242
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 ❌ Error starting LiveAvatar session: API request failed SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:1424
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Error starting HeyGen for mode switch: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:1984
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Error switching mode: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+handleModeToggle @ avatar-chat.tsx:575
+await in handleModeToggle
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/stop 404 (Not Found)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610 Uncaught (in promise) SessionApiError: API request failed with status 404
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610:17)
+    at Generator.next (<anonymous>)
+    at fulfilled (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24090:24)
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24610
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 📦 LiveAvatar session credentials received: {sessionId: '2e0db776-2657-420e-b4ac-0e3a8b8e40be', hasToken: true, mode: 'CUSTOM'}
+injected.js:37 📋 Creating LiveAvatar session: {sessionId: '2e0db776-2657-420e-b4ac-0e3a8b8e40be', hasToken: true, attempt: 1}
+injected.js:37 🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)
+injected.js:37 🎤 Voice input: DISABLED (using Web Speech API)
+injected.js:37 🔄 Calling session.start() - SDK will connect to LiveKit...
+injected.js:37 📊 LiveAvatar session state: CONNECTING
+thad:1 Access to fetch at 'https://api.liveavatar.com/v1/sessions/start' from origin 'https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/start net::ERR_FAILED 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24627
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+startSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24626
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24694
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session start failed: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24710
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 📊 LiveAvatar session state: DISCONNECTED
+injected.js:37 📵 LiveAvatar stream disconnected: SESSION_START_FAILED
+injected.js:37 📵 Stream disconnected - intentionalStop flag: false
+injected.js:37 🔄 Auto-reconnecting attempt 3/3 in 4000ms...
+injected.js:37 ❌ Error starting LiveAvatar session (attempt 1): API request failed SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+start @ sessionDrivers.ts:237
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session is not connected
+(anonymous) @ injected.js:37
+assertConnected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:25046
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24719
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24718
+start @ sessionDrivers.ts:242
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🔄 Retry attempt 2/2 with fresh token...
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🔑 Fetching LiveAvatar session credentials for: thad
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/stop 404 (Not Found)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610 Uncaught (in promise) SessionApiError: API request failed with status 404
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610:17)
+    at Generator.next (<anonymous>)
+    at fulfilled (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24090:24)
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24610
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: false, …}
+injected.js:37 📦 LiveAvatar session credentials received: {sessionId: 'ce3ba081-ece5-47fb-add8-db978ec2ce20', hasToken: true, mode: 'CUSTOM'}
+injected.js:37 📋 Creating LiveAvatar session: {sessionId: 'ce3ba081-ece5-47fb-add8-db978ec2ce20', hasToken: true, attempt: 2}
+injected.js:37 🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)
+injected.js:37 🎤 Voice input: DISABLED (using Web Speech API)
+injected.js:37 🔄 Calling session.start() - SDK will connect to LiveKit...
+injected.js:37 📊 LiveAvatar session state: CONNECTING
+thad:1 Access to fetch at 'https://api.liveavatar.com/v1/sessions/start' from origin 'https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/start net::ERR_FAILED 500 (Internal Server Error)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24627
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+startSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24626
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24694
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session start failed: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24710
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 📊 LiveAvatar session state: DISCONNECTED
+injected.js:37 📵 LiveAvatar stream disconnected: SESSION_START_FAILED
+injected.js:37 📵 Stream disconnected - intentionalStop flag: false
+injected.js:37 ⚠️ Max auto-reconnect attempts reached - showing reconnect button
+injected.js:37 ❌ Error starting LiveAvatar session (attempt 2): API request failed SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+start @ sessionDrivers.ts:237
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 Session is not connected
+(anonymous) @ injected.js:37
+assertConnected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:25046
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24719
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24718
+start @ sessionDrivers.ts:242
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 ❌ Error starting LiveAvatar session: API request failed SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:1424
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 ❌ Auto-reconnect attempt 1 failed: SessionApiError: API request failed
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24621:15)
+    at Generator.throw (<anonymous>)
+    at rejected (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24097:32)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:1339
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 ⚠️ Max auto-reconnect attempts reached - showing reconnect button
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: true, …}
+injected.js:214  POST https://api.liveavatar.com/v1/sessions/stop 404 (Not Found)
+apply @ injected.js:214
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24607
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610 Uncaught (in promise) SessionApiError: API request failed with status 404
+    at SessionAPIClient.<anonymous> (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24610:17)
+    at Generator.next (<anonymous>)
+    at fulfilled (@heygen_liveavatar-web-sdk.js?v=6a4164ef:24090:24)
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24610
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+fulfilled @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24090
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+request @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24604
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24632
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+stopSession @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24631
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24964
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+cleanup @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24938
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24711
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1334
+setTimeout
+scheduleReconnect @ useAvatarSession.ts:1330
+onStreamDisconnected @ useAvatarSession.ts:1354
+(anonymous) @ sessionDrivers.ts:208
+emit @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:109
+postStop @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24969
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24712
+rejected @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24097
+Promise.then
+step @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24103
+(anonymous) @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24105
+__awaiter2 @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24087
+start @ @heygen_liveavatar-web-sdk.js?v=6a4164ef:24687
+start @ sessionDrivers.ts:227
+await in start
+(anonymous) @ useAvatarSession.ts:1419
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:1975
+await in (anonymous)
+handleModeToggle @ avatar-chat.tsx:566
+onClick @ AudioVideoToggle.tsx:73
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: true, …}
+injected.js:37 🔄 Executing auto-reconnect attempt 3...
+injected.js:37 ✅ Auto-reconnect successful!
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1765288348960%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1765288348960%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1765288348960%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1765288348960%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ a88b09b1736d5ed7.js:2
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: true, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: true, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: true, …}
+injected.js:37 🖼️ Render state: {audioOnly: true, heygenSessionActive: false, videoReady: false, isLoading: false, showReconnect: true, …}
