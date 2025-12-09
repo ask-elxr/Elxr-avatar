@@ -87,13 +87,14 @@ export class ClaudeService {
       'give me details', 'full explanation', 'comprehensive', 'in depth',
       'tell me everything', 'more information', 'expand on', 'detailed answer',
       'long answer', 'thorough', 'complete answer', 'walk me through',
-      'step by step', 'break it down', 'all the details'
+      'step by step', 'break it down', 'all the details',
+      'in detail', 'explain', 'tell me about'
     ];
     const queryLower = query.toLowerCase();
     const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
     
     if (wantsDetailedResponse) {
-      log.info('User requested detailed response - using extended max_tokens');
+      log.info('User requested detailed response - using extended max_tokens (250)');
     }
 
     const messages: any[] = [];
@@ -169,16 +170,21 @@ RESPONSE REQUIREMENTS:
       content: userContent
     });
 
-    // Voice mode brevity directive - forces concise responses for audio
+    // Voice mode brevity directive - forces concise responses for audio with progressive disclosure
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
 🎤 VOICE MODE - ULTRA CONCISE RESPONSES REQUIRED:
 This is a voice conversation. Users are LISTENING, not reading. You MUST be extremely brief:
-- Respond in 1-2 SHORT sentences maximum (under 30 words total)
-- Get straight to the point - no preambles, no filler
+- Respond in 1-3 SHORT, spoken-style sentences unless asked for detail
+- Maximum 120 tokens - get straight to the point
+- Use progressive disclosure: give a brief answer, then offer to go deeper
+- Example format: "[Brief 1-2 sentence answer]. Want me to go deeper on that?"
 - If asked a yes/no question, lead with the answer
 - Skip pleasantries and unnecessary context
 - Think "radio host" not "textbook"
-- If user wants more detail, they will ask - keep initial response minimal
+
+Example of good progressive disclosure:
+User: "What is kundalini?"
+Response: "Kundalini is dormant energy at your spine's base. When awakened, it rises through energy centers, shifting your awareness. Want me to go deeper?"
 
 ` : '';
 
@@ -187,8 +193,9 @@ This is a voice conversation. Users are LISTENING, not reading. You MUST be extr
       : `${voiceModeBrevity}You are an intelligent AI assistant with access to a comprehensive knowledge base. 
       
       Guidelines:
-      - DEFAULT: Keep responses SHORT and CLEAR (1-2 sentences) - be conversational, not verbose
-      - Only give detailed responses when the user explicitly asks for more information
+      - DEFAULT: Respond in 1-3 short, spoken-style sentences unless asked for detail
+      - Use progressive disclosure: brief answer first, then offer more depth
+      - End complex topics with "Want me to go deeper?" or similar invitation
       - Use the provided context to give accurate, helpful responses
       - If information isn't in the context, say so clearly
       - Be conversational and engaging, but CONCISE
@@ -196,7 +203,8 @@ This is a voice conversation. Users are LISTENING, not reading. You MUST be extr
       - Think "helpful friend" not "encyclopedia"`;
 
     // Use lower max_tokens for faster response in voice mode, higher when details requested
-    const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 300 : 1000);
+    // Voice mode: 120 tokens (enforces 1-3 sentences), Detail mode: 250 tokens
+    const maxTokens = wantsDetailedResponse ? 250 : (isVoiceMode ? 120 : 1000);
 
     let stream;
     try {
@@ -215,13 +223,29 @@ This is a voice conversation. Users are LISTENING, not reading. You MUST be extr
 
     let buffer = '';
     let fullResponse = '';
+    let sentenceCount = 0;
     const sentenceEnders = /([.!?])\s+/g;
+    
+    // Truncation settings: max 3 sentences if over 200 chars in voice mode (unless detailed)
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 3 : 10;
+    const charThresholdForTruncation = 200;
+    let shouldTruncate = false;
 
     for await (const event of stream) {
       if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
         const text = event.delta.text;
         buffer += text;
         fullResponse += text;
+        
+        // Check if we should start truncating (over 200 chars and in voice mode)
+        if (isVoiceMode && !wantsDetailedResponse && fullResponse.length > charThresholdForTruncation && sentenceCount >= maxSentences) {
+          shouldTruncate = true;
+        }
+        
+        // If truncating, stop processing new text
+        if (shouldTruncate) {
+          continue;
+        }
         
         yield { type: 'text', content: text };
         
@@ -232,7 +256,15 @@ This is a voice conversation. Users are LISTENING, not reading. You MUST be extr
         while ((match = sentenceEnders.exec(tempBuffer)) !== null) {
           const sentence = tempBuffer.slice(lastIndex, match.index + match[1].length).trim();
           if (sentence.length > 10) {
+            sentenceCount++;
             yield { type: 'sentence', content: sentence };
+            
+            // Check truncation after yielding sentence
+            if (isVoiceMode && !wantsDetailedResponse && sentenceCount >= maxSentences && fullResponse.length > charThresholdForTruncation) {
+              shouldTruncate = true;
+              log.info({ sentenceCount, responseLength: fullResponse.length }, 'Truncating response at max sentences');
+              break;
+            }
           }
           lastIndex = match.index + match[0].length;
         }
@@ -243,7 +275,8 @@ This is a voice conversation. Users are LISTENING, not reading. You MUST be extr
       }
     }
 
-    if (buffer.trim().length > 0) {
+    // Only yield remaining buffer if not truncated
+    if (buffer.trim().length > 0 && !shouldTruncate) {
       yield { type: 'sentence', content: buffer.trim() };
     }
 
