@@ -507,18 +507,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const costStats = await storage.getCostStats();
       const claudeService = costStats.services.find(s => s.serviceName === 'claude');
       
-      // Claude pricing: approximately $3 per 1M input tokens, $15 per 1M output tokens
-      // We track API calls, not tokens, so we estimate usage
+      // Claude Sonnet 4 pricing: $3 per 1M input tokens, $15 per 1M output tokens
+      // Average estimate: ~1500 input tokens, ~500 output tokens per call
       const totalCalls = claudeService?.total || 0;
-      const estimatedTokensPerCall = 2000; // Average tokens per call
-      const estimatedTotalTokens = totalCalls * estimatedTokensPerCall;
+      const avgInputTokens = 1500;
+      const avgOutputTokens = 500;
+      const inputCostPerMillion = 3.00;
+      const outputCostPerMillion = 15.00;
+      
+      const estimatedInputTokens = totalCalls * avgInputTokens;
+      const estimatedOutputTokens = totalCalls * avgOutputTokens;
+      const estimatedCostUsed = 
+        (estimatedInputTokens / 1000000) * inputCostPerMillion +
+        (estimatedOutputTokens / 1000000) * outputCostPerMillion;
       
       const stats = {
         totalCalls: totalCalls,
         last24h: claudeService?.last24h || 0,
         last7d: claudeService?.last7d || 0,
         avgResponseTimeMs: claudeService?.avgResponseTimeMs || 0,
-        estimatedTokens: estimatedTotalTokens,
+        estimatedInputTokens,
+        estimatedOutputTokens,
+        estimatedCostUsed: Math.round(estimatedCostUsed * 100) / 100,
+        // Claude doesn't have a credits API, so we can't show remaining
+        note: 'Check console.anthropic.com for actual balance',
         status: 'ok' as const,
       };
       
@@ -530,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // GET ElevenLabs API usage stats endpoint
+  // GET ElevenLabs API usage stats endpoint - fetches real subscription data
   app.get("/api/elevenlabs/credits", async (req: any, res) => {
     const log = logger.child({ service: "elevenlabs-credit", operation: "getCredits" });
 
@@ -538,19 +550,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const costStats = await storage.getCostStats();
       const elevenlabsService = costStats.services.find(s => s.serviceName === 'elevenlabs');
       
-      // ElevenLabs pricing: ~$0.30 per 1000 characters
-      // We track API calls, not characters, so we estimate usage
-      const totalCalls = elevenlabsService?.total || 0;
-      const estimatedCharsPerCall = 200; // Average characters per TTS call
-      const estimatedTotalChars = totalCalls * estimatedCharsPerCall;
+      // Fetch real subscription data from ElevenLabs API
+      let subscriptionData = null;
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      
+      if (apiKey) {
+        try {
+          const response = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+            headers: { 'xi-api-key': apiKey }
+          });
+          if (response.ok) {
+            subscriptionData = await response.json();
+          }
+        } catch (e) {
+          log.warn({ error: e }, "Failed to fetch ElevenLabs subscription");
+        }
+      }
       
       const stats = {
-        totalCalls: totalCalls,
+        totalCalls: elevenlabsService?.total || 0,
         last24h: elevenlabsService?.last24h || 0,
         last7d: elevenlabsService?.last7d || 0,
         avgResponseTimeMs: elevenlabsService?.avgResponseTimeMs || 0,
-        estimatedCharacters: estimatedTotalChars,
-        status: 'ok' as const,
+        // Real subscription data from ElevenLabs
+        subscription: subscriptionData ? {
+          tier: subscriptionData.tier,
+          characterCount: subscriptionData.character_count,
+          characterLimit: subscriptionData.character_limit,
+          charactersRemaining: subscriptionData.character_limit - subscriptionData.character_count,
+          usagePercent: Math.round((subscriptionData.character_count / subscriptionData.character_limit) * 100),
+        } : null,
+        status: subscriptionData ? 
+          (subscriptionData.character_count / subscriptionData.character_limit > 0.9 ? 'critical' : 
+           subscriptionData.character_count / subscriptionData.character_limit > 0.7 ? 'warning' : 'ok') : 'ok',
       };
       
       log.info({ stats }, "ElevenLabs credit stats retrieved");
