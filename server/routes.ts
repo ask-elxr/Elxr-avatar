@@ -4041,7 +4041,27 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
           const googleStart = Date.now();
           if (!avatarUseGoogleSearch || !googleSearchService.isAvailable()) return null;
           try {
-            const result = await googleSearchService.search(message, 4);
+            // Enhance search query for vague follow-up questions
+            let searchQuery = message;
+            const isVagueFollowUp = message.length < 50 && 
+              /\b(that|this|it|those|these|how|what|show me|tell me more)\b/i.test(message) &&
+              conversationHistory && conversationHistory.length > 0;
+            
+            if (isVagueFollowUp) {
+              const recentMessages = conversationHistory.slice(-4);
+              const topicContext = recentMessages
+                .filter((msg: any) => msg.message && msg.message.length > 20)
+                .map((msg: any) => msg.message)
+                .join(' ')
+                .substring(0, 200);
+              
+              if (topicContext) {
+                searchQuery = `${message} ${topicContext}`.substring(0, 150);
+                logger.info({ originalQuery: message, enhancedQuery: searchQuery }, 'Enhanced vague follow-up query');
+              }
+            }
+            
+            const result = await googleSearchService.search(searchQuery, 4);
             perfTimings.googleSearch = Date.now() - googleStart;
             return result;
           } catch (error) {
@@ -4467,7 +4487,32 @@ This applies to EVERY response, regardless of conversation length.`;
           const googleStart = Date.now();
           if (!avatarUseGoogleSearch || !googleSearchService.isAvailable()) return null;
           try {
-            const result = await googleSearchService.search(message, 4);
+            // Enhance search query for vague follow-up questions
+            let searchQuery = message;
+            const isVagueFollowUp = message.length < 50 && 
+              /\b(that|this|it|those|these|how|what|show me|tell me more)\b/i.test(message) &&
+              conversationHistory && conversationHistory.length > 0;
+            
+            if (isVagueFollowUp) {
+              // Extract topic from recent conversation history
+              const recentMessages = conversationHistory.slice(-4);
+              const topicContext = recentMessages
+                .filter((msg: any) => msg.message && msg.message.length > 20)
+                .map((msg: any) => msg.message)
+                .join(' ')
+                .substring(0, 200);
+              
+              if (topicContext) {
+                // Create enhanced search query with topic context
+                searchQuery = `${message} ${topicContext}`.substring(0, 150);
+                logger.info({ 
+                  originalQuery: message, 
+                  enhancedQuery: searchQuery 
+                }, 'Enhanced vague follow-up query for Google search');
+              }
+            }
+            
+            const result = await googleSearchService.search(searchQuery, 4);
             perfTimings.googleSearch = Date.now() - googleStart;
             return result;
           } catch (error) {
