@@ -3975,18 +3975,26 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         log.info({ avatarId }, "Video creation disabled for this avatar (streaming mode), continuing with normal chat");
       }
 
-      // Set up SSE headers - disable buffering for real-time streaming
+      // Set up SSE headers - disable all buffering for real-time streaming
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
-      res.setHeader('Transfer-Encoding', 'chunked');
+      
+      // Disable Nagle's algorithm for immediate packet transmission
+      if (res.socket) {
+        res.socket.setNoDelay(true);
+        res.socket.setTimeout(0);
+      }
+      
       res.flushHeaders();
 
       const sendEvent = (eventType: string, data: any) => {
-        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
-        if (typeof (res as any).flush === 'function') {
-          (res as any).flush();
+        const chunk = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
+        res.write(chunk);
+        if (res.socket && typeof res.socket.uncork === 'function') {
+          res.socket.cork();
+          res.socket.uncork();
         }
       };
 
@@ -4365,16 +4373,24 @@ This applies to EVERY response, regardless of conversation length.`;
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
-      res.setHeader('Transfer-Encoding', 'chunked');
+      
+      // Disable Nagle's algorithm for immediate packet transmission
+      if (res.socket) {
+        res.socket.setNoDelay(true);
+        res.socket.setTimeout(0);
+      }
       
       // Flush headers immediately to establish SSE connection
       res.flushHeaders();
 
+      // Send event and force immediate transmission
       const sendEvent = (eventType: string, data: any) => {
-        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
-        // Force flush to prevent buffering - critical for real-time audio streaming
-        if (typeof (res as any).flush === 'function') {
-          (res as any).flush();
+        const chunk = `event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
+        res.write(chunk);
+        // Force socket-level flush - critical for real-time streaming
+        if (res.socket && typeof res.socket.uncork === 'function') {
+          res.socket.cork();
+          res.socket.uncork();
         }
       };
 
