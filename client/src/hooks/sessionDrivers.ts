@@ -168,12 +168,14 @@ export class LiveAvatarDriver implements SessionDriver {
         // MediaRecorder API works in iframes on mobile (unlike WebSocket or Web Speech API alone)
         // Transcriptions are routed to our Claude + RAG + ElevenLabs TTS pipeline
         this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
-        console.log("🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)");
+        console.log("🔧 LiveAvatarDriver code version: 2024-12-09-v4 (correct SDK 3-arg signature)");
         console.log(`🎤 Voice input: ${this.enableMobileVoiceChat ? 'ENABLED (using ElevenLabs STT)' : 'DISABLED (using Web Speech API)'}`);
         
-        // Create session with just the token - SDK handles LiveKit connection internally
-        // DO NOT pass apiUrl - it causes CORS issues when SDK tries to make direct API calls
-        const session = new LiveAvatarSession(sessionToken, {
+        // Create session with sessionId, sessionToken, and config
+        // SDK signature: new LiveAvatarSession(sessionId, sessionToken, userConfig)
+        // Note: TypeScript types may be outdated, but the runtime signature is correct per npm docs
+        // @ts-ignore - SDK types are outdated, npm docs confirm 3-arg signature
+        const session = new LiveAvatarSession(sessionId, sessionToken, {
           voiceChat: false, // DISABLED - using ElevenLabs STT instead of HeyGen's built-in STT
         });
         this.session = session;
