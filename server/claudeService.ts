@@ -223,66 +223,80 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
     }
 
     let buffer = '';
-    let fullResponse = '';
+    let yieldedResponse = ''; // Track only what we've actually yielded
     let sentenceCount = 0;
     const sentenceEnders = /([.!?])\s+/g;
     
-    // Truncation settings: max 3 sentences if over 200 chars in voice mode (unless detailed)
+    // Truncation settings: max 3 sentences in voice mode (unless detailed)
     const maxSentences = isVoiceMode && !wantsDetailedResponse ? 3 : 10;
-    const charThresholdForTruncation = 200;
     let shouldTruncate = false;
 
     for await (const event of stream) {
+      // Stop processing entirely if we've hit our sentence limit
+      if (shouldTruncate) {
+        continue; // Drain remaining stream events without processing
+      }
+      
       if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
         const text = event.delta.text;
         buffer += text;
-        fullResponse += text;
         
-        // Check if we should start truncating (over 200 chars and in voice mode)
-        if (isVoiceMode && !wantsDetailedResponse && fullResponse.length > charThresholdForTruncation && sentenceCount >= maxSentences) {
-          shouldTruncate = true;
-        }
-        
-        // If truncating, stop processing new text
-        if (shouldTruncate) {
-          continue;
-        }
-        
-        yield { type: 'text', content: text };
-        
+        // Process sentences FIRST to check for truncation before yielding text
         let match;
         let lastIndex = 0;
         const tempBuffer = buffer;
+        let sentencesInChunk: string[] = [];
         
         while ((match = sentenceEnders.exec(tempBuffer)) !== null) {
           const sentence = tempBuffer.slice(lastIndex, match.index + match[1].length).trim();
           if (sentence.length > 10) {
             sentenceCount++;
-            yield { type: 'sentence', content: sentence };
+            sentencesInChunk.push(sentence);
             
-            // Check truncation after yielding sentence
-            if (isVoiceMode && !wantsDetailedResponse && sentenceCount >= maxSentences && fullResponse.length > charThresholdForTruncation) {
+            // Check truncation IMMEDIATELY after hitting max sentences
+            if (isVoiceMode && !wantsDetailedResponse && sentenceCount >= maxSentences) {
               shouldTruncate = true;
-              log.info({ sentenceCount, responseLength: fullResponse.length }, 'Truncating response at max sentences');
+              log.info({ sentenceCount, responseLength: yieldedResponse.length }, 'Truncating response at max sentences');
+              // Only yield text up to the end of the last allowed sentence
+              const truncatedText = tempBuffer.slice(0, match.index + match[1].length);
+              yield { type: 'text', content: truncatedText };
+              yieldedResponse += truncatedText;
+              // Yield all accumulated sentences
+              for (const s of sentencesInChunk) {
+                yield { type: 'sentence', content: s };
+              }
+              buffer = '';
               break;
             }
           }
           lastIndex = match.index + match[0].length;
         }
         
-        if (lastIndex > 0) {
-          buffer = tempBuffer.slice(lastIndex);
+        // Only yield text and sentences if NOT truncating
+        if (!shouldTruncate) {
+          yield { type: 'text', content: text };
+          yieldedResponse += text;
+          
+          for (const s of sentencesInChunk) {
+            yield { type: 'sentence', content: s };
+          }
+          
+          if (lastIndex > 0) {
+            buffer = tempBuffer.slice(lastIndex);
+          }
         }
       }
     }
 
     // Only yield remaining buffer if not truncated
     if (buffer.trim().length > 0 && !shouldTruncate) {
+      sentenceCount++;
       yield { type: 'sentence', content: buffer.trim() };
+      yieldedResponse += buffer.trim();
     }
 
     const duration = Date.now() - startTime;
-    log.info({ duration, responseLength: fullResponse.length }, 'Claude streaming response completed');
+    log.info({ duration, responseLength: yieldedResponse.length, sentenceCount }, 'Claude streaming response completed');
 
     storage.logApiCall({
       serviceName: 'claude',
@@ -293,7 +307,7 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
       log.error({ error: error.message }, 'Failed to log API call');
     });
 
-    yield { type: 'done', content: fullResponse };
+    yield { type: 'done', content: yieldedResponse };
   }
 
   // Generate conversational response with context and optional custom system prompt
