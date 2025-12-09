@@ -5298,7 +5298,7 @@ This applies to EVERY response, regardless of conversation length.`;
       let processedFiles: string[] = [];
       
       try {
-        if (mimeType === 'text/plain') {
+        if (mimeType === 'text/plain' || mimeType === 'text/markdown' || processedFileName?.endsWith('.md')) {
           text = buffer.toString('utf-8');
         } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
           const mammoth = await import('mammoth');
@@ -5335,7 +5335,7 @@ This applies to EVERY response, regardless of conversation length.`;
             try {
               let entryText = '';
               
-              if (entryName.endsWith('.txt')) {
+              if (entryName.endsWith('.txt') || entryName.endsWith('.md')) {
                 entryText = entryBuffer.toString('utf-8');
               } else if (entryName.endsWith('.pdf')) {
                 const pdfParse = await import('pdf-parse').then(m => m.default);

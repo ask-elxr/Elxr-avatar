@@ -370,7 +370,7 @@ export function TopicFolderUpload() {
             </CardTitle>
             <CardDescription className="text-white/70">
               Upload documents from organized topic folders to their Pinecone namespaces.
-              <span className="block text-xs mt-1 text-white/50">Click on a folder to expand and select files. Files &gt;15MB are automatically filtered out.</span>
+              <span className="block text-xs mt-1 text-white/50">Click on a folder to expand and select files. Supports PDF, Word, text, markdown, and ZIP (up to 100MB).</span>
             </CardDescription>
           </div>
           <Button
