@@ -82,13 +82,14 @@ export class ClaudeService {
     const startTime = Date.now();
 
     // Detect if user wants detailed/comprehensive response
+    // IMPORTANT: Keep this list strict - only explicit requests for detail
     const detailKeywords = [
       'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
-      'give me details', 'full explanation', 'comprehensive', 'in depth',
-      'tell me everything', 'more information', 'expand on', 'detailed answer',
-      'long answer', 'thorough', 'complete answer', 'walk me through',
-      'step by step', 'break it down', 'all the details',
-      'in detail', 'explain', 'tell me about'
+      'give me more details', 'full explanation', 'comprehensive', 'in depth',
+      'tell me everything', 'more information', 'expand on that', 'detailed answer',
+      'long answer', 'thorough explanation', 'complete answer', 'walk me through',
+      'step by step', 'break it down for me', 'all the details',
+      'explain in depth', 'go into detail'
     ];
     const queryLower = query.toLowerCase();
     const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
