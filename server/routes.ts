@@ -4365,9 +4365,19 @@ This applies to EVERY response, regardless of conversation length.`;
         res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
       };
 
-      // Performance timing
+      // Performance timing - detailed step-by-step logging
       const perfStart = Date.now();
       const perfTimings: Record<string, number> = {};
+      
+      const logStep = (step: string, startTime: number) => {
+        const elapsed = Date.now() - startTime;
+        const total = Date.now() - perfStart;
+        console.log(`⏱️ [${total}ms total] ${step}: ${elapsed}ms`);
+        return elapsed;
+      };
+      
+      console.log('\n🚀 ==================== STREAM-AUDIO REQUEST START ====================');
+      console.log(`⏱️ [0ms] Request received - message: "${(message || '').substring(0, 50)}..."`);
 
       // 1. Send thinking sound immediately to mask latency
       const thinkingStart = Date.now();
@@ -4380,12 +4390,11 @@ This applies to EVERY response, regardless of conversation length.`;
             format: 'pcm_24000',
             isFinal: false 
           });
-          log.info({ duration: Date.now() - thinkingStart }, "Thinking sound sent");
         }
+        perfTimings.thinkingSound = logStep('1. Thinking sound', thinkingStart);
       } catch (thinkingError) {
-        log.warn({ error: thinkingError }, "Failed to generate thinking sound, continuing...");
+        perfTimings.thinkingSound = logStep('1. Thinking sound (failed)', thinkingStart);
       }
-      perfTimings.thinkingSound = Date.now() - thinkingStart;
 
       sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
 
@@ -4394,6 +4403,9 @@ This applies to EVERY response, regardless of conversation length.`;
       const avatarUseWikipedia = avatarConfig.useWikipedia || false;
       const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
 
+      console.log(`⏱️ [${Date.now() - perfStart}ms] 2. Starting parallel data fetch...`);
+      const dataFetchStart = Date.now();
+      
       // PARALLEL DATA FETCHING (same as text streaming endpoint)
       const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         (async () => {
@@ -4457,7 +4469,8 @@ This applies to EVERY response, regardless of conversation length.`;
         })()
       ]);
 
-      perfTimings.dataFetch = Date.now() - perfStart;
+      perfTimings.dataFetch = logStep('2. Parallel data fetch COMPLETE', dataFetchStart);
+      console.log(`   └─ Memory: ${perfTimings.memory || 'skipped'}ms, Wiki: ${perfTimings.wikipedia || 'skipped'}ms, Google: ${perfTimings.googleSearch || 'skipped'}ms, Knowledge: ${perfTimings.knowledge || 0}ms`);
       sendEvent('timing', { dataFetch: perfTimings.dataFetch });
 
       // Process results
@@ -4514,12 +4527,15 @@ This applies to EVERY response, regardless of conversation length.`;
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
+      console.log(`⏱️ [${Date.now() - perfStart}ms] 3. Starting Claude streaming...`);
+      
       // Stream Claude response with sentence buffering for concurrent TTS
       const claudeStart = Date.now();
       let fullResponse = '';
       let sentenceBuffer = '';
       let sentenceCount = 0;
       let firstAudioTime = 0;
+      let firstTokenTime = 0;
       
       // Track pending TTS promises for concurrent generation
       const pendingTTSPromises: Promise<void>[] = [];
@@ -4603,6 +4619,12 @@ This applies to EVERY response, regardless of conversation length.`;
           true // isVoiceMode = true for concise responses
         )) {
           if (chunk.type === 'text') {
+            // Log first token time
+            if (!firstTokenTime) {
+              firstTokenTime = Date.now();
+              console.log(`⏱️ [${firstTokenTime - perfStart}ms] 3a. First Claude token received`);
+            }
+            
             // Accumulate text in sentence buffer
             sentenceBuffer += chunk.content;
             
@@ -4613,6 +4635,8 @@ This applies to EVERY response, regardless of conversation length.`;
               const sentence = extraction.sentence;
               sentenceBuffer = extraction.remaining;
               const currentIndex = sentenceCount; // Capture for closure
+              
+              console.log(`⏱️ [${Date.now() - perfStart}ms] 3b. Sentence ${currentIndex} complete: "${sentence.substring(0, 40)}..."`);
               
               // Send text event immediately
               sendEvent('sentence', { content: sentence, index: currentIndex });
@@ -4662,6 +4686,18 @@ This applies to EVERY response, regardless of conversation length.`;
       perfTimings.claude = Date.now() - claudeStart;
       perfTimings.total = Date.now() - perfStart;
       perfTimings.timeToFirstAudio = firstAudioTime ? firstAudioTime - perfStart : perfTimings.total;
+      perfTimings.timeToFirstToken = firstTokenTime ? firstTokenTime - perfStart : 0;
+
+      console.log(`⏱️ [${perfTimings.total}ms] 4. Stream complete - ${sentenceCount} sentences, ${fullResponse.length} chars`);
+      console.log('\n📊 ==================== TIMING SUMMARY ====================');
+      console.log(`   1. Thinking sound:    ${perfTimings.thinkingSound || 0}ms`);
+      console.log(`   2. Data fetch:        ${perfTimings.dataFetch || 0}ms`);
+      console.log(`   3. First token:       ${perfTimings.timeToFirstToken || 0}ms`);
+      console.log(`   4. First audio:       ${perfTimings.timeToFirstAudio || 0}ms`);
+      console.log(`   5. Claude total:      ${perfTimings.claude || 0}ms`);
+      console.log(`   6. TOTAL:             ${perfTimings.total}ms`);
+      console.log(`   Response: "${fullResponse.substring(0, 80)}..."`);
+      console.log('=============================================================\n');
 
       // Save assistant response
       if (userId && fullResponse) {
