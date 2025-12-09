@@ -4557,9 +4557,14 @@ This applies to EVERY response, regardless of conversation length.`;
       const generateAndSendAudio = async (text: string, index: number, isFinal: boolean): Promise<void> => {
         if (!text.trim()) return;
         
+        console.log('🔊 TTS called for:', text.substring(0, 60) + (text.length > 60 ? '...' : ''));
+        
         try {
           const ttsStart = Date.now();
-          const audioBase64 = await elevenlabsService.generateSpeechBase64(text, voiceId, languageCode);
+          
+          // Add SSML break tag for natural pause at end of sentence (no <speak> wrapper needed)
+          const ssmlText = `${text}<break time="70ms"/>`;
+          const audioBase64 = await elevenlabsService.generateSpeechBase64(ssmlText, voiceId, languageCode);
           
           if (index === 1 && !firstAudioTime) {
             firstAudioTime = Date.now();
@@ -4578,8 +4583,11 @@ This applies to EVERY response, regardless of conversation length.`;
             ttsMs: Date.now() - ttsStart
           });
           
+          console.log(`✅ Audio chunk sent: index=${index}, size=${audioBase64.length} chars, tts=${Date.now() - ttsStart}ms`);
+          
         } catch (ttsError: any) {
           log.error({ error: ttsError.message, text: text.substring(0, 50) }, "TTS generation failed");
+          console.error(`❌ TTS failed for index=${index}:`, ttsError.message);
           sendEvent('error', { message: 'TTS failed for sentence', index, recoverable: true });
         }
       };

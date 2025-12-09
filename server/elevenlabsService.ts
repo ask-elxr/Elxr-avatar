@@ -239,6 +239,9 @@ class ElevenLabsService {
       log.debug("Generating base64 PCM speech for LiveAvatar SDK");
       const startTime = Date.now();
 
+      // Check if text contains SSML tags to enable SSML parsing
+      const containsSSML = text.includes('<break') || text.includes('<speak');
+      
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
         {
@@ -257,6 +260,7 @@ class ElevenLabsService {
               use_speaker_boost: true,
             },
             ...(languageCode && { language_code: languageCode }),
+            ...(containsSSML && { enable_ssml: true }),
           }),
         }
       );
