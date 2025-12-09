@@ -25,6 +25,14 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
     -   TTS audio → Avatar SDK (`repeatAudio()` for lip-sync)
     -   `LiveAvatarDriver` accumulates streaming audio (12KB threshold / 200ms timeout)
     -   Batched audio sent to SDK for synchronized lip animation
+- **Audio Streaming Mode** (`/api/avatar/response/stream-audio`):
+    -   Immediate thinking sound (~500ms) to mask latency
+    -   Parallel data fetching (Pinecone, Mem0, Wikipedia, Google)
+    -   Claude streaming with sentence buffering (splits on . ! ? or 100 chars)
+    -   Concurrent TTS generation per sentence (ElevenLabs REST API)
+    -   SSE audio events with index metadata for ordered playback
+    -   Frontend buffers by index, plays in order (thinking → sentence 1 → 2...)
+    -   Expected time-to-first-audio: ~3-4s (after thinking sound at ~500ms)
 
 #### Backend (Express + TypeScript + Python)
 - **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.

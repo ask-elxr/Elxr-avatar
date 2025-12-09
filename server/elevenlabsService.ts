@@ -19,6 +19,9 @@ class ElevenLabsService {
   private ttsBreaker: any;
   private acknowledgmentCache: Map<string, Buffer[]> = new Map();
   private avatarPhraseCache: Map<string, string[]> = new Map();
+  private thinkingSoundCache: Map<string, { audio: string; timestamp: number }> = new Map(); // voiceId -> { audio, timestamp }
+  private readonly THINKING_CACHE_MAX_SIZE = 20; // Max number of thinking sounds to cache
+  private readonly THINKING_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes TTL
 
   constructor() {
     this.apiKey = process.env.ELEVENLABS_API_KEY || "";
@@ -509,6 +512,170 @@ class ElevenLabsService {
    */
   isSTTAvailable(): boolean {
     return !!this.apiKey;
+  }
+
+  /**
+   * Generate and cache a soft "thinking" sound for masking initial latency
+   * Uses a short, natural phrase that sounds like the avatar is processing
+   */
+  async getThinkingSound(voiceId: string, languageCode?: string): Promise<string | null> {
+    if (!this.apiKey) return null;
+
+    // Check cache first with TTL validation
+    const cacheKey = `${voiceId}_${languageCode || 'en'}`;
+    const cached = this.thinkingSoundCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < this.THINKING_CACHE_TTL_MS) {
+      return cached.audio;
+    }
+    // Remove stale entry if exists
+    if (cached) {
+      this.thinkingSoundCache.delete(cacheKey);
+    }
+
+    const log = logger.child({
+      service: "elevenlabs",
+      operation: "getThinkingSound",
+      voiceId,
+      languageCode,
+    });
+
+    try {
+      // Short, natural thinking sounds - SSML for natural delivery
+      const thinkingPhrases = [
+        "Hmm...",
+        "Let me see...",
+        "Mmm...",
+      ];
+      const phrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
+      
+      log.debug({ phrase }, "Generating thinking sound");
+      const startTime = Date.now();
+
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "xi-api-key": this.apiKey,
+          },
+          body: JSON.stringify({
+            text: `<speak><prosody rate="slow">${phrase}</prosody></speak>`,
+            model_id: "eleven_turbo_v2_5",
+            voice_settings: {
+              stability: 0.8,
+              similarity_boost: 0.6,
+              style: 0.0,
+              use_speaker_boost: true,
+            },
+            ...(languageCode && { language_code: languageCode }),
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        // Fallback to non-SSML if SSML fails
+        const fallbackResponse = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "xi-api-key": this.apiKey,
+            },
+            body: JSON.stringify({
+              text: phrase,
+              model_id: "eleven_turbo_v2_5",
+              voice_settings: {
+                stability: 0.8,
+                similarity_boost: 0.6,
+                style: 0.0,
+                use_speaker_boost: true,
+              },
+              ...(languageCode && { language_code: languageCode }),
+            }),
+          }
+        );
+
+        if (!fallbackResponse.ok) {
+          throw new Error(`ElevenLabs API error: ${fallbackResponse.status}`);
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        const audioBase64 = fallbackData.audio_base64;
+        if (audioBase64) {
+          this.evictThinkingCacheIfNeeded();
+          this.thinkingSoundCache.set(cacheKey, { audio: audioBase64, timestamp: Date.now() });
+          log.info({ duration: Date.now() - startTime }, "Thinking sound generated (fallback)");
+          return audioBase64;
+        }
+        return null;
+      }
+
+      const data = await response.json();
+      const audioBase64 = data.audio_base64;
+
+      if (!audioBase64) {
+        throw new Error("ElevenLabs API did not return audio_base64");
+      }
+
+      // Cache for reuse with TTL and size limit
+      this.evictThinkingCacheIfNeeded();
+      this.thinkingSoundCache.set(cacheKey, { audio: audioBase64, timestamp: Date.now() });
+
+      const duration = Date.now() - startTime;
+      log.info({ duration, audioLength: audioBase64.length }, "Thinking sound generated and cached");
+
+      return audioBase64;
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error generating thinking sound");
+      return null;
+    }
+  }
+
+  /**
+   * Pre-cache thinking sound for a voice
+   */
+  async preCacheThinkingSound(voiceId: string, languageCode?: string): Promise<void> {
+    await this.getThinkingSound(voiceId, languageCode);
+  }
+
+  /**
+   * Check if thinking sound is cached for a voice (with TTL check)
+   */
+  hasThinkingSoundFor(voiceId: string, languageCode?: string): boolean {
+    const cacheKey = `${voiceId}_${languageCode || 'en'}`;
+    const cached = this.thinkingSoundCache.get(cacheKey);
+    return !!cached && (Date.now() - cached.timestamp) < this.THINKING_CACHE_TTL_MS;
+  }
+
+  /**
+   * Evict old entries if cache exceeds max size
+   */
+  private evictThinkingCacheIfNeeded(): void {
+    if (this.thinkingSoundCache.size < this.THINKING_CACHE_MAX_SIZE) {
+      return;
+    }
+
+    // Find and remove oldest entry
+    let oldestKey: string | null = null;
+    let oldestTime = Date.now();
+    
+    for (const [key, value] of this.thinkingSoundCache.entries()) {
+      if (value.timestamp < oldestTime) {
+        oldestTime = value.timestamp;
+        oldestKey = key;
+      }
+    }
+    
+    if (oldestKey) {
+      this.thinkingSoundCache.delete(oldestKey);
+      logger.debug({ 
+        service: "elevenlabs", 
+        operation: "evictThinkingCache",
+        evictedKey: oldestKey 
+      }, "Evicted oldest thinking sound from cache");
+    }
   }
 }
 

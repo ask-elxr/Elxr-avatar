@@ -95,7 +95,7 @@ export function useAvatarSession({
   const acknowledgmentAudioRef = useRef<HTMLAudioElement | null>(null); // Cached acknowledgment audio
   const acknowledgmentCacheReadyRef = useRef<Map<string, boolean>>(new Map()); // Track which avatars have cached acknowledgments
   const currentAcknowledgmentRef = useRef<HTMLAudioElement | null>(null); // Currently playing acknowledgment (for stopping)
-  const streamingEnabledRef = useRef(false); // Disable streaming mode - avatar speaks full response at once
+  const streamingEnabledRef = useRef(true); // Enable audio streaming mode - faster first-response latency
   const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
   const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
@@ -2394,60 +2394,86 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Use streaming mode for faster perceived response
+        // Use AUDIO streaming mode for faster perceived response (concurrent TTS)
+        // Audio chunks may arrive out of order - frontend handles ordering via index
         if (streamingEnabledRef.current && sessionDriverRef.current) {
-          console.log("🚀 [STREAMING] Using streaming mode for faster response");
+          console.log("🎯 [AUDIO-STREAMING] Using audio streaming mode for faster response");
           
           let fullResponse = '';
-          let firstSentenceTime = 0;
-          let sentenceCount = 0;
-          let streamingComplete = false;
+          let firstAudioTime = 0;
+          let audioCount = 0;
           let performanceData: any = null;
           
-          // Clear sentence queue for new message
-          sentenceQueueRef.current = [];
-          isSpeakingQueueRef.current = false;
+          // Ordered playback state - audio chunks may arrive out of order
+          const audioBuffer: Map<number, { content: string; type: string; isFinal: boolean }> = new Map();
+          let nextPlayIndex = 0; // 0 = thinking sound, 1+ = sentences
+          let streamingComplete = false;
+          let streamError = false;
           
-          // Helper to speak all sentences sequentially - waits for each to complete
-          const processSentenceQueue = async () => {
-            while (sentenceQueueRef.current.length > 0 || !streamingComplete) {
-              // Wait for more sentences if queue is empty but stream isn't complete
-              if (sentenceQueueRef.current.length === 0) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-                continue;
+          // Helper to play audio chunks in order via repeatAudio
+          const processAudioQueue = async () => {
+            const maxWaitMs = 30000; // 30 second timeout
+            const startTime = Date.now();
+            
+            while (!streamingComplete || audioBuffer.size > 0) {
+              // Check for timeout
+              if (Date.now() - startTime > maxWaitMs) {
+                console.warn("🎯 [AUDIO-STREAMING] Timeout waiting for audio");
+                break;
               }
               
-              if (!sessionDriverRef.current) break;
+              // Check for fatal error
+              if (streamError) {
+                console.warn("🎯 [AUDIO-STREAMING] Stopping due to stream error");
+                break;
+              }
               
-              const sentence = sentenceQueueRef.current.shift();
-              if (sentence) {
-                isSpeakingQueueRef.current = true;
+              // Check if next audio chunk is ready
+              const nextAudio = audioBuffer.get(nextPlayIndex);
+              if (nextAudio) {
+                audioBuffer.delete(nextPlayIndex);
+                
+                if (!sessionDriverRef.current) break;
+                
                 try {
-                  // Use the session driver's speak method which handles voice mode internally
-                  await sessionDriverRef.current.speak(sentence, elevenLabsLanguageCodeRef.current);
-                  // Small delay between sentences for natural pacing
-                  await new Promise(resolve => setTimeout(resolve, 200));
+                  // Call repeatAudio directly on the session - SDK handles playback and lip-sync
+                  const session = (sessionDriverRef.current as any).session;
+                  if (session?.repeatAudio) {
+                    session.repeatAudio(nextAudio.content);
+                    console.log(`🔊 [AUDIO-STREAMING] Audio index ${nextPlayIndex} (${nextAudio.type}) sent to SDK`);
+                    
+                    // Estimate audio duration from PCM data length (24kHz, 16-bit mono)
+                    // Fast estimate: base64Length * 0.75 / 48000 * 1000ms
+                    const durationMs = (nextAudio.content.length * 0.75 / 48000) * 1000;
+                    
+                    // Wait for approximate audio duration before playing next chunk
+                    await new Promise(resolve => setTimeout(resolve, Math.max(durationMs * 0.8, 100)));
+                  }
                 } catch (e) {
-                  console.warn("Speak error:", e);
+                  console.warn("Audio playback error:", e);
                 }
-                isSpeakingQueueRef.current = false;
+                
+                nextPlayIndex++;
+              } else {
+                // Wait for next chunk to arrive
+                await new Promise(resolve => setTimeout(resolve, 50));
               }
             }
-            console.log("🚀 [STREAMING] Sentence queue fully processed");
+            console.log("🎯 [AUDIO-STREAMING] Audio queue fully processed");
           };
           
-          // Start processing queue in background (runs concurrently with stream reading)
-          const queueProcessor = processSentenceQueue();
+          // Start processing audio queue in background
+          const audioProcessor = processAudioQueue();
           
           try {
-            // Use fetch with streaming body for SSE
+            // Use fetch with streaming body for SSE - AUDIO streaming endpoint
             const headers: Record<string, string> = { "Content-Type": "application/json" };
             const memberstackId = getMemberstackId();
             if (memberstackId) {
               headers['X-Member-Id'] = memberstackId;
             }
             
-            const response = await fetch("/api/avatar/response/stream", {
+            const response = await fetch("/api/avatar/response/stream-audio", {
               method: "POST",
               headers,
               body: JSON.stringify({
@@ -2463,7 +2489,7 @@ export function useAvatarSession({
             });
             
             if (!response.ok) {
-              throw new Error(`Stream failed: ${response.status}`);
+              throw new Error(`Audio stream failed: ${response.status}`);
             }
             
             const reader = response.body?.getReader();
@@ -2488,39 +2514,59 @@ export function useAvatarSession({
                       try {
                         const data = JSON.parse(lines[i + 1].slice(6));
                         
-                        if (eventType === 'sentence') {
-                          sentenceCount++;
-                          if (sentenceCount === 1) {
-                            firstSentenceTime = performance.now();
-                            console.log(`🚀 [STREAMING] First sentence ready: ${(firstSentenceTime - apiStartTime).toFixed(0)}ms`);
+                        if (eventType === 'audio') {
+                          audioCount++;
+                          if (audioCount === 1) {
+                            firstAudioTime = performance.now();
+                            console.log(`🎯 [AUDIO-STREAMING] First audio ready: ${(firstAudioTime - apiStartTime).toFixed(0)}ms (type: ${data.type})`);
                           }
-                          console.log(`🚀 [STREAMING] Sentence ${sentenceCount}: "${data.content.substring(0, 50)}..."`);
                           
-                          // Queue sentence for speaking
-                          sentenceQueueRef.current.push(data.content);
+                          // Buffer audio by index for ordered playback
+                          // Thinking sound has index 0, sentences have index 1+
+                          const audioIndex = data.type === 'thinking' ? 0 : data.index;
+                          audioBuffer.set(audioIndex, {
+                            content: data.content,
+                            type: data.type,
+                            isFinal: data.isFinal
+                          });
+                          
+                          if (data.text) {
+                            console.log(`🎯 [AUDIO-STREAMING] Audio ${audioIndex} (${data.type}): "${data.text?.substring(0, 40)}..."`);
+                          } else {
+                            console.log(`🎯 [AUDIO-STREAMING] Audio ${audioIndex} (${data.type}) buffered`);
+                          }
+                        } else if (eventType === 'sentence') {
+                          // Text event - for logging only
+                          console.log(`📝 [AUDIO-STREAMING] Sentence ${data.index}: "${data.content?.substring(0, 50)}..."`);
                         } else if (eventType === 'done') {
                           fullResponse = data.fullResponse;
                           performanceData = data.performance;
                           const totalTime = performance.now() - flowStartTime;
-                          console.log(`🚀 [STREAMING] === STREAMING COMPLETE ===`);
-                          console.log(`🚀 [STREAMING] Total sentences: ${sentenceCount}`);
-                          console.log(`🚀 [STREAMING] First sentence delay: ${firstSentenceTime ? (firstSentenceTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
-                          console.log(`🚀 [STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
+                          console.log(`🎯 [AUDIO-STREAMING] === STREAMING COMPLETE ===`);
+                          console.log(`🎯 [AUDIO-STREAMING] Total audio chunks: ${audioCount}`);
+                          console.log(`🎯 [AUDIO-STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
+                          console.log(`🎯 [AUDIO-STREAMING] Time to first audio from backend: ${performanceData?.timeToFirstAudioMs || 'N/A'}ms`);
+                          console.log(`🎯 [AUDIO-STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
                           if (performanceData) {
-                            console.log(`🚀 [STREAMING] Backend breakdown:`, performanceData);
+                            console.log(`🎯 [AUDIO-STREAMING] Backend breakdown:`, performanceData);
                           }
                           console.log(`📝 USER MESSAGE: ${message}`);
                           console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
                           console.log(`---`);
                           
-                          // Check for video generation notification
-                          if (data.videoGenerating && onVideoGenerating) {
-                            const { videoRecordId, topic } = data.videoGenerating;
-                            console.log(`🎬 [STREAMING] Video generation started: topic="${topic}", id=${videoRecordId}`);
-                            onVideoGenerating(topic, videoRecordId);
+                          // Check if there was an error
+                          if (data.error) {
+                            streamError = true;
                           }
                         } else if (eventType === 'timing') {
                           console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetch}ms`);
+                        } else if (eventType === 'status') {
+                          console.log(`📊 [STATUS] ${data.phase}: ${data.message}`);
+                        } else if (eventType === 'error') {
+                          console.error(`❌ [AUDIO-STREAMING] Error: ${data.message}`);
+                          if (data.fatal) {
+                            streamError = true;
+                          }
                         }
                       } catch (e) {
                         // JSON parse error, skip
@@ -2531,11 +2577,11 @@ export function useAvatarSession({
               }
             }
             
-            // Mark stream as complete so queue processor can finish
+            // Mark stream as complete so audio processor can finish
             streamingComplete = true;
             
-            // Wait for all sentences to be spoken
-            await queueProcessor;
+            // Wait for all audio to be played
+            await audioProcessor;
             
             // Post-response cleanup (same as non-streaming)
             onResetInactivityTimer?.();

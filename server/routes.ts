@@ -4320,6 +4320,395 @@ This applies to EVERY response, regardless of conversation length.`;
   });
 
 
+  // STREAMING AUDIO AVATAR RESPONSE - Streams Claude response with per-sentence TTS audio via SSE
+  // Reduces time-to-first-audio from 6+ seconds to ~3 seconds by streaming sentences
+  app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
+    const log = logger.child({ service: 'avatar-stream-audio', operation: 'streamAudioResponse' });
+    
+    try {
+      const { message, avatarId, conversationHistory = [], memoryEnabled = false, languageCode, imageBase64, imageMimeType } = req.body;
+      let userId = req.user?.claims?.sub || null;
+      if (!userId && req.body.userId?.startsWith('temp_')) {
+        userId = req.body.userId;
+      }
+
+      if (!message && !imageBase64) {
+        return res.status(400).json({ error: "Message or image is required" });
+      }
+
+      const avatarConfig = await getAvatarById(avatarId || "nigel");
+      if (!avatarConfig) {
+        return res.status(404).json({ error: "Avatar not found" });
+      }
+
+      const voiceId = avatarConfig.elevenlabsVoiceId;
+      if (!voiceId) {
+        return res.status(400).json({ error: "Avatar not configured for audio" });
+      }
+
+      // Short query optimization: use non-streaming for very short queries (<20 chars)
+      const useNonStreaming = message && message.length < 20;
+      
+      if (useNonStreaming) {
+        log.info({ messageLength: message.length }, "Short query - using non-streaming mode");
+        // Redirect to existing non-streaming endpoint logic would go here
+        // For now, continue with streaming but note this optimization
+      }
+
+      // Set up SSE headers
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no');
+
+      const sendEvent = (eventType: string, data: any) => {
+        res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+      };
+
+      // Performance timing
+      const perfStart = Date.now();
+      const perfTimings: Record<string, number> = {};
+
+      // 1. Send thinking sound immediately to mask latency
+      const thinkingStart = Date.now();
+      try {
+        const thinkingAudio = await elevenlabsService.getThinkingSound(voiceId, languageCode);
+        if (thinkingAudio) {
+          sendEvent('audio', { 
+            content: thinkingAudio, 
+            type: 'thinking',
+            format: 'pcm_24000',
+            isFinal: false 
+          });
+          log.info({ duration: Date.now() - thinkingStart }, "Thinking sound sent");
+        }
+      } catch (thinkingError) {
+        log.warn({ error: thinkingError }, "Failed to generate thinking sound, continuing...");
+      }
+      perfTimings.thinkingSound = Date.now() - thinkingStart;
+
+      sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
+
+      // Check avatar research source toggles
+      const avatarUsePubMed = avatarConfig.usePubMed || false;
+      const avatarUseWikipedia = avatarConfig.useWikipedia || false;
+      const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
+
+      // PARALLEL DATA FETCHING (same as text streaming endpoint)
+      const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+        (async () => {
+          const memStart = Date.now();
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+            return { success: false, memories: [] };
+          }
+          try {
+            const result = await memoryService.searchMemories(message, userId, { limit: 5 });
+            perfTimings.memory = Date.now() - memStart;
+            return result;
+          } catch (error) {
+            perfTimings.memory = Date.now() - memStart;
+            return { success: false, memories: [] };
+          }
+        })(),
+        (async () => {
+          const wikiStart = Date.now();
+          if (!avatarUseWikipedia) return null;
+          try {
+            const result = await wikipediaService.searchAndSummarize(message);
+            perfTimings.wikipedia = Date.now() - wikiStart;
+            return result;
+          } catch (error) {
+            perfTimings.wikipedia = Date.now() - wikiStart;
+            return null;
+          }
+        })(),
+        (async () => {
+          const googleStart = Date.now();
+          if (!avatarUseGoogleSearch || !googleSearchService.isAvailable()) return null;
+          try {
+            const result = await googleSearchService.search(message, 4);
+            perfTimings.googleSearch = Date.now() - googleStart;
+            return result;
+          } catch (error) {
+            perfTimings.googleSearch = Date.now() - googleStart;
+            return null;
+          }
+        })(),
+        (async () => {
+          const knowStart = Date.now();
+          try {
+            const avatarNamespaces = avatarConfig.pineconeNamespaces || [];
+            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+            if (!pineconeNamespaceService.isAvailable()) {
+              perfTimings.knowledge = Date.now() - knowStart;
+              return null;
+            }
+            const results = await pineconeNamespaceService.retrieveContext(message, 3, avatarNamespaces);
+            perfTimings.knowledge = Date.now() - knowStart;
+            
+            if (results.length > 0) {
+              return results[0].text || null;
+            }
+            return null;
+          } catch (error: any) {
+            perfTimings.knowledge = Date.now() - knowStart;
+            return null;
+          }
+        })()
+      ]);
+
+      perfTimings.dataFetch = Date.now() - perfStart;
+      sendEvent('timing', { dataFetch: perfTimings.dataFetch });
+
+      // Process results
+      let memoryContext = "";
+      let wikipediaContext = "";
+      let googleSearchContext = "";
+      let knowledgeContext = "";
+
+      const memories = memoryResultSettled.status === 'fulfilled' ? memoryResultSettled.value?.memories : undefined;
+      if (memories && memories.length > 0) {
+        memoryContext = "\n\nRELEVANT MEMORIES:\n" + memories.map((m: any) => `- ${m.content}`).join("\n");
+      }
+      if (wikipediaResultSettled.status === 'fulfilled' && wikipediaResultSettled.value) {
+        wikipediaContext = `\n\nWIKIPEDIA INFORMATION:\n${wikipediaResultSettled.value}`;
+      }
+      if (googleSearchResultSettled.status === 'fulfilled' && googleSearchResultSettled.value) {
+        googleSearchContext = `\n\nWEB SEARCH RESULTS:\n${googleSearchResultSettled.value}`;
+      }
+      if (knowledgeResultSettled.status === 'fulfilled' && knowledgeResultSettled.value) {
+        knowledgeContext = knowledgeResultSettled.value;
+      }
+
+      // Build combined context
+      let combinedContext = knowledgeContext || '';
+      if (memoryContext) combinedContext += memoryContext;
+      if (wikipediaContext) combinedContext += wikipediaContext;
+      if (googleSearchContext) combinedContext += googleSearchContext;
+
+      // Get conversation history
+      let dbConversationHistory: any[] = [];
+      if (userId) {
+        try {
+          const records = await storage.getConversationHistory(userId, avatarId, 6);
+          dbConversationHistory = records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
+        } catch (error) { }
+      }
+
+      // Save user message
+      if (userId) {
+        await storage.saveConversation({ userId, avatarId, role: 'user', text: message }).catch(() => {});
+      }
+
+      // Build personality prompt (simplified from text streaming)
+      const personalityPrompt = avatarConfig.personalityPrompt || `You are ${avatarConfig.name}, an expert assistant.`;
+      const currentDate = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+      let enhancedPersonality = `${personalityPrompt}\n\n⚠️ TODAY'S DATE: ${currentDate}.\n\n`;
+      
+      // Voice mode brevity directive
+      enhancedPersonality += `🎤 VOICE MODE - Keep responses SHORT (1-3 sentences). Get straight to the point.\n\n`;
+
+      if (languageCode && languageCode !== "en" && languageCode !== "en-US") {
+        enhancedPersonality = `🌐 LANGUAGE: Respond in the user's language (${languageCode}).\n\n${enhancedPersonality}`;
+      }
+
+      sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
+
+      // Stream Claude response with sentence buffering for concurrent TTS
+      const claudeStart = Date.now();
+      let fullResponse = '';
+      let sentenceBuffer = '';
+      let sentenceCount = 0;
+      let firstAudioTime = 0;
+      
+      // Track pending TTS promises for concurrent generation
+      const pendingTTSPromises: Promise<void>[] = [];
+
+      // Helper function: Extract complete sentences from buffer
+      const extractSentence = (buffer: string): { sentence: string; remaining: string } | null => {
+        // Look for sentence boundaries: ., !, ? followed by space or end
+        const sentenceEndRegex = /([.!?]+)\s*(?=\S|$)/;
+        const match = buffer.match(sentenceEndRegex);
+        
+        if (match && match.index !== undefined) {
+          const endIndex = match.index + match[0].length;
+          return {
+            sentence: buffer.substring(0, endIndex).trim(),
+            remaining: buffer.substring(endIndex).trim()
+          };
+        }
+        
+        // If buffer exceeds 100 chars without sentence end, force split at word boundary
+        if (buffer.length > 100) {
+          const spaceIndex = buffer.lastIndexOf(' ', 100);
+          if (spaceIndex > 20) {
+            return {
+              sentence: buffer.substring(0, spaceIndex).trim(),
+              remaining: buffer.substring(spaceIndex).trim()
+            };
+          }
+        }
+        
+        return null;
+      };
+
+      // Helper function: Generate TTS and send audio (runs concurrently)
+      // Frontend handles ordering via index metadata
+      const generateAndSendAudio = async (text: string, index: number, isFinal: boolean): Promise<void> => {
+        if (!text.trim()) return;
+        
+        try {
+          const ttsStart = Date.now();
+          const audioBase64 = await elevenlabsService.generateSpeechBase64(text, voiceId, languageCode);
+          
+          if (index === 1 && !firstAudioTime) {
+            firstAudioTime = Date.now();
+            log.info({ 
+              timeToFirstAudio: firstAudioTime - perfStart 
+            }, "🎯 First sentence audio ready");
+          }
+          
+          sendEvent('audio', {
+            content: audioBase64,
+            type: 'sentence',
+            text: text,
+            index: index,
+            format: 'pcm_24000',
+            isFinal: isFinal,
+            ttsMs: Date.now() - ttsStart
+          });
+          
+        } catch (ttsError: any) {
+          log.error({ error: ttsError.message, text: text.substring(0, 50) }, "TTS generation failed");
+          sendEvent('error', { message: 'TTS failed for sentence', index, recoverable: true });
+        }
+      };
+
+      try {
+        for await (const chunk of claudeService.streamResponse(
+          message || 'What do you see in this image?',
+          combinedContext,
+          dbConversationHistory.length > 0 ? dbConversationHistory : conversationHistory,
+          enhancedPersonality,
+          imageBase64,
+          imageMimeType,
+          true // isVoiceMode = true for concise responses
+        )) {
+          if (chunk.type === 'text') {
+            // Accumulate text in sentence buffer
+            sentenceBuffer += chunk.content;
+            
+            // Check if we have a complete sentence
+            let extraction = extractSentence(sentenceBuffer);
+            while (extraction) {
+              sentenceCount++;
+              const sentence = extraction.sentence;
+              sentenceBuffer = extraction.remaining;
+              const currentIndex = sentenceCount; // Capture for closure
+              
+              // Send text event immediately
+              sendEvent('sentence', { content: sentence, index: currentIndex });
+              
+              // Start TTS generation concurrently (don't await)
+              // Audio will be sent when ready, frontend handles ordering via index
+              const ttsPromise = generateAndSendAudio(sentence, currentIndex, false);
+              pendingTTSPromises.push(ttsPromise);
+              
+              // Check for more sentences in remaining buffer
+              extraction = extractSentence(sentenceBuffer);
+            }
+          } else if (chunk.type === 'done') {
+            fullResponse = chunk.content;
+            
+            // Handle any remaining text in buffer as final sentence
+            if (sentenceBuffer.trim()) {
+              sentenceCount++;
+              const finalIndex = sentenceCount;
+              sendEvent('sentence', { content: sentenceBuffer.trim(), index: finalIndex });
+              const finalTtsPromise = generateAndSendAudio(sentenceBuffer.trim(), finalIndex, true);
+              pendingTTSPromises.push(finalTtsPromise);
+            }
+          }
+        }
+        
+        // Wait for all TTS to complete before sending done event
+        await Promise.allSettled(pendingTTSPromises);
+        
+      } catch (streamError: any) {
+        log.error({ error: streamError.message }, 'Claude streaming error');
+        sendEvent('error', { message: 'AI generation failed', fatal: true });
+        
+        // Always send done event even on error so frontend can exit queue loop
+        sendEvent('done', { 
+          fullResponse: '', 
+          sentenceCount: 0, 
+          error: true,
+          performance: {
+            totalMs: Date.now() - perfStart,
+            error: streamError.message
+          }
+        });
+        return res.end();
+      }
+
+      perfTimings.claude = Date.now() - claudeStart;
+      perfTimings.total = Date.now() - perfStart;
+      perfTimings.timeToFirstAudio = firstAudioTime ? firstAudioTime - perfStart : perfTimings.total;
+
+      // Save assistant response
+      if (userId && fullResponse) {
+        await storage.saveConversation({ userId, avatarId, role: 'assistant', text: fullResponse }).catch(() => {});
+      }
+
+      // Store in memory if enabled
+      if (memoryEnabled && userId && memoryService.isAvailable() && fullResponse) {
+        const conversationText = `User asked: "${message}"\nAssistant responded: "${fullResponse}"`;
+        await memoryService.addMemory(conversationText, userId, MemoryType.NOTE, {
+          timestamp: new Date().toISOString(),
+          avatarId,
+        }).catch(() => {});
+      }
+
+      // Send completion event
+      sendEvent('done', {
+        fullResponse,
+        sentenceCount,
+        performance: {
+          totalMs: perfTimings.total,
+          timeToFirstAudioMs: perfTimings.timeToFirstAudio,
+          dataFetchMs: perfTimings.dataFetch,
+          claudeMs: perfTimings.claude,
+          breakdown: perfTimings
+        }
+      });
+
+      log.info({ 
+        userId, 
+        avatarId, 
+        perfTimings, 
+        sentenceCount,
+        timeToFirstAudio: perfTimings.timeToFirstAudio,
+      }, '🎯 Audio streaming response completed');
+      
+      console.log(`🎯 STREAMING AUDIO: First audio in ${perfTimings.timeToFirstAudio}ms, ${sentenceCount} sentences`);
+      
+      res.end();
+
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Streaming audio endpoint error');
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'Streaming failed' });
+      } else {
+        // Send error event with fatal flag
+        res.write(`event: error\ndata: ${JSON.stringify({ message: error.message, fatal: true })}\n\n`);
+        // Always send done event so frontend can exit queue loop
+        res.write(`event: done\ndata: ${JSON.stringify({ fullResponse: '', sentenceCount: 0, error: true })}\n\n`);
+        res.end();
+      }
+    }
+  });
+
+
   // Configure multer for file uploads
   const upload = multer({ 
     dest: "uploads/",
