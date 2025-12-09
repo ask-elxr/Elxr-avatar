@@ -499,6 +499,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET Claude API usage stats endpoint
+  app.get("/api/claude/credits", async (req: any, res) => {
+    const log = logger.child({ service: "claude-credit", operation: "getCredits" });
+
+    try {
+      const costStats = await storage.getCostStats();
+      const claudeService = costStats.services.find(s => s.serviceName === 'claude');
+      
+      // Claude pricing: approximately $3 per 1M input tokens, $15 per 1M output tokens
+      // We track API calls, not tokens, so we estimate usage
+      const totalCalls = claudeService?.total || 0;
+      const estimatedTokensPerCall = 2000; // Average tokens per call
+      const estimatedTotalTokens = totalCalls * estimatedTokensPerCall;
+      
+      const stats = {
+        totalCalls: totalCalls,
+        last24h: claudeService?.last24h || 0,
+        last7d: claudeService?.last7d || 0,
+        avgResponseTimeMs: claudeService?.avgResponseTimeMs || 0,
+        estimatedTokens: estimatedTotalTokens,
+        status: 'ok' as const,
+      };
+      
+      log.info({ stats }, "Claude credit stats retrieved");
+      res.json(stats);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting Claude credit stats");
+      res.status(500).json({ error: "Failed to retrieve Claude credit stats" });
+    }
+  });
+
+  // GET ElevenLabs API usage stats endpoint
+  app.get("/api/elevenlabs/credits", async (req: any, res) => {
+    const log = logger.child({ service: "elevenlabs-credit", operation: "getCredits" });
+
+    try {
+      const costStats = await storage.getCostStats();
+      const elevenlabsService = costStats.services.find(s => s.serviceName === 'elevenlabs');
+      
+      // ElevenLabs pricing: ~$0.30 per 1000 characters
+      // We track API calls, not characters, so we estimate usage
+      const totalCalls = elevenlabsService?.total || 0;
+      const estimatedCharsPerCall = 200; // Average characters per TTS call
+      const estimatedTotalChars = totalCalls * estimatedCharsPerCall;
+      
+      const stats = {
+        totalCalls: totalCalls,
+        last24h: elevenlabsService?.last24h || 0,
+        last7d: elevenlabsService?.last7d || 0,
+        avgResponseTimeMs: elevenlabsService?.avgResponseTimeMs || 0,
+        estimatedCharacters: estimatedTotalChars,
+        status: 'ok' as const,
+      };
+      
+      log.info({ stats }, "ElevenLabs credit stats retrieved");
+      res.json(stats);
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting ElevenLabs credit stats");
+      res.status(500).json({ error: "Failed to retrieve ElevenLabs credit stats" });
+    }
+  });
+
   // HeyGen API token endpoint for Streaming SDK with rate limiting (15 requests per user per minute for conversation flow)
   app.post("/api/heygen/token", rateLimitMiddleware(15, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen", operation: "createToken" });

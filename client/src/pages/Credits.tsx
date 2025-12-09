@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DollarSign, TrendingUp, Activity, AlertCircle } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell, LineChart, Line } from "recharts";
 
-interface CreditStats {
+interface HeygenCreditStats {
   limit: number;
   totalUsed: number;
   remaining: number;
@@ -14,32 +14,33 @@ interface CreditStats {
   status: 'ok' | 'warning' | 'critical';
 }
 
+interface ApiUsageStats {
+  totalCalls: number;
+  last24h: number;
+  last7d: number;
+  avgResponseTimeMs: number;
+  estimatedTokens?: number;
+  estimatedCharacters?: number;
+  status: 'ok' | 'warning' | 'critical';
+}
+
 export default function Credits() {
-  const { data: heygenStats, isLoading: heygenLoading } = useQuery<CreditStats>({
+  const { data: heygenStats, isLoading: heygenLoading } = useQuery<HeygenCreditStats>({
     queryKey: ['/api/heygen/credits'],
     refetchInterval: 30000,
   });
 
-  // Placeholder for other services - you can implement these endpoints later
-  const claudeStats = {
-    limit: 1000000,
-    totalUsed: 450000,
-    remaining: 550000,
-    last24h: 15000,
-    last7d: 85000,
-    status: 'ok' as const,
-  };
+  const { data: claudeStats, isLoading: claudeLoading } = useQuery<ApiUsageStats>({
+    queryKey: ['/api/claude/credits'],
+    refetchInterval: 30000,
+  });
 
-  const elevenlabsStats = {
-    limit: 500000,
-    totalUsed: 120000,
-    remaining: 380000,
-    last24h: 5000,
-    last7d: 25000,
-    status: 'ok' as const,
-  };
+  const { data: elevenlabsStats, isLoading: elevenlabsLoading } = useQuery<ApiUsageStats>({
+    queryKey: ['/api/elevenlabs/credits'],
+    refetchInterval: 30000,
+  });
 
-  if (heygenLoading) {
+  if (heygenLoading || claudeLoading || elevenlabsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -47,32 +48,29 @@ export default function Credits() {
     );
   }
 
-  // Data for service comparison chart
+  // Data for service comparison chart - showing API calls
   const comparisonData = [
     {
       name: 'HeyGen',
       used: heygenStats?.totalUsed || 0,
       remaining: heygenStats?.remaining || 0,
-      limit: heygenStats?.limit || 0,
     },
     {
       name: 'Claude',
-      used: claudeStats.totalUsed,
-      remaining: claudeStats.remaining,
-      limit: claudeStats.limit,
+      used: claudeStats?.totalCalls || 0,
+      remaining: 0,
     },
     {
       name: 'ElevenLabs',
-      used: elevenlabsStats.totalUsed,
-      remaining: elevenlabsStats.remaining,
-      limit: elevenlabsStats.limit,
+      used: elevenlabsStats?.totalCalls || 0,
+      remaining: 0,
     },
   ];
 
   // Data for usage trend chart
   const usageTrendData = [
-    { period: '24h', HeyGen: heygenStats?.last24h || 0, Claude: claudeStats.last24h, ElevenLabs: elevenlabsStats.last24h },
-    { period: '7d', HeyGen: heygenStats?.last7d || 0, Claude: claudeStats.last7d, ElevenLabs: elevenlabsStats.last7d },
+    { period: '24h', HeyGen: heygenStats?.last24h || 0, Claude: claudeStats?.last24h || 0, ElevenLabs: elevenlabsStats?.last24h || 0 },
+    { period: '7d', HeyGen: heygenStats?.last7d || 0, Claude: claudeStats?.last7d || 0, ElevenLabs: elevenlabsStats?.last7d || 0 },
   ];
 
   // Data for pie charts
@@ -81,14 +79,17 @@ export default function Credits() {
     { name: 'Remaining', value: heygenStats?.remaining || 0 },
   ];
 
+  // For Claude and ElevenLabs, show usage distribution by time period
   const claudePieData = [
-    { name: 'Used', value: claudeStats.totalUsed },
-    { name: 'Remaining', value: claudeStats.remaining },
+    { name: '24h', value: claudeStats?.last24h || 0 },
+    { name: '7d (excl. 24h)', value: Math.max(0, (claudeStats?.last7d || 0) - (claudeStats?.last24h || 0)) },
+    { name: 'Older', value: Math.max(0, (claudeStats?.totalCalls || 0) - (claudeStats?.last7d || 0)) },
   ];
 
   const elevenlabsPieData = [
-    { name: 'Used', value: elevenlabsStats.totalUsed },
-    { name: 'Remaining', value: elevenlabsStats.remaining },
+    { name: '24h', value: elevenlabsStats?.last24h || 0 },
+    { name: '7d (excl. 24h)', value: Math.max(0, (elevenlabsStats?.last7d || 0) - (elevenlabsStats?.last24h || 0)) },
+    { name: 'Older', value: Math.max(0, (elevenlabsStats?.totalCalls || 0) - (elevenlabsStats?.last7d || 0)) },
   ];
 
   const COLORS = {
@@ -97,6 +98,9 @@ export default function Credits() {
     heygen: '#0ea5e9',
     claude: '#8b5cf6',
     elevenlabs: '#14b8a6',
+    period24h: '#ef4444',
+    period7d: '#f59e0b',
+    older: '#6b7280',
   };
 
   const getStatusBadge = (status: string) => {
@@ -171,30 +175,28 @@ export default function Credits() {
                   <Activity className="w-4 h-4 text-muted-foreground" />
                   Claude AI
                 </CardTitle>
-                {getStatusBadge(claudeStats.status)}
+                {claudeStats && getStatusBadge(claudeStats.status)}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Used</p>
-                  <p className="text-xl font-semibold text-foreground">{claudeStats.totalUsed.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Total Calls</p>
+                  <p className="text-xl font-semibold text-foreground">{(claudeStats?.totalCalls || 0).toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-                  <p className="text-xl font-semibold text-foreground">{claudeStats.remaining.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Avg Response</p>
+                  <p className="text-xl font-semibold text-foreground">{((claudeStats?.avgResponseTimeMs || 0) / 1000).toFixed(1)}s</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Usage</span>
-                  <span className="font-medium">{((claudeStats.totalUsed / claudeStats.limit) * 100).toFixed(1)}%</span>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Last 24h</p>
+                  <p className="font-medium text-foreground">{(claudeStats?.last24h || 0).toLocaleString()} calls</p>
                 </div>
-                <div className="w-full bg-muted rounded-full h-1.5">
-                  <div 
-                    className="h-1.5 rounded-full bg-primary transition-all"
-                    style={{ width: `${Math.min((claudeStats.totalUsed / claudeStats.limit) * 100, 100)}%` }}
-                  />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Last 7 days</p>
+                  <p className="font-medium text-foreground">{(claudeStats?.last7d || 0).toLocaleString()} calls</p>
                 </div>
               </div>
             </CardContent>
@@ -208,30 +210,28 @@ export default function Credits() {
                   <TrendingUp className="w-4 h-4 text-muted-foreground" />
                   ElevenLabs
                 </CardTitle>
-                {getStatusBadge(elevenlabsStats.status)}
+                {elevenlabsStats && getStatusBadge(elevenlabsStats.status)}
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Used</p>
-                  <p className="text-xl font-semibold text-foreground">{elevenlabsStats.totalUsed.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Total Calls</p>
+                  <p className="text-xl font-semibold text-foreground">{(elevenlabsStats?.totalCalls || 0).toLocaleString()}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-                  <p className="text-xl font-semibold text-foreground">{elevenlabsStats.remaining.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground mb-1">Avg Response</p>
+                  <p className="text-xl font-semibold text-foreground">{(elevenlabsStats?.avgResponseTimeMs || 0).toLocaleString()}ms</p>
                 </div>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Usage</span>
-                  <span className="font-medium">{((elevenlabsStats.totalUsed / elevenlabsStats.limit) * 100).toFixed(1)}%</span>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Last 24h</p>
+                  <p className="font-medium text-foreground">{(elevenlabsStats?.last24h || 0).toLocaleString()} calls</p>
                 </div>
-                <div className="w-full bg-muted rounded-full h-1.5">
-                  <div 
-                    className="h-1.5 rounded-full bg-primary transition-all"
-                    style={{ width: `${Math.min((elevenlabsStats.totalUsed / elevenlabsStats.limit) * 100, 100)}%` }}
-                  />
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Last 7 days</p>
+                  <p className="font-medium text-foreground">{(elevenlabsStats?.last7d || 0).toLocaleString()} calls</p>
                 </div>
               </div>
             </CardContent>
@@ -333,7 +333,7 @@ export default function Credits() {
           {/* Claude Pie Chart */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">Claude Distribution</CardTitle>
+              <CardTitle className="text-sm font-semibold">Claude Usage by Period</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -346,16 +346,10 @@ export default function Credits() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                    activeIndex={undefined}
-                    activeShape={{
-                      fill: undefined,
-                      stroke: 'hsl(var(--foreground))',
-                      strokeWidth: 2,
-                      filter: 'brightness(1.1)'
-                    }}
                   >
-                    <Cell fill={COLORS.claude} stroke="transparent" />
-                    <Cell fill={COLORS.remaining} stroke="transparent" />
+                    <Cell fill={COLORS.period24h} stroke="transparent" />
+                    <Cell fill={COLORS.period7d} stroke="transparent" />
+                    <Cell fill={COLORS.older} stroke="transparent" />
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
@@ -365,18 +359,22 @@ export default function Credits() {
                     }}
                     labelStyle={{ color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+                    formatter={(value: number, name: string) => [`${value.toLocaleString()} calls`, name]}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex justify-center gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.claude }} />
-                  <span>Used</span>
+              <div className="flex justify-center gap-3 mt-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.period24h }} />
+                  <span>24h</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.remaining }} />
-                  <span>Remaining</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.period7d }} />
+                  <span>7d</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.older }} />
+                  <span>Older</span>
                 </div>
               </div>
             </CardContent>
@@ -385,7 +383,7 @@ export default function Credits() {
           {/* ElevenLabs Pie Chart */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">ElevenLabs Distribution</CardTitle>
+              <CardTitle className="text-sm font-semibold">ElevenLabs Usage by Period</CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={200}>
@@ -398,16 +396,10 @@ export default function Credits() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                    activeIndex={undefined}
-                    activeShape={{
-                      fill: undefined,
-                      stroke: 'hsl(var(--foreground))',
-                      strokeWidth: 2,
-                      filter: 'brightness(1.1)'
-                    }}
                   >
-                    <Cell fill={COLORS.elevenlabs} stroke="transparent" />
-                    <Cell fill={COLORS.remaining} stroke="transparent" />
+                    <Cell fill={COLORS.period24h} stroke="transparent" />
+                    <Cell fill={COLORS.period7d} stroke="transparent" />
+                    <Cell fill={COLORS.older} stroke="transparent" />
                   </Pie>
                   <Tooltip 
                     contentStyle={{ 
@@ -417,18 +409,22 @@ export default function Credits() {
                     }}
                     labelStyle={{ color: 'hsl(var(--foreground))' }}
                     itemStyle={{ color: 'hsl(var(--foreground))' }}
-                    formatter={(value: number, name: string) => [value.toLocaleString(), name]}
+                    formatter={(value: number, name: string) => [`${value.toLocaleString()} calls`, name]}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex justify-center gap-4 mt-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.elevenlabs }} />
-                  <span>Used</span>
+              <div className="flex justify-center gap-3 mt-4 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.period24h }} />
+                  <span>24h</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.remaining }} />
-                  <span>Remaining</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.period7d }} />
+                  <span>7d</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.older }} />
+                  <span>Older</span>
                 </div>
               </div>
             </CardContent>
