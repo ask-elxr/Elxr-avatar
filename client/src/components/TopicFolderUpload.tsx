@@ -6,8 +6,9 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw } from "lucide-react";
+import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface TopicFolder {
@@ -41,8 +42,39 @@ interface UploadStatus {
 export function TopicFolderUpload() {
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, Set<string>>>({}); // folderId -> Set of fileIds
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const toggleFileSelection = (folderId: string, fileId: string) => {
+    setSelectedFiles(prev => {
+      const folderSelections = new Set(prev[folderId] || []);
+      if (folderSelections.has(fileId)) {
+        folderSelections.delete(fileId);
+      } else {
+        folderSelections.add(fileId);
+      }
+      return { ...prev, [folderId]: folderSelections };
+    });
+  };
+
+  const selectAllFiles = (folderId: string, fileIds: string[]) => {
+    setSelectedFiles(prev => ({
+      ...prev,
+      [folderId]: new Set(fileIds),
+    }));
+  };
+
+  const deselectAllFiles = (folderId: string) => {
+    setSelectedFiles(prev => ({
+      ...prev,
+      [folderId]: new Set(),
+    }));
+  };
+
+  const getSelectedCount = (folderId: string) => {
+    return selectedFiles[folderId]?.size || 0;
+  };
 
   const { data: topicFolders, isLoading, refetch } = useQuery<TopicFolder[]>({
     queryKey: ['/api/google-drive/topic-folders'],
@@ -62,6 +94,107 @@ export function TopicFolderUpload() {
       namespace,
     });
     return response;
+  };
+
+  const handleUploadSelected = async (folder: TopicFolder, filesToUpload: FileInfo[]) => {
+    if (filesToUpload.length === 0) {
+      toast({
+        title: "No files selected",
+        description: "Please select files to upload",
+        variant: "default",
+      });
+      return;
+    }
+
+    const status: UploadStatus = {
+      folderId: folder.id,
+      status: 'uploading',
+      progress: 0,
+      currentFile: '',
+      successCount: 0,
+      errorCount: 0,
+      totalFiles: filesToUpload.length,
+    };
+
+    setUploadStatuses(prev => ({ ...prev, [folder.id]: status }));
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const file = filesToUpload[i];
+        
+        setUploadStatuses(prev => ({
+          ...prev,
+          [folder.id]: {
+            ...prev[folder.id],
+            currentFile: file.name,
+            progress: Math.round((i / filesToUpload.length) * 100),
+          }
+        }));
+
+        try {
+          await uploadSingleFile(file.id, file.name, folder.namespace);
+          successCount++;
+        } catch (error: any) {
+          if (error.message?.includes('too large') || error.message?.includes('413')) {
+            console.log(`Skipped ${file.name}: file too large`);
+          } else {
+            console.error(`Failed to upload ${file.name}:`, error);
+          }
+          errorCount++;
+        }
+
+        setUploadStatuses(prev => ({
+          ...prev,
+          [folder.id]: {
+            ...prev[folder.id],
+            successCount,
+            errorCount,
+          }
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      setUploadStatuses(prev => ({
+        ...prev,
+        [folder.id]: {
+          ...prev[folder.id],
+          status: errorCount === filesToUpload.length ? 'error' : 'success',
+          progress: 100,
+          currentFile: '',
+        }
+      }));
+
+      // Clear selections after upload
+      deselectAllFiles(folder.id);
+
+      toast({
+        title: "Upload complete",
+        description: `${folder.name}: ${successCount} succeeded, ${errorCount} failed`,
+        variant: errorCount > 0 ? "destructive" : "default",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+
+    } catch (error: any) {
+      setUploadStatuses(prev => ({
+        ...prev,
+        [folder.id]: {
+          ...prev[folder.id],
+          status: 'error',
+          progress: 0,
+        }
+      }));
+
+      toast({
+        title: "Upload failed",
+        description: error.message || "Failed to upload files",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUploadFolder = async (folder: TopicFolder) => {
@@ -237,7 +370,7 @@ export function TopicFolderUpload() {
             </CardTitle>
             <CardDescription className="text-white/70">
               Upload documents from organized topic folders to their Pinecone namespaces.
-              <span className="block text-xs mt-1 text-white/50">Files &gt;3MB and archives (zip/rar) are automatically filtered out for stability.</span>
+              <span className="block text-xs mt-1 text-white/50">Click on a folder to expand and select files. Files &gt;15MB are automatically filtered out.</span>
             </CardDescription>
           </div>
           <Button
@@ -328,10 +461,19 @@ export function TopicFolderUpload() {
 
                     <CollapsibleContent className="mt-3">
                       {hasFiles ? (
-                        <FolderFiles folderId={folder.id} />
+                        <FolderFiles 
+                          folderId={folder.id}
+                          folder={folder}
+                          selectedFiles={selectedFiles[folder.id] || new Set()}
+                          onToggleFile={(fileId) => toggleFileSelection(folder.id, fileId)}
+                          onSelectAll={(fileIds) => selectAllFiles(folder.id, fileIds)}
+                          onDeselectAll={() => deselectAllFiles(folder.id)}
+                          onUploadSelected={(files) => handleUploadSelected(folder, files)}
+                          isUploading={uploadStatuses[folder.id]?.status === 'uploading'}
+                        />
                       ) : (
                         <div className="text-center py-4 text-white/40 text-sm">
-                          No uploadable files (all files may be &gt;3MB or archives)
+                          No uploadable files (all files may be &gt;15MB or archives)
                         </div>
                       )}
                     </CollapsibleContent>
@@ -362,7 +504,27 @@ function formatFileSize(bytes: string | undefined): string {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function FolderFiles({ folderId }: { folderId: string }) {
+interface FolderFilesProps {
+  folderId: string;
+  folder: TopicFolder;
+  selectedFiles: Set<string>;
+  onToggleFile: (fileId: string) => void;
+  onSelectAll: (fileIds: string[]) => void;
+  onDeselectAll: () => void;
+  onUploadSelected: (files: FileInfo[]) => void;
+  isUploading: boolean;
+}
+
+function FolderFiles({ 
+  folderId, 
+  folder,
+  selectedFiles, 
+  onToggleFile, 
+  onSelectAll, 
+  onDeselectAll,
+  onUploadSelected,
+  isUploading,
+}: FolderFilesProps) {
   const { data: files, isLoading } = useQuery<FileInfo[]>({
     queryKey: ['/api/google-drive/topic-folder', folderId, 'files'],
     select: (data: any) => data.files || [],
@@ -387,9 +549,69 @@ function FolderFiles({ folderId }: { folderId: string }) {
 
   const uploadableFiles = files.filter(f => f.uploadable !== false);
   const skippedFiles = files.filter(f => f.uploadable === false);
+  const selectedCount = selectedFiles.size;
+  const allSelected = selectedCount === uploadableFiles.length && uploadableFiles.length > 0;
+  const someSelected = selectedCount > 0 && selectedCount < uploadableFiles.length;
+
+  const handleSelectAll = () => {
+    if (allSelected) {
+      onDeselectAll();
+    } else {
+      onSelectAll(uploadableFiles.map(f => f.id));
+    }
+  };
+
+  const handleUploadSelected = () => {
+    const filesToUpload = uploadableFiles.filter(f => selectedFiles.has(f.id));
+    onUploadSelected(filesToUpload);
+  };
 
   return (
     <div className="space-y-3 pl-6">
+      {/* Selection controls */}
+      {uploadableFiles.length > 0 && (
+        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSelectAll}
+              className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
+              data-testid={`button-select-all-${folderId}`}
+            >
+              {allSelected ? (
+                <CheckSquare className="w-4 h-4 text-purple-400" />
+              ) : someSelected ? (
+                <Square className="w-4 h-4 text-purple-400/50" />
+              ) : (
+                <Square className="w-4 h-4 text-white/40" />
+              )}
+              {allSelected ? 'Deselect All' : 'Select All'}
+            </button>
+            {selectedCount > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {selectedCount} selected
+              </Badge>
+            )}
+          </div>
+          {selectedCount > 0 && (
+            <Button
+              size="sm"
+              variant="default"
+              disabled={isUploading}
+              onClick={handleUploadSelected}
+              className="gap-1 bg-purple-600 hover:bg-purple-700"
+              data-testid={`button-upload-selected-${folderId}`}
+            >
+              {isUploading ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Upload className="w-3 h-3" />
+              )}
+              Upload {selectedCount} Selected
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Uploadable files section */}
       {uploadableFiles.length > 0 && (
         <div>
@@ -397,13 +619,24 @@ function FolderFiles({ folderId }: { folderId: string }) {
             <Check className="w-3 h-3" />
             Ready to upload ({uploadableFiles.length})
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {uploadableFiles.slice(0, 10).map(file => (
+          <div className="grid grid-cols-1 gap-1">
+            {uploadableFiles.map(file => (
               <div 
                 key={file.id} 
-                className="flex items-center gap-2 text-sm text-white/70 py-1"
+                className={`flex items-center gap-2 text-sm py-1.5 px-2 rounded cursor-pointer transition-colors ${
+                  selectedFiles.has(file.id) 
+                    ? 'bg-purple-500/20 text-white' 
+                    : 'text-white/70 hover:bg-white/5'
+                }`}
+                onClick={() => onToggleFile(file.id)}
                 data-testid={`file-item-${file.id}`}
               >
+                <Checkbox
+                  checked={selectedFiles.has(file.id)}
+                  onCheckedChange={() => onToggleFile(file.id)}
+                  className="data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
+                  data-testid={`checkbox-file-${file.id}`}
+                />
                 <FileText className="w-3 h-3 text-blue-400 flex-shrink-0" />
                 <span className="truncate flex-1">{file.name}</span>
                 <span className="text-xs text-white/40 flex-shrink-0">
@@ -412,11 +645,6 @@ function FolderFiles({ folderId }: { folderId: string }) {
               </div>
             ))}
           </div>
-          {uploadableFiles.length > 10 && (
-            <div className="text-xs text-white/40 mt-1">
-              +{uploadableFiles.length - 10} more uploadable files
-            </div>
-          )}
         </div>
       )}
 
