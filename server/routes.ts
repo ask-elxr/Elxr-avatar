@@ -3975,14 +3975,19 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         log.info({ avatarId }, "Video creation disabled for this avatar (streaming mode), continuing with normal chat");
       }
 
-      // Set up SSE headers
+      // Set up SSE headers - disable buffering for real-time streaming
       res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      res.flushHeaders();
 
       const sendEvent = (eventType: string, data: any) => {
         res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        if (typeof (res as any).flush === 'function') {
+          (res as any).flush();
+        }
       };
 
       // Start performance timing
@@ -4355,14 +4360,22 @@ This applies to EVERY response, regardless of conversation length.`;
         // For now, continue with streaming but note this optimization
       }
 
-      // Set up SSE headers
+      // Set up SSE headers - disable all buffering for real-time streaming
       res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
+      res.setHeader('Transfer-Encoding', 'chunked');
+      
+      // Flush headers immediately to establish SSE connection
+      res.flushHeaders();
 
       const sendEvent = (eventType: string, data: any) => {
         res.write(`event: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`);
+        // Force flush to prevent buffering - critical for real-time audio streaming
+        if (typeof (res as any).flush === 'function') {
+          (res as any).flush();
+        }
       };
 
       // Performance timing - detailed step-by-step logging
