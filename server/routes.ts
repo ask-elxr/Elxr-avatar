@@ -5295,6 +5295,8 @@ This applies to EVERY response, regardless of conversation length.`;
 
       // Extract text directly from buffer without saving to disk
       let text = '';
+      let processedFiles: string[] = [];
+      
       try {
         if (mimeType === 'text/plain') {
           text = buffer.toString('utf-8');
@@ -5306,6 +5308,56 @@ This applies to EVERY response, regardless of conversation length.`;
           const pdfParse = await import('pdf-parse').then(m => m.default);
           const pdfData = await pdfParse(buffer);
           text = pdfData.text || '';
+        } else if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed' || processedFileName?.endsWith('.zip')) {
+          // Handle ZIP files - extract and process documents inside
+          log.info({ fileName: processedFileName }, "Processing ZIP file");
+          const unzipper = await import('unzipper');
+          const { Readable } = await import('stream');
+          
+          // Create a readable stream from buffer
+          const zipStream = Readable.from(buffer);
+          const directory = await unzipper.Open.buffer(buffer);
+          
+          const extractedTexts: string[] = [];
+          
+          for (const entry of directory.files) {
+            if (entry.type === 'Directory') continue;
+            
+            const entryName = entry.path.toLowerCase();
+            const entryBuffer = await entry.buffer();
+            
+            // Skip large files inside ZIP (max 5MB per file)
+            if (entryBuffer.length > 5 * 1024 * 1024) {
+              log.warn({ entryName, size: entryBuffer.length }, "Skipping large file in ZIP");
+              continue;
+            }
+            
+            try {
+              let entryText = '';
+              
+              if (entryName.endsWith('.txt')) {
+                entryText = entryBuffer.toString('utf-8');
+              } else if (entryName.endsWith('.pdf')) {
+                const pdfParse = await import('pdf-parse').then(m => m.default);
+                const pdfData = await pdfParse(entryBuffer);
+                entryText = pdfData.text || '';
+              } else if (entryName.endsWith('.docx')) {
+                const mammoth = await import('mammoth');
+                const result = await mammoth.extractRawText({ buffer: entryBuffer });
+                entryText = result.value;
+              }
+              
+              if (entryText.trim().length > 50) {
+                extractedTexts.push(`--- ${entry.path} ---\n${entryText}`);
+                processedFiles.push(entry.path);
+              }
+            } catch (entryError: any) {
+              log.warn({ entryName, error: entryError.message }, "Failed to extract text from ZIP entry");
+            }
+          }
+          
+          text = extractedTexts.join('\n\n');
+          log.info({ filesProcessed: processedFiles.length, totalTextLength: text.length }, "ZIP file processed");
         } else {
           throw new Error(`Unsupported file type: ${mimeType}`);
         }
