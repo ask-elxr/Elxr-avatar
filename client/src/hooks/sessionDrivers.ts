@@ -51,6 +51,13 @@ export class LiveAvatarDriver implements SessionDriver {
   private audioContext: AudioContext | null = null;
   private enableMobileVoiceChat: boolean = false; // Track if mobile voice chat is enabled
   
+  // ElevenLabs STT via WebSocket (replaces HeyGen's built-in STT)
+  private sttWebSocket: WebSocket | null = null;
+  private sttReady: boolean = false;
+  private mediaStream: MediaStream | null = null;
+  private audioWorkletNode: AudioWorkletNode | null = null;
+  private sttAudioContext: AudioContext | null = null;
+  
   // Streaming audio accumulator for real-time lip-sync
   private audioChunkBuffer: Uint8Array[] = [];
   private audioBufferSize: number = 0;
@@ -157,48 +164,35 @@ export class LiveAvatarDriver implements SessionDriver {
         // The SDK handles LiveKit connection internally when session.start() is called
         // NOTE: LiveAvatar is a separate service from HeyGen - must use LiveAvatar API endpoint
         
-        // Enable voice chat for mobile devices - uses LiveKit WebRTC for microphone capture
-        // This works in iframes on mobile (unlike WebSocket or Web Speech API)
-        // USER_TRANSCRIPTION events will be routed to our Claude + ElevenLabs pipeline
+        // Enable voice chat for mobile devices - uses ElevenLabs STT via WebSocket
+        // MediaRecorder API works in iframes on mobile (unlike WebSocket or Web Speech API alone)
+        // Transcriptions are routed to our Claude + RAG + ElevenLabs TTS pipeline
         this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
-        console.log("🔧 LiveAvatarDriver code version: 2024-12-07-v2");
-        console.log(`🎤 LiveAvatar voiceChat: ${this.enableMobileVoiceChat ? 'ENABLED (mobile mode - using LiveKit WebRTC)' : 'DISABLED (using Web Speech API)'}`);
+        console.log("🔧 LiveAvatarDriver code version: 2024-12-08-v3 (ElevenLabs STT)");
+        console.log(`🎤 Voice input: ${this.enableMobileVoiceChat ? 'ENABLED (using ElevenLabs STT)' : 'DISABLED (using Web Speech API)'}`);
         
         const session = new LiveAvatarSession(sessionToken, {
-          voiceChat: this.enableMobileVoiceChat, // Enable for mobile - uses LiveKit for microphone capture
+          voiceChat: false, // DISABLED - using ElevenLabs STT instead of HeyGen's built-in STT
           apiUrl: "https://api.liveavatar.com", // LiveAvatar service endpoint (different from HeyGen)
         });
         this.session = session;
 
-        // Listen for stream ready event - this is when we attach the video element and start voice chat
+        // Listen for stream ready event - this is when we attach the video element and start ElevenLabs STT
         session.on(SessionEvent.SESSION_STREAM_READY, async () => {
           console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
           // Use SDK's attach() method to connect video element
           // Retry with increasing delays if video element is not yet rendered
           this.attachVideoWithRetry(5);
           
-          // Start voice chat after stream is ready (for mobile devices)
-          if (this.enableMobileVoiceChat && this.session) {
-            console.log("🎤 Starting SDK voice chat after stream ready (LiveKit microphone capture)...");
+          // Start ElevenLabs STT after stream is ready (for mobile devices)
+          if (this.enableMobileVoiceChat) {
+            console.log("🎤 Starting ElevenLabs STT after stream ready...");
             try {
-              // First, explicitly start the voiceChat microphone capture
-              // This uses LiveKit to capture audio via WebRTC (works in mobile iframes)
-              const voiceChat = this.session.voiceChat;
-              console.log("🎤 VoiceChat state:", voiceChat?.state);
-              
-              if (voiceChat && voiceChat.state !== 'ACTIVE') {
-                console.log("🎤 Starting voiceChat.start() for microphone capture...");
-                await voiceChat.start({ defaultMuted: false });
-                console.log("✅ VoiceChat microphone capture started, state:", voiceChat.state);
-              }
-              
-              // Then tell the avatar to start listening for speech
-              this.session.startListening();
-              console.log("✅ SDK startListening() called - avatar is now listening");
-              this.config.onVoiceChatReady?.();
-            } catch (voiceChatError: any) {
-              console.warn("⚠️ Failed to start SDK voice chat:", voiceChatError?.message || voiceChatError);
-              // If voiceChat fails (e.g., permission denied), the UI should show a message
+              await this.startElevenLabsSTT();
+              console.log("✅ ElevenLabs STT started successfully");
+            } catch (sttError: any) {
+              console.warn("⚠️ Failed to start ElevenLabs STT:", sttError?.message || sttError);
+              // If STT fails (e.g., permission denied), the UI should show a message
             }
           }
         });
@@ -225,22 +219,8 @@ export class LiveAvatarDriver implements SessionDriver {
           this.config.onAvatarStopTalking?.();
         });
 
-        // Listen for user speaking events (for debugging voice input)
-        session.on(AgentEventsEnum.USER_SPEAK_STARTED, () => {
-          console.log("🎤 User started speaking (SDK voice detection)");
-        });
-
-        session.on(AgentEventsEnum.USER_SPEAK_ENDED, () => {
-          console.log("🎤 User stopped speaking (SDK voice detection)");
-        });
-
-        // Listen for user transcription (voice input)
-        session.on(AgentEventsEnum.USER_TRANSCRIPTION, (event) => {
-          console.log("🎤 User transcription:", event.text);
-          if (event.text && this.config.onUserMessage) {
-            this.config.onUserMessage(event.text);
-          }
-        });
+        // Note: User voice input is now handled by ElevenLabs STT (not HeyGen SDK)
+        // USER_TRANSCRIPTION events from HeyGen are no longer used
 
         // Start the session - SDK handles LiveKit connection internally
         console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
@@ -279,6 +259,9 @@ export class LiveAvatarDriver implements SessionDriver {
     this.stopCurrentAudio();
     this.videoAttached = false;
     
+    // Stop ElevenLabs STT
+    await this.stopElevenLabsSTT();
+    
     // Clean up audio context
     if (this.audioContext) {
       try {
@@ -295,6 +278,163 @@ export class LiveAvatarDriver implements SessionDriver {
       await this.session.stop();
       this.session = null;
     }
+  }
+
+  /**
+   * Start ElevenLabs STT - captures microphone and streams to backend
+   * Uses MediaRecorder API which works on mobile devices in iframes
+   */
+  private async startElevenLabsSTT(): Promise<void> {
+    console.log("🎤 Starting ElevenLabs STT (replacing HeyGen's built-in STT)...");
+    
+    try {
+      // Request microphone access
+      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          sampleRate: 16000,
+          echoCancellation: true,
+          noiseSuppression: true,
+        }
+      });
+      console.log("✅ Microphone access granted");
+      
+      // Connect to ElevenLabs STT WebSocket
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${wsProtocol}//${window.location.host}/ws/elevenlabs-stt`;
+      console.log("🔌 Connecting to ElevenLabs STT WebSocket:", wsUrl);
+      
+      this.sttWebSocket = new WebSocket(wsUrl);
+      
+      this.sttWebSocket.onopen = () => {
+        console.log("✅ ElevenLabs STT WebSocket connected");
+        // Send start command with language
+        this.sttWebSocket?.send(JSON.stringify({
+          type: 'start',
+          languageCode: this.languageCode.split('-')[0] || 'en',
+        }));
+      };
+      
+      this.sttWebSocket.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          
+          if (message.type === 'stt_ready') {
+            console.log("✅ ElevenLabs STT ready - starting audio capture");
+            this.sttReady = true;
+            this.startAudioCapture();
+            this.config.onVoiceChatReady?.();
+          } else if (message.type === 'final') {
+            console.log("🎤 ElevenLabs STT transcription:", message.text);
+            if (message.text && this.config.onUserMessage) {
+              this.config.onUserMessage(message.text);
+            }
+          } else if (message.type === 'partial') {
+            console.log("🎤 ElevenLabs STT partial:", message.text);
+          } else if (message.type === 'error') {
+            console.error("❌ ElevenLabs STT error:", message.message);
+          }
+        } catch (error) {
+          console.error("Error parsing STT message:", error);
+        }
+      };
+      
+      this.sttWebSocket.onerror = (error) => {
+        console.error("❌ ElevenLabs STT WebSocket error:", error);
+      };
+      
+      this.sttWebSocket.onclose = () => {
+        console.log("📵 ElevenLabs STT WebSocket closed");
+        this.sttReady = false;
+      };
+      
+    } catch (error) {
+      console.error("❌ Failed to start ElevenLabs STT:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Start capturing audio and sending to ElevenLabs STT
+   * Uses ScriptProcessorNode for PCM conversion (works on all browsers including mobile Safari)
+   */
+  private startAudioCapture(): void {
+    if (!this.mediaStream || !this.sttWebSocket) return;
+    
+    try {
+      // Create AudioContext for PCM conversion
+      this.sttAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+        sampleRate: 16000,
+      });
+      
+      const source = this.sttAudioContext.createMediaStreamSource(this.mediaStream);
+      
+      // Use ScriptProcessorNode for PCM capture (deprecated but widely supported)
+      const bufferSize = 4096;
+      const scriptProcessor = this.sttAudioContext.createScriptProcessor(bufferSize, 1, 1);
+      
+      scriptProcessor.onaudioprocess = (event) => {
+        if (!this.sttReady || !this.sttWebSocket || this.sttWebSocket.readyState !== WebSocket.OPEN) {
+          return;
+        }
+        
+        // Get PCM float32 data
+        const inputData = event.inputBuffer.getChannelData(0);
+        
+        // Convert float32 to int16 PCM
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          const s = Math.max(-1, Math.min(1, inputData[i]));
+          pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+        }
+        
+        // Send binary PCM data
+        this.sttWebSocket.send(pcm16.buffer);
+      };
+      
+      source.connect(scriptProcessor);
+      scriptProcessor.connect(this.sttAudioContext.destination);
+      
+      console.log("✅ Audio capture started - streaming PCM to ElevenLabs STT");
+      
+    } catch (error) {
+      console.error("❌ Failed to start audio capture:", error);
+    }
+  }
+
+  /**
+   * Stop ElevenLabs STT and clean up resources
+   */
+  private async stopElevenLabsSTT(): Promise<void> {
+    console.log("🛑 Stopping ElevenLabs STT...");
+    
+    // Stop media stream
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => track.stop());
+      this.mediaStream = null;
+    }
+    
+    // Close STT audio context
+    if (this.sttAudioContext) {
+      try {
+        await this.sttAudioContext.close();
+      } catch (e) {
+        // Ignore
+      }
+      this.sttAudioContext = null;
+    }
+    
+    // Close WebSocket
+    if (this.sttWebSocket) {
+      if (this.sttWebSocket.readyState === WebSocket.OPEN) {
+        this.sttWebSocket.send(JSON.stringify({ type: 'stop' }));
+      }
+      this.sttWebSocket.close();
+      this.sttWebSocket = null;
+    }
+    
+    this.sttReady = false;
+    console.log("✅ ElevenLabs STT stopped");
   }
 
   setLanguage(languageCode: string): void {
