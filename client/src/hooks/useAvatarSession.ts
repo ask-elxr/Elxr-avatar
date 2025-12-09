@@ -2497,80 +2497,95 @@ export function useAvatarSession({
             let buffer = '';
             
             if (reader) {
+              let pendingEventType: string | null = null;
+              
               while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 
                 buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
                 
-                for (let i = 0; i < lines.length; i++) {
-                  const line = lines[i];
-                  if (line.startsWith('event: ')) {
-                    const eventType = line.slice(7);
-                    // Look for data line right after event line
-                    if (i + 1 < lines.length && lines[i + 1].startsWith('data: ')) {
-                      try {
-                        const data = JSON.parse(lines[i + 1].slice(6));
-                        
-                        if (eventType === 'audio') {
-                          audioCount++;
-                          if (audioCount === 1) {
-                            firstAudioTime = performance.now();
-                            console.log(`🎯 [AUDIO-STREAMING] First audio ready: ${(firstAudioTime - apiStartTime).toFixed(0)}ms (type: ${data.type})`);
-                          }
-                          
-                          // Buffer audio by index for ordered playback
-                          // Thinking sound has index 0, sentences have index 1+
-                          const audioIndex = data.type === 'thinking' ? 0 : data.index;
-                          audioBuffer.set(audioIndex, {
-                            content: data.content,
-                            type: data.type,
-                            isFinal: data.isFinal
-                          });
-                          
-                          if (data.text) {
-                            console.log(`🎯 [AUDIO-STREAMING] Audio ${audioIndex} (${data.type}): "${data.text?.substring(0, 40)}..."`);
-                          } else {
-                            console.log(`🎯 [AUDIO-STREAMING] Audio ${audioIndex} (${data.type}) buffered`);
-                          }
-                        } else if (eventType === 'sentence') {
-                          // Text event - for logging only
-                          console.log(`📝 [AUDIO-STREAMING] Sentence ${data.index}: "${data.content?.substring(0, 50)}..."`);
-                        } else if (eventType === 'done') {
-                          fullResponse = data.fullResponse;
-                          performanceData = data.performance;
-                          const totalTime = performance.now() - flowStartTime;
-                          console.log(`🎯 [AUDIO-STREAMING] === STREAMING COMPLETE ===`);
-                          console.log(`🎯 [AUDIO-STREAMING] Total audio chunks: ${audioCount}`);
-                          console.log(`🎯 [AUDIO-STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
-                          console.log(`🎯 [AUDIO-STREAMING] Time to first audio from backend: ${performanceData?.timeToFirstAudioMs || 'N/A'}ms`);
-                          console.log(`🎯 [AUDIO-STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
-                          if (performanceData) {
-                            console.log(`🎯 [AUDIO-STREAMING] Backend breakdown:`, performanceData);
-                          }
-                          console.log(`📝 USER MESSAGE: ${message}`);
-                          console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
-                          console.log(`---`);
-                          
-                          // Check if there was an error
-                          if (data.error) {
-                            streamError = true;
-                          }
-                        } else if (eventType === 'timing') {
-                          console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetch}ms`);
-                        } else if (eventType === 'status') {
-                          console.log(`📊 [STATUS] ${data.phase}: ${data.message}`);
-                        } else if (eventType === 'error') {
-                          console.error(`❌ [AUDIO-STREAMING] Error: ${data.message}`);
-                          if (data.fatal) {
-                            streamError = true;
-                          }
+                // Process complete SSE events (event + data pairs separated by double newline)
+                let eventEndIndex: number;
+                while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
+                  const eventBlock = buffer.substring(0, eventEndIndex);
+                  buffer = buffer.substring(eventEndIndex + 2);
+                  
+                  // Parse event block which may contain event: and data: lines
+                  const lines = eventBlock.split('\n');
+                  let eventType: string | null = pendingEventType;
+                  let dataStr: string | null = null;
+                  
+                  for (const line of lines) {
+                    if (line.startsWith('event: ')) {
+                      eventType = line.slice(7);
+                    } else if (line.startsWith('data: ')) {
+                      dataStr = line.slice(6);
+                    }
+                  }
+                  
+                  pendingEventType = null; // Reset pending
+                  
+                  if (eventType && dataStr) {
+                    try {
+                      const data = JSON.parse(dataStr);
+                      
+                      if (eventType === 'audio') {
+                        audioCount++;
+                        if (audioCount === 1) {
+                          firstAudioTime = performance.now();
+                          console.log(`🎯 [AUDIO-STREAMING] First audio ready: ${(firstAudioTime - apiStartTime).toFixed(0)}ms (type: ${data.type})`);
                         }
-                      } catch (e) {
-                        // JSON parse error, skip
+                        
+                        // Buffer audio by index for ordered playback
+                        // Thinking sound has index 0, sentences have index 1+
+                        const audioIndex = data.type === 'thinking' ? 0 : data.index;
+                        audioBuffer.set(audioIndex, {
+                          content: data.content,
+                          type: data.type,
+                          isFinal: data.isFinal
+                        });
+                        
+                        if (data.text) {
+                          console.log(`🎯 [AUDIO-STREAMING] Audio ${audioIndex} (${data.type}): "${data.text?.substring(0, 40)}..."`);
+                        } else {
+                          console.log(`🎯 [AUDIO-STREAMING] Audio ${audioIndex} (${data.type}) buffered`);
+                        }
+                      } else if (eventType === 'sentence') {
+                        // Text event - for logging only
+                        console.log(`📝 [AUDIO-STREAMING] Sentence ${data.index}: "${data.content?.substring(0, 50)}..."`);
+                      } else if (eventType === 'done') {
+                        fullResponse = data.fullResponse;
+                        performanceData = data.performance;
+                        const totalTime = performance.now() - flowStartTime;
+                        console.log(`🎯 [AUDIO-STREAMING] === STREAMING COMPLETE ===`);
+                        console.log(`🎯 [AUDIO-STREAMING] Total audio chunks: ${audioCount}`);
+                        console.log(`🎯 [AUDIO-STREAMING] First audio delay: ${firstAudioTime ? (firstAudioTime - apiStartTime).toFixed(0) : 'N/A'}ms`);
+                        console.log(`🎯 [AUDIO-STREAMING] Time to first audio from backend: ${performanceData?.timeToFirstAudioMs || 'N/A'}ms`);
+                        console.log(`🎯 [AUDIO-STREAMING] Total time: ${totalTime.toFixed(0)}ms`);
+                        if (performanceData) {
+                          console.log(`🎯 [AUDIO-STREAMING] Backend breakdown:`, performanceData);
+                        }
+                        console.log(`📝 USER MESSAGE: ${message}`);
+                        console.log(`🤖 CLAUDE RESPONSE: ${fullResponse}`);
+                        console.log(`---`);
+                        
+                        // Check if there was an error
+                        if (data.error) {
+                          streamError = true;
+                        }
+                      } else if (eventType === 'timing') {
+                        console.log(`⏱️ [TIMING] Data fetch: ${data.dataFetch}ms`);
+                      } else if (eventType === 'status') {
+                        console.log(`📊 [STATUS] ${data.phase}: ${data.message}`);
+                      } else if (eventType === 'error') {
+                        console.error(`❌ [AUDIO-STREAMING] Error: ${data.message}`);
+                        if (data.fatal) {
+                          streamError = true;
+                        }
                       }
+                    } catch (e) {
+                      // JSON parse error, skip
                     }
                   }
                 }
