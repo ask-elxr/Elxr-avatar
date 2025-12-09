@@ -168,15 +168,13 @@ export class LiveAvatarDriver implements SessionDriver {
         // MediaRecorder API works in iframes on mobile (unlike WebSocket or Web Speech API alone)
         // Transcriptions are routed to our Claude + RAG + ElevenLabs TTS pipeline
         this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
-        console.log("🔧 LiveAvatarDriver code version: 2024-12-09-v7 (correct 2-arg with apiUrl)");
+        console.log("🔧 LiveAvatarDriver code version: 2024-12-09-v8 (no apiUrl override)");
         console.log(`🎤 Voice input: ${this.enableMobileVoiceChat ? 'ENABLED (using ElevenLabs STT)' : 'DISABLED (using Web Speech API)'}`);
         
         // SDK signature: new LiveAvatarSession(sessionAccessToken, config?)
         // sessionAccessToken is the token from /v1/sessions/token endpoint
-        // config.apiUrl can override the default https://api.liveavatar.com
-        const session = new LiveAvatarSession(sessionToken, {
-          apiUrl: "https://api.liveavatar.com",
-        });
+        // SDK has correct apiUrl built-in, no override needed
+        const session = new LiveAvatarSession(sessionToken);
         this.session = session;
 
         // Listen for stream ready event - this is when we attach the video element and start ElevenLabs STT
