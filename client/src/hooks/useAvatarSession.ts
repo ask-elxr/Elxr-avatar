@@ -1054,6 +1054,12 @@ export function useAvatarSession({
     const activeAvatarId = avatarId || currentAvatarIdRef.current;
     currentAvatarIdRef.current = activeAvatarId;
 
+    // 🎤 START VOICE RECOGNITION EARLY - in parallel with session registration
+    // This gives ElevenLabs STT time to connect WebSocket and initialize microphone
+    // so it's ready by the time the video loads (reduces "not listening" perception)
+    console.log("🎤 Pre-starting ElevenLabs STT (parallel with session setup)...");
+    startVoiceRecognition();
+
     // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
     try {
       await fetch("/api/session/end-all", {
@@ -1145,9 +1151,11 @@ export function useAvatarSession({
       }
     }
     
-    // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
+    // Voice recognition already started early (at session start) - just ensure it's running
     // This allows users to speak even before video loads or in audio-only mode
-    startVoiceRecognition();
+    if (!recognitionRunningRef.current) {
+      startVoiceRecognition();
+    }
     
     // Start HeyGen immediately in video mode for instant avatar appearance
     if (!audioOnly) {
