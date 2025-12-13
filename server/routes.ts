@@ -988,8 +988,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         log.info({ avatarId }, "Video creation disabled for this avatar, continuing with normal chat");
       }
 
-      // ⚡ PARALLEL DATA FETCHING - Fetch memory and knowledge at the same time
+      // Start timing for performance measurement
       const requestStartTime = Date.now();
+
+      // ⚡ FAST PATH: Detect simple greetings/non-substantive messages and skip RAG for faster response
+      // Pattern 1: Pure greetings with optional punctuation (e.g., "hi", "hello?", "hey!", "what's up")
+      // Pattern 2: Connection-check phrases only (e.g., "can you hear me?", "are you there?", "is this working?")
+      const trimmedMessage = message.trim();
+      const isSimpleGreeting = /^(hey|hi|hello|what'?s up|yo|greetings|testing)+[\s\?,!.]*$/i.test(trimmedMessage) ||
+        /^(can you hear me|are you there|is this working|are you listening|hello\?*|hey\?*|hi\?*)+[\s\?,!.]*$/i.test(trimmedMessage);
+
+      if (isSimpleGreeting) {
+        log.info({ message: message.substring(0, 50) }, '⚡ Simple greeting detected - skipping RAG for faster response');
+        console.log(`⚡ FAST PATH: Simple greeting detected - skipping RAG queries`);
+        
+        const claudeStart = Date.now();
+        const response = await claudeService.generateEnhancedResponse(
+          message,
+          avatarConfig.personalityPrompt,
+          "", // No knowledge context
+          "", // No web search
+          [], // No conversation history
+          { isVoiceMode: true, wantsDetailedResponse: false }
+        );
+        const claudeTime = Date.now() - claudeStart;
+        
+        // Generate TTS
+        const ttsStart = Date.now();
+        const audioBuffer = await elevenlabsService.generateSpeech(
+          response,
+          avatarConfig.elevenlabsVoiceId,
+          effectiveLanguageCode
+        );
+        const ttsTime = Date.now() - ttsStart;
+        
+        const totalTime = Date.now() - requestStartTime;
+        console.log(`⏱️ FAST GREETING RESPONSE: Claude ${claudeTime}ms | TTS ${ttsTime}ms | Total: ${totalTime}ms`);
+        log.info({ claudeTime, ttsTime, totalTime }, '⚡ Fast greeting response completed');
+        
+        // Log the response
+        console.log(`📤 AVATAR RESPONSE (Fast Greeting):`);
+        console.log(`───────────────────────────────────────────────────────────────`);
+        console.log(response);
+        console.log(`───────────────────────────────────────────────────────────────`);
+        console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+        
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Content-Length", audioBuffer.length.toString());
+        res.setHeader("X-Claude-Response", encodeURIComponent(response));
+        return res.send(audioBuffer);
+      }
+
+      // ⚡ PARALLEL DATA FETCHING - Fetch memory and knowledge at the same time
       const timings: Record<string, number> = {};
       
       const perfStart = Date.now();
