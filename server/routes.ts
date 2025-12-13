@@ -6883,6 +6883,178 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // Service status check endpoint - verifies health of all external services
+  app.get("/api/admin/service-status", isAuthenticated, requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "admin", operation: "serviceStatus" });
+    
+    const checkService = async (name: string, checkFn: () => Promise<{ ok: boolean; message?: string; details?: any }>) => {
+      const startTime = Date.now();
+      try {
+        const result = await Promise.race([
+          checkFn(),
+          new Promise<{ ok: boolean; message: string }>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout after 10s')), 10000)
+          )
+        ]);
+        return {
+          name,
+          status: result.ok ? 'healthy' : 'unhealthy',
+          responseTimeMs: Date.now() - startTime,
+          message: result.message,
+          details: result.details,
+        };
+      } catch (error: any) {
+        return {
+          name,
+          status: 'error',
+          responseTimeMs: Date.now() - startTime,
+          message: error.message || 'Unknown error',
+        };
+      }
+    };
+
+    try {
+      const checks = await Promise.all([
+        // ElevenLabs (Voice TTS)
+        checkService('ElevenLabs (Voice)', async () => {
+          const apiKey = process.env.ELEVENLABS_API_KEY;
+          if (!apiKey) return { ok: false, message: 'API key not configured' };
+          
+          const response = await fetch('https://api.elevenlabs.io/v1/user/subscription', {
+            headers: { 'xi-api-key': apiKey }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            return { 
+              ok: true, 
+              message: `${data.tier} plan - ${data.character_count}/${data.character_limit} chars used`,
+              details: {
+                tier: data.tier,
+                charactersUsed: data.character_count,
+                charactersLimit: data.character_limit,
+                usagePercent: Math.round((data.character_count / data.character_limit) * 100),
+              }
+            };
+          }
+          return { ok: false, message: `API error: ${response.status}` };
+        }),
+
+        // LiveAvatar (New HeyGen SDK)
+        checkService('LiveAvatar', async () => {
+          const apiKey = process.env.LIVEAVATAR_API_KEY;
+          if (!apiKey) return { ok: false, message: 'API key not configured' };
+          
+          // Just check if the API is reachable by listing avatars
+          const response = await fetch('https://api.heygen.com/v1/streaming/avatar.list', {
+            headers: { 'x-api-key': apiKey }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const count = data.data?.avatars?.length || 0;
+            return { ok: true, message: `API reachable - ${count} avatars available` };
+          }
+          return { ok: false, message: `API error: ${response.status}` };
+        }),
+
+        // HeyGen Streaming (Older SDK)
+        checkService('HeyGen Streaming', async () => {
+          const apiKey = process.env.HEYGEN_API_KEY || process.env.HEYGEN_VIDEO_API_KEY;
+          if (!apiKey) return { ok: false, message: 'API key not configured' };
+          
+          // Check if streaming token API is reachable
+          const response = await fetch('https://api.heygen.com/v1/streaming/avatar.list', {
+            headers: { 'x-api-key': apiKey }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            const count = data.data?.avatars?.length || 0;
+            return { ok: true, message: `API reachable - ${count} avatars available` };
+          }
+          return { ok: false, message: `API error: ${response.status}` };
+        }),
+
+        // Pinecone (Vector Database)
+        checkService('Pinecone', async () => {
+          const apiKey = process.env.PINECONE_API_KEY;
+          if (!apiKey) return { ok: false, message: 'API key not configured' };
+          
+          try {
+            const stats = await pineconeService.getStats();
+            return { 
+              ok: true, 
+              message: `Connected - ${stats.totalRecordCount || 0} vectors`,
+              details: {
+                totalVectors: stats.totalRecordCount,
+                namespaces: stats.namespaces ? Object.keys(stats.namespaces).length : 0,
+              }
+            };
+          } catch (error: any) {
+            return { ok: false, message: error.message };
+          }
+        }),
+
+        // Claude AI (Anthropic)
+        checkService('Claude AI', async () => {
+          // Claude doesn't have a simple health check endpoint
+          // We'll verify by checking if the API key is configured
+          const apiKey = process.env.ANTHROPIC_API_KEY;
+          if (!apiKey) return { ok: false, message: 'API key not configured' };
+          
+          // Make a minimal API call to verify the key works
+          try {
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'content-type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: 'claude-sonnet-4-20250514',
+                max_tokens: 1,
+                messages: [{ role: 'user', content: 'Hi' }],
+              }),
+            });
+            
+            if (response.ok || response.status === 400) {
+              // 400 means API is reachable but request was rejected (still working)
+              return { ok: true, message: 'API reachable and authenticated' };
+            }
+            if (response.status === 401) {
+              return { ok: false, message: 'Invalid API key' };
+            }
+            return { ok: false, message: `API error: ${response.status}` };
+          } catch (error: any) {
+            return { ok: false, message: error.message };
+          }
+        }),
+      ]);
+
+      const healthyCount = checks.filter(c => c.status === 'healthy').length;
+      const totalCount = checks.length;
+
+      log.info({ 
+        healthyCount, 
+        totalCount,
+        services: checks.map(c => ({ name: c.name, status: c.status }))
+      }, 'Service status check completed');
+
+      res.json({
+        timestamp: new Date().toISOString(),
+        overall: healthyCount === totalCount ? 'healthy' : healthyCount > 0 ? 'degraded' : 'unhealthy',
+        healthyCount,
+        totalCount,
+        services: checks,
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Error checking service status');
+      res.status(500).json({ error: 'Failed to check service status' });
+    }
+  });
+
   // Start a session (for audio-only mode or session registration without HeyGen token)
   app.post("/api/session/start", async (req, res) => {
     try {

@@ -1,6 +1,7 @@
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { AvatarManager } from "@/components/AvatarManager";
 import { DatabaseStatus } from "@/components/DatabaseStatus";
+import { ServiceStatusCheck } from "@/components/ServiceStatusCheck";
 import { TopicFolderUpload } from "@/components/TopicFolderUpload";
 import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
 import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager";
@@ -508,6 +509,11 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+
+              {/* Service Status Check */}
+              <div className="mb-6 sm:mb-8">
+                <ServiceStatusCheck />
               </div>
 
               {/* Avatars Table */}
