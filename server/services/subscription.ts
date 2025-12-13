@@ -227,6 +227,17 @@ class SubscriptionService {
       throw new Error("User already has a subscription");
     }
 
+    // Ensure user exists in users table before creating subscription
+    // This handles anonymous/webflow users who may not have a users record yet
+    const [existingUser] = await db.select().from(users).where(eq(users.id, userId));
+    if (!existingUser) {
+      await db.insert(users).values({
+        id: userId,
+        role: "user",
+      });
+      logger.info({ userId }, "Created user record for subscription");
+    }
+
     const now = new Date();
     const expiresAt = new Date(now.getTime() + (freePlan.durationHours || 1) * 60 * 60 * 1000);
 
