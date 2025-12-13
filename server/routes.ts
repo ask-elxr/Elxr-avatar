@@ -1039,107 +1039,118 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.send(audioBuffer);
       }
 
-      // ⚡ PARALLEL DATA FETCHING - Fetch memory and knowledge at the same time
+      // ⚡ ASYNC RAG PATTERN - Use cached context immediately, fetch in background for next turn
       const timings: Record<string, number> = {};
-      
       const perfStart = Date.now();
-      const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
       
-      // Build namespace list
-      let allNamespaces = [...avatarConfig.pineconeNamespaces];
-      log.info({ 
-        avatarId, 
-        avatarName: avatarConfig.name,
-        baseNamespaces: avatarConfig.pineconeNamespaces 
-      }, '🔍 Audio mode - Avatar Pinecone namespaces');
+      // Get cached context from previous turn (if available)
+      const cachedRagContext = userId ? latencyCache.getSessionRagContext(userId, avatarId) : null;
+      const hasCachedContext = cachedRagContext !== null;
       
-      if (userId && !userId.startsWith('temp_')) {
-        try {
-          const userSources = await storage.listKnowledgeSources(userId);
-          const activeSourceNamespaces = userSources
-            .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
-            .map(source => source.pineconeNamespace);
-          allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
-          if (activeSourceNamespaces.length > 0) {
-            log.info({ userNamespaces: activeSourceNamespaces }, 'Added user knowledge source namespaces');
-          }
-        } catch (error) {
-          log.warn({ error }, 'Error fetching user knowledge sources');
-        }
+      if (hasCachedContext) {
+        log.info({ 
+          userId, 
+          avatarId,
+          cachedQuery: cachedRagContext.lastQuery?.substring(0, 50)
+        }, '⚡ Using cached RAG context from previous turn');
+        console.log(`⚡ ASYNC RAG: Using cached context from previous turn`);
+      } else {
+        log.info({ userId, avatarId }, '⚡ No cached context - first message or cache expired');
+        console.log(`⚡ ASYNC RAG: No cached context available (first message)`);
       }
       
-      log.info({ allNamespaces, totalCount: allNamespaces.length }, '🔍 Total namespaces to query');
-
-      // Run memory, knowledge, and conversation history fetches in PARALLEL
-      const [memoryResultSettled, knowledgeResultSettled, conversationHistorySettled] = await Promise.allSettled([
-        (async () => {
-          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
-            return { success: false, memories: [] };
-          }
-          try {
-            return await memoryService.searchMemories(message, userId, { limit: 5 });
-          } catch (error) {
-            return { success: false, memories: [] };
-          }
-        })(),
-        (async () => {
-          if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
-            log.info({ available: false, namespaceCount: allNamespaces.length }, '🔍 Pinecone not available or no namespaces');
-            return null;
-          }
-          try {
-            const results = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
-            if (results.length > 0) {
-              log.info({ 
-                resultCount: results.length,
-                topResultPreview: results[0].text?.substring(0, 200) + '...',
-                topResultNamespace: results[0].namespace || 'unknown',
-                topResultScore: results[0].score
-              }, '🔍 Pinecone knowledge results');
-            } else {
-              log.info({ query: message.substring(0, 100) }, '🔍 No Pinecone results found');
-            }
-            return results.length > 0 ? results[0].text : null;
-          } catch (error: any) {
-            log.error({ error: error.message }, '🔍 Pinecone query error');
-            return null;
-          }
-        })(),
-        // Fetch conversation history from database
-        (async () => {
-          if (!userId) return [];
-          try {
-            const records = await storage.getConversationHistory(userId, avatarId, 6);
-            return records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
-          } catch (error) {
-            return [];
-          }
-        })()
-      ]);
-
-      const dataFetchTime = Date.now() - perfStart;
-      timings.dataFetch = dataFetchTime;
-      log.info({ dataFetchMs: dataFetchTime }, "Parallel data fetch completed");
-
-      // Process results
-      let memoryContext = "";
-      if (memoryResultSettled.status === 'fulfilled' && memoryResultSettled.value?.memories?.length > 0) {
-        memoryContext = "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
-          memoryResultSettled.value.memories.map((m: any) => `- ${m.content}`).join("\n");
-        log.info({ userId, memoryCount: memoryResultSettled.value.memories.length }, 'Retrieved relevant memories');
-      }
-
-      let knowledgeContext = "";
-      if (knowledgeResultSettled.status === 'fulfilled' && knowledgeResultSettled.value) {
-        knowledgeContext = knowledgeResultSettled.value;
-        log.debug({ contextLength: knowledgeContext.length }, "Knowledge context retrieved");
-      }
-      
-      // Get conversation history from settled promise
-      const dbConversationHistory: any[] = conversationHistorySettled.status === 'fulfilled' 
-        ? conversationHistorySettled.value 
-        : [];
+      // Use cached context immediately (or empty if none)
+      let memoryContext = cachedRagContext?.memoryContext || "";
+      let knowledgeContext = cachedRagContext?.knowledgeContext || "";
+      const dbConversationHistory: any[] = cachedRagContext?.conversationHistory || [];
       const hasConversationHistory = dbConversationHistory.length > 0;
+      
+      timings.dataFetch = Date.now() - perfStart; // Nearly instant when using cache
+      log.info({ dataFetchMs: timings.dataFetch, usedCache: hasCachedContext }, "Context retrieval completed");
+
+      // 🔄 BACKGROUND RAG RETRIEVAL - Fire and forget, don't block response
+      // This retrieval is for the NEXT turn, not the current one
+      if (userId) {
+        const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+        
+        // Build namespace list
+        let allNamespaces = [...avatarConfig.pineconeNamespaces];
+        
+        if (userId && !userId.startsWith('temp_')) {
+          try {
+            const userSources = await storage.listKnowledgeSources(userId);
+            const activeSourceNamespaces = userSources
+              .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
+              .map(source => source.pineconeNamespace);
+            allNamespaces = [...allNamespaces, ...activeSourceNamespaces];
+          } catch (error) {
+            // Ignore errors in background fetch
+          }
+        }
+
+        // Fire background retrieval (don't await - runs async)
+        (async () => {
+          try {
+            const bgStart = Date.now();
+            
+            // Run all fetches in parallel
+            const [memoryResult, knowledgeResult, historyResult] = await Promise.allSettled([
+              // Memory fetch
+              (async () => {
+                if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+                  return { success: false, memories: [] };
+                }
+                return await memoryService.searchMemories(message, userId, { limit: 5 });
+              })(),
+              // Knowledge fetch
+              (async () => {
+                if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
+                  return null;
+                }
+                const results = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
+                return results.length > 0 ? results[0].text : null;
+              })(),
+              // Conversation history fetch
+              (async () => {
+                if (!userId) return [];
+                const records = await storage.getConversationHistory(userId, avatarId, 6);
+                return records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
+              })()
+            ]);
+
+            // Process and cache results for next turn
+            let newMemoryContext = "";
+            if (memoryResult.status === 'fulfilled' && memoryResult.value?.memories?.length > 0) {
+              newMemoryContext = "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
+                memoryResult.value.memories.map((m: any) => `- ${m.content}`).join("\n");
+            }
+
+            let newKnowledgeContext = "";
+            if (knowledgeResult.status === 'fulfilled' && knowledgeResult.value) {
+              newKnowledgeContext = knowledgeResult.value;
+            }
+
+            const newConversationHistory = historyResult.status === 'fulfilled' 
+              ? historyResult.value as Array<{ message: string; isUser: boolean }>
+              : [];
+
+            // Cache for next turn
+            latencyCache.setSessionRagContext(userId, avatarId, {
+              knowledgeContext: newKnowledgeContext,
+              memoryContext: newMemoryContext,
+              conversationHistory: newConversationHistory,
+              lastQuery: message
+            });
+
+            const bgTime = Date.now() - bgStart;
+            log.info({ bgTimeMs: bgTime, userId, avatarId }, '🔄 Background RAG retrieval completed and cached');
+            console.log(`🔄 BACKGROUND RAG: Completed in ${bgTime}ms, cached for next turn`);
+          } catch (error: any) {
+            log.error({ error: error.message }, '🔄 Background RAG retrieval failed');
+          }
+        })();
+      }
+      
       log.info({ hasConversationHistory, historyCount: dbConversationHistory.length }, 'Conversation history status');
 
       // Step 1: Get Claude response with knowledge base context
