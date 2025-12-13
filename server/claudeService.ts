@@ -289,10 +289,11 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
     }
 
     // Only yield remaining buffer if not truncated
+    // Note: buffer content is already in yieldedResponse from the streaming loop
+    // We only need to yield it as a sentence, not add to yieldedResponse again
     if (buffer.trim().length > 0 && !shouldTruncate) {
       sentenceCount++;
       yield { type: 'sentence', content: buffer.trim() };
-      yieldedResponse += buffer.trim();
     }
 
     const duration = Date.now() - startTime;
