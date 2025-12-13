@@ -2430,11 +2430,97 @@ export function useAvatarSession({
             }, 3000);
           }
         } else if (shouldEndSession) {
-          // Audio-only mode or no avatar - end session immediately
-          console.log("👋 Farewell delivered - ending session...");
-          setTimeout(async () => {
-            await endSessionShowReconnect();
-          }, 2000);
+          // Audio-only mode with end session - speak farewell then end session
+          console.log("👋 Audio-only farewell - speaking with TTS...");
+          try {
+            const ttsResponse = await fetch('/api/elevenlabs/tts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                text: claudeResponse, 
+                avatarId: currentAvatarIdRef.current,
+                languageCode: elevenLabsLanguageCodeRef.current
+              })
+            });
+            if (ttsResponse.ok) {
+              const audioBlob = await ttsResponse.blob();
+              const audioUrl = URL.createObjectURL(audioBlob);
+              const audio = new Audio(audioUrl);
+              currentAudioRef.current = audio;
+              audio.onended = async () => {
+                URL.revokeObjectURL(audioUrl);
+                currentAudioRef.current = null;
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
+                console.log("👋 Farewell audio finished - ending session...");
+                await endSessionShowReconnect();
+              };
+              isSpeakingRef.current = true;
+              setIsSpeakingState(true);
+              await audio.play();
+            } else {
+              // TTS failed, still end session
+              setTimeout(async () => {
+                await endSessionShowReconnect();
+              }, 2000);
+            }
+          } catch (error) {
+            console.error("Audio-only farewell TTS failed:", error);
+            setTimeout(async () => {
+              await endSessionShowReconnect();
+            }, 2000);
+          }
+        } else {
+          // Audio-only mode without sessionDriver - use TTS directly
+          console.log("🔊 Audio-only mode - speaking with ElevenLabs TTS...");
+          try {
+            const ttsResponse = await fetch('/api/elevenlabs/tts', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                text: claudeResponse, 
+                avatarId: currentAvatarIdRef.current,
+                languageCode: elevenLabsLanguageCodeRef.current
+              })
+            });
+            if (ttsResponse.ok) {
+              const audioBlob = await ttsResponse.blob();
+              const audioUrl = URL.createObjectURL(audioBlob);
+              const audio = new Audio(audioUrl);
+              currentAudioRef.current = audio;
+              audio.onended = () => {
+                URL.revokeObjectURL(audioUrl);
+                currentAudioRef.current = null;
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
+                console.log("🔊 Audio-only TTS playback finished");
+                // Resume voice recognition after audio ends
+                if (sessionActiveRef.current && !recognitionRunningRef.current) {
+                  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                  const delay = (isIOS || isSafari) ? 3500 : 1000;
+                  setTimeout(() => {
+                    if (sessionActiveRef.current && !recognitionRunningRef.current) {
+                      startVoiceRecognition();
+                      console.log("🎤 Voice recognition resumed after audio-only TTS");
+                    }
+                  }, delay);
+                }
+              };
+              isSpeakingRef.current = true;
+              setIsSpeakingState(true);
+              console.log("🔊 Playing audio-only TTS response...");
+              await audio.play();
+            } else {
+              console.error("Audio-only TTS request failed:", ttsResponse.status);
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+            }
+          } catch (error) {
+            console.error("Audio-only TTS failed:", error);
+            isSpeakingRef.current = false;
+            setIsSpeakingState(false);
+          }
         }
       }
     } catch (error) {

@@ -276,15 +276,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       }
     } else if (audioOnly) {
       try {
-        const response = await fetch(`/api/audio/speak`, {
+        const response = await fetch(`/api/elevenlabs/tts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: message, avatarId: selectedAvatarId })
         });
         if (response.ok) {
           const audioBlob = await response.blob();
-          const audio = new Audio(URL.createObjectURL(audioBlob));
-          await audio.play();
+          const audioUrl = URL.createObjectURL(audioBlob);
+          const audio = new Audio(audioUrl);
+          audio.onended = () => URL.revokeObjectURL(audioUrl);
+          await audio.play().catch((err) => {
+            console.error("Audio play failed (likely mobile autoplay restriction):", err);
+          });
         }
       } catch (error) {
         console.error("Failed to speak warning via audio:", error);
