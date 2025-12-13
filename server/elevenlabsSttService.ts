@@ -111,7 +111,6 @@ async function handleAudioData(sessionId: string, audioData: Buffer): Promise<vo
     session.sttWs.send(JSON.stringify({
       message_type: 'input_audio_chunk',
       audio_base_64: audioBase64,
-      commit: false,
       sample_rate: session.sampleRate,
     }));
   }
@@ -128,9 +127,9 @@ async function startSTTStream(session: STTSession): Promise<void> {
     model_id: 'scribe_v2_realtime',
     language_code: session.languageCode,
     sample_rate: session.sampleRate.toString(),
-    audio_format: 'pcm_16000',
+    audio_format: `pcm_${session.sampleRate}`,
     vad_commit_strategy: 'true',
-    vad_silence_threshold_secs: '1.0',
+    vad_silence_threshold_secs: '0.5',
   });
   
   const sttUrl = `${ELEVENLABS_STT_URL}?${queryParams.toString()}`;
@@ -163,22 +162,34 @@ async function startSTTStream(session: STTSession): Promise<void> {
       sttWs.on('message', async (data: Buffer) => {
         try {
           const event = JSON.parse(data.toString());
+          const msgType = event.type || event.message_type;
           
-          log.debug({ sessionId: session.sessionId, messageType: event.message_type }, 'STT message received');
+          log.debug({ sessionId: session.sessionId, messageType: msgType, text: event.text?.substring(0, 50) }, 'STT message received');
           
-          if (event.message_type === 'session_started') {
+          if (msgType === 'session_started' || msgType === 'session_begin') {
             log.info({ sessionId: session.sessionId }, 'STT session confirmed started');
-          } else if (event.message_type === 'partial_transcript') {
-            session.clientWs.send(JSON.stringify({
-              type: 'partial',
-              text: event.text,
-            }));
-          } else if (event.message_type === 'committed_transcript' || event.message_type === 'committed_transcript_with_timestamps') {
+          } else if (msgType === 'partial_transcript' || msgType === 'transcript') {
+            // Handle partial transcripts (speech_final=false) vs final (speech_final=true)
+            const isFinal = event.speech_final === true || event.is_final === true;
+            if (isFinal) {
+              log.info({ sessionId: session.sessionId, text: event.text }, 'Final transcript received');
+              session.clientWs.send(JSON.stringify({
+                type: 'final',
+                text: event.text,
+              }));
+            } else {
+              session.clientWs.send(JSON.stringify({
+                type: 'partial',
+                text: event.text,
+              }));
+            }
+          } else if (msgType === 'committed_transcript' || msgType === 'committed_transcript_with_timestamps' || msgType === 'utterance_end') {
+            log.info({ sessionId: session.sessionId, text: event.text }, 'Committed transcript received');
             session.clientWs.send(JSON.stringify({
               type: 'final',
-              text: event.text,
+              text: event.text || event.transcript,
             }));
-          } else if (event.message_type === 'error') {
+          } else if (msgType === 'error') {
             log.error({ sessionId: session.sessionId, error: event }, 'STT error from server');
             session.clientWs.send(JSON.stringify({
               type: 'error',
