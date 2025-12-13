@@ -128,10 +128,8 @@ class PineconeService {
       // If specific namespace(s) provided, search those; otherwise search default namespace
       const namespaces = Array.isArray(namespace) ? namespace : (namespace ? [namespace] : ['default']);
       
-      // Search across all specified namespaces and combine results
-      const allResults: any[] = [];
-      
-      for (const ns of namespaces) {
+      // Search across all specified namespaces IN PARALLEL for speed
+      const searchPromises = namespaces.map(async (ns) => {
         try {
           const queryResponse = await index.namespace(ns).query({
             vector: embedding,
@@ -140,14 +138,17 @@ class PineconeService {
             includeValues: false
           });
           
-          if (queryResponse.matches) {
-            allResults.push(...queryResponse.matches);
-          }
+          return queryResponse.matches || [];
         } catch (error) {
           console.warn(`Error searching namespace "${ns}":`, error);
-          // Continue with other namespaces even if one fails
+          // Return empty array for failed namespace, continue with others
+          return [];
         }
-      }
+      });
+      
+      // Wait for all namespace searches to complete in parallel
+      const resultsArrays = await Promise.all(searchPromises);
+      const allResults = resultsArrays.flat();
       
       // Sort all results by score and return top K
       return allResults
