@@ -4267,7 +4267,14 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
           const wikiStart = Date.now();
           if (!shouldFetchWikipedia) return null;
           try {
-            const result = await wikipediaService.searchAndSummarize(message);
+            // 2-second timeout to prevent Wikipedia from blocking response
+            const result = await Promise.race([
+              wikipediaService.searchAndSummarize(message),
+              new Promise<null>((resolve) => setTimeout(() => {
+                console.log('⚠️ Wikipedia timeout (2s) - skipping');
+                resolve(null);
+              }, 2000))
+            ]);
             perfTimings.wikipedia = Date.now() - wikiStart;
             return result;
           } catch (error) {
@@ -4741,7 +4748,14 @@ This applies to EVERY response, regardless of conversation length.`;
           const wikiStart = Date.now();
           if (!shouldFetchWikipedia) return null;
           try {
-            const result = await wikipediaService.searchAndSummarize(message);
+            // 2-second timeout to prevent Wikipedia from blocking response
+            const result = await Promise.race([
+              wikipediaService.searchAndSummarize(message),
+              new Promise<null>((resolve) => setTimeout(() => {
+                console.log('⚠️ Wikipedia timeout (2s) - skipping');
+                resolve(null);
+              }, 2000))
+            ]);
             perfTimings.wikipedia = Date.now() - wikiStart;
             return result;
           } catch (error) {
@@ -4991,15 +5005,9 @@ This applies to EVERY response, regardless of conversation length.`;
             }
           } else if (chunk.type === 'done') {
             fullResponse = chunk.content;
-            
-            // Handle any remaining text in buffer as final sentence
-            if (sentenceBuffer.trim()) {
-              sentenceCount++;
-              const finalIndex = sentenceCount;
-              sendEvent('sentence', { content: sentenceBuffer.trim(), index: finalIndex });
-              const finalTtsPromise = generateAndSendAudio(sentenceBuffer.trim(), finalIndex, true);
-              pendingTTSPromises.push(finalTtsPromise);
-            }
+            // Note: Don't extract additional sentences from sentenceBuffer here.
+            // Claude's sentence extraction already handles incomplete sentences,
+            // and extracting here with different regex can cause duplicate sentences.
           }
         }
         
