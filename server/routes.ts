@@ -4232,6 +4232,15 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       const avatarUsePubMed = avatarConfig.usePubMed || false;
       const avatarUseWikipedia = avatarConfig.useWikipedia || false;
       const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
+      
+      // Smart question detection - only use Wikipedia/Google for actual questions
+      const isQuestion = message && (
+        /\?/.test(message) ||
+        /^(what|who|where|when|why|how|is|are|was|were|do|does|did|can|could|would|should|will|may|might)\b/i.test(message.trim()) ||
+        /\b(tell me|explain|describe|show me|help me|teach me|what is|what are|who is|how to|how do|how does|how can|why is|why do|when did|where is|where can|can you|could you|would you|please explain|tell me about|what about|know about|learn about)\b/i.test(message)
+      );
+      const shouldFetchWikipedia = avatarUseWikipedia && isQuestion;
+      const shouldFetchGoogle = avatarUseGoogleSearch && isQuestion;
 
       // PARALLEL DATA FETCHING (same as non-streaming endpoint)
       const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
@@ -4251,7 +4260,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         })(),
         (async () => {
           const wikiStart = Date.now();
-          if (!avatarUseWikipedia) return null;
+          if (!shouldFetchWikipedia) return null;
           try {
             const result = await wikipediaService.searchAndSummarize(message);
             perfTimings.wikipedia = Date.now() - wikiStart;
@@ -4263,7 +4272,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         })(),
         (async () => {
           const googleStart = Date.now();
-          if (!avatarUseGoogleSearch || !googleSearchService.isAvailable()) return null;
+          if (!shouldFetchGoogle || !googleSearchService.isAvailable()) return null;
           try {
             // Enhance search query for vague follow-up questions
             let searchQuery = message;
@@ -4675,6 +4684,25 @@ This applies to EVERY response, regardless of conversation length.`;
       const avatarUsePubMed = avatarConfig.usePubMed || false;
       const avatarUseWikipedia = avatarConfig.useWikipedia || false;
       const avatarUseGoogleSearch = avatarConfig.useGoogleSearch || false;
+      
+      // Smart question detection - only use Wikipedia/Google for actual questions
+      // This reduces latency for statements/greetings by ~500-700ms
+      const isQuestion = message && (
+        // Contains question mark anywhere
+        /\?/.test(message) ||
+        // Starts with question words or request phrases
+        /^(what|who|where|when|why|how|is|are|was|were|do|does|did|can|could|would|should|will|may|might)\b/i.test(message.trim()) ||
+        // Request/inquiry phrases anywhere
+        /\b(tell me|explain|describe|show me|help me|teach me|what is|what are|who is|how to|how do|how does|how can|why is|why do|when did|where is|where can|can you|could you|would you|please explain|tell me about|what about|know about|learn about)\b/i.test(message)
+      );
+      
+      // Only fetch Wikipedia/Google if enabled AND message is a question
+      const shouldFetchWikipedia = avatarUseWikipedia && isQuestion;
+      const shouldFetchGoogle = avatarUseGoogleSearch && isQuestion;
+      
+      if (!isQuestion && (avatarUseWikipedia || avatarUseGoogleSearch)) {
+        console.log(`⚡ Skipping Wikipedia/Google - not a question: "${(message || '').substring(0, 50)}..."`);
+      }
 
       console.log(`⏱️ [${Date.now() - perfStart}ms] 2. Starting parallel data fetch...`);
       const dataFetchStart = Date.now();
@@ -4697,7 +4725,7 @@ This applies to EVERY response, regardless of conversation length.`;
         })(),
         (async () => {
           const wikiStart = Date.now();
-          if (!avatarUseWikipedia) return null;
+          if (!shouldFetchWikipedia) return null;
           try {
             const result = await wikipediaService.searchAndSummarize(message);
             perfTimings.wikipedia = Date.now() - wikiStart;
@@ -4709,7 +4737,7 @@ This applies to EVERY response, regardless of conversation length.`;
         })(),
         (async () => {
           const googleStart = Date.now();
-          if (!avatarUseGoogleSearch || !googleSearchService.isAvailable()) return null;
+          if (!shouldFetchGoogle || !googleSearchService.isAvailable()) return null;
           try {
             // Enhance search query for vague follow-up questions
             let searchQuery = message;
