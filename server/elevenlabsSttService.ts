@@ -19,8 +19,9 @@ const activeSessions = new Map<string, STTSession>();
 export function initElevenLabsSttServer(wss: WebSocketServer): void {
   wss.on('connection', async (ws: WebSocket, request: any) => {
     const sessionId = `stt_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const clientIp = request.socket?.remoteAddress || 'unknown';
     
-    log.info({ sessionId }, 'New ElevenLabs STT connection');
+    log.info({ sessionId, clientIp, url: request.url }, 'New ElevenLabs STT connection established');
     
     ws.on('message', async (data: Buffer | string) => {
       try {
@@ -54,9 +55,13 @@ async function handleControlMessage(
   sessionId: string,
   message: any
 ): Promise<void> {
+  log.debug({ sessionId, messageType: message.type }, 'Received control message from client');
+  
   switch (message.type) {
     case 'start': {
       const { languageCode = 'en', sampleRate = 16000 } = message;
+      
+      log.info({ sessionId, languageCode, sampleRate }, 'Starting STT session...');
       
       const session: STTSession = {
         sessionId,
@@ -77,7 +82,7 @@ async function handleControlMessage(
           sessionId,
         }));
         
-        log.info({ sessionId, languageCode, sampleRate }, 'STT session started');
+        log.info({ sessionId, languageCode, sampleRate }, 'STT session started successfully');
       } catch (error) {
         log.error({ sessionId, error }, 'Failed to start STT session');
         clientWs.send(JSON.stringify({ type: 'error', message: 'Failed to start STT session' }));

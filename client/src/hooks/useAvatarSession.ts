@@ -373,10 +373,34 @@ export function useAvatarSession({
 
   // Start ElevenLabs STT for mobile devices
   const startElevenLabsSTT = useCallback(async () => {
-    // Skip if already running
-    if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
-      console.log("⏭️ ElevenLabs STT already active");
+    // More robust check - ensure WebSocket is truly open AND ready AND we have ACTIVELY working audio capture
+    const wsOpen = elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN;
+    const sttReady = elevenLabsSttReadyRef.current;
+    const hasAudioProcessor = elevenLabsSttProcessorRef.current !== null;
+    const hasAudioStream = elevenLabsSttStreamRef.current !== null;
+    
+    // Additional checks: AudioContext must be running AND media track must be live
+    const audioContextRunning = elevenLabsSttAudioContextRef.current?.state === 'running';
+    const mediaTrackLive = elevenLabsSttStreamRef.current?.getAudioTracks().some(track => track.readyState === 'live') ?? false;
+    
+    console.log("🎤 ElevenLabs STT state check:", { 
+      wsOpen, 
+      sttReady, 
+      hasAudioProcessor, 
+      hasAudioStream, 
+      audioContextRunning,
+      mediaTrackLive 
+    });
+    
+    // Only skip if ALL components are truly active AND working
+    if (wsOpen && sttReady && hasAudioProcessor && hasAudioStream && audioContextRunning && mediaTrackLive) {
+      console.log("⏭️ ElevenLabs STT already active (verified all components including live audio)");
       return;
+    }
+    
+    // If some components exist but audio isn't actually flowing, clean up and restart
+    if (wsOpen || hasAudioProcessor || hasAudioStream) {
+      console.log("⚠️ ElevenLabs STT in incomplete/stale state - cleaning up and restarting");
     }
     
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -384,7 +408,7 @@ export function useAvatarSession({
     console.log("🎤 Starting ElevenLabs STT for mobile...", { wsUrl, host: window.location.host, protocol: window.location.protocol });
     useElevenLabsSttRef.current = true;
     
-    // Cleanup any existing connection
+    // Cleanup any existing connection before starting fresh
     stopElevenLabsSTT();
     
     let ws: WebSocket;
