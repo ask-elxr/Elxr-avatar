@@ -181,7 +181,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            ...(languageCode && { language_code: languageCode }),
+            ...(languageCode && { language_code: languageCode.split('-')[0] }),
           }),
         }
       );
@@ -259,7 +259,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            ...(languageCode && { language_code: languageCode }),
+            ...(languageCode && { language_code: languageCode.split('-')[0] }),
             ...(containsSSML && { enable_ssml: true }),
           }),
         }
@@ -572,7 +572,7 @@ class ElevenLabsService {
               style: 0.0,
               use_speaker_boost: true,
             },
-            ...(languageCode && { language_code: languageCode }),
+            ...(languageCode && { language_code: languageCode.split('-')[0] }),
           }),
         }
       );
@@ -596,7 +596,7 @@ class ElevenLabsService {
                 style: 0.0,
                 use_speaker_boost: true,
               },
-              ...(languageCode && { language_code: languageCode }),
+              ...(languageCode && { language_code: languageCode.split('-')[0] }),
             }),
           }
         );
