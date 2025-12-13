@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { SessionDriver, LiveAvatarDriver, AudioOnlyDriver } from "./sessionDrivers";
+import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
 
 interface AvatarSessionConfig {
@@ -835,8 +835,12 @@ export function useAvatarSession({
       // Track that we're using HeyGen's voice chat (so we don't start our own voice recognition)
       usingHeygenMobileVoiceChatRef.current = isMobile;
 
-      // Create LiveAvatarDriver with callbacks wired to existing logic
-      const driver = new LiveAvatarDriver({
+      // Select driver based on avatar's streamingPlatform setting
+      // LiveAvatar = new LiveAvatar SDK (may have issues), HeyGen = older more stable SDK
+      const streamingPlatform = avatarConfig.streamingPlatform || 'liveavatar';
+      console.log(`🎬 Streaming platform: ${streamingPlatform}`);
+
+      const driverConfig = {
         avatarConfig,
         audioOnly: false,
         videoRef,
@@ -1003,17 +1007,27 @@ export function useAvatarSession({
         
         // User message callback (from LiveAvatar voice input if enabled)
         onUserMessage: (message: string) => {
-          console.log("🎤 User message from LiveAvatar:", message);
+          console.log("🎤 User message from driver:", message);
           handleSubmitMessage(message);
         },
-      });
+      };
+      
+      // Create the appropriate driver based on streamingPlatform
+      let driver: SessionDriver;
+      if (streamingPlatform === 'heygen') {
+        console.log("🎬 Using HeyGenStreamingDriver (older, more stable SDK)");
+        driver = new HeyGenStreamingDriver(driverConfig);
+      } else {
+        console.log("🎬 Using LiveAvatarDriver (newer SDK)");
+        driver = new LiveAvatarDriver(driverConfig);
+      }
       
       sessionDriverRef.current = driver;
       
-      // Start the LiveAvatar session
+      // Start the avatar session
       await driver.start();
       
-      console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
+      console.log(`✅ ${streamingPlatform === 'heygen' ? 'HeyGen Streaming' : 'LiveAvatar'} session started`);
     } catch (error: any) {
       const errorMessage = error?.message || error?.toString?.() || JSON.stringify(error) || 'Unknown error';
       console.error("❌ Error starting LiveAvatar session:", errorMessage, error);

@@ -790,6 +790,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // HeyGen Streaming Avatar token endpoint (older, more stable API)
+  // Uses the @heygen/streaming-avatar SDK which requires a different token format
+  app.post("/api/heygen/streaming-token", rateLimitMiddleware(15, 60000), async (req, res) => {
+    const log = logger.child({ service: "heygen-streaming", operation: "createToken" });
+
+    try {
+      const { userId, avatarId } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Use HEYGEN_API_KEY for the streaming API (not LiveAvatar)
+      const apiKey = process.env.HEYGEN_API_KEY || process.env.HEYGEN_VIDEO_API_KEY;
+      
+      if (!apiKey) {
+        log.error("HeyGen API key not configured");
+        return res.status(500).json({
+          error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable.",
+        });
+      }
+
+      log.debug({ 
+        userId,
+        avatarId,
+        keyLength: apiKey.length,
+      }, "Creating HeyGen Streaming token");
+
+      // Call HeyGen's streaming token API
+      const response = await fetch("https://api.heygen.com/v1/streaming.create_token", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        log.error({
+          httpStatus: response.status,
+          statusText: response.statusText,
+          errorBody: errorText,
+        }, "HeyGen Streaming API request failed");
+        return res.status(response.status).json({
+          error: `HeyGen Streaming API error: ${response.status} - ${errorText}`,
+        });
+      }
+
+      const tokenData = await response.json();
+      
+      log.info({ 
+        userId,
+        hasToken: !!tokenData?.data?.token,
+      }, "HeyGen Streaming token created successfully");
+
+      res.json({
+        token: tokenData.data?.token || tokenData.token,
+      });
+    } catch (error: any) {
+      log.error({
+        errorMessage: error.message,
+      }, "Error creating HeyGen Streaming token");
+      res.status(500).json({
+        error: "Failed to create HeyGen Streaming token",
+      });
+    }
+  });
+
   // Combined audio endpoint: Get Claude response + convert to ElevenLabs audio
   app.post("/api/audio", async (req: any, res) => {
     const log = logger.child({ service: "audio-chat", operation: "processMessage" });

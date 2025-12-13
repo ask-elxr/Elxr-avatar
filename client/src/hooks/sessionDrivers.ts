@@ -716,6 +716,168 @@ export class LiveAvatarDriver implements SessionDriver {
 // Alias for backwards compatibility
 export const HeyGenDriver = LiveAvatarDriver;
 
+/**
+ * HeyGenStreamingDriver - Uses the older @heygen/streaming-avatar SDK
+ * This is more stable than the newer LiveAvatar SDK
+ * Video is streamed via MediaStream, we use our own Claude + RAG + ElevenLabs pipeline
+ */
+export class HeyGenStreamingDriver implements SessionDriver {
+  private streamingAvatar: any = null;
+  private config: DriverConfig;
+  private languageCode: string = "en";
+  private mediaStream: MediaStream | null = null;
+
+  constructor(config: DriverConfig) {
+    this.config = config;
+    this.languageCode = config.languageCode || "en";
+    console.log(`🎬 HeyGenStreamingDriver: Using @heygen/streaming-avatar SDK for ${config.avatarConfig.name || config.avatarId}`);
+  }
+
+  async start(): Promise<void> {
+    console.log("🚀 HeyGenStreamingDriver.start() called for:", this.config.avatarId);
+    
+    try {
+      // Dynamically import the HeyGen Streaming Avatar SDK
+      const { default: StreamingAvatar, AvatarQuality, StreamingEvents } = await import("@heygen/streaming-avatar");
+      
+      // Fetch access token from backend
+      const token = await this.fetchAccessToken();
+      console.log("🔑 Got HeyGen Streaming token");
+      
+      // Create streaming avatar instance
+      this.streamingAvatar = new StreamingAvatar({ token });
+      
+      // Set up event listeners
+      this.streamingAvatar.on(StreamingEvents.STREAM_READY, (event: any) => {
+        console.log("🎬 HeyGen STREAM_READY event received");
+        this.mediaStream = event.detail;
+        
+        // Attach stream to video element
+        if (this.config.videoRef.current && this.mediaStream) {
+          this.config.videoRef.current.srcObject = this.mediaStream;
+          this.config.videoRef.current.onloadedmetadata = () => {
+            this.config.videoRef.current?.play().catch(err => {
+              console.warn("⚠️ Video autoplay prevented:", err);
+            });
+          };
+          console.log("✅ Video stream attached");
+          this.config.onStreamReady?.();
+          this.config.onVideoReady?.();
+        }
+      });
+
+      this.streamingAvatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
+        console.log("🔌 HeyGen stream disconnected");
+        this.config.onStreamDisconnected?.();
+      });
+
+      this.streamingAvatar.on(StreamingEvents.AVATAR_START_TALKING, () => {
+        console.log("🗣️ Avatar started talking");
+        this.config.onAvatarStartTalking?.();
+      });
+
+      this.streamingAvatar.on(StreamingEvents.AVATAR_STOP_TALKING, () => {
+        console.log("🤐 Avatar stopped talking");
+        this.config.onAvatarStopTalking?.();
+      });
+
+      // Get avatar ID - prefer heygenAvatarId for HeyGen Streaming API
+      const avatarName = this.config.avatarConfig?.heygenAvatarId || 
+                         this.config.avatarConfig?.liveAvatarId ||
+                         this.config.avatarId;
+      
+      console.log("📋 Starting HeyGen Streaming avatar:", avatarName);
+      
+      // Start the avatar session
+      await this.streamingAvatar.createStartAvatar({
+        quality: AvatarQuality.High,
+        avatarName: avatarName,
+        language: this.languageCode,
+        disableIdleTimeout: true,
+      });
+      
+      console.log("✅ HeyGen Streaming avatar session started");
+      
+    } catch (error: any) {
+      console.error("❌ Error starting HeyGen Streaming session:", error);
+      throw error;
+    }
+  }
+
+  async stop(): Promise<void> {
+    console.log("🛑 Stopping HeyGen Streaming session...");
+    
+    if (this.streamingAvatar) {
+      try {
+        await this.streamingAvatar.stopAvatar();
+      } catch (error) {
+        console.error("Error stopping avatar:", error);
+      }
+      this.streamingAvatar = null;
+    }
+    
+    if (this.config.videoRef.current) {
+      this.config.videoRef.current.srcObject = null;
+    }
+    
+    this.mediaStream = null;
+    console.log("✅ HeyGen Streaming session stopped");
+  }
+
+  setLanguage(languageCode: string): void {
+    this.languageCode = languageCode;
+    console.log(`🌐 HeyGenStreamingDriver language set to: ${languageCode}`);
+  }
+
+  async speak(text: string, languageCodeOverride?: string): Promise<void> {
+    if (!this.streamingAvatar) {
+      console.warn("Cannot speak - no active streaming avatar session");
+      return;
+    }
+
+    try {
+      console.log(`🗣️ Speaking via HeyGen avatar: "${text.substring(0, 50)}..."`);
+      // Use HeyGen's built-in TTS via the speak method
+      await this.streamingAvatar.speak({ text });
+    } catch (error) {
+      console.error("Error speaking:", error);
+    }
+  }
+
+  async interrupt(): Promise<void> {
+    if (this.streamingAvatar) {
+      try {
+        await this.streamingAvatar.interrupt();
+      } catch (error) {
+        console.error("Error interrupting:", error);
+      }
+    }
+  }
+
+  supportsVoiceInput(): boolean {
+    return true; // HeyGen SDK supports voice input
+  }
+
+  private async fetchAccessToken(): Promise<string> {
+    const response = await fetch("/api/heygen/streaming-token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: this.config.userId,
+        avatarId: this.config.avatarId,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch HeyGen Streaming token: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    return data.token;
+  }
+}
+
 export class AudioOnlyDriver implements SessionDriver {
   private config: DriverConfig;
   private currentAudio: HTMLAudioElement | null = null;
