@@ -4241,12 +4241,17 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       );
       const shouldFetchWikipedia = avatarUseWikipedia && isQuestion;
       const shouldFetchGoogle = avatarUseGoogleSearch && isQuestion;
+      
+      // Check if message needs memory context (questions OR memory-related keywords)
+      const needsMemoryContext = isQuestion || 
+        /\b(remember|previous|last time|earlier|before|we talked|you said|i told you|mentioned|our conversation|recall)\b/i.test(message || '');
 
       // PARALLEL DATA FETCHING (same as non-streaming endpoint)
       const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         (async () => {
           const memStart = Date.now();
-          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+          // Skip Mem0 for non-questions unless memory-related keywords present
+          if (!memoryEnabled || !userId || !memoryService.isAvailable() || !needsMemoryContext) {
             return { success: false, memories: [] };
           }
           try {
@@ -4700,8 +4705,16 @@ This applies to EVERY response, regardless of conversation length.`;
       const shouldFetchWikipedia = avatarUseWikipedia && isQuestion;
       const shouldFetchGoogle = avatarUseGoogleSearch && isQuestion;
       
+      // Check if message needs memory context (questions OR memory-related keywords)
+      const needsMemoryContext = isQuestion || 
+        /\b(remember|previous|last time|earlier|before|we talked|you said|i told you|mentioned|our conversation|recall)\b/i.test(message || '');
+      
       if (!isQuestion && (avatarUseWikipedia || avatarUseGoogleSearch)) {
         console.log(`⚡ Skipping Wikipedia/Google - not a question: "${(message || '').substring(0, 50)}..."`);
+      }
+      
+      if (!needsMemoryContext) {
+        console.log(`⚡ Skipping Mem0 - not a question/memory request: "${(message || '').substring(0, 50)}..."`);
       }
 
       console.log(`⏱️ [${Date.now() - perfStart}ms] 2. Starting parallel data fetch...`);
@@ -4711,7 +4724,8 @@ This applies to EVERY response, regardless of conversation length.`;
       const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         (async () => {
           const memStart = Date.now();
-          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
+          // Skip Mem0 for non-questions unless memory-related keywords present
+          if (!memoryEnabled || !userId || !memoryService.isAvailable() || !needsMemoryContext) {
             return { success: false, memories: [] };
           }
           try {
