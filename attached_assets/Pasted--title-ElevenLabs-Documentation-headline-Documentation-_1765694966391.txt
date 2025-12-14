@@ -1,0 +1,425 @@
+---
+title: ElevenLabs Documentation
+headline: Documentation
+subtitle: Explore our docs and guides to integrate ElevenLabs
+hide-nav-links: true
+---
+
+{/* Light mode wave */}
+
+<div id="overview-wave" className="light-mode-wave">
+  <ElevenLabsWaveform color="blue" className="h-[500px]" />
+</div>
+
+{/* Dark mode wave */}
+
+<div id="overview-wave" className="dark-mode-wave">
+  <ElevenLabsWaveform color="gray" className="h-[500px]" />
+</div>
+
+<div id="agents-cards">
+  <a
+    href="/docs/creative-platform/overview"
+    style={{
+      borderRadius: '1.25rem',
+      overflow: 'hidden',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      textDecoration: 'none',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+    className="agents-card"
+  >
+    <div
+      style={{
+        position: 'relative',
+        height: '240px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <img
+        src="file:80326248-134d-41cb-992f-6969f5d51f29"
+        alt=""
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          transition: 'filter 0.3s ease',
+        }}
+        className="agents-card-img"
+      />
+    </div>
+    <div
+      style={{
+        padding: '1rem 1.25rem 1.5rem',
+        background: 'var(--sidebar-background)',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        gap: 0,
+      }}
+    >
+      <h3
+        style={{
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          margin: 0,
+          lineHeight: 1,
+          color: 'var(--grayscale-contrast)',
+        }}
+      >
+        Creative Platform
+      </h3>
+      <p
+        style={{
+          fontSize: '0.875rem',
+          lineHeight: '1.5',
+          color: 'var(--text-secondary)',
+          margin: 0,
+        }}
+      >
+        Learn how to use the ElevenLabs Creative Platform with step-by-step guides
+      </p>
+    </div>
+  </a>
+  <a
+    href="/docs/agents-platform/overview"
+    style={{
+      borderRadius: '1.25rem',
+      overflow: 'hidden',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      textDecoration: 'none',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+    className="agents-card"
+  >
+    <div
+      style={{
+        position: 'relative',
+        height: '240px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <img
+        src="file:8e5f6fe7-5a14-4d52-8750-a4030b4ee10a"
+        alt=""
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          pointerEvents: 'none',
+          transition: 'filter 0.3s ease',
+        }}
+        className="agents-card-img"
+      />
+    </div>
+    <div
+      style={{
+        padding: '1rem 1.25rem 1.5rem',
+        background: 'var(--sidebar-background)',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        gap: 0,
+      }}
+    >
+      <h3
+        style={{
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          margin: 0,
+          lineHeight: 1,
+          color: 'var(--grayscale-contrast)',
+        }}
+      >
+        Agents Platform
+      </h3>
+      <p
+        style={{
+          fontSize: '0.875rem',
+          lineHeight: '1.5',
+          color: 'var(--text-secondary)',
+          margin: 0,
+        }}
+      >
+        Learn how to build, launch, and scale agents with ElevenLabs
+      </p>
+    </div>
+  </a>
+  <a
+    href="/docs/developers/quickstart"
+    style={{
+      borderRadius: '1.25rem',
+      overflow: 'hidden',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      textDecoration: 'none',
+      display: 'flex',
+      flexDirection: 'column',
+    }}
+    className="agents-card"
+  >
+    <div
+      style={{
+        position: 'relative',
+        height: '240px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+      }}
+    >
+      <img
+        src="file:37fa4ded-f1f4-4804-95d1-58374dc86225"
+        alt=""
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          pointerEvents: 'none',
+          transition: 'filter 0.3s ease',
+        }}
+        className="agents-card-img"
+      />
+    </div>
+    <div
+      style={{
+        padding: '1rem 1.25rem 1.5rem',
+        background: 'var(--sidebar-background)',
+        flex: 1,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'flex-start',
+        gap: 0,
+      }}
+    >
+      <h3
+        style={{
+          fontSize: '1.125rem',
+          fontWeight: '600',
+          margin: 0,
+          lineHeight: 1,
+          color: 'var(--grayscale-contrast)',
+        }}
+      >
+        Developers
+      </h3>
+      <p
+        style={{
+          fontSize: '0.875rem',
+          lineHeight: '1.5',
+          color: 'var(--text-secondary)',
+          margin: 0,
+        }}
+      >
+        Learn how to integrate ElevenLabs with examples and tutorials
+      </p>
+    </div>
+  </a>
+</div>
+
+## Meet the models
+
+<CardGroup cols={2} rows={2}>
+  <Card title={<div className="flex items-start gap-2"><div>Eleven v3</div><div><img src="file:93ca0af7-e268-4070-b048-501a17c764f6" alt="Alpha" /></div></div>} href="/docs/overview/models#eleven-v3-alpha">
+    Our most emotionally rich, expressive speech synthesis model
+    <div className="mt-4 space-y-2">
+      <div className="text-sm">Dramatic delivery and performance</div>
+      <div className="text-sm">70+ languages supported</div>
+      <div className="text-sm">5,000 character limit</div>
+      <div className="text-sm">Support for natural multi-speaker dialogue</div>
+    </div>
+  </Card>
+  <Card title="Eleven Multilingual v2" href="/docs/overview/models#multilingual-v2">
+    Lifelike, consistent quality speech synthesis model
+    <div className="mt-4 space-y-2">
+      <div className="text-sm">Natural-sounding output</div>
+      <div className="text-sm">29 languages supported</div>
+      <div className="text-sm">10,000 character limit</div>
+      <div className="text-sm">Most stable on long-form generations</div>
+    </div>
+  </Card>
+  <Card title="Eleven Flash v2.5" href="/docs/overview/models#flash-v25">
+    Our fast, affordable speech synthesis model
+    <div className="mt-4 space-y-2">
+      <div className="text-sm">Ultra-low latency (~75ms&dagger;)</div>
+      <div className="text-sm">32 languages supported</div>
+      <div className="text-sm">40,000 character limit</div>
+      <div className="text-sm">Faster model, 50% lower price per character</div>
+    </div>
+  </Card>
+  <Card title="Eleven Turbo v2.5" href="/docs/overview/models#turbo-v25">
+    High quality, low-latency model with a good balance of quality and speed
+    <div className="mt-4 space-y-2">
+      <div className="text-sm">High quality voice generation</div>
+      <div className="text-sm">32 languages supported</div>
+      <div className="text-sm">40,000 character limit</div>
+      <div className="text-sm">Low latency (~250ms-300ms&dagger;), 50% lower price per character</div>
+
+    </div>
+
+  </Card>
+</CardGroup>
+
+<CardGroup cols={2} rows={1}>
+  <Card title="Scribe v1" href="/docs/overview/models#scribe-v1">
+    State-of-the-art speech recognition model
+    <div className="mt-4 space-y-2">
+      <div className="text-sm">Accurate transcription in 99 languages</div>
+      <div className="text-sm">Precise word-level timestamps</div>
+      <div className="text-sm">Speaker diarization</div>
+      <div className="text-sm">Dynamic audio tagging</div>
+    </div>
+  </Card>
+  <Card title="Scribe v2 Realtime" href="/docs/overview/models#scribe-v2-realtime">
+    Real-time speech recognition model
+    <div className="mt-4 space-y-2">
+      <div className="text-sm">Accurate transcription in 90 languages</div>
+      <div className="text-sm">Real-time transcription</div>
+      <div className="text-sm">Low latency (~150ms&dagger;)</div>
+      <div className="text-sm">Precise word-level timestamps</div>
+    </div>
+  </Card>
+</CardGroup>
+
+<div className="text-center">
+  <div>[Explore all](/docs/overview/models)</div>
+</div>
+
+<small>† Excluding application & network latency</small>
+
+## Browse by capability
+
+<CardGroup cols={3}>
+
+<Card href="/docs/overview/capabilities/text-to-speech">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Text to Speech</div>
+      <p>Convert text into lifelike speech</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/speech-to-text">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Speech to Text</div>
+      <p>Transcribe spoken audio into text</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/music">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Music</div>
+      <p>Generate music from text</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/text-to-dialogue">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Text to Dialogue</div>
+      <p>Create natural-sounding dialogue from text</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/image-video">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Image & Video</div>
+      <p>Generate images and videos from text</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/voice-changer">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Voice changer</div>
+      <p>Modify and transform voices</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/voice-isolator">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Voice isolator</div>
+      <p>Isolate voices from background noise</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/dubbing">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Dubbing</div>
+      <p>Dub audio and videos seamlessly</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/sound-effects">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Sound effects</div>
+      <p>Create cinematic sound effects</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/voices">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Voices</div>
+      <p>Clone and design custom voices</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/voice-remixing">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Voice Remixing</div>
+      <p>Transform and enhance existing voices</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/overview/capabilities/forced-alignment">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Forced Alignment</div>
+      <p>Align text to audio</p>
+    </div>
+  </div>
+</Card>
+
+<Card href="/docs/agents-platform/overview">
+  <div className="flex items-center justify-between">
+    <div className="text-left">
+      <div className="t-default text-base font-semibold">Agents Platform</div>
+      <p>Deploy intelligent voice agents</p>
+    </div>
+  </div>
+</Card>
+
+</CardGroup>
