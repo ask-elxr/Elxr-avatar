@@ -2028,9 +2028,15 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
+        // Check if driver supports repeatAudio (LiveAvatarDriver has getSessionInstance, HeyGenStreamingDriver doesn't)
+        // HeyGenStreamingDriver uses older SDK that only has speak({ text }) - no custom audio support
+        const driverSupportsAudioStreaming = typeof (sessionDriverRef.current as any)?.getSessionInstance === 'function';
+        console.log(`🔍 Driver audio streaming support: ${driverSupportsAudioStreaming ? 'YES (LiveAvatarDriver)' : 'NO (HeyGenStreamingDriver - using text fallback)'}`);
+        
         // Use AUDIO streaming mode for faster perceived response (concurrent TTS)
         // Audio chunks may arrive out of order - frontend handles ordering via index
-        if (streamingEnabledRef.current && sessionDriverRef.current) {
+        // Only use audio streaming if driver supports repeatAudio (LiveAvatarDriver)
+        if (streamingEnabledRef.current && sessionDriverRef.current && driverSupportsAudioStreaming) {
           console.log("🎯 [AUDIO-STREAMING] Using audio streaming mode for faster response");
           
           let fullResponse = '';
