@@ -2013,7 +2013,8 @@ export function useAvatarSession({
         console.log("⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===");
         
         // Video mode: Start avatar session ONLY on first message if not already started
-        if (!heygenSessionActive && !sessionDriverRef.current) {
+        // Skip this in audio-only mode - we don't need HeyGen video
+        if (!audioOnlyRef.current && !heygenSessionActive && !sessionDriverRef.current) {
           try {
             const avatarStartTime = performance.now();
             await startHeyGenSession(currentAvatarIdRef.current);
