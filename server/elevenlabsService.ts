@@ -77,7 +77,7 @@ class ElevenLabsService {
 
       const options: any = {
         text,
-        model_id: "eleven_turbo_v2_5",
+        model_id: "eleven_flash_v2_5", // Flash model - ~75ms latency vs ~250-300ms for Turbo
         voice_settings: {
           stability: 0.7, // Increased for warmer, smoother voice (less harsh)
           similarity_boost: 0.65, // Slightly reduced for softer tone
