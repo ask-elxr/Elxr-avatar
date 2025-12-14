@@ -802,8 +802,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "userId is required" });
       }
 
-      // Use HEYGEN_API_KEY for the streaming API (not LiveAvatar)
-      const apiKey = process.env.HEYGEN_API_KEY || process.env.HEYGEN_VIDEO_API_KEY;
+      // Use HEYGEN_VIDEO_API_KEY for the streaming API (user updated this key)
+      // Fall back to HEYGEN_API_KEY if VIDEO key not set
+      const apiKey = process.env.HEYGEN_VIDEO_API_KEY || process.env.HEYGEN_API_KEY;
       
       if (!apiKey) {
         log.error("HeyGen API key not configured");
