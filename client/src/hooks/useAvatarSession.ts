@@ -2070,9 +2070,10 @@ export function useAvatarSession({
                 if (!sessionDriverRef.current) break;
                 
                 try {
-                  // Call repeatAudio directly on the session - SDK handles playback and lip-sync
+                  // Call repeatAudio via getSessionInstance() - session is private in LiveAvatarDriver
                   const driver = sessionDriverRef.current as any;
-                  const session = driver?.session;
+                  // Use getSessionInstance() method to access the internal HeyGen session
+                  const session = driver?.getSessionInstance?.() || driver?.session;
                   
                   if (session?.repeatAudio) {
                     session.repeatAudio(nextAudio.content);
@@ -2086,7 +2087,8 @@ export function useAvatarSession({
                     await new Promise(resolve => setTimeout(resolve, Math.max(durationMs * 0.8, 100)));
                   } else {
                     // Debug: log what's available
-                    console.warn(`🔊 [AUDIO-STREAMING] repeatAudio not available - driver: ${!!driver}, session: ${!!session}, methods: ${session ? Object.keys(session).slice(0, 5).join(',') : 'none'}`);
+                    const hasGetSession = typeof driver?.getSessionInstance === 'function';
+                    console.warn(`🔊 [AUDIO-STREAMING] repeatAudio not available - driver: ${!!driver}, hasGetSession: ${hasGetSession}, session: ${!!session}, methods: ${session ? Object.keys(session).slice(0, 5).join(',') : 'none'}`);
                   }
                 } catch (e) {
                   console.warn("Audio playback error:", e);
