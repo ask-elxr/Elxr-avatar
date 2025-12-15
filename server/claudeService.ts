@@ -15,6 +15,9 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-5";
 // </important_do_not_delete>
 
+// Fast model for voice mode - Haiku is ~5x faster than Sonnet
+const FAST_VOICE_MODEL = "claude-3-5-haiku-20241022";
+
 export class ClaudeService {
   private anthropic: Anthropic | null;
   private createMessageBreaker: any;
@@ -652,6 +655,73 @@ ABSOLUTE RULES:
     } catch (error: any) {
       log.error({ error: error.message, stack: error.stack }, 'Claude enhanced response error');
       throw new Error('Failed to generate enhanced response from Claude Sonnet');
+    }
+  }
+
+  // Ultra-fast voice response using Haiku model - optimized for low latency audio mode
+  async generateFastVoiceResponse(
+    query: string,
+    personalityPrompt: string,
+    knowledgeContext: string = '',
+    memoryContext: string = ''
+  ): Promise<string> {
+    if (!this.anthropic) {
+      throw new Error('Claude is not available - API key not configured');
+    }
+
+    const log = logger.child({ 
+      service: 'claude', 
+      operation: 'generateFastVoiceResponse',
+      model: FAST_VOICE_MODEL
+    });
+
+    const startTime = Date.now();
+    log.info({ queryLength: query.length }, 'Starting fast voice response with Haiku');
+
+    try {
+      // Build a minimal but effective context
+      let contextBlock = '';
+      if (knowledgeContext) {
+        contextBlock += `KNOWLEDGE:\n${knowledgeContext.substring(0, 1500)}\n\n`;
+      }
+      if (memoryContext) {
+        contextBlock += `MEMORY:\n${memoryContext.substring(0, 500)}\n\n`;
+      }
+
+      const userMessage = contextBlock 
+        ? `${contextBlock}Question: ${query}`
+        : query;
+
+      // Simplified system prompt for speed
+      const systemPrompt = `${personalityPrompt}
+
+VOICE MODE: Respond in 1-2 short sentences only. Be direct and conversational.`;
+
+      const response = await this.createMessageBreaker.execute({
+        model: FAST_VOICE_MODEL,
+        max_tokens: 150,
+        messages: [{ role: 'user', content: userMessage }],
+        system: systemPrompt
+      });
+
+      const duration = Date.now() - startTime;
+      log.info({ duration, tokensUsed: response.usage?.total_tokens }, 'Fast voice response completed');
+
+      storage.logApiCall({
+        serviceName: 'claude-haiku',
+        endpoint: 'messages.create',
+        userId: null,
+        responseTimeMs: duration,
+      }).catch(() => {});
+
+      const content = response.content[0];
+      if (content && content.type === 'text') {
+        return content.text;
+      }
+      return 'I apologize, but I was unable to respond.';
+    } catch (error: any) {
+      log.error({ error: error.message }, 'Fast voice response error');
+      throw new Error('Failed to generate fast voice response');
     }
   }
 }

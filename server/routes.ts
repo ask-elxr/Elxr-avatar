@@ -1364,19 +1364,33 @@ This appears to be your first conversation with this person - no prior memories 
         log.info({ userId, historyCount: dbConversationHistory.length }, 'Added conversation history to audio mode prompt');
       }
 
-      // Generate Claude response with enhanced personality
-      // isVoiceMode=true for audio mode - ensures ultra-concise responses (1-2 sentences, <30 words)
+      // Generate Claude response - use fast Haiku model for text-only, Sonnet for images
       const claudeStart = Date.now();
-      const claudeResponseResult = await claudeService.generateEnhancedResponse(
-        message || 'What do you see in this image?', // Default message if only image is provided
-        knowledgeContext,
-        "", // webSearchResults (empty for audio mode)
-        [], // conversationHistory (no history for audio mode currently)
-        enhancedPersonality, // customSystemPrompt - Use enhanced personality with memories
-        true, // isVoiceMode=true for audio mode - brief responses unless user asks for detail
-        imageBase64, // Image data for vision
-        imageMimeType // Image MIME type
-      );
+      let claudeResponseResult: string;
+      
+      if (imageBase64) {
+        // Image analysis requires Sonnet (multimodal)
+        log.info('Using Sonnet for image analysis');
+        claudeResponseResult = await claudeService.generateEnhancedResponse(
+          message || 'What do you see in this image?',
+          knowledgeContext,
+          "", // webSearchResults
+          [], // conversationHistory
+          enhancedPersonality,
+          true, // isVoiceMode
+          imageBase64,
+          imageMimeType
+        );
+      } else {
+        // Text-only: Use fast Haiku model for ~5x faster response
+        log.info('Using fast Haiku model for voice response');
+        claudeResponseResult = await claudeService.generateFastVoiceResponse(
+          message,
+          enhancedPersonality,
+          knowledgeContext,
+          memoryContext
+        );
+      }
 
       timings.claude = Date.now() - claudeStart;
       
