@@ -26,6 +26,7 @@ const Credits = lazy(() => import("@/pages/Credits"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LiveAvatarTest = lazy(() => import("@/pages/liveavatar-test"));
 const SDKTest = lazy(() => import("@/pages/sdk-test"));
+const ElevenLabsAgentTest = lazy(() => import("@/pages/elevenlabs-agent-test"));
 
 const EmbedPage = lazy(() => import("@/pages/embed/index"));
 const EmbedAdmin = lazy(() => import("@/pages/embed/admin"));
@@ -90,6 +91,7 @@ function Router() {
         <Route path="/account" component={Account} />
         <Route path="/liveavatar-test" component={LiveAvatarTest} />
         <Route path="/sdk-test" component={SDKTest} />
+        <Route path="/elevenlabs-agent-test" component={ElevenLabsAgentTest} />
         
         {/* Embed routes - content only pages for Webflow embedding */}
         <Route path="/embed/dashboard">{() => <EmbedPage view="dashboard" />}</Route>

@@ -7895,6 +7895,58 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   );
 
+  // ElevenLabs Agents Platform - Conversation Token endpoint for WebRTC connections
+  // This endpoint is used by the mobile-first ElevenLabs Agent test page
+  app.get("/api/elevenlabs/conversation-token", async (req, res) => {
+    try {
+      const apiKey = process.env.ELEVENLABS_API_KEY;
+      const agentId = process.env.ELEVENLABS_AGENT_ID;
+      
+      if (!apiKey) {
+        logger.error("ELEVENLABS_API_KEY not configured");
+        return res.status(500).json({ error: "ElevenLabs API key not configured" });
+      }
+      
+      if (!agentId) {
+        // If no agent ID configured, return an error with instructions
+        logger.warn("ELEVENLABS_AGENT_ID not configured - user needs to create an agent in ElevenLabs dashboard");
+        return res.status(500).json({ 
+          error: "ElevenLabs Agent ID not configured. Create an agent at elevenlabs.io/app/agents and set ELEVENLABS_AGENT_ID environment variable." 
+        });
+      }
+      
+      // Request a conversation token for WebRTC connection (recommended for mobile)
+      const response = await fetch(
+        `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${agentId}`,
+        {
+          headers: {
+            "xi-api-key": apiKey,
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.error({ status: response.status, error: errorText }, "Failed to get ElevenLabs conversation token");
+        return res.status(response.status).json({ 
+          error: "Failed to get conversation token from ElevenLabs",
+          details: errorText
+        });
+      }
+      
+      const data = await response.json();
+      logger.info("ElevenLabs conversation token generated successfully");
+      
+      res.json({ 
+        token: data.token,
+        agentId // Include agentId in case frontend needs it for fallback
+      });
+    } catch (error: any) {
+      logger.error({ error: error.message }, "Error getting ElevenLabs conversation token");
+      res.status(500).json({ error: "Failed to get conversation token", details: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   
   // Setup streaming WebSocket for real-time STT and LLM responses
