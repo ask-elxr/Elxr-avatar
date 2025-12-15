@@ -24,6 +24,43 @@ export default function ElevenLabsVideoTest() {
   const liveAvatarRef = useRef<LiveAvatarSession | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [liveAvatarStatus, setLiveAvatarStatus] = useState<string>("idle");
+  
+  // Audio buffering for smoother lip-sync
+  const audioBufferRef = useRef<Uint8Array[]>([]);
+  const audioBufferSizeRef = useRef<number>(0);
+  const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const BUFFER_THRESHOLD = 12000; // ~250ms of audio at 24kHz
+  const FLUSH_DELAY = 150; // ms to wait before flushing smaller buffers
+
+  // Flush accumulated audio buffer to SDK for lip-sync
+  const flushAudioBuffer = useCallback(() => {
+    const session = liveAvatarRef.current;
+    if (!session || audioBufferRef.current.length === 0) return;
+    if (!('repeatAudio' in session) || typeof session.repeatAudio !== 'function') return;
+    
+    // Combine all chunks into one buffer
+    const totalLength = audioBufferRef.current.reduce((sum, chunk) => sum + chunk.length, 0);
+    const combined = new Uint8Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioBufferRef.current) {
+      combined.set(chunk, offset);
+      offset += chunk.length;
+    }
+    
+    // Convert to base64 for SDK
+    let binary = '';
+    for (let i = 0; i < combined.length; i++) {
+      binary += String.fromCharCode(combined[i]);
+    }
+    const base64Audio = btoa(binary);
+    
+    console.log(`[LiveAvatar] Sending ${totalLength} bytes for lip-sync`);
+    session.repeatAudio(base64Audio);
+    
+    // Clear buffer
+    audioBufferRef.current = [];
+    audioBufferSizeRef.current = 0;
+  }, []);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -61,49 +98,59 @@ export default function ElevenLabsVideoTest() {
       setIsConnecting(false);
     },
     onAudio: async (audio: unknown) => {
-      console.log("[ElevenLabs] Audio received:", audio);
       const session = liveAvatarRef.current;
-      if (!session) {
-        console.log("[LiveAvatar] No session available for audio lip-sync");
-        return;
-      }
-      
-      if (!('repeatAudio' in session) || typeof session.repeatAudio !== 'function') {
-        console.warn("[LiveAvatar] repeatAudio method not available on session");
-        return;
-      }
+      if (!session) return;
+      if (!('repeatAudio' in session) || typeof session.repeatAudio !== 'function') return;
       
       try {
-        let base64Audio: string;
+        // Convert audio to bytes
+        let bytes: Uint8Array;
         if (audio instanceof ArrayBuffer) {
-          const bytes = new Uint8Array(audio);
-          let binary = '';
-          for (let i = 0; i < bytes.byteLength; i++) {
-            binary += String.fromCharCode(bytes[i]);
-          }
-          base64Audio = btoa(binary);
+          bytes = new Uint8Array(audio);
         } else if (typeof audio === "string") {
-          base64Audio = audio;
+          // Already base64 - decode it
+          const binary = atob(audio);
+          bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
         } else if (audio && typeof audio === "object" && "data" in audio) {
           const data = (audio as { data: ArrayBuffer | string }).data;
           if (data instanceof ArrayBuffer) {
-            const bytes = new Uint8Array(data);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++) {
-              binary += String.fromCharCode(bytes[i]);
-            }
-            base64Audio = btoa(binary);
+            bytes = new Uint8Array(data);
           } else {
-            base64Audio = String(data);
+            const binary = atob(String(data));
+            bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+              bytes[i] = binary.charCodeAt(i);
+            }
           }
         } else {
-          console.warn("[ElevenLabs] Unknown audio format:", typeof audio);
           return;
         }
-        session.repeatAudio(base64Audio);
-        console.log("[LiveAvatar] Sent audio for lip-sync");
+        
+        // Add to buffer
+        audioBufferRef.current.push(bytes);
+        audioBufferSizeRef.current += bytes.length;
+        
+        // Clear existing flush timer
+        if (flushTimerRef.current) {
+          clearTimeout(flushTimerRef.current);
+        }
+        
+        // Flush if buffer is large enough
+        if (audioBufferSizeRef.current >= BUFFER_THRESHOLD) {
+          flushAudioBuffer();
+        } else {
+          // Set timer to flush smaller buffers after delay
+          flushTimerRef.current = setTimeout(() => {
+            if (audioBufferSizeRef.current > 0) {
+              flushAudioBuffer();
+            }
+          }, FLUSH_DELAY);
+        }
       } catch (err) {
-        console.error("[LiveAvatar] Error sending audio:", err);
+        console.error("[LiveAvatar] Audio buffering error:", err);
       }
     },
     onModeChange: (mode) => {
