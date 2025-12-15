@@ -159,6 +159,20 @@ export default function ElevenLabsVideoTest() {
         if (videoRef.current) {
           session.attach(videoRef.current);
           console.log("[LiveAvatar] Video element attached");
+          
+          // Explicitly mute and disable audio tracks to prevent dual audio
+          // ElevenLabs handles all audio - LiveAvatar should only provide video
+          videoRef.current.muted = true;
+          videoRef.current.volume = 0;
+          
+          // Also disable any audio tracks on the MediaStream
+          const stream = videoRef.current.srcObject as MediaStream | null;
+          if (stream) {
+            stream.getAudioTracks().forEach(track => {
+              console.log("[LiveAvatar] Disabling audio track:", track.label);
+              track.enabled = false;
+            });
+          }
         }
         setVideoReady(true);
       });
