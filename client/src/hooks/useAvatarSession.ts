@@ -1175,13 +1175,26 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true);
     
-    // ✅ MOBILE FIX: Warm up microphone before starting voice recognition
+    // ✅ MOBILE FIX: Warm up microphone AND unlock audio before starting
     // Mobile browsers (especially iOS Safari) require an active audio stream
-    // before Web Speech API will work properly
+    // before Web Speech API will work properly, AND require audio to be "unlocked"
+    // by playing audio during a user gesture
     const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
     if (isMobile) {
       try {
-        console.log("📱 Mobile detected - warming up microphone...");
+        console.log("📱 Mobile detected - unlocking audio...");
+        // 🔓 CRITICAL: Play a tiny silent audio to unlock audio playback on mobile
+        // This must happen SYNCHRONOUSLY within the user gesture (button click)
+        const silentAudioUnlock = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+        silentAudioUnlock.volume = 0.01;
+        await silentAudioUnlock.play().catch(() => {});
+        console.log("📱 Audio unlocked for mobile");
+      } catch (error) {
+        console.warn("📱 Audio unlock failed:", error);
+      }
+      
+      try {
+        console.log("📱 Warming up microphone...");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         // Keep stream active briefly to "warm up" the microphone
         await new Promise(resolve => setTimeout(resolve, 300));
@@ -1247,6 +1260,7 @@ export function useAvatarSession({
             }
             
             // Use ElevenLabs TTS endpoint to speak the greeting
+            console.log("🎤 Fetching greeting audio from ElevenLabs...");
             const audioResponse = await fetch("/api/elevenlabs/tts", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -1256,18 +1270,26 @@ export function useAvatarSession({
                 languageCode: elevenLabsLanguageCodeRef.current,
               }),
             });
+            console.log("🎤 Greeting audio response status:", audioResponse.status);
             if (audioResponse.ok) {
               const audioBlob = await audioResponse.blob();
+              console.log("🎤 Greeting audio blob size:", audioBlob.size, "bytes, type:", audioBlob.type);
               const audioUrl = URL.createObjectURL(audioBlob);
               const audio = new Audio(audioUrl);
+              audio.volume = 1.0;
               
               // 🔇 CRITICAL: Set currentAudioRef to block voice recognition restart during playback
               currentAudioRef.current = audio;
               isSpeakingRef.current = true;
               setIsSpeakingState(true);
               
+              audio.onloadedmetadata = () => {
+                console.log("🎤 Greeting audio loaded - duration:", audio.duration, "s");
+              };
+              
               // 🔊 Resume voice recognition after greeting ends
               audio.onended = () => {
+                console.log("🎤 Greeting audio ENDED successfully");
                 URL.revokeObjectURL(audioUrl);
                 currentAudioRef.current = null;
                 isSpeakingRef.current = false;
@@ -1280,7 +1302,8 @@ export function useAvatarSession({
                 }, 500);
               };
               
-              audio.onerror = () => {
+              audio.onerror = (e) => {
+                console.error("🎤 Greeting audio ERROR:", e, audio.error);
                 URL.revokeObjectURL(audioUrl);
                 currentAudioRef.current = null;
                 isSpeakingRef.current = false;
@@ -1294,8 +1317,12 @@ export function useAvatarSession({
                 }, 500);
               };
               
-              audio.play().catch((err) => {
-                console.error("Failed to play greeting audio:", err);
+              try {
+                console.log("🎤 Attempting to play greeting audio...");
+                await audio.play();
+                console.log("🎤 Greeting audio PLAYING - paused:", audio.paused, "currentTime:", audio.currentTime);
+              } catch (err) {
+                console.error("🎤 Greeting audio play() FAILED:", err);
                 currentAudioRef.current = null;
                 isSpeakingRef.current = false;
                 setIsSpeakingState(false);
@@ -1305,7 +1332,9 @@ export function useAvatarSession({
                     startVoiceRecognition();
                   }
                 }, 500);
-              });
+              }
+            } else {
+              console.error("🎤 Failed to fetch greeting audio:", audioResponse.status);
             }
           }
         }
