@@ -7895,6 +7895,60 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   );
 
+  // HeyGen Streaming Session endpoint for Audio-to-Video API (WSS)
+  // Creates a new streaming session and returns the realtime WebSocket endpoint
+  app.post("/api/heygen/streaming-session", async (req, res) => {
+    const log = logger.child({ service: "heygen-audio-to-video", operation: "createSession" });
+    
+    try {
+      const apiKey = process.env.HEYGEN_API_KEY || process.env.HEYGEN_VIDEO_API_KEY;
+      
+      if (!apiKey) {
+        log.error("HeyGen API key not configured");
+        return res.status(500).json({ error: "HeyGen API key not configured" });
+      }
+      
+      const { avatar_id = "Wayne_20240711", version = "v2" } = req.body;
+      
+      log.info({ avatar_id, version }, "Creating HeyGen streaming session");
+      
+      // Create a new streaming session
+      const response = await fetch("https://api.heygen.com/v1/streaming.new", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+        },
+        body: JSON.stringify({
+          version,
+          avatar_id,
+          quality: "high"
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        log.error({ status: response.status, error: errorText }, "HeyGen streaming.new failed");
+        return res.status(response.status).json({ 
+          error: "Failed to create HeyGen streaming session",
+          details: errorText
+        });
+      }
+      
+      const data = await response.json();
+      log.info({ session_id: data.session_id }, "HeyGen streaming session created");
+      
+      res.json({
+        session_id: data.session_id,
+        realtime_endpoint: data.realtime_endpoint,
+        ice_servers: data.ice_servers
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error creating HeyGen streaming session");
+      res.status(500).json({ error: "Failed to create streaming session", details: error.message });
+    }
+  });
+
   // ElevenLabs Agents Platform - Conversation Token endpoint for WebRTC connections
   // This endpoint is used by the mobile-first ElevenLabs Agent test page
   app.get("/api/elevenlabs/conversation-token", async (req, res) => {
