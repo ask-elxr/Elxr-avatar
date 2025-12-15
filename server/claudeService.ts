@@ -262,10 +262,20 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
             if (isVoiceMode && !wantsDetailedResponse && sentenceCount >= maxSentences) {
               shouldTruncate = true;
               log.info({ sentenceCount, responseLength: yieldedResponse.length }, 'Truncating response at max sentences');
-              // Only yield text up to the end of the last allowed sentence
-              const truncatedText = tempBuffer.slice(0, match.index + match[1].length);
-              yield { type: 'text', content: truncatedText };
-              yieldedResponse += truncatedText;
+              
+              // Calculate how much of the CURRENT text chunk to yield
+              // buffer = previous_remainder + current_text
+              // We need only the portion of current text that fits within truncation
+              const bufferLengthBeforeChunk = buffer.length - text.length;
+              const endPosInBuffer = match.index + match[1].length;
+              const portionOfCurrentText = Math.max(0, endPosInBuffer - bufferLengthBeforeChunk);
+              
+              if (portionOfCurrentText > 0) {
+                const newContent = text.slice(0, portionOfCurrentText);
+                yield { type: 'text', content: newContent };
+                yieldedResponse += newContent;
+              }
+              
               // Yield all accumulated sentences
               for (const s of sentencesInChunk) {
                 yield { type: 'sentence', content: s };
