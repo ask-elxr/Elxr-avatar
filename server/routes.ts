@@ -7901,14 +7901,16 @@ This applies to EVERY response, regardless of conversation length.`;
     const log = logger.child({ service: "heygen-audio-to-video", operation: "createSession" });
     
     try {
-      const apiKey = process.env.HEYGEN_API_KEY || process.env.HEYGEN_VIDEO_API_KEY;
+      // HeyGen Streaming API (Interactive Avatar) uses LIVEAVATAR_API_KEY or HEYGEN_LIVE_API_KEY
+      // This is different from HEYGEN_VIDEO_API_KEY which is for video generation
+      const apiKey = process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_LIVE_API_KEY || process.env.HEYGEN_API_KEY;
       
       if (!apiKey) {
-        log.error("HeyGen API key not configured");
-        return res.status(500).json({ error: "HeyGen API key not configured" });
+        log.error("HeyGen Streaming API key not configured (need LIVEAVATAR_API_KEY)");
+        return res.status(500).json({ error: "HeyGen Streaming API key not configured" });
       }
       
-      const { avatar_id = "Wayne_20240711", version = "v2" } = req.body;
+      const { avatar_id = "98917de8-81a1-4a24-ad0b-584fff35c168", version = "v2" } = req.body;
       
       log.info({ avatar_id, version }, "Creating HeyGen streaming session");
       

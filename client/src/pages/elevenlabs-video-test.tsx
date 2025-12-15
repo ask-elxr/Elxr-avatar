@@ -115,7 +115,7 @@ export default function ElevenLabsVideoTest() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           version: "v2",
-          avatar_id: "Wayne_20240711"
+          avatar_id: "98917de8-81a1-4a24-ad0b-584fff35c168"
         })
       });
       
