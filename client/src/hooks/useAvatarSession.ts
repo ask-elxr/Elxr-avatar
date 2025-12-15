@@ -1076,6 +1076,21 @@ export function useAvatarSession({
   const startHeyGenSession = startLiveAvatarSession;
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
+    // 🔓 MOBILE FIX: Unlock audio IMMEDIATELY on user gesture - MUST be first!
+    // This must happen BEFORE any async operations or the user gesture expires
+    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
+    if (isMobile) {
+      try {
+        console.log("📱 Mobile detected - unlocking audio FIRST...");
+        const silentAudioUnlock = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
+        silentAudioUnlock.volume = 0.01;
+        await silentAudioUnlock.play().catch(() => {});
+        console.log("📱 Audio unlocked for mobile");
+      } catch (error) {
+        console.warn("📱 Audio unlock failed:", error);
+      }
+    }
+    
     setIsLoading(true);
     
     reconnectAttemptsRef.current = 0;
@@ -1175,35 +1190,16 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true);
     
-    // ✅ MOBILE FIX: Warm up microphone AND unlock audio before starting
-    // Mobile browsers (especially iOS Safari) require an active audio stream
-    // before Web Speech API will work properly, AND require audio to be "unlocked"
-    // by playing audio during a user gesture
-    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
+    // ✅ MOBILE: Warm up microphone (audio unlock already done at start of function)
     if (isMobile) {
-      try {
-        console.log("📱 Mobile detected - unlocking audio...");
-        // 🔓 CRITICAL: Play a tiny silent audio to unlock audio playback on mobile
-        // This must happen SYNCHRONOUSLY within the user gesture (button click)
-        const silentAudioUnlock = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
-        silentAudioUnlock.volume = 0.01;
-        await silentAudioUnlock.play().catch(() => {});
-        console.log("📱 Audio unlocked for mobile");
-      } catch (error) {
-        console.warn("📱 Audio unlock failed:", error);
-      }
-      
       try {
         console.log("📱 Warming up microphone...");
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Keep stream active briefly to "warm up" the microphone
         await new Promise(resolve => setTimeout(resolve, 300));
-        // Stop tracks - we just needed to activate the microphone
         stream.getTracks().forEach(track => track.stop());
         console.log("📱 Microphone warmed up successfully");
       } catch (error) {
         console.warn("📱 Microphone warm-up failed:", error);
-        // Continue anyway - voice recognition may still work
       }
     }
     
