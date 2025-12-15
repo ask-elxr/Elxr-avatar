@@ -900,14 +900,25 @@ export function useAvatarSession({
           
           // 🎤 Avatar speaks first with a personalized greeting (only for fresh starts, not mode switches)
           if (!skipGreeting) {
+            console.log("🗣️ Fetching greeting for avatar:", activeAvatarId);
             try {
               const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
+              console.log("🗣️ Greeting response status:", greetingResponse.status);
               if (greetingResponse.ok) {
                 const { greeting } = await greetingResponse.json();
+                console.log("🗣️ Greeting fetched:", greeting ? greeting.substring(0, 50) + "..." : "null");
+                console.log("🗣️ sessionDriverRef.current exists:", !!sessionDriverRef.current);
                 if (greeting && sessionDriverRef.current) {
                   console.log("🗣️ Avatar greeting:", greeting);
+                  // Small delay to ensure session is fully ready for speaking
+                  await new Promise(resolve => setTimeout(resolve, 500));
                   await sessionDriverRef.current.speak(greeting, elevenLabsLanguageCodeRef.current);
+                  console.log("🗣️ Greeting speak() completed");
+                } else {
+                  console.warn("🗣️ Cannot speak greeting - greeting:", !!greeting, "driver:", !!sessionDriverRef.current);
                 }
+              } else {
+                console.warn("🗣️ Greeting API failed with status:", greetingResponse.status);
               }
             } catch (error) {
               console.warn("Failed to fetch greeting:", error);
