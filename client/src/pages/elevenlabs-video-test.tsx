@@ -156,12 +156,11 @@ export default function ElevenLabsVideoTest() {
       
       session.on(SessionEvent.SESSION_STREAM_READY, () => {
         console.log("[LiveAvatar] Stream ready");
-        setVideoReady(true);
-        const mediaElement = session.getMediaElement();
-        if (mediaElement && videoRef.current) {
-          videoRef.current.srcObject = mediaElement.srcObject;
-          videoRef.current.play().catch(console.error);
+        if (videoRef.current) {
+          session.attach(videoRef.current);
+          console.log("[LiveAvatar] Video element attached");
         }
+        setVideoReady(true);
       });
       
       liveAvatarRef.current = session;
