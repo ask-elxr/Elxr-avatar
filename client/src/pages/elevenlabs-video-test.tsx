@@ -186,6 +186,12 @@ export default function ElevenLabsVideoTest() {
       return;
     }
 
+    // Start HeyGen video session first
+    const heygenStarted = await startHeyGenSession();
+    if (!heygenStarted) {
+      console.warn("[HeyGen] Video session failed to start, continuing with audio only");
+    }
+
     try {
       const response = await fetch("/api/elevenlabs/conversation-token");
       if (!response.ok) {
