@@ -16,7 +16,8 @@ export default function ElevenLabsVideoTest() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [micPermission, setMicPermission] = useState<"unknown" | "granted" | "denied">("unknown");
   const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
+  // Mute ElevenLabs audio - we use LiveAvatar for audio playback (synced with lip-sync)
+  const [volume, setVolume] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   
@@ -152,19 +153,10 @@ export default function ElevenLabsVideoTest() {
           session.attach(videoRef.current);
           console.log("[LiveAvatar] Video element attached");
           
-          // Explicitly mute and disable audio tracks to prevent dual audio
-          // ElevenLabs handles all audio - LiveAvatar should only provide video
-          videoRef.current.muted = true;
-          videoRef.current.volume = 0;
-          
-          // Also disable any audio tracks on the MediaStream
-          const stream = videoRef.current.srcObject as MediaStream | null;
-          if (stream) {
-            stream.getAudioTracks().forEach(track => {
-              console.log("[LiveAvatar] Disabling audio track:", track.label);
-              track.enabled = false;
-            });
-          }
+          // Enable LiveAvatar audio - ElevenLabs is muted, we play TTS audio through LiveAvatar
+          // This keeps lip-sync perfectly in sync with the audio
+          videoRef.current.muted = false;
+          videoRef.current.volume = 1;
         }
         setVideoReady(true);
       });
@@ -300,7 +292,6 @@ export default function ElevenLabsVideoTest() {
                 className="w-full h-full object-cover"
                 autoPlay
                 playsInline
-                muted
               />
               {!videoReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900/80">
