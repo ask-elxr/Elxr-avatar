@@ -25,17 +25,37 @@ export default function ElevenLabsVideoTest() {
   const [videoReady, setVideoReady] = useState(false);
   const [liveAvatarStatus, setLiveAvatarStatus] = useState<string>("idle");
   
-  // Send text to LiveAvatar for lip-sync (SDK generates lip movements from text)
-  const speakWithLipSync = useCallback((text: string) => {
+  // Convert text to PCM audio via TTS and send to LiveAvatar for lip-sync
+  const speakWithLipSync = useCallback(async (text: string) => {
     const session = liveAvatarRef.current;
     if (!session) return;
-    if (!('repeat' in session) || typeof session.repeat !== 'function') {
-      console.warn("[LiveAvatar] repeat method not available");
-      return;
-    }
     
-    console.log(`[LiveAvatar] Sending text for lip-sync: "${text.substring(0, 50)}..."`);
-    session.repeat(text);
+    try {
+      console.log(`[LiveAvatar] Getting TTS audio for lip-sync: "${text.substring(0, 50)}..."`);
+      
+      // Call our TTS endpoint to get base64 PCM audio
+      const response = await fetch("/api/elevenlabs/tts-base64", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      
+      if (!response.ok) {
+        console.warn("[LiveAvatar] TTS request failed:", response.status);
+        return;
+      }
+      
+      const { audio } = await response.json();
+      if (!audio) {
+        console.warn("[LiveAvatar] No audio returned from TTS");
+        return;
+      }
+      
+      console.log(`[LiveAvatar] Sending ${audio.length} bytes for lip-sync`);
+      session.repeatAudio(audio);
+    } catch (err) {
+      console.warn("[LiveAvatar] Lip-sync error:", err);
+    }
   }, []);
 
   const conversation = useConversation({
