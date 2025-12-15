@@ -66,7 +66,8 @@ export class ClaudeService {
     customSystemPrompt?: string,
     imageBase64?: string,
     imageMimeType?: string,
-    isVoiceMode: boolean = true
+    isVoiceMode: boolean = true,
+    useFastModel: boolean = false
   ): AsyncGenerator<{ type: 'text' | 'sentence' | 'done'; content: string }> {
     if (!this.anthropic) {
       throw new Error('Claude Sonnet is not available - API key not configured');
@@ -211,10 +212,11 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
     const maxTokens = wantsDetailedResponse ? 250 : (isVoiceMode ? 120 : 1000);
 
     let stream;
+    const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
     try {
-      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages, max_tokens:', maxTokens);
+      console.log('📷 CLAUDE: Starting stream with', messages.length, 'messages, max_tokens:', maxTokens, 'model:', modelToUse);
       stream = await this.anthropic.messages.stream({
-        model: DEFAULT_MODEL_STR,
+        model: modelToUse,
         max_tokens: maxTokens,
         messages: messages,
         system: systemPrompt

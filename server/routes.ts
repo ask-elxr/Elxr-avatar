@@ -1117,6 +1117,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cachedRagContext = userId ? latencyCache.getSessionRagContext(userId, avatarId) : null;
       const hasCachedContext = cachedRagContext !== null;
       
+      // Use cached context immediately (or empty if none)
+      let memoryContext = cachedRagContext?.memoryContext || "";
+      let knowledgeContext = cachedRagContext?.knowledgeContext || "";
+      let dbConversationHistory: any[] = cachedRagContext?.conversationHistory || [];
+      
       if (hasCachedContext) {
         log.info({ 
           userId, 
@@ -1127,16 +1132,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         log.info({ userId, avatarId }, '⚡ No cached context - first message or cache expired');
         console.log(`⚡ ASYNC RAG: No cached context available (first message)`);
+        
+        // 🧠 SYNC MEMORY FETCH for first message - ensures memory works on first turn
+        // This is critical for "do you remember?" questions at conversation start
+        if (memoryEnabled && userId && memoryService.isAvailable()) {
+          try {
+            const memoryStart = Date.now();
+            const memoryResult = await memoryService.searchMemories(message, userId, { limit: 5 });
+            if (memoryResult.success && memoryResult.memories && memoryResult.memories.length > 0) {
+              memoryContext = "\n\nRELEVANT MEMORIES FROM PREVIOUS CONVERSATIONS:\n" +
+                memoryResult.memories.map((m: any) => `- ${m.content}`).join("\n");
+              console.log(`🧠 SYNC MEMORY: Found ${memoryResult.memories.length} memories in ${Date.now() - memoryStart}ms`);
+            } else {
+              console.log(`🧠 SYNC MEMORY: No memories found for user`);
+            }
+          } catch (memError) {
+            log.error({ error: memError }, 'Error fetching memory synchronously');
+          }
+        }
+        
+        // Also fetch conversation history synchronously for first message
+        if (userId) {
+          try {
+            const records = await storage.getConversationHistory(userId, avatarId, 6);
+            dbConversationHistory = records.map(conv => ({ message: conv.text, isUser: conv.role === 'user' }));
+            if (dbConversationHistory.length > 0) {
+              console.log(`📜 SYNC HISTORY: Found ${dbConversationHistory.length} previous messages`);
+            }
+          } catch (histError) {
+            log.error({ error: histError }, 'Error fetching conversation history synchronously');
+          }
+        }
       }
       
-      // Use cached context immediately (or empty if none)
-      let memoryContext = cachedRagContext?.memoryContext || "";
-      let knowledgeContext = cachedRagContext?.knowledgeContext || "";
-      const dbConversationHistory: any[] = cachedRagContext?.conversationHistory || [];
       const hasConversationHistory = dbConversationHistory.length > 0;
       
-      timings.dataFetch = Date.now() - perfStart; // Nearly instant when using cache
-      log.info({ dataFetchMs: timings.dataFetch, usedCache: hasCachedContext }, "Context retrieval completed");
+      timings.dataFetch = Date.now() - perfStart;
+      log.info({ dataFetchMs: timings.dataFetch, usedCache: hasCachedContext, hasMemory: !!memoryContext }, "Context retrieval completed");
 
       // 🔄 BACKGROUND RAG RETRIEVAL - Fire and forget, don't block response
       // This retrieval is for the NEXT turn, not the current one
@@ -4688,22 +4720,11 @@ This applies to EVERY response, regardless of conversation length.`;
       console.log('\n🚀 ==================== STREAM-AUDIO REQUEST START ====================');
       console.log(`⏱️ [0ms] Request received - message: "${(message || '').substring(0, 50)}..."`);
 
-      // 1. Send thinking sound immediately to mask latency
-      const thinkingStart = Date.now();
-      try {
-        const thinkingAudio = await elevenlabsService.getThinkingSound(voiceId, languageCode);
-        if (thinkingAudio) {
-          sendEvent('audio', { 
-            content: thinkingAudio, 
-            type: 'thinking',
-            format: 'pcm_24000',
-            isFinal: false 
-          });
-        }
-        perfTimings.thinkingSound = logStep('1. Thinking sound', thinkingStart);
-      } catch (thinkingError) {
-        perfTimings.thinkingSound = logStep('1. Thinking sound (failed)', thinkingStart);
-      }
+      // 1. Thinking sound DISABLED - users reported it sounded strange
+      // Previously: await elevenlabsService.getThinkingSound(voiceId, languageCode)
+      // Now we skip straight to generating the actual response for faster, cleaner experience
+      perfTimings.thinkingSound = 0;
+      console.log(`⏱️ [${Date.now() - perfStart}ms] 1. Thinking sound: SKIPPED (disabled)`);
 
       sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
 
@@ -4985,7 +5006,8 @@ This applies to EVERY response, regardless of conversation length.`;
           enhancedPersonality,
           imageBase64,
           imageMimeType,
-          true // isVoiceMode = true for concise responses
+          true, // isVoiceMode = true for concise responses
+          true  // useFastModel = true for Haiku (faster response)
         )) {
           if (chunk.type === 'text') {
             // Log first token time
