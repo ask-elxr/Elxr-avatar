@@ -16,8 +16,8 @@ export default function ElevenLabsVideoTest() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [micPermission, setMicPermission] = useState<"unknown" | "granted" | "denied">("unknown");
   const [isMuted, setIsMuted] = useState(false);
-  // Mute ElevenLabs audio - we use LiveAvatar for audio playback (synced with lip-sync)
-  const [volume, setVolume] = useState(0);
+  // ElevenLabs handles audio playback, we intercept it via onAudio for lip-sync
+  const [volume, setVolume] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   
@@ -26,38 +26,64 @@ export default function ElevenLabsVideoTest() {
   const [videoReady, setVideoReady] = useState(false);
   const [liveAvatarStatus, setLiveAvatarStatus] = useState<string>("idle");
   
-  // Convert text to PCM audio via TTS and send to LiveAvatar for lip-sync
-  const speakWithLipSync = useCallback(async (text: string) => {
+  // Buffer for accumulating audio chunks from ElevenLabs
+  const audioBufferRef = useRef<string>("");
+  const flushTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Send accumulated audio to LiveAvatar for lip-sync
+  const flushAudioBuffer = useCallback(() => {
+    const session = liveAvatarRef.current;
+    const buffer = audioBufferRef.current;
+    
+    if (!session || !buffer) return;
+    
+    console.log(`[LiveAvatar] Sending ${buffer.length} chars of audio for lip-sync`);
+    try {
+      session.repeatAudio(buffer);
+    } catch (err) {
+      console.warn("[LiveAvatar] repeatAudio error:", err);
+    }
+    audioBufferRef.current = "";
+  }, []);
+  
+  // Handle raw audio from ElevenLabs - accumulate and send to LiveAvatar
+  const handleElevenLabsAudio = useCallback((audioEvent: any) => {
     const session = liveAvatarRef.current;
     if (!session) return;
     
-    try {
-      console.log(`[LiveAvatar] Getting TTS audio for lip-sync: "${text.substring(0, 50)}..."`);
-      
-      // Call our TTS endpoint to get base64 PCM audio
-      const response = await fetch("/api/elevenlabs/tts-base64", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-      
-      if (!response.ok) {
-        console.warn("[LiveAvatar] TTS request failed:", response.status);
-        return;
+    // ElevenLabs sends audio in various formats - try to extract base64
+    let audioData: string | null = null;
+    
+    if (typeof audioEvent === 'string') {
+      audioData = audioEvent;
+    } else if (audioEvent?.audio) {
+      audioData = audioEvent.audio;
+    } else if (audioEvent?.data) {
+      // Convert ArrayBuffer to base64
+      if (audioEvent.data instanceof ArrayBuffer) {
+        const bytes = new Uint8Array(audioEvent.data);
+        let binary = '';
+        bytes.forEach(b => binary += String.fromCharCode(b));
+        audioData = btoa(binary);
+      } else if (typeof audioEvent.data === 'string') {
+        audioData = audioEvent.data;
       }
-      
-      const { audio } = await response.json();
-      if (!audio) {
-        console.warn("[LiveAvatar] No audio returned from TTS");
-        return;
-      }
-      
-      console.log(`[LiveAvatar] Sending ${audio.length} bytes for lip-sync`);
-      session.repeatAudio(audio);
-    } catch (err) {
-      console.warn("[LiveAvatar] Lip-sync error:", err);
     }
-  }, []);
+    
+    if (!audioData) {
+      console.log("[LiveAvatar] Audio event format unknown:", typeof audioEvent);
+      return;
+    }
+    
+    // Accumulate audio chunks
+    audioBufferRef.current += audioData;
+    
+    // Debounce flush - wait for more chunks before sending
+    if (flushTimeoutRef.current) {
+      clearTimeout(flushTimeoutRef.current);
+    }
+    flushTimeoutRef.current = setTimeout(flushAudioBuffer, 100);
+  }, [flushAudioBuffer]);
 
   const conversation = useConversation({
     onConnect: () => {
@@ -87,10 +113,6 @@ export default function ElevenLabsVideoTest() {
           return [...prev, newMessage];
         });
         
-        // Trigger lip-sync for AI responses using text
-        if (message.source === "ai" && message.message) {
-          speakWithLipSync(message.message);
-        }
       }
     },
     onError: (err: unknown) => {
@@ -102,6 +124,7 @@ export default function ElevenLabsVideoTest() {
     onModeChange: (mode) => {
       console.log("[ElevenLabs] Mode changed:", mode);
     },
+    onAudio: handleElevenLabsAudio,
     micMuted: isMuted,
     volume,
   });
@@ -153,10 +176,9 @@ export default function ElevenLabsVideoTest() {
           session.attach(videoRef.current);
           console.log("[LiveAvatar] Video element attached");
           
-          // Enable LiveAvatar audio - ElevenLabs is muted, we play TTS audio through LiveAvatar
-          // This keeps lip-sync perfectly in sync with the audio
-          videoRef.current.muted = false;
-          videoRef.current.volume = 1;
+          // Mute LiveAvatar audio - ElevenLabs handles audio, LiveAvatar only does video + lip-sync
+          videoRef.current.muted = true;
+          videoRef.current.volume = 0;
         }
         setVideoReady(true);
       });
