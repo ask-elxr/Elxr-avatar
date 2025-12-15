@@ -4297,8 +4297,8 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         (async () => {
           const memStart = Date.now();
-          // Skip Mem0 for non-questions unless memory-related keywords present
-          if (!memoryEnabled || !userId || !memoryService.isAvailable() || !needsMemoryContext) {
+          // ALWAYS fetch memory when enabled - for personalization and context
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
             return { success: false, memories: [] };
           }
           try {
@@ -4756,9 +4756,7 @@ This applies to EVERY response, regardless of conversation length.`;
         console.log(`⚡ Skipping Wikipedia/Google - not a question: "${(message || '').substring(0, 50)}..."`);
       }
       
-      if (!needsMemoryContext) {
-        console.log(`⚡ Skipping Mem0 - not a question/memory request: "${(message || '').substring(0, 50)}..."`);
-      }
+      // Memory is always fetched when enabled for personalization
 
       console.log(`⏱️ [${Date.now() - perfStart}ms] 2. Starting parallel data fetch...`);
       const dataFetchStart = Date.now();
@@ -4767,8 +4765,8 @@ This applies to EVERY response, regardless of conversation length.`;
       const [memoryResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         (async () => {
           const memStart = Date.now();
-          // Skip Mem0 for non-questions unless memory-related keywords present
-          if (!memoryEnabled || !userId || !memoryService.isAvailable() || !needsMemoryContext) {
+          // ALWAYS fetch memory when enabled - for personalization and context
+          if (!memoryEnabled || !userId || !memoryService.isAvailable()) {
             return { success: false, memories: [] };
           }
           try {
