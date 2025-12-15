@@ -7895,58 +7895,69 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   );
 
-  // HeyGen Streaming Session endpoint for Audio-to-Video API (WSS)
-  // Creates a new streaming session and returns the realtime WebSocket endpoint
+  // LiveAvatar Streaming Session endpoint for ElevenLabs + Video integration
+  // Uses the NEW LiveAvatar API (api.liveavatar.com) NOT the old HeyGen Interactive Avatar API
+  // The LIVEAVATAR_API_KEY works with api.liveavatar.com, NOT api.heygen.com
   app.post("/api/heygen/streaming-session", async (req, res) => {
-    const log = logger.child({ service: "heygen-audio-to-video", operation: "createSession" });
+    const log = logger.child({ service: "liveavatar-streaming", operation: "createSession" });
     
     try {
-      // HeyGen Streaming API (Interactive Avatar) uses LIVEAVATAR_API_KEY or HEYGEN_LIVE_API_KEY
-      // This is different from HEYGEN_VIDEO_API_KEY which is for video generation
-      const apiKey = process.env.LIVEAVATAR_API_KEY || process.env.HEYGEN_LIVE_API_KEY || process.env.HEYGEN_API_KEY;
+      const apiKey = process.env.LIVEAVATAR_API_KEY;
       
       if (!apiKey) {
-        log.error("HeyGen Streaming API key not configured (need LIVEAVATAR_API_KEY)");
-        return res.status(500).json({ error: "HeyGen Streaming API key not configured" });
+        log.error("LIVEAVATAR_API_KEY not configured");
+        return res.status(500).json({ error: "LiveAvatar API key not configured" });
       }
       
-      const { avatar_id = "98917de8-81a1-4a24-ad0b-584fff35c168", version = "v2" } = req.body;
+      const { avatar_id = "98917de8-81a1-4a24-ad0b-584fff35c168" } = req.body;
       
-      log.info({ avatar_id, version }, "Creating HeyGen streaming session");
+      log.info({ avatar_id }, "Creating LiveAvatar streaming session");
       
-      // Create a new streaming session
-      const response = await fetch("https://api.heygen.com/v1/streaming.new", {
+      // Use the correct LiveAvatar API endpoint (NOT api.heygen.com/v1/streaming.new)
+      // LiveAvatar requires CUSTOM mode for external audio input (from ElevenLabs)
+      const requestBody = {
+        mode: "CUSTOM",
+        avatar_id: avatar_id,
+      };
+      
+      const response = await fetch("https://api.liveavatar.com/v1/sessions/token", {
         method: "POST",
         headers: {
+          "X-API-KEY": apiKey,
           "Content-Type": "application/json",
-          "x-api-key": apiKey,
         },
-        body: JSON.stringify({
-          version,
-          avatar_id,
-          quality: "high"
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       if (!response.ok) {
         const errorText = await response.text();
-        log.error({ status: response.status, error: errorText }, "HeyGen streaming.new failed");
+        log.error({ status: response.status, error: errorText }, "LiveAvatar session creation failed");
         return res.status(response.status).json({ 
-          error: "Failed to create HeyGen streaming session",
+          error: "Failed to create LiveAvatar streaming session",
           details: errorText
         });
       }
       
-      const data = await response.json();
-      log.info({ session_id: data.session_id }, "HeyGen streaming session created");
+      const responseData = await response.json();
+      const data = responseData.data || responseData;
       
+      log.info({ 
+        session_id: data.session_id,
+        hasSessionToken: !!data.session_token,
+        availableFields: Object.keys(data)
+      }, "LiveAvatar streaming session created");
+      
+      // Return session data for frontend to connect
+      // LiveAvatar CUSTOM mode returns session_token for SDK initialization
       res.json({
         session_id: data.session_id,
-        realtime_endpoint: data.realtime_endpoint,
-        ice_servers: data.ice_servers
+        session_token: data.session_token,
+        access_token: data.access_token || data.session_token,
+        url: data.url,
+        ice_servers: data.ice_servers || data.ice_servers2,
       });
     } catch (error: any) {
-      log.error({ error: error.message }, "Error creating HeyGen streaming session");
+      log.error({ error: error.message }, "Error creating LiveAvatar streaming session");
       res.status(500).json({ error: "Failed to create streaming session", details: error.message });
     }
   });

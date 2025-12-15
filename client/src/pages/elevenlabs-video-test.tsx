@@ -3,7 +3,8 @@ import { useConversation } from "@elevenlabs/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, AlertCircle, CheckCircle2, Loader2, Video, VideoOff } from "lucide-react";
+import { Mic, MicOff, Volume2, VolumeX, Phone, PhoneOff, AlertCircle, CheckCircle2, Loader2, Video, VideoOff, Info } from "lucide-react";
+import { LiveAvatarSession, SessionState, SessionEvent } from "@heygen/liveavatar-web-sdk";
 
 type Message = {
   role: "user" | "agent";
@@ -20,10 +21,9 @@ export default function ElevenLabsVideoTest() {
   const [isConnecting, setIsConnecting] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [heygenWs, setHeygenWs] = useState<WebSocket | null>(null);
-  const [heygenSessionId, setHeygenSessionId] = useState<string | null>(null);
+  const liveAvatarRef = useRef<LiveAvatarSession | null>(null);
   const [videoReady, setVideoReady] = useState(false);
-  const [audioBuffer, setAudioBuffer] = useState<string[]>([]);
+  const [liveAvatarStatus, setLiveAvatarStatus] = useState<string>("idle");
 
   const conversation = useConversation({
     onConnect: () => {
@@ -60,104 +60,126 @@ export default function ElevenLabsVideoTest() {
       setError(errMsg);
       setIsConnecting(false);
     },
-    onAudio: (audio: unknown) => {
+    onAudio: async (audio: unknown) => {
       console.log("[ElevenLabs] Audio received:", audio);
-      if (heygenWs && heygenWs.readyState === WebSocket.OPEN) {
+      const session = liveAvatarRef.current;
+      if (!session) {
+        console.log("[LiveAvatar] No session available for audio lip-sync");
+        return;
+      }
+      
+      if (!('repeatAudio' in session) || typeof session.repeatAudio !== 'function') {
+        console.warn("[LiveAvatar] repeatAudio method not available on session");
+        return;
+      }
+      
+      try {
         let base64Audio: string;
         if (audio instanceof ArrayBuffer) {
-          base64Audio = arrayBufferToBase64(audio);
+          const bytes = new Uint8Array(audio);
+          let binary = '';
+          for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+          }
+          base64Audio = btoa(binary);
         } else if (typeof audio === "string") {
           base64Audio = audio;
         } else if (audio && typeof audio === "object" && "data" in audio) {
           const data = (audio as { data: ArrayBuffer | string }).data;
-          base64Audio = data instanceof ArrayBuffer ? arrayBufferToBase64(data) : String(data);
+          if (data instanceof ArrayBuffer) {
+            const bytes = new Uint8Array(data);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            base64Audio = btoa(binary);
+          } else {
+            base64Audio = String(data);
+          }
         } else {
           console.warn("[ElevenLabs] Unknown audio format:", typeof audio);
           return;
         }
-        heygenWs.send(JSON.stringify({
-          type: "agent.speak",
-          event_id: crypto.randomUUID(),
-          audio: base64Audio
-        }));
-        console.log("[HeyGen] Sent audio chunk to avatar");
+        session.repeatAudio(base64Audio);
+        console.log("[LiveAvatar] Sent audio for lip-sync");
+      } catch (err) {
+        console.error("[LiveAvatar] Error sending audio:", err);
       }
     },
     onModeChange: (mode) => {
       console.log("[ElevenLabs] Mode changed:", mode);
-      if (mode.mode === "listening" && heygenWs && heygenWs.readyState === WebSocket.OPEN) {
-        heygenWs.send(JSON.stringify({
-          type: "agent.speak_end",
-          event_id: crypto.randomUUID()
-        }));
-        console.log("[HeyGen] Agent finished speaking");
-      }
     },
     micMuted: isMuted,
     volume,
   });
 
-  function arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
-  }
-
-  const startHeyGenSession = useCallback(async () => {
+  const startLiveAvatarSession = useCallback(async () => {
     try {
-      console.log("[HeyGen] Starting video session...");
+      console.log("[LiveAvatar] Starting video session...");
+      setLiveAvatarStatus("connecting");
       
       const response = await fetch("/api/heygen/streaming-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          version: "v2",
           avatar_id: "98917de8-81a1-4a24-ad0b-584fff35c168"
         })
       });
       
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "Failed to create HeyGen session");
+        throw new Error(errData.error || errData.details || "Failed to create LiveAvatar session");
       }
       
       const data = await response.json();
-      console.log("[HeyGen] Session created:", data);
+      console.log("[LiveAvatar] Session token received:", data);
       
-      setHeygenSessionId(data.session_id);
+      const token = data.session_token || data.access_token;
+      if (!token) {
+        throw new Error("No session token received from LiveAvatar API");
+      }
       
-      if (data.realtime_endpoint) {
-        const ws = new WebSocket(data.realtime_endpoint);
-        
-        ws.onopen = () => {
-          console.log("[HeyGen] WebSocket connected");
-          setVideoReady(true);
-        };
-        
-        ws.onmessage = (event) => {
-          const msg = JSON.parse(event.data);
-          console.log("[HeyGen] WS message:", msg);
-        };
-        
-        ws.onerror = (err) => {
-          console.error("[HeyGen] WS error:", err);
-        };
-        
-        ws.onclose = () => {
-          console.log("[HeyGen] WebSocket closed");
+      const session = new LiveAvatarSession(token, {
+        voiceChat: false, // We use ElevenLabs for voice, not LiveAvatar's built-in voice
+        apiUrl: "https://api.liveavatar.com",
+      });
+      
+      session.on(SessionEvent.SESSION_STATE_CHANGED, (state) => {
+        console.log("[LiveAvatar] Session state changed:", state);
+        if (state === SessionState.CONNECTED) {
+          setLiveAvatarStatus("connected");
+        } else if (state === SessionState.DISCONNECTED) {
+          setLiveAvatarStatus("disconnected");
           setVideoReady(false);
-        };
-        
-        setHeygenWs(ws);
+        }
+      });
+      
+      session.on(SessionEvent.SESSION_STREAM_READY, () => {
+        console.log("[LiveAvatar] Stream ready");
+        setVideoReady(true);
+        const mediaElement = session.getMediaElement();
+        if (mediaElement && videoRef.current) {
+          videoRef.current.srcObject = mediaElement.srcObject;
+          videoRef.current.play().catch(console.error);
+        }
+      });
+      
+      liveAvatarRef.current = session;
+      
+      try {
+        await session.start();
+        console.log("[LiveAvatar] Session started successfully");
+      } catch (startErr: any) {
+        console.error("[LiveAvatar] session.start() failed:", startErr);
+        liveAvatarRef.current = null;
+        throw new Error(`LiveAvatar session start failed: ${startErr.message || 'Unknown error'}`);
       }
       
       return true;
     } catch (err: any) {
-      console.error("[HeyGen] Start error:", err);
-      setError(err.message || "Failed to start HeyGen session");
+      console.error("[LiveAvatar] Start error:", err);
+      setError(err.message || "Failed to start LiveAvatar session");
+      setLiveAvatarStatus("error");
       return false;
     }
   }, []);
@@ -186,10 +208,10 @@ export default function ElevenLabsVideoTest() {
       return;
     }
 
-    // Start HeyGen video session first
-    const heygenStarted = await startHeyGenSession();
-    if (!heygenStarted) {
-      console.warn("[HeyGen] Video session failed to start, continuing with audio only");
+    // Start LiveAvatar video session first
+    const videoStarted = await startLiveAvatarSession();
+    if (!videoStarted) {
+      console.warn("[LiveAvatar] Video session failed to start, continuing with audio only");
     }
 
     try {
@@ -218,23 +240,28 @@ export default function ElevenLabsVideoTest() {
       setError(err.message || "Failed to start conversation");
       setIsConnecting(false);
     }
-  }, [conversation, micPermission, checkMicPermission]);
+  }, [conversation, micPermission, checkMicPermission, startLiveAvatarSession]);
 
   const endConversation = useCallback(async () => {
     try {
       await conversation.endSession();
       
-      if (heygenWs) {
-        heygenWs.close();
-        setHeygenWs(null);
+      if (liveAvatarRef.current) {
+        liveAvatarRef.current.removeAllListeners();
+        await liveAvatarRef.current.stop();
+        liveAvatarRef.current = null;
       }
       
-      setHeygenSessionId(null);
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+      
       setVideoReady(false);
+      setLiveAvatarStatus("idle");
     } catch (err) {
       console.error("[ElevenLabs] End error:", err);
     }
-  }, [conversation, heygenWs]);
+  }, [conversation]);
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => !prev);
@@ -257,7 +284,7 @@ export default function ElevenLabsVideoTest() {
         <Card className="bg-gray-800/50 border-gray-700">
           <CardHeader className="pb-2">
             <CardTitle className="text-xl text-center text-purple-400">
-              ElevenLabs Agent + HeyGen Video
+              ElevenLabs Agent + LiveAvatar Video
             </CardTitle>
             <p className="text-sm text-gray-400 text-center">Voice AI with video avatar lip-sync</p>
           </CardHeader>
@@ -397,7 +424,7 @@ export default function ElevenLabsVideoTest() {
         </Card>
 
         <p className="text-xs text-gray-500 text-center">
-          ElevenLabs WebRTC voice + HeyGen WSS Audio-to-Video (Beta)
+          ElevenLabs WebRTC Voice + LiveAvatar Video (Beta)
         </p>
       </div>
     </div>
