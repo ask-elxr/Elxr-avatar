@@ -1,0 +1,575 @@
+Changelog
+The latest product updates from Neon
+
+RSS feed
+Dec 19, 2025
+Project recovery
+Accidentally deleted a project? You can now recover it within 7 days of deletion. This feature restores your entire project infrastructure, including all branches, endpoints, compute configurations, and project settings. Your connection strings, collaborators, and snapshots all come back exactly as they were.
+
+Recovery is available through the CLI and API. There are no storage costs or recovery fees during the 7-day recovery window.
+
+For more information, see Recover a deleted project.
+
+100 Free plan projects
+Another week, yet another increase: The Neon Free plan now includes:
+
+80 projects
+100 projects
+That's 100 separate database projects you can spin up, experiment with, and build on. Whether you're prototyping ideas, learning Postgres, or running multiple side projects, you've got plenty of room to work.
+
+Dashboard page showing 100 Free Plan projects
+
+This change applies automatically to all Free plan users. No action required. For more information about plan limits, see Neon plans.
+
+Learn about why we're increasing project limits on the Free plan
+
+Easier setup for Neon MCP Server
+Connecting AI editors to the Neon MCP Server is now a single command:
+
+npx neonctl@latest init
+This command authenticates via OAuth, automatically creates a Neon API key, and configures Cursor, VS Code, or Claude Code CLI to connect to Neon. It handles all the setup steps that previously required manual configuration file edits and API key management. Once configured, you can immediately ask your AI assistant to create projects, manage branches, or query your database.
+
+If you’re an existing Neon MCP user, setting up the MCP Server this way means you won’t be prompted to repeatedly reconnect through browser-based OAuth flows. Your local configuration and API key are created and saved for reuse.
+
+For more information, see Connect MCP clients to Neon.
+
+Data masking enhancements
+We've added address-specific masking functions to data masking in the Neon Console. These functions provide specialized handling for text fields like street addresses, cities, and postal codes, letting you mask location data while preserving geographic patterns.
+
+As well, all masking functions are now organized into categories (Names, Email Addresses, Phone Numbers, and Addresses).
+
+Address masking functions
+
+For more information about data masking, see Data anonymization.
+
+AI-powered Neon Auth setup
+Your AI editor can now scaffold complete authentication flows with Neon Auth. We've published AI rules, MCP prompt templates, and a Claude skill that teach AI assistants how to integrate Neon Auth into your apps. These tools detect your framework, install the right packages, create the necessary files, and follow best practices automatically.
+
+The setup includes:
+
+AI rules
+MCP prompt templates
+Claude skill
+This means you can open Cursor, Claude, or VS Code, ask your AI assistant to "add Neon Auth," and let it handle the implementation.
+
+Learn more in our blog post, Teaching AI to Do Auth (So You Don't Have To).
+
+Fixes & improvements
+Dec 12, 2025
+Neon Auth: branchable identity in your database
+We've rebuilt Neon Auth using Better Auth as the foundation. Auth was the last part of Neon that didn't yet branch. Now it does. All authentication data lives directly in your Neon database, so when you branch, your entire auth state branches with it.
+
+Neon Auth
+
+Users, sessions, organizations, configuration, and JWKS are stored in a dedicated neon_auth schema. Each branch gets its own isolated auth endpoint. No more external identity provider, no webhook syncing, no drift between environments.
+
+What branchable auth enables:
+
+Preview environments that actually work. Spin up a branch that mirrors production exactly: same users, same roles, same permissions. Test full signup, login, password reset, and OAuth flows before release.
+Safe multi-tenant testing. Clone your environment, invite test organizations, modify access rules, and confirm permissions propagate correctly without risking production data.
+Real auth in CI/CD. Test the complete user lifecycle in automated pipelines with real authentication, not mocked tokens.
+How it works:
+
+Auth lives in your database. Your user model sits in Postgres, evolving with your migrations and integrating naturally with your schema.
+
+Works with RLS automatically. Your Row-Level Security policies can reference the authenticated user directly, without duplicate identity tables.
+
+Data API integration. JWTs from Neon Auth are validated by the Data API, so authenticated queries work with your RLS policies out of the box.
+
+One SDK for everything. The new @neondatabase/neon-js package brings Neon Auth, Data API, and database access together:
+
+import { createAuthClient } from '@neondatabase/neon-js/auth';
+import { NeonAuthUIProvider, AuthView } from '@neondatabase/neon-js/auth/react/ui';
+const authClient = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL);
+export default function App() {
+  return (
+    <NeonAuthUIProvider authClient={authClient}>
+      <AuthView pathname="sign-in" />
+    </NeonAuthUIProvider>
+  );
+}
+Neon Auth is available on all plans, including Free. Get started with Next.js, React, or TanStack.
+
+"Owning your auth means keeping your user model inside your architecture. Neon users now get that ownership while letting Better Auth take care of the parts that make authentication hard." — Bereket Engida, creator of Better Auth
+
+Read more: Meet the New Neon Auth: Branchable Identity in Your Database and The Case for Owning Your Auth
+
+More projects on the Free plan
+Another week, another increase: The Neon Free plan now includes:
+
+70 projects
+80 projects
+More projects means more room to experiment, prototype, and build without worrying about limits.
+
+Dashboard page showing 80 Free Plan projects
+
+This change applies automatically to all Free plan users. No action required. For more information about plan limits, see Neon plans.
+
+Learn about why we're increasing project limits on the Free plan
+
+Purely usage-based billing
+We've removed the $5 monthly minimum from our paid plans. Neon is now purely usage-based: if you use $3 one month, that's the bill you'll receive.
+
+For more details, see Neon plans.
+
+Fixes & improvements
+Dec 05, 2025
+70 projects on the Free plan
+We've increased the project limit on the Free plan to 70 projects.
+
+Free plan 70 projects
+
+That's 70 separate database projects you can spin up, experiment with, and build on. Whether you're prototyping ideas, learning Postgres, or running multiple side projects, you've got plenty of room to work.
+
+This change applies automatically to all Free plan users. No action required. For more information about plan limits, see Neon plans.
+
+Learn about why we increased project limits on the Free plan
+
+Postgres version updates
+We updated supported Postgres versions to 14.20, 15.15, 16.11, 17.7, and 18.1, respectively.
+
+When a new minor version is available on Neon, it is applied the next time your compute restarts. For more about how we handle Postgres version upgrades, refer to our Postgres version support policy.
+
+New Data API advanced settings
+The Neon Data API provides a ready-to-use REST API for your Neon database, letting you query tables, views, and functions using standard HTTP requests. We've added two new options to the Advanced settings panel:
+
+OpenAPI mode — Enables automatic generation of an OpenAPI schema for your Data API. Use it to generate API documentation, build typed client libraries, import your API into Postman, or integrate with API gateways.
+Enable server timing headers — Adds Server-Timing headers to API responses, showing how long different parts of each request took to process. Use this to debug slow queries, measure performance, and troubleshoot latency issues.
+To learn more about Data API advanced settings, see Manage Data API.
+
+Neon is now a Kiro Power
+Kiro announced powers at AWS re:Invent — a new way for developers to access curated tools directly from the IDE. Neon is one of the first launch partners, alongside Figma, Stripe, and Postman.
+
+Kiro Neon Power
+
+With the Neon power, you can manage your Postgres databases without leaving Kiro:
+
+Deploy instantly — Provision a Neon database in seconds whenever your workflow needs a Postgres backend.
+Branch for safe testing — Create lightweight, isolated copies of your database to test migrations, validate queries, or run integration tests without touching production.
+Time-travel and restore — Roll back to any past state, inspect historical data, or restore from a previous point in time.
+Read more: Just Launched: Neon Is Now a Kiro Power
+
+Custom Neon agents for GitHub Copilot
+GitHub Copilot now supports custom agents, and we've built two specialized agents that bring Neon's branching workflow directly into your IDE:
+
+Neon Migration Specialist
+ — Safe Postgres migrations with zero downtime. Test schema changes in isolated database branches, validate, then apply to production—all automated with support for Prisma, Drizzle, or your favorite ORM.
+
+Neon Performance Analyzer
+ — Identify and fix slow Postgres queries automatically. Analyzes execution plans, tests optimizations in isolated branches, and provides clear before/after performance metrics with actionable code fixes.
+
+Both agents leverage Neon's instant branching to give you a safe environment for testing database changes before they hit production.
+
+To learn more about using these agents, see Neon agents for GitHub Copilot.
+
+Fixes & improvements
+Nov 28, 2025
+More projects on the Free plan
+Another week, another increase: The Neon Free plan now includes:
+
+50 projects
+60 projects
+More projects means more room to experiment, prototype, and build without worrying about limits.
+
+Dashboard page showing 60 Free Plan projects
+
+This change applies automatically to all Free plan users. No action required. For more information about plan limits, see Neon plans.
+
+Learn about why we're increasing project limits on the Free plan
+
+AI-powered Neon setup expands to VS Code and Claude
+The one-command Neon setup, which configures the Neon MCP Server for AI-assisted project onboarding, now supports VS Code with GitHub Copilot and Claude Code CLI in addition to Cursor.
+
+Run this command in your project directory:
+
+npx neonctl@latest init
+┌  Adding Neon to your project
+│
+◆  Which editor(s) would you like to configure? (Space to toggle each option, Enter to confirm your selection)
+│  ◼ Cursor
+│  ◼ VS Code
+│  ◻ Claude CLI
+│
+◒  Authenticating
+┌────────┬──────────────────┬────────┬────────────────┐
+│ Login  │ Email            │ Name   │ Projects Limit │
+├────────┼──────────────────┼────────┼────────────────┤
+│ alex   │ alex@domain.com  │ Alex   │ 60             │
+└────────┴──────────────────┴────────┴────────────────┘
+◇  Authentication successful ✓
+│
+◇  Installed Neon MCP server
+│
+◇  Success! Neon is now ready to use with Cursor / VS Code.
+│
+│
+◇  What's next? ─────────────────────────────────────────────────────────────╮
+│                                                                            │
+│  Restart Cursor / VS Code and type in "Get started with Neon" in the chat  │
+│                                                                            │
+├────────────────────────────────────────────────────────────────────────────╯
+After setup, ask your AI assistant to "Get started with Neon" to launch an interactive onboarding guide. The guide analyzes your codebase and walks you through selecting or creating a project, configuring connection strings, installing dependencies, and more, all with contextual recommendations.
+
+For more details about this feature, see our blog post.
+
+HIPAA support now available for Postgres 18
+HIPAA compliance is now supported for Postgres 18 projects in AWS regions. You can now create Postgres 18 projects in HIPAA-enabled Neon organizations and enable HIPAA compliance on existing Postgres 18 projects.
+
+For more information, see HIPAA compliance.
+
+Four ways platforms integrate with Neon
+Whether you're building an agent platform, a developer tool that needs instant Postgres, or a SaaS that offers databases to users, there's a platform integration path designed for your use case:
+
+☑ AI Agents integration — For codegen and agent platforms that need database versioning and isolated environments (platforms like Replit and CMS systems like Strapi)
+
+☑ Claimable database flow — For plugins and platforms that want instant Postgres as part of their developer experience, with no signup required upfront (see TanStack, Netlify DB, or try Instagres at neon.new)
+
+☑ Embedded Postgres — For SaaS platforms offering Postgres to users (platforms like Retool, which manages 300k+ databases, and Koyeb, which offers serverless Postgres)
+
+☑ OAuth integration — For tools that interact with existing Neon accounts (platforms like Hasura Cloud, which uses OAuth for authentication and database provisioning)
+
+If you're building an agent platform, check out the Neon Agent Plan, designed specifically for platforms that need to manage large fleets of databases with flexible resource limits and instant provisioning. Early-stage startups can also apply to the Neon Startup Program for startup credits.
+
+Fixes & improvements
+Nov 21, 2025
+More projects on the Free plan
+We've increased the Free plan project limit again! The Neon Free plan now includes:
+
+30 projects
+50 projects
+This gives you even more room for side projects, prototypes, experiments, and learning new stacks.
+
+Dashboard page showing 50 Free Plan projects
+
+This change applies automatically to all Free plan users. No action required. For more information about plan limits, see Neon plans.
+
+Branch anonymization APIs
+Last week, we announced Data masking for creating anonymized branches (see the November 14 changelog). This week, you'll find the APIs for this feature available in the Neon API reference.
+
+Example request:
+
+curl -X POST \
+  'https://console.neon.tech/api/v2/projects/{project_id}/branch_anonymized' \
+  -H 'Authorization: Bearer $NEON_API_KEY' \
+  -H 'Accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "masking_rules": [
+      {
+        "database_name": "neondb",
+        "schema_name": "public",
+        "table_name": "users",
+        "column_name": "email",
+        "masking_function": "anon.dummy_free_email()"
+      },
+      {
+        "database_name": "neondb",
+        "schema_name": "public",
+        "table_name": "users",
+        "column_name": "age",
+        "masking_function": "anon.random_int_between(25,65)"
+      }
+    ],
+    "start_anonymization": true
+  }'
+The new APIs include:
+
+Create anonymized branch
+Get masking rules
+Update masking rules
+Start anonymization
+Get anonymization status
+For usage examples and request/response details, see Data anonymization APIs.
+
+Neon status page migration
+We've migrated neonstatus.com to a new provider. The domain remains the same and all historical incident data has been preserved.
+
+If you've previously subscribed to the Neon Status page via RSS, you'll need to update your feed. For instructions, see Neon status.
+
+Fixes & improvements
+Nov 14, 2025
+Data masking (Beta)
+Neon now offers a data masking feature that makes it easy to create anonymized branches for development and testing. Define masking rules through the Neon Console or API to protect sensitive data like email addresses, names, phone numbers, and other personally identifiable information. Apply these rules to create a branch with production-like data that's safe to share with your team.
+
+Neon Console data masking dialog with example masking functions configured
+
+This feature uses the PostgreSQL Anonymizer extension (anon) under the hood.
+
+For more information, see Data anonymization.
+
+Branch auto-deletion enabled by default
+When creating a branch in the Neon Console, auto-delete is now enabled by default (set to 1 day). You can uncheck this option or adjust the timeframe as needed. This new default helps reduce storage costs and prevent the accumulation of unused branches.
+
+Branch creation dialog with auto-delete enabled by default
+
+Console only: This change only affects branches created through the Neon Console. Branches created via API or CLI are unaffected.
+
+This change will be rolled out to all Console users in the coming days.
+
+For more information, see Branch expiration.
+
+More MCP Server tools
+We've added several new capabilities to the Neon MCP Server:
+
+Search across resources - You can now search across all your Neon resources with a single query. Ask your AI assistant:
+
+Can you search for "production" across my Neon resources?
+The assistant will search through organizations, projects, and branches, returning structured results with direct links to the Neon Console. Use the companion fetch tool to get detailed information about any resource.
+
+Read-only mode - We've added read-only mode for safe operation in cloud and production environments. Enable it by adding the x-read-only: true header to your MCP configuration:
+
+{
+  "mcpServers": {
+    "Neon": {
+      "url": "https://mcp.neon.tech/mcp",
+      "headers": {
+        "x-read-only": "true"
+      }
+    }
+  }
+}
+When enabled, the server restricts all operations to read-only tools. Only list and describe tools are available, and SQL queries automatically run in read-only transactions, providing a safe method for querying and analyzing production databases without any risk of accidental modifications.
+
+Guided onboarding - The new load_resource tool provides comprehensive getting-started guidance directly through your AI assistant. Ask "Get started with Neon" or "Help me set up my first project," and the assistant will load detailed instructions covering organization setup, project configuration, connection strings, schema creation, and migrations. This works in IDEs that don't fully support MCP resources and ensures onboarding guidance is explicitly loaded when you need it.
+
+For more information, see Neon MCP Server.
+
+WebSocket connection reliability improvements
+WebSocket connections are now more stable during long-running queries and in edge runtime environments. The serverless proxy now prevents connection timeouts during idle periods, particularly benefiting applications with long-duration queries, analytics workloads, or deployments on edge runtimes like Vercel Edge Runtime.
+
+Fixes & improvements
+Nov 07, 2025
+Reduced compute pricing across Launch, Scale, and Agent plans
+We've reduced compute pricing by up to 25% across our plans:
+
+Launch plan: Now $0.106 per CU-hour (previously $0.14)
+Scale plan: Now $0.222 per CU-hour (previously $0.26)
+Agent plan: Now $0.106 per CU-hour (previously $0.14)
+These price reductions apply immediately to all usage going forward. No action is required—you'll automatically benefit from the new lower rates on your next billing cycle.
+
+For detailed pricing information and usage examples, see Neon plans. To learn more about these price reductions, see our blog post.
+
+More projects on the Free plan
+We're pleased to announce that the Neon Free plan now includes:
+
+20 projects
+30 projects
+This means more room for side projects, prototypes, experiments, and learning new stacks.
+
+This change applies automatically to all Free plan users—no action required. For more information about plan limits, see Neon plans.
+
+Connect your app to Neon with a single command
+We've introduced a new command that configures the Neon MCP (Model Context Protocol) Server, giving your AI assistant full context about your Neon project—including connection details, schema, and best practices. Run this command in your app's root directory:
+
+npx neonctl@latest init
+The command walks you through an interactive setup:
+
+npx neonctl@latest init
+┌  Adding Neon to your project
+│
+◒  Authenticating.
+┌────────┬──────────────────┬────────┬────────────────┐
+│ Login  │ Email            │ Name   │ Projects Limit │
+├────────┼──────────────────┼────────┼────────────────┤
+│ alex   │ alex@domain.com  │ Alex   │ 20             │
+└────────┴──────────────────┴────────┴────────────────┘
+◇  Authentication successful ✓
+│
+◇  Installed Neon MCP server
+│
+◇  Success! Neon is now ready to use with Cursor.
+│
+│
+◇  What's next? ────────────────────────────────────────────────────────────────────────────╮
+│                                                                                           │
+│  Restart Cursor and ask Cursor to "Get started with Neon using MCP Resource" in the chat  │
+│                                                                                           │
+├───────────────────────────────────────────────────────────────────────────────────────────╯
+│
+└  Have feedback? Email us at feedback@neon.tech
+After setup, restart Cursor and ask your AI assistant to "Get started with Neon using MCP Resource" to launch an interactive 7-step onboarding guide. The guide analyzes your codebase and walks you through selecting or creating a project, configuring connection strings, installing dependencies (@neondatabase/serverless or pg), setting up an ORM like Prisma or Drizzle, and creating your database schema—all with contextual recommendations tailored to your environment.
+
+This feature is currently in beta for Cursor, with VS Code and Claude Code support coming soon. For more details, see our blog post.
+
+Backup schedule API (Beta)
+You can now manage automated backup schedules via the Neon API. Previously, backup schedules could only be configured through the Console. With the new API endpoints, you can programmatically view and update backup schedules for your branches, enabling infrastructure-as-code workflows and automated backup management.
+
+Available endpoints:
+
+GET /projects/{project_id}/branches/{branch_id}/backup_schedule — View the current backup schedule for a branch
+PUT /projects/{project_id}/branches/{branch_id}/backup_schedule — Update the backup schedule configuration
+This makes it easier to standardize backup policies across projects and integrate backup scheduling into your deployment pipelines.
+
+For more information, see Backup & restore.
+
+Vercel integration now supports current Neon pricing plans
+Vercel integration users now have full access to Neon's current usage-based pricing plans (Free, Launch, and Scale). Previously, Vercel integration users were limited to Neon's legacy plans. Free plan Vercel users have been automatically migrated to the new Neon Free plan. This change gives you access to all the latest features and pricing options, including:
+
+Usage-based pricing with $5/month minimum on paid plans
+Enhanced compute options and autoscaling
+Advanced features like database branching for preview deployments
+Flexible project and branch limits
+To upgrade your plan, visit the Storage tab in your Vercel Dashboard, select your database, navigate to Settings > Update Configuration, click the integration settings link, and click Change Plan.
+
+For more information, see Neon plans.
+
+Fixes & improvements
+Oct 31, 2025
+Snapshots now in Beta with automated scheduling
+The Backup & Restore page in the Neon Console is now available to all users. It combines instant point-in-time restore with snapshots to help you protect your data and recover from accidental changes, data loss, or schema issues. The snapshots feature is now in Beta with new capabilities for automated snapshot management. Use the Enhanced view toggle to access the new Backup & Restore page with snapshot capabilities, or toggle it off to return to the previous Restore page.
+
+Backup and restore page
+
+Snapshots (Beta):
+
+Scheduled snapshots — Automate snapshots with daily, weekly, or monthly backup schedules (available on paid plans, excluding the Agent plan)Backup schedule configuration showing daily, weekly, and monthly options
+
+Flexible retention — Configure how long to keep automated snapshots before they're automatically deleted
+
+Instant restore improvements:
+
+Preview data before restoring — The instant point-in-time restore feature now includes a Preview data button that lets you browse tables, run queries, and compare schemas at the selected restore point before committing to the restore operation
+Improved timezone display — The date/time picker for instant restore now shows times in your project's region timezone, and snapshot names include the region timezone for clarity
+Together, these features help you maintain reliable recovery points for your production databases without manual intervention.
+
+Postgres extension updates
+We've expanded extension support for Postgres 18.
+
+Now available on Postgres 18:
+
+Extension	Version
+hll	2.19
+pgcrypto	1.4
+pgjwt	0.2.0
+pg_hashids	1.2.1
+rdkit	4.8.0
+pg_roaringbitmap	0.5
+For a complete list of Postgres extensions supported by Neon, see Postgres extensions.
+
+100x smaller Docs pages served to LLMs
+We've updated the serving logic in our documentation, guides, and PostgreSQL Tutorial sites to serve raw markdown in response to web requests from user-agents we can identify as LLM Agents (like ChatGPT, Claude, Copilot, etc...)
+
+The result is 80-100x smaller page sizes, 6x speed-up, and most importantly fewer tokens costing you money and occupying your context windows as you work with codegen agents to ship faster.
+
+Neon Docs now serve markdown to LLMs
+
+AI-ready prompts for faster setup
+We've added pre-built AI prompts to our integration guides to help you get started with Neon faster in your AI-enabled code editor. Simply copy a prompt from any guide and paste it into your AI assistant (Cursor, GitHub Copilot, Claude Code, etc.) for step-by-step setup assistance tailored to your stack.
+
+Copy prompt for Neon guide
+
+Guides with AI prompts:
+
+ORMs & Drivers: TypeORM, SQLAlchemy, Neon Serverless Driver, Prisma
+JavaScript/TypeScript Frameworks: Next.js, Astro, SvelteKit, Nuxt, Solid Start, Express, NestJS, Hono, RedwoodJS, Node.js
+Python Frameworks: Django, Reflex
+PHP Frameworks: Laravel, Symfony
+Ruby: Ruby on Rails
+Java Frameworks: Quarkus (JDBC), Quarkus (Reactive), Micronaut (Kotlin)
+Languages: Python, JavaScript, Go, Java, Rust, Elixir, Elixir with Ecto, .NET, .NET Entity Framework
+Each prompt provides your AI assistant with the context it needs to configure dependencies, set up environment variables, establish database connections, and create working examples.
+
+We're actively improving these prompts based on your feedback. Share your experience through the Feedback form in the Neon Console or join the conversation on Discord.
+
+Neon Open Source Program
+We've recently launched a Neon Open Source Program to support Postgres-powered open source projects. If your open source project uses Postgres and is ready to grow, we'd love to hear from you.
+
+Visit the Neon Open Source Program page to learn more about the benefits and apply.
+
+Fixes & improvements
+Oct 24, 2025
+Claude Code plugin for Neon
+We've launched a new plugin that brings Neon's capabilities directly into Claude Code. The new plugin includes:
+
+Claude Skills to streamline key workflows:
+
+neon-drizzle: Set up Drizzle ORM with Neon
+neon-serverless: Configure connections with Neon's serverless Postgres driver
+neon-toolkit: Manage databases, projects, and branches using the Neon API
+add-neon-knowledge: Access Neon documentation snippets and usage examples
+Neon MCP server integration that lets Claude interact with Neon in real time to query projects, manage databases and branches, and run SQL or migrations
+
+Context rules (.mdc files) that can be used in other AI tools like Cursor
+
+Install it from our marketplace:
+
+/plugin marketplace add neondatabase-labs/ai-rules
+/plugin install neon-plugin@neon
+For more information, see Claude Code plugin for Neon.
+
+MCP server: Schema diff and migration generation
+Our MCP server now supports schema diff generation and zero-downtime migration creation. Ask your AI assistant:
+
+Can you generate a schema diff for branch br-feature-auth in project my-app?
+The assistant will compare the branch schema with its parent, show what changed, and offer to generate a zero-downtime migration to apply those changes to the parent branch.
+
+This makes it easier to develop schema changes on feature branches and promote them when ready. For more information, see Neon MCP Server.
+
+Storage quota doubled to 16TB
+We've doubled our default storage quota from 8TB to 16TB. This means you can now run databases up to 16TB without contacting us to increase your limit. If you need to run larger databases, please reach out to our team.
+
+Branch navigation improvements
+We've added breadcrumb navigation to branch pages, making it easier to understand and navigate your branch hierarchy. When viewing a child branch, you'll now see the full lineage path (e.g., production / development / feature-branch) with visual branch indicators. The page heading has also been updated to "Child branch overview" for better clarity when working with nested branches.
+
+Branch breadcrumb navigation
+
+Postgres extension updates
+We've expanded extension support for Postgres 18 and updated several extension versions.
+
+Now available on Postgres 18:
+
+Extension	Version
+anon	2.4.1
+address_standardizer	3.6.0
+address_standardizer_data_us	3.6.0
+h3	4.2.3
+h3_postgis	4.2.3
+pg_cron	1.6
+pg_ivm	1.12
+pg_uuidv7	1.6
+pgrag	0.0.0
+postgis_raster	3.6.0
+postgis_sfcgal	3.6.0
+postgis_tiger_geocoder	3.6.0
+postgis_topology	3.6.0
+postgres_fdw	1.2
+Version updates across all supported Postgres versions:
+
+Extension	Old Version	New Version
+anon	2.1.0	2.4.1
+To upgrade from a previous version of an extension, follow the instructions in Update an extension version.
+
+For a complete list of Postgres extensions supported by Neon, see Postgres extensions.
+
+Fixes & improvements
+Oct 17, 2025
+Configure scale to zero in the console
+Scale plan users can now adjust their scale to zero timeout directly in the Neon Console. Simply select Edit compute from the menu on the Compute tab to set a custom timeout. The Scale plan allows you to set this as low as 1 minute, a setting that was previously only available via the Neon API.
+
+Scale to zero helps minimize costs by automatically placing inactive databases in an idle state. The timeout setting controls how fast that happens. To learn more, refer to our Scale to zero guide.
+
+Configure scale to zero time in the Console
+
+Quick presets for branch expiration
+Managing your project's branches is now easier with convenient preset options. When creating or configuring a branch, choose to automatically expire it after 1 hour, 1 day, or a week. No need to manually calculate and select a specific date and time.
+
+Setting branch expiration times can help reduce costs. To learn more, check out our Branch expiration guide.
+
+Branch expiration preset options
+
+New NAT gateway IP addresses
+We've added new NAT gateway IP addresses in the AWS US East (N. Virginia) region to expand infrastructure capacity. If you have external IP allow lists that enable connections from external services into Neon, update those allow lists soon to include the new addresses to avoid connectivity issues.
+
+See our Regions documentation for the complete list of NAT gateway IPs for all regions.
+
+New VPC endpoint service for Private Networking
+We've added a new VPC endpoint service address for Private Networking in the AWS US East (N. Virginia) region. If you're setting up Private Networking in the us-east-1 region, you can now use the additional endpoint service address for enhanced infrastructure capacity and reliability.
+
+For the complete list of VPC endpoint service addresses by region, see our Private Networking guide.
+
+E2E testing with Neon branches
+Run end-to-end tests using isolated database branches. We've published guides showing how to use Neon's database branching with Playwright and Cypress to create isolated test environments for every pull request. Each PR gets its own database branch with automated schema migrations, ensuring your E2E tests run against the exact schema changes you're testing.
+
+Automated E2E Testing with Neon Branching and Playwright
+Automated E2E Testing with Neon Branching and Cypress
+Fixes & improvements
