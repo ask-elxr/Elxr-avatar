@@ -20,13 +20,22 @@ interface PendingVideoConfirmation {
 
 const pendingVideoConfirmations = new Map<string, PendingVideoConfirmation>();
 
-// Confirmation patterns
+// Confirmation patterns - more lenient to catch spoken variations
 const CONFIRMATION_PATTERNS = [
+  // Exact matches
   /^(?:yes|yeah|yep|yup|sure|ok|okay|confirm|do it|go ahead|please|definitely|absolutely|yes please|go for it)$/i,
-  /^(?:yes|yeah|yep|yup|sure|ok|okay),?\s*(?:please|do it|go ahead|that sounds good|let's do it)$/i,
-  /^(?:that's|thats)\s+(?:right|correct|good|perfect|great)$/i,
-  /^(?:sounds good|perfect|great|awesome|cool)$/i,
-  /^(?:make|create|generate)\s+(?:it|the video)$/i,
+  // Starting with confirmation word
+  /^(?:yes|yeah|yep|yup|sure|ok|okay),?\s/i,
+  // With please or let's do it
+  /^(?:yes|yeah|yep|yup|sure|ok|okay),?\s*(?:please|do it|go ahead|that sounds good|let's do it)/i,
+  // Affirmative phrases
+  /^(?:that's|thats)\s+(?:right|correct|good|perfect|great)/i,
+  /^(?:sounds good|perfect|great|awesome|cool)/i,
+  /^(?:make|create|generate)\s+(?:it|the video)/i,
+  // Contains strong confirmation (for noisy STT)
+  /\b(?:yes|yeah|yep|yup|do it|go ahead|make the video|create the video|confirm|let's go|go for it)\b/i,
+  // Very short messages that are likely confirmations
+  /^(?:y|ya|ye|yea|uh huh|mm hmm|mhm)$/i,
 ];
 
 const REJECTION_PATTERNS = [
