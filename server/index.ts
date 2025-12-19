@@ -115,18 +115,44 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
   app.use("/api/mood", moodRouter);
   app.use("/api/subscription", subscriptionRouter);
   
-  // Seed default avatars if database is empty
-  await seedDefaultAvatars();
+  // Database initialization with graceful error handling
+  // App will start even if database is temporarily unavailable
+  let dbAvailable = true;
   
-  // Initialize subscription plans
-  await subscriptionService.initializePlans();
+  try {
+    // Seed default avatars if database is empty
+    await seedDefaultAvatars();
+  } catch (error: any) {
+    console.warn('⚠️ Failed to seed avatars (database may be unavailable):', error.message);
+    dbAvailable = false;
+  }
+  
+  try {
+    // Initialize subscription plans
+    await subscriptionService.initializePlans();
+  } catch (error: any) {
+    console.warn('⚠️ Failed to initialize subscription plans:', error.message);
+    dbAvailable = false;
+  }
 
-  // Initialize video generation service: recover stuck videos and start background checker
-  await videoGenerationService.recoverStuckVideos();
-  videoGenerationService.startBackgroundChecker();
+  try {
+    // Initialize video generation service: recover stuck videos and start background checker
+    await videoGenerationService.recoverStuckVideos();
+    videoGenerationService.startBackgroundChecker();
+  } catch (error: any) {
+    console.warn('⚠️ Failed to initialize video generation service:', error.message);
+  }
   
-  // Start chat video background checker (for videos generated from chat conversations)
-  chatVideoService.startBackgroundChecker();
+  try {
+    // Start chat video background checker (for videos generated from chat conversations)
+    chatVideoService.startBackgroundChecker();
+  } catch (error: any) {
+    console.warn('⚠️ Failed to start chat video service:', error.message);
+  }
+  
+  if (!dbAvailable) {
+    console.warn('⚠️ Database is currently unavailable. Some features may not work until database connection is restored.');
+  }
 
   // Clear Pinecone cache to ensure cache key normalization changes take effect
   latencyCache.invalidatePineconeCache();
