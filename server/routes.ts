@@ -4671,6 +4671,56 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(400).json({ error: "Avatar not configured for audio" });
       }
 
+      // Check for video request intent (streaming audio mode)
+      // Only process if video creation is enabled for this avatar
+      if (message && userId && avatarConfig.enableVideoCreation !== false) {
+        const videoIntent = await detectVideoIntent(message);
+        log.info({ videoIntent }, "Video intent detection result");
+        
+        if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7) {
+          const topic = videoIntent.topic || message.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
+          log.info({ topic, userId, avatarId }, "Video request detected - triggering generation");
+          
+          // Trigger video generation in background
+          try {
+            const videoResult = await chatVideoService.createVideoFromChat({
+              userId,
+              avatarId: avatarId || "mark-kohl",
+              requestText: message,
+              topic,
+            });
+            
+            if (videoResult.success && videoResult.videoRecordId) {
+              log.info({ videoId: videoResult.videoRecordId, topic }, "Chat video generation started");
+              
+              // Return acknowledgment as regular JSON (not SSE) for video requests
+              const acknowledgment = generateVideoAcknowledgment(topic, avatarConfig.name);
+              return res.json({
+                response: acknowledgment,
+                isVideoRequest: true,
+                videoId: videoResult.videoRecordId,
+                topic: topic
+              });
+            } else {
+              log.warn({ error: videoResult.error }, "Video generation failed, continuing with normal response");
+            }
+          } catch (videoError: any) {
+            log.error({ error: videoError.message }, "Failed to start video generation");
+            // Continue with normal response if video generation fails
+          }
+        }
+      } else if (message && avatarConfig.enableVideoCreation === false) {
+        // Check if user asked for video but it's disabled for this avatar
+        const videoIntent = await detectVideoIntent(message);
+        if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7) {
+          log.info({ avatarId }, "Video request detected but video creation disabled for this avatar");
+          return res.json({
+            response: `I'd love to create a video for you, but video creation isn't available for my current configuration. Is there something else I can help you with?`,
+            isVideoRequest: false
+          });
+        }
+      }
+
       // Short query optimization: use non-streaming for very short queries (<20 chars)
       const useNonStreaming = message && message.length < 20;
       
