@@ -185,7 +185,7 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
     // Continue server startup even if sync fails
   }
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
@@ -194,8 +194,8 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
       res.status(status).json({ message });
     }
     
-    // Log the error but don't rethrow to prevent crash
-    console.error('Express error:', message);
+    // Log the error with request context for debugging
+    console.error(`Express error on ${req.method} ${req.path}:`, message);
   });
 
   // importantly only setup vite in development and after
