@@ -189,8 +189,13 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Only send response if headers haven't been sent yet
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
+    
+    // Log the error but don't rethrow to prevent crash
+    console.error('Express error:', message);
   });
 
   // importantly only setup vite in development and after
