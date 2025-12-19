@@ -8,6 +8,11 @@ neonConfig.webSocketConstructor = ws;
 // Try to get DATABASE_URL, or construct it from individual PG* variables
 let databaseUrl = process.env.DATABASE_URL;
 
+// Strip any surrounding quotes and trim whitespace
+if (databaseUrl) {
+  databaseUrl = databaseUrl.replace(/^['"]|['"]$/g, '').trim();
+}
+
 // If DATABASE_URL is missing or invalid (e.g., just a UUID), construct from PG* vars
 if (!databaseUrl || !databaseUrl.startsWith('postgresql://')) {
   const { PGHOST, PGUSER, PGPASSWORD, PGDATABASE, PGPORT } = process.env;
