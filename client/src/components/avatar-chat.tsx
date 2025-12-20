@@ -646,6 +646,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   return (
     <div ref={containerRef} className="relative w-full h-screen bg-black overflow-hidden">
+      {/* ALWAYS VISIBLE DEBUG - remove after testing */}
+      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '8px', background: 'red', color: 'white', fontSize: '12px', zIndex: 9999, textAlign: 'center' }}>
+        AvatarChat: showBtn={String(showChatButton)}, showSel={String(showAvatarSelector)}, mic={String(micPermissionGranted)}, avatarId={avatarId || 'none'}
+      </div>
       {/* Full Screen Avatar Video */}
       <div className="relative w-full h-screen bg-black">
         {/* Video Element */}
