@@ -98,20 +98,31 @@ export class VideoGenerationService {
       // Upload audio to HeyGen using the v1/asset endpoint
       console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
       
-      // Use native fetch with FormData for proper multipart handling
-      const blob = new Blob([audioBuffer], { type: "audio/mpeg" });
-      const nativeFormData = new FormData();
-      nativeFormData.append("file", blob, `audio_${Date.now()}.mp3`);
-
-      const uploadResponse = await fetch("https://upload.heygen.com/v1/asset", {
-        method: "POST",
-        headers: {
-          "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
-        },
-        body: nativeFormData,
-      });
+      // Write buffer to temp file, then stream it (HeyGen requires file stream)
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
+      const FormData = (await import("form-data")).default;
       
-      const uploadResult = await uploadResponse.json();
+      const tempFilePath = path.join(os.tmpdir(), `heygen_audio_${Date.now()}.mp3`);
+      fs.writeFileSync(tempFilePath, audioBuffer);
+      
+      const formData = new FormData();
+      formData.append("file", fs.createReadStream(tempFilePath));
+
+      const uploadResponse = await axios.post(
+        "https://upload.heygen.com/v1/asset",
+        formData,
+        {
+          headers: {
+            ...formData.getHeaders(),
+            "X-Api-Key": HEYGEN_VIDEO_API_KEY,
+          },
+        }
+      );
+      
+      // Clean up temp file
+      try { fs.unlinkSync(tempFilePath); } catch {}
 
       const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
       if (assetId) {

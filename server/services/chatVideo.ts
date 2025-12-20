@@ -89,19 +89,20 @@ export class ChatVideoService {
       console.log(`✅ ElevenLabs audio generated: ${audioBuffer.length} bytes`);
 
       // Upload audio to HeyGen using the v1/asset endpoint
+      console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
+      
+      // Write buffer to temp file, then stream it (HeyGen requires file stream)
+      const fs = await import("fs");
+      const path = await import("path");
+      const os = await import("os");
       const FormData = (await import("form-data")).default;
-      const { Readable } = await import("stream");
+      
+      const tempFilePath = path.join(os.tmpdir(), `heygen_chat_audio_${Date.now()}.mp3`);
+      fs.writeFileSync(tempFilePath, audioBuffer);
       
       const formData = new FormData();
-      // Convert buffer to stream for proper form-data handling
-      const audioStreamForUpload = Readable.from(audioBuffer);
-      formData.append("file", audioStreamForUpload, {
-        filename: `audio_${Date.now()}.mp3`,
-        contentType: "audio/mpeg",
-        knownLength: audioBuffer.length,
-      });
+      formData.append("file", fs.createReadStream(tempFilePath));
 
-      console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
       const uploadResponse = await axios.post(
         "https://upload.heygen.com/v1/asset",
         formData,
@@ -110,10 +111,11 @@ export class ChatVideoService {
             ...formData.getHeaders(),
             "X-Api-Key": HEYGEN_VIDEO_API_KEY,
           },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
         }
       );
+      
+      // Clean up temp file
+      try { fs.unlinkSync(tempFilePath); } catch {}
 
       const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
       if (assetId) {
