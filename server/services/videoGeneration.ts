@@ -110,13 +110,17 @@ export class VideoGenerationService {
       const formData = new FormData();
       formData.append("file", fs.createReadStream(tempFilePath));
 
+      // Try main API key first (broader permissions), fall back to video API key
+      const uploadApiKey = HEYGEN_API_KEY || HEYGEN_VIDEO_API_KEY;
+      console.log(`📤 Using API key: ${uploadApiKey?.slice(0, 8)}...`);
+      
       const uploadResponse = await axios.post(
         "https://upload.heygen.com/v1/asset",
         formData,
         {
           headers: {
             ...formData.getHeaders(),
-            "X-Api-Key": HEYGEN_VIDEO_API_KEY,
+            "X-Api-Key": uploadApiKey,
           },
         }
       );
