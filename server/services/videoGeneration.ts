@@ -104,35 +104,51 @@ export class VideoGenerationService {
       }
 
       const publicPath = publicPaths[0];
+      console.log(`📂 Using public path: ${publicPath}`);
+      
       const { bucketName, objectName: basePath } = this.parseObjectPath(publicPath);
+      console.log(`📂 Parsed bucket: ${bucketName}, basePath: ${basePath}`);
+      
       const audioFileName = `audio/video_${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
       const fullObjectName = basePath ? `${basePath}/${audioFileName}` : audioFileName;
+      console.log(`📂 Full object name: ${fullObjectName}`);
 
       const bucket = objectStorageClient.bucket(bucketName);
       const file = bucket.file(fullObjectName);
 
       // Upload the audio buffer
-      await file.save(audioBuffer, {
-        contentType: "audio/mpeg",
-        metadata: {
-          cacheControl: "public, max-age=3600",
-        },
-      });
-
-      console.log(`✅ Audio uploaded to object storage: ${bucketName}/${fullObjectName}`);
+      try {
+        await file.save(audioBuffer, {
+          contentType: "audio/mpeg",
+          metadata: {
+            cacheControl: "public, max-age=3600",
+          },
+        });
+        console.log(`✅ Audio uploaded to object storage: ${bucketName}/${fullObjectName}`);
+      } catch (uploadError: any) {
+        console.error("❌ Object storage upload failed:", uploadError.message || uploadError);
+        console.error("❌ Upload error details:", JSON.stringify(uploadError, null, 2));
+        throw uploadError;
+      }
 
       // Generate a signed URL for HeyGen to access (valid for 1 hour)
-      const signedUrl = await this.signObjectURL({
-        bucketName,
-        objectName: fullObjectName,
-        method: "GET",
-        ttlSec: 3600, // 1 hour should be enough for video generation
-      });
-
-      console.log(`✅ Signed URL generated for HeyGen`);
-      return signedUrl;
+      try {
+        const signedUrl = await this.signObjectURL({
+          bucketName,
+          objectName: fullObjectName,
+          method: "GET",
+          ttlSec: 3600, // 1 hour should be enough for video generation
+        });
+        console.log(`✅ Signed URL generated for HeyGen`);
+        return signedUrl;
+      } catch (signError: any) {
+        console.error("❌ Signed URL generation failed:", signError.message || signError);
+        throw signError;
+      }
     } catch (error: any) {
-      console.error("❌ Error generating ElevenLabs audio:", error.message);
+      console.error("❌ Error generating ElevenLabs audio:", error.message || error);
+      console.error("❌ Error stack:", error.stack);
+      console.error("❌ Error code:", error.code);
       return null;
     }
   }

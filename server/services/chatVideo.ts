@@ -125,7 +125,9 @@ export class ChatVideoService {
       console.log(`✅ Signed URL generated for HeyGen`);
       return signedUrl;
     } catch (error: any) {
-      console.error("❌ Error generating ElevenLabs audio for chat video:", error.message);
+      console.error("❌ Error generating ElevenLabs audio for chat video:", error.message || error);
+      console.error("❌ Error stack:", error.stack);
+      console.error("❌ Error code:", error.code);
       return null;
     }
   }
