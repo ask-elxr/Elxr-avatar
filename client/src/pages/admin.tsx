@@ -48,24 +48,54 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [adminSecretInput, setAdminSecretInput] = useState('');
   const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
   const { toast } = useToast();
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const searchString = useSearch();
   
-  // Check for admin access on mount
+  // Check for admin access on mount - validate with server
   useEffect(() => {
+    const verifyAdminAccess = async (secret: string) => {
+      setIsVerifying(true);
+      try {
+        const response = await fetch('/api/admin/avatars', {
+          headers: { 'X-Admin-Secret': secret },
+        });
+        if (response.ok) {
+          setIsAdminVerified(true);
+        } else {
+          // Invalid secret - clear it
+          localStorage.removeItem('admin_secret');
+          setIsAdminVerified(false);
+        }
+      } catch {
+        localStorage.removeItem('admin_secret');
+        setIsAdminVerified(false);
+      } finally {
+        setIsVerifying(false);
+      }
+    };
+
     // Check URL params first and store in localStorage
     const urlParams = new URLSearchParams(searchString);
     const urlSecret = urlParams.get('admin_secret');
     if (urlSecret) {
       localStorage.setItem('admin_secret', urlSecret);
-      setIsAdminVerified(true);
+      verifyAdminAccess(urlSecret);
       // Remove secret from URL for security
       const newUrl = window.location.pathname;
       window.history.replaceState({}, '', newUrl);
     } else if (hasAdminAccess()) {
-      setIsAdminVerified(true);
+      // Verify stored secret is still valid
+      const storedSecret = getAdminSecret();
+      if (storedSecret) {
+        verifyAdminAccess(storedSecret);
+      } else {
+        setIsVerifying(false);
+      }
+    } else {
+      setIsVerifying(false);
     }
   }, [searchString]);
 
@@ -250,7 +280,7 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
     }
   };
   
-  if (isLoading) {
+  if (isLoading || isVerifying) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" data-testid="loading-spinner"></div>
