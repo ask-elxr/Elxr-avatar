@@ -89,44 +89,24 @@ export class ChatVideoService {
       console.log(`✅ ElevenLabs audio generated: ${audioBuffer.length} bytes`);
 
       // Upload audio to HeyGen using the v1/asset endpoint
-      console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
+      // HeyGen expects RAW BINARY data, not multipart/form-data
+      console.log(`📤 Uploading audio to HeyGen (${audioBuffer.length} bytes)...`);
       
-      // Write buffer to temp file, then stream it (HeyGen requires file stream)
-      const fs = await import("fs");
-      const path = await import("path");
-      const os = await import("os");
-      const FormData = (await import("form-data")).default;
-      
-      const tempFilePath = path.join(os.tmpdir(), `heygen_chat_audio_${Date.now()}.mp3`);
-      fs.writeFileSync(tempFilePath, audioBuffer);
-      
-      const formData = new FormData();
-      // HeyGen requires field name "asset" with explicit filename and content-type
-      const filename = `audio_${Date.now()}.mp3`;
-      formData.append("asset", fs.createReadStream(tempFilePath), {
-        filename: filename,
-        contentType: "audio/mpeg",
-        knownLength: audioBuffer.length,
-      });
-      console.log(`📤 Uploading ${filename} (${audioBuffer.length} bytes)`);
-
-      // Use video API key for uploads (main key returns Unauthorized)
       const uploadApiKey = HEYGEN_VIDEO_API_KEY || HEYGEN_API_KEY;
       console.log(`📤 Using API key: ${uploadApiKey?.slice(0, 8)}...`);
       
       const uploadResponse = await axios.post(
         "https://upload.heygen.com/v1/asset",
-        formData,
+        audioBuffer,
         {
           headers: {
-            ...formData.getHeaders(),
+            "Content-Type": "audio/mpeg",
             "X-Api-Key": uploadApiKey,
           },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         }
       );
-      
-      // Clean up temp file
-      try { fs.unlinkSync(tempFilePath); } catch {}
 
       const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
       if (assetId) {
