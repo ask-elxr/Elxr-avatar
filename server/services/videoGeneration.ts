@@ -112,7 +112,7 @@ export class VideoGenerationService {
         try {
           console.log(`📤 Trying HeyGen asset upload with ${name} API key...`);
           const uploadResponse = await axios.post(
-            "https://api.heygen.com/v2/asset",
+            "https://upload.heygen.com/v1/asset",
             formData,
             {
               headers: {
