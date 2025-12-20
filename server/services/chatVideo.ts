@@ -101,10 +101,11 @@ export class ChatVideoService {
       fs.writeFileSync(tempFilePath, audioBuffer);
       
       const formData = new FormData();
-      formData.append("file", fs.createReadStream(tempFilePath));
+      // HeyGen requires field name "asset" not "file"
+      formData.append("asset", fs.createReadStream(tempFilePath));
 
-      // Try main API key first (broader permissions), fall back to video API key
-      const uploadApiKey = HEYGEN_API_KEY || HEYGEN_VIDEO_API_KEY;
+      // Use video API key for uploads (main key returns Unauthorized)
+      const uploadApiKey = HEYGEN_VIDEO_API_KEY || HEYGEN_API_KEY;
       console.log(`📤 Using API key: ${uploadApiKey?.slice(0, 8)}...`);
       
       const uploadResponse = await axios.post(
