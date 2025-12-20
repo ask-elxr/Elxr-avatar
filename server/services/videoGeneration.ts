@@ -108,8 +108,14 @@ export class VideoGenerationService {
       fs.writeFileSync(tempFilePath, audioBuffer);
       
       const formData = new FormData();
-      // HeyGen requires field name "asset" not "file"
-      formData.append("asset", fs.createReadStream(tempFilePath));
+      // HeyGen requires field name "asset" with explicit filename and content-type
+      const filename = `audio_${Date.now()}.mp3`;
+      formData.append("asset", fs.createReadStream(tempFilePath), {
+        filename: filename,
+        contentType: "audio/mpeg",
+        knownLength: audioBuffer.length,
+      });
+      console.log(`📤 Uploading ${filename} (${audioBuffer.length} bytes)`);
 
       // Use video API key for uploads (main key returns Unauthorized)
       const uploadApiKey = HEYGEN_VIDEO_API_KEY || HEYGEN_API_KEY;
