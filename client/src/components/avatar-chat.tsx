@@ -874,6 +874,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </>
         )}
 
+        {/* Debug Info - remove after testing */}
+        {showChatButton && (
+          <div className="absolute top-2 left-2 text-xs text-yellow-400 bg-black/80 p-2 rounded z-50">
+            Debug: showChatButton={String(showChatButton)}, showAvatarSelector={String(showAvatarSelector)}, micPermission={String(micPermissionGranted)}
+          </div>
+        )}
+        
         {/* Microphone Permission Button - shown before Start Chat if permission not yet granted */}
         {showChatButton && !showAvatarSelector && micPermissionGranted !== true && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/50 z-20">
