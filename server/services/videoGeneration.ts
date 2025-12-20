@@ -11,13 +11,12 @@ import { objectStorageClient } from "../objectStorage";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;
+// HEYGEN_API_KEY (main key) may have broader permissions for asset uploads
+const HEYGEN_API_KEY = process.env.HEYGEN_API_KEY;
 const HEYGEN_BASE_URL = "https://api.heygen.com/v2";
 const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
 const elevenLabsClient = ELEVENLABS_API_KEY ? new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY }) : null;
-
-// Replit sidecar endpoint for signing URLs
-const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
 // Track videos currently being polled to avoid duplicate polling
 const activePollingSet = new Set<string>();
@@ -65,10 +64,10 @@ export class VideoGenerationService {
   };
 
   /**
-   * Generate audio using ElevenLabs and upload to object storage
-   * Returns a signed URL for the audio file that HeyGen can access
+   * Generate audio using ElevenLabs and upload to HeyGen
+   * Returns the HeyGen asset_id for the uploaded audio
    */
-  private async generateElevenLabsAudioUrl(text: string, voiceId: string, avatarName: string): Promise<string | null> {
+  private async generateElevenLabsAudio(text: string, voiceId: string, avatarName: string): Promise<string | null> {
     if (!elevenLabsClient || !ELEVENLABS_API_KEY) {
       console.log("⚠️ ElevenLabs not configured, falling back to HeyGen voice");
       return null;
@@ -82,8 +81,8 @@ export class VideoGenerationService {
         text: text.slice(0, 5000), // ElevenLabs has its own limits
         model_id: "eleven_multilingual_v2",
         voice_settings: {
-          stability: 0.7, // Increased for warmer, smoother voice (less harsh)
-          similarity_boost: 0.65, // Slightly reduced for softer tone
+          stability: 0.7,
+          similarity_boost: 0.65,
         },
       });
 
@@ -96,110 +95,49 @@ export class VideoGenerationService {
       
       console.log(`✅ ElevenLabs audio generated: ${audioBuffer.length} bytes`);
 
-      // Upload audio to object storage (public directory for HeyGen access)
-      const publicPaths = process.env.PUBLIC_OBJECT_SEARCH_PATHS?.split(",").map(p => p.trim()).filter(p => p) || [];
-      if (publicPaths.length === 0) {
-        console.error("❌ PUBLIC_OBJECT_SEARCH_PATHS not configured");
-        return null;
-      }
+      // Upload audio to HeyGen - try main API key first, then video API key
+      const FormData = (await import("form-data")).default;
+      const apiKeysToTry = [
+        { key: HEYGEN_API_KEY, name: "main" },
+        { key: HEYGEN_VIDEO_API_KEY, name: "video" },
+      ].filter(k => k.key);
 
-      const publicPath = publicPaths[0];
-      console.log(`📂 Using public path: ${publicPath}`);
-      
-      const { bucketName, objectName: basePath } = this.parseObjectPath(publicPath);
-      console.log(`📂 Parsed bucket: ${bucketName}, basePath: ${basePath}`);
-      
-      const audioFileName = `audio/video_${Date.now()}_${Math.random().toString(36).substring(7)}.mp3`;
-      const fullObjectName = basePath ? `${basePath}/${audioFileName}` : audioFileName;
-      console.log(`📂 Full object name: ${fullObjectName}`);
-
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(fullObjectName);
-
-      // Upload the audio buffer
-      try {
-        await file.save(audioBuffer, {
+      for (const { key, name } of apiKeysToTry) {
+        const formData = new FormData();
+        formData.append("file", audioBuffer, {
+          filename: `audio_${Date.now()}.mp3`,
           contentType: "audio/mpeg",
-          metadata: {
-            cacheControl: "public, max-age=3600",
-          },
         });
-        console.log(`✅ Audio uploaded to object storage: ${bucketName}/${fullObjectName}`);
-      } catch (uploadError: any) {
-        console.error("❌ Object storage upload failed:", uploadError.message || uploadError);
-        console.error("❌ Upload error details:", JSON.stringify(uploadError, null, 2));
-        throw uploadError;
+
+        try {
+          console.log(`📤 Trying HeyGen asset upload with ${name} API key...`);
+          const uploadResponse = await axios.post(
+            "https://api.heygen.com/v2/asset",
+            formData,
+            {
+              headers: {
+                ...formData.getHeaders(),
+                "X-Api-Key": key,
+              },
+            }
+          );
+
+          const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
+          if (assetId) {
+            console.log(`✅ Audio uploaded to HeyGen with ${name} key: ${assetId}`);
+            return assetId;
+          }
+        } catch (error: any) {
+          console.log(`⚠️ HeyGen upload with ${name} key failed: ${error.response?.status || error.message}`);
+        }
       }
 
-      // Generate a signed URL for HeyGen to access (valid for 1 hour)
-      try {
-        const signedUrl = await this.signObjectURL({
-          bucketName,
-          objectName: fullObjectName,
-          method: "GET",
-          ttlSec: 3600, // 1 hour should be enough for video generation
-        });
-        console.log(`✅ Signed URL generated for HeyGen`);
-        return signedUrl;
-      } catch (signError: any) {
-        console.error("❌ Signed URL generation failed:", signError.message || signError);
-        throw signError;
-      }
+      console.error("❌ Failed to upload audio to HeyGen with any API key");
+      return null;
     } catch (error: any) {
-      console.error("❌ Error generating ElevenLabs audio:", error.message || error);
-      console.error("❌ Error stack:", error.stack);
-      console.error("❌ Error code:", error.code);
+      console.error("❌ Error generating ElevenLabs audio:", error.message);
       return null;
     }
-  }
-
-  private parseObjectPath(path: string): { bucketName: string; objectName: string } {
-    if (!path.startsWith("/")) {
-      path = `/${path}`;
-    }
-    const pathParts = path.split("/");
-    if (pathParts.length < 2) {
-      throw new Error("Invalid path: must contain at least a bucket name");
-    }
-    const bucketName = pathParts[1];
-    const objectName = pathParts.slice(2).join("/");
-    return { bucketName, objectName };
-  }
-
-  private async signObjectURL({
-    bucketName,
-    objectName,
-    method,
-    ttlSec,
-  }: {
-    bucketName: string;
-    objectName: string;
-    method: "GET" | "PUT" | "DELETE" | "HEAD";
-    ttlSec: number;
-  }): Promise<string> {
-    const request = {
-      bucket_name: bucketName,
-      object_name: objectName,
-      method,
-      expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
-    };
-    const response = await fetch(
-      `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(request),
-      }
-    );
-    if (!response.ok) {
-      throw new Error(
-        `Failed to sign object URL, errorcode: ${response.status}`
-      );
-    }
-    const { signed_url: signedURL } = await response.json();
-    return signedURL;
   }
 
   /**
@@ -263,20 +201,20 @@ export class VideoGenerationService {
       const useHeygenVoice = avatar.useHeygenVoiceForLive === true;
       
       if (!useHeygenVoice && avatar.elevenlabsVoiceId && elevenLabsClient) {
-        // Use ElevenLabs voice - generate audio and upload to object storage
+        // Use ElevenLabs voice - generate audio and upload to HeyGen
         console.log(`🎙️ Using ElevenLabs voice for video (${avatar.name}): ${avatar.elevenlabsVoiceId}`);
-        const audioUrl = await this.generateElevenLabsAudioUrl(
+        const audioAssetId = await this.generateElevenLabsAudio(
           lesson.script,
           avatar.elevenlabsVoiceId,
           avatar.name
         );
         
-        if (audioUrl) {
+        if (audioAssetId) {
           voiceConfig = {
             type: "audio",
-            audio_url: audioUrl,
+            audio_asset_id: audioAssetId,
           };
-          console.log(`✅ Using ElevenLabs audio URL for HeyGen`);
+          console.log(`✅ Using ElevenLabs audio asset: ${audioAssetId}`);
         } else {
           // If ElevenLabs failed, check for HeyGen fallback
           const videoVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
