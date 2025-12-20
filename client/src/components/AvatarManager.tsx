@@ -687,13 +687,13 @@ export function AvatarManager() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">ElevenLabs</span>
+                        <span className={`text-xs ${!formData.useHeygenVoiceForLive ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>ElevenLabs</span>
                         <Switch
                           checked={formData.useHeygenVoiceForLive || false}
                           onCheckedChange={(checked) => setFormData({ ...formData, useHeygenVoiceForLive: checked })}
                           data-testid="switch-video-voice-source"
                         />
-                        <span className="text-xs text-muted-foreground">HeyGen</span>
+                        <span className={`text-xs ${formData.useHeygenVoiceForLive ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>HeyGen</span>
                       </div>
                     </div>
                     
