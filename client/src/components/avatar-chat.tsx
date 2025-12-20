@@ -678,7 +678,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             onCanPlay={() => console.log("Video can play")}
           />
           
-          {audioOnly && !heygenSessionActive && (
+          {audioOnly && !heygenSessionActive && (sessionActive || isLoading) && (
             <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
           )}
         </div>

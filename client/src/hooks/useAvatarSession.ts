@@ -1188,7 +1188,7 @@ export function useAvatarSession({
     }
 
     setSessionActive(true);
-    onSessionActiveChange?.(true);
+    onSessionActiveChange?.(true)
     
     // ✅ MOBILE: Warm up microphone (audio unlock already done at start of function)
     if (isMobile) {
