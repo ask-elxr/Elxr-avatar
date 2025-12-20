@@ -88,12 +88,17 @@ export class ChatVideoService {
       
       console.log(`✅ ElevenLabs audio generated: ${audioBuffer.length} bytes`);
 
-      // Upload audio to HeyGen using the v1/asset endpoint (working implementation from Dec 17)
+      // Upload audio to HeyGen using the v1/asset endpoint
       const FormData = (await import("form-data")).default;
+      const { Readable } = await import("stream");
+      
       const formData = new FormData();
-      formData.append("file", audioBuffer, {
+      // Convert buffer to stream for proper form-data handling
+      const audioStreamForUpload = Readable.from(audioBuffer);
+      formData.append("file", audioStreamForUpload, {
         filename: `audio_${Date.now()}.mp3`,
         contentType: "audio/mpeg",
+        knownLength: audioBuffer.length,
       });
 
       console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
@@ -105,6 +110,8 @@ export class ChatVideoService {
             ...formData.getHeaders(),
             "X-Api-Key": HEYGEN_VIDEO_API_KEY,
           },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
         }
       );
 
