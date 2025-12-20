@@ -100,17 +100,47 @@ export class LiveAvatarDriver implements SessionDriver {
         // Force video element to play with audio enabled
         // SDK handles audio through WebRTC - don't mute!
         const videoEl = this.config.videoRef.current;
-        videoEl.muted = false; // SDK handles audio through WebRTC stream
-        videoEl.play().catch(err => {
-          console.warn("⚠️ Video autoplay prevented:", err.message || err);
-          // If autoplay is blocked, try muted first then unmute
-          videoEl.muted = true;
-          videoEl.play().then(() => {
-            // Unmute after playback starts
+        
+        // Mobile fix: Set webkit-specific attributes
+        videoEl.setAttribute('webkit-playsinline', 'true');
+        videoEl.setAttribute('x5-playsinline', 'true');
+        videoEl.setAttribute('x5-video-player-type', 'h5');
+        
+        const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
+        
+        // Try to play with audio first
+        videoEl.muted = false;
+        videoEl.play().then(() => {
+          console.log("✅ Video playing with audio");
+        }).catch(async err => {
+          console.warn("⚠️ Video autoplay with audio prevented:", err.message || err);
+          
+          // Strategy 1: Try muted first, then unmute
+          try {
+            videoEl.muted = true;
+            await videoEl.play();
+            console.log("✅ Video playing muted, attempting unmute...");
+            
+            // Unmute after short delay
             setTimeout(() => {
               videoEl.muted = false;
-            }, 100);
-          }).catch(e => console.error("Video play failed:", e));
+              console.log("🔊 Video unmuted");
+            }, 300);
+          } catch (mutedError) {
+            console.error("❌ Video play failed even muted:", mutedError);
+            
+            // Strategy 2: For mobile, try resuming AudioContext
+            if (isMobile) {
+              try {
+                const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                await audioContext.resume();
+                await videoEl.play();
+                console.log("✅ Video playing after AudioContext resume");
+              } catch (audioContextError) {
+                console.error("❌ Mobile video play failed:", audioContextError);
+              }
+            }
+          }
         });
         
         // Log video state for debugging

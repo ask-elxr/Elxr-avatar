@@ -661,15 +661,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             ref={videoRef}
             autoPlay
             playsInline
+            muted={false}
             className="w-full h-full object-cover"
             style={{ 
               display: (videoReady && !isLoading && !showReconnect) ? 'block' : 'none',
               position: 'absolute',
               top: 0,
               left: 0,
-              zIndex: 10
+              zIndex: 10,
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
             }}
             data-testid="avatar-video"
+            onError={(e) => console.error("Video error:", e)}
+            onLoadedData={() => console.log("Video loaded data")}
+            onCanPlay={() => console.log("Video can play")}
           />
           
           {audioOnly && !heygenSessionActive && (
@@ -680,10 +686,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Overlay Controls */}
         {sessionActive && (
           <>
-            {/* Top Controls Bar */}
-            <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-4 bg-gradient-to-b from-black/60 to-transparent z-30">
+            {/* Top Controls Bar - Mobile responsive */}
+            <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-2 sm:p-4 bg-gradient-to-b from-black/60 to-transparent z-30 safe-area-inset-top">
               {/* Audio/Video Toggle, Language Selector, and Trial Countdown - Centered at top */}
-              <div className="mb-3 flex items-center gap-3">
+              <div className="mb-2 sm:mb-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                 <TrialCountdown compact />
                 <AudioVideoToggle
                   isVideoMode={!audioOnly}
@@ -700,10 +706,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
               
               <div className="w-full flex items-center justify-between">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 sm:gap-2">
                   <Button
                     onClick={() => togglePause()}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
                     size="sm"
                     data-testid="button-pause-toggle"
                   >
@@ -712,20 +718,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   
                   <Button
                     onClick={() => setShowAvatarSwitcher(true)}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm"
                     size="sm"
                     data-testid="button-switch-avatar"
                   >
-                    Switch Avatar
+                    <span className="hidden sm:inline">Switch Avatar</span>
+                    <User className="w-4 h-4 sm:hidden" />
                   </Button>
                 </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 sm:gap-2">
                 {/* Fullscreen Button - Video-like immersive experience (works on mobile too) */}
                 {fullscreenSupported && (
                   <Button
                     onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
                     size="sm"
                     data-testid="button-fullscreen"
                     title={isFullscreen ? "Exit Fullscreen (F)" : "Fullscreen (F)"}
@@ -736,7 +743,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 
                 <Button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white"
+                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
                   size="sm"
                 >
                   <Settings className="w-4 h-4" />
@@ -752,7 +759,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                         description: "Playback stopped",
                       });
                     }}
-                    className="bg-amber-500/80 hover:bg-amber-600 text-white"
+                    className="bg-amber-500/80 hover:bg-amber-600 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
                     size="sm"
                     data-testid="button-stop-audio"
                   >
@@ -762,7 +769,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 
                 <Button
                   onClick={endChat}
-                  className="bg-red-500/80 hover:bg-red-600 text-white"
+                  className="bg-red-500/80 hover:bg-red-600 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
                   size="sm"
                   data-testid="button-end-chat"
                 >
