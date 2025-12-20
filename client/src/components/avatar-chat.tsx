@@ -787,14 +787,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
             )}
             
-            {/* Voice Not Supported - ElevenLabs WebSocket STT handles this automatically via useAvatarSession */}
-            {microphoneStatus === 'not-supported' && (
+            {/* Voice Not Supported - Only show if microphone truly not working after session is fully active */}
+            {microphoneStatus === 'not-supported' && !isLoading && (
               <div className="absolute top-20 right-4 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
                 <div className="flex items-center gap-2">
                   <MicOff className="w-4 h-4 text-amber-400" />
-                  <span className="text-sm text-amber-400 font-medium">Voice not available</span>
+                  <span className="text-sm text-amber-400 font-medium">Voice connecting...</span>
                 </div>
-                <span className="text-xs text-amber-300/80 text-right">Type your message below</span>
+                <span className="text-xs text-amber-300/80 text-right">Type your message or wait</span>
               </div>
             )}
             
