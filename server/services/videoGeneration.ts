@@ -103,9 +103,9 @@ export class VideoGenerationService {
         contentType: "audio/mpeg",
       });
 
-      console.log(`📤 Uploading audio to HeyGen api.heygen.com/v1/asset/upload...`);
+      console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
       const uploadResponse = await axios.post(
-        "https://api.heygen.com/v1/asset/upload",
+        "https://upload.heygen.com/v1/asset",
         formData,
         {
           headers: {
