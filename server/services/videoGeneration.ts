@@ -96,31 +96,22 @@ export class VideoGenerationService {
       console.log(`✅ ElevenLabs audio generated: ${audioBuffer.length} bytes`);
 
       // Upload audio to HeyGen using the v1/asset endpoint
-      const FormData = (await import("form-data")).default;
-      const { Readable } = await import("stream");
-      
-      const formData = new FormData();
-      // Convert buffer to stream for proper form-data handling
-      const audioStreamForUpload = Readable.from(audioBuffer);
-      formData.append("file", audioStreamForUpload, {
-        filename: `audio_${Date.now()}.mp3`,
-        contentType: "audio/mpeg",
-        knownLength: audioBuffer.length,
-      });
-
       console.log(`📤 Uploading audio to HeyGen upload.heygen.com/v1/asset...`);
-      const uploadResponse = await axios.post(
-        "https://upload.heygen.com/v1/asset",
-        formData,
-        {
-          headers: {
-            ...formData.getHeaders(),
-            "X-Api-Key": HEYGEN_VIDEO_API_KEY,
-          },
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        }
-      );
+      
+      // Use native fetch with FormData for proper multipart handling
+      const blob = new Blob([audioBuffer], { type: "audio/mpeg" });
+      const nativeFormData = new FormData();
+      nativeFormData.append("file", blob, `audio_${Date.now()}.mp3`);
+
+      const uploadResponse = await fetch("https://upload.heygen.com/v1/asset", {
+        method: "POST",
+        headers: {
+          "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
+        },
+        body: nativeFormData,
+      });
+      
+      const uploadResult = await uploadResponse.json();
 
       const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
       if (assetId) {
