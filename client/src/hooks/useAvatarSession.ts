@@ -910,8 +910,12 @@ export function useAvatarSession({
   }, [clearIdleTimeout, startIdleTimeout, startVoiceRecognition]);
 
   const startLiveAvatarSession = useCallback(async (activeAvatarId: string, options?: { skipGreeting?: boolean }) => {
+    console.log(`🎬 startLiveAvatarSession called: avatarId=${activeAvatarId}, skipGreeting=${options?.skipGreeting}`);
+    console.log(`🎬 State check: audioOnlyRef=${audioOnlyRef.current}, sessionDriverRef exists=${!!sessionDriverRef.current}, heygenSessionActive=${heygenSessionActive}`);
+    
     // Skip if audio-only
     if (audioOnlyRef.current) {
+      console.log("⏭️ Skipping startLiveAvatarSession - in audio-only mode");
       return;
     }
     
@@ -1612,6 +1616,10 @@ export function useAvatarSession({
   // This preserves conversation context and provides seamless transition
   const switchTransportMode = useCallback(async (toVideoMode: boolean) => {
     const newAudioOnly = !toVideoMode;
+    
+    console.log(`🔄 switchTransportMode called: toVideoMode=${toVideoMode}, newAudioOnly=${newAudioOnly}`);
+    console.log(`🔄 Current state: audioOnlyRef=${audioOnlyRef.current}, sessionActive=${sessionActiveRef.current}, heygenSessionActive=${heygenSessionActive}`);
+    console.log(`🔄 Refs: sessionDriverRef exists=${!!sessionDriverRef.current}, currentAvatarId=${currentAvatarIdRef.current}`);
     
     // Skip if already in the target mode
     if (audioOnlyRef.current === newAudioOnly) {
