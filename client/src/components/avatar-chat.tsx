@@ -284,12 +284,15 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         if (response.ok) {
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
-          const audio = new Audio(audioUrl);
-          // Mobile-specific: Add attributes for iOS/Android compatibility
-          audio.setAttribute('playsinline', 'true');
-          audio.setAttribute('webkit-playsinline', 'true');
-          audio.preload = 'auto';
+          // 📱 MOBILE FIX: Use shared audio element
+          const { getSharedAudioElement } = await import('@/lib/mobileAudio');
+          const audio = getSharedAudioElement();
+          if (audio.src && audio.src.startsWith('blob:')) {
+            URL.revokeObjectURL(audio.src);
+          }
+          audio.src = audioUrl;
           audio.onended = () => URL.revokeObjectURL(audioUrl);
+          audio.load();
           await audio.play().catch((err) => {
             console.error("Audio play failed (likely mobile autoplay restriction):", err);
           });

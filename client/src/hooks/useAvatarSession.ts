@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
+import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked } from "@/lib/mobileAudio";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -1134,18 +1135,12 @@ export function useAvatarSession({
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     // 🔓 MOBILE FIX: Unlock audio IMMEDIATELY on user gesture - MUST be first!
-    // This must happen BEFORE any async operations or the user gesture expires
-    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
-    if (isMobile) {
-      try {
-        console.log("📱 Mobile detected - unlocking audio FIRST...");
-        const silentAudioUnlock = new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==");
-        silentAudioUnlock.volume = 0.01;
-        await silentAudioUnlock.play().catch(() => {});
-        console.log("📱 Audio unlocked for mobile");
-      } catch (error) {
-        console.warn("📱 Audio unlock failed:", error);
-      }
+    // This primes a shared audio element that will be reused for all playback
+    try {
+      console.log("📱 Unlocking mobile audio on user gesture...");
+      await unlockMobileAudio();
+    } catch (error) {
+      console.warn("📱 Audio unlock failed:", error);
     }
     
     setIsLoading(true);
@@ -1248,6 +1243,7 @@ export function useAvatarSession({
     onSessionActiveChange?.(true)
     
     // ✅ MOBILE: Warm up microphone (audio unlock already done at start of function)
+    const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
     if (isMobile) {
       try {
         console.log("📱 Warming up microphone...");
@@ -2027,17 +2023,20 @@ export function useAvatarSession({
             const audioBlob = await audioResponse.blob();
             console.log(`🔊 Audio blob received: ${(audioBlob.size / 1024).toFixed(1)} KB, type: ${audioBlob.type}`);
             
-            const audioUrl = URL.createObjectURL(audioBlob);
-            const audio = new Audio(audioUrl);
+            // 📱 MOBILE FIX: Use shared audio element instead of new Audio()
+            // This element was pre-unlocked during user gesture in startSession
+            const audio = getSharedAudioElement();
             currentAudioRef.current = audio;
             
-            // Set volume to max and log audio properties
+            // Revoke any previous blob URL
+            if (audio.src && audio.src.startsWith('blob:')) {
+              URL.revokeObjectURL(audio.src);
+            }
+            
+            const audioUrl = URL.createObjectURL(audioBlob);
+            audio.src = audioUrl;
             audio.volume = 1.0;
-            // Mobile-specific: Add attributes for iOS/Android compatibility
-            audio.setAttribute('playsinline', 'true');
-            audio.setAttribute('webkit-playsinline', 'true');
-            audio.preload = 'auto';
-            console.log(`🔊 Audio element created, volume: ${audio.volume}, muted: ${audio.muted}`);
+            console.log(`🔊 Audio element configured, volume: ${audio.volume}, muted: ${audio.muted}, unlocked: ${isAudioUnlocked()}`);
 
             audio.onloadedmetadata = () => {
               console.log(`🔊 Audio metadata loaded: duration=${audio.duration.toFixed(2)}s, volume=${audio.volume}`);
@@ -2051,7 +2050,6 @@ export function useAvatarSession({
               currentAudioRef.current = null;
               
               // 🔊 Resume voice recognition after audio ends (with 1s delay to prevent echo)
-              // Increased from 500ms to allow any speaker echo to fully dissipate
               setTimeout(() => {
                 if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
                   startVoiceRecognition();
@@ -2067,7 +2065,7 @@ export function useAvatarSession({
               URL.revokeObjectURL(audioUrl);
               currentAudioRef.current = null;
               
-              // Resume voice recognition on error too (with delay to prevent echo)
+              // Resume voice recognition on error too
               setTimeout(() => {
                 if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
                   startVoiceRecognition();
@@ -2086,10 +2084,15 @@ export function useAvatarSession({
             }
 
             try {
+              audio.load(); // Force reload the new source
               await audio.play();
-              console.log(`🔊 Audio playback STARTED - duration: ${audio.duration.toFixed(2)}s, currentTime: ${audio.currentTime}, paused: ${audio.paused}`);
+              console.log(`🔊 Audio playback STARTED via shared element - duration: ${audio.duration.toFixed(2)}s`);
             } catch (playError) {
               console.error(`🔊 Audio play() FAILED:`, playError);
+              // 📱 On mobile, if play fails, user may need to tap again
+              if ((playError as Error).name === 'NotAllowedError') {
+                console.warn('📱 Audio blocked by browser - user interaction required');
+              }
             }
           } else {
             // Audio fetch failed - clear state
@@ -2554,12 +2557,13 @@ export function useAvatarSession({
             });
             if (ttsResponse.ok) {
               const audioBlob = await ttsResponse.blob();
+              // 📱 MOBILE FIX: Use shared audio element
+              const audio = getSharedAudioElement();
+              if (audio.src && audio.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audio.src);
+              }
               const audioUrl = URL.createObjectURL(audioBlob);
-              const audio = new Audio(audioUrl);
-              // Mobile-specific: Add attributes for iOS/Android compatibility
-              audio.setAttribute('playsinline', 'true');
-              audio.setAttribute('webkit-playsinline', 'true');
-              audio.preload = 'auto';
+              audio.src = audioUrl;
               currentAudioRef.current = audio;
               audio.onended = async () => {
                 URL.revokeObjectURL(audioUrl);
@@ -2571,6 +2575,7 @@ export function useAvatarSession({
               };
               isSpeakingRef.current = true;
               setIsSpeakingState(true);
+              audio.load();
               await audio.play();
             } else {
               // TTS failed, still end session
@@ -2599,12 +2604,13 @@ export function useAvatarSession({
             });
             if (ttsResponse.ok) {
               const audioBlob = await ttsResponse.blob();
+              // 📱 MOBILE FIX: Use shared audio element
+              const audio = getSharedAudioElement();
+              if (audio.src && audio.src.startsWith('blob:')) {
+                URL.revokeObjectURL(audio.src);
+              }
               const audioUrl = URL.createObjectURL(audioBlob);
-              const audio = new Audio(audioUrl);
-              // Mobile-specific: Add attributes for iOS/Android compatibility
-              audio.setAttribute('playsinline', 'true');
-              audio.setAttribute('webkit-playsinline', 'true');
-              audio.preload = 'auto';
+              audio.src = audioUrl;
               currentAudioRef.current = audio;
               audio.onended = () => {
                 URL.revokeObjectURL(audioUrl);
@@ -2627,7 +2633,8 @@ export function useAvatarSession({
               };
               isSpeakingRef.current = true;
               setIsSpeakingState(true);
-              console.log("🔊 Playing audio-only TTS response...");
+              console.log("🔊 Playing audio-only TTS response via shared element...");
+              audio.load();
               await audio.play();
             } else {
               console.error("Audio-only TTS request failed:", ttsResponse.status);

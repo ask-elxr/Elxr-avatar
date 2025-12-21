@@ -954,12 +954,17 @@ export class AudioOnlyDriver implements SessionDriver {
       }
 
       const audioBlob = await response.blob();
+      // 📱 MOBILE FIX: Use shared audio element from mobileAudio utility
+      const { getSharedAudioElement } = await import('@/lib/mobileAudio');
+      const audio = getSharedAudioElement();
+      
+      // Revoke previous blob URL if any
+      if (audio.src && audio.src.startsWith('blob:')) {
+        URL.revokeObjectURL(audio.src);
+      }
+      
       const audioUrl = URL.createObjectURL(audioBlob);
-      const audio = new Audio(audioUrl);
-      // Mobile-specific: Add attributes for iOS/Android compatibility
-      audio.setAttribute('playsinline', 'true');
-      audio.setAttribute('webkit-playsinline', 'true');
-      audio.preload = 'auto';
+      audio.src = audioUrl;
       this.currentAudio = audio;
 
       audio.onended = () => {
@@ -974,6 +979,7 @@ export class AudioOnlyDriver implements SessionDriver {
         this.currentAudio = null;
       };
 
+      audio.load();
       await audio.play();
     } catch (error) {
       console.error("Error playing TTS:", error);
