@@ -956,6 +956,10 @@ export class AudioOnlyDriver implements SessionDriver {
       const audioBlob = await response.blob();
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
+      // Mobile-specific: Add attributes for iOS/Android compatibility
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
+      audio.preload = 'auto';
       this.currentAudio = audio;
 
       audio.onended = () => {

@@ -142,6 +142,51 @@ export function useAvatarSession({
     elevenLabsLanguageCodeRef.current = elevenLabsLanguageCode;
   }, [elevenLabsLanguageCode]);
 
+  // Handle tab visibility changes - resume audio contexts when returning to tab (mobile browsers suspend audio)
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && sessionActiveRef.current) {
+        console.log("📱 Tab became visible - resuming audio contexts...");
+        
+        // Resume ElevenLabs STT AudioContext if exists
+        if (elevenLabsSttAudioContextRef.current?.state === 'suspended') {
+          try {
+            await elevenLabsSttAudioContextRef.current.resume();
+            console.log("✅ ElevenLabs STT AudioContext resumed");
+          } catch (err) {
+            console.error("❌ Failed to resume ElevenLabs STT AudioContext:", err);
+          }
+        }
+        
+        // Resume any playing audio elements
+        if (currentAudioRef.current?.paused && !currentAudioRef.current.ended) {
+          try {
+            await currentAudioRef.current.play();
+            console.log("✅ Current audio resumed");
+          } catch (err) {
+            console.error("❌ Failed to resume current audio:", err);
+          }
+        }
+        
+        // Restart voice recognition if it stopped while tab was hidden
+        if (!recognitionRunningRef.current && !isSpeakingRef.current && !isPaused) {
+          console.log("🎤 Restarting voice recognition after tab visibility change");
+          // Small delay to let audio system stabilize
+          setTimeout(() => {
+            if (sessionActiveRef.current && !recognitionRunningRef.current && !isSpeakingRef.current) {
+              startVoiceRecognition();
+            }
+          }, 500);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isPaused]);
+
   const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
       method: "POST",
@@ -198,6 +243,9 @@ export function useAvatarSession({
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         audio.preload = "auto";
+        // Mobile-specific: Add attributes for iOS/Android compatibility
+        audio.setAttribute('playsinline', 'true');
+        audio.setAttribute('webkit-playsinline', 'true');
         acknowledgmentAudioRef.current = audio;
         acknowledgmentCacheReadyRef.current.set(avatarId, true);
         console.log("🔊 Acknowledgment audio preloaded for:", avatarId);
@@ -258,6 +306,10 @@ export function useAvatarSession({
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         audio.volume = 0.8; // Slightly lower volume for acknowledgment
+        // Mobile-specific: Add attributes for iOS/Android compatibility
+        audio.setAttribute('playsinline', 'true');
+        audio.setAttribute('webkit-playsinline', 'true');
+        audio.preload = 'auto';
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl);
           if (currentAcknowledgmentRef.current === audio) {
@@ -676,6 +728,11 @@ export function useAvatarSession({
       // Ensure audio is properly configured for playback
       audio.volume = 1.0; // Maximum volume
       audio.muted = false;
+      
+      // Mobile-specific: Add attributes for iOS/Android compatibility
+      audio.setAttribute('playsinline', 'true');
+      audio.setAttribute('webkit-playsinline', 'true');
+      audio.preload = 'auto';
       
       // CRITICAL: Append audio element to document body to ensure it plays through speakers
       // Some browsers don't play detached Audio elements properly
@@ -1273,6 +1330,10 @@ export function useAvatarSession({
               const audioUrl = URL.createObjectURL(audioBlob);
               const audio = new Audio(audioUrl);
               audio.volume = 1.0;
+              // Mobile-specific: Add attributes for iOS/Android compatibility
+              audio.setAttribute('playsinline', 'true');
+              audio.setAttribute('webkit-playsinline', 'true');
+              audio.preload = 'auto';
               
               // 🔇 CRITICAL: Set currentAudioRef to block voice recognition restart during playback
               currentAudioRef.current = audio;
@@ -1972,6 +2033,10 @@ export function useAvatarSession({
             
             // Set volume to max and log audio properties
             audio.volume = 1.0;
+            // Mobile-specific: Add attributes for iOS/Android compatibility
+            audio.setAttribute('playsinline', 'true');
+            audio.setAttribute('webkit-playsinline', 'true');
+            audio.preload = 'auto';
             console.log(`🔊 Audio element created, volume: ${audio.volume}, muted: ${audio.muted}`);
 
             audio.onloadedmetadata = () => {
@@ -2491,6 +2556,10 @@ export function useAvatarSession({
               const audioBlob = await ttsResponse.blob();
               const audioUrl = URL.createObjectURL(audioBlob);
               const audio = new Audio(audioUrl);
+              // Mobile-specific: Add attributes for iOS/Android compatibility
+              audio.setAttribute('playsinline', 'true');
+              audio.setAttribute('webkit-playsinline', 'true');
+              audio.preload = 'auto';
               currentAudioRef.current = audio;
               audio.onended = async () => {
                 URL.revokeObjectURL(audioUrl);
@@ -2532,6 +2601,10 @@ export function useAvatarSession({
               const audioBlob = await ttsResponse.blob();
               const audioUrl = URL.createObjectURL(audioBlob);
               const audio = new Audio(audioUrl);
+              // Mobile-specific: Add attributes for iOS/Android compatibility
+              audio.setAttribute('playsinline', 'true');
+              audio.setAttribute('webkit-playsinline', 'true');
+              audio.preload = 'auto';
               currentAudioRef.current = audio;
               audio.onended = () => {
                 URL.revokeObjectURL(audioUrl);

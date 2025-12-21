@@ -285,6 +285,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           const audioBlob = await response.blob();
           const audioUrl = URL.createObjectURL(audioBlob);
           const audio = new Audio(audioUrl);
+          // Mobile-specific: Add attributes for iOS/Android compatibility
+          audio.setAttribute('playsinline', 'true');
+          audio.setAttribute('webkit-playsinline', 'true');
+          audio.preload = 'auto';
           audio.onended = () => URL.revokeObjectURL(audioUrl);
           await audio.play().catch((err) => {
             console.error("Audio play failed (likely mobile autoplay restriction):", err);
@@ -646,10 +650,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   return (
     <div ref={containerRef} className="relative w-full h-screen bg-black overflow-hidden">
-      {/* ALWAYS VISIBLE DEBUG - remove after testing */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, padding: '8px', background: 'red', color: 'white', fontSize: '12px', zIndex: 9999, textAlign: 'center' }}>
-        AvatarChat: showBtn={String(showChatButton)}, showSel={String(showAvatarSelector)}, mic={String(micPermissionGranted)}, avatarId={avatarId || 'none'}
-      </div>
       {/* Full Screen Avatar Video */}
       <div className="relative w-full h-screen bg-black">
         {/* Video Element */}
@@ -878,13 +878,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </>
         )}
 
-        {/* Debug Info - remove after testing */}
-        {showChatButton && (
-          <div className="absolute top-2 left-2 text-xs text-yellow-400 bg-black/80 p-2 rounded z-50">
-            Debug: showChatButton={String(showChatButton)}, showAvatarSelector={String(showAvatarSelector)}, micPermission={String(micPermissionGranted)}
-          </div>
-        )}
-        
         {/* Microphone Permission Button - shown before Start Chat if permission not yet granted */}
         {showChatButton && !showAvatarSelector && micPermissionGranted !== true && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/50 z-20">
