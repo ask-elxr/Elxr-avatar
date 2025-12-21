@@ -1586,6 +1586,29 @@ export function useAvatarSession({
     
     console.log(`🔄 Switching transport: ${audioOnlyRef.current ? 'Audio' : 'Video'} → ${newAudioOnly ? 'Audio' : 'Video'}`);
     
+    // 📱 MOBILE FIX: Unlock video/audio IMMEDIATELY on user gesture - MUST be first!
+    // This must happen BEFORE any async operations or the user gesture expires
+    // For video mode, we need to "prime" the video element so play() works later
+    if (toVideoMode && videoRef.current) {
+      try {
+        console.log("📱 Unlocking video element for mobile...");
+        videoRef.current.muted = true;
+        videoRef.current.setAttribute('playsinline', 'true');
+        videoRef.current.setAttribute('webkit-playsinline', 'true');
+        // Start a muted play to unlock, then immediately pause
+        const playPromise = videoRef.current.play();
+        if (playPromise !== undefined) {
+          await playPromise.catch(() => {});
+        }
+        videoRef.current.pause();
+        console.log("📱 Video element unlocked for mobile");
+      } catch (e) {
+        console.warn("📱 Video unlock failed:", e);
+      }
+    }
+    // Also unlock audio
+    await unlockMobileAudio().catch(() => {});
+    
     // CRITICAL: Clear any pending idle timeout to prevent it from firing in audio mode
     // and calling stopHeyGenSession which would clear sessionIdRef
     clearIdleTimeout();
