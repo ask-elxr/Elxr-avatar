@@ -57,7 +57,10 @@ export function AudioVideoToggle({
       data-testid="audio-video-toggle"
     >
       <button
-        onClick={() => !disabled && onToggle(false)}
+        onClick={() => {
+          console.log(`🔘 Audio button clicked, disabled=${disabled}, isVideoMode=${isVideoMode}`);
+          if (!disabled) onToggle(false);
+        }}
         disabled={disabled}
         className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
           !isVideoMode
@@ -70,7 +73,10 @@ export function AudioVideoToggle({
         <span>Audio</span>
       </button>
       <button
-        onClick={() => !disabled && onToggle(true)}
+        onClick={() => {
+          console.log(`🔘 Video button clicked, disabled=${disabled}, isVideoMode=${isVideoMode}`);
+          if (!disabled) onToggle(true);
+        }}
         disabled={disabled}
         className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
           isVideoMode
