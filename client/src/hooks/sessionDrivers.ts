@@ -286,11 +286,21 @@ export class LiveAvatarDriver implements SessionDriver {
   }
 
   async stop(): Promise<void> {
+    console.log("🛑 Stopping LiveAvatar session...");
     this.stopCurrentAudio();
     this.videoAttached = false;
     
     // Stop ElevenLabs STT
     await this.stopElevenLabsSTT();
+    
+    // Stop all tracks in the MediaStream to release camera/mic
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`🛑 Stopped track: ${track.kind}`);
+      });
+      this.mediaStream = null;
+    }
     
     // Clean up audio context
     if (this.audioContext) {
@@ -302,12 +312,24 @@ export class LiveAvatarDriver implements SessionDriver {
       this.audioContext = null;
     }
     
+    // Clear video element
+    if (this.config.videoRef.current) {
+      this.config.videoRef.current.pause();
+      this.config.videoRef.current.srcObject = null;
+    }
+    
     // Stop the LiveAvatar session - SDK handles LiveKit disconnection internally
     if (this.session) {
-      console.log("📵 Stopping LiveAvatar session...");
-      await this.session.stop();
+      console.log("📵 Stopping LiveAvatar SDK session...");
+      try {
+        await this.session.stop();
+      } catch (e) {
+        console.warn("Error stopping SDK session:", e);
+      }
       this.session = null;
     }
+    
+    console.log("✅ LiveAvatar session stopped and resources released");
   }
 
   /**
@@ -846,12 +868,22 @@ export class HeyGenStreamingDriver implements SessionDriver {
       this.streamingAvatar = null;
     }
     
+    // Stop all tracks in the MediaStream to release camera/mic
+    if (this.mediaStream) {
+      this.mediaStream.getTracks().forEach(track => {
+        track.stop();
+        console.log(`🛑 Stopped track: ${track.kind}`);
+      });
+      this.mediaStream = null;
+    }
+    
+    // Clear video element
     if (this.config.videoRef.current) {
+      this.config.videoRef.current.pause();
       this.config.videoRef.current.srcObject = null;
     }
     
-    this.mediaStream = null;
-    console.log("✅ HeyGen Streaming session stopped");
+    console.log("✅ HeyGen Streaming session stopped and resources released");
   }
 
   setLanguage(languageCode: string): void {

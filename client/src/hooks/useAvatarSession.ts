@@ -143,10 +143,45 @@ export function useAvatarSession({
     elevenLabsLanguageCodeRef.current = elevenLabsLanguageCode;
   }, [elevenLabsLanguageCode]);
 
-  // Handle tab visibility changes - resume audio contexts when returning to tab (mobile browsers suspend audio)
+  // Handle tab visibility changes - pause session when hidden, resume when visible
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible' && sessionActiveRef.current) {
+      if (document.visibilityState === 'hidden' && sessionActiveRef.current) {
+        // Tab became hidden - stop the avatar session to release resources
+        console.log("📱 Tab became hidden - stopping avatar session to release resources...");
+        
+        // Stop the HeyGen session to release camera/mic and save credits
+        if (sessionDriverRef.current && !audioOnlyRef.current) {
+          try {
+            intentionalStopRef.current = true;
+            await sessionDriverRef.current.stop();
+            sessionDriverRef.current = null;
+            setHeygenSessionActive(false);
+            console.log("✅ Avatar session stopped (tab hidden)");
+          } catch (err) {
+            console.error("❌ Failed to stop avatar session:", err);
+          }
+        }
+        
+        // Stop voice recognition
+        if (recognitionRef.current) {
+          try {
+            recognitionIntentionalStopRef.current = true;
+            recognitionRunningRef.current = false;
+            recognitionRef.current.stop();
+            console.log("✅ Voice recognition stopped (tab hidden)");
+          } catch (err) {
+            // Ignore
+          }
+        }
+        
+        // Pause any playing audio
+        if (currentAudioRef.current && !currentAudioRef.current.paused) {
+          currentAudioRef.current.pause();
+          console.log("✅ Audio paused (tab hidden)");
+        }
+        
+      } else if (document.visibilityState === 'visible' && sessionActiveRef.current) {
         console.log("📱 Tab became visible - resuming audio contexts...");
         
         // Resume ElevenLabs STT AudioContext if exists
