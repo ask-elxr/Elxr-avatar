@@ -546,6 +546,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   };
 
   const handleModeToggle = async (isVideoMode: boolean) => {
+    console.log(`🔄 handleModeToggle called: isVideoMode=${isVideoMode}`);
+    console.log(`🔄 Current state: audioOnly=${audioOnly}, sessionActive=${sessionActive}, isModeSwitching=${isModeSwitching}, isLoading=${isLoading}`);
+    console.log(`🔄 Avatar capabilities: enableVideoMode=${avatarCapabilities.enableVideoMode}, enableAudioMode=${avatarCapabilities.enableAudioMode}`);
+    
     const newAudioOnly = !isVideoMode;
     const previousAudioOnly = audioOnly;
     
