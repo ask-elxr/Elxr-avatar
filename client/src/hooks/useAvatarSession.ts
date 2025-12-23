@@ -1750,20 +1750,28 @@ export function useAvatarSession({
     }
     
     // If switching FROM audio TO video, start HeyGen
+    console.log(`🔄 Checking if should start video: !newAudioOnly=${!newAudioOnly}, wasAudioOnly=${wasAudioOnly}`);
     if (!newAudioOnly) {
+      console.log("🔄 Entering video start block");
       if (videoRef.current) {
+        console.log("🔄 Setting video element styles");
         videoRef.current.style.display = 'block';
         videoRef.current.style.visibility = 'visible';
         videoRef.current.style.opacity = '1';
+      } else {
+        console.warn("🔄 No videoRef.current!");
       }
       
       try {
+        console.log("🔄 Setting isLoading=true");
         setIsLoading(true);
         
         // Small delay to ensure video element is rendered and DOM is updated
+        console.log("🔄 Waiting 100ms for DOM update...");
         await new Promise(resolve => setTimeout(resolve, 100));
         
         // Pass skipGreeting=true for seamless mode switch - conversation is already in progress
+        console.log(`🔄 Calling startHeyGenSession with avatarId=${currentAvatarIdRef.current}`);
         await startHeyGenSession(currentAvatarIdRef.current, { skipGreeting: true });
         setIsLoading(false);
         console.log("✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)");
