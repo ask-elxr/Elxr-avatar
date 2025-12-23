@@ -1621,10 +1621,20 @@ export function useAvatarSession({
     console.log(`🔄 Current state: audioOnlyRef=${audioOnlyRef.current}, sessionActive=${sessionActiveRef.current}, heygenSessionActive=${heygenSessionActive}`);
     console.log(`🔄 Refs: sessionDriverRef exists=${!!sessionDriverRef.current}, currentAvatarId=${currentAvatarIdRef.current}`);
     
-    // Skip if already in the target mode
-    if (audioOnlyRef.current === newAudioOnly) {
-      console.log("Already in target mode, skipping switch");
-      return;
+    // Skip if already in the target mode AND the session is in a valid state
+    // Don't skip if we're supposedly in video mode but no video session is active
+    const videoModeButNoSession = !audioOnlyRef.current && !heygenSessionActive && !toVideoMode === false;
+    const alreadyInTargetMode = audioOnlyRef.current === newAudioOnly;
+    
+    if (alreadyInTargetMode) {
+      // For video mode, verify session is actually running
+      if (!newAudioOnly && !heygenSessionActive) {
+        console.log("🔄 Supposedly in video mode but no session active - retrying video start");
+        // Don't return, proceed to start video session
+      } else {
+        console.log("Already in target mode with valid session, skipping switch");
+        return;
+      }
     }
     
     console.log(`🔄 Switching transport: ${audioOnlyRef.current ? 'Audio' : 'Video'} → ${newAudioOnly ? 'Audio' : 'Video'}`);
