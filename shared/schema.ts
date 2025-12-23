@@ -151,6 +151,10 @@ export type Job = typeof jobs.$inferSelect;
 export const streamingPlatformEnum = ["liveavatar", "heygen"] as const;
 export type StreamingPlatform = typeof streamingPlatformEnum[number];
 
+// Interactive voice source enum (3 options for video streaming)
+export const interactiveVoiceSourceEnum = ["elevenlabs", "heygen", "liveavatar"] as const;
+export type InteractiveVoiceSource = typeof interactiveVoiceSourceEnum[number];
+
 export const avatarProfiles = pgTable("avatar_profiles", {
   id: varchar("id").primaryKey(),
   name: text("name").notNull(),
@@ -158,14 +162,16 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   profileImageUrl: text("profile_image_url"),
   // Interactive streaming configuration
   streamingPlatform: text("streaming_platform").default("liveavatar").notNull(), // 'liveavatar' or 'heygen' for interactive streaming
-  useHeygenVoiceForInteractive: boolean("use_heygen_voice_for_interactive").default(false).notNull(), // Toggle for interactive: false = ElevenLabs, true = HeyGen voice
+  useHeygenVoiceForInteractive: boolean("use_heygen_voice_for_interactive").default(false).notNull(), // DEPRECATED: Use interactiveVoiceSource instead
+  interactiveVoiceSource: text("interactive_voice_source").default("elevenlabs"), // 'elevenlabs', 'heygen', or 'liveavatar'
   heygenAvatarId: text("heygen_avatar_id"), // HeyGen Streaming Avatar ID (used when platform = heygen)
   liveAvatarId: text("live_avatar_id"), // LiveAvatar platform ID (used when platform = liveavatar)
   heygenVideoAvatarId: text("heygen_video_avatar_id"), // Separate ID for video generation (Instant Avatars)
-  heygenVoiceId: text("heygen_voice_id"), // HeyGen voice ID for interactive mode (when useHeygenVoiceForInteractive = true)
+  heygenVoiceId: text("heygen_voice_id"), // HeyGen voice ID for interactive mode (when interactiveVoiceSource = 'heygen')
   heygenVideoVoiceId: text("heygen_video_voice_id"), // Separate voice ID for video generation
   heygenKnowledgeId: text("heygen_knowledge_id"),
-  elevenlabsVoiceId: text("elevenlabs_voice_id"), // ElevenLabs voice ID (used when useHeygenVoiceForInteractive = false)
+  elevenlabsVoiceId: text("elevenlabs_voice_id"), // ElevenLabs voice ID (used when interactiveVoiceSource = 'elevenlabs')
+  liveAvatarVoiceId: text("live_avatar_voice_id"), // LiveAvatar voice ID (used when interactiveVoiceSource = 'liveavatar')
   useHeygenVoiceForLive: boolean("use_heygen_voice_for_live").default(false).notNull(), // Toggle for video generation: false = ElevenLabs voice, true = HeyGen voice
   voiceRate: text("voice_rate").default("1.0"),
   // Language configuration

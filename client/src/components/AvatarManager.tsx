@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +47,7 @@ export function AvatarManager() {
     description: "",
     streamingPlatform: "liveavatar",
     useHeygenVoiceForInteractive: false,
+    interactiveVoiceSource: "elevenlabs",
     liveAvatarId: null,
     heygenAvatarId: null,
     heygenVoiceId: null,
@@ -53,6 +55,7 @@ export function AvatarManager() {
     heygenVideoVoiceId: null,
     heygenKnowledgeId: null,
     elevenlabsVoiceId: null,
+    liveAvatarVoiceId: null,
     useHeygenVoiceForLive: false,
     voiceRate: "1.0",
     languageCode: "en-US",
@@ -147,6 +150,7 @@ export function AvatarManager() {
       profileImageUrl: null,
       streamingPlatform: "liveavatar",
       useHeygenVoiceForInteractive: false,
+      interactiveVoiceSource: "elevenlabs",
       liveAvatarId: null,
       heygenAvatarId: null,
       heygenVoiceId: null,
@@ -154,6 +158,7 @@ export function AvatarManager() {
       heygenVideoVoiceId: null,
       heygenKnowledgeId: null,
       elevenlabsVoiceId: null,
+      liveAvatarVoiceId: null,
       useHeygenVoiceForLive: false,
       voiceRate: "1.0",
       languageCode: "en-US",
@@ -173,6 +178,9 @@ export function AvatarManager() {
 
   const handleOpenEditDialog = (avatar: AvatarProfile) => {
     setEditingAvatar(avatar);
+    // Derive interactiveVoiceSource from useHeygenVoiceForInteractive for backward compatibility
+    const derivedVoiceSource = (avatar as any).interactiveVoiceSource || 
+      (avatar.useHeygenVoiceForInteractive ? "heygen" : "elevenlabs");
     setFormData({
       id: avatar.id,
       name: avatar.name,
@@ -180,6 +188,7 @@ export function AvatarManager() {
       profileImageUrl: avatar.profileImageUrl || null,
       streamingPlatform: avatar.streamingPlatform || "liveavatar",
       useHeygenVoiceForInteractive: avatar.useHeygenVoiceForInteractive || false,
+      interactiveVoiceSource: derivedVoiceSource,
       liveAvatarId: avatar.liveAvatarId,
       heygenAvatarId: avatar.heygenAvatarId,
       heygenVoiceId: avatar.heygenVoiceId,
@@ -187,6 +196,7 @@ export function AvatarManager() {
       heygenVideoVoiceId: avatar.heygenVideoVoiceId,
       heygenKnowledgeId: avatar.heygenKnowledgeId,
       elevenlabsVoiceId: avatar.elevenlabsVoiceId,
+      liveAvatarVoiceId: (avatar as any).liveAvatarVoiceId || null,
       useHeygenVoiceForLive: avatar.useHeygenVoiceForLive || false,
       voiceRate: avatar.voiceRate || "1.0",
       languageCode: avatar.languageCode || "en-US",
@@ -290,6 +300,7 @@ export function AvatarManager() {
     }
 
     // Clean data - trim all text fields and convert empty strings to null for optional fields
+    // Sync deprecated useHeygenVoiceForInteractive with new interactiveVoiceSource for backward compatibility
     const cleanedData = {
       ...formData,
       id: formData.id.trim(),
@@ -298,7 +309,8 @@ export function AvatarManager() {
       personalityPrompt: formData.personalityPrompt.trim(),
       profileImageUrl: formData.profileImageUrl?.trim() || null,
       streamingPlatform: formData.streamingPlatform || "liveavatar",
-      useHeygenVoiceForInteractive: formData.useHeygenVoiceForInteractive || false,
+      interactiveVoiceSource: formData.interactiveVoiceSource || "elevenlabs",
+      useHeygenVoiceForInteractive: formData.interactiveVoiceSource === "heygen", // Sync deprecated flag
       liveAvatarId: formData.liveAvatarId?.trim() || null,
       heygenAvatarId: formData.heygenAvatarId?.trim() || null,
       heygenVoiceId: formData.heygenVoiceId?.trim() || null,
@@ -306,6 +318,7 @@ export function AvatarManager() {
       heygenVideoVoiceId: formData.heygenVideoVoiceId?.trim() || null,
       heygenKnowledgeId: formData.heygenKnowledgeId?.trim() || null,
       elevenlabsVoiceId: formData.elevenlabsVoiceId?.trim() || null,
+      liveAvatarVoiceId: formData.liveAvatarVoiceId?.trim() || null,
       voiceRate: formData.voiceRate?.trim() || null,
       languageCode: formData.languageCode?.trim() || "en-US",
       elevenLabsLanguageCode: formData.elevenLabsLanguageCode?.trim() || "en",
@@ -600,31 +613,50 @@ export function AvatarManager() {
                   )}
                 </div>
 
-                {/* Voice Source Toggle for Interactive */}
+                {/* Voice Source Selection for Interactive */}
                 <div className="p-3 rounded-md bg-background/50 border">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <span className="text-xs font-medium">Interactive Voice Source</span>
-                      <p className="text-xs text-muted-foreground">
-                        {formData.useHeygenVoiceForInteractive 
-                          ? "Using HeyGen's built-in voice for chat" 
-                          : "Using ElevenLabs voice for chat"}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs ${!formData.useHeygenVoiceForInteractive ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>ElevenLabs</span>
-                      <Switch
-                        checked={formData.useHeygenVoiceForInteractive || false}
-                        onCheckedChange={(checked) => setFormData({ ...formData, useHeygenVoiceForInteractive: checked })}
-                        data-testid="switch-interactive-voice-source"
-                      />
-                      <span className={`text-xs ${formData.useHeygenVoiceForInteractive ? "text-blue-400 font-medium" : "text-muted-foreground"}`}>HeyGen</span>
-                    </div>
+                  <div className="mb-3">
+                    <span className="text-xs font-medium">Interactive Voice Source</span>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.interactiveVoiceSource === "elevenlabs" && "Using ElevenLabs voice for chat"}
+                      {formData.interactiveVoiceSource === "heygen" && "Using HeyGen's built-in voice for chat"}
+                      {formData.interactiveVoiceSource === "liveavatar" && "Using LiveAvatar's built-in voice for chat"}
+                    </p>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    {/* ElevenLabs Voice ID - for interactive when using ElevenLabs */}
-                    <div className={`space-y-2 transition-opacity ${formData.useHeygenVoiceForInteractive ? 'opacity-40' : ''}`}>
+                  <RadioGroup
+                    value={formData.interactiveVoiceSource || "elevenlabs"}
+                    onValueChange={(value) => setFormData({ 
+                      ...formData, 
+                      interactiveVoiceSource: value as "elevenlabs" | "heygen" | "liveavatar",
+                      useHeygenVoiceForInteractive: value === "heygen"
+                    })}
+                    className="flex gap-4 mb-3"
+                    data-testid="radio-interactive-voice-source"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="elevenlabs" id="voice-elevenlabs" data-testid="radio-voice-elevenlabs" />
+                      <Label htmlFor="voice-elevenlabs" className={`text-xs cursor-pointer ${formData.interactiveVoiceSource === "elevenlabs" ? "text-blue-400 font-medium" : ""}`}>
+                        ElevenLabs
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="heygen" id="voice-heygen" data-testid="radio-voice-heygen" />
+                      <Label htmlFor="voice-heygen" className={`text-xs cursor-pointer ${formData.interactiveVoiceSource === "heygen" ? "text-blue-400 font-medium" : ""}`}>
+                        HeyGen
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="liveavatar" id="voice-liveavatar" data-testid="radio-voice-liveavatar" />
+                      <Label htmlFor="voice-liveavatar" className={`text-xs cursor-pointer ${formData.interactiveVoiceSource === "liveavatar" ? "text-blue-400 font-medium" : ""}`}>
+                        LiveAvatar
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  
+                  <div className="grid grid-cols-3 gap-3">
+                    {/* ElevenLabs Voice ID */}
+                    <div className={`space-y-2 transition-opacity ${formData.interactiveVoiceSource !== "elevenlabs" ? 'opacity-40' : ''}`}>
                       <Label htmlFor="elevenlabsVoiceIdLive" className="text-xs">ElevenLabs Voice ID</Label>
                       <Input
                         id="elevenlabsVoiceIdLive"
@@ -632,13 +664,13 @@ export function AvatarManager() {
                         onChange={(e) => setFormData({ ...formData, elevenlabsVoiceId: e.target.value || null })}
                         placeholder="ElevenLabs voice ID"
                         className="text-sm"
-                        disabled={formData.useHeygenVoiceForInteractive}
+                        disabled={formData.interactiveVoiceSource !== "elevenlabs"}
                         data-testid="input-elevenlabs-voice-id-live"
                       />
                     </div>
                     
-                    {/* HeyGen Voice ID - for interactive when using HeyGen */}
-                    <div className={`space-y-2 transition-opacity ${!formData.useHeygenVoiceForInteractive ? 'opacity-40' : ''}`}>
+                    {/* HeyGen Voice ID */}
+                    <div className={`space-y-2 transition-opacity ${formData.interactiveVoiceSource !== "heygen" ? 'opacity-40' : ''}`}>
                       <Label htmlFor="heygenVoiceId" className="text-xs">HeyGen Voice ID</Label>
                       <Input
                         id="heygenVoiceId"
@@ -646,8 +678,22 @@ export function AvatarManager() {
                         onChange={(e) => setFormData({ ...formData, heygenVoiceId: e.target.value || null })}
                         placeholder="HeyGen voice ID"
                         className="text-sm"
-                        disabled={!formData.useHeygenVoiceForInteractive}
+                        disabled={formData.interactiveVoiceSource !== "heygen"}
                         data-testid="input-heygen-voice-id"
+                      />
+                    </div>
+                    
+                    {/* LiveAvatar Voice ID */}
+                    <div className={`space-y-2 transition-opacity ${formData.interactiveVoiceSource !== "liveavatar" ? 'opacity-40' : ''}`}>
+                      <Label htmlFor="liveAvatarVoiceId" className="text-xs">LiveAvatar Voice ID</Label>
+                      <Input
+                        id="liveAvatarVoiceId"
+                        value={formData.liveAvatarVoiceId || ""}
+                        onChange={(e) => setFormData({ ...formData, liveAvatarVoiceId: e.target.value || null })}
+                        placeholder="LiveAvatar voice ID"
+                        className="text-sm"
+                        disabled={formData.interactiveVoiceSource !== "liveavatar"}
+                        data-testid="input-live-avatar-voice-id"
                       />
                     </div>
                   </div>
