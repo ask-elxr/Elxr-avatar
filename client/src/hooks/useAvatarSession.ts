@@ -1649,9 +1649,11 @@ export function useAvatarSession({
         videoRef.current.setAttribute('playsinline', 'true');
         videoRef.current.setAttribute('webkit-playsinline', 'true');
         // Start a muted play to unlock, then immediately pause
+        // Add timeout to prevent hanging if play() never resolves (e.g., no video source)
         const playPromise = videoRef.current.play();
         if (playPromise !== undefined) {
-          await playPromise.catch(() => {});
+          const timeoutPromise = new Promise<void>((resolve) => setTimeout(resolve, 500));
+          await Promise.race([playPromise.catch(() => {}), timeoutPromise]);
         }
         videoRef.current.pause();
         console.log("📱 Video element unlocked for mobile");
@@ -1659,8 +1661,10 @@ export function useAvatarSession({
         console.warn("📱 Video unlock failed:", e);
       }
     }
-    // Also unlock audio
-    await unlockMobileAudio().catch(() => {});
+    // Also unlock audio (with timeout to prevent hanging)
+    const unlockPromise = unlockMobileAudio().catch(() => {});
+    const unlockTimeout = new Promise<void>((resolve) => setTimeout(resolve, 500));
+    await Promise.race([unlockPromise, unlockTimeout]);
     
     // CRITICAL: Clear any pending idle timeout to prevent it from firing in audio mode
     // and calling stopHeyGenSession which would clear sessionIdRef
