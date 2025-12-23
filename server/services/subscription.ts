@@ -390,6 +390,25 @@ class SubscriptionService {
       throw new Error(`Plan ${planSlug} not found`);
     }
 
+    // Ensure user exists in database (handles anonymous sessions)
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    
+    if (!existingUser) {
+      // Create user record for anonymous session
+      await db.insert(users).values({
+        id: userId,
+        role: "user",
+        currentPlanSlug: "free",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      logger.info({ userId }, "Created user record for anonymous session");
+    }
+
     const existingSubscription = await this.getUserSubscription(userId);
     
     const now = new Date();
