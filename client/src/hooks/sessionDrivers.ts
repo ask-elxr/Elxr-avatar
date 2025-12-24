@@ -838,15 +838,30 @@ export class HeyGenStreamingDriver implements SessionDriver {
                          this.config.avatarConfig?.liveAvatarId ||
                          this.config.avatarId;
       
-      console.log("📋 Starting HeyGen Streaming avatar:", avatarName);
+      // Get HeyGen voice ID for streaming
+      const heygenVoiceId = this.config.avatarConfig?.heygenVoiceId;
       
-      // Start the avatar session
-      await this.streamingAvatar.createStartAvatar({
+      console.log("📋 Starting HeyGen Streaming avatar:", avatarName);
+      console.log("🔊 Using HeyGen voice ID:", heygenVoiceId || "default");
+      
+      // Build start request with optional voice settings
+      const startRequest: any = {
         quality: AvatarQuality.High,
         avatarName: avatarName,
         language: this.languageCode,
         disableIdleTimeout: true,
-      });
+      };
+      
+      // Only add voice settings if we have a valid HeyGen voice ID
+      if (heygenVoiceId) {
+        startRequest.voice = {
+          voiceId: heygenVoiceId,
+          rate: 1.0,
+        };
+      }
+      
+      // Start the avatar session
+      await this.streamingAvatar.createStartAvatar(startRequest);
       
       console.log("✅ HeyGen Streaming avatar session started");
       
