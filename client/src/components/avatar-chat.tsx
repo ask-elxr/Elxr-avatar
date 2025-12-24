@@ -51,6 +51,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean | null>(null);
   const [requestingMicPermission, setRequestingMicPermission] = useState(false);
   const [sessionStarting, setSessionStarting] = useState(false); // Track if session start was initiated (prevents black screen)
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false); // Track if loading has exceeded timeout
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   const [showAvatarSwitcher, setShowAvatarSwitcher] = useState(false);
@@ -262,8 +263,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   useEffect(() => {
     if (sessionActive || showReconnect) {
       setSessionStarting(false);
+      setLoadingTimedOut(false); // Reset timeout flag when session starts or shows reconnect
     }
   }, [sessionActive, showReconnect]);
+
+  // Loading timeout: If loading takes too long in video mode, force show reconnect
+  useEffect(() => {
+    if (sessionStarting && !audioOnly) {
+      const timeoutId = setTimeout(() => {
+        console.log("⏰ Loading timeout reached (30s) - forcing reconnect screen");
+        setLoadingTimedOut(true);
+      }, 30000);
+      return () => clearTimeout(timeoutId);
+    }
+    return undefined;
+  }, [sessionStarting, audioOnly]);
   
   // Reset Start button when session ends
   const prevSessionActiveRef = useRef(sessionActive);
@@ -969,7 +983,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
         {/* Loading Overlay - shows immediately when Start Chat is clicked or during loading */}
         {/* Keep overlay visible until video is actually ready (videoReady) in video mode, or session is active in audio mode */}
-        {!showReconnect && (isLoading || isModeSwitching || (sessionStarting && !sessionActive) || (!audioOnly && !videoReady && sessionActive)) && (
+        {/* Hide if showReconnect or loadingTimedOut is true (will show reconnect screen instead) */}
+        {!showReconnect && !loadingTimedOut && (isLoading || isModeSwitching || (sessionStarting && !sessionActive) || (!audioOnly && !videoReady && sessionActive)) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
             {/* Always show avatar placeholder for visual feedback */}
             <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
@@ -986,26 +1001,30 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </div>
         )}
 
-        {/* Reconnect Screen */}
-        {showReconnect && (
+        {/* Reconnect Screen - shows on disconnect or loading timeout */}
+        {(showReconnect || loadingTimedOut) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-black z-20">
-            {audioOnly && !heygenSessionActive && <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />}
+            <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="reconnect-placeholder" />
+            {loadingTimedOut && !showReconnect && (
+              <p className="text-white/70 text-sm text-center max-w-xs">
+                Taking longer than expected. Please try again.
+              </p>
+            )}
             <Button
               onClick={async () => {
+                setLoadingTimedOut(false);
+                setSessionStarting(false);
+                setShowChatButton(true);
                 try {
-                  await reconnect();
-                } catch (error: any) {
-                  toast({
-                    variant: "destructive",
-                    title: "Cannot reconnect",
-                    description: error.message || "Failed to reconnect",
-                  });
+                  await endSession();
+                } catch (e) {
+                  // Ignore errors when ending stale session
                 }
               }}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-3 font-semibold rounded-full shadow-lg"
               data-testid="button-reconnect"
             >
-              Reconnect
+              {loadingTimedOut ? "Try Again" : "Reconnect"}
             </Button>
           </div>
         )}
