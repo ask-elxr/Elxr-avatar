@@ -968,16 +968,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         )}
 
         {/* Loading Overlay - shows immediately when Start Chat is clicked or during loading */}
-        {(isLoading || isModeSwitching || (sessionStarting && !sessionActive)) && !showReconnect && !heygenSessionActive && (
+        {/* Keep overlay visible until video is actually ready (videoReady) in video mode, or session is active in audio mode */}
+        {!showReconnect && (isLoading || isModeSwitching || (sessionStarting && !sessionActive) || (!audioOnly && !videoReady && sessionActive)) && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
-            {audioOnly && !isModeSwitching ? (
-              <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
-            ) : (
-              <LoadingSpinner size="md" />
-            )}
+            {/* Always show avatar placeholder for visual feedback */}
+            <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
             {isModeSwitching && (
               <p className="text-white/80 mt-4 text-sm">
                 Switching to {audioOnly ? 'audio' : 'video'} mode...
+              </p>
+            )}
+            {!audioOnly && !isModeSwitching && (
+              <p className="text-white/60 text-xs mt-2">
+                Loading video avatar...
               </p>
             )}
           </div>
