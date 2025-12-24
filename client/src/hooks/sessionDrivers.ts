@@ -800,17 +800,48 @@ export class HeyGenStreamingDriver implements SessionDriver {
       this.streamingAvatar = new StreamingAvatar({ token });
       
       // Set up event listeners
-      this.streamingAvatar.on(StreamingEvents.STREAM_READY, (event: any) => {
+      this.streamingAvatar.on(StreamingEvents.STREAM_READY, async (event: any) => {
         console.log("🎬 HeyGen STREAM_READY event received");
         this.mediaStream = event.detail;
         
-        // Attach stream to video element
+        // Attach stream to video element with proper audio handling
         if (this.config.videoRef.current && this.mediaStream) {
-          this.config.videoRef.current.srcObject = this.mediaStream;
-          this.config.videoRef.current.onloadedmetadata = () => {
-            this.config.videoRef.current?.play().catch(err => {
-              console.warn("⚠️ Video autoplay prevented:", err);
-            });
+          const videoEl = this.config.videoRef.current;
+          videoEl.srcObject = this.mediaStream;
+          
+          // Set webkit-specific attributes for mobile
+          videoEl.setAttribute('webkit-playsinline', 'true');
+          videoEl.setAttribute('x5-playsinline', 'true');
+          videoEl.setAttribute('playsinline', 'true');
+          
+          // Ensure audio is enabled
+          videoEl.muted = false;
+          videoEl.volume = 1.0;
+          
+          videoEl.onloadedmetadata = async () => {
+            try {
+              // Try to play with audio first
+              videoEl.muted = false;
+              await videoEl.play();
+              console.log("✅ Video playing with audio");
+            } catch (err: any) {
+              console.warn("⚠️ Video autoplay with audio prevented:", err?.message || err);
+              
+              // Strategy: Play muted first, then unmute
+              try {
+                videoEl.muted = true;
+                await videoEl.play();
+                console.log("✅ Video playing muted, attempting unmute...");
+                
+                // Unmute after short delay
+                setTimeout(() => {
+                  videoEl.muted = false;
+                  console.log("🔊 Video unmuted");
+                }, 300);
+              } catch (mutedError) {
+                console.error("❌ Video play failed even muted:", mutedError);
+              }
+            }
           };
           console.log("✅ Video stream attached");
           this.config.onStreamReady?.();
@@ -913,6 +944,12 @@ export class HeyGenStreamingDriver implements SessionDriver {
     }
 
     try {
+      // Ensure video is unmuted before speaking - audio comes through video stream
+      if (this.config.videoRef.current) {
+        this.config.videoRef.current.muted = false;
+        this.config.videoRef.current.volume = 1.0;
+      }
+      
       console.log(`🗣️ Speaking via HeyGen avatar: "${text.substring(0, 50)}..."`);
       // Use HeyGen's built-in TTS via the speak method
       await this.streamingAvatar.speak({ text });
