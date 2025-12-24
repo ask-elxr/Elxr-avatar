@@ -427,8 +427,8 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
           },
         ],
         dimension: {
-          width: 1280,
-          height: 720,
+          width: 1920,
+          height: 1080,
         },
         test: false,
         caption: false,

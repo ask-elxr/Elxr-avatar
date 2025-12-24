@@ -280,8 +280,8 @@ export class VideoGenerationService {
           },
         ],
         dimension: {
-          width: 1280,
-          height: 720,
+          width: 1920,
+          height: 1080,
         },
         test: useTestMode, // Use test mode for Instant Avatars, production for public avatars
         caption: false,
