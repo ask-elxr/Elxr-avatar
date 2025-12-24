@@ -39,6 +39,18 @@ export function AudioVideoToggle({
   }
   
   if (onlyVideo) {
+    // If video-only mode but currently in audio mode (fallback due to error)
+    if (!isVideoMode) {
+      return (
+        <div 
+          className="inline-flex items-center bg-amber-600/60 backdrop-blur-sm rounded-full px-4 py-2 border border-amber-400/40"
+          data-testid="audio-video-toggle"
+        >
+          <Volume2 className="w-4 h-4 text-white mr-2" />
+          <span className="text-sm font-medium text-white">Audio Fallback</span>
+        </div>
+      );
+    }
     return (
       <div 
         className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20"
