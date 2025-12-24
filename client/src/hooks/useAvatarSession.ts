@@ -929,6 +929,11 @@ export function useAvatarSession({
     console.log(`Starting LiveAvatar session${skipGreeting ? ' (mode switch - no greeting)' : ' (fresh start)'}`);
     setIsLoading(true);
     
+    // CRITICAL: Reset intentional stop flag when starting a new session
+    // This ensures voice recognition can start after the greeting
+    intentionalStopRef.current = false;
+    recognitionIntentionalStopRef.current = false;
+    
     try {
       const avatarConfigResponse = await fetch(`/api/avatar/config/${activeAvatarId}`);
       if (!avatarConfigResponse.ok) {
