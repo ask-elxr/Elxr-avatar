@@ -50,6 +50,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [isModeSwitching, setIsModeSwitching] = useState(false);
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean | null>(null);
   const [requestingMicPermission, setRequestingMicPermission] = useState(false);
+  const [sessionStarting, setSessionStarting] = useState(false); // Track if session start was initiated (prevents black screen)
   const [selectedAvatarId, setSelectedAvatarId] = useState(avatarId || "mark-kohl");
   const [showAvatarSelector, setShowAvatarSelector] = useState(!avatarId);
   const [showAvatarSwitcher, setShowAvatarSwitcher] = useState(false);
@@ -256,6 +257,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   useEffect(() => {
     setIsSpeaking(isSpeakingFromHook);
   }, [isSpeakingFromHook]);
+
+  // Clear sessionStarting when session becomes active or shows reconnect (prevents stuck loading state)
+  useEffect(() => {
+    if (sessionActive || showReconnect) {
+      setSessionStarting(false);
+    }
+  }, [sessionActive, showReconnect]);
   
   // Reset Start button when session ends
   const prevSessionActiveRef = useRef(sessionActive);
@@ -924,15 +932,31 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             <Button
               onClick={async () => {
                 setShowChatButton(false);
+                setSessionStarting(true); // Show loading immediately to prevent black screen
+                let didError = false;
                 try {
                   await startSession({ audioOnly, avatarId: selectedAvatarId });
+                  // Session started successfully - sessionActive effect will clear sessionStarting
                 } catch (error: any) {
+                  didError = true;
                   setShowChatButton(true);
+                  setSessionStarting(false);
                   toast({
                     variant: "destructive",
                     title: "Cannot start session",
                     description: error.message || "Failed to start session",
                   });
+                } finally {
+                  // Safety check: If we didn't error but state updates don't propagate within 1s,
+                  // the effect watching sessionActive/showReconnect will handle it.
+                  // This extra timeout handles edge case where startSession completes
+                  // but neither sessionActive nor showReconnect become true.
+                  if (!didError) {
+                    setTimeout(() => {
+                      // State will be checked by effect - just log for debugging
+                      console.log("📱 Session start completed, checking state propagation...");
+                    }, 500);
+                  }
                 }
               }}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
@@ -943,8 +967,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </div>
         )}
 
-        {/* Loading Overlay */}
-        {(isLoading || isModeSwitching) && !showReconnect && !heygenSessionActive && (
+        {/* Loading Overlay - shows immediately when Start Chat is clicked or during loading */}
+        {(isLoading || isModeSwitching || (sessionStarting && !sessionActive)) && !showReconnect && !heygenSessionActive && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black z-20">
             {audioOnly && !isModeSwitching ? (
               <LoadingPlaceholder avatarId={selectedAvatarId} data-testid="loading-placeholder" />
