@@ -177,6 +177,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { timeout: 15000, errorThresholdPercentage: 50 },
   );
 
+  // Alternative LiveAvatar token endpoint using /app/token (like the website uses)
+  // This may work better for animated avatars that fail with the standard endpoint
+  const liveAvatarAppTokenBreaker = wrapServiceCall(
+    async (apiKey: string, config: { 
+      avatarId: string; 
+      voiceId?: string; 
+      contextId?: string;
+      language?: string;
+    }) => {
+      const requestBody = {
+        avatar_id: config.avatarId,
+        voice_id: config.voiceId,
+        context_id: config.contextId,
+        language: config.language || "en",
+      };
+
+      logger.info({
+        service: 'liveavatar',
+        operation: 'create_app_token',
+        avatarId: config.avatarId,
+        voiceId: config.voiceId ? `${config.voiceId.substring(0, 8)}...` : 'none',
+        contextId: config.contextId ? `${config.contextId.substring(0, 8)}...` : 'none',
+        endpoint: '/v1/sessions/app/token',
+      }, 'Trying LiveAvatar /app/token endpoint (website-style)');
+      
+      const response = await fetch(
+        "https://api.liveavatar.com/v1/sessions/app/token",
+        {
+          method: "POST",
+          headers: {
+            "X-API-KEY": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(requestBody),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        
+        logger.error({
+          service: 'liveavatar',
+          operation: 'create_app_token',
+          httpStatus: response.status,
+          statusText: response.statusText,
+          errorBody: errorText,
+          url: response.url,
+        }, 'LiveAvatar /app/token endpoint failed');
+
+        throw new Error(
+          `LiveAvatar /app/token error: ${response.status} ${response.statusText} - ${errorText}`,
+        );
+      }
+
+      const responseData = await response.json();
+      
+      logger.info({
+        service: 'liveavatar',
+        operation: 'create_app_token',
+        sessionId: responseData?.data?.session_id,
+        hasToken: !!responseData?.data?.token || !!responseData?.data?.session_token,
+        availableFields: responseData?.data ? Object.keys(responseData.data) : [],
+      }, 'LiveAvatar /app/token succeeded');
+      
+      return responseData;
+    },
+    "liveavatar-app",
+    { timeout: 15000, errorThresholdPercentage: 50 },
+  );
+
   // Auth middleware
   await setupAuth(app);
 
@@ -786,6 +856,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, "Error creating LiveAvatar session token");
       res.status(500).json({
         error: "Failed to create LiveAvatar session token",
+      });
+    }
+  });
+
+  // Test endpoint: Try the /app/token endpoint like the LiveAvatar website uses
+  // This may work better for animated avatars that fail with the standard /sessions/token endpoint
+  app.post("/api/liveavatar/app-token-test", rateLimitMiddleware(10, 60000), async (req, res) => {
+    const log = logger.child({ service: "liveavatar", operation: "appTokenTest" });
+
+    try {
+      const { avatarId, voiceId, contextId } = req.body;
+
+      if (!avatarId) {
+        return res.status(400).json({ error: "avatarId is required" });
+      }
+
+      const apiKey = process.env.LIVEAVATAR_API_KEY;
+      
+      if (!apiKey) {
+        log.error("LiveAvatar API key not configured");
+        return res.status(500).json({
+          error: "LiveAvatar API key not configured",
+        });
+      }
+
+      log.info({ 
+        avatarId,
+        voiceId: voiceId ? `${voiceId.substring(0, 8)}...` : 'none',
+        contextId: contextId ? `${contextId.substring(0, 8)}...` : 'none',
+      }, "Testing LiveAvatar /app/token endpoint");
+
+      const result = await liveAvatarAppTokenBreaker.execute(apiKey, {
+        avatarId,
+        voiceId,
+        contextId,
+        language: "en",
+      });
+
+      log.info({
+        success: true,
+        sessionId: result?.data?.session_id,
+        availableFields: result?.data ? Object.keys(result.data) : [],
+      }, "LiveAvatar /app/token test succeeded");
+
+      res.json({
+        success: true,
+        message: "/app/token endpoint worked!",
+        data: result,
+      });
+    } catch (error: any) {
+      log.error({
+        errorMessage: error.message,
+        errorStack: error.stack,
+      }, "LiveAvatar /app/token test failed");
+      
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        hint: "The /app/token endpoint may require website authentication, not just API key",
       });
     }
   });
