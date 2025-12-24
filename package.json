@@ -15,7 +15,7 @@
     "@elevenlabs/react": "^0.12.1",
     "@google-cloud/storage": "^7.17.0",
     "@google/genai": "^1.16.0",
-    "@heygen/liveavatar-web-sdk": "^0.0.9",
+    "@heygen/liveavatar-web-sdk": "^0.0.10",
     "@heygen/streaming-avatar": "^2.1.0",
     "@hookform/resolvers": "^3.10.0",
     "@jridgewell/trace-mapping": "^0.3.25",
