@@ -404,9 +404,15 @@ export function useAvatarSession({
   }, []);
 
   // Handle ElevenLabs STT transcript (same flow as Web Speech API)
-  const handleElevenLabsSttTranscript = useCallback((transcript: string, isFinal: boolean) => {
+  const handleElevenLabsSttTranscript = useCallback((transcript: string | undefined | null, isFinal: boolean) => {
     if (!isFinal) {
       // Partial transcript - could show in UI if desired
+      return;
+    }
+    
+    // Guard against undefined/null transcript
+    if (transcript == null) {
+      console.log("🎤 ElevenLabs STT received null/undefined transcript, ignoring");
       return;
     }
     
@@ -530,10 +536,14 @@ export function useAvatarSession({
             break;
             
           case 'partial':
+            if (message.text) {
+              console.log("🎤 ElevenLabs STT partial:", message.text);
+            }
             handleElevenLabsSttTranscript(message.text, false);
             break;
             
           case 'final':
+            console.log("🎤 ElevenLabs STT transcription:", message.text || "(empty)");
             handleElevenLabsSttTranscript(message.text, true);
             break;
             
@@ -1187,7 +1197,11 @@ export function useAvatarSession({
     try {
       setIsLoading(true);
       
+      // Reset session state for clean start
+      hasStartedRef.current = false;
       reconnectAttemptsRef.current = 0;
+      recognitionIntentionalStopRef.current = false;
+      
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
@@ -1521,6 +1535,9 @@ export function useAvatarSession({
     }
     // Always reset microphone status to stopped, even if recognition was never initialized
     setMicrophoneStatus('stopped');
+    
+    // Stop ElevenLabs STT as well
+    stopElevenLabsSTT();
 
     if (sessionDriverRef.current) {
       try {
@@ -1569,7 +1586,7 @@ export function useAvatarSession({
     onSessionActiveChange?.(false);
     
     endSessionOnServer();
-  }, [videoRef, onSessionActiveChange]);
+  }, [videoRef, onSessionActiveChange, stopElevenLabsSTT]);
 
   const endSession = useCallback(async () => {
     if (abortControllerRef.current) {
@@ -1600,6 +1617,9 @@ export function useAvatarSession({
     }
     // Always reset microphone status to stopped, even if recognition was never initialized
     setMicrophoneStatus('stopped');
+    
+    // Stop ElevenLabs STT as well
+    stopElevenLabsSTT();
 
     if (sessionDriverRef.current) {
       intentionalStopRef.current = true;
@@ -1634,7 +1654,7 @@ export function useAvatarSession({
     onSessionActiveChange?.(false);
     
     await endSessionOnServer();
-  }, [videoRef, onSessionActiveChange, clearIdleTimeout]);
+  }, [videoRef, onSessionActiveChange, clearIdleTimeout, stopElevenLabsSTT]);
 
   const reconnect = useCallback(async () => {
     setShowReconnect(false);

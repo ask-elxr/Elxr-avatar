@@ -1,0 +1,334 @@
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG📱 Tab became visible - resuming audio contexts...
+LOG🎤 Restarting voice recognition after tab visibility change
+LOG🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+LOG🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+LOG🎤 ElevenLabs STT state check: [object Object]
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+LOG📱 Microphone warmed up successfully
+LOG🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+LOG🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+LOG🎤 ElevenLabs STT state check: [object Object]
+LOG⚠️ ElevenLabs STT in incomplete/stale state - cleaning up and restarting
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🗣️ Audio-only greeting: Hey! I'm Thad. Good to connect with you. Feel free to jump in anytime - just start talking. What's on your mind about money or life?
+LOG🎤 Fetching greeting audio from ElevenLabs...
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🔊 Acknowledgment pre-cache triggered for: thad (already cached)
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+LOG🎤 ElevenLabs STT ready - starting microphone
+LOG🎤 Requesting microphone access for ElevenLabs STT...
+LOG🔊 Acknowledgment audio preloaded for: thad
+LOG🎤 ElevenLabs STT microphone listening
+LOG🎤 Greeting audio response status: 200
+LOG🖼️ Render state: [object Object]
+LOG🎤 Greeting audio blob size: 113729 bytes, type: audio/mpeg
+LOG🎤 Attempting to play greeting audio...
+ERROR🎤 Greeting audio play() FAILED: NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+LOG🖼️ Render state: [object Object]
+LOG🎤 Greeting audio loaded - duration: 7.1053061224489795 s
+LOGInactivity timer cleared and reset
+LOG📱 Session start completed, checking state propagation...
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🎤 ElevenLabs STT voice input (final): Hey, Seb, what's going on?
+LOG📝 handleSubmitMessage called with: [object Object]
+LOG🔇 ElevenLabs STT microphone paused (processing user message)
+LOGInactivity timer cleared and reset
+LOG✅ Processing message - Request ID: 17667913007830.chfg9xgn44i
+LOGAudio-only mode: Using /api/audio endpoint
+LOG🧠 Memory settings: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOGAcknowledgment not available, proceeding...
+LOG🖼️ Render state: [object Object]
+LOG
+🎧 ═══════════════════════════════════════════════════════════════
+LOG🎧 AUDIO MODE - Thad
+LOG🎧 ═══════════════════════════════════════════════════════════════
+LOG📥 USER: "Hey, Seb, what's going on?"
+LOG📤 CLAUDE RESPONSE:
+LOG───────────────────────────────────────────────────────────────
+LOGI'm Thad. Who am I speaking with?
+LOG───────────────────────────────────────────────────────────────
+LOG📊 Response: 33 chars
+LOG🎧 ═══════════════════════════════════════════════════════════════
+LOG🔇 Acknowledgment audio stopped
+LOG🔊 Audio blob received: 28.2 KB, type: audio/mpeg
+LOG🔊 Audio element configured, volume: 1, muted: false, unlocked: false
+LOG🔊 Audio metadata loaded: duration=1.80s, volume=1
+LOG🔊 Audio playback STARTED via shared element - duration: 1.80s
+LOG🖼️ Render state: [object Object]
+LOG🔊 Audio playback ENDED successfully
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+LOG🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+LOG🎤 ElevenLabs STT state check: [object Object]
+LOG⚠️ ElevenLabs STT in incomplete/stale state - cleaning up and restarting
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🔊 Voice recognition resumed (audio-only mode - avatar finished)
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+LOG🎤 ElevenLabs STT ready - starting microphone
+LOG🎤 Requesting microphone access for ElevenLabs STT...
+LOG🎤 ElevenLabs STT microphone listening
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🎤 ElevenLabs STT voice input (final): Can you hear me?
+LOG📝 handleSubmitMessage called with: [object Object]
+LOG🔇 ElevenLabs STT microphone paused (processing user message)
+LOGInactivity timer cleared and reset
+LOG✅ Processing message - Request ID: 17667913242370.w7dtqjynjui
+LOGAudio-only mode: Using /api/audio endpoint
+LOG🧠 Memory settings: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOGAcknowledgment not available, proceeding...
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG
+🎧 ═══════════════════════════════════════════════════════════════
+LOG🎧 AUDIO MODE - Avatar
+LOG🎧 ═══════════════════════════════════════════════════════════════
+LOG📥 USER: "Can you hear me?"
+LOG📤 CLAUDE RESPONSE:
+LOG───────────────────────────────────────────────────────────────
+LOGYeah, I can hear you.
+LOG───────────────────────────────────────────────────────────────
+LOG📊 Response: 21 chars
+LOG🎧 ═══════════════════════════════════════════════════════════════
+LOG🔇 Acknowledgment audio stopped
+LOG🔊 Audio blob received: 17.2 KB, type: audio/mpeg
+LOG🔊 Audio element configured, volume: 1, muted: false, unlocked: false
+LOG🔊 Audio metadata loaded: duration=1.10s, volume=1
+LOG🔊 Audio playback STARTED via shared element - duration: 1.10s
+LOG🖼️ Render state: [object Object]
+LOG🔊 Audio playback ENDED successfully
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+LOG🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+LOG🎤 ElevenLabs STT state check: [object Object]
+LOG⚠️ ElevenLabs STT in incomplete/stale state - cleaning up and restarting
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🔊 Voice recognition resumed (audio-only mode - avatar finished)
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+LOG🎤 ElevenLabs STT ready - starting microphone
+LOG🎤 Requesting microphone access for ElevenLabs STT...
+LOG🎤 ElevenLabs STT microphone listening
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔘 Video button clicked, disabled=false, isVideoMode=false
+LOG🔄 handleModeToggle called: isVideoMode=true
+LOG🔄 Current state: audioOnly=true, sessionActive=true, isModeSwitching=false, isLoading=false
+LOG🔄 Avatar capabilities: enableVideoMode=true, enableAudioMode=true
+LOG🔄 switchTransportMode called: toVideoMode=true, newAudioOnly=false
+LOG🔄 Current state: audioOnlyRef=true, sessionActive=true, heygenSessionActive=false
+LOG🔄 Refs: sessionDriverRef exists=false, currentAvatarId=thad
+LOG🔄 Switching transport: Audio → Video
+LOG📱 Unlocking video element for mobile...
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+LOG📱 Video element unlocked for mobile
+LOG📱 Unlocking mobile audio...
+LOG🔊 Audio metadata loaded: duration=0.00s, volume=1
+ERROR🔊 Audio playback ERROR: [object Event] [object MediaError]
+LOG🔄 Checking if should start video: !newAudioOnly=true, wasAudioOnly=true
+LOG🔄 Entering video start block
+LOG🔄 Setting video element styles
+LOG🔄 Setting isLoading=true
+LOG🔄 Waiting 100ms for DOM update...
+LOG🖼️ Render state: [object Object]
+LOG🔄 Calling startHeyGenSession with avatarId=thad
+LOG🎬 startLiveAvatarSession called: avatarId=thad, skipGreeting=true
+LOG🎬 State check: audioOnlyRef=false, sessionDriverRef exists=false, heygenSessionActive=false
+LOGStarting LiveAvatar session (mode switch - no greeting)
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔍 Avatar voice config check: heygenVoiceId="9aa6620f4a1a408294130b5982086e16", elevenlabsVoiceId="MDpvXQvf5KG59Q6wtj71"
+LOG🎙️ useElevenLabsVoiceRef set to: false
+LOG🔧 Session start code version: 2024-12-07-v2
+LOG📱 Mobile detection for voice chat: true
+LOG🎬 Streaming platform: heygen
+LOG🎬 Using HeyGenStreamingDriver (older, more stable SDK)
+LOG🎬 HeyGenStreamingDriver: Using @heygen/streaming-avatar SDK for Thad
+LOG🚀 HeyGenStreamingDriver.start() called for: thad
+LOG🔑 Got HeyGen Streaming token
+LOG📋 Starting HeyGen Streaming avatar: b115a2af9a9b41f3b69d589d6f26ecef
+LOG🔊 Using HeyGen voice ID: 9aa6620f4a1a408294130b5982086e16
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎬 HeyGen STREAM_READY event received
+LOG✅ Video stream attached
+LOG🎬 LiveAvatar stream ready
+LOG🎤 HeyGen mobile voice chat active - microphone handled by SDK
+LOG⏭️ Skipping greeting - mode switch (seamless transition)
+LOG📺 Video track ready - updating videoReady state
+LOG🖼️ Render state: [object Object]
+LOG✅ HeyGen Streaming avatar session started
+LOG✅ HeyGen Streaming session started
+LOG✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+LOG🖼️ Render state: [object Object]
+LOGVideo loaded data
+LOGVideo can play
+LOG✅ Video playing with audio
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERRORError parsing ElevenLabs STT message: TypeError: undefined is not an object (evaluating 'g.trim')
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT voice input (final): I said,
+LOG📝 handleSubmitMessage called with: [object Object]
+LOG🔇 ElevenLabs STT microphone paused (processing user message)
+LOGInactivity timer cleared and reset
+LOG✅ Processing message - Request ID: 17667913714310.nasek59kb5q
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+LOG⏱️ [TIMING] API call starting...
+LOG🔍 Driver audio streaming support: NO (HeyGenStreamingDriver - using text fallback)
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG⏱️ [TIMING] API response received: 6039ms
+LOG⏱️ [TIMING] === BACKEND BREAKDOWN ===
+LOG⏱️ [TIMING] ├─ Total backend: 5881ms
+LOG⏱️ [TIMING] ├─ Data fetch (parallel): 2968ms
+LOG⏱️ [TIMING] │  ├─ PubMed: 2967ms
+LOG⏱️ [TIMING] │  ├─ Wikipedia: 993ms
+LOG⏱️ [TIMING] │  ├─ Google Search: 368ms
+LOG⏱️ [TIMING] │  └─ Knowledge (Pinecone): 512ms
+LOG⏱️ [TIMING] └─ Claude AI: 2913ms
+LOGClaude response received: I'm listening. 
+
+What did you say?...
+LOGInactivity timer cleared and reset
+LOG🗣️ SENDING TO AVATAR - Text length: 34 characters
+LOG⏱️ [TIMING] Avatar speak() starting...
+LOG🗣️ Speaking via HeyGen avatar: "I'm listening. 
+
+What did you say?..."
+LOG⏱️ [TIMING] speak() completed: 7ms
+LOG⏱️ [TIMING] === TOTAL FLOW TIME: 6050ms ===
+LOG✅ Speak completed successfully
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🗣️ Avatar started talking
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+LOGCleared speaking interval - user interrupted
+LOGResetting timer during avatar speech
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🤐 Avatar stopped talking
+LOG🎤 Avatar stopped talking, will resume voice recognition in 3500 ms
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🛑 Stopping HeyGen Streaming session...
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+LOG🌐 Loaded avatar language: en-US
+LOG🎛️ Loaded avatar capabilities: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG✅ HeyGen Streaming session stopped and resources released
+LOG🖼️ Render state: [object Object]
+ERRORUnknown DataChannel error on lossy [object Object]
+ERRORUnknown DataChannel error on reliable [object Object]
+LOG🔌 HeyGen stream disconnected
+LOG📵 Stream disconnected - intentionalStop flag: true
+LOG🖼️ Render state: [object Object]
+LOG📱 Unlocking mobile audio on user gesture...
+LOG📱 Unlocking mobile audio...
+ERROR📱 Failed to unlock mobile audio: AbortError: The operation was aborted.
+LOG🔊 Audio metadata loaded: duration=0.00s, volume=1
+ERROR🔊 Audio playback ERROR: [object Event] [object MediaError]
+LOG🖼️ Render state: [object Object]
+LOG🎤 Skip resume: intentionalStop= true isSpeaking= false
+ERROR📱 Failed to unlock mobile audio: AbortError: The operation was aborted.
+LOG🖼️ Render state: [object Object]
+LOGVideo mode: UI ready, HeyGen will start on first message
+LOG📱 Warming up microphone...
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
