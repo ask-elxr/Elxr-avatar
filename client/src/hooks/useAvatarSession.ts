@@ -1214,13 +1214,14 @@ export function useAvatarSession({
       currentAvatarIdRef.current = activeAvatarId;
 
       // 🔓 MOBILE FIX: Unlock audio on user gesture (completely non-blocking)
-      // This primes a shared audio element that will be reused for all playback
-      try {
-        console.log("📱 Unlocking mobile audio on user gesture...");
-        Promise.resolve(unlockMobileAudio()).catch(err => console.warn("📱 Audio unlock failed:", err));
-      } catch (error) {
-        console.warn("📱 Audio unlock sync failed:", error);
-      }
+      // TEMPORARILY DISABLED for debugging - Safari mobile issue
+      // try {
+      //   console.log("📱 Unlocking mobile audio on user gesture...");
+      //   Promise.resolve(unlockMobileAudio()).catch(err => console.warn("📱 Audio unlock failed:", err));
+      // } catch (error) {
+      //   console.warn("📱 Audio unlock sync failed:", error);
+      // }
+      console.log("📱 Audio unlock skipped for debugging");
 
       // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
       try {

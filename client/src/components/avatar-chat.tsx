@@ -945,11 +945,15 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
             <Button
               onClick={async () => {
+                console.log("📱 BUTTON CLICKED - Start Chat pressed");
                 setShowChatButton(false);
                 setSessionStarting(true); // Show loading immediately to prevent black screen
+                console.log("📱 State updated, about to call startSession");
                 let didError = false;
                 try {
+                  console.log("📱 Calling startSession now...");
                   await startSession({ audioOnly, avatarId: selectedAvatarId });
+                  console.log("📱 startSession returned successfully");
                   // Session started successfully - sessionActive effect will clear sessionStarting
                 } catch (error: any) {
                   didError = true;
