@@ -1181,7 +1181,8 @@ export function useAvatarSession({
     console.log("📱 startSession called - beginning session initialization...");
     
     // ✅ MOBILE DEFENSE: Wrap EVERYTHING in try-catch to prevent stuck loading state
-    let loadingTimeoutId: NodeJS.Timeout | null = null;
+    // Use ReturnType for browser compatibility
+    let loadingTimeoutId: ReturnType<typeof setTimeout> | null = null;
     
     try {
       setIsLoading(true);
