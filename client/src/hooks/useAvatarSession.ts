@@ -1178,14 +1178,7 @@ export function useAvatarSession({
   const startHeyGenSession = startLiveAvatarSession;
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
-    // 🔓 MOBILE FIX: Unlock audio IMMEDIATELY on user gesture - MUST be first!
-    // This primes a shared audio element that will be reused for all playback
-    try {
-      console.log("📱 Unlocking mobile audio on user gesture...");
-      await unlockMobileAudio();
-    } catch (error) {
-      console.warn("📱 Audio unlock failed:", error);
-    }
+    console.log("📱 startSession called - beginning session initialization...");
     
     setIsLoading(true);
     
@@ -1214,8 +1207,18 @@ export function useAvatarSession({
     const activeAvatarId = avatarId || currentAvatarIdRef.current;
     currentAvatarIdRef.current = activeAvatarId;
 
+    // 🔓 MOBILE FIX: Unlock audio on user gesture (non-blocking)
+    // This primes a shared audio element that will be reused for all playback
+    try {
+      console.log("📱 Unlocking mobile audio on user gesture...");
+      unlockMobileAudio().catch(err => console.warn("📱 Audio unlock failed:", err));
+    } catch (error) {
+      console.warn("📱 Audio unlock sync failed:", error);
+    }
+
     // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
     try {
+      console.log("📱 Ending previous sessions...");
       await fetch("/api/session/end-all", {
         method: "POST",
         headers: {
@@ -1225,6 +1228,7 @@ export function useAvatarSession({
           userId,
         }),
       });
+      console.log("📱 Previous sessions ended");
     } catch (error) {
       console.warn("Failed to end previous sessions:", error);
       // Continue anyway - this is just cleanup
@@ -1232,6 +1236,7 @@ export function useAvatarSession({
 
     // Register session with server (for both audio and video modes)
     try {
+      console.log("📱 Registering session with server...");
       const response = await fetch("/api/session/start", {
         method: "POST",
         headers: {
@@ -1255,6 +1260,7 @@ export function useAvatarSession({
 
       const data = await response.json();
       sessionIdRef.current = data.sessionId;
+      console.log("📱 Session registered successfully:", data.sessionId);
     } catch (error: any) {
       console.error("Error registering session:", error);
       if (loadingTimeoutRef.current) {
@@ -1286,18 +1292,27 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true)
     
-    // ✅ MOBILE: Warm up microphone (audio unlock already done at start of function)
+    // ✅ MOBILE: Warm up microphone in background (non-blocking with timeout)
     const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
-    if (isMobile) {
-      try {
-        console.log("📱 Warming up microphone...");
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        await new Promise(resolve => setTimeout(resolve, 300));
-        stream.getTracks().forEach(track => track.stop());
-        console.log("📱 Microphone warmed up successfully");
-      } catch (error) {
-        console.warn("📱 Microphone warm-up failed:", error);
-      }
+    if (isMobile && navigator.mediaDevices?.getUserMedia) {
+      // Non-blocking microphone warm-up with timeout
+      const warmupMic = async () => {
+        try {
+          console.log("📱 Warming up microphone (background)...");
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error("Microphone warmup timeout")), 3000)
+          );
+          const micPromise = navigator.mediaDevices.getUserMedia({ audio: true });
+          const stream = await Promise.race([micPromise, timeoutPromise]);
+          await new Promise(resolve => setTimeout(resolve, 300));
+          (stream as MediaStream).getTracks().forEach(track => track.stop());
+          console.log("📱 Microphone warmed up successfully");
+        } catch (error) {
+          console.warn("📱 Microphone warm-up failed (non-critical):", error);
+        }
+      };
+      // Fire and forget - don't block session start
+      warmupMic();
     }
     
     // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
