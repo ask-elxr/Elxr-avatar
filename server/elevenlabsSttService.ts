@@ -174,24 +174,35 @@ async function startSTTStream(session: STTSession): Promise<void> {
           } else if (msgType === 'partial_transcript' || msgType === 'transcript') {
             // Handle partial transcripts (speech_final=false) vs final (speech_final=true)
             const isFinal = event.speech_final === true || event.is_final === true;
+            const transcriptText = event.text || '';
             if (isFinal) {
-              log.info({ sessionId: session.sessionId, text: event.text }, 'Final transcript received');
-              session.clientWs.send(JSON.stringify({
-                type: 'final',
-                text: event.text,
-              }));
+              // Only send final if there's actual text
+              if (transcriptText) {
+                log.info({ sessionId: session.sessionId, text: transcriptText }, 'Final transcript received');
+                session.clientWs.send(JSON.stringify({
+                  type: 'final',
+                  text: transcriptText,
+                }));
+              }
             } else {
-              session.clientWs.send(JSON.stringify({
-                type: 'partial',
-                text: event.text,
-              }));
+              // Only send partial if there's actual text
+              if (transcriptText) {
+                session.clientWs.send(JSON.stringify({
+                  type: 'partial',
+                  text: transcriptText,
+                }));
+              }
             }
           } else if (msgType === 'committed_transcript' || msgType === 'committed_transcript_with_timestamps' || msgType === 'utterance_end') {
-            log.info({ sessionId: session.sessionId, text: event.text }, 'Committed transcript received');
-            session.clientWs.send(JSON.stringify({
-              type: 'final',
-              text: event.text || event.transcript,
-            }));
+            const transcriptText = event.text || event.transcript || '';
+            log.info({ sessionId: session.sessionId, text: transcriptText }, 'Committed transcript received');
+            // Only send if there's actual text
+            if (transcriptText) {
+              session.clientWs.send(JSON.stringify({
+                type: 'final',
+                text: transcriptText,
+              }));
+            }
           } else if (msgType === 'error') {
             log.error({ sessionId: session.sessionId, error: event }, 'STT error from server');
             session.clientWs.send(JSON.stringify({
