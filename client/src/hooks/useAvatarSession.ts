@@ -143,6 +143,45 @@ export function useAvatarSession({
     elevenLabsLanguageCodeRef.current = elevenLabsLanguageCode;
   }, [elevenLabsLanguageCode]);
 
+  // Safari iOS workaround: The browser suspends JavaScript during startup
+  // Track loading start time to detect stuck states
+  const loadingStartTimeRef = useRef<number | null>(null);
+  const safariKeepaliveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // When loading starts, track time and start a keepalive for Safari
+  useEffect(() => {
+    if (isLoading) {
+      loadingStartTimeRef.current = Date.now();
+      document.title = "Loading...";
+      console.log("📱 Safari keepalive: Loading started");
+      
+      // Safari workaround: Use requestAnimationFrame loop to keep JS thread alive
+      // This prevents Safari from suspending fetch() during startup
+      let keepaliveFrame: number | null = null;
+      const keepalive = () => {
+        if (loadingStartTimeRef.current) {
+          const elapsed = Date.now() - loadingStartTimeRef.current;
+          // Update title with elapsed time for debugging
+          document.title = `Loading (${Math.floor(elapsed / 1000)}s)...`;
+        }
+        keepaliveFrame = requestAnimationFrame(keepalive);
+      };
+      keepaliveFrame = requestAnimationFrame(keepalive);
+      
+      return () => {
+        if (keepaliveFrame) {
+          cancelAnimationFrame(keepaliveFrame);
+        }
+        loadingStartTimeRef.current = null;
+      };
+    } else {
+      loadingStartTimeRef.current = null;
+      if (sessionActive) {
+        document.title = "Chat Active";
+      }
+    }
+  }, [isLoading, sessionActive]);
+
   // Handle tab visibility changes - pause session when hidden, resume when visible
   useEffect(() => {
     const handleVisibilityChange = async () => {
@@ -1189,14 +1228,12 @@ export function useAvatarSession({
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     console.log("📱 startSession called - beginning session initialization...");
-    document.title = "startSession:1";
     
     // ✅ MOBILE DEFENSE: Wrap EVERYTHING in try-catch to prevent stuck loading state
     // Use ReturnType for browser compatibility
     let loadingTimeoutId: ReturnType<typeof setTimeout> | null = null;
     
     try {
-      document.title = "startSession:2";
       setIsLoading(true);
       
       // Reset session state for clean start
@@ -1242,7 +1279,6 @@ export function useAvatarSession({
       // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
       try {
         console.log("📱 Ending previous sessions...");
-        document.title = "startSession:3-endAll";
         await fetch("/api/session/end-all", {
           method: "POST",
           headers: {
@@ -1253,17 +1289,14 @@ export function useAvatarSession({
           }),
         });
         console.log("📱 Previous sessions ended");
-        document.title = "startSession:4-endedAll";
       } catch (error) {
         console.warn("Failed to end previous sessions:", error);
-        document.title = "startSession:3-endAllErr";
         // Continue anyway - this is just cleanup
       }
 
       // Register session with server (for both audio and video modes)
       try {
         console.log("📱 Registering session with server...");
-        document.title = "startSession:5-register";
         const response = await fetch("/api/session/start", {
           method: "POST",
           headers: {
@@ -1288,7 +1321,6 @@ export function useAvatarSession({
         const data = await response.json();
         sessionIdRef.current = data.sessionId;
         console.log("📱 Session registered successfully:", data.sessionId);
-        document.title = "startSession:6-registered";
       } catch (error: any) {
         console.error("Error registering session:", error);
         if (loadingTimeoutRef.current) {
