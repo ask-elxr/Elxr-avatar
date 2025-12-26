@@ -1180,96 +1180,101 @@ export function useAvatarSession({
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     console.log("📱 startSession called - beginning session initialization...");
     
-    setIsLoading(true);
+    // ✅ MOBILE DEFENSE: Wrap EVERYTHING in try-catch to prevent stuck loading state
+    let loadingTimeoutId: NodeJS.Timeout | null = null;
     
-    reconnectAttemptsRef.current = 0;
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-    
-    if (loadingTimeoutRef.current) {
-      clearTimeout(loadingTimeoutRef.current);
-    }
-    
-    // ✅ Safety timeout: Auto-clear loading state after 30 seconds
-    // HeyGen initialization can take 15-20 seconds, so we give it plenty of time
-    loadingTimeoutRef.current = setTimeout(() => {
-      console.warn("⚠️ Loading timeout reached - auto-clearing loading state");
-      setIsLoading(false);
-      setShowReconnect(true);
-      loadingTimeoutRef.current = null;
-    }, 30000);
-    
-    const { audioOnly = false, avatarId } = options || {};
-    audioOnlyRef.current = audioOnly;
-    
-    const activeAvatarId = avatarId || currentAvatarIdRef.current;
-    currentAvatarIdRef.current = activeAvatarId;
-
-    // 🔓 MOBILE FIX: Unlock audio on user gesture (non-blocking)
-    // This primes a shared audio element that will be reused for all playback
     try {
-      console.log("📱 Unlocking mobile audio on user gesture...");
-      unlockMobileAudio().catch(err => console.warn("📱 Audio unlock failed:", err));
-    } catch (error) {
-      console.warn("📱 Audio unlock sync failed:", error);
-    }
-
-    // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
-    try {
-      console.log("📱 Ending previous sessions...");
-      await fetch("/api/session/end-all", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-        }),
-      });
-      console.log("📱 Previous sessions ended");
-    } catch (error) {
-      console.warn("Failed to end previous sessions:", error);
-      // Continue anyway - this is just cleanup
-    }
-
-    // Register session with server (for both audio and video modes)
-    try {
-      console.log("📱 Registering session with server...");
-      const response = await fetch("/api/session/start", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          avatarId: activeAvatarId,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        
-        if (response.status === 429) {
-          throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
-        }
-        
-        throw new Error(errorData.error || "Failed to start session");
+      setIsLoading(true);
+      
+      reconnectAttemptsRef.current = 0;
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = null;
       }
-
-      const data = await response.json();
-      sessionIdRef.current = data.sessionId;
-      console.log("📱 Session registered successfully:", data.sessionId);
-    } catch (error: any) {
-      console.error("Error registering session:", error);
+      
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
-        loadingTimeoutRef.current = null;
       }
-      setIsLoading(false);
-      throw error;
-    }
+      
+      // ✅ Safety timeout: Auto-clear loading state after 30 seconds
+      // HeyGen initialization can take 15-20 seconds, so we give it plenty of time
+      loadingTimeoutId = setTimeout(() => {
+        console.warn("⚠️ Loading timeout reached - auto-clearing loading state");
+        setIsLoading(false);
+        setShowReconnect(true);
+        loadingTimeoutRef.current = null;
+      }, 30000);
+      loadingTimeoutRef.current = loadingTimeoutId;
+      
+      const { audioOnly = false, avatarId } = options || {};
+      audioOnlyRef.current = audioOnly;
+      
+      const activeAvatarId = avatarId || currentAvatarIdRef.current;
+      currentAvatarIdRef.current = activeAvatarId;
+
+      // 🔓 MOBILE FIX: Unlock audio on user gesture (completely non-blocking)
+      // This primes a shared audio element that will be reused for all playback
+      try {
+        console.log("📱 Unlocking mobile audio on user gesture...");
+        Promise.resolve(unlockMobileAudio()).catch(err => console.warn("📱 Audio unlock failed:", err));
+      } catch (error) {
+        console.warn("📱 Audio unlock sync failed:", error);
+      }
+
+      // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
+      try {
+        console.log("📱 Ending previous sessions...");
+        await fetch("/api/session/end-all", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+          }),
+        });
+        console.log("📱 Previous sessions ended");
+      } catch (error) {
+        console.warn("Failed to end previous sessions:", error);
+        // Continue anyway - this is just cleanup
+      }
+
+      // Register session with server (for both audio and video modes)
+      try {
+        console.log("📱 Registering session with server...");
+        const response = await fetch("/api/session/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId,
+            avatarId: activeAvatarId,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          
+          if (response.status === 429) {
+            throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
+          }
+          
+          throw new Error(errorData.error || "Failed to start session");
+        }
+
+        const data = await response.json();
+        sessionIdRef.current = data.sessionId;
+        console.log("📱 Session registered successfully:", data.sessionId);
+      } catch (error: any) {
+        console.error("Error registering session:", error);
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+        setIsLoading(false);
+        throw error;
+      }
 
     // Setup UI based on mode
     if (audioOnly) {
@@ -1464,6 +1469,20 @@ export function useAvatarSession({
     setTimeout(() => {
       onResetInactivityTimer?.();
     }, 500);
+    } catch (error: any) {
+      // ✅ MOBILE DEFENSE: Catch ANY error and clear loading state
+      console.error("📱 startSession failed with error:", error?.message || error);
+      if (loadingTimeoutId) {
+        clearTimeout(loadingTimeoutId);
+      }
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      setIsLoading(false);
+      setShowReconnect(true);
+      throw error;
+    }
   }, [
     videoRef,
     userId,
