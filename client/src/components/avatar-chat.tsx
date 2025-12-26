@@ -946,14 +946,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             <Button
               onClick={async () => {
                 console.log("📱 BUTTON CLICKED - Start Chat pressed");
+                // Debug: show we got here
+                document.title = "Starting...";
                 setShowChatButton(false);
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
                 let didError = false;
                 try {
                   console.log("📱 Calling startSession now...");
+                  document.title = "Calling API...";
                   await startSession({ audioOnly, avatarId: selectedAvatarId });
                   console.log("📱 startSession returned successfully");
+                  document.title = "Session OK";
                   // Session started successfully - sessionActive effect will clear sessionStarting
                 } catch (error: any) {
                   didError = true;

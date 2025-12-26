@@ -1189,12 +1189,14 @@ export function useAvatarSession({
 
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     console.log("📱 startSession called - beginning session initialization...");
+    document.title = "startSession:1";
     
     // ✅ MOBILE DEFENSE: Wrap EVERYTHING in try-catch to prevent stuck loading state
     // Use ReturnType for browser compatibility
     let loadingTimeoutId: ReturnType<typeof setTimeout> | null = null;
     
     try {
+      document.title = "startSession:2";
       setIsLoading(true);
       
       // Reset session state for clean start
@@ -1240,6 +1242,7 @@ export function useAvatarSession({
       // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
       try {
         console.log("📱 Ending previous sessions...");
+        document.title = "startSession:3-endAll";
         await fetch("/api/session/end-all", {
           method: "POST",
           headers: {
@@ -1250,14 +1253,17 @@ export function useAvatarSession({
           }),
         });
         console.log("📱 Previous sessions ended");
+        document.title = "startSession:4-endedAll";
       } catch (error) {
         console.warn("Failed to end previous sessions:", error);
+        document.title = "startSession:3-endAllErr";
         // Continue anyway - this is just cleanup
       }
 
       // Register session with server (for both audio and video modes)
       try {
         console.log("📱 Registering session with server...");
+        document.title = "startSession:5-register";
         const response = await fetch("/api/session/start", {
           method: "POST",
           headers: {
@@ -1282,6 +1288,7 @@ export function useAvatarSession({
         const data = await response.json();
         sessionIdRef.current = data.sessionId;
         console.log("📱 Session registered successfully:", data.sessionId);
+        document.title = "startSession:6-registered";
       } catch (error: any) {
         console.error("Error registering session:", error);
         if (loadingTimeoutRef.current) {
