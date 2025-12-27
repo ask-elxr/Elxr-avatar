@@ -32,6 +32,7 @@ export function ElevenLabsConversation({
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
   const startedRef = useRef(false);
+  const autoStartUsedRef = useRef(false);
 
   const conversation = useConversation({
     onConnect: ({ conversationId }) => {
@@ -130,17 +131,18 @@ export function ElevenLabsConversation({
   }, [conversation, isMuted]);
 
   useEffect(() => {
-    // Auto-start when enabled and not yet connected/connecting
+    // Auto-start when enabled, but only once per component mount
     // Status can be: 'disconnected', 'connecting', 'connected', 'disconnecting'
     const isDisconnected = conversation.status === 'disconnected' || 
                            (conversation.status as string) === 'idle';
-    if (autoStart && !hasStarted && !startedRef.current && isDisconnected) {
+    if (autoStart && !autoStartUsedRef.current && !startedRef.current && isDisconnected) {
+      autoStartUsedRef.current = true;
       const timer = setTimeout(() => {
         startConversation();
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [autoStart, hasStarted, conversation.status, startConversation]);
+  }, [autoStart, conversation.status, startConversation]);
 
   useEffect(() => {
     return () => {
