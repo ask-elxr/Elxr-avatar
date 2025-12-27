@@ -2,6 +2,13 @@ let sharedAudioElement: HTMLAudioElement | null = null;
 let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
 
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+}
+
 export function isAudioUnlocked(): boolean {
   return audioUnlocked;
 }
@@ -33,8 +40,16 @@ export async function ensureAudioContextResumed(): Promise<boolean> {
     const ctx = createOrGetAudioContext();
     if (ctx.state === 'suspended') {
       console.log('📱 AudioContext suspended, attempting resume...');
-      await ctx.resume();
-      console.log('📱 AudioContext resumed successfully, state:', ctx.state);
+      const resumed = await withTimeout(
+        ctx.resume().then(() => true),
+        1000,
+        false
+      );
+      if (resumed) {
+        console.log('📱 AudioContext resumed successfully, state:', ctx.state);
+      } else {
+        console.warn('📱 AudioContext resume timed out');
+      }
     }
     return ctx.state === 'running';
   } catch (error) {
@@ -55,8 +70,16 @@ export async function unlockMobileAudio(): Promise<boolean> {
     const ctx = createOrGetAudioContext();
     
     if (ctx.state === 'suspended') {
-      await ctx.resume();
-      console.log('📱 AudioContext resumed, state:', ctx.state);
+      const resumed = await withTimeout(
+        ctx.resume().then(() => true),
+        1000,
+        false
+      );
+      if (resumed) {
+        console.log('📱 AudioContext resumed, state:', ctx.state);
+      } else {
+        console.warn('📱 AudioContext resume timed out, continuing anyway');
+      }
     }
     
     const audio = getSharedAudioElement();
@@ -65,22 +88,38 @@ export async function unlockMobileAudio(): Promise<boolean> {
     audio.src = silentDataUri;
     
     try {
-      await audio.play();
-      audio.pause();
-      audio.currentTime = 0;
-      audio.src = '';
-      audioUnlocked = true;
-      console.log('📱 Mobile audio unlocked successfully via silent play');
-      return true;
+      const playResult = await withTimeout(
+        audio.play().then(() => 'success' as const),
+        1000,
+        'timeout' as const
+      );
+      
+      if (playResult === 'success') {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.src = '';
+        audioUnlocked = true;
+        console.log('📱 Mobile audio unlocked successfully via silent play');
+        return true;
+      } else {
+        console.warn('📱 Silent audio play timed out');
+        audio.pause();
+        audio.src = '';
+      }
     } catch (playError: any) {
       console.warn('📱 Silent audio play failed:', playError.name, playError.message);
-      if (ctx.state === 'running') {
-        audioUnlocked = true;
-        console.log('📱 AudioContext is running - marking audio as unlocked despite play failure');
-        return true;
-      }
-      return false;
+      audio.pause();
+      audio.src = '';
     }
+    
+    if (ctx.state === 'running') {
+      audioUnlocked = true;
+      console.log('📱 AudioContext is running - marking audio as unlocked despite play issues');
+      return true;
+    }
+    
+    console.warn('📱 Audio unlock incomplete, but continuing to avoid blocking');
+    return false;
   } catch (error) {
     console.error('📱 Failed to unlock mobile audio:', error);
     return false;
@@ -93,16 +132,24 @@ export async function ensureAudioUnlocked(): Promise<boolean> {
     if (ctx && ctx.state === 'suspended') {
       console.log('📱 Audio was unlocked but context suspended, resuming...');
       try {
-        await ctx.resume();
-        console.log('📱 Context resumed after suspend');
+        const resumed = await withTimeout(
+          ctx.resume().then(() => true),
+          1000,
+          false
+        );
+        if (resumed) {
+          console.log('📱 Context resumed after suspend');
+        } else {
+          console.warn('📱 Context resume timed out');
+        }
       } catch (e) {
         console.error('📱 Failed to resume suspended context:', e);
-        return false;
       }
     }
     return true;
   }
-  return await unlockMobileAudio();
+  
+  return await withTimeout(unlockMobileAudio(), 2000, false);
 }
 
 export async function playAudioBlob(blob: Blob): Promise<HTMLAudioElement> {
