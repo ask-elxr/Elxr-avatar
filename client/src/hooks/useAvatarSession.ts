@@ -1255,6 +1255,20 @@ export function useAvatarSession({
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     console.log("📱 startSession called - beginning session initialization...");
     
+    // 🔇 CRITICAL: Stop any previous audio immediately to prevent overlapping voices
+    if (currentAudioRef.current) {
+      console.log("🔇 Stopping previous audio at session start");
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      if (currentAudioRef.current.src?.startsWith('blob:')) {
+        URL.revokeObjectURL(currentAudioRef.current.src);
+      }
+      currentAudioRef.current = null;
+    }
+    stopSharedAudio();
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
+    
     // ✅ MOBILE DEFENSE: Wrap EVERYTHING in try-catch to prevent stuck loading state
     // Use ReturnType for browser compatibility
     let loadingTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -1446,6 +1460,20 @@ export function useAvatarSession({
       
       // 🎤 Avatar speaks first with a personalized greeting (audio-only mode)
       try {
+        // 🔇 CRITICAL: Stop any existing audio before playing new greeting
+        // This prevents overlapping audio when switching avatars quickly
+        const existingAudio = currentAudioRef.current as HTMLAudioElement | null;
+        if (existingAudio) {
+          console.log("🔇 Stopping previous audio before greeting");
+          existingAudio.pause();
+          existingAudio.currentTime = 0;
+          if (existingAudio.src?.startsWith('blob:')) {
+            URL.revokeObjectURL(existingAudio.src);
+          }
+          currentAudioRef.current = null;
+        }
+        stopSharedAudio();
+        
         const greetingResponse = await fetch(`/api/avatar/greeting/${activeAvatarId}`);
         if (greetingResponse.ok) {
           const { greeting } = await greetingResponse.json();
