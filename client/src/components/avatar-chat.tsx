@@ -951,14 +951,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
                 
-                // Safari iOS workaround: Use Web Worker to bypass main thread suspension
-                // Safari iOS 17 throttles the main thread after taps, but workers stay active
-                const isSafariIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-                                   /Safari/.test(navigator.userAgent) && 
-                                   !/Chrome|CriOS|FxiOS/.test(navigator.userAgent);
+                // Mobile workaround: Use Web Worker to bypass main thread throttling
+                // Both Safari iOS and Chrome mobile can throttle the main thread after taps
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
-                if (isSafariIOS && typeof Worker !== 'undefined') {
-                  console.log("📱 Safari iOS detected, using Web Worker for session start");
+                if (isMobile && typeof Worker !== 'undefined') {
+                  console.log("📱 Mobile detected, using Web Worker for session start");
                   
                   // Create inline worker to avoid bundling issues
                   const workerCode = `
@@ -1052,8 +1050,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     userId: 'current-user' 
                   });
                 } else {
-                  // Non-Safari path - standard approach
-                  console.log("📱 Using standard session start");
+                  // Desktop path - direct session start
+                  console.log("📱 Desktop detected, using direct session start");
                   startSession({ audioOnly, avatarId: selectedAvatarId }).then(() => {
                     console.log("📱 startSession returned successfully");
                   }).catch((error: any) => {
