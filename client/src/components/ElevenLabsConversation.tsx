@@ -7,6 +7,7 @@ interface ElevenLabsConversationProps {
   agentId: string;
   avatarId: string;
   userId: string;
+  voiceId?: string;
   onMessage?: (message: { role: 'user' | 'assistant'; content: string }) => void;
   onStatusChange?: (status: string) => void;
   onSpeakingChange?: (isSpeaking: boolean) => void;
@@ -27,6 +28,7 @@ export const ElevenLabsConversation = forwardRef<ElevenLabsConversationRef, Elev
     agentId,
     avatarId,
     userId,
+    voiceId,
     onMessage,
     onStatusChange,
     onSpeakingChange,
@@ -106,12 +108,23 @@ export const ElevenLabsConversation = forwardRef<ElevenLabsConversationRef, Elev
       await navigator.mediaDevices.getUserMedia({ audio: true });
       console.log('🎙️ Microphone access granted');
 
-      console.log('🎙️ Starting ElevenLabs conversation with agent:', agentId);
+      console.log('🎙️ Starting ElevenLabs conversation with agent:', agentId, 'voiceId:', voiceId);
       
-      await conversation.startSession({
+      const sessionConfig: any = {
         agentId: agentId,
         connectionType: 'webrtc',
-      });
+      };
+      
+      if (voiceId) {
+        sessionConfig.overrides = {
+          tts: {
+            voiceId: voiceId,
+          },
+        };
+        console.log('🎙️ Using voice override:', voiceId);
+      }
+      
+      await conversation.startSession(sessionConfig);
       
       console.log('🎙️ ElevenLabs conversation started successfully');
     } catch (err: any) {
@@ -119,7 +132,7 @@ export const ElevenLabsConversation = forwardRef<ElevenLabsConversationRef, Elev
       setError(err.message || 'Failed to start conversation');
       startedRef.current = false;
     }
-  }, [agentId, conversation]);
+  }, [agentId, voiceId, conversation]);
 
   const endConversation = useCallback(async () => {
     try {

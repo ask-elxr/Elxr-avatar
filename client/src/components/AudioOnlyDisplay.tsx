@@ -7,6 +7,7 @@ interface AudioOnlyDisplayProps {
   avatarId?: string;
   userId?: string;
   agentId?: string;
+  voiceId?: string;
   useElevenLabsAgent?: boolean;
   onSpeakingChange?: (isSpeaking: boolean) => void;
   onSessionStart?: () => void;
@@ -40,6 +41,7 @@ export const AudioOnlyDisplay = forwardRef<AudioOnlyDisplayRef, AudioOnlyDisplay
     avatarId = 'mark-kohl',
     userId = '',
     agentId = '',
+    voiceId = '',
     useElevenLabsAgent = false,
     onSpeakingChange,
     onSessionStart,
@@ -126,6 +128,7 @@ export const AudioOnlyDisplay = forwardRef<AudioOnlyDisplayRef, AudioOnlyDisplay
             agentId={agentId}
             avatarId={avatarId}
             userId={userId}
+            voiceId={voiceId}
             autoStart={true}
             onSpeakingChange={onSpeakingChange}
             onSessionStart={onSessionStart}

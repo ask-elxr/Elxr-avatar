@@ -74,6 +74,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [elevenLabsAgentConfig, setElevenLabsAgentConfig] = useState<{ enabled: boolean; agentId: string } | null>(null);
   const [elevenLabsAgentActive, setElevenLabsAgentActive] = useState(false); // Track when ElevenLabs Agent mode is active
+  const [avatarVoiceId, setAvatarVoiceId] = useState<string>(''); // Track avatar's ElevenLabs voice ID
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -139,6 +140,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           } else {
             setElevenLabsLanguage("en");
           }
+          // Load ElevenLabs voice ID for agent mode
+          if (avatar.elevenlabsVoiceId) {
+            setAvatarVoiceId(avatar.elevenlabsVoiceId);
+            console.log(`🎤 Loaded avatar voice ID: ${avatar.elevenlabsVoiceId}`);
+          } else {
+            setAvatarVoiceId('');
+          }
+          
           // Load capability settings
           const capabilities = {
             enableAudioMode: avatar.enableAudioMode ?? true,
@@ -781,6 +790,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               avatarId={selectedAvatarId}
               userId={userId}
               agentId={elevenLabsAgentConfig?.agentId || ''}
+              voiceId={avatarVoiceId}
               useElevenLabsAgent={elevenLabsAgentActive}
               onSpeakingChange={(speaking) => {
                 setIsSpeaking(speaking);
