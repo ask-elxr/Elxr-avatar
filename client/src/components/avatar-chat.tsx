@@ -842,12 +842,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   {/* Pause button - hidden in agent mode since ElevenLabs handles this */}
                   {!elevenLabsAgentActive && (
                     <Button
-                      onClick={() => togglePause()}
-                      className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("⏸️ Pause button clicked");
+                        togglePause();
+                      }}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log("⏸️ Pause button touched");
+                        togglePause();
+                      }}
+                      className="bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/20 text-white min-w-[44px] min-h-[44px] touch-manipulation"
                       size="sm"
                       data-testid="button-pause-toggle"
                     >
-                      {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                      {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
                     </Button>
                   )}
                   
