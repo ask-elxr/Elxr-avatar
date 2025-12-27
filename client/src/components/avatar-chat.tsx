@@ -589,7 +589,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
   const handleModeToggle = async (isVideoMode: boolean) => {
     console.log(`🔄 handleModeToggle called: isVideoMode=${isVideoMode}`);
-    console.log(`🔄 Current state: audioOnly=${audioOnly}, sessionActive=${sessionActive}, isModeSwitching=${isModeSwitching}, isLoading=${isLoading}`);
+    console.log(`🔄 Current state: audioOnly=${audioOnly}, sessionActive=${sessionActive}, isModeSwitching=${isModeSwitching}, isLoading=${isLoading}, elevenLabsAgentActive=${elevenLabsAgentActive}`);
     console.log(`🔄 Avatar capabilities: enableVideoMode=${avatarCapabilities.enableVideoMode}, enableAudioMode=${avatarCapabilities.enableAudioMode}`);
     
     const newAudioOnly = !isVideoMode;
@@ -610,6 +610,43 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         title: "Audio mode unavailable",
         description: "Audio mode is not enabled for this avatar.",
       });
+      return;
+    }
+    
+    // Handle switching from ElevenLabs agent mode to video mode
+    if (elevenLabsAgentActive && isVideoMode) {
+      console.log("🔄 Switching from ElevenLabs agent mode to video mode");
+      setIsModeSwitching(true);
+      
+      // End agent mode first
+      setElevenLabsAgentActive(false);
+      setAudioOnly(false);
+      
+      // Give time for agent cleanup
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      try {
+        // Start fresh video session
+        await startSession({ audioOnly: false, avatarId: selectedAvatarId });
+        
+        toast({
+          title: "Video Mode",
+          description: "Switched to video mode",
+        });
+      } catch (error: any) {
+        console.error("Error switching to video mode:", error);
+        // Revert state on failure
+        setAudioOnly(true);
+        setElevenLabsAgentActive(true);
+        
+        toast({
+          variant: "destructive",
+          title: "Switch failed",
+          description: error.message || "Failed to switch to video mode. Please try again.",
+        });
+      } finally {
+        setIsModeSwitching(false);
+      }
       return;
     }
     
@@ -779,7 +816,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <AudioVideoToggle
                   isVideoMode={!audioOnly}
                   onToggle={handleModeToggle}
-                  disabled={isModeSwitching || isLoading || elevenLabsAgentActive}
+                  disabled={isModeSwitching || isLoading}
                   enableAudioMode={avatarCapabilities.enableAudioMode}
                   enableVideoMode={avatarCapabilities.enableVideoMode}
                 />
