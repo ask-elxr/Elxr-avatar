@@ -631,6 +631,18 @@ export function useAvatarSession({
       const audioContext = new AudioContext({ sampleRate: 16000 });
       elevenLabsSttAudioContextRef.current = audioContext;
       
+      // 🔊 CRITICAL MOBILE FIX: AudioContext starts suspended on iOS Safari
+      // Must explicitly resume it, especially after user gesture
+      if (audioContext.state === 'suspended') {
+        console.log("🔊 AudioContext suspended - resuming for mobile...");
+        try {
+          await audioContext.resume();
+          console.log("🔊 AudioContext resumed successfully, state:", audioContext.state);
+        } catch (resumeError) {
+          console.error("🔊 Failed to resume AudioContext:", resumeError);
+        }
+      }
+      
       const source = audioContext.createMediaStreamSource(stream);
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       elevenLabsSttProcessorRef.current = processor;
@@ -649,9 +661,22 @@ export function useAvatarSession({
       source.connect(processor);
       processor.connect(audioContext.destination);
       
+      // 🔊 MOBILE FIX: Final verification that AudioContext is running
+      // Some mobile browsers may still be suspended even after resume()
+      if (audioContext.state !== 'running') {
+        console.warn("🔊 AudioContext still not running after setup, state:", audioContext.state);
+        // Try resume one more time
+        try {
+          await audioContext.resume();
+          console.log("🔊 Second resume attempt - AudioContext state:", audioContext.state);
+        } catch (e) {
+          console.warn("🔊 Second resume failed:", e);
+        }
+      }
+      
       recognitionRunningRef.current = true;
       setMicrophoneStatus('listening');
-      console.log("🎤 ElevenLabs STT microphone listening");
+      console.log("🎤 ElevenLabs STT microphone listening, AudioContext state:", audioContext.state);
       
     } catch (error: any) {
       console.error("🎤 Failed to start microphone for ElevenLabs STT:", error);
