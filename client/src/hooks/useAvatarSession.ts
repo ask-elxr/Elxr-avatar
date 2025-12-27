@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
-import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed } from "@/lib/mobileAudio";
+import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob } from "@/lib/mobileAudio";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -1506,90 +1506,62 @@ export function useAvatarSession({
             if (audioResponse.ok) {
               const audioBlob = await audioResponse.blob();
               console.log("🎤 Greeting audio blob size:", audioBlob.size, "bytes, type:", audioBlob.type);
-              const audioUrl = URL.createObjectURL(audioBlob);
-              const audio = new Audio(audioUrl);
-              audio.volume = 1.0;
-              // Mobile-specific: Add attributes for iOS/Android compatibility
-              audio.setAttribute('playsinline', 'true');
-              audio.setAttribute('webkit-playsinline', 'true');
-              audio.preload = 'auto';
               
-              // 🔇 CRITICAL: Set currentAudioRef to block voice recognition restart during playback
-              currentAudioRef.current = audio;
+              // 📱 MOBILE FIX: Use shared audio element (already unlocked) instead of new Audio()
+              // This is critical for iOS Safari which requires audio to be played from a user gesture
               isSpeakingRef.current = true;
               setIsSpeakingState(true);
               
-              audio.onloadedmetadata = () => {
-                console.log("🎤 Greeting audio loaded - duration:", audio.duration, "s");
-              };
-              
-              // 🔊 Resume voice recognition after greeting ends
-              audio.onended = () => {
-                console.log("🎤 Greeting audio ENDED successfully");
-                URL.revokeObjectURL(audioUrl);
-                currentAudioRef.current = null;
-                isSpeakingRef.current = false;
-                setIsSpeakingState(false);
-                setTimeout(() => {
-                  if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
-                    console.log("🔊 Voice recognition resumed (greeting finished)");
-                    startVoiceRecognition();
-                  }
-                }, 500);
-              };
-              
-              audio.onerror = (e) => {
-                console.error("🎤 Greeting audio ERROR:", e, audio.error);
-                URL.revokeObjectURL(audioUrl);
-                currentAudioRef.current = null;
-                isSpeakingRef.current = false;
-                setIsSpeakingState(false);
-                // Still try to resume voice recognition on error
-                setTimeout(() => {
-                  if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
-                    console.log("🔊 Voice recognition resumed (greeting error)");
-                    startVoiceRecognition();
-                  }
-                }, 500);
-              };
-              
               try {
-                console.log("🎤 Attempting to play greeting audio...");
+                console.log("🎤 Attempting to play greeting via shared audio element...");
+                const audio = await playAudioBlob(audioBlob);
+                currentAudioRef.current = audio;
+                console.log("🎤 Greeting audio PLAYING via shared element");
                 
-                // 📱 MOBILE FIX: Ensure audio is unlocked before playing
-                const audioReady = await ensureAudioUnlocked();
-                if (!audioReady) {
-                  console.warn("🎤 Audio not unlocked, attempting context resume...");
-                  await ensureAudioContextResumed();
-                }
+                // Set up cleanup after audio ends
+                const originalOnEnded = audio.onended;
+                audio.onended = () => {
+                  console.log("🎤 Greeting audio ENDED successfully");
+                  currentAudioRef.current = null;
+                  isSpeakingRef.current = false;
+                  setIsSpeakingState(false);
+                  if (originalOnEnded) {
+                    originalOnEnded.call(audio, new Event('ended'));
+                  }
+                  setTimeout(() => {
+                    if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                      console.log("🔊 Voice recognition resumed (greeting finished)");
+                      startVoiceRecognition();
+                    }
+                  }, 500);
+                };
                 
-                await audio.play();
-                console.log("🎤 Greeting audio PLAYING - paused:", audio.paused, "currentTime:", audio.currentTime);
+                const originalOnError = audio.onerror;
+                audio.onerror = (e) => {
+                  console.error("🎤 Greeting audio ERROR:", e);
+                  currentAudioRef.current = null;
+                  isSpeakingRef.current = false;
+                  setIsSpeakingState(false);
+                  if (originalOnError) {
+                    (originalOnError as any).call(audio, e);
+                  }
+                  setTimeout(() => {
+                    if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                      console.log("🔊 Voice recognition resumed (greeting error)");
+                      startVoiceRecognition();
+                    }
+                  }, 500);
+                };
               } catch (err: any) {
                 console.error("🎤 Greeting audio play() FAILED:", err?.name, err?.message);
                 currentAudioRef.current = null;
                 isSpeakingRef.current = false;
                 setIsSpeakingState(false);
                 
-                // 📱 MOBILE FIX: If NotAllowedError, try resuming AudioContext and retry once
-                if (err?.name === 'NotAllowedError') {
-                  console.log("🎤 NotAllowedError - attempting AudioContext resume and retry...");
-                  try {
-                    await ensureAudioContextResumed();
-                    await audio.play();
-                    console.log("🎤 Greeting audio PLAYING after retry");
-                    currentAudioRef.current = audio;
-                    isSpeakingRef.current = true;
-                    setIsSpeakingState(true);
-                    return; // Success on retry, don't start voice recognition yet
-                  } catch (retryErr) {
-                    console.error("🎤 Retry also failed:", retryErr);
-                  }
-                }
-                
-                // Resume voice recognition if play fails
+                // Resume voice recognition if play fails - session still works, just no greeting
                 setTimeout(() => {
                   if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                    console.log("🔊 Voice recognition started (greeting skipped)");
                     startVoiceRecognition();
                   }
                 }, 500);
