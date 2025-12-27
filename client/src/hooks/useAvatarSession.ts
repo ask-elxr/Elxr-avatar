@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
-import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked } from "@/lib/mobileAudio";
+import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed } from "@/lib/mobileAudio";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -1292,15 +1292,20 @@ export function useAvatarSession({
       const activeAvatarId = avatarId || currentAvatarIdRef.current;
       currentAvatarIdRef.current = activeAvatarId;
 
-      // 🔓 MOBILE FIX: Unlock audio on user gesture (completely non-blocking)
-      // TEMPORARILY DISABLED for debugging - Safari mobile issue
-      // try {
-      //   console.log("📱 Unlocking mobile audio on user gesture...");
-      //   Promise.resolve(unlockMobileAudio()).catch(err => console.warn("📱 Audio unlock failed:", err));
-      // } catch (error) {
-      //   console.warn("📱 Audio unlock sync failed:", error);
-      // }
-      console.log("📱 Audio unlock skipped for debugging");
+      // 🔓 MOBILE FIX: Unlock audio on user gesture - MUST happen synchronously with gesture
+      try {
+        console.log("📱 Unlocking mobile audio on user gesture...");
+        const unlocked = await ensureAudioUnlocked();
+        if (unlocked) {
+          console.log("📱 Mobile audio unlocked successfully");
+        } else {
+          console.warn("📱 Audio unlock returned false, but continuing anyway");
+        }
+      } catch (error) {
+        console.warn("📱 Audio unlock failed:", error);
+        // Try to at least resume the AudioContext
+        await ensureAudioContextResumed().catch(() => {});
+      }
 
       // Skip server registration if already done by Web Worker (Safari iOS workaround)
       if (!skipServerRegistration) {
@@ -1522,13 +1527,38 @@ export function useAvatarSession({
               
               try {
                 console.log("🎤 Attempting to play greeting audio...");
+                
+                // 📱 MOBILE FIX: Ensure audio is unlocked before playing
+                const audioReady = await ensureAudioUnlocked();
+                if (!audioReady) {
+                  console.warn("🎤 Audio not unlocked, attempting context resume...");
+                  await ensureAudioContextResumed();
+                }
+                
                 await audio.play();
                 console.log("🎤 Greeting audio PLAYING - paused:", audio.paused, "currentTime:", audio.currentTime);
-              } catch (err) {
-                console.error("🎤 Greeting audio play() FAILED:", err);
+              } catch (err: any) {
+                console.error("🎤 Greeting audio play() FAILED:", err?.name, err?.message);
                 currentAudioRef.current = null;
                 isSpeakingRef.current = false;
                 setIsSpeakingState(false);
+                
+                // 📱 MOBILE FIX: If NotAllowedError, try resuming AudioContext and retry once
+                if (err?.name === 'NotAllowedError') {
+                  console.log("🎤 NotAllowedError - attempting AudioContext resume and retry...");
+                  try {
+                    await ensureAudioContextResumed();
+                    await audio.play();
+                    console.log("🎤 Greeting audio PLAYING after retry");
+                    currentAudioRef.current = audio;
+                    isSpeakingRef.current = true;
+                    setIsSpeakingState(true);
+                    return; // Success on retry, don't start voice recognition yet
+                  } catch (retryErr) {
+                    console.error("🎤 Retry also failed:", retryErr);
+                  }
+                }
+                
                 // Resume voice recognition if play fails
                 setTimeout(() => {
                   if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
@@ -1792,10 +1822,13 @@ export function useAvatarSession({
         console.warn("📱 Video unlock failed:", e);
       }
     }
-    // Also unlock audio (with timeout to prevent hanging)
-    const unlockPromise = unlockMobileAudio().catch(() => {});
-    const unlockTimeout = new Promise<void>((resolve) => setTimeout(resolve, 500));
-    await Promise.race([unlockPromise, unlockTimeout]);
+    // Also unlock audio - properly await instead of racing with timeout
+    try {
+      const unlocked = await ensureAudioUnlocked();
+      console.log("📱 Audio unlock result:", unlocked);
+    } catch (e) {
+      console.warn("📱 Audio unlock failed, continuing anyway:", e);
+    }
     
     // CRITICAL: Clear any pending idle timeout to prevent it from firing in audio mode
     // and calling stopHeyGenSession which would clear sessionIdRef
