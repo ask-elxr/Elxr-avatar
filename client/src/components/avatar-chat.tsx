@@ -955,100 +955,51 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 // Both Safari iOS and Chrome mobile can throttle the main thread after taps
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
-                if (isMobile && typeof Worker !== 'undefined') {
-                  console.log("📱 Mobile detected, using Web Worker for session start");
+                if (isMobile) {
+                  console.log("📱 Mobile detected, using visibility trick + deferred session start");
                   
-                  // Create inline worker to avoid bundling issues
-                  const workerCode = `
-                    self.onmessage = async (event) => {
-                      const { avatarId, audioOnly, userId } = event.data;
-                      try {
-                        // End previous sessions
-                        try {
-                          await fetch('/api/session/end-all', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ userId }),
-                          });
-                        } catch (e) {}
-                        
-                        // Register session
-                        const response = await fetch('/api/session/start', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ avatarId, audioOnly }),
-                        });
-                        
-                        if (!response.ok) {
-                          const errorData = await response.json();
-                          throw new Error(errorData.error || 'Failed to start session');
-                        }
-                        
-                        const data = await response.json();
-                        self.postMessage({ success: true, sessionId: data.sessionId });
-                      } catch (error) {
-                        self.postMessage({ success: false, error: error.message });
-                      }
-                    };
-                  `;
-                  
-                  const blob = new Blob([workerCode], { type: 'application/javascript' });
-                  const workerUrl = URL.createObjectURL(blob);
-                  const worker = new Worker(workerUrl);
-                  
-                  worker.onmessage = async (event) => {
-                    URL.revokeObjectURL(workerUrl);
-                    worker.terminate();
+                  // Mobile browsers suspend network requests after tap events
+                  // Simulate tab switch by triggering a focus/blur cycle via hidden iframe
+                  const triggerVisibilityResume = () => {
+                    console.log("📱 Triggering visibility resume...");
+                    const iframe = document.createElement('iframe');
+                    iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;';
+                    document.body.appendChild(iframe);
                     
-                    if (event.data.success) {
-                      console.log("📱 Worker: Session registered, continuing setup...");
-                      // Continue with the rest of session setup on main thread
+                    requestAnimationFrame(() => {
                       try {
-                        await startSession({ audioOnly, avatarId: selectedAvatarId, skipServerRegistration: true });
-                        console.log("📱 startSession returned successfully");
-                      } catch (error: any) {
-                        setShowChatButton(true);
-                        setSessionStarting(false);
-                        toast({
-                          variant: "destructive",
-                          title: "Cannot start session",
-                          description: error.message || "Failed to start session",
-                        });
+                        // Brief focus to iframe triggers visibility change
+                        iframe.contentWindow?.focus();
+                        setTimeout(() => {
+                          window.focus();
+                          iframe.remove();
+                        }, 50);
+                      } catch (e) {
+                        iframe.remove();
                       }
-                    } else {
-                      console.error("📱 Worker: Session start failed:", event.data.error);
-                      setShowChatButton(true);
-                      setSessionStarting(false);
-                      toast({
-                        variant: "destructive",
-                        title: "Cannot start session",
-                        description: event.data.error || "Failed to start session",
-                      });
-                    }
-                  };
-                  
-                  worker.onerror = (error) => {
-                    console.error("📱 Worker error:", error);
-                    URL.revokeObjectURL(workerUrl);
-                    worker.terminate();
-                    // Fall back to normal path
-                    startSession({ audioOnly, avatarId: selectedAvatarId }).catch((err: any) => {
-                      setShowChatButton(true);
-                      setSessionStarting(false);
-                      toast({
-                        variant: "destructive",
-                        title: "Cannot start session",
-                        description: err.message || "Failed to start session",
-                      });
                     });
                   };
                   
-                  // Send message to worker
-                  worker.postMessage({ 
-                    avatarId: selectedAvatarId, 
-                    audioOnly, 
-                    userId: 'current-user' 
-                  });
+                  // Defer session start to escape the tap event's synchronous context
+                  setTimeout(async () => {
+                    try {
+                      console.log("📱 Starting deferred session...");
+                      triggerVisibilityResume();
+                      await new Promise(resolve => setTimeout(resolve, 100));
+                      
+                      await startSession({ audioOnly, avatarId: selectedAvatarId });
+                      console.log("📱 Mobile session started successfully");
+                    } catch (error: any) {
+                      console.error("📱 Mobile session error:", error);
+                      setShowChatButton(true);
+                      setSessionStarting(false);
+                      toast({
+                        variant: "destructive",
+                        title: "Cannot start session",
+                        description: error.message || "Failed to start session",
+                      });
+                    }
+                  }, 0);
                 } else {
                   // Desktop path - direct session start
                   console.log("📱 Desktop detected, using direct session start");
