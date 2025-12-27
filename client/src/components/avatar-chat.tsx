@@ -296,6 +296,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       setLoadingTimedOut(false); // Reset timeout flag when session starts or shows reconnect
     }
   }, [sessionActive, showReconnect]);
+  
+  // 📱 CRITICAL FIX: Clear sessionStarting whenever isLoading becomes false
+  // This ensures the loading overlay clears even if sessionActive hasn't been set yet
+  // (happens on mobile when audio greeting fails)
+  useEffect(() => {
+    if (!isLoading && sessionStarting) {
+      console.log("📱 isLoading=false, clearing sessionStarting to remove loading overlay");
+      setSessionStarting(false);
+    }
+  }, [isLoading, sessionStarting]);
 
   // 📱 iOS Safari fix: Force clear stuck loading state when tab becomes visible
   // This handles cases where iOS suspends React state updates
