@@ -614,39 +614,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
     
     // Handle switching from ElevenLabs agent mode to video mode
+    // End the agent session and let user restart in video mode via Start Chat button
     if (elevenLabsAgentActive && isVideoMode) {
-      console.log("🔄 Switching from ElevenLabs agent mode to video mode");
-      setIsModeSwitching(true);
-      
-      // End agent mode first
+      console.log("🔄 Ending ElevenLabs agent mode to switch to video");
       setElevenLabsAgentActive(false);
       setAudioOnly(false);
+      setShowChatButton(true);
+      setChatHistory([]); // Clear chat history for fresh start
       
-      // Give time for agent cleanup
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      try {
-        // Start fresh video session
-        await startSession({ audioOnly: false, avatarId: selectedAvatarId });
-        
-        toast({
-          title: "Video Mode",
-          description: "Switched to video mode",
-        });
-      } catch (error: any) {
-        console.error("Error switching to video mode:", error);
-        // Revert state on failure
-        setAudioOnly(true);
-        setElevenLabsAgentActive(true);
-        
-        toast({
-          variant: "destructive",
-          title: "Switch failed",
-          description: error.message || "Failed to switch to video mode. Please try again.",
-        });
-      } finally {
-        setIsModeSwitching(false);
-      }
+      toast({
+        title: "Video Mode Selected",
+        description: "Press Start Chat to begin with video",
+      });
+      return;
+    }
+    
+    // Handle switching from ElevenLabs agent mode to stay in audio (different avatar setup)
+    if (elevenLabsAgentActive && !isVideoMode) {
+      // Already in audio mode via agent, no action needed
       return;
     }
     
