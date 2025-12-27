@@ -663,6 +663,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get ElevenLabs agent configuration for audio-only mode
+  app.get("/api/elevenlabs/agent-config", async (req: any, res) => {
+    const log = logger.child({ service: "elevenlabs", operation: "getAgentConfig" });
+    
+    try {
+      const agentId = process.env.ELEVENLABS_AGENT_ID;
+      
+      if (!agentId) {
+        log.warn("ELEVENLABS_AGENT_ID not configured");
+        return res.json({ 
+          enabled: false,
+          message: "ElevenLabs Agent not configured" 
+        });
+      }
+      
+      log.info("ElevenLabs agent config retrieved");
+      res.json({
+        enabled: true,
+        agentId: agentId,
+      });
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error getting ElevenLabs agent config");
+      res.status(500).json({ error: "Failed to retrieve agent config" });
+    }
+  });
+
   // HeyGen API token endpoint for Streaming SDK with rate limiting (15 requests per user per minute for conversation flow)
   app.post("/api/heygen/token", rateLimitMiddleware(15, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen", operation: "createToken" });

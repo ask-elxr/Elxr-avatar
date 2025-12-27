@@ -1,7 +1,16 @@
+import { ElevenLabsConversation } from './ElevenLabsConversation';
+
 interface AudioOnlyDisplayProps {
   isSpeaking: boolean;
   sessionActive: boolean;
   avatarId?: string;
+  userId?: string;
+  agentId?: string;
+  useElevenLabsAgent?: boolean;
+  onSpeakingChange?: (isSpeaking: boolean) => void;
+  onSessionStart?: () => void;
+  onSessionEnd?: () => void;
+  onMessage?: (message: { role: 'user' | 'assistant'; content: string }) => void;
 }
 
 const avatarGifs: Record<string, string> = {
@@ -17,11 +26,22 @@ const avatarGifs: Record<string, string> = {
   'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
 };
 
-export function AudioOnlyDisplay({ isSpeaking, sessionActive, avatarId = 'mark-kohl' }: AudioOnlyDisplayProps) {
+export function AudioOnlyDisplay({ 
+  isSpeaking, 
+  sessionActive, 
+  avatarId = 'mark-kohl',
+  userId = '',
+  agentId = '',
+  useElevenLabsAgent = false,
+  onSpeakingChange,
+  onSessionStart,
+  onSessionEnd,
+  onMessage,
+}: AudioOnlyDisplayProps) {
   const gifUrl = avatarGifs[avatarId] || avatarGifs['mark-kohl'];
   
   return (
-    <div className="absolute inset-0 flex items-center justify-center bg-black">
+    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">
       <div className="relative flex items-center justify-center">
         {/* Radiating Circles - Behind the Avatar */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -79,12 +99,30 @@ export function AudioOnlyDisplay({ isSpeaking, sessionActive, avatarId = 'mark-k
         </div>
       </div>
       
+      {/* ElevenLabs Conversation Controls (when using agent mode) */}
+      {useElevenLabsAgent && agentId && (
+        <div className="mt-8 z-20">
+          <ElevenLabsConversation
+            agentId={agentId}
+            avatarId={avatarId}
+            userId={userId}
+            autoStart={true}
+            onSpeakingChange={onSpeakingChange}
+            onSessionStart={onSessionStart}
+            onSessionEnd={onSessionEnd}
+            onMessage={onMessage}
+          />
+        </div>
+      )}
+      
       {/* Status Text */}
       <div className="absolute bottom-24 left-0 right-0 text-center">
         <p className="text-lg font-medium text-white/90">
           {!sessionActive ? "Starting audio session..." : isSpeaking ? "Speaking..." : "Listening..."}
         </p>
-        <p className="text-sm text-white/60 mt-1">Audio Mode</p>
+        <p className="text-sm text-white/60 mt-1">
+          {useElevenLabsAgent ? "ElevenLabs Agent" : "Audio Mode"}
+        </p>
       </div>
       
       {/* CSS Keyframes for radiating animation */}

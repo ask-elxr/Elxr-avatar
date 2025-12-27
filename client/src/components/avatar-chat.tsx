@@ -72,6 +72,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
   const [attachedImage, setAttachedImage] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [elevenLabsAgentConfig, setElevenLabsAgentConfig] = useState<{ enabled: boolean; agentId: string } | null>(null);
+  const [elevenLabsAgentActive, setElevenLabsAgentActive] = useState(false); // Track when ElevenLabs Agent mode is active
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,6 +95,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     const memoryPref = localStorage.getItem('memory-enabled');
     console.log("🧠 Loading memory preference from localStorage:", memoryPref);
     setMemoryEnabled(memoryPref === 'true');
+  }, []);
+
+  // Fetch ElevenLabs agent configuration on mount
+  useEffect(() => {
+    const fetchAgentConfig = async () => {
+      try {
+        const response = await fetch('/api/elevenlabs/agent-config');
+        if (response.ok) {
+          const config = await response.json();
+          console.log("🎙️ ElevenLabs agent config:", config);
+          setElevenLabsAgentConfig(config);
+        }
+      } catch (error) {
+        console.error("Failed to fetch ElevenLabs agent config:", error);
+      }
+    };
+    fetchAgentConfig();
   }, []);
 
   // Load avatar's language settings and capabilities when avatar changes
@@ -660,7 +679,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   };
 
   const endChat = async () => {
-    await endSession();
+    // Handle both legacy session and agent mode
+    if (elevenLabsAgentActive) {
+      setElevenLabsAgentActive(false);
+      setShowChatButton(true);
+    } else {
+      await endSession();
+    }
     setChatHistory([]); // Clear chat history on end
   };
 
@@ -712,13 +737,39 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             onCanPlay={() => console.log("Video can play")}
           />
           
-          {audioOnly && !heygenSessionActive && (sessionActive || isLoading) && (
-            <AudioOnlyDisplay isSpeaking={isSpeaking} sessionActive={sessionActive} avatarId={selectedAvatarId} />
+          {audioOnly && !heygenSessionActive && (sessionActive || isLoading || elevenLabsAgentActive) && (
+            <AudioOnlyDisplay 
+              isSpeaking={isSpeaking} 
+              sessionActive={sessionActive || elevenLabsAgentActive} 
+              avatarId={selectedAvatarId}
+              userId={userId}
+              agentId={elevenLabsAgentConfig?.agentId || ''}
+              useElevenLabsAgent={elevenLabsAgentActive}
+              onSpeakingChange={(speaking) => {
+                setIsSpeaking(speaking);
+              }}
+              onSessionStart={() => {
+                console.log('🎙️ ElevenLabs agent session started');
+              }}
+              onSessionEnd={() => {
+                console.log('🎙️ ElevenLabs agent session ended');
+                setElevenLabsAgentActive(false);
+                setShowChatButton(true);
+              }}
+              onMessage={(message) => {
+                setChatHistory(prev => [...prev, {
+                  id: `${Date.now()}-${message.role}`,
+                  role: message.role,
+                  content: message.content,
+                  timestamp: new Date()
+                }]);
+              }}
+            />
           )}
         </div>
 
         {/* Overlay Controls */}
-        {sessionActive && (
+        {(sessionActive || elevenLabsAgentActive) && (
           <>
             {/* Top Controls Bar - Mobile responsive */}
             <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-2 sm:p-4 bg-gradient-to-b from-black/60 to-transparent z-30 safe-area-inset-top">
@@ -728,7 +779,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <AudioVideoToggle
                   isVideoMode={!audioOnly}
                   onToggle={handleModeToggle}
-                  disabled={isModeSwitching || isLoading}
+                  disabled={isModeSwitching || isLoading || elevenLabsAgentActive}
                   enableAudioMode={avatarCapabilities.enableAudioMode}
                   enableVideoMode={avatarCapabilities.enableVideoMode}
                 />
@@ -741,14 +792,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               
               <div className="w-full flex items-center justify-between">
                 <div className="flex items-center gap-1 sm:gap-2">
-                  <Button
-                    onClick={() => togglePause()}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
-                    size="sm"
-                    data-testid="button-pause-toggle"
-                  >
-                    {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
-                  </Button>
+                  {/* Pause button - hidden in agent mode since ElevenLabs handles this */}
+                  {!elevenLabsAgentActive && (
+                    <Button
+                      onClick={() => togglePause()}
+                      className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
+                      size="sm"
+                      data-testid="button-pause-toggle"
+                    >
+                      {isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+                    </Button>
+                  )}
                   
                   <Button
                     onClick={() => setShowAvatarSwitcher(true)}
@@ -951,6 +1005,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
                 
+                // Check if ElevenLabs Agent mode is enabled for audio-only
+                const useElevenLabsAgent = audioOnly && elevenLabsAgentConfig?.enabled;
+                
+                if (useElevenLabsAgent) {
+                  // ElevenLabs Agent mode: Skip legacy pipeline, let ElevenLabsConversation handle everything
+                  console.log("🎙️ Using ElevenLabs Agent mode - skipping legacy session");
+                  setSessionStarting(false);
+                  // Set agent active to show the audio-only display with agent
+                  // The ElevenLabsConversation component will auto-start
+                  setElevenLabsAgentActive(true);
+                  return;
+                }
+                
                 // Mobile workaround: Use Web Worker to bypass main thread throttling
                 // Both Safari iOS and Chrome mobile can throttle the main thread after taps
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -1105,7 +1172,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         )}
 
         {/* Drag overlay */}
-        {isDragOver && sessionActive && (
+        {isDragOver && (sessionActive || elevenLabsAgentActive) && (
           <div 
             className="absolute inset-0 bg-primary/30 backdrop-blur-sm z-20 flex items-center justify-center border-4 border-dashed border-primary rounded-lg"
             onDragOver={handleDragOver}
@@ -1121,112 +1188,123 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         )}
 
         {/* Chat Input Overlay (Bottom) */}
-        {sessionActive && (
+        {(sessionActive || elevenLabsAgentActive) && (
           <div 
             className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent z-10"
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
+            onDragOver={!elevenLabsAgentActive ? handleDragOver : undefined}
+            onDragLeave={!elevenLabsAgentActive ? handleDragLeave : undefined}
+            onDrop={!elevenLabsAgentActive ? handleDrop : undefined}
           >
-            {/* Image preview */}
-            {attachedImage && (
-              <div className="max-w-4xl mx-auto mb-3">
-                <div className="relative inline-block">
-                  <img 
-                    src={attachedImage.preview} 
-                    alt="Attached" 
-                    className="h-20 rounded-lg border-2 border-white/30"
-                  />
-                  <button
-                    onClick={removeAttachedImage}
-                    className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1"
-                    data-testid="button-remove-image"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
+            {/* Agent mode: Show voice indicator instead of text input */}
+            {elevenLabsAgentActive ? (
+              <div className="max-w-4xl mx-auto text-center">
+                <p className="text-white/70 text-sm">
+                  Speak naturally - the AI is listening
+                </p>
               </div>
-            )}
-            
-            <form 
-              onSubmit={(e: FormEvent) => {
-                e.preventDefault();
-                if ((inputMessage.trim() || attachedImage) && !isPaused) {
-                  handleSubmitMessage(
-                    inputMessage || "What do you see in this image?",
-                    attachedImage ? { base64: attachedImage.base64, mimeType: attachedImage.mimeType } : undefined
-                  );
-                  setInputMessage("");
-                }
-              }}
-              className="flex items-center gap-2 max-w-4xl mx-auto"
-            >
-              {/* Hidden file input */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                onChange={handleFileSelect}
-                className="hidden"
-                data-testid="input-file"
-              />
-              
-              {/* Image upload button */}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                className="bg-black/50 border-white/20 text-white hover:bg-white/20"
-                disabled={!sessionActive || isPaused}
-                data-testid="button-attach-image"
-              >
-                <Image className="w-4 h-4" />
-              </Button>
-              
-              <div className="flex-1 relative">
-                <Input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder={attachedImage ? "Ask about the image..." : (microphoneStatus === 'listening' ? "" : "Type your message...")}
-                  className="flex-1 w-full bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm pr-4"
-                  data-testid="input-message"
-                  disabled={!sessionActive || isPaused}
-                />
-                {/* Audio Waveform - shows inside input when listening */}
-                {microphoneStatus === 'listening' && !inputMessage && !attachedImage && (
-                  <div className="absolute inset-y-0 left-3 flex items-center gap-[2px] pointer-events-none">
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                      <div
-                        key={i}
-                        className="w-[2px] rounded-full"
-                        style={{
-                          height: '60%',
-                          background: `linear-gradient(to top, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 1), rgba(167, 139, 250, 0.9))`,
-                          boxShadow: '0 0 8px rgba(139, 92, 246, 0.6)',
-                          animation: `waveform 0.6s ease-in-out infinite`,
-                          animationDelay: `${i * 0.08}s`,
-                        }}
+            ) : (
+              <>
+                {/* Image preview */}
+                {attachedImage && (
+                  <div className="max-w-4xl mx-auto mb-3">
+                    <div className="relative inline-block">
+                      <img 
+                        src={attachedImage.preview} 
+                        alt="Attached" 
+                        className="h-20 rounded-lg border-2 border-white/30"
                       />
-                    ))}
-                    <style>{`
-                      @keyframes waveform {
-                        0%, 100% { transform: scaleY(0.2); opacity: 0.5; }
-                        50% { transform: scaleY(1); opacity: 1; }
-                      }
-                    `}</style>
+                      <button
+                        onClick={removeAttachedImage}
+                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1"
+                        data-testid="button-remove-image"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 )}
-              </div>
-              <Button
-                type="submit"
-                disabled={(!inputMessage.trim() && !attachedImage) || !sessionActive || isPaused}
-                className="bg-primary hover:bg-primary/90 text-white"
-                data-testid="button-send-message"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </form>
+                
+                <form 
+                  onSubmit={(e: FormEvent) => {
+                    e.preventDefault();
+                    if ((inputMessage.trim() || attachedImage) && !isPaused) {
+                      handleSubmitMessage(
+                        inputMessage || "What do you see in this image?",
+                        attachedImage ? { base64: attachedImage.base64, mimeType: attachedImage.mimeType } : undefined
+                      );
+                      setInputMessage("");
+                    }
+                  }}
+                  className="flex items-center gap-2 max-w-4xl mx-auto"
+                >
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    data-testid="input-file"
+                  />
+                  
+                  {/* Image upload button */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="bg-black/50 border-white/20 text-white hover:bg-white/20"
+                    disabled={!sessionActive || isPaused}
+                    data-testid="button-attach-image"
+                  >
+                    <Image className="w-4 h-4" />
+                  </Button>
+                  
+                  <div className="flex-1 relative">
+                    <Input
+                      type="text"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      placeholder={attachedImage ? "Ask about the image..." : (microphoneStatus === 'listening' ? "" : "Type your message...")}
+                      className="flex-1 w-full bg-black/50 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm pr-4"
+                      data-testid="input-message"
+                      disabled={!sessionActive || isPaused}
+                    />
+                    {/* Audio Waveform - shows inside input when listening */}
+                    {microphoneStatus === 'listening' && !inputMessage && !attachedImage && (
+                      <div className="absolute inset-y-0 left-3 flex items-center gap-[2px] pointer-events-none">
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                          <div
+                            key={i}
+                            className="w-[2px] rounded-full"
+                            style={{
+                              height: '60%',
+                              background: `linear-gradient(to top, rgba(99, 102, 241, 0.8), rgba(139, 92, 246, 1), rgba(167, 139, 250, 0.9))`,
+                              boxShadow: '0 0 8px rgba(139, 92, 246, 0.6)',
+                              animation: `waveform 0.6s ease-in-out infinite`,
+                              animationDelay: `${i * 0.08}s`,
+                            }}
+                          />
+                        ))}
+                        <style>{`
+                          @keyframes waveform {
+                            0%, 100% { transform: scaleY(0.2); opacity: 0.5; }
+                            50% { transform: scaleY(1); opacity: 1; }
+                          }
+                        `}</style>
+                      </div>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={(!inputMessage.trim() && !attachedImage) || !sessionActive || isPaused}
+                    className="bg-primary hover:bg-primary/90 text-white"
+                    data-testid="button-send-message"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </form>
+              </>
+            )}
           </div>
         )}
 
