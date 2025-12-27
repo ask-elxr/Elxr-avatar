@@ -956,39 +956,50 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
                 if (isMobile) {
-                  console.log("📱 Mobile detected, using visibility trick + deferred session start");
+                  console.log("📱 Mobile detected, using LiveKit server-side approach");
                   
-                  // Mobile browsers suspend network requests after tap events
-                  // Simulate tab switch by triggering a focus/blur cycle via hidden iframe
-                  const triggerVisibilityResume = () => {
-                    console.log("📱 Triggering visibility resume...");
-                    const iframe = document.createElement('iframe');
-                    iframe.style.cssText = 'position:absolute;width:0;height:0;border:0;opacity:0;pointer-events:none;';
-                    document.body.appendChild(iframe);
-                    
-                    requestAnimationFrame(() => {
-                      try {
-                        // Brief focus to iframe triggers visibility change
-                        iframe.contentWindow?.focus();
-                        setTimeout(() => {
-                          window.focus();
-                          iframe.remove();
-                        }, 50);
-                      } catch (e) {
-                        iframe.remove();
-                      }
-                    });
-                  };
+                  // Mobile LiveKit approach: Server-side avatar initialization
+                  // 1. Call /api/session/start-mobile to get LiveKit room credentials
+                  // 2. Connect to LiveKit room directly (no heavy client-side work)
+                  // 3. Python avatar agent handles avatar streaming server-side
                   
-                  // Defer session start to escape the tap event's synchronous context
-                  setTimeout(async () => {
+                  (async () => {
                     try {
-                      console.log("📱 Starting deferred session...");
-                      triggerVisibilityResume();
-                      await new Promise(resolve => setTimeout(resolve, 100));
+                      console.log("📱 Starting mobile session via LiveKit...");
                       
-                      await startSession({ audioOnly, avatarId: selectedAvatarId });
-                      console.log("📱 Mobile session started successfully");
+                      // Get LiveKit room credentials from server
+                      const response = await fetch('/api/session/start-mobile', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          userId: userId,
+                          avatarId: selectedAvatarId 
+                        }),
+                      });
+                      
+                      if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || 'Failed to start mobile session');
+                      }
+                      
+                      const data = await response.json();
+                      console.log("📱 Mobile session created:", data.sessionId);
+                      console.log("📱 LiveKit room:", data.livekit?.room);
+                      
+                      // Store LiveKit credentials for the session
+                      // These will be used by sessionDrivers to connect to the room
+                      if (data.livekit) {
+                        (window as any).__mobileAvatarLiveKit = data.livekit;
+                      }
+                      
+                      // Start session with LiveKit config
+                      await startSession({ 
+                        audioOnly, 
+                        avatarId: selectedAvatarId,
+                        skipServerRegistration: true,
+                      });
+                      
+                      console.log("📱 Mobile session started successfully via LiveKit");
                     } catch (error: any) {
                       console.error("📱 Mobile session error:", error);
                       setShowChatButton(true);
@@ -999,7 +1010,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                         description: error.message || "Failed to start session",
                       });
                     }
-                  }, 0);
+                  })();
                 } else {
                   // Desktop path - direct session start
                   console.log("📱 Desktop detected, using direct session start");

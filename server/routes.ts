@@ -7382,6 +7382,64 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // Start a mobile session with LiveKit-based avatar (bypasses mobile browser throttling)
+  // The Python avatar agent handles avatar streaming server-side
+  app.post("/api/session/start-mobile", async (req, res) => {
+    try {
+      const { userId, avatarId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "userId is required" });
+      }
+
+      // Check if LiveKit is configured
+      if (!liveKitService.isConfigured()) {
+        return res.status(500).json({ 
+          error: "LiveKit not configured. Set LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET" 
+        });
+      }
+
+      const sessionCheck = sessionManager.canStartSession(userId);
+      if (!sessionCheck.allowed) {
+        return res.status(429).json({
+          error: sessionCheck.reason,
+          currentCount: sessionCheck.currentCount,
+        });
+      }
+
+      // Generate LiveKit room config for client to connect directly
+      const liveKitConfig = await liveKitService.generateLiveAvatarConfig(
+        userId,
+        avatarId || 'default'
+      );
+
+      const sessionId = `mobile_${userId}_${Date.now()}`;
+      sessionManager.startSession(sessionId, userId, avatarId || 'unknown');
+
+      // Track usage
+      await subscriptionService.incrementUsage(userId, "chatSession").catch(err => {
+        console.warn("Failed to track chat session usage:", err.message);
+      });
+
+      console.log(`📱 Mobile session started: ${sessionId}, room: ${liveKitConfig.livekit_room}`);
+
+      res.json({ 
+        sessionId,
+        livekit: {
+          url: liveKitConfig.livekit_url,
+          room: liveKitConfig.livekit_room,
+          token: liveKitConfig.frontend_token,
+        }
+      });
+    } catch (error: any) {
+      console.error("Error starting mobile session:", error);
+      res.status(500).json({
+        error: "Failed to start mobile session",
+        details: error.message,
+      });
+    }
+  });
+
   // End all sessions for a user
   app.post("/api/session/end-all", async (req, res) => {
     try {
