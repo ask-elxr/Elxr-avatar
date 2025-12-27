@@ -664,24 +664,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get ElevenLabs agent configuration for audio-only mode
+  // DISABLED: Using legacy pipeline (Claude + Pinecone + ElevenLabs TTS) instead of ElevenLabs Agents
+  // ElevenLabs Agents use a separate knowledge base - we want to use our Pinecone knowledge
   app.get("/api/elevenlabs/agent-config", async (req: any, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "getAgentConfig" });
     
     try {
-      const agentId = process.env.ELEVENLABS_AGENT_ID;
-      
-      if (!agentId) {
-        log.warn("ELEVENLABS_AGENT_ID not configured");
-        return res.json({ 
-          enabled: false,
-          message: "ElevenLabs Agent not configured" 
-        });
-      }
-      
-      log.info("ElevenLabs agent config retrieved");
-      res.json({
-        enabled: true,
-        agentId: agentId,
+      // Disabled: Return enabled: false to use legacy pipeline with Pinecone knowledge base
+      // The ElevenLabs Agents Platform uses its own knowledge base, not our Pinecone
+      log.info("ElevenLabs agent disabled - using legacy Claude + Pinecone + ElevenLabs TTS pipeline");
+      return res.json({ 
+        enabled: false,
+        message: "Using legacy pipeline with Pinecone knowledge base" 
       });
     } catch (error: any) {
       log.error({ error: error.message }, "Error getting ElevenLabs agent config");
