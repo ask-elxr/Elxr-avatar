@@ -18,6 +18,7 @@ interface AvatarSessionConfig {
 interface StartSessionOptions {
   audioOnly?: boolean;
   avatarId?: string;
+  skipServerRegistration?: boolean; // Safari iOS workaround - worker already registered
 }
 
 interface AvatarSessionReturn {
@@ -1260,7 +1261,7 @@ export function useAvatarSession({
       }, 30000);
       loadingTimeoutRef.current = loadingTimeoutId;
       
-      const { audioOnly = false, avatarId } = options || {};
+      const { audioOnly = false, avatarId, skipServerRegistration = false } = options || {};
       audioOnlyRef.current = audioOnly;
       
       const activeAvatarId = avatarId || currentAvatarIdRef.current;
@@ -1276,59 +1277,64 @@ export function useAvatarSession({
       // }
       console.log("📱 Audio unlock skipped for debugging");
 
-      // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
-      try {
-        console.log("📱 Ending previous sessions...");
-        await fetch("/api/session/end-all", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId,
-          }),
-        });
-        console.log("📱 Previous sessions ended");
-      } catch (error) {
-        console.warn("Failed to end previous sessions:", error);
-        // Continue anyway - this is just cleanup
-      }
+      // Skip server registration if already done by Web Worker (Safari iOS workaround)
+      if (!skipServerRegistration) {
+        // End all existing sessions first to prevent "Maximum 2 concurrent sessions" error
+        try {
+          console.log("📱 Ending previous sessions...");
+          await fetch("/api/session/end-all", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId,
+            }),
+          });
+          console.log("📱 Previous sessions ended");
+        } catch (error) {
+          console.warn("Failed to end previous sessions:", error);
+          // Continue anyway - this is just cleanup
+        }
 
-      // Register session with server (for both audio and video modes)
-      try {
-        console.log("📱 Registering session with server...");
-        const response = await fetch("/api/session/start", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId,
-            avatarId: activeAvatarId,
-          }),
-        });
+        // Register session with server (for both audio and video modes)
+        try {
+          console.log("📱 Registering session with server...");
+          const response = await fetch("/api/session/start", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              userId,
+              avatarId: activeAvatarId,
+            }),
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          
-          if (response.status === 429) {
-            throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            
+            if (response.status === 429) {
+              throw new Error(errorData.error || "Rate limit exceeded. Please wait before starting a new session.");
+            }
+            
+            throw new Error(errorData.error || "Failed to start session");
           }
-          
-          throw new Error(errorData.error || "Failed to start session");
-        }
 
-        const data = await response.json();
-        sessionIdRef.current = data.sessionId;
-        console.log("📱 Session registered successfully:", data.sessionId);
-      } catch (error: any) {
-        console.error("Error registering session:", error);
-        if (loadingTimeoutRef.current) {
-          clearTimeout(loadingTimeoutRef.current);
-          loadingTimeoutRef.current = null;
+          const data = await response.json();
+          sessionIdRef.current = data.sessionId;
+          console.log("📱 Session registered successfully:", data.sessionId);
+        } catch (error: any) {
+          console.error("Error registering session:", error);
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+            loadingTimeoutRef.current = null;
+          }
+          setIsLoading(false);
+          throw error;
         }
-        setIsLoading(false);
-        throw error;
+      } else {
+        console.log("📱 Skipping server registration (already done by Web Worker)");
       }
 
     // Setup UI based on mode

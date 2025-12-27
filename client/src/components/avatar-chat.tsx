@@ -951,30 +951,112 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
                 
-                // Safari iOS workaround: Engage audio system to prevent JS suspension
-                // Audio playback gets priority in Safari's power management
-                unlockMobileAudio().then(() => {
-                  console.log("📱 Audio unlocked, starting session...");
-                }).catch(() => {
-                  console.log("📱 Audio unlock failed, continuing anyway...");
-                });
+                // Safari iOS workaround: Use Web Worker to bypass main thread suspension
+                // Safari iOS 17 throttles the main thread after taps, but workers stay active
+                const isSafariIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+                                   /Safari/.test(navigator.userAgent) && 
+                                   !/Chrome|CriOS|FxiOS/.test(navigator.userAgent);
                 
-                // Also start a keepalive interval with network pings
-                const keepaliveInterval = setInterval(() => {
-                  fetch('/api/auth/user', { method: 'HEAD' }).catch(() => {});
-                }, 100);
-                
-                // Safari iOS workaround: Use setTimeout(0) to break out of click handler
-                // before making async calls. Safari suspends JS during click handlers.
-                setTimeout(async () => {
-                  let didError = false;
-                  try {
-                    console.log("📱 Calling startSession now (deferred)...");
-                    await startSession({ audioOnly, avatarId: selectedAvatarId });
+                if (isSafariIOS && typeof Worker !== 'undefined') {
+                  console.log("📱 Safari iOS detected, using Web Worker for session start");
+                  
+                  // Create inline worker to avoid bundling issues
+                  const workerCode = `
+                    self.onmessage = async (event) => {
+                      const { avatarId, audioOnly, userId } = event.data;
+                      try {
+                        // End previous sessions
+                        try {
+                          await fetch('/api/session/end-all', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ userId }),
+                          });
+                        } catch (e) {}
+                        
+                        // Register session
+                        const response = await fetch('/api/session/start', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ avatarId, audioOnly }),
+                        });
+                        
+                        if (!response.ok) {
+                          const errorData = await response.json();
+                          throw new Error(errorData.error || 'Failed to start session');
+                        }
+                        
+                        const data = await response.json();
+                        self.postMessage({ success: true, sessionId: data.sessionId });
+                      } catch (error) {
+                        self.postMessage({ success: false, error: error.message });
+                      }
+                    };
+                  `;
+                  
+                  const blob = new Blob([workerCode], { type: 'application/javascript' });
+                  const workerUrl = URL.createObjectURL(blob);
+                  const worker = new Worker(workerUrl);
+                  
+                  worker.onmessage = async (event) => {
+                    URL.revokeObjectURL(workerUrl);
+                    worker.terminate();
+                    
+                    if (event.data.success) {
+                      console.log("📱 Worker: Session registered, continuing setup...");
+                      // Continue with the rest of session setup on main thread
+                      try {
+                        await startSession({ audioOnly, avatarId: selectedAvatarId, skipServerRegistration: true });
+                        console.log("📱 startSession returned successfully");
+                      } catch (error: any) {
+                        setShowChatButton(true);
+                        setSessionStarting(false);
+                        toast({
+                          variant: "destructive",
+                          title: "Cannot start session",
+                          description: error.message || "Failed to start session",
+                        });
+                      }
+                    } else {
+                      console.error("📱 Worker: Session start failed:", event.data.error);
+                      setShowChatButton(true);
+                      setSessionStarting(false);
+                      toast({
+                        variant: "destructive",
+                        title: "Cannot start session",
+                        description: event.data.error || "Failed to start session",
+                      });
+                    }
+                  };
+                  
+                  worker.onerror = (error) => {
+                    console.error("📱 Worker error:", error);
+                    URL.revokeObjectURL(workerUrl);
+                    worker.terminate();
+                    // Fall back to normal path
+                    startSession({ audioOnly, avatarId: selectedAvatarId }).catch((err: any) => {
+                      setShowChatButton(true);
+                      setSessionStarting(false);
+                      toast({
+                        variant: "destructive",
+                        title: "Cannot start session",
+                        description: err.message || "Failed to start session",
+                      });
+                    });
+                  };
+                  
+                  // Send message to worker
+                  worker.postMessage({ 
+                    avatarId: selectedAvatarId, 
+                    audioOnly, 
+                    userId: 'current-user' 
+                  });
+                } else {
+                  // Non-Safari path - standard approach
+                  console.log("📱 Using standard session start");
+                  startSession({ audioOnly, avatarId: selectedAvatarId }).then(() => {
                     console.log("📱 startSession returned successfully");
-                    // Session started successfully - sessionActive effect will clear sessionStarting
-                  } catch (error: any) {
-                    didError = true;
+                  }).catch((error: any) => {
                     setShowChatButton(true);
                     setSessionStarting(false);
                     toast({
@@ -982,15 +1064,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       title: "Cannot start session",
                       description: error.message || "Failed to start session",
                     });
-                  } finally {
-                    clearInterval(keepaliveInterval);
-                    if (!didError) {
-                      setTimeout(() => {
-                        console.log("📱 Session start completed, checking state propagation...");
-                      }, 500);
-                    }
-                  }
-                }, 0);
+                  });
+                }
               }}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
               data-testid="button-start-session"
