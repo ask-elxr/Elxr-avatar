@@ -16,6 +16,7 @@ import { AudioVideoToggle } from "@/components/AudioVideoToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { TrialCountdown } from "@/components/TrialCountdown";
+import { unlockMobileAudio } from "@/lib/mobileAudio";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -950,6 +951,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
                 
+                // Safari iOS workaround: Engage audio system to prevent JS suspension
+                // Audio playback gets priority in Safari's power management
+                unlockMobileAudio().then(() => {
+                  console.log("📱 Audio unlocked, starting session...");
+                }).catch(() => {
+                  console.log("📱 Audio unlock failed, continuing anyway...");
+                });
+                
+                // Also start a keepalive interval with network pings
+                const keepaliveInterval = setInterval(() => {
+                  fetch('/api/auth/user', { method: 'HEAD' }).catch(() => {});
+                }, 100);
+                
                 // Safari iOS workaround: Use setTimeout(0) to break out of click handler
                 // before making async calls. Safari suspends JS during click handlers.
                 setTimeout(async () => {
@@ -969,6 +983,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       description: error.message || "Failed to start session",
                     });
                   } finally {
+                    clearInterval(keepaliveInterval);
                     if (!didError) {
                       setTimeout(() => {
                         console.log("📱 Session start completed, checking state propagation...");
