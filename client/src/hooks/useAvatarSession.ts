@@ -1255,6 +1255,21 @@ export function useAvatarSession({
   const startSession = useCallback(async (options?: StartSessionOptions) => {
     console.log("📱 startSession called - beginning session initialization...");
     
+    // 🔇 CRITICAL: Stop any previous session driver FIRST to free up HeyGen session slot
+    // This prevents "Maximum 2 concurrent sessions" error when switching avatars
+    if (sessionDriverRef.current) {
+      console.log("🛑 Stopping previous session driver before starting new session");
+      try {
+        intentionalStopRef.current = true;
+        await sessionDriverRef.current.stop();
+        sessionDriverRef.current = null;
+        console.log("✅ Previous session driver stopped successfully");
+      } catch (e) {
+        console.warn("⚠️ Error stopping previous session:", e);
+        sessionDriverRef.current = null;
+      }
+    }
+    
     // 🔇 CRITICAL: Stop any previous audio immediately to prevent overlapping voices
     if (currentAudioRef.current) {
       console.log("🔇 Stopping previous audio at session start");
