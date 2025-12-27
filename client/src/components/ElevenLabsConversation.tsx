@@ -1,5 +1,5 @@
 import { useConversation } from '@elevenlabs/react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, MicOff, Volume2, VolumeX } from 'lucide-react';
 
@@ -16,18 +16,25 @@ interface ElevenLabsConversationProps {
   className?: string;
 }
 
-export function ElevenLabsConversation({
-  agentId,
-  avatarId,
-  userId,
-  onMessage,
-  onStatusChange,
-  onSpeakingChange,
-  onSessionStart,
-  onSessionEnd,
-  autoStart = false,
-  className = '',
-}: ElevenLabsConversationProps) {
+export interface ElevenLabsConversationRef {
+  endConversation: () => Promise<void>;
+  isConnected: () => boolean;
+}
+
+export const ElevenLabsConversation = forwardRef<ElevenLabsConversationRef, ElevenLabsConversationProps>(
+  function ElevenLabsConversationInner(props, ref) {
+  const {
+    agentId,
+    avatarId,
+    userId,
+    onMessage,
+    onStatusChange,
+    onSpeakingChange,
+    onSessionStart,
+    onSessionEnd,
+    autoStart = false,
+    className = '',
+  } = props;
   const [hasStarted, setHasStarted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -123,6 +130,11 @@ export function ElevenLabsConversation({
       console.error('🎙️ Error ending conversation:', err);
     }
   }, [conversation]);
+
+  useImperativeHandle(ref, () => ({
+    endConversation,
+    isConnected: () => conversation.status === 'connected',
+  }), [endConversation, conversation.status]);
 
   const toggleMute = useCallback(() => {
     const newVolume = isMuted ? 1 : 0;
@@ -227,6 +239,6 @@ export function ElevenLabsConversation({
       )}
     </div>
   );
-}
+});
 
 export default ElevenLabsConversation;

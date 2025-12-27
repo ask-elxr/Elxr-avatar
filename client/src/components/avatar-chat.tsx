@@ -11,7 +11,7 @@ import { useFullscreen } from "@/hooks/useFullscreen";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
-import { AudioOnlyDisplay } from "@/components/AudioOnlyDisplay";
+import { AudioOnlyDisplay, AudioOnlyDisplayRef } from "@/components/AudioOnlyDisplay";
 import { AudioVideoToggle } from "@/components/AudioVideoToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
@@ -79,6 +79,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioOnlyRef = useRef<AudioOnlyDisplayRef>(null);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -681,13 +682,26 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setShowAvatarSwitcher(false);
     
     try {
+      // End any active agent session first via ref
+      if (elevenLabsAgentActive && audioOnlyRef.current) {
+        console.log("🔄 Calling endAgentConversation before avatar switch");
+        await audioOnlyRef.current.endAgentConversation();
+        console.log("🔄 Agent conversation ended");
+      }
+      setElevenLabsAgentActive(false);
+      
       await endSession();
-      await new Promise(resolve => setTimeout(resolve, 500));
-      await startSession({ audioOnly, avatarId: newAvatarId });
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Clear chat history for fresh start with new avatar
+      setChatHistory([]);
+      
+      // Show start button to let user initiate new session
+      setShowChatButton(true);
       
       toast({
         title: "Avatar Switched",
-        description: "Successfully switched to new AI guide",
+        description: `Switched to ${newAvatarId}. Press Start Chat to begin.`,
       });
     } catch (error: any) {
       toast({
@@ -761,6 +775,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           
           {audioOnly && !heygenSessionActive && (sessionActive || isLoading || elevenLabsAgentActive) && (
             <AudioOnlyDisplay 
+              ref={audioOnlyRef}
               isSpeaking={isSpeaking} 
               sessionActive={sessionActive || elevenLabsAgentActive} 
               avatarId={selectedAvatarId}

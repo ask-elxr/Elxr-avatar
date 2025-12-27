@@ -1,4 +1,5 @@
-import { ElevenLabsConversation } from './ElevenLabsConversation';
+import { ElevenLabsConversation, ElevenLabsConversationRef } from './ElevenLabsConversation';
+import { forwardRef, useRef, useImperativeHandle } from 'react';
 
 interface AudioOnlyDisplayProps {
   isSpeaking: boolean;
@@ -11,6 +12,11 @@ interface AudioOnlyDisplayProps {
   onSessionStart?: () => void;
   onSessionEnd?: () => void;
   onMessage?: (message: { role: 'user' | 'assistant'; content: string }) => void;
+}
+
+export interface AudioOnlyDisplayRef {
+  endAgentConversation: () => Promise<void>;
+  isAgentConnected: () => boolean;
 }
 
 const avatarGifs: Record<string, string> = {
@@ -26,18 +32,31 @@ const avatarGifs: Record<string, string> = {
   'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
 };
 
-export function AudioOnlyDisplay({ 
-  isSpeaking, 
-  sessionActive, 
-  avatarId = 'mark-kohl',
-  userId = '',
-  agentId = '',
-  useElevenLabsAgent = false,
-  onSpeakingChange,
-  onSessionStart,
-  onSessionEnd,
-  onMessage,
-}: AudioOnlyDisplayProps) {
+export const AudioOnlyDisplay = forwardRef<AudioOnlyDisplayRef, AudioOnlyDisplayProps>(
+  function AudioOnlyDisplayInner(props, ref) {
+  const {
+    isSpeaking, 
+    sessionActive, 
+    avatarId = 'mark-kohl',
+    userId = '',
+    agentId = '',
+    useElevenLabsAgent = false,
+    onSpeakingChange,
+    onSessionStart,
+    onSessionEnd,
+    onMessage,
+  } = props;
+  
+  const conversationRef = useRef<ElevenLabsConversationRef>(null);
+  
+  useImperativeHandle(ref, () => ({
+    endAgentConversation: async () => {
+      if (conversationRef.current) {
+        await conversationRef.current.endConversation();
+      }
+    },
+    isAgentConnected: () => conversationRef.current?.isConnected() ?? false,
+  }), []);
   const gifUrl = avatarGifs[avatarId] || avatarGifs['mark-kohl'];
   
   return (
@@ -103,6 +122,7 @@ export function AudioOnlyDisplay({
       {useElevenLabsAgent && agentId && (
         <div className="mt-8 z-20">
           <ElevenLabsConversation
+            ref={conversationRef}
             agentId={agentId}
             avatarId={avatarId}
             userId={userId}
@@ -143,4 +163,4 @@ export function AudioOnlyDisplay({
       `}</style>
     </div>
   );
-}
+});
