@@ -297,6 +297,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
   }, [sessionActive, showReconnect]);
 
+  // 📱 iOS Safari fix: Force clear stuck loading state when tab becomes visible
+  // This handles cases where iOS suspends React state updates
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log("📱 Tab visible - checking for stuck loading state");
+        // If session is actually active but UI still shows loading, force clear it
+        if (sessionActive && sessionStarting) {
+          console.log("📱 Detected stuck loading state, clearing sessionStarting");
+          setSessionStarting(false);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [sessionActive, sessionStarting]);
+
   // Loading timeout: If loading takes too long in video mode, force show reconnect
   useEffect(() => {
     if (sessionStarting && !audioOnly) {
@@ -304,6 +322,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         console.log("⏰ Loading timeout reached (30s) - forcing reconnect screen");
         setLoadingTimedOut(true);
       }, 30000);
+      return () => clearTimeout(timeoutId);
+    }
+    return undefined;
+  }, [sessionStarting, audioOnly]);
+  
+  // 📱 Additional safeguard: Auto-clear sessionStarting after short delay for audio-only mode
+  useEffect(() => {
+    if (sessionStarting && audioOnly) {
+      const timeoutId = setTimeout(() => {
+        console.log("📱 Audio-only mode: Auto-clearing sessionStarting after 5s");
+        setSessionStarting(false);
+      }, 5000);
       return () => clearTimeout(timeoutId);
     }
     return undefined;
