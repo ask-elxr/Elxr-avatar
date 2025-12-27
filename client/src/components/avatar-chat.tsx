@@ -1065,17 +1065,29 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   return;
                 }
                 
-                // Mobile workaround: Use Web Worker to bypass main thread throttling
-                // Both Safari iOS and Chrome mobile can throttle the main thread after taps
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 
+                // For audio-only mode: Use direct session start (same as desktop)
+                // No complex LiveKit setup needed - just start listening and responding
+                if (audioOnly) {
+                  console.log("🎧 Audio-only mode - using direct session start");
+                  startSession({ audioOnly: true, avatarId: selectedAvatarId }).then(() => {
+                    console.log("🎧 Audio-only session started successfully");
+                  }).catch((error: any) => {
+                    setShowChatButton(true);
+                    setSessionStarting(false);
+                    toast({
+                      variant: "destructive",
+                      title: "Cannot start session",
+                      description: error.message || "Failed to start session",
+                    });
+                  });
+                  return;
+                }
+                
+                // Video mode on mobile: Use LiveKit server-side approach
                 if (isMobile) {
-                  console.log("📱 Mobile detected, using LiveKit server-side approach");
-                  
-                  // Mobile LiveKit approach: Server-side avatar initialization
-                  // 1. Call /api/session/start-mobile to get LiveKit room credentials
-                  // 2. Connect to LiveKit room directly (no heavy client-side work)
-                  // 3. Python avatar agent handles avatar streaming server-side
+                  console.log("📱 Mobile VIDEO detected, using LiveKit server-side approach");
                   
                   (async () => {
                     try {
@@ -1101,14 +1113,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       console.log("📱 LiveKit room:", data.livekit?.room);
                       
                       // Store LiveKit credentials for the session
-                      // These will be used by sessionDrivers to connect to the room
                       if (data.livekit) {
                         (window as any).__mobileAvatarLiveKit = data.livekit;
                       }
                       
                       // Start session with LiveKit config
                       await startSession({ 
-                        audioOnly, 
+                        audioOnly: false, 
                         avatarId: selectedAvatarId,
                         skipServerRegistration: true,
                       });
@@ -1126,10 +1137,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     }
                   })();
                 } else {
-                  // Desktop path - direct session start
-                  console.log("📱 Desktop detected, using direct session start");
-                  startSession({ audioOnly, avatarId: selectedAvatarId }).then(() => {
-                    console.log("📱 startSession returned successfully");
+                  // Desktop video path - direct session start
+                  console.log("🖥️ Desktop VIDEO detected, using direct session start");
+                  startSession({ audioOnly: false, avatarId: selectedAvatarId }).then(() => {
+                    console.log("🖥️ startSession returned successfully");
                   }).catch((error: any) => {
                     setShowChatButton(true);
                     setSessionStarting(false);
