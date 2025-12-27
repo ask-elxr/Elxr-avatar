@@ -944,38 +944,38 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {showChatButton && !showAvatarSelector && micPermissionGranted === true && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
             <Button
-              onClick={async () => {
+              onClick={() => {
                 console.log("📱 BUTTON CLICKED - Start Chat pressed");
                 setShowChatButton(false);
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
-                let didError = false;
-                try {
-                  console.log("📱 Calling startSession now...");
-                  await startSession({ audioOnly, avatarId: selectedAvatarId });
-                  console.log("📱 startSession returned successfully");
-                  // Session started successfully - sessionActive effect will clear sessionStarting
-                } catch (error: any) {
-                  didError = true;
-                  setShowChatButton(true);
-                  setSessionStarting(false);
-                  toast({
-                    variant: "destructive",
-                    title: "Cannot start session",
-                    description: error.message || "Failed to start session",
-                  });
-                } finally {
-                  // Safety check: If we didn't error but state updates don't propagate within 1s,
-                  // the effect watching sessionActive/showReconnect will handle it.
-                  // This extra timeout handles edge case where startSession completes
-                  // but neither sessionActive nor showReconnect become true.
-                  if (!didError) {
-                    setTimeout(() => {
-                      // State will be checked by effect - just log for debugging
-                      console.log("📱 Session start completed, checking state propagation...");
-                    }, 500);
+                
+                // Safari iOS workaround: Use setTimeout(0) to break out of click handler
+                // before making async calls. Safari suspends JS during click handlers.
+                setTimeout(async () => {
+                  let didError = false;
+                  try {
+                    console.log("📱 Calling startSession now (deferred)...");
+                    await startSession({ audioOnly, avatarId: selectedAvatarId });
+                    console.log("📱 startSession returned successfully");
+                    // Session started successfully - sessionActive effect will clear sessionStarting
+                  } catch (error: any) {
+                    didError = true;
+                    setShowChatButton(true);
+                    setSessionStarting(false);
+                    toast({
+                      variant: "destructive",
+                      title: "Cannot start session",
+                      description: error.message || "Failed to start session",
+                    });
+                  } finally {
+                    if (!didError) {
+                      setTimeout(() => {
+                        console.log("📱 Session start completed, checking state propagation...");
+                      }, 500);
+                    }
                   }
-                }
+                }, 0);
               }}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
               data-testid="button-start-session"
