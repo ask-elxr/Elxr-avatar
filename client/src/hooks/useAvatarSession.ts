@@ -2318,14 +2318,17 @@ export function useAvatarSession({
               const audio = await playAudioBlob(audioBlob);
               currentAudioRef.current = audio;
               
-              // Setup cleanup after playback ends
-              const originalOnEnded = audio.onended;
+              // Setup cleanup after playback ends (playAudioBlob resolves when play STARTS)
               audio.onended = () => {
                 console.log(`🔊 Audio playback ENDED successfully`);
-                if (originalOnEnded) (originalOnEnded as any)();
                 isSpeakingRef.current = false;
                 setIsSpeakingState(false);
                 currentAudioRef.current = null;
+                
+                // Cleanup blob URL
+                if (audio.src && audio.src.startsWith('blob:')) {
+                  URL.revokeObjectURL(audio.src);
+                }
                 
                 // 🔊 Resume voice recognition after audio ends (with 1s delay to prevent echo)
                 setTimeout(() => {
@@ -2336,7 +2339,16 @@ export function useAvatarSession({
                 }, 1000);
               };
               
-              console.log(`🔊 Audio playback STARTED - duration: ${audio.duration.toFixed(2)}s`);
+              audio.onerror = () => {
+                console.error(`🔊 Audio playback ERROR`);
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
+                currentAudioRef.current = null;
+                if (audio.src && audio.src.startsWith('blob:')) {
+                  URL.revokeObjectURL(audio.src);
+                }
+              };
+              
             } catch (playError) {
               console.error(`🔊 Audio playback FAILED:`, playError);
               isSpeakingRef.current = false;

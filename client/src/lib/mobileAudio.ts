@@ -163,46 +163,45 @@ export async function ensureAudioUnlocked(): Promise<boolean> {
   return await withTimeout(unlockMobileAudio(), 2000, false);
 }
 
+// 📱 Play audio blob - resolves when playback STARTS (not ends)
+// Returns the audio element so caller can attach onended handler
 export async function playAudioBlob(blob: Blob): Promise<HTMLAudioElement> {
   await ensureAudioUnlocked();
+  await ensureAudioContextResumed();
   
   const audio = getSharedAudioElement();
+  
+  // 📱 CRITICAL: Fully reset audio element before reuse (iOS requires this)
+  audio.pause();
+  audio.currentTime = 0;
   
   const previousSrc = audio.src;
   if (previousSrc && previousSrc.startsWith('blob:')) {
     URL.revokeObjectURL(previousSrc);
   }
+  audio.src = '';
   
   const audioUrl = URL.createObjectURL(blob);
   audio.src = audioUrl;
+  audio.volume = 1.0;
+  audio.muted = false;
   
   return new Promise((resolve, reject) => {
-    const cleanup = () => {
-      audio.onended = null;
-      audio.onerror = null;
-      audio.oncanplaythrough = null;
-    };
-
-    audio.onended = () => {
-      cleanup();
-      URL.revokeObjectURL(audioUrl);
-      resolve(audio);
-    };
-
     audio.onerror = (e) => {
-      cleanup();
       URL.revokeObjectURL(audioUrl);
       reject(new Error(`Audio playback error: ${audio.error?.message || 'unknown'}`));
     };
 
     audio.oncanplaythrough = async () => {
+      audio.oncanplaythrough = null; // Clear to prevent multiple calls
       try {
-        console.log('🔊 Audio element configured, volume:', audio.volume, 'muted:', audio.muted, 'unlocked:', audioUnlocked);
+        console.log('🔊 Audio ready, volume:', audio.volume, 'muted:', audio.muted, 'unlocked:', audioUnlocked);
         await audio.play();
-        console.log('🔊 Audio playback STARTED via shared element - duration:', audio.duration.toFixed(2) + 's');
+        console.log('🔊 Audio playback STARTED - duration:', audio.duration.toFixed(2) + 's');
+        // Resolve immediately after play starts - caller handles onended
+        resolve(audio);
       } catch (playError: any) {
         console.error('🔊 Audio play failed:', playError.name, playError.message);
-        cleanup();
         URL.revokeObjectURL(audioUrl);
         reject(playError);
       }
