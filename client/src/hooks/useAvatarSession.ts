@@ -2303,96 +2303,52 @@ export function useAvatarSession({
             const audioBlob = await audioResponse.blob();
             console.log(`🔊 Audio blob received: ${(audioBlob.size / 1024).toFixed(1)} KB, type: ${audioBlob.type}`);
             
-            // 📱 MOBILE FIX: Create fresh audio element for EACH playback
-            // iOS Safari has issues with reusing audio elements - they get "stuck"
-            // First, cleanup any existing audio
-            if (currentAudioRef.current) {
-              currentAudioRef.current.pause();
-              currentAudioRef.current.src = '';
-              currentAudioRef.current = null;
-            }
-            
-            const audio = createFreshAudioElement();
-            currentAudioRef.current = audio;
-            
-            const audioUrl = URL.createObjectURL(audioBlob);
-            audio.src = audioUrl;
-            audio.volume = 1.0;
-            audio.muted = false;
-            console.log(`🔊 Audio element configured, volume: ${audio.volume}, muted: ${audio.muted}, unlocked: ${isAudioUnlocked()}`);
-
-            audio.onloadedmetadata = () => {
-              console.log(`🔊 Audio metadata loaded: duration=${audio.duration.toFixed(2)}s, volume=${audio.volume}`);
-            };
-
-            audio.onended = () => {
-              console.log(`🔊 Audio playback ENDED successfully`);
-              isSpeakingRef.current = false;
-              setIsSpeakingState(false);
-              URL.revokeObjectURL(audioUrl);
-              currentAudioRef.current = null;
-              
-              // 🔊 Resume voice recognition after audio ends (with 1s delay to prevent echo)
-              setTimeout(() => {
-                if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
-                  startVoiceRecognition();
-                  console.log("🔊 Voice recognition resumed (audio-only mode - avatar finished)");
-                }
-              }, 1000);
-            };
-
-            audio.onerror = (e) => {
-              console.error(`🔊 Audio playback ERROR:`, e, audio.error);
-              isSpeakingRef.current = false;
-              setIsSpeakingState(false);
-              URL.revokeObjectURL(audioUrl);
-              currentAudioRef.current = null;
-              
-              // Resume voice recognition on error too
-              setTimeout(() => {
-                if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
-                  startVoiceRecognition();
-                }
-              }, 1000);
-            };
-
             // Final check before playing - mode might have changed during blob processing
             if (!audioOnlyRef.current) {
               console.log("🚫 Skipping audio playback - mode changed to video");
-              URL.revokeObjectURL(audioUrl);
-              currentAudioRef.current = null;
               isSpeakingRef.current = false;
               setIsSpeakingState(false);
               return;
             }
 
+            // 📱 MOBILE FIX: Use playAudioBlob which properly uses the pre-unlocked shared element
+            // This is critical for iOS Safari which rejects audio.play() outside user gesture context
             try {
-              // 📱 MOBILE FIX: Ensure audio is unlocked and AudioContext is running before playback
-              const unlocked = await ensureAudioUnlocked();
-              if (!unlocked) {
-                console.warn('📱 Audio may not be unlocked, attempting playback anyway');
-              }
-              await ensureAudioContextResumed();
+              console.log(`🔊 Playing audio via playAudioBlob (unlocked: ${isAudioUnlocked()})`);
+              const audio = await playAudioBlob(audioBlob);
+              currentAudioRef.current = audio;
               
-              audio.load(); // Force reload the new source
-              await audio.play();
-              console.log(`🔊 Audio playback STARTED via shared element - duration: ${audio.duration.toFixed(2)}s`);
+              // Setup cleanup after playback ends
+              const originalOnEnded = audio.onended;
+              audio.onended = () => {
+                console.log(`🔊 Audio playback ENDED successfully`);
+                if (originalOnEnded) (originalOnEnded as any)();
+                isSpeakingRef.current = false;
+                setIsSpeakingState(false);
+                currentAudioRef.current = null;
+                
+                // 🔊 Resume voice recognition after audio ends (with 1s delay to prevent echo)
+                setTimeout(() => {
+                  if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
+                    startVoiceRecognition();
+                    console.log("🔊 Voice recognition resumed (audio-only mode - avatar finished)");
+                  }
+                }, 1000);
+              };
+              
+              console.log(`🔊 Audio playback STARTED - duration: ${audio.duration.toFixed(2)}s`);
             } catch (playError) {
-              console.error(`🔊 Audio play() FAILED:`, playError);
-              // 📱 On mobile, if play fails, try one more time after ensuring unlock
-              if ((playError as Error).name === 'NotAllowedError') {
-                console.warn('📱 Audio blocked by browser - attempting unlock and retry...');
-                try {
-                  await ensureAudioUnlocked();
-                  await ensureAudioContextResumed();
-                  await audio.play();
-                  console.log('📱 Audio retry succeeded after re-unlock');
-                } catch (retryError) {
-                  console.error('📱 Audio retry also failed:', retryError);
-                  isSpeakingRef.current = false;
-                  setIsSpeakingState(false);
+              console.error(`🔊 Audio playback FAILED:`, playError);
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+              currentAudioRef.current = null;
+              
+              // Resume voice recognition on error
+              setTimeout(() => {
+                if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
+                  startVoiceRecognition();
                 }
-              }
+              }, 1000);
             }
           } else {
             // Audio fetch failed - clear state
