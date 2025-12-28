@@ -1746,7 +1746,7 @@ export function useAvatarSession({
       videoRef.current.srcObject = null;
     }
 
-    // Stop current audio if playing
+    // Stop current audio if playing (both ref audio AND shared mobile audio)
     if (currentAudioRef.current) {
       try {
         currentAudioRef.current.pause();
@@ -1759,6 +1759,19 @@ export function useAvatarSession({
         currentAudioRef.current = null;
       }
     }
+    // Stop ElevenLabs video mode audio as well
+    if (elevenLabsVideoAudioRef.current) {
+      try {
+        elevenLabsVideoAudioRef.current.pause();
+        elevenLabsVideoAudioRef.current = null;
+      } catch (e) {
+        console.warn("Error stopping ElevenLabs video audio:", e);
+        elevenLabsVideoAudioRef.current = null;
+      }
+    }
+    // Also stop shared mobile audio element to prevent voice overlap on avatar switch
+    stopSharedAudio();
+    
     isSpeakingRef.current = false;
     setIsSpeakingState(false);
 
