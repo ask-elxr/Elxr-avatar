@@ -541,50 +541,81 @@ export function useAvatarSession({
     
     useElevenLabsSttRef.current = true;
     
-    // Cleanup any existing connection before starting fresh
-    stopElevenLabsSTT();
+    // 📱 Check if we can reuse existing mic stream (important for post-greeting restart)
+    // If mic is already granted, don't request again (we may not be in user gesture context)
+    let micStream: MediaStream | null = elevenLabsSttStreamRef.current;
+    let audioContext: AudioContext | null = elevenLabsSttAudioContextRef.current;
+    const existingMicValid = micStream?.getAudioTracks().some(t => t.readyState === 'live') ?? false;
+    const existingAudioContextValid = audioContext && audioContext.state !== 'closed';
     
-    // 📱 iOS CRITICAL: Request microphone IMMEDIATELY within user gesture context
-    // This MUST happen before any async operations (WebSocket, fetch, etc.)
-    // Otherwise iOS Safari will deny the permission request
-    let micStream: MediaStream | null = null;
-    let audioContext: AudioContext | null = null;
-    
-    try {
-      console.log("🎤 Requesting microphone access IMMEDIATELY (user gesture context)...");
-      micStream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
+    if (existingMicValid && existingAudioContextValid) {
+      console.log("🎤 Reusing existing mic stream and AudioContext");
+      
+      // Cleanup old WebSocket and processor (but keep mic stream and AudioContext)
+      if (elevenLabsSttProcessorRef.current) {
+        elevenLabsSttProcessorRef.current.disconnect();
+        elevenLabsSttProcessorRef.current = null;
+      }
+      if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN) {
+        elevenLabsSttWsRef.current.send(JSON.stringify({ type: 'stop' }));
+        elevenLabsSttWsRef.current.close();
+      }
+      elevenLabsSttWsRef.current = null;
+      elevenLabsSttReadyRef.current = false;
+      
+      // Resume AudioContext if suspended
+      if (audioContext!.state === 'suspended') {
+        try {
+          await audioContext!.resume();
+          console.log("🔊 AudioContext resumed, state:", audioContext!.state);
+        } catch (e) {
+          console.warn("🔊 Failed to resume AudioContext:", e);
         }
-      });
-      elevenLabsSttStreamRef.current = micStream;
-      console.log("🎤 Microphone access granted!");
-      
-      // Create AudioContext while still in gesture context
-      audioContext = new AudioContext({ sampleRate: 16000 });
-      elevenLabsSttAudioContextRef.current = audioContext;
-      
-      // Resume AudioContext if suspended (iOS)
-      if (audioContext.state === 'suspended') {
-        console.log("🔊 AudioContext suspended - resuming...");
-        await audioContext.resume();
-        console.log("🔊 AudioContext resumed, state:", audioContext.state);
       }
+    } else {
+      // Need fresh mic - cleanup existing first
+      console.log("🎤 Need fresh mic stream (existing invalid:", { existingMicValid, existingAudioContextValid }, ")");
+      stopElevenLabsSTT();
       
-      setMicrophoneStatus('listening');
-    } catch (error: any) {
-      console.error("🎤 Microphone access denied:", error);
-      if (error.name === 'NotAllowedError') {
-        setMicrophoneStatus('permission-denied');
-      } else {
-        setMicrophoneStatus('not-supported');
+      // 📱 iOS CRITICAL: Request microphone within user gesture context
+      // This MUST happen before any async operations (WebSocket, fetch, etc.)
+      // Otherwise iOS Safari will deny the permission request
+      try {
+        console.log("🎤 Requesting microphone access...");
+        micStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            sampleRate: 16000,
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+        elevenLabsSttStreamRef.current = micStream;
+        console.log("🎤 Microphone access granted!");
+        
+        // Create AudioContext
+        audioContext = new AudioContext({ sampleRate: 16000 });
+        elevenLabsSttAudioContextRef.current = audioContext;
+        
+        // Resume AudioContext if suspended (iOS)
+        if (audioContext.state === 'suspended') {
+          console.log("🔊 AudioContext suspended - resuming...");
+          await audioContext.resume();
+          console.log("🔊 AudioContext resumed, state:", audioContext.state);
+        }
+      } catch (error: any) {
+        console.error("🎤 Microphone access denied:", error);
+        if (error.name === 'NotAllowedError') {
+          setMicrophoneStatus('permission-denied');
+        } else {
+          setMicrophoneStatus('not-supported');
+        }
+        return; // Can't proceed without microphone
       }
-      return; // Can't proceed without microphone
     }
+    
+    setMicrophoneStatus('listening');
     
     // Now set up WebSocket (async operations are OK after mic is granted)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -1554,10 +1585,26 @@ export function useAvatarSession({
                   if (originalOnEnded) {
                     originalOnEnded.call(audio, new Event('ended'));
                   }
+                  // 📱 ALWAYS verify STT is working after greeting ends
+                  // The recognitionRunningRef may be true but STT could be broken
                   setTimeout(() => {
-                    if (audioOnlyRef.current && !recognitionRunningRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
-                      console.log("🔊 Voice recognition resumed (greeting finished)");
-                      startVoiceRecognition();
+                    if (audioOnlyRef.current && !recognitionIntentionalStopRef.current && sessionActiveRef.current) {
+                      // Verify ElevenLabs STT is actually working
+                      const wsOpen = elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN;
+                      const sttReady = elevenLabsSttReadyRef.current;
+                      const audioContextRunning = elevenLabsSttAudioContextRef.current?.state === 'running';
+                      const mediaTrackLive = elevenLabsSttStreamRef.current?.getAudioTracks().some(t => t.readyState === 'live') ?? false;
+                      
+                      console.log("🔊 Post-greeting STT state check:", { wsOpen, sttReady, audioContextRunning, mediaTrackLive });
+                      
+                      if (wsOpen && sttReady && audioContextRunning && mediaTrackLive) {
+                        console.log("🔊 STT still working after greeting - listening for input");
+                      } else {
+                        // STT is broken - restart it
+                        console.log("🔊 STT broken after greeting - restarting voice recognition");
+                        recognitionRunningRef.current = false;
+                        startVoiceRecognition();
+                      }
                     }
                   }, 500);
                 };
