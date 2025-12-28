@@ -2364,14 +2364,31 @@ export function useAvatarSession({
             }
 
             try {
+              // 📱 MOBILE FIX: Ensure audio is unlocked and AudioContext is running before playback
+              const unlocked = await ensureAudioUnlocked();
+              if (!unlocked) {
+                console.warn('📱 Audio may not be unlocked, attempting playback anyway');
+              }
+              await ensureAudioContextResumed();
+              
               audio.load(); // Force reload the new source
               await audio.play();
               console.log(`🔊 Audio playback STARTED via shared element - duration: ${audio.duration.toFixed(2)}s`);
             } catch (playError) {
               console.error(`🔊 Audio play() FAILED:`, playError);
-              // 📱 On mobile, if play fails, user may need to tap again
+              // 📱 On mobile, if play fails, try one more time after ensuring unlock
               if ((playError as Error).name === 'NotAllowedError') {
-                console.warn('📱 Audio blocked by browser - user interaction required');
+                console.warn('📱 Audio blocked by browser - attempting unlock and retry...');
+                try {
+                  await ensureAudioUnlocked();
+                  await ensureAudioContextResumed();
+                  await audio.play();
+                  console.log('📱 Audio retry succeeded after re-unlock');
+                } catch (retryError) {
+                  console.error('📱 Audio retry also failed:', retryError);
+                  isSpeakingRef.current = false;
+                  setIsSpeakingState(false);
+                }
               }
             }
           } else {
