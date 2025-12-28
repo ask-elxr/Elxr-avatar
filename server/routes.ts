@@ -8209,6 +8209,7 @@ This applies to EVERY response, regardless of conversation length.`;
   // Handle WebSocket upgrades manually for our streaming endpoints only
   httpServer.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url || '', `http://${request.headers.host}`);
+    logger.debug({ pathname: url.pathname }, 'WebSocket upgrade request received');
     if (url.pathname === '/ws/streaming-chat') {
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit('connection', ws, request);
@@ -8218,7 +8219,9 @@ This applies to EVERY response, regardless of conversation length.`;
         webrtcWss.emit('connection', ws, request);
       });
     } else if (url.pathname === '/ws/elevenlabs-stt') {
+      logger.info('ElevenLabs STT WebSocket upgrade request - processing...');
       sttWss.handleUpgrade(request, socket, head, (ws) => {
+        logger.info('ElevenLabs STT WebSocket connection established');
         sttWss.emit('connection', ws, request);
       });
     }
