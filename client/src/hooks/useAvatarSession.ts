@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
-import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob } from "@/lib/mobileAudio";
+import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement } from "@/lib/mobileAudio";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -2303,25 +2303,22 @@ export function useAvatarSession({
             const audioBlob = await audioResponse.blob();
             console.log(`🔊 Audio blob received: ${(audioBlob.size / 1024).toFixed(1)} KB, type: ${audioBlob.type}`);
             
-            // 📱 MOBILE FIX: Use shared audio element instead of new Audio()
-            // This element was pre-unlocked during user gesture in startSession
-            const audio = getSharedAudioElement();
-            currentAudioRef.current = audio;
-            
-            // 📱 CRITICAL: Fully reset audio element before reuse (iOS requires this)
-            audio.pause();
-            audio.currentTime = 0;
-            
-            // Revoke any previous blob URL
-            if (audio.src && audio.src.startsWith('blob:')) {
-              URL.revokeObjectURL(audio.src);
+            // 📱 MOBILE FIX: Create fresh audio element for EACH playback
+            // iOS Safari has issues with reusing audio elements - they get "stuck"
+            // First, cleanup any existing audio
+            if (currentAudioRef.current) {
+              currentAudioRef.current.pause();
+              currentAudioRef.current.src = '';
+              currentAudioRef.current = null;
             }
-            audio.src = ''; // Clear source before setting new one
+            
+            const audio = createFreshAudioElement();
+            currentAudioRef.current = audio;
             
             const audioUrl = URL.createObjectURL(audioBlob);
             audio.src = audioUrl;
             audio.volume = 1.0;
-            audio.muted = false; // Ensure not muted
+            audio.muted = false;
             console.log(`🔊 Audio element configured, volume: ${audio.volume}, muted: ${audio.muted}, unlocked: ${isAudioUnlocked()}`);
 
             audio.onloadedmetadata = () => {

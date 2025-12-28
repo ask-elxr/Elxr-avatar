@@ -24,6 +24,17 @@ export function getSharedAudioElement(): HTMLAudioElement {
   return sharedAudioElement;
 }
 
+// 📱 iOS FIX: Create a fresh audio element for each playback
+// This avoids the issue where reused audio elements get stuck on iOS Safari
+export function createFreshAudioElement(): HTMLAudioElement {
+  const audio = document.createElement('audio');
+  audio.setAttribute('playsinline', 'true');
+  audio.setAttribute('webkit-playsinline', 'true');
+  audio.preload = 'auto';
+  audio.volume = 1.0;
+  return audio;
+}
+
 export function getAudioContext(): AudioContext | null {
   return audioContext;
 }
