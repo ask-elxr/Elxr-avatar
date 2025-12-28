@@ -2308,14 +2308,20 @@ export function useAvatarSession({
             const audio = getSharedAudioElement();
             currentAudioRef.current = audio;
             
+            // 📱 CRITICAL: Fully reset audio element before reuse (iOS requires this)
+            audio.pause();
+            audio.currentTime = 0;
+            
             // Revoke any previous blob URL
             if (audio.src && audio.src.startsWith('blob:')) {
               URL.revokeObjectURL(audio.src);
             }
+            audio.src = ''; // Clear source before setting new one
             
             const audioUrl = URL.createObjectURL(audioBlob);
             audio.src = audioUrl;
             audio.volume = 1.0;
+            audio.muted = false; // Ensure not muted
             console.log(`🔊 Audio element configured, volume: ${audio.volume}, muted: ${audio.muted}, unlocked: ${isAudioUnlocked()}`);
 
             audio.onloadedmetadata = () => {
