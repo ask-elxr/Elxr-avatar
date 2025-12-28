@@ -129,10 +129,10 @@ async function startSTTStream(session: STTSession): Promise<void> {
     sample_rate: session.sampleRate.toString(),
     audio_format: `pcm_${session.sampleRate}`,
     commit_strategy: 'vad',
-    vad_silence_threshold_secs: '0.8',
-    vad_threshold: '0.3',
-    min_speech_duration_ms: '200',
-    min_silence_duration_ms: '500',
+    vad_silence_threshold_secs: '1.2',
+    vad_threshold: '0.2',
+    min_speech_duration_ms: '150',
+    min_silence_duration_ms: '400',
   });
   
   const sttUrl = `${ELEVENLABS_STT_URL}?${queryParams.toString()}`;
