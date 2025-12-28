@@ -1120,20 +1120,23 @@ export function useAvatarSession({
       }
 
       // Detect mobile for voice chat mode
-      // On mobile, use HeyGen's built-in voice chat (LiveKit WebRTC) which works better in iframes
       const userAgent = navigator.userAgent || '';
       const isMobile = /iPad|iPhone|iPod|android|mobile|phone/i.test(userAgent) || 
                        (('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth <= 768);
-      console.log("🔧 Session start code version: 2024-12-07-v2");
+      console.log("🔧 Session start code version: 2024-12-28-v1");
       console.log(`📱 Mobile detection for voice chat: ${isMobile}`);
-      
-      // Track that we're using HeyGen's voice chat (so we don't start our own voice recognition)
-      usingHeygenMobileVoiceChatRef.current = isMobile;
 
       // Select driver based on avatar's streamingPlatform setting
-      // LiveAvatar = new LiveAvatar SDK (may have issues), HeyGen = older more stable SDK
+      // LiveAvatar = new LiveAvatar SDK (has built-in ElevenLabs STT), HeyGen = older SDK (no built-in STT)
       const streamingPlatform = avatarConfig.streamingPlatform || 'liveavatar';
       console.log(`🎬 Streaming platform: ${streamingPlatform}`);
+      
+      // CRITICAL: Only skip our voice recognition if using LiveAvatarDriver on mobile
+      // LiveAvatarDriver has built-in ElevenLabs STT that handles voice input
+      // HeyGenStreamingDriver does NOT have built-in STT, so we need our own voice recognition
+      const driverHasBuiltInSTT = streamingPlatform === 'liveavatar';
+      usingHeygenMobileVoiceChatRef.current = isMobile && driverHasBuiltInSTT;
+      console.log(`🎤 Driver has built-in STT: ${driverHasBuiltInSTT}, usingHeygenMobileVoiceChat: ${usingHeygenMobileVoiceChatRef.current}`);
 
       const driverConfig = {
         avatarConfig,

@@ -828,6 +828,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               zIndex: 10,
               WebkitBackfaceVisibility: 'hidden',
               backfaceVisibility: 'hidden',
+              pointerEvents: 'none',
             }}
             data-testid="avatar-video"
             onError={(e) => console.error("Video error:", e)}
