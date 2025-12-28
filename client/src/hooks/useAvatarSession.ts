@@ -85,6 +85,8 @@ export function useAvatarSession({
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); // Web Speech API for voice input
   const lastTranscriptRef = useRef<string>(""); // For deduplication
+  const lastAvatarResponseRef = useRef<string>(""); // For echo detection - track what avatar last said
+  const lastAvatarResponseTimeRef = useRef<number>(0); // When avatar spoke (for echo detection window)
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
   const recognitionRunningRef = useRef(false); // Track if recognition is currently running
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
@@ -556,6 +558,22 @@ export function useAvatarSession({
     if (isSpeakingRef.current && !audioOnlyRef.current) {
       if (!sessionDriverRef.current) {
         console.log("🔇 ECHO BLOCKED (ElevenLabs STT): Ignoring while avatar speaking:", trimmedTranscript.substring(0, 50));
+        return;
+      }
+    }
+    
+    // Content-based echo detection: Check if transcript matches what avatar just said
+    // This catches echo that arrives after the avatar "stopped speaking" according to SDK
+    const timeSinceAvatarSpoke = Date.now() - lastAvatarResponseTimeRef.current;
+    if (timeSinceAvatarSpoke < 15000 && lastAvatarResponseRef.current) {
+      // Check if transcript is a substring of or very similar to what avatar said
+      const avatarResponseLower = lastAvatarResponseRef.current.toLowerCase();
+      const transcriptLower = trimmedTranscript.toLowerCase();
+      
+      // Check if the transcript is contained in what the avatar said (echo)
+      if (avatarResponseLower.includes(transcriptLower) || 
+          transcriptLower.includes(avatarResponseLower.substring(0, Math.min(50, avatarResponseLower.length)))) {
+        console.log("🔇 ECHO DETECTED: Transcript matches avatar's recent speech, ignoring:", trimmedTranscript.substring(0, 50));
         return;
       }
     }
@@ -1291,12 +1309,24 @@ export function useAvatarSession({
           setIsSpeakingState(false);
           
           // 🎤 Resume voice recognition after a delay to prevent echo
-          // iOS Safari needs a longer delay (3-5 seconds) due to video/audio conflicts
-          const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-          const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-          const delay = (isIOS || isSafari) ? 3500 : 1000;
+          // Mobile devices need much longer delay (6+ seconds) because:
+          // 1. Audio buffering causes residual playback
+          // 2. Echo from speakers is picked up by microphone
+          // 3. Video mode has additional audio latency
+          const userAgent = navigator.userAgent || '';
+          const isMobile = /iPad|iPhone|iPod|android|mobile|phone/i.test(userAgent);
+          const isIOS = /iPad|iPhone|iPod/.test(userAgent);
+          const isSafari = /^((?!chrome|android).)*safari/i.test(userAgent);
           
-          console.log("🎤 Avatar stopped talking, will resume voice recognition in", delay, "ms");
+          // Use longer delay for mobile video mode to prevent echo pickup
+          let delay = 1000; // Desktop default
+          if (isMobile) {
+            delay = 6000; // Mobile needs 6 seconds to avoid echo
+          } else if (isIOS || isSafari) {
+            delay = 4000; // iOS/Safari desktop
+          }
+          
+          console.log("🎤 Avatar stopped talking, will resume voice recognition in", delay, "ms (mobile:", isMobile, ")");
           
           setTimeout(() => {
             if (recognitionIntentionalStopRef.current || isSpeakingRef.current) {
@@ -2399,6 +2429,10 @@ export function useAvatarSession({
               console.log(`───────────────────────────────────────────────────────────────`);
               console.log(`📊 Response: ${decodedResponse.length} chars`);
               console.log(`🎧 ═══════════════════════════════════════════════════════════════\n`);
+              
+              // Store avatar response for echo detection (audio mode)
+              lastAvatarResponseRef.current = decodedResponse;
+              lastAvatarResponseTimeRef.current = Date.now();
             }
             
             // Check for video generation headers and notify
@@ -2869,6 +2903,10 @@ export function useAvatarSession({
           // ✅ Avatar speaks Claude's response
           // Note: Voice recognition will be paused by AVATAR_START_TALKING event
           console.log("🗣️ SENDING TO AVATAR - Text length:", claudeResponse.length, "characters");
+          
+          // Store avatar response for echo detection
+          lastAvatarResponseRef.current = claudeResponse;
+          lastAvatarResponseTimeRef.current = Date.now();
           
           // ⏱️ TIMING: Avatar speak call
           const speakStartTime = performance.now();
