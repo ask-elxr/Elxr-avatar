@@ -2,6 +2,19 @@ let sharedAudioElement: HTMLAudioElement | null = null;
 let audioUnlocked = false;
 let audioContext: AudioContext | null = null;
 
+// Session token to prevent voice overlap between avatar switches
+let currentSessionToken = 0;
+
+export function incrementSessionToken(): number {
+  currentSessionToken++;
+  console.log('🔄 Session token incremented to:', currentSessionToken);
+  return currentSessionToken;
+}
+
+export function getCurrentSessionToken(): number {
+  return currentSessionToken;
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([
     promise,
@@ -165,9 +178,23 @@ export async function ensureAudioUnlocked(): Promise<boolean> {
 
 // 📱 Play audio blob - resolves when playback STARTS (not ends)
 // Returns the audio element so caller can attach onended handler
-export async function playAudioBlob(blob: Blob): Promise<HTMLAudioElement> {
+// Now accepts optional sessionToken to prevent voice overlap
+export async function playAudioBlob(blob: Blob, sessionToken?: number): Promise<HTMLAudioElement> {
+  // 🔇 CRITICAL: Check session token BEFORE any async operations
+  // This prevents stale audio from previous avatars from playing
+  if (sessionToken !== undefined && sessionToken !== currentSessionToken) {
+    console.log('🔇 Blocking stale audio playback - token mismatch:', sessionToken, '!==', currentSessionToken);
+    throw new Error('Session token mismatch - audio cancelled');
+  }
+  
   await ensureAudioUnlocked();
   await ensureAudioContextResumed();
+  
+  // 🔇 Check again after async operations
+  if (sessionToken !== undefined && sessionToken !== currentSessionToken) {
+    console.log('🔇 Blocking stale audio playback after unlock - token mismatch');
+    throw new Error('Session token mismatch - audio cancelled');
+  }
   
   const audio = getSharedAudioElement();
   
@@ -194,8 +221,17 @@ export async function playAudioBlob(blob: Blob): Promise<HTMLAudioElement> {
 
     audio.oncanplaythrough = async () => {
       audio.oncanplaythrough = null; // Clear to prevent multiple calls
+      
+      // 🔇 Final check before playing
+      if (sessionToken !== undefined && sessionToken !== currentSessionToken) {
+        console.log('🔇 Blocking stale audio at canplaythrough - token mismatch');
+        URL.revokeObjectURL(audioUrl);
+        reject(new Error('Session token mismatch - audio cancelled'));
+        return;
+      }
+      
       try {
-        console.log('🔊 Audio ready, volume:', audio.volume, 'muted:', audio.muted, 'unlocked:', audioUnlocked);
+        console.log('🔊 Audio ready, volume:', audio.volume, 'muted:', audio.muted, 'unlocked:', audioUnlocked, 'sessionToken:', sessionToken);
         await audio.play();
         console.log('🔊 Audio playback STARTED - duration:', audio.duration.toFixed(2) + 's');
         // Resolve immediately after play starts - caller handles onended

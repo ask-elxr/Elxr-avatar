@@ -2,7 +2,14 @@ import { useState, useEffect, useRef, FormEvent, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -864,17 +871,126 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Overlay Controls */}
         {(sessionActive || elevenLabsAgentActive) && (
           <>
-            {/* Top Controls Bar - Minimal, only show end chat button */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-end p-2 sm:p-4 z-30 safe-area-inset-top">
-              {/* Only End Chat button visible - clean interface */}
-              <Button
-                onClick={endChat}
-                className="bg-black/40 hover:bg-black/60 border border-white/10 text-white/70 hover:text-white min-w-[40px] min-h-[40px] backdrop-blur-sm"
-                size="sm"
-                data-testid="button-end-chat"
-              >
-                <X className="w-4 h-4" />
-              </Button>
+            {/* Top Controls Bar - Dropdown menu for clean interface */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-2 sm:p-4 z-30 safe-area-inset-top">
+              {/* Left side - Audio/Video toggle and language */}
+              <div className="flex items-center gap-2">
+                <AudioVideoToggle
+                  isVideoMode={!audioOnly}
+                  onToggle={handleModeToggle}
+                  disabled={isModeSwitching || isLoading}
+                  enableAudioMode={avatarCapabilities.enableAudioMode}
+                  enableVideoMode={avatarCapabilities.enableVideoMode}
+                />
+                <LanguageSelector
+                  selectedLanguage={selectedLanguage}
+                  onLanguageChange={handleLanguageChange}
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Right side - Dropdown menu + End chat button */}
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-black/40 hover:bg-black/60 border border-white/10 text-white/70 hover:text-white min-w-[40px] min-h-[40px] backdrop-blur-sm"
+                      size="sm"
+                      data-testid="button-menu"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md">
+                    <DropdownMenuItem 
+                      onClick={() => setShowAvatarSwitcher(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      data-testid="menu-switch-avatar"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Switch Avatar
+                    </DropdownMenuItem>
+                    
+                    {!elevenLabsAgentActive && (
+                      <DropdownMenuItem 
+                        onClick={() => togglePause()}
+                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                        data-testid="menu-pause"
+                      >
+                        {isPaused ? (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Resume
+                          </>
+                        ) : (
+                          <>
+                            <Pause className="w-4 h-4 mr-2" />
+                            Pause
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    )}
+                    
+                    {fullscreenSupported && (
+                      <DropdownMenuItem 
+                        onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
+                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                        data-testid="menu-fullscreen"
+                      >
+                        {isFullscreen ? (
+                          <>
+                            <Minimize className="w-4 h-4 mr-2" />
+                            Exit Fullscreen
+                          </>
+                        ) : (
+                          <>
+                            <Maximize className="w-4 h-4 mr-2" />
+                            Fullscreen
+                          </>
+                        )}
+                      </DropdownMenuItem>
+                    )}
+                    
+                    <DropdownMenuItem 
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      data-testid="menu-settings"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                    
+                    {isSpeaking && audioOnly && (
+                      <>
+                        <DropdownMenuSeparator className="bg-white/20" />
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            stopAudio();
+                            toast({
+                              title: "Audio Stopped",
+                              description: "Playback stopped",
+                            });
+                          }}
+                          className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10"
+                          data-testid="menu-stop-audio"
+                        >
+                          <VolumeX className="w-4 h-4 mr-2" />
+                          Stop Audio
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                
+                <Button
+                  onClick={endChat}
+                  className="bg-red-500/80 hover:bg-red-600 text-white min-w-[40px] min-h-[40px]"
+                  size="sm"
+                  data-testid="button-end-chat"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Mic Blocked Status - only show when permission denied */}

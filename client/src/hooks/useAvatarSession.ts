@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
-import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement } from "@/lib/mobileAudio";
+import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken } from "@/lib/mobileAudio";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -100,6 +100,7 @@ export function useAvatarSession({
   const streamingEnabledRef = useRef(true); // Enable audio streaming mode - faster first-response latency
   const sentenceQueueRef = useRef<string[]>([]); // Queue of sentences to speak
   const isSpeakingQueueRef = useRef(false); // Whether we're currently processing the speak queue
+  const sessionTokenRef = useRef<number>(getCurrentSessionToken()); // Track current session for audio gating
   const useElevenLabsVoiceRef = useRef(false); // Use ElevenLabs voice in video mode for avatars without HeyGen voice
   const elevenLabsVideoAudioRef = useRef<HTMLAudioElement | null>(null); // Audio element for ElevenLabs in video mode
   const elevenLabsRecognitionResumeTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Pending recognition resume timer for ElevenLabs
@@ -307,6 +308,56 @@ export function useAvatarSession({
       }
     }
   };
+
+  // 🔇 CRITICAL: Centralized cancellation of all pending audio/requests
+  // Called from endSession, handleAvatarSwitch, and any path that needs clean slate
+  const cancelPendingWork = useCallback(() => {
+    console.log("🔇 cancelPendingWork: Cancelling all pending audio and requests");
+    
+    // 1. Abort any in-flight API requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // 2. Increment session token to invalidate all pending audio playback
+    const newToken = incrementSessionToken();
+    sessionTokenRef.current = newToken;
+    
+    // 3. Clear request ID to invalidate responses for old requests
+    currentRequestIdRef.current = "";
+    
+    // 4. Clear sentence queue to prevent queued speech from playing
+    sentenceQueueRef.current = [];
+    isSpeakingQueueRef.current = false;
+    
+    // 5. Stop any currently playing audio
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      if (currentAudioRef.current.src?.startsWith('blob:')) {
+        URL.revokeObjectURL(currentAudioRef.current.src);
+      }
+      currentAudioRef.current = null;
+    }
+    stopSharedAudio();
+    
+    // 6. Stop acknowledgment audio
+    if (currentAcknowledgmentRef.current) {
+      currentAcknowledgmentRef.current.pause();
+      currentAcknowledgmentRef.current = null;
+    }
+    
+    // 7. Stop ElevenLabs video mode audio
+    if (elevenLabsVideoAudioRef.current) {
+      elevenLabsVideoAudioRef.current.pause();
+      elevenLabsVideoAudioRef.current = null;
+    }
+    
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
+    
+    console.log("🔇 cancelPendingWork: All pending work cancelled, token:", newToken);
+  }, []);
 
   const preloadAcknowledgmentAudio = useCallback(async (avatarId: string) => {
     if (acknowledgmentCacheReadyRef.current.get(avatarId)) {
@@ -1313,11 +1364,12 @@ export function useAvatarSession({
       }
     }
     
-    // 🔇 CRITICAL: Stop any previous audio immediately to prevent overlapping voices
+    // 🔇 CRITICAL: Cancel any pending work from previous session to prevent voice overlap
+    // Note: We don't call cancelPendingWork() here because we want to keep the current token
+    // Instead, just stop audio and refresh the token to current global value
     if (currentAudioRef.current) {
       console.log("🔇 Stopping previous audio at session start");
       currentAudioRef.current.pause();
-      currentAudioRef.current.currentTime = 0;
       if (currentAudioRef.current.src?.startsWith('blob:')) {
         URL.revokeObjectURL(currentAudioRef.current.src);
       }
@@ -1326,6 +1378,11 @@ export function useAvatarSession({
     stopSharedAudio();
     isSpeakingRef.current = false;
     setIsSpeakingState(false);
+    
+    // 🔄 Refresh session token to capture current global token for this new session
+    // This ensures new audio uses the latest token after any previous endSession() increments
+    sessionTokenRef.current = getCurrentSessionToken();
+    console.log("🔄 Session token refreshed to:", sessionTokenRef.current);
     
     // ✅ MOBILE DEFENSE: Wrap EVERYTHING in try-catch to prevent stuck loading state
     // Use ReturnType for browser compatibility
@@ -1582,7 +1639,7 @@ export function useAvatarSession({
               
               try {
                 console.log("🎤 Attempting to play greeting via shared audio element...");
-                const audio = await playAudioBlob(audioBlob);
+                const audio = await playAudioBlob(audioBlob, sessionTokenRef.current);
                 currentAudioRef.current = audio;
                 console.log("🎤 Greeting audio PLAYING via shared element");
                 
@@ -1774,11 +1831,8 @@ export function useAvatarSession({
   }, [videoRef, onSessionActiveChange, stopElevenLabsSTT]);
 
   const endSession = useCallback(async () => {
-    if (abortControllerRef.current) {
-      console.log("Cancelling ongoing API request on end session");
-      abortControllerRef.current.abort();
-      abortControllerRef.current = null;
-    }
+    // 🔇 CRITICAL: Cancel all pending work immediately to prevent voice overlap
+    cancelPendingWork();
 
     // Clear idle timeout
     clearIdleTimeout();
@@ -1852,7 +1906,7 @@ export function useAvatarSession({
     onSessionActiveChange?.(false);
     
     await endSessionOnServer();
-  }, [videoRef, onSessionActiveChange, clearIdleTimeout, stopElevenLabsSTT]);
+  }, [videoRef, onSessionActiveChange, clearIdleTimeout, stopElevenLabsSTT, cancelPendingWork]);
 
   const reconnect = useCallback(async () => {
     setShowReconnect(false);
@@ -2384,8 +2438,8 @@ export function useAvatarSession({
             // 📱 MOBILE FIX: Use playAudioBlob which properly uses the pre-unlocked shared element
             // This is critical for iOS Safari which rejects audio.play() outside user gesture context
             try {
-              console.log(`🔊 Playing audio via playAudioBlob (unlocked: ${isAudioUnlocked()})`);
-              const audio = await playAudioBlob(audioBlob);
+              console.log(`🔊 Playing audio via playAudioBlob (unlocked: ${isAudioUnlocked()}, token: ${sessionTokenRef.current})`);
+              const audio = await playAudioBlob(audioBlob, sessionTokenRef.current);
               currentAudioRef.current = audio;
               
               // Setup cleanup after playback ends (playAudioBlob resolves when play STARTS)
