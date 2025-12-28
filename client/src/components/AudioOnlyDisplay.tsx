@@ -138,15 +138,7 @@ export const AudioOnlyDisplay = forwardRef<AudioOnlyDisplayRef, AudioOnlyDisplay
         </div>
       )}
       
-      {/* Status Text */}
-      <div className="absolute bottom-24 left-0 right-0 text-center">
-        <p className="text-lg font-medium text-white/90">
-          {!sessionActive ? "Starting audio session..." : isSpeaking ? "Speaking..." : "Listening..."}
-        </p>
-        <p className="text-sm text-white/60 mt-1">
-          {useElevenLabsAgent ? "ElevenLabs Agent" : "Audio Mode"}
-        </p>
-      </div>
+      {/* Status Text - Hidden for cleaner appearance */}
       
       {/* CSS Keyframes for radiating animation */}
       <style>{`

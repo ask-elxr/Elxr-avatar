@@ -16,7 +16,7 @@ import { AudioVideoToggle } from "@/components/AudioVideoToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { TrialCountdown } from "@/components/TrialCountdown";
-import { unlockMobileAudio } from "@/lib/mobileAudio";
+import { unlockMobileAudio, stopSharedAudio } from "@/lib/mobileAudio";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -730,6 +730,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setSelectedAvatarId(newAvatarId);
     setShowAvatarSwitcher(false);
     
+    // 🔇 IMMEDIATELY stop any playing audio to prevent voice overlap
+    stopSharedAudio();
+    
     try {
       // End any active agent session first via ref
       if (elevenLabsAgentActive && audioOnlyRef.current) {
@@ -764,6 +767,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   };
 
   const endChat = async () => {
+    // 🔇 Immediately stop any playing audio
+    stopSharedAudio();
+    
     // Handle both legacy session and agent mode
     if (elevenLabsAgentActive) {
       setElevenLabsAgentActive(false);
@@ -858,111 +864,17 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Overlay Controls */}
         {(sessionActive || elevenLabsAgentActive) && (
           <>
-            {/* Top Controls Bar - Mobile responsive */}
-            <div className="absolute top-0 left-0 right-0 flex flex-col items-center p-2 sm:p-4 bg-gradient-to-b from-black/60 to-transparent z-30 safe-area-inset-top">
-              {/* Audio/Video Toggle, Language Selector, and Trial Countdown - Centered at top */}
-              <div className="mb-2 sm:mb-3 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-                <TrialCountdown compact />
-                <AudioVideoToggle
-                  isVideoMode={!audioOnly}
-                  onToggle={handleModeToggle}
-                  disabled={isModeSwitching || isLoading}
-                  enableAudioMode={avatarCapabilities.enableAudioMode}
-                  enableVideoMode={avatarCapabilities.enableVideoMode}
-                />
-                <LanguageSelector
-                  selectedLanguage={selectedLanguage}
-                  onLanguageChange={handleLanguageChange}
-                  disabled={isLoading}
-                />
-              </div>
-              
-              <div className="w-full flex items-center justify-between">
-                <div className="flex items-center gap-1 sm:gap-2">
-                  {/* Pause button - hidden in agent mode since ElevenLabs handles this */}
-                  {!elevenLabsAgentActive && (
-                    <Button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log("⏸️ Pause button clicked");
-                        togglePause();
-                      }}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log("⏸️ Pause button touched");
-                        togglePause();
-                      }}
-                      className="bg-white/10 hover:bg-white/20 active:bg-white/30 border border-white/20 text-white min-w-[44px] min-h-[44px] touch-manipulation"
-                      size="sm"
-                      data-testid="button-pause-toggle"
-                    >
-                      {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
-                    </Button>
-                  )}
-                  
-                  <Button
-                    onClick={() => setShowAvatarSwitcher(true)}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm"
-                    size="sm"
-                    data-testid="button-switch-avatar"
-                  >
-                    <span className="hidden sm:inline">Switch Avatar</span>
-                    <User className="w-4 h-4 sm:hidden" />
-                  </Button>
-                </div>
-
-              <div className="flex items-center gap-1 sm:gap-2">
-                {/* Fullscreen Button - Video-like immersive experience (works on mobile too) */}
-                {fullscreenSupported && (
-                  <Button
-                    onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
-                    size="sm"
-                    data-testid="button-fullscreen"
-                    title={isFullscreen ? "Exit Fullscreen (F)" : "Fullscreen (F)"}
-                  >
-                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                  </Button>
-                )}
-                
-                <Button
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
-                  size="sm"
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
-                
-                {/* Emergency Stop Button for Audio-Only Mode */}
-                {isSpeaking && audioOnly && (
-                  <Button
-                    onClick={() => {
-                      stopAudio();
-                      toast({
-                        title: "Audio Stopped",
-                        description: "Playback stopped",
-                      });
-                    }}
-                    className="bg-amber-500/80 hover:bg-amber-600 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
-                    size="sm"
-                    data-testid="button-stop-audio"
-                  >
-                    <VolumeX className="w-4 h-4" />
-                  </Button>
-                )}
-                
-                <Button
-                  onClick={endChat}
-                  className="bg-red-500/80 hover:bg-red-600 text-white min-w-[40px] min-h-[40px] sm:min-w-0 sm:min-h-0"
-                  size="sm"
-                  data-testid="button-end-chat"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-              </div>
+            {/* Top Controls Bar - Minimal, only show end chat button */}
+            <div className="absolute top-0 left-0 right-0 flex items-center justify-end p-2 sm:p-4 z-30 safe-area-inset-top">
+              {/* Only End Chat button visible - clean interface */}
+              <Button
+                onClick={endChat}
+                className="bg-black/40 hover:bg-black/60 border border-white/10 text-white/70 hover:text-white min-w-[40px] min-h-[40px] backdrop-blur-sm"
+                size="sm"
+                data-testid="button-end-chat"
+              >
+                <X className="w-4 h-4" />
+              </Button>
             </div>
 
             {/* Mic Blocked Status - only show when permission denied */}
