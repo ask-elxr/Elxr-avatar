@@ -443,6 +443,43 @@ export function useAvatarSession({
     }
   }, []);
 
+  // Connect pre-acquired microphone stream to WebSocket (called after stt_ready)
+  // 📱 IMPORTANT: Must be defined BEFORE startElevenLabsSTT which references it
+  const connectMicToWebSocket = useCallback(() => {
+    const stream = elevenLabsSttStreamRef.current;
+    const audioContext = elevenLabsSttAudioContextRef.current;
+    
+    if (!stream || !audioContext) {
+      console.error("🎤 Cannot connect mic - stream or audioContext missing");
+      return;
+    }
+    
+    try {
+      const source = audioContext.createMediaStreamSource(stream);
+      const processor = audioContext.createScriptProcessor(4096, 1, 1);
+      elevenLabsSttProcessorRef.current = processor;
+      
+      processor.onaudioprocess = (e) => {
+        if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
+          const inputData = e.inputBuffer.getChannelData(0);
+          const pcm16 = new Int16Array(inputData.length);
+          for (let i = 0; i < inputData.length; i++) {
+            pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+          }
+          elevenLabsSttWsRef.current.send(pcm16.buffer);
+        }
+      };
+      
+      source.connect(processor);
+      processor.connect(audioContext.destination);
+      
+      recognitionRunningRef.current = true;
+      console.log("🎤 Audio pipeline connected to WebSocket, AudioContext state:", audioContext.state);
+    } catch (error) {
+      console.error("🎤 Failed to connect audio pipeline:", error);
+    }
+  }, []);
+
   // Handle ElevenLabs STT transcript (same flow as Web Speech API)
   const handleElevenLabsSttTranscript = useCallback((transcript: string | undefined | null, isFinal: boolean) => {
     if (!isFinal) {
@@ -686,43 +723,7 @@ export function useAvatarSession({
         recognitionRunningRef.current = false;
       }
     };
-  }, [stopElevenLabsSTT, handleElevenLabsSttTranscript]);
-  
-  // Connect pre-acquired microphone stream to WebSocket (called after stt_ready)
-  const connectMicToWebSocket = useCallback(() => {
-    const stream = elevenLabsSttStreamRef.current;
-    const audioContext = elevenLabsSttAudioContextRef.current;
-    
-    if (!stream || !audioContext) {
-      console.error("🎤 Cannot connect mic - stream or audioContext missing");
-      return;
-    }
-    
-    try {
-      const source = audioContext.createMediaStreamSource(stream);
-      const processor = audioContext.createScriptProcessor(4096, 1, 1);
-      elevenLabsSttProcessorRef.current = processor;
-      
-      processor.onaudioprocess = (e) => {
-        if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
-          const inputData = e.inputBuffer.getChannelData(0);
-          const pcm16 = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-          }
-          elevenLabsSttWsRef.current.send(pcm16.buffer);
-        }
-      };
-      
-      source.connect(processor);
-      processor.connect(audioContext.destination);
-      
-      recognitionRunningRef.current = true;
-      console.log("🎤 Audio pipeline connected to WebSocket, AudioContext state:", audioContext.state);
-    } catch (error) {
-      console.error("🎤 Failed to connect audio pipeline:", error);
-    }
-  }, []);
+  }, [stopElevenLabsSTT, handleElevenLabsSttTranscript, connectMicToWebSocket]);
   
   // Start microphone capture for ElevenLabs STT (legacy - kept for compatibility)
   const startMicrophoneForElevenLabsSTT = useCallback(async () => {
