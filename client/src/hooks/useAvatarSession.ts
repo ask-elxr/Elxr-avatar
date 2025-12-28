@@ -1483,9 +1483,13 @@ export function useAvatarSession({
       warmupMic();
     }
     
-    // ✅ Start voice recognition IMMEDIATELY for all modes (independent of HeyGen video)
-    // This allows users to speak even before video loads or in audio-only mode
-    startVoiceRecognition();
+    // ✅ Start voice recognition for all modes
+    // For video mode: Start immediately (non-blocking)
+    // For audio mode: Wait for mic to be acquired before playing greeting
+    if (!audioOnly) {
+      // Video mode: Start voice recognition in background
+      startVoiceRecognition();
+    }
     
     // Start HeyGen immediately in video mode for instant avatar appearance
     if (!audioOnly) {
@@ -1512,6 +1516,12 @@ export function useAvatarSession({
         loadingTimeoutRef.current = null;
       }
       setIsLoading(false);
+      
+      // 📱 AUDIO MODE: Start voice recognition FIRST and wait for mic to be acquired
+      // This ensures mic is ready before we play greeting (critical for post-greeting listening)
+      console.log("🎤 Audio mode: Starting voice recognition before greeting...");
+      await startElevenLabsSTT();
+      console.log("🎤 Audio mode: Voice recognition started, now playing greeting...");
       
       // Pre-cache acknowledgment audio for faster responses in audio-only mode
       triggerAcknowledgmentCache(activeAvatarId);
@@ -1680,6 +1690,7 @@ export function useAvatarSession({
     onResetInactivityTimer,
     startHeyGenSession,
     startVoiceRecognition,
+    startElevenLabsSTT,
     triggerAcknowledgmentCache,
   ]);
 
