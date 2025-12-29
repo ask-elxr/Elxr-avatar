@@ -896,16 +896,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Extract session data from API response (wrapped in 'data' field)
+      const sessionData = tokenData.data || tokenData;
+      
       log.info({ 
-        sessionId: tokenData?.data?.session_id || tokenData.session_id,
+        sessionId: sessionData.session_id,
         mode,
         streamingPlatform,
         useHeygenVoiceForInteractive,
         hasLiveKitConfig: !!liveKitConfig,
       }, "LiveAvatar session token created successfully");
 
-      // Extract session data from API response (wrapped in 'data' field)
-      const sessionData = tokenData.data || tokenData;
+      // For CUSTOM mode, we need to call /v1/sessions/start to make the avatar join the LiveKit room
+      // Without this call, the avatar never connects even though we have a session_token
+      if (mode === 'CUSTOM' && sessionData.session_id) {
+        log.info({
+          sessionId: sessionData.session_id,
+        }, 'Starting LiveAvatar session (CUSTOM mode - avatar must join LiveKit room)');
+        
+        try {
+          const startResponse = await fetch(
+            `https://api.liveavatar.com/v1/sessions/${sessionData.session_id}/start`,
+            {
+              method: 'POST',
+              headers: {
+                'X-API-KEY': apiKey,
+                'Content-Type': 'application/json',
+              },
+            }
+          );
+          
+          if (!startResponse.ok) {
+            const errorText = await startResponse.text();
+            log.warn({
+              sessionId: sessionData.session_id,
+              httpStatus: startResponse.status,
+              errorBody: errorText,
+            }, 'Failed to start LiveAvatar session - avatar may not join LiveKit room');
+          } else {
+            const startData = await startResponse.json();
+            log.info({
+              sessionId: sessionData.session_id,
+              startData,
+            }, 'LiveAvatar session started - avatar should join LiveKit room');
+          }
+        } catch (startError: any) {
+          log.warn({
+            sessionId: sessionData.session_id,
+            error: startError.message,
+          }, 'Error starting LiveAvatar session');
+        }
+      }
       
       // Build response - includes LiveKit info for CUSTOM mode
       const response: any = {
