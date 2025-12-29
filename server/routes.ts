@@ -77,11 +77,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (requestedMode === 'CUSTOM') {
         mode = "CUSTOM";
-        // Per official SDK demo: CUSTOM mode only needs mode + avatar_id
+        // CUSTOM mode requires livekit_config to be set per the API docs
+        // Empty object = use LiveAvatar's default LiveKit room
         // SDK's session.start() internally calls LiveAvatar API to get LiveKit credentials
         requestBody = {
           mode: "CUSTOM",
           avatar_id: avatarConfig?.avatarId,
+          livekit_config: {}, // Required for CUSTOM mode - empty = use default LiveKit room
         };
         
         logger.debug({
