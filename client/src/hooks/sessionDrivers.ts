@@ -4,6 +4,7 @@ import {
   AgentEventsEnum,
   SessionState 
 } from "@heygen/liveavatar-web-sdk";
+import { Room, RoomEvent, Track, RemoteTrack, RemoteTrackPublication, RemoteParticipant } from "livekit-client";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -50,6 +51,10 @@ export class LiveAvatarDriver implements SessionDriver {
   private videoAttached: boolean = false;
   private audioContext: AudioContext | null = null;
   private enableMobileVoiceChat: boolean = false; // Track if mobile voice chat is enabled
+  
+  // LiveKit Room for CUSTOM mode (direct connection, bypassing SDK's session.start())
+  private liveKitRoom: Room | null = null;
+  private useDirectLiveKit: boolean = false; // True when using direct LiveKit connection
   
   // ElevenLabs STT via WebSocket (replaces HeyGen's built-in STT)
   private sttWebSocket: WebSocket | null = null;
@@ -179,42 +184,78 @@ export class LiveAvatarDriver implements SessionDriver {
       try {
         if (attempt > 0) {
           console.log(`🔄 Retry attempt ${attempt + 1}/${MAX_RETRIES + 1} with fresh token...`);
-          // Wait before retry
           await new Promise(resolve => setTimeout(resolve, 800));
         }
         
         // Fetch session credentials from the backend (fresh token on each attempt)
-        const { sessionId, sessionToken } = await this.fetchSessionCredentials();
-        this.sessionId = sessionId;
+        const credentials = await this.fetchSessionCredentials();
+        this.sessionId = credentials.sessionId;
         
-        console.log("📋 Creating LiveAvatar session:", { sessionId, hasToken: !!sessionToken, attempt: attempt + 1 });
+        console.log("📋 Creating LiveAvatar session:", { 
+          sessionId: credentials.sessionId, 
+          hasToken: !!credentials.sessionToken, 
+          mode: credentials.mode,
+          hasLiveKitConfig: !!(credentials.livekit_url && credentials.livekit_token),
+          attempt: attempt + 1 
+        });
         
-        // Create LiveAvatarSession with sessionAccessToken and config
-        // SDK signature: new LiveAvatarSession(sessionAccessToken: string, config?: SessionConfig)
-        // The SDK handles LiveKit connection internally when session.start() is called
-        // NOTE: LiveAvatar is a separate service from HeyGen - must use LiveAvatar API endpoint
-        
-        // Enable voice chat for mobile devices - uses ElevenLabs STT via WebSocket
-        // MediaRecorder API works in iframes on mobile (unlike WebSocket or Web Speech API alone)
-        // Transcriptions are routed to our Claude + RAG + ElevenLabs TTS pipeline
         this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
-        console.log("🔧 LiveAvatarDriver code version: 2024-12-09-v8 (no apiUrl override)");
+        console.log("🔧 LiveAvatarDriver code version: 2024-12-29-v9 (direct LiveKit for CUSTOM mode)");
         console.log(`🎤 Voice input: ${this.enableMobileVoiceChat ? 'ENABLED (using ElevenLabs STT)' : 'DISABLED (using Web Speech API)'}`);
         
-        // SDK signature: new LiveAvatarSession(sessionAccessToken, config?)
-        // sessionAccessToken is the token from /v1/sessions/token endpoint
-        // SDK has correct apiUrl built-in, no override needed
-        const session = new LiveAvatarSession(sessionToken);
+        // CUSTOM mode with our own LiveKit room - connect directly via livekit-client
+        // This bypasses the SDK's session.start() which doesn't work with external LiveKit
+        if (credentials.mode === 'CUSTOM' && credentials.livekit_url && credentials.livekit_token) {
+          console.log("🎬 CUSTOM mode - Using direct LiveKit connection (bypassing SDK session.start)");
+          this.useDirectLiveKit = true;
+          
+          // Create LiveAvatarSession for speak/repeatAudio methods (but don't call start())
+          const session = new LiveAvatarSession(credentials.sessionToken);
+          this.session = session;
+          
+          // Set up event listeners on the SDK session (for speak events)
+          session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
+            console.log("🗣️ Avatar started speaking");
+            this.config.onAvatarStartTalking?.();
+          });
+          session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
+            console.log("🤫 Avatar stopped speaking");
+            this.config.onAvatarStopTalking?.();
+          });
+          
+          // Connect directly to LiveKit room
+          await this.connectToLiveKitRoom(
+            credentials.livekit_url,
+            credentials.livekit_token,
+            credentials.livekit_room || ''
+          );
+          
+          // Start ElevenLabs STT if mobile voice chat is enabled
+          if (this.enableMobileVoiceChat) {
+            console.log("🎤 Starting ElevenLabs STT after LiveKit connection...");
+            try {
+              await this.startElevenLabsSTT();
+              console.log("✅ ElevenLabs STT started successfully");
+            } catch (sttError: any) {
+              console.warn("⚠️ Failed to start ElevenLabs STT:", sttError?.message || sttError);
+            }
+          }
+          
+          console.log("✅ LiveAvatar session started - CUSTOM mode with direct LiveKit + Claude + RAG + ElevenLabs");
+          return;
+        }
+        
+        // FULL mode or SDK-managed LiveKit - use SDK's session.start()
+        console.log("🎬 Using SDK session.start() (FULL mode or SDK-managed LiveKit)");
+        this.useDirectLiveKit = false;
+        
+        const session = new LiveAvatarSession(credentials.sessionToken);
         this.session = session;
 
-        // Listen for stream ready event - this is when we attach the video element and start ElevenLabs STT
         session.on(SessionEvent.SESSION_STREAM_READY, async () => {
           console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
-          // Use SDK's attach() method to connect video element
-          // Retry with increasing delays if video element is not yet rendered
           this.attachVideoWithRetry(5);
           
-          // Start ElevenLabs STT after stream is ready (for mobile devices)
           if (this.enableMobileVoiceChat) {
             console.log("🎤 Starting ElevenLabs STT after stream ready...");
             try {
@@ -222,23 +263,19 @@ export class LiveAvatarDriver implements SessionDriver {
               console.log("✅ ElevenLabs STT started successfully");
             } catch (sttError: any) {
               console.warn("⚠️ Failed to start ElevenLabs STT:", sttError?.message || sttError);
-              // If STT fails (e.g., permission denied), the UI should show a message
             }
           }
         });
 
-        // Listen for session state changes
         session.on(SessionEvent.SESSION_STATE_CHANGED, (state: SessionState) => {
           console.log("📊 LiveAvatar session state:", state);
         });
 
-        // Listen for session disconnected
         session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
           console.log("📵 LiveAvatar stream disconnected:", reason);
           this.config.onStreamDisconnected?.();
         });
 
-        // Listen for avatar talking events
         session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
           console.log("🗣️ Avatar started speaking");
           this.config.onAvatarStartTalking?.();
@@ -249,17 +286,11 @@ export class LiveAvatarDriver implements SessionDriver {
           this.config.onAvatarStopTalking?.();
         });
 
-        // Note: User voice input is now handled by ElevenLabs STT (not HeyGen SDK)
-        // USER_TRANSCRIPTION events from HeyGen are no longer used
-
-        // Start the session - SDK handles LiveKit connection internally
         console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
         await session.start();
         console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
-        // Note: startListening() is called in SESSION_STREAM_READY handler (after stream is ready)
         
-        // Success - exit retry loop
-        console.log("✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs");
+        console.log("✅ LiveAvatar session started - SDK-managed mode");
         return;
         
       } catch (startError: any) {
@@ -267,6 +298,14 @@ export class LiveAvatarDriver implements SessionDriver {
         console.error(`❌ Error starting LiveAvatar session (attempt ${attempt + 1}):`, startError?.message || startError, startError);
         
         // Clean up failed session before retry
+        if (this.liveKitRoom) {
+          try {
+            await this.liveKitRoom.disconnect();
+          } catch (e) {
+            // Ignore cleanup errors
+          }
+          this.liveKitRoom = null;
+        }
         if (this.session) {
           try {
             await this.session.stop();
@@ -276,11 +315,103 @@ export class LiveAvatarDriver implements SessionDriver {
           this.session = null;
         }
         
-        // If this was the last attempt, throw the error
         if (attempt >= MAX_RETRIES) {
           throw lastError;
         }
-        // Otherwise, continue to next retry iteration
+      }
+    }
+  }
+  
+  /**
+   * Connect directly to LiveKit room for CUSTOM mode
+   * This bypasses the SDK's session.start() which doesn't work with external LiveKit rooms
+   */
+  private async connectToLiveKitRoom(livekitUrl: string, livekitToken: string, roomName: string): Promise<void> {
+    console.log("🔌 Connecting to LiveKit room:", { livekitUrl, roomName, hasToken: !!livekitToken });
+    
+    // Create LiveKit Room instance
+    this.liveKitRoom = new Room({
+      adaptiveStream: true,
+      dynacast: true,
+    });
+    
+    // Set up room event handlers
+    this.liveKitRoom.on(RoomEvent.TrackSubscribed, (track: RemoteTrack, publication: RemoteTrackPublication, participant: RemoteParticipant) => {
+      console.log("📹 LiveKit track subscribed:", { 
+        kind: track.kind, 
+        participantIdentity: participant.identity,
+        trackSid: track.sid 
+      });
+      
+      // Attach video track from avatar participant
+      if (track.kind === Track.Kind.Video && participant.identity.toLowerCase().includes('avatar')) {
+        console.log("🎬 Attaching avatar video track to video element");
+        if (this.config.videoRef.current) {
+          track.attach(this.config.videoRef.current);
+          this.videoAttached = true;
+          this.config.onStreamReady?.();
+          this.config.onVideoReady?.();
+          console.log("✅ Avatar video attached successfully");
+          
+          // Force play
+          const videoEl = this.config.videoRef.current;
+          videoEl.muted = false;
+          videoEl.play().catch(err => {
+            console.warn("⚠️ Video autoplay prevented, trying muted:", err);
+            videoEl.muted = true;
+            videoEl.play().then(() => {
+              setTimeout(() => { videoEl.muted = false; }, 500);
+            });
+          });
+        }
+      }
+      
+      // Also attach audio track
+      if (track.kind === Track.Kind.Audio && participant.identity.toLowerCase().includes('avatar')) {
+        console.log("🔊 Attaching avatar audio track");
+        if (this.config.videoRef.current) {
+          track.attach(this.config.videoRef.current);
+        }
+      }
+    });
+    
+    this.liveKitRoom.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
+      console.log("📵 LiveKit track unsubscribed:", track.kind);
+      track.detach();
+    });
+    
+    this.liveKitRoom.on(RoomEvent.Disconnected, () => {
+      console.log("📵 LiveKit room disconnected");
+      this.config.onStreamDisconnected?.();
+    });
+    
+    this.liveKitRoom.on(RoomEvent.ParticipantConnected, (participant: RemoteParticipant) => {
+      console.log("👤 Participant connected:", participant.identity);
+    });
+    
+    // Connect to the room
+    console.log("🔄 Connecting to LiveKit room...");
+    await this.liveKitRoom.connect(livekitUrl, livekitToken);
+    console.log("✅ Connected to LiveKit room:", this.liveKitRoom.name);
+    
+    // Check for existing participants (avatar may have joined before us)
+    const participants = Array.from(this.liveKitRoom.remoteParticipants.values());
+    for (const participant of participants) {
+      console.log("👤 Existing participant:", participant.identity);
+      const publications = Array.from(participant.trackPublications.values());
+      for (const publication of publications) {
+        if (publication.track && publication.isSubscribed) {
+          const track = publication.track as RemoteTrack;
+          if (track.kind === Track.Kind.Video && participant.identity.toLowerCase().includes('avatar')) {
+            console.log("🎬 Found existing avatar video track, attaching...");
+            if (this.config.videoRef.current) {
+              track.attach(this.config.videoRef.current);
+              this.videoAttached = true;
+              this.config.onStreamReady?.();
+              this.config.onVideoReady?.();
+            }
+          }
+        }
       }
     }
   }
@@ -318,16 +449,28 @@ export class LiveAvatarDriver implements SessionDriver {
       this.config.videoRef.current.srcObject = null;
     }
     
-    // Stop the LiveAvatar session - SDK handles LiveKit disconnection internally
-    if (this.session) {
+    // Disconnect from LiveKit room (for CUSTOM mode with direct connection)
+    if (this.liveKitRoom) {
+      console.log("📵 Disconnecting from LiveKit room...");
+      try {
+        await this.liveKitRoom.disconnect();
+      } catch (e) {
+        console.warn("Error disconnecting from LiveKit room:", e);
+      }
+      this.liveKitRoom = null;
+    }
+    
+    // Stop the LiveAvatar session - SDK handles LiveKit disconnection internally (for FULL mode)
+    if (this.session && !this.useDirectLiveKit) {
       console.log("📵 Stopping LiveAvatar SDK session...");
       try {
         await this.session.stop();
       } catch (e) {
         console.warn("Error stopping SDK session:", e);
       }
-      this.session = null;
     }
+    this.session = null;
+    this.useDirectLiveKit = false;
     
     console.log("✅ LiveAvatar session stopped and resources released");
   }
@@ -605,7 +748,14 @@ export class LiveAvatarDriver implements SessionDriver {
     return true;
   }
 
-  private async fetchSessionCredentials(): Promise<{ sessionId: string; sessionToken: string }> {
+  private async fetchSessionCredentials(): Promise<{ 
+    sessionId: string; 
+    sessionToken: string;
+    mode?: string;
+    livekit_url?: string;
+    livekit_room?: string;
+    livekit_token?: string;
+  }> {
     console.log("🔑 Fetching LiveAvatar session credentials for:", this.config.avatarId);
     
     const response = await fetch("/api/heygen/token", {
@@ -629,12 +779,17 @@ export class LiveAvatarDriver implements SessionDriver {
     console.log("📦 LiveAvatar session credentials received:", {
       sessionId: data.session_id,
       hasToken: !!data.session_token,
-      mode: data.mode
+      mode: data.mode,
+      hasLiveKitConfig: !!(data.livekit_url && data.livekit_room && data.livekit_token),
     });
     
     return {
       sessionId: data.sessionId || data.session_id,
       sessionToken: data.sessionToken || data.session_token,
+      mode: data.mode,
+      livekit_url: data.livekit_url,
+      livekit_room: data.livekit_room,
+      livekit_token: data.livekit_token,
     };
   }
 
