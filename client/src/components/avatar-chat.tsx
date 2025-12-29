@@ -712,16 +712,30 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         // Revert to previous mode on failure
         setAudioOnly(previousAudioOnly);
         
-        // Check if this is a video unavailable error (404)
+        // Check error type for specific messages
         const errorMessage = error?.message?.toLowerCase() || '';
+        const errorResponse = error?.responseText || '';
         const is404 = errorMessage.includes('404') || errorMessage.includes('not found');
+        const isConcurrentLimit = errorMessage.includes('concurrent') || 
+                                  errorMessage.includes('10004') ||
+                                  errorResponse.includes('10004') ||
+                                  errorResponse.includes('Concurrent limit');
+        
+        let toastTitle = "Switch failed";
+        let toastDescription = "Failed to switch to video mode. Please try again.";
+        
+        if (isConcurrentLimit) {
+          toastTitle = "Video session in use";
+          toastDescription = "Another video session is active. Please close other tabs or wait a moment and try again.";
+        } else if (is404) {
+          toastTitle = "Video unavailable";
+          toastDescription = "Video mode is not available for this avatar. Using audio mode instead.";
+        }
         
         toast({
           variant: "destructive",
-          title: is404 ? "Video unavailable" : "Switch failed",
-          description: is404 
-            ? "Video mode is not available for this avatar. Using audio mode instead."
-            : "Failed to switch to video mode. Please try again.",
+          title: toastTitle,
+          description: toastDescription,
         });
       } finally {
         setIsModeSwitching(false);
