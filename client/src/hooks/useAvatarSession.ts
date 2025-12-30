@@ -82,6 +82,7 @@ export function useAvatarSession({
   const elevenLabsLanguageCodeRef = useRef(elevenLabsLanguageCode); // For TTS
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const sessionIdRef = useRef<string | null>(null);
+  const liveAvatarSessionTokenRef = useRef<string | null>(null); // LiveAvatar session token for proper cleanup
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); // Web Speech API for voice input
   const lastTranscriptRef = useRef<string>(""); // For deduplication
@@ -197,6 +198,12 @@ export function useAvatarSession({
         if (sessionDriverRef.current && !audioOnlyRef.current) {
           try {
             intentionalStopRef.current = true;
+            // Capture LiveAvatar session token before stopping (for proper cleanup)
+            const token = sessionDriverRef.current.getLiveAvatarSessionToken?.();
+            if (token) {
+              liveAvatarSessionTokenRef.current = token;
+              console.log("📵 Captured LiveAvatar token for cleanup (tab hidden)");
+            }
             await sessionDriverRef.current.stop();
             sessionDriverRef.current = null;
             setHeygenSessionActive(false);
@@ -295,16 +302,24 @@ export function useAvatarSession({
   const endSessionOnServer = async () => {
     if (sessionIdRef.current) {
       try {
+        // Send LiveAvatar session token if we have one (for proper cleanup)
+        const payload: { sessionId: string; liveAvatarSessionToken?: string } = {
+          sessionId: sessionIdRef.current,
+        };
+        if (liveAvatarSessionTokenRef.current) {
+          payload.liveAvatarSessionToken = liveAvatarSessionTokenRef.current;
+          console.log("📵 Sending LiveAvatar session token for cleanup");
+        }
+        
         await fetch("/api/session/end", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            sessionId: sessionIdRef.current,
-          }),
+          body: JSON.stringify(payload),
         });
         sessionIdRef.current = null;
+        liveAvatarSessionTokenRef.current = null;
       } catch (error) {
         console.error("Failed to end session on server:", error);
       }
@@ -859,6 +874,12 @@ export function useAvatarSession({
     
     try {
       intentionalStopRef.current = true;
+      // Capture LiveAvatar session token before stopping (for proper cleanup)
+      const token = sessionDriverRef.current.getLiveAvatarSessionToken?.();
+      if (token) {
+        liveAvatarSessionTokenRef.current = token;
+        console.log("📵 Captured LiveAvatar token for cleanup");
+      }
       await sessionDriverRef.current.stop().catch(console.error);
       sessionDriverRef.current = null;
       

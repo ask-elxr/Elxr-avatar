@@ -259,6 +259,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { timeout: 15000, errorThresholdPercentage: 50 },
   );
 
+  // LiveAvatar session close function - call this to properly release sessions
+  const closeLiveAvatarSession = async (sessionToken: string): Promise<boolean> => {
+    const apiKey = process.env.LIVEAVATAR_API_KEY;
+    if (!apiKey) {
+      logger.warn({
+        service: 'liveavatar',
+        operation: 'close_session',
+      }, 'No LiveAvatar API key - cannot close session');
+      return false;
+    }
+
+    try {
+      // LiveAvatar uses POST /v1/sessions/stop with Bearer token
+      const response = await fetch(
+        "https://api.liveavatar.com/v1/sessions/stop",
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${sessionToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logger.warn({
+          service: 'liveavatar',
+          operation: 'close_session',
+          httpStatus: response.status,
+          errorBody: errorText?.substring(0, 200),
+        }, 'LiveAvatar session close request failed (may already be closed)');
+        return false;
+      }
+
+      logger.info({
+        service: 'liveavatar',
+        operation: 'close_session',
+      }, 'LiveAvatar session closed successfully');
+      return true;
+    } catch (error: any) {
+      logger.error({
+        service: 'liveavatar',
+        operation: 'close_session',
+        error: error?.message,
+      }, 'Error closing LiveAvatar session');
+      return false;
+    }
+  };
+
   // Auth middleware
   await setupAuth(app);
 
@@ -7404,13 +7454,40 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
-  // End a session
+  // End a session - also closes LiveAvatar session if present
   app.post("/api/session/end", async (req, res) => {
     try {
-      const { sessionId } = req.body;
+      const { sessionId, liveAvatarSessionToken } = req.body;
       
       if (!sessionId) {
         return res.status(400).json({ error: "sessionId is required" });
+      }
+
+      // Close LiveAvatar session if token provided
+      if (liveAvatarSessionToken) {
+        logger.info({
+          service: 'session',
+          operation: 'end',
+          sessionId,
+          hasLiveAvatarToken: true,
+        }, 'Closing LiveAvatar session from client token');
+        closeLiveAvatarSession(liveAvatarSessionToken).catch(err => {
+          logger.warn({ error: err?.message }, 'Failed to close LiveAvatar session');
+        });
+      } else {
+        // Try to get token from session manager
+        const storedToken = sessionManager.getLiveAvatarSessionToken(sessionId);
+        if (storedToken) {
+          logger.info({
+            service: 'session',
+            operation: 'end',
+            sessionId,
+            hasStoredToken: true,
+          }, 'Closing LiveAvatar session from stored token');
+          closeLiveAvatarSession(storedToken).catch(err => {
+            logger.warn({ error: err?.message }, 'Failed to close stored LiveAvatar session');
+          });
+        }
       }
 
       sessionManager.endSession(sessionId);
@@ -7419,6 +7496,26 @@ This applies to EVERY response, regardless of conversation length.`;
       console.error("Error ending session:", error);
       res.status(500).json({
         error: "Failed to end session",
+      });
+    }
+  });
+
+  // Close LiveAvatar session explicitly (for cleanup when switching avatars)
+  app.post("/api/liveavatar/close-session", async (req, res) => {
+    try {
+      const { sessionToken } = req.body;
+      
+      if (!sessionToken) {
+        return res.status(400).json({ error: "sessionToken is required" });
+      }
+
+      const closed = await closeLiveAvatarSession(sessionToken);
+      res.json({ success: closed });
+    } catch (error: any) {
+      console.error("Error closing LiveAvatar session:", error);
+      res.status(500).json({
+        error: "Failed to close LiveAvatar session",
+        details: error?.message,
       });
     }
   });

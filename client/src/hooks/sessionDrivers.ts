@@ -17,6 +17,8 @@ export interface SessionDriver {
   startStreamingAudio?(): void;
   addAudioChunk?(base64Audio: string): void;
   endStreamingAudio?(): void;
+  // Session token for cleanup
+  getLiveAvatarSessionToken?(): string | null;
   isStreamingAudioActive?(): boolean;
 }
 
@@ -48,6 +50,7 @@ export class LiveAvatarDriver implements SessionDriver {
   private useHeygenVoice: boolean = false; // Toggle between HeyGen voice (repeat) and ElevenLabs voice (repeatAudio)
   private languageCode: string = "en";
   private sessionId: string | null = null;
+  private liveAvatarSessionToken: string | null = null; // Store token for proper cleanup
   private videoAttached: boolean = false;
   private audioContext: AudioContext | null = null;
   private enableMobileVoiceChat: boolean = false; // Track if mobile voice chat is enabled
@@ -190,6 +193,7 @@ export class LiveAvatarDriver implements SessionDriver {
         // Fetch session credentials from the backend (fresh token on each attempt)
         const credentials = await this.fetchSessionCredentials();
         this.sessionId = credentials.sessionId;
+        this.liveAvatarSessionToken = credentials.sessionToken; // Store for cleanup
         
         console.log("📋 Creating LiveAvatar session:", { 
           sessionId: credentials.sessionId, 
@@ -604,6 +608,13 @@ export class LiveAvatarDriver implements SessionDriver {
   setLanguage(languageCode: string): void {
     this.languageCode = languageCode;
     console.log(`🌐 LiveAvatarDriver language set to: ${languageCode}`);
+  }
+
+  /**
+   * Get the LiveAvatar session token for proper cleanup when ending session
+   */
+  getLiveAvatarSessionToken(): string | null {
+    return this.liveAvatarSessionToken;
   }
 
   async speak(text: string, languageCodeOverride?: string): Promise<void> {

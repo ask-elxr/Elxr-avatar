@@ -5,6 +5,7 @@ interface SessionInfo {
   avatarId: string;
   startTime: number;
   lastActivity: number;
+  liveAvatarSessionToken?: string; // LiveAvatar session token for proper cleanup
 }
 
 interface AvatarSwitchInfo {
@@ -170,6 +171,44 @@ class SessionManager {
       avatarId,
       activeSessionCount: this.activeSessions.size,
     }, "Session started");
+  }
+
+  /**
+   * Store LiveAvatar session token for a session (for proper cleanup)
+   */
+  setLiveAvatarSessionToken(sessionId: string, token: string): void {
+    const session = this.activeSessions.get(sessionId);
+    if (session) {
+      session.liveAvatarSessionToken = token;
+      logger.debug({
+        env: process.env.NODE_ENV || "production",
+        service: "session-manager",
+        operation: "setLiveAvatarToken",
+        sessionId,
+        hasToken: !!token,
+      }, "LiveAvatar session token stored");
+    }
+  }
+
+  /**
+   * Get LiveAvatar session token for a session
+   */
+  getLiveAvatarSessionToken(sessionId: string): string | undefined {
+    const session = this.activeSessions.get(sessionId);
+    return session?.liveAvatarSessionToken;
+  }
+
+  /**
+   * Get all LiveAvatar session tokens for a user (for cleanup when switching avatars)
+   */
+  getUserLiveAvatarSessionTokens(userId: string): string[] {
+    const tokens: string[] = [];
+    for (const session of Array.from(this.activeSessions.values())) {
+      if (session.userId === userId && session.liveAvatarSessionToken) {
+        tokens.push(session.liveAvatarSessionToken);
+      }
+    }
+    return tokens;
   }
 
   updateActivity(sessionId: string): void {
