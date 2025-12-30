@@ -65,6 +65,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (apiKey: string, avatarConfig?: { 
       avatarId?: string; 
       voiceId?: string; 
+      contextId?: string;  // Per-avatar context ID for FULL mode
       mode?: 'CUSTOM' | 'FULL';
       livekit_config?: {
         livekit_url: string;
@@ -77,7 +78,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Use specified mode, default to CUSTOM (preserves Claude + RAG + ElevenLabs pipeline)
       // CUSTOM mode: livekit_config is OPTIONAL - if not provided, LiveAvatar manages its own LiveKit room
-      // FULL mode: LiveAvatar handles AI conversation (requires LIVEAVATAR_CONTEXT_ID)
+      // FULL mode: LiveAvatar handles AI conversation (requires context_id from avatar config or env)
       const requestedMode = avatarConfig?.mode || 'CUSTOM';
       
       if (requestedMode === 'CUSTOM') {
@@ -104,10 +105,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 'Creating LiveAvatar session with CUSTOM mode');
       } else {
         // FULL mode - uses LiveAvatar's built-in LLM
-        const contextId = process.env.LIVEAVATAR_CONTEXT_ID;
+        // Context ID can come from avatar config or environment variable
+        const contextId = avatarConfig?.contextId || process.env.LIVEAVATAR_CONTEXT_ID;
         if (!contextId) {
           throw new Error(
-            'FULL mode requires LIVEAVATAR_CONTEXT_ID environment variable. ' +
+            'FULL mode requires context_id in avatar config or LIVEAVATAR_CONTEXT_ID environment variable. ' +
             'Use CUSTOM mode instead to preserve Claude + RAG pipeline.'
           );
         }
@@ -817,18 +819,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get avatar config for the LiveAvatar session
       // Default to CUSTOM mode - SDK handles LiveKit internally when session.start() is called
       // CUSTOM mode preserves our Claude + RAG + ElevenLabs AI pipeline
+      // Some avatars require FULL mode (uses LiveAvatar's LLM instead of Claude)
       let avatarConfig: { 
         avatarId?: string; 
         voiceId?: string;
+        contextId?: string;
         mode?: 'CUSTOM' | 'FULL';
       } | undefined;
       
       // Default to CUSTOM mode (our AI pipeline)
-      const mode: 'CUSTOM' | 'FULL' = (req.body.mode as 'CUSTOM' | 'FULL') || 'CUSTOM';
+      let mode: 'CUSTOM' | 'FULL' = (req.body.mode as 'CUSTOM' | 'FULL') || 'CUSTOM';
       
       // Track platform and voice settings for response
       let streamingPlatform: 'liveavatar' | 'heygen' = 'liveavatar';
       let useHeygenVoiceForInteractive = false;
+      let requiresFullMode = false;
       
       // For CUSTOM mode, let LiveAvatar SDK manage its own LiveKit room
       // The SDK's session.start() handles all LiveKit connection internally
@@ -850,6 +855,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           streamingPlatform = (avatar.streamingPlatform as 'liveavatar' | 'heygen') || 'liveavatar';
           useHeygenVoiceForInteractive = avatar.useHeygenVoiceForInteractive || false;
           
+          // Check if avatar requires FULL mode (uses LiveAvatar's LLM instead of Claude)
+          // This is needed for some avatars that don't work with CUSTOM mode
+          requiresFullMode = avatar.requiresFullMode === true;
+          if (requiresFullMode) {
+            if (!avatar.liveAvatarContextId) {
+              log.error({ avatarId }, "Avatar requires FULL mode but has no context ID configured");
+              return res.status(500).json({
+                error: "Avatar requires FULL mode but is not properly configured. Please set the context ID in the admin dashboard.",
+                avatarId,
+              });
+            }
+            mode = 'FULL';
+            log.info({
+              avatarId,
+              contextId: avatar.liveAvatarContextId?.substring(0, 8) + '...',
+              voiceId: avatar.liveAvatarVoiceId?.substring(0, 8) + '...',
+            }, 'Avatar requires FULL mode - switching from CUSTOM to FULL');
+          }
+          
           // For LiveAvatar API: ALWAYS use liveAvatarId (API only accepts LiveAvatar-specific IDs)
           // The platform setting is for future HeyGen streaming API support
           // HeyGen avatar IDs (heygenAvatarId) are NOT compatible with LiveAvatar API
@@ -858,7 +882,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (selectedAvatarId) {
             avatarConfig = {
               avatarId: selectedAvatarId,
-              voiceId: useHeygenVoiceForInteractive ? (avatar.heygenVoiceId || undefined) : undefined,
+              voiceId: requiresFullMode 
+                ? (avatar.liveAvatarVoiceId || undefined)  // FULL mode uses LiveAvatar voice
+                : (useHeygenVoiceForInteractive ? (avatar.heygenVoiceId || undefined) : undefined),
+              contextId: requiresFullMode ? (avatar.liveAvatarContextId || undefined) : undefined,
               mode,
             };
             log.debug({
@@ -868,6 +895,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               heygenAvatarId: avatar.heygenAvatarId,
               selectedAvatarId,
               useHeygenVoiceForInteractive,
+              requiresFullMode,
               mode,
             }, 'Resolved avatar ID for streaming session');
           }
