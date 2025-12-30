@@ -909,19 +909,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // For CUSTOM mode, we need to call /v1/sessions/start to make the avatar join the LiveKit room
       // Without this call, the avatar never connects even though we have a session_token
-      if (mode === 'CUSTOM' && sessionData.session_id) {
+      // IMPORTANT: Use session_token as Bearer auth, NOT X-API-KEY with session ID in URL
+      if (mode === 'CUSTOM' && sessionData.session_token) {
         log.info({
           sessionId: sessionData.session_id,
         }, 'Starting LiveAvatar session (CUSTOM mode - avatar must join LiveKit room)');
         
         try {
           const startResponse = await fetch(
-            `https://api.liveavatar.com/v1/sessions/${sessionData.session_id}/start`,
+            `https://api.liveavatar.com/v1/sessions/start`,
             {
               method: 'POST',
               headers: {
-                'X-API-KEY': apiKey,
-                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${sessionData.session_token}`,
+                'Accept': 'application/json',
               },
             }
           );
@@ -938,6 +939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log.info({
               sessionId: sessionData.session_id,
               startData,
+              hasWsUrl: !!startData.ws_url,
+              hasLiveKitUrl: !!startData.livekit_url,
             }, 'LiveAvatar session started - avatar should join LiveKit room');
           }
         } catch (startError: any) {
