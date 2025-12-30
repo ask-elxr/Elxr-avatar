@@ -200,53 +200,12 @@ export class LiveAvatarDriver implements SessionDriver {
         });
         
         this.enableMobileVoiceChat = this.config.enableMobileVoiceChat === true;
-        console.log("🔧 LiveAvatarDriver code version: 2024-12-29-v9 (direct LiveKit for CUSTOM mode)");
+        console.log("🔧 LiveAvatarDriver code version: 2024-12-30-v10 (SDK session.start + repeatAudio for lip-sync)");
         console.log(`🎤 Voice input: ${this.enableMobileVoiceChat ? 'ENABLED (using ElevenLabs STT)' : 'DISABLED (using Web Speech API)'}`);
         
-        // CUSTOM mode with our own LiveKit room - connect directly via livekit-client
-        // This bypasses the SDK's session.start() which doesn't work with external LiveKit
-        if (credentials.mode === 'CUSTOM' && credentials.livekit_url && credentials.livekit_token) {
-          console.log("🎬 CUSTOM mode - Using direct LiveKit connection (bypassing SDK session.start)");
-          this.useDirectLiveKit = true;
-          
-          // Create LiveAvatarSession for speak/repeatAudio methods (but don't call start())
-          const session = new LiveAvatarSession(credentials.sessionToken);
-          this.session = session;
-          
-          // Set up event listeners on the SDK session (for speak events)
-          session.on(AgentEventsEnum.AVATAR_SPEAK_STARTED, () => {
-            console.log("🗣️ Avatar started speaking");
-            this.config.onAvatarStartTalking?.();
-          });
-          session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
-            console.log("🤫 Avatar stopped speaking");
-            this.config.onAvatarStopTalking?.();
-          });
-          
-          // Connect directly to LiveKit room
-          await this.connectToLiveKitRoom(
-            credentials.livekit_url,
-            credentials.livekit_token,
-            credentials.livekit_room || ''
-          );
-          
-          // Start ElevenLabs STT if mobile voice chat is enabled
-          if (this.enableMobileVoiceChat) {
-            console.log("🎤 Starting ElevenLabs STT after LiveKit connection...");
-            try {
-              await this.startElevenLabsSTT();
-              console.log("✅ ElevenLabs STT started successfully");
-            } catch (sttError: any) {
-              console.warn("⚠️ Failed to start ElevenLabs STT:", sttError?.message || sttError);
-            }
-          }
-          
-          console.log("✅ LiveAvatar session started - CUSTOM mode with direct LiveKit + Claude + RAG + ElevenLabs");
-          return;
-        }
-        
-        // FULL mode or SDK-managed LiveKit - use SDK's session.start()
-        console.log("🎬 Using SDK session.start() (FULL mode or SDK-managed LiveKit)");
+        // Always use SDK's session.start() - it handles LiveKit connection internally
+        // In CUSTOM mode, we use session.repeatAudio() to send ElevenLabs TTS for lip-sync
+        console.log(`🎬 Using SDK session.start() (mode: ${credentials.mode})`);
         this.useDirectLiveKit = false;
         
         const session = new LiveAvatarSession(credentials.sessionToken);

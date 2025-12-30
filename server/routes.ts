@@ -76,30 +76,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let mode: string;
       
       // Use specified mode, default to CUSTOM (preserves Claude + RAG + ElevenLabs pipeline)
-      // CUSTOM mode REQUIRES livekit_config with all fields (url, room, client_token)
+      // CUSTOM mode: livekit_config is OPTIONAL - if not provided, LiveAvatar manages its own LiveKit room
       // FULL mode: LiveAvatar handles AI conversation (requires LIVEAVATAR_CONTEXT_ID)
       const requestedMode = avatarConfig?.mode || 'CUSTOM';
       
       if (requestedMode === 'CUSTOM') {
         mode = "CUSTOM";
-        // CUSTOM mode requires full livekit_config per API docs
-        if (!avatarConfig?.livekit_config) {
-          throw new Error('CUSTOM mode requires livekit_config with livekit_url, livekit_room, and livekit_client_token');
-        }
         
+        // Build request body - livekit_config is optional in CUSTOM mode
+        // If not provided, LiveAvatar SDK will manage its own LiveKit room
         requestBody = {
           mode: "CUSTOM",
           avatar_id: avatarConfig?.avatarId,
-          livekit_config: avatarConfig.livekit_config,
         };
+        
+        // Only include livekit_config if provided (optional)
+        if (avatarConfig?.livekit_config) {
+          requestBody.livekit_config = avatarConfig.livekit_config;
+        }
         
         logger.debug({
           service: 'liveavatar',
           operation: 'create_session_token',
           mode: 'CUSTOM',
           avatarId: avatarConfig?.avatarId,
-          livekit_room: avatarConfig.livekit_config.livekit_room,
-        }, 'Creating LiveAvatar session with CUSTOM mode (using our LiveKit room)');
+          usesOwnLiveKit: !avatarConfig?.livekit_config,
+        }, 'Creating LiveAvatar session with CUSTOM mode');
       } else {
         // FULL mode - uses LiveAvatar's built-in LLM
         const contextId = process.env.LIVEAVATAR_CONTEXT_ID;
@@ -778,32 +780,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let streamingPlatform: 'liveavatar' | 'heygen' = 'liveavatar';
       let useHeygenVoiceForInteractive = false;
       
-      // For CUSTOM mode, generate LiveKit config (room + tokens)
-      // CUSTOM mode REQUIRES livekit_config per LiveAvatar API docs
-      let liveKitConfig: { 
-        livekit_url: string; 
-        livekit_room: string; 
-        livekit_client_token: string;
-        frontend_token: string;
-      } | null = null;
-      
-      if (mode === 'CUSTOM') {
-        // Check if LiveKit is configured
-        if (!liveKitService.isConfigured()) {
-          log.error("LiveKit service not configured for CUSTOM mode");
-          return res.status(500).json({
-            error: "LiveKit not configured. Set LIVEKIT_URL, LIVEKIT_API_KEY, and LIVEKIT_API_SECRET.",
-          });
-        }
-        
-        // Generate LiveKit room and tokens for this session
-        liveKitConfig = await liveKitService.generateLiveAvatarConfig(userId, avatarId || 'default');
-        log.debug({
-          livekit_room: liveKitConfig.livekit_room,
-          hasAvatarToken: !!liveKitConfig.livekit_client_token,
-          hasFrontendToken: !!liveKitConfig.frontend_token,
-        }, 'Generated LiveKit config for CUSTOM mode');
-      }
+      // For CUSTOM mode, let LiveAvatar SDK manage its own LiveKit room
+      // The SDK's session.start() handles all LiveKit connection internally
+      // We no longer generate our own LiveKit config - this was causing 500 errors
 
       if (avatarId) {
         const avatar = await getAvatarById(avatarId);
@@ -831,11 +810,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
               avatarId: selectedAvatarId,
               voiceId: useHeygenVoiceForInteractive ? (avatar.heygenVoiceId || undefined) : undefined,
               mode,
-              livekit_config: liveKitConfig ? {
-                livekit_url: liveKitConfig.livekit_url,
-                livekit_room: liveKitConfig.livekit_room,
-                livekit_client_token: liveKitConfig.livekit_client_token,
-              } : undefined,
             };
             log.debug({
               appAvatarId: avatarId,
@@ -845,18 +819,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               selectedAvatarId,
               useHeygenVoiceForInteractive,
               mode,
-              hasLiveKitConfig: !!liveKitConfig,
             }, 'Resolved avatar ID for streaming session');
           }
         }
       } else {
         avatarConfig = { 
           mode,
-          livekit_config: liveKitConfig ? {
-            livekit_url: liveKitConfig.livekit_url,
-            livekit_room: liveKitConfig.livekit_room,
-            livekit_client_token: liveKitConfig.livekit_client_token,
-          } : undefined,
         };
       }
 
@@ -904,54 +872,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         mode,
         streamingPlatform,
         useHeygenVoiceForInteractive,
-        hasLiveKitConfig: !!liveKitConfig,
       }, "LiveAvatar session token created successfully");
 
-      // For CUSTOM mode, we need to call /v1/sessions/start to make the avatar join the LiveKit room
-      // Without this call, the avatar never connects even though we have a session_token
-      // IMPORTANT: Use session_token as Bearer auth, NOT X-API-KEY with session ID in URL
-      if (mode === 'CUSTOM' && sessionData.session_token) {
-        log.info({
-          sessionId: sessionData.session_id,
-        }, 'Starting LiveAvatar session (CUSTOM mode - avatar must join LiveKit room)');
-        
-        try {
-          const startResponse = await fetch(
-            `https://api.liveavatar.com/v1/sessions/start`,
-            {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${sessionData.session_token}`,
-                'Accept': 'application/json',
-              },
-            }
-          );
-          
-          if (!startResponse.ok) {
-            const errorText = await startResponse.text();
-            log.warn({
-              sessionId: sessionData.session_id,
-              httpStatus: startResponse.status,
-              errorBody: errorText,
-            }, 'Failed to start LiveAvatar session - avatar may not join LiveKit room');
-          } else {
-            const startData = await startResponse.json();
-            log.info({
-              sessionId: sessionData.session_id,
-              startData,
-              hasWsUrl: !!startData.ws_url,
-              hasLiveKitUrl: !!startData.livekit_url,
-            }, 'LiveAvatar session started - avatar should join LiveKit room');
-          }
-        } catch (startError: any) {
-          log.warn({
-            sessionId: sessionData.session_id,
-            error: startError.message,
-          }, 'Error starting LiveAvatar session');
-        }
-      }
+      // NOTE: The SDK's session.start() will handle connecting to LiveKit
+      // We no longer call /v1/sessions/start here - the SDK does it internally
       
-      // Build response - includes LiveKit info for CUSTOM mode
+      // Build response - SDK handles LiveKit connection via session.start()
       const response: any = {
         session_id: sessionData.session_id,
         session_token: sessionData.session_token,
@@ -960,13 +886,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         useHeygenVoiceForInteractive, // Tell frontend which voice source to use
         ...sessionData,
       };
-      
-      // For CUSTOM mode, include LiveKit connection info for the frontend
-      if (liveKitConfig) {
-        response.livekit_url = liveKitConfig.livekit_url;
-        response.livekit_room = liveKitConfig.livekit_room;
-        response.livekit_token = liveKitConfig.frontend_token; // Token for user to join room
-      }
       
       res.json(response);
     } catch (error: any) {
