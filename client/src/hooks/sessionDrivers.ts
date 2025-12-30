@@ -232,6 +232,16 @@ export class LiveAvatarDriver implements SessionDriver {
 
         session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
           console.log("📵 LiveAvatar stream disconnected:", reason);
+          console.log("📵 Stream disconnected - intentionalStop flag:", this.intentionalStop);
+          
+          // Log detailed error info for debugging failed sessions
+          if (reason === "SESSION_START_FAILED") {
+            console.error("Session start failed:", {
+              status: (session as any)?.lastError?.status || null,
+              errorCode: (session as any)?.lastError?.code || 500,
+            });
+          }
+          
           this.config.onStreamDisconnected?.();
         });
 
