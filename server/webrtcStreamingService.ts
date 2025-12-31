@@ -258,7 +258,12 @@ async function startTTSStream(session: WebRTCSession): Promise<void> {
     return;
   }
   
-  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=eleven_turbo_v2_5&output_format=pcm_24000&optimize_streaming_latency=4`;
+  // Use multilingual model for non-English languages
+  const isNonEnglish = session.languageCode && !session.languageCode.startsWith('en');
+  const modelId = isNonEnglish ? 'eleven_multilingual_v2' : 'eleven_turbo_v2_5';
+  log.debug({ languageCode: session.languageCode, modelId, isNonEnglish }, 'Selected TTS model for WebRTC streaming');
+  
+  const ttsUrl = `${ELEVENLABS_TTS_URL}/${session.voiceId}/stream-input?model_id=${modelId}&output_format=pcm_24000&optimize_streaming_latency=4`;
   
   try {
     const ttsWs = new WebSocket(ttsUrl, {

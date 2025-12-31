@@ -75,9 +75,13 @@ class ElevenLabsService {
       log.debug("Generating speech with ElevenLabs");
       const startTime = Date.now();
 
+      // Use multilingual model for non-English languages, otherwise use fast flash model
+      const isNonEnglish = languageCode && !languageCode.startsWith('en');
+      const modelId = isNonEnglish ? "eleven_multilingual_v2" : "eleven_flash_v2_5";
+      
       const options: any = {
         text,
-        model_id: "eleven_flash_v2_5", // Flash model - ~75ms latency vs ~250-300ms for Turbo
+        model_id: modelId,
         voice_settings: {
           stability: 0.7, // Increased for warmer, smoother voice (less harsh)
           similarity_boost: 0.65, // Slightly reduced for softer tone
@@ -88,8 +92,10 @@ class ElevenLabsService {
 
       // Add language code if specified (for multilingual models)
       if (languageCode) {
-        options.language_code = languageCode;
+        options.language_code = languageCode.split('-')[0]; // Use just "es" not "es-ES"
       }
+      
+      log.debug({ modelId, isNonEnglish, languageCode }, "Selected TTS model based on language");
 
       const audioStream = await this.ttsBreaker.execute({
         voiceId,
@@ -163,6 +169,12 @@ class ElevenLabsService {
       log.debug("Generating PCM speech with ElevenLabs for HeyGen lip-sync");
       const startTime = Date.now();
 
+      // Use multilingual model for non-English languages
+      const isNonEnglish = languageCode && !languageCode.startsWith('en');
+      const modelId = isNonEnglish ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      
+      log.debug({ modelId, isNonEnglish, languageCode }, "Selected TTS model for PCM generation");
+      
       // Use direct API call to specify PCM output format
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=pcm_24000`,
@@ -174,7 +186,7 @@ class ElevenLabsService {
           },
           body: JSON.stringify({
             text,
-            model_id: "eleven_turbo_v2_5",
+            model_id: modelId,
             voice_settings: {
               stability: 0.7,
               similarity_boost: 0.65,
@@ -242,6 +254,12 @@ class ElevenLabsService {
       // Check if text contains SSML tags to enable SSML parsing
       const containsSSML = text.includes('<break') || text.includes('<speak');
       
+      // Use multilingual model for non-English languages
+      const isNonEnglish = languageCode && !languageCode.startsWith('en');
+      const modelId = isNonEnglish ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      
+      log.debug({ modelId, isNonEnglish, languageCode }, "Selected TTS model for base64 generation");
+      
       const response = await fetch(
         `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/with-timestamps?output_format=pcm_24000`,
         {
@@ -252,7 +270,7 @@ class ElevenLabsService {
           },
           body: JSON.stringify({
             text,
-            model_id: "eleven_turbo_v2_5",
+            model_id: modelId,
             voice_settings: {
               stability: 0.7,
               similarity_boost: 0.65,
@@ -552,7 +570,11 @@ class ElevenLabsService {
       ];
       const phrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
       
-      log.debug({ phrase }, "Generating thinking sound");
+      // Use multilingual model for non-English languages
+      const isNonEnglish = languageCode && !languageCode.startsWith('en');
+      const modelId = isNonEnglish ? "eleven_multilingual_v2" : "eleven_turbo_v2_5";
+      
+      log.debug({ phrase, modelId, isNonEnglish }, "Generating thinking sound");
       const startTime = Date.now();
 
       const response = await fetch(
@@ -565,7 +587,7 @@ class ElevenLabsService {
           },
           body: JSON.stringify({
             text: `<speak><prosody rate="slow">${phrase}</prosody></speak>`,
-            model_id: "eleven_turbo_v2_5",
+            model_id: modelId,
             voice_settings: {
               stability: 0.8,
               similarity_boost: 0.6,
@@ -589,7 +611,7 @@ class ElevenLabsService {
             },
             body: JSON.stringify({
               text: phrase,
-              model_id: "eleven_turbo_v2_5",
+              model_id: modelId,
               voice_settings: {
                 stability: 0.8,
                 similarity_boost: 0.6,
