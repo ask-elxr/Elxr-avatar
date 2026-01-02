@@ -83,6 +83,20 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Admin UI**: KnowledgeBase page offers a "Topic Folders" tab for bulk uploads.
 - **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially to minimize memory usage.
 
+#### Production Pinecone Ingestion System
+- **Location**: `server/ingest/` directory with modular architecture
+- **Namespace Format**: `{env}:mentor:{mentorSlug}:{kbSlug}:v{version}` (e.g., `prod:mentor:markkohl:psychedelics:v1`)
+- **Chunking**: Token-based (350 tokens default, 60 overlap), heading-aware splitting, breadcrumb context prepended
+- **Breadcrumb Format**: `Title: {title}\nSection: {section}\nMentor: {mentor}\nKB: {kb}\nContent: {chunk_text}`
+- **Embeddings**: OpenAI text-embedding-3-small (1536 dimensions) with batch processing and retry logic
+- **Debug Logging**: JSONL files in `storage/debug/pinecone/{namespace}/` for debugging and reindexing
+- **Admin Endpoints** (require `X-Admin-Secret` header):
+  - `POST /admin/ingest/text` - Ingest text with chunking, embedding, and Pinecone upsert
+  - `POST /admin/query` - Query namespace with citations
+  - `DELETE /admin/source/:source_id` - Remove all chunks for a source
+  - `GET /admin/health` - Health check
+- **Data Model**: Chunk IDs as `{source_id}:{chunk_index}`, metadata includes mentor, kb, env, source_type, title, section, text_preview, created_at
+
 #### Technical Implementations
 - **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
