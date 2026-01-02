@@ -117,3 +117,45 @@ export function getFolderNamespace(folderName: string): PineconeCategory {
   
   return "OTHER";
 }
+
+export const NAMESPACE_DISPLAY_NAMES: Record<string, string> = {
+  ADDICTION: "Addiction",
+  MIND: "Mind",
+  BODY: "Body",
+  SEXUALITY: "Sexuality",
+  TRANSITIONS: "Transitions",
+  SPIRITUALITY: "Spirituality",
+  SCIENCE: "Science",
+  PSYCHEDELICS: "Psychedelics",
+  NUTRITION: "Nutrition",
+  LIFE: "Life",
+  LONGEVITY: "Longevity",
+  GRIEF: "Grief",
+  MIDLIFE: "Midlife",
+  MOVEMENT: "Movement",
+  WORK: "Work",
+  SLEEP: "Sleep",
+  OTHER: "Other",
+  WELLNESS: "Wellness",
+  HEALING: "Healing",
+};
+
+export function getNamespaceDisplayName(namespace: string, avatarId?: string): string | null {
+  const lower = namespace.toLowerCase();
+  const avatarLower = avatarId?.toLowerCase().replace(/-/g, '');
+  
+  if (avatarLower && (lower === avatarId?.toLowerCase() || lower.replace(/-/g, '') === avatarLower)) {
+    return null;
+  }
+  
+  const upper = namespace.toUpperCase();
+  if (NAMESPACE_DISPLAY_NAMES[upper]) {
+    return NAMESPACE_DISPLAY_NAMES[upper];
+  }
+  
+  if (NAMESPACE_DISPLAY_NAMES[namespace]) {
+    return NAMESPACE_DISPLAY_NAMES[namespace];
+  }
+  
+  return namespace.charAt(0).toUpperCase() + namespace.slice(1).toLowerCase().replace(/_/g, ' ');
+}

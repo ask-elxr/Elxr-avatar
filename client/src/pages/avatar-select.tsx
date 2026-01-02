@@ -5,6 +5,7 @@ import { Check, MessageCircle, Lock, Crown, GraduationCap } from "lucide-react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { AvatarProfile } from "@shared/schema";
+import { getNamespaceDisplayName } from "@shared/pineconeCategories";
 
 interface UserPlanInfo {
   plan: {
@@ -209,12 +210,16 @@ export default function AvatarSelect() {
                         
                         {/* Knowledge Categories - Fixed height area */}
                         <div className="flex flex-wrap gap-1.5 mb-4 min-h-[2.5rem]">
-                          {avatar.pineconeNamespaces && avatar.pineconeNamespaces.length > 0 && avatar.pineconeNamespaces.slice(0, 5).map((namespace, index) => (
+                          {avatar.pineconeNamespaces && avatar.pineconeNamespaces.length > 0 && avatar.pineconeNamespaces
+                            .map((ns) => getNamespaceDisplayName(ns, avatar.id))
+                            .filter((name): name is string => name !== null)
+                            .slice(0, 5)
+                            .map((displayName, index) => (
                             <span
                               key={index}
                               className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi h-fit"
                             >
-                              {namespace}
+                              {displayName}
                             </span>
                           ))}
                         </div>

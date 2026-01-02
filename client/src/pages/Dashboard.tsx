@@ -64,6 +64,7 @@ import type {
   UserSubscription,
   UsagePeriod,
 } from "@shared/schema";
+import { getNamespaceDisplayName } from "@shared/pineconeCategories";
 import { Badge } from "@/components/ui/badge";
 
 // Extended type for courses with lessons and video data from API
@@ -1114,13 +1115,15 @@ export default function Dashboard({
                                       {avatar.pineconeNamespaces &&
                                         avatar.pineconeNamespaces.length > 0 &&
                                         avatar.pineconeNamespaces
+                                          .map((ns) => getNamespaceDisplayName(ns, avatar.id))
+                                          .filter((name): name is string => name !== null)
                                           .slice(0, 3)
-                                          .map((namespace, index) => (
+                                          .map((displayName, index) => (
                                             <span
                                               key={index}
                                               className="text-sm sm:text-xs px-3 sm:px-2 py-1 sm:py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
                                             >
-                                              {namespace}
+                                              {displayName}
                                             </span>
                                           ))}
                                     </div>

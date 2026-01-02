@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/ca
 import { Button } from "@/components/ui/button";
 import { Users } from "lucide-react";
 import type { AvatarProfile } from "@shared/schema";
+import { getNamespaceDisplayName } from "@shared/pineconeCategories";
 import { LoadingSpinner } from "@/components/loading-spinner";
 
 interface AvatarSwitcherProps {
@@ -150,12 +151,15 @@ export function AvatarSwitcher({
                         
                         {avatar.pineconeNamespaces && avatar.pineconeNamespaces.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
-                            {avatar.pineconeNamespaces.map((namespace, index) => (
+                            {avatar.pineconeNamespaces
+                              .map((ns) => getNamespaceDisplayName(ns, avatar.id))
+                              .filter((name): name is string => name !== null)
+                              .map((displayName, index) => (
                               <span
                                 key={index}
                                 className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi"
                               >
-                                {namespace}
+                                {displayName}
                               </span>
                             ))}
                           </div>
