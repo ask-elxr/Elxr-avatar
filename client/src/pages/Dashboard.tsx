@@ -1109,18 +1109,18 @@ export default function Dashboard({
                                       {avatar.description}
                                     </CardDescription>
 
-                                    {/* Tags */}
+                                    {/* Knowledge Categories */}
                                     <div className="flex flex-wrap gap-2 sm:gap-1.5 mb-4 min-h-[2.5rem]">
-                                      {avatar.tags &&
-                                        avatar.tags.length > 0 &&
-                                        avatar.tags
+                                      {avatar.pineconeNamespaces &&
+                                        avatar.pineconeNamespaces.length > 0 &&
+                                        avatar.pineconeNamespaces
                                           .slice(0, 3)
-                                          .map((tag, index) => (
+                                          .map((namespace, index) => (
                                             <span
                                               key={index}
                                               className="text-sm sm:text-xs px-3 sm:px-2 py-1 sm:py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 h-fit"
                                             >
-                                              {tag}
+                                              {namespace}
                                             </span>
                                           ))}
                                     </div>

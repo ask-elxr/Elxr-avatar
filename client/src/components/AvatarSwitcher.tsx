@@ -148,14 +148,14 @@ export function AvatarSwitcher({
                           {avatar.description}
                         </CardDescription>
                         
-                        {avatar.tags && avatar.tags.length > 0 && (
+                        {avatar.pineconeNamespaces && avatar.pineconeNamespaces.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
-                            {avatar.tags.map((tag, index) => (
+                            {avatar.pineconeNamespaces.map((namespace, index) => (
                               <span
                                 key={index}
                                 className="text-xs px-2 py-0.5 bg-purple-500/20 text-purple-300 rounded-full border border-purple-500/30 font-satoshi"
                               >
-                                {tag}
+                                {namespace}
                               </span>
                             ))}
                           </div>
