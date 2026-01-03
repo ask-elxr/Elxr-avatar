@@ -309,12 +309,16 @@ export function CourseIngestion() {
                 <SelectTrigger data-testid="select-namespace-ingestion">
                   <SelectValue placeholder="Select existing namespace..." />
                 </SelectTrigger>
-                <SelectContent>
-                  {availableNamespaces.map(ns => (
-                    <SelectItem key={ns.namespace} value={ns.namespace}>
-                      {ns.namespace} ({ns.vectorCount} vectors)
-                    </SelectItem>
-                  ))}
+                <SelectContent className="z-[9999] max-h-[300px] overflow-y-auto bg-zinc-900 border border-zinc-700">
+                  {availableNamespaces.length === 0 ? (
+                    <SelectItem value="_empty" disabled>No namespaces found</SelectItem>
+                  ) : (
+                    availableNamespaces.map(ns => (
+                      <SelectItem key={ns.namespace} value={ns.namespace}>
+                        {ns.namespace} ({ns.vectorCount} vectors)
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
               <div className="text-xs text-white/50">Or enter a new namespace name below</div>
