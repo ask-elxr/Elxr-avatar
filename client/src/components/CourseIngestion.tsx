@@ -212,6 +212,9 @@ export function CourseIngestion() {
         } catch {
           errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         }
+        if (response.status === 401) {
+          errorMessage = 'Admin secret mismatch. Please clear your browser storage and re-enter the correct admin secret. Run in console: localStorage.removeItem("admin_secret") then refresh.';
+        }
         throw new Error(errorMessage);
       }
 
