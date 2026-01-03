@@ -73,10 +73,15 @@ export function CourseIngestion() {
       });
       if (!response.ok) throw new Error('Failed to fetch namespaces');
       const data = await response.json();
+      const nsObj = data.pinecone?.namespaces || {};
+      const namespaces = Object.entries(nsObj).map(([name, stats]: [string, any]) => ({
+        namespace: name,
+        vectorCount: stats?.recordCount || 0
+      }));
       return {
-        totalVectorCount: data.pinecone?.totalVectorCount || 0,
+        totalVectorCount: data.pinecone?.totalRecordCount || 0,
         dimension: data.pinecone?.dimension || 1536,
-        namespaces: data.pinecone?.namespaces || []
+        namespaces
       };
     }
   });
