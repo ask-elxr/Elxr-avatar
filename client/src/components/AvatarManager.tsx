@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2 } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 import { useLocation } from "wouter";
@@ -87,6 +87,12 @@ export function AvatarManager() {
   const [personaData, setPersonaData] = useState<PersonaSpec | null>(null);
   const [personaOpen, setPersonaOpen] = useState(false);
   const [previewPrompt, setPreviewPrompt] = useState<string | null>(null);
+  const [personaEditMode, setPersonaEditMode] = useState(false);
+  const [editablePersona, setEditablePersona] = useState<PersonaSpec | null>(null);
+  const [personaSaving, setPersonaSaving] = useState(false);
+  const [newToneInput, setNewToneInput] = useState("");
+  const [newBannedWordInput, setNewBannedWordInput] = useState("");
+  const [newPhraseInput, setNewPhraseInput] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<InsertAvatarProfile>({
@@ -303,6 +309,106 @@ export function AvatarManager() {
     setPersonaData(null);
     setPersonaOpen(false);
     setPreviewPrompt(null);
+    setPersonaEditMode(false);
+    setEditablePersona(null);
+    setNewToneInput("");
+    setNewBannedWordInput("");
+    setNewPhraseInput("");
+  };
+
+  const startPersonaEdit = () => {
+    if (personaData) {
+      setEditablePersona(JSON.parse(JSON.stringify(personaData)));
+      setPersonaEditMode(true);
+    }
+  };
+
+  const cancelPersonaEdit = () => {
+    setPersonaEditMode(false);
+    setEditablePersona(null);
+    setNewToneInput("");
+    setNewBannedWordInput("");
+    setNewPhraseInput("");
+  };
+
+  const savePersona = async () => {
+    if (!editablePersona || !editingAvatar) return;
+    
+    setPersonaSaving(true);
+    try {
+      const response = await fetch(`/api/admin/personas/${editingAvatar.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editablePersona),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setPersonaData(data.persona);
+        setPersonaEditMode(false);
+        setEditablePersona(null);
+        toast({
+          title: "Persona saved",
+          description: "Personality Engine settings updated successfully.",
+        });
+      } else {
+        throw new Error('Failed to save');
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to save",
+        description: "Could not save persona settings",
+        variant: "destructive",
+      });
+    }
+    setPersonaSaving(false);
+  };
+
+  const createDefaultPersona = async () => {
+    if (!editingAvatar) return;
+    
+    const defaultPersona: PersonaSpec = {
+      id: editingAvatar.id,
+      displayName: editingAvatar.name,
+      oneLiner: "Expert guide and advisor.",
+      role: "Knowledgeable assistant",
+      audience: ["general users"],
+      boundaries: {
+        notA: ["doctor", "therapist", "lawyer"],
+        refuseTopics: []
+      },
+      voice: {
+        tone: ["warm", "helpful", "knowledgeable"],
+        humor: "occasional and appropriate",
+        readingLevel: "accessible",
+        bannedWords: [],
+        signaturePhrases: []
+      },
+      behavior: {
+        opensWith: ["direct answer", "helpful context"],
+        disagreementStyle: "respectful and evidence-based",
+        uncertaintyProtocol: "acknowledge limits, offer what is known"
+      },
+      knowledge: {
+        namespaces: editingAvatar.pineconeNamespaces || [],
+        kbPolicy: {
+          whenToQuery: ["user asks for specific information"],
+          whenNotToQuery: ["casual conversation"]
+        }
+      },
+      output: {
+        maxLength: "medium",
+        structure: ["answer first", "supporting detail"]
+      },
+      safety: {
+        crisis: {
+          selfHarm: "offer compassion, encourage professional help"
+        }
+      }
+    };
+    
+    setEditablePersona(defaultPersona);
+    setPersonaEditMode(true);
   };
 
   const handleAddNamespace = () => {
@@ -958,7 +1064,188 @@ export function AvatarManager() {
                   </CollapsibleTrigger>
                   
                   <CollapsibleContent className="space-y-3 pt-3">
-                    {personaData ? (
+                    {personaEditMode && editablePersona ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">One-liner</Label>
+                            <Input
+                              value={editablePersona.oneLiner}
+                              onChange={(e) => setEditablePersona({...editablePersona, oneLiner: e.target.value})}
+                              className="text-sm"
+                              data-testid="input-persona-oneliner"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Role</Label>
+                            <Input
+                              value={editablePersona.role}
+                              onChange={(e) => setEditablePersona({...editablePersona, role: e.target.value})}
+                              className="text-sm"
+                              data-testid="input-persona-role"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Voice Tone</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {editablePersona.voice.tone.map((t, i) => (
+                              <Badge key={i} variant="outline" className="text-xs cursor-pointer hover:bg-destructive" onClick={() => {
+                                setEditablePersona({
+                                  ...editablePersona,
+                                  voice: {...editablePersona.voice, tone: editablePersona.voice.tone.filter((_, idx) => idx !== i)}
+                                });
+                              }}>
+                                {t} ×
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              value={newToneInput}
+                              onChange={(e) => setNewToneInput(e.target.value)}
+                              placeholder="Add tone..."
+                              className="text-sm flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newToneInput.trim()) {
+                                  e.preventDefault();
+                                  setEditablePersona({
+                                    ...editablePersona,
+                                    voice: {...editablePersona.voice, tone: [...editablePersona.voice.tone, newToneInput.trim()]}
+                                  });
+                                  setNewToneInput("");
+                                }
+                              }}
+                              data-testid="input-add-tone"
+                            />
+                            <Button type="button" size="sm" variant="outline" onClick={() => {
+                              if (newToneInput.trim()) {
+                                setEditablePersona({
+                                  ...editablePersona,
+                                  voice: {...editablePersona.voice, tone: [...editablePersona.voice.tone, newToneInput.trim()]}
+                                });
+                                setNewToneInput("");
+                              }
+                            }}>
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Banned Words</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {editablePersona.voice.bannedWords.map((w, i) => (
+                              <Badge key={i} variant="destructive" className="text-xs cursor-pointer" onClick={() => {
+                                setEditablePersona({
+                                  ...editablePersona,
+                                  voice: {...editablePersona.voice, bannedWords: editablePersona.voice.bannedWords.filter((_, idx) => idx !== i)}
+                                });
+                              }}>
+                                {w} ×
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              value={newBannedWordInput}
+                              onChange={(e) => setNewBannedWordInput(e.target.value)}
+                              placeholder="Add banned word..."
+                              className="text-sm flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newBannedWordInput.trim()) {
+                                  e.preventDefault();
+                                  setEditablePersona({
+                                    ...editablePersona,
+                                    voice: {...editablePersona.voice, bannedWords: [...editablePersona.voice.bannedWords, newBannedWordInput.trim()]}
+                                  });
+                                  setNewBannedWordInput("");
+                                }
+                              }}
+                              data-testid="input-add-banned-word"
+                            />
+                            <Button type="button" size="sm" variant="outline" onClick={() => {
+                              if (newBannedWordInput.trim()) {
+                                setEditablePersona({
+                                  ...editablePersona,
+                                  voice: {...editablePersona.voice, bannedWords: [...editablePersona.voice.bannedWords, newBannedWordInput.trim()]}
+                                });
+                                setNewBannedWordInput("");
+                              }
+                            }}>
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs text-muted-foreground">Signature Phrases</Label>
+                          <div className="flex flex-wrap gap-1">
+                            {editablePersona.voice.signaturePhrases.map((p, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs bg-purple-500/20 cursor-pointer" onClick={() => {
+                                setEditablePersona({
+                                  ...editablePersona,
+                                  voice: {...editablePersona.voice, signaturePhrases: editablePersona.voice.signaturePhrases.filter((_, idx) => idx !== i)}
+                                });
+                              }}>
+                                "{p}" ×
+                              </Badge>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              value={newPhraseInput}
+                              onChange={(e) => setNewPhraseInput(e.target.value)}
+                              placeholder="Add signature phrase..."
+                              className="text-sm flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newPhraseInput.trim()) {
+                                  e.preventDefault();
+                                  setEditablePersona({
+                                    ...editablePersona,
+                                    voice: {...editablePersona.voice, signaturePhrases: [...editablePersona.voice.signaturePhrases, newPhraseInput.trim()]}
+                                  });
+                                  setNewPhraseInput("");
+                                }
+                              }}
+                              data-testid="input-add-phrase"
+                            />
+                            <Button type="button" size="sm" variant="outline" onClick={() => {
+                              if (newPhraseInput.trim()) {
+                                setEditablePersona({
+                                  ...editablePersona,
+                                  voice: {...editablePersona.voice, signaturePhrases: [...editablePersona.voice.signaturePhrases, newPhraseInput.trim()]}
+                                });
+                                setNewPhraseInput("");
+                              }
+                            }}>
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={savePersona}
+                            disabled={personaSaving}
+                            className="bg-purple-600 hover:bg-purple-700"
+                          >
+                            {personaSaving ? "Saving..." : "Save Persona"}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={cancelPersonaEdit}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </>
+                    ) : personaData ? (
                       <>
                         <div className="grid grid-cols-2 gap-3 text-sm">
                           <div>
@@ -1001,13 +1288,22 @@ export function AvatarManager() {
                         <div className="flex gap-2 pt-2">
                           <Button
                             type="button"
+                            size="sm"
+                            onClick={startPersonaEdit}
+                            className="bg-purple-600 hover:bg-purple-700"
+                          >
+                            <Edit2 className="w-3 h-3 mr-1" />
+                            Edit Persona
+                          </Button>
+                          <Button
+                            type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => fetchPreviewPrompt(editingAvatar.id)}
                             className="text-xs"
                           >
                             <Eye className="w-3 h-3 mr-1" />
-                            Preview Prompt
+                            Preview
                           </Button>
                           <Button
                             type="button"
@@ -1028,10 +1324,20 @@ export function AvatarManager() {
                         )}
                       </>
                     ) : (
-                      <p className="text-sm text-muted-foreground">
-                        No persona spec found for this avatar. Create a JSON file at{' '}
-                        <code className="bg-black/50 px-1 rounded">server/engine/personas/{editingAvatar.id}.json</code>
-                      </p>
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          No persona configured for this avatar yet.
+                        </p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          onClick={createDefaultPersona}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Plus className="w-3 h-3 mr-1" />
+                          Create Persona
+                        </Button>
+                      </div>
                     )}
                   </CollapsibleContent>
                 </div>
