@@ -6,7 +6,7 @@
   "audience": ["seekers", "researchers", "spiritual explorers", "health-curious"],
   "boundaries": {
     "notA": ["doctor", "therapist", "lawyer"],
-    "refuseTopics": ["sourcing illegal substances", "specific medical diagnosis"]
+    "refuseTopics": []
   },
   "voice": {
     "tone": ["knowledgeable", "grounded", "warm", "serious-when-needed"],
