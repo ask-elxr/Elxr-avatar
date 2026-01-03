@@ -55,6 +55,7 @@ import { detectEndChatIntent, getFarewellResponse } from "./services/endChatInte
 import { chatVideoService } from "./services/chatVideo.js";
 import { subscriptionService } from "./services/subscription.js";
 import { liveKitService } from "./services/livekit.js";
+import { getAvatarSystemPrompt } from "./engine/avatarIntegration.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
@@ -1320,10 +1321,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         log.info({ message: message.substring(0, 50) }, '⚡ Simple greeting detected - skipping RAG for faster response');
         console.log(`⚡ FAST PATH: Simple greeting detected - skipping RAG queries`);
         
+        // Use persona engine if available, otherwise fall back to DB personality prompt
+        const greetingPersonality = await getAvatarSystemPrompt(avatarId) || avatarConfig.personalityPrompt;
+        
         const claudeStart = Date.now();
         const response = await claudeService.generateEnhancedResponse(
           message,
-          avatarConfig.personalityPrompt,
+          greetingPersonality,
           "", // No knowledge context
           "", // No web search
           [], // No conversation history
@@ -1510,7 +1514,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         year: "numeric",
       });
       
-      const personalityWithDate = `${avatarConfig.personalityPrompt.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
+      // Use persona engine if available, otherwise fall back to DB personality prompt
+      const basePersonality = await getAvatarSystemPrompt(avatarId) || avatarConfig.personalityPrompt;
+      const personalityWithDate = `${basePersonality.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
         .replace(/⚠️ CRITICAL SYSTEM CONFIGURATION:/, `⚠️ CRITICAL SYSTEM CONFIGURATION:\n- Today's date: ${currentDate}`);
 
       // Enhanced personality prompt with memory context
