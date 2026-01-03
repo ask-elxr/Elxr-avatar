@@ -26,11 +26,56 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, X, Video } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 import { useLocation } from "wouter";
 import { MarqueeText } from "@/components/MarqueeText";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+
+interface PersonaSpec {
+  id: string;
+  displayName: string;
+  oneLiner: string;
+  role: string;
+  audience: string[];
+  boundaries: {
+    notA: string[];
+    refuseTopics: string[];
+  };
+  voice: {
+    tone: string[];
+    humor: string;
+    readingLevel: string;
+    bannedWords: string[];
+    signaturePhrases: string[];
+  };
+  behavior: {
+    opensWith: string[];
+    disagreementStyle: string;
+    uncertaintyProtocol: string;
+  };
+  knowledge: {
+    namespaces: string[];
+    kbPolicy: {
+      whenToQuery: string[];
+      whenNotToQuery: string[];
+    };
+  };
+  output: {
+    maxLength: 'short' | 'medium' | 'long';
+    structure: string[];
+  };
+  safety: {
+    crisis: {
+      selfHarm: string;
+    };
+  };
+}
 
 export function AvatarManager() {
   const { toast } = useToast();
@@ -39,6 +84,9 @@ export function AvatarManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAvatar, setEditingAvatar] = useState<AvatarProfile | null>(null);
   const [namespaceInput, setNamespaceInput] = useState("");
+  const [personaData, setPersonaData] = useState<PersonaSpec | null>(null);
+  const [personaOpen, setPersonaOpen] = useState(false);
+  const [previewPrompt, setPreviewPrompt] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState<InsertAvatarProfile>({
@@ -212,12 +260,49 @@ export function AvatarManager() {
       isActive: avatar.isActive,
     });
     setIsDialogOpen(true);
+    
+    fetchPersonaData(avatar.id);
+  };
+
+  const fetchPersonaData = async (avatarId: string) => {
+    try {
+      const response = await fetch(`/api/admin/personas/${avatarId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setPersonaData(data);
+      } else {
+        setPersonaData(null);
+      }
+    } catch (error) {
+      setPersonaData(null);
+    }
+    setPreviewPrompt(null);
+    setPersonaOpen(false);
+  };
+
+  const fetchPreviewPrompt = async (avatarId: string) => {
+    try {
+      const response = await fetch(`/api/admin/personas/${avatarId}/preview`);
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewPrompt(data.systemPrompt);
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to preview",
+        description: "Could not generate prompt preview",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingAvatar(null);
     setNamespaceInput("");
+    setPersonaData(null);
+    setPersonaOpen(false);
+    setPreviewPrompt(null);
   };
 
   const handleAddNamespace = () => {
@@ -855,6 +940,103 @@ export function AvatarManager() {
                 data-testid="input-personality-prompt"
               />
             </div>
+
+            {editingAvatar && (
+              <Collapsible open={personaOpen} onOpenChange={setPersonaOpen}>
+                <div className="space-y-2 p-4 border rounded-lg bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/30">
+                  <CollapsibleTrigger className="flex items-center justify-between w-full">
+                    <div className="flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-purple-400" />
+                      <span className="text-sm font-medium text-purple-300">Personality Engine</span>
+                      {personaData ? (
+                        <Badge variant="secondary" className="bg-green-500/20 text-green-400 text-xs">Active</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-gray-500/20 text-gray-400 text-xs">Not Configured</Badge>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{personaOpen ? '▼' : '▶'}</span>
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent className="space-y-3 pt-3">
+                    {personaData ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <span className="text-muted-foreground">One-liner:</span>
+                            <p className="text-white">{personaData.oneLiner}</p>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Role:</span>
+                            <p className="text-white">{personaData.role}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Voice Tone:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {personaData.voice.tone.map((t, i) => (
+                              <Badge key={i} variant="outline" className="text-xs">{t}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Banned Words:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {personaData.voice.bannedWords.map((w, i) => (
+                              <Badge key={i} variant="destructive" className="text-xs">{w}</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <span className="text-sm text-muted-foreground">Signature Phrases:</span>
+                          <div className="flex flex-wrap gap-1">
+                            {personaData.voice.signaturePhrases.map((p, i) => (
+                              <Badge key={i} variant="secondary" className="text-xs bg-purple-500/20">"{p}"</Badge>
+                            ))}
+                          </div>
+                        </div>
+                        
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fetchPreviewPrompt(editingAvatar.id)}
+                            className="text-xs"
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            Preview Prompt
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fetchPersonaData(editingAvatar.id)}
+                            className="text-xs"
+                          >
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Refresh
+                          </Button>
+                        </div>
+                        
+                        {previewPrompt && (
+                          <div className="mt-3 p-3 bg-black/50 rounded-lg max-h-60 overflow-y-auto">
+                            <pre className="text-xs text-gray-300 whitespace-pre-wrap">{previewPrompt}</pre>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No persona spec found for this avatar. Create a JSON file at{' '}
+                        <code className="bg-black/50 px-1 rounded">server/engine/personas/{editingAvatar.id}.json</code>
+                      </p>
+                    )}
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            )}
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
