@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2 } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2, Upload } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 import { useLocation } from "wouter";
@@ -93,6 +93,8 @@ export function AvatarManager() {
   const [newToneInput, setNewToneInput] = useState("");
   const [newBannedWordInput, setNewBannedWordInput] = useState("");
   const [newPhraseInput, setNewPhraseInput] = useState("");
+  const [personaUploading, setPersonaUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
   const [formData, setFormData] = useState<InsertAvatarProfile>({
@@ -270,9 +272,21 @@ export function AvatarManager() {
     fetchPersonaData(avatar.id);
   };
 
+  const getAdminHeaders = (): HeadersInit => {
+    const headers: Record<string, string> = {};
+    const adminSecret = localStorage.getItem('admin_secret');
+    if (adminSecret) {
+      headers['X-Admin-Secret'] = adminSecret;
+    }
+    return headers;
+  };
+
   const fetchPersonaData = async (avatarId: string) => {
     try {
-      const response = await fetch(`/api/admin/personas/${avatarId}`);
+      const response = await fetch(`/api/admin/personas/${avatarId}`, {
+        headers: getAdminHeaders(),
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setPersonaData(data);
@@ -288,7 +302,10 @@ export function AvatarManager() {
 
   const fetchPreviewPrompt = async (avatarId: string) => {
     try {
-      const response = await fetch(`/api/admin/personas/${avatarId}/preview`);
+      const response = await fetch(`/api/admin/personas/${avatarId}/preview`, {
+        headers: getAdminHeaders(),
+        credentials: 'include',
+      });
       if (response.ok) {
         const data = await response.json();
         setPreviewPrompt(data.systemPrompt);
@@ -336,9 +353,16 @@ export function AvatarManager() {
     
     setPersonaSaving(true);
     try {
+      const adminSecret = localStorage.getItem('admin_secret');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminSecret) {
+        headers['X-Admin-Secret'] = adminSecret;
+      }
+      
       const response = await fetch(`/api/admin/personas/${editingAvatar.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
+        credentials: 'include',
         body: JSON.stringify(editablePersona),
       });
       
@@ -409,6 +433,55 @@ export function AvatarManager() {
     
     setEditablePersona(defaultPersona);
     setPersonaEditMode(true);
+  };
+
+  const handleUploadPersonaDocument = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !editingAvatar) return;
+    
+    setPersonaUploading(true);
+    
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('document', file);
+      
+      const headers: Record<string, string> = {};
+      const adminSecret = localStorage.getItem('admin_secret');
+      if (adminSecret) {
+        headers['X-Admin-Secret'] = adminSecret;
+      }
+      
+      const response = await fetch(`/api/admin/personas/${editingAvatar.id}/from-document`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: uploadFormData,
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEditablePersona(data.persona);
+        setPersonaEditMode(true);
+        toast({
+          title: "Document processed",
+          description: "Review the extracted personality and click Save when ready.",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to process document');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Upload failed",
+        description: error.message || "Could not process the document",
+        variant: "destructive",
+      });
+    }
+    
+    setPersonaUploading(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleAddNamespace = () => {
@@ -1328,15 +1401,37 @@ export function AvatarManager() {
                         <p className="text-sm text-muted-foreground">
                           No persona configured for this avatar yet.
                         </p>
-                        <Button
-                          type="button"
-                          size="sm"
-                          onClick={createDefaultPersona}
-                          className="bg-purple-600 hover:bg-purple-700"
-                        >
-                          <Plus className="w-3 h-3 mr-1" />
-                          Create Persona
-                        </Button>
+                        <div className="flex gap-2 flex-wrap">
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={personaUploading}
+                            className="bg-purple-600 hover:bg-purple-700"
+                          >
+                            <Upload className="w-3 h-3 mr-1" />
+                            {personaUploading ? "Processing..." : "Upload Document"}
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={createDefaultPersona}
+                          >
+                            <Plus className="w-3 h-3 mr-1" />
+                            Create Manually
+                          </Button>
+                        </div>
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".txt,.md,.pdf,.docx"
+                          onChange={handleUploadPersonaDocument}
+                          className="hidden"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Upload a .txt, .md, .pdf, or .docx file describing the personality
+                        </p>
                       </div>
                     )}
                   </CollapsibleContent>
