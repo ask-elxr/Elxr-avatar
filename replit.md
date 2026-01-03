@@ -83,6 +83,18 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Admin UI**: KnowledgeBase page offers a "Topic Folders" tab for bulk uploads.
 - **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially to minimize memory usage.
 
+#### Personality Engine
+- **Location**: `server/engine/` directory with modular architecture
+- **Persona Specs**: JSON files in `server/engine/personas/` defining identity, boundaries, voice, behavior, knowledge policies
+- **Components**:
+  - `personaLoader.ts` - Loads personas from JSON files at runtime (no recompile needed)
+  - `personaRegistry.ts` - Stores and retrieves loaded personas
+  - `promptAssembler.ts` - Generates dynamic system prompts from persona specs
+  - `responseCritic.ts` - Validates responses (banned words, AI references, action descriptions) and rewrites if needed
+  - `avatarIntegration.ts` - Bridges personality engine to existing avatar system
+- **Persona Spec Structure**: id, displayName, oneLiner, role, audience, boundaries (notA, refuseTopics), voice (tone, humor, bannedWords, signaturePhrases), behavior (opensWith, disagreementStyle, uncertaintyProtocol), knowledge (namespaces, kbPolicy), output (maxLength, structure), safety (crisis handling)
+- **Current Personas**: thad.json, mark-kohl.json
+
 #### Production Pinecone Ingestion System
 - **Location**: `server/ingest/` directory with modular architecture
 - **Namespace Format**: `{env}:mentor:{mentorSlug}:{kbSlug}:v{version}` (e.g., `prod:mentor:markkohl:psychedelics:v1`)
