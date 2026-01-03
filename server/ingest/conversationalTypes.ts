@@ -14,13 +14,13 @@ export interface ConversationalChunk {
 }
 
 export interface ConversationalMetadata {
-  avatar: string;
+  namespace: string;
   source: string;
-  content_type: ContentType;
-  tone: Tone;
+  content_type: string;
+  tone: string;
   topic: string;
-  confidence: Confidence;
-  voice_origin: VoiceOrigin;
+  confidence: string;
+  voice_origin: string;
   attribution?: string;
   text: string;
   created_at: string;
@@ -28,7 +28,7 @@ export interface ConversationalMetadata {
 }
 
 export interface CourseIngestionRequest {
-  avatar: string;
+  namespace: string;
   source: string;
   rawText: string;
   attribution?: string;
@@ -36,11 +36,10 @@ export interface CourseIngestionRequest {
 }
 
 export interface CourseIngestionResult {
-  avatar: string;
+  namespace: string;
   source: string;
   totalChunks: number;
   chunksByType: Record<ContentType, number>;
-  chunksByNamespace: Record<string, number>;
   discardedCount: number;
   dryRunPreview?: ConversationalChunk[];
 }

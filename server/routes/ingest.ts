@@ -1,14 +1,21 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
+import multer from 'multer';
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 import { ingestText, queryNamespace, deleteBySourceId } from '../ingest/ingestionService.js';
 import { validateNamespaceParams } from '../ingest/namespaceUtils.js';
 import { 
   ingestCourseTranscript, 
-  deleteAvatarNamespace, 
-  getAvatarNamespaceStats 
+  deleteNamespaceVectors,
+  getNamespaceStats
 } from '../ingest/courseIngestionService.js';
-import { isProtectedAvatar } from '../ingest/conversationalTypes.js';
 import { logger } from '../logger.js';
+
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }
+});
 
 const router = Router();
 
@@ -236,12 +243,21 @@ router.get('/health', (req: Request, res: Response) => {
 });
 
 const CourseIngestionSchema = z.object({
-  avatar: z.string().min(1, 'Avatar ID is required'),
+  namespace: z.string().min(1, 'Namespace is required'),
   source: z.string().min(1, 'Source identifier is required'),
   rawText: z.string().min(100, 'Text content must be at least 100 characters'),
   attribution: z.string().optional(),
   dryRun: z.boolean().optional()
 });
+
+const PROTECTED_NAMESPACES = ['mark-kohl', 'markkohl', 'mark_kohl'];
+
+function isProtectedNamespace(namespace: string): boolean {
+  const normalized = namespace.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return PROTECTED_NAMESPACES.some(p => 
+    normalized.includes(p.replace(/[^a-z0-9]/g, ''))
+  );
+}
 
 router.post('/course/ingest', requireAdminAuth, async (req: Request, res: Response) => {
   try {
@@ -259,24 +275,24 @@ router.post('/course/ingest', requireAdminAuth, async (req: Request, res: Respon
     
     const data = parseResult.data;
     
-    if (isProtectedAvatar(data.avatar)) {
+    if (isProtectedNamespace(data.namespace)) {
       return res.status(403).json({
-        error: 'Protected avatar',
-        message: `Avatar "${data.avatar}" is protected and cannot be modified through this ingestion pipeline`
+        error: 'Protected namespace',
+        message: `Namespace "${data.namespace}" is protected and cannot be modified through this ingestion pipeline`
       });
     }
     
     logger.info({
       service: 'course-ingest-routes',
       operation: 'course_ingest',
-      avatar: data.avatar,
+      namespace: data.namespace,
       source: data.source,
       textLength: data.rawText.length,
       dryRun: data.dryRun
     }, 'Processing course ingestion request');
     
     const result = await ingestCourseTranscript({
-      avatar: data.avatar,
+      namespace: data.namespace,
       source: data.source,
       rawText: data.rawText,
       attribution: data.attribution,
@@ -301,20 +317,20 @@ router.post('/course/ingest', requireAdminAuth, async (req: Request, res: Respon
   }
 });
 
-router.get('/course/stats/:avatar', requireAdminAuth, async (req: Request, res: Response) => {
+router.get('/course/stats/:namespace', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { avatar } = req.params;
+    const { namespace } = req.params;
     
-    if (!avatar) {
-      return res.status(400).json({ error: 'Avatar ID is required' });
+    if (!namespace) {
+      return res.status(400).json({ error: 'Namespace is required' });
     }
     
-    const stats = await getAvatarNamespaceStats(avatar);
+    const stats = await getNamespaceStats(namespace);
     
     res.json({
       success: true,
-      avatar,
-      namespaces: stats
+      namespace,
+      ...stats
     });
   } catch (error) {
     logger.error({
@@ -330,37 +346,32 @@ router.get('/course/stats/:avatar', requireAdminAuth, async (req: Request, res: 
   }
 });
 
-router.delete('/course/namespace/:avatar', requireAdminAuth, async (req: Request, res: Response) => {
+router.delete('/course/namespace/:namespace', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const { avatar } = req.params;
-    const { contentType } = req.query;
+    const { namespace } = req.params;
     
-    if (!avatar) {
-      return res.status(400).json({ error: 'Avatar ID is required' });
+    if (!namespace) {
+      return res.status(400).json({ error: 'Namespace is required' });
     }
     
-    if (isProtectedAvatar(avatar)) {
+    if (isProtectedNamespace(namespace)) {
       return res.status(403).json({
-        error: 'Protected avatar',
-        message: `Avatar "${avatar}" is protected and cannot be deleted`
+        error: 'Protected namespace',
+        message: `Namespace "${namespace}" is protected and cannot be deleted`
       });
     }
     
     logger.info({
       service: 'course-ingest-routes',
       operation: 'delete_namespace',
-      avatar,
-      contentType: contentType || 'all'
+      namespace
     }, 'Processing namespace deletion request');
     
-    const result = await deleteAvatarNamespace(
-      avatar, 
-      contentType as any
-    );
+    const result = await deleteNamespaceVectors(namespace);
     
     res.json({
       success: true,
-      avatar,
+      namespace,
       ...result
     });
   } catch (error) {
@@ -372,6 +383,69 @@ router.delete('/course/namespace/:avatar', requireAdminAuth, async (req: Request
     
     res.status(500).json({
       error: 'Namespace deletion failed',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/course/extract-text', requireAdminAuth, upload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+    
+    const { originalname, mimetype, buffer } = req.file;
+    const extension = originalname.toLowerCase().split('.').pop();
+    
+    logger.info({
+      service: 'course-ingest-routes',
+      operation: 'extract_text',
+      filename: originalname,
+      mimetype,
+      size: buffer.length
+    }, 'Extracting text from file');
+    
+    let text = '';
+    
+    if (extension === 'pdf' || mimetype === 'application/pdf') {
+      const pdfData = await pdfParse(buffer);
+      text = pdfData.text;
+    } else if (extension === 'docx' || mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const result = await mammoth.extractRawText({ buffer });
+      text = result.value;
+    } else if (extension === 'txt' || mimetype === 'text/plain') {
+      text = buffer.toString('utf-8');
+    } else {
+      return res.status(400).json({ 
+        error: 'Unsupported file type',
+        message: `File type "${extension || mimetype}" is not supported. Use PDF, DOCX, or TXT.`
+      });
+    }
+    
+    text = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    
+    logger.info({
+      service: 'course-ingest-routes',
+      operation: 'extract_text',
+      filename: originalname,
+      extractedLength: text.length
+    }, 'Text extraction complete');
+    
+    res.json({
+      success: true,
+      filename: originalname,
+      text,
+      characterCount: text.length
+    });
+  } catch (error) {
+    logger.error({
+      service: 'course-ingest-routes',
+      operation: 'extract_text',
+      error: (error as Error).message
+    }, 'Text extraction failed');
+    
+    res.status(500).json({
+      error: 'Text extraction failed',
       message: (error as Error).message
     });
   }

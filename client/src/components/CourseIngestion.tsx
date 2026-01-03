@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, AlertTriangle, CheckCircle2, Info, Trash2, BarChart3 } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, CheckCircle2, Info, Trash2, BarChart3, FileText, FileUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminHeaders } from "@/lib/adminAuth";
 
@@ -25,65 +24,60 @@ interface ConversationalChunk {
 
 interface IngestionResult {
   success: boolean;
-  avatar: string;
+  namespace: string;
   source: string;
   totalChunks: number;
   chunksByType: Record<string, number>;
-  chunksByNamespace: Record<string, number>;
   discardedCount: number;
   dryRunPreview?: ConversationalChunk[];
 }
 
 interface NamespaceStats {
-  success: boolean;
-  avatar: string;
-  namespaces: Record<string, { vectorCount: number }>;
+  namespace: string;
+  vectorCount: number;
 }
 
-interface AvatarOption {
-  id: string;
-  name: string;
+interface NamespaceResponse {
+  totalVectorCount: number;
+  dimension: number;
+  namespaces: NamespaceStats[];
 }
 
-const PROTECTED_AVATARS = ['mark-kohl', 'markkohl'];
+const PROTECTED_NAMESPACES = ['mark-kohl', 'markkohl', 'mark_kohl'];
 
-function isProtectedAvatar(avatar: string): boolean {
-  const normalized = avatar.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return PROTECTED_AVATARS.some(p => 
-    p.toLowerCase().replace(/[^a-z0-9]/g, '') === normalized
+function isProtectedNamespace(namespace: string): boolean {
+  const normalized = namespace.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return PROTECTED_NAMESPACES.some(p => 
+    normalized.includes(p.replace(/[^a-z0-9]/g, ''))
   );
 }
 
 export function CourseIngestion() {
   const { toast } = useToast();
-  const [selectedAvatar, setSelectedAvatar] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedNamespace, setSelectedNamespace] = useState<string>("");
+  const [customNamespace, setCustomNamespace] = useState<string>("");
   const [source, setSource] = useState<string>("");
   const [rawText, setRawText] = useState<string>("");
   const [attribution, setAttribution] = useState<string>("");
   const [dryRun, setDryRun] = useState<boolean>(true);
   const [lastResult, setLastResult] = useState<IngestionResult | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  const [isExtracting, setIsExtracting] = useState(false);
 
-  const { data: avatars = [] } = useQuery<AvatarOption[]>({
-    queryKey: ['/api/admin/avatars'],
+  const { data: namespaceData } = useQuery<NamespaceResponse>({
+    queryKey: ['/api/admin/pinecone/namespaces'],
   });
 
-  const availableAvatars = avatars.filter(a => !isProtectedAvatar(a.id));
+  const availableNamespaces = namespaceData?.namespaces
+    ?.filter(ns => !isProtectedNamespace(ns.namespace))
+    ?.sort((a, b) => a.namespace.localeCompare(b.namespace)) || [];
 
-  const { data: namespaceStats, refetch: refetchStats } = useQuery<NamespaceStats>({
-    queryKey: ['/admin/course/stats', selectedAvatar],
-    enabled: !!selectedAvatar,
-    queryFn: async () => {
-      const response = await fetch(`/admin/course/stats/${selectedAvatar}`, {
-        headers: getAdminHeaders()
-      });
-      if (!response.ok) throw new Error('Failed to fetch stats');
-      return response.json();
-    }
-  });
+  const targetNamespace = customNamespace.trim() || selectedNamespace;
 
   const ingestMutation = useMutation({
     mutationFn: async (data: {
-      avatar: string;
+      namespace: string;
       source: string;
       rawText: string;
       attribution?: string;
@@ -111,7 +105,7 @@ export function CourseIngestion() {
       if (result.dryRunPreview) {
         toast({
           title: "Dry Run Complete",
-          description: `Would create ${result.totalChunks} chunks across ${Object.keys(result.chunksByNamespace).length} namespaces`
+          description: `Would create ${result.totalChunks} chunks in namespace "${targetNamespace}"`
         });
       } else {
         toast({
@@ -120,7 +114,7 @@ export function CourseIngestion() {
         });
         setRawText("");
         setSource("");
-        refetchStats();
+        setUploadedFileName("");
       }
     },
     onError: (error: Error) => {
@@ -133,8 +127,8 @@ export function CourseIngestion() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async (avatar: string) => {
-      const response = await fetch(`/admin/course/namespace/${avatar}`, {
+    mutationFn: async (namespace: string) => {
+      const response = await fetch(`/admin/course/namespace/${encodeURIComponent(namespace)}`, {
         method: 'DELETE',
         headers: getAdminHeaders()
       });
@@ -148,10 +142,9 @@ export function CourseIngestion() {
     },
     onSuccess: (result) => {
       toast({
-        title: "Namespaces Deleted",
-        description: `Deleted: ${result.deleted?.join(', ') || 'none'}`
+        title: "Namespace Cleared",
+        description: `Deleted vectors from: ${result.deleted?.join(', ') || targetNamespace}`
       });
-      refetchStats();
     },
     onError: (error: Error) => {
       toast({
@@ -162,36 +155,121 @@ export function CourseIngestion() {
     }
   });
 
+  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const validTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      '.docx', '.pdf', '.txt'
+    ];
+
+    const isValidType = validTypes.some(type => 
+      file.type === type || file.name.toLowerCase().endsWith(type)
+    );
+
+    if (!isValidType) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a PDF, DOCX, or TXT file",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsExtracting(true);
+    setUploadedFileName(file.name);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch('/admin/course/extract-text', {
+        method: 'POST',
+        headers: getAdminHeaders(),
+        body: formData
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Text extraction failed');
+      }
+
+      const result = await response.json();
+      setRawText(result.text);
+      
+      if (!source) {
+        const baseName = file.name.replace(/\.[^/.]+$/, "").replace(/[^a-zA-Z0-9]/g, '_');
+        setSource(baseName);
+      }
+
+      toast({
+        title: "File Processed",
+        description: `Extracted ${result.text.length.toLocaleString()} characters from ${file.name}`
+      });
+    } catch (error) {
+      toast({
+        title: "Extraction Failed",
+        description: (error as Error).message,
+        variant: "destructive"
+      });
+      setUploadedFileName("");
+    } finally {
+      setIsExtracting(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [toast, source]);
+
   const handleIngest = useCallback(() => {
-    if (!selectedAvatar || !source || !rawText) {
+    if (!targetNamespace || !source || !rawText) {
       toast({
         title: "Missing Required Fields",
-        description: "Please select an avatar, enter a source name, and paste your transcript",
+        description: "Please select/enter a namespace, enter a source name, and provide transcript content",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isProtectedNamespace(targetNamespace)) {
+      toast({
+        title: "Protected Namespace",
+        description: "This namespace is protected and cannot be modified",
         variant: "destructive"
       });
       return;
     }
     
     ingestMutation.mutate({
-      avatar: selectedAvatar,
+      namespace: targetNamespace,
       source,
       rawText,
       attribution: attribution || undefined,
       dryRun
     });
-  }, [selectedAvatar, source, rawText, attribution, dryRun, ingestMutation, toast]);
+  }, [targetNamespace, source, rawText, attribution, dryRun, ingestMutation, toast]);
 
   const handleDelete = useCallback(() => {
-    if (!selectedAvatar) return;
-    
-    if (window.confirm(`Are you sure you want to delete ALL namespaces for ${selectedAvatar}? This cannot be undone.`)) {
-      deleteMutation.mutate(selectedAvatar);
-    }
-  }, [selectedAvatar, deleteMutation]);
+    if (!targetNamespace) return;
 
-  const totalVectors = namespaceStats?.namespaces 
-    ? Object.values(namespaceStats.namespaces).reduce((sum, ns) => sum + ns.vectorCount, 0)
-    : 0;
+    if (isProtectedNamespace(targetNamespace)) {
+      toast({
+        title: "Protected Namespace",
+        description: "This namespace is protected and cannot be deleted",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (window.confirm(`Are you sure you want to delete ALL vectors in "${targetNamespace}"? This cannot be undone.`)) {
+      deleteMutation.mutate(targetNamespace);
+    }
+  }, [targetNamespace, deleteMutation, toast]);
+
+  const selectedNsStats = availableNamespaces.find(ns => ns.namespace === selectedNamespace);
 
   return (
     <div className="space-y-6">
@@ -202,26 +280,34 @@ export function CourseIngestion() {
             Course Transcript Ingestion
           </CardTitle>
           <CardDescription className="text-white/70">
-            Paste course transcripts to anonymize, chunk conversationally, and route to the correct namespace.
+            Upload or paste course transcripts to anonymize, chunk conversationally, and ingest to a namespace.
             Mark Kohl's namespace is protected and cannot be modified.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-white">Avatar</Label>
-              <Select value={selectedAvatar} onValueChange={setSelectedAvatar}>
-                <SelectTrigger data-testid="select-avatar-ingestion">
-                  <SelectValue placeholder="Select avatar..." />
+              <Label className="text-white">Target Namespace</Label>
+              <Select value={selectedNamespace} onValueChange={(v) => { setSelectedNamespace(v); setCustomNamespace(""); }}>
+                <SelectTrigger data-testid="select-namespace-ingestion">
+                  <SelectValue placeholder="Select existing namespace..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableAvatars.map(avatar => (
-                    <SelectItem key={avatar.id} value={avatar.id}>
-                      {avatar.name}
+                  {availableNamespaces.map(ns => (
+                    <SelectItem key={ns.namespace} value={ns.namespace}>
+                      {ns.namespace} ({ns.vectorCount} vectors)
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <div className="text-xs text-white/50">Or enter a new namespace name below</div>
+              <Input
+                data-testid="input-custom-namespace"
+                placeholder="e.g., thad_core, june_stories"
+                value={customNamespace}
+                onChange={(e) => { setCustomNamespace(e.target.value); setSelectedNamespace(""); }}
+                className="bg-white/5 border-white/20 text-white"
+              />
             </div>
             
             <div className="space-y-2">
@@ -250,11 +336,48 @@ export function CourseIngestion() {
             </p>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-white">Raw Transcript</Label>
+          <div className="space-y-3">
+            <Label className="text-white">Content Source</Label>
+            
+            <div className="flex gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                onChange={handleFileUpload}
+                className="hidden"
+                data-testid="input-file-upload"
+              />
+              <Button
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isExtracting}
+                className="gap-2"
+                data-testid="button-upload-file"
+              >
+                {isExtracting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Extracting...
+                  </>
+                ) : (
+                  <>
+                    <FileUp className="w-4 h-4" />
+                    Upload File (PDF, DOCX, TXT)
+                  </>
+                )}
+              </Button>
+              {uploadedFileName && (
+                <Badge variant="secondary" className="gap-1">
+                  <FileText className="w-3 h-3" />
+                  {uploadedFileName}
+                </Badge>
+              )}
+            </div>
+
             <Textarea
               data-testid="textarea-raw-transcript"
-              placeholder="Paste your raw course transcript here..."
+              placeholder="Paste your raw course transcript here, or upload a file above..."
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
               className="min-h-[200px] bg-white/5 border-white/20 text-white font-mono text-sm"
@@ -286,7 +409,7 @@ export function CourseIngestion() {
           <div className="flex gap-3">
             <Button
               onClick={handleIngest}
-              disabled={ingestMutation.isPending || !selectedAvatar || !source || rawText.length < 100}
+              disabled={ingestMutation.isPending || !targetNamespace || !source || rawText.length < 100}
               className="flex-1 bg-gradient-primary"
               data-testid="button-ingest"
             >
@@ -302,11 +425,11 @@ export function CourseIngestion() {
               )}
             </Button>
             
-            {selectedAvatar && (
+            {targetNamespace && (
               <Button
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={deleteMutation.isPending}
+                disabled={deleteMutation.isPending || isProtectedNamespace(targetNamespace)}
                 data-testid="button-delete-namespace"
               >
                 {deleteMutation.isPending ? (
@@ -317,40 +440,23 @@ export function CourseIngestion() {
               </Button>
             )}
           </div>
+
+          {selectedNsStats && (
+            <div className="p-3 rounded-lg bg-white/5 border border-white/10">
+              <div className="text-sm text-white/70">
+                Selected namespace has <span className="font-bold text-white">{selectedNsStats.vectorCount.toLocaleString()}</span> vectors
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
-
-      {selectedAvatar && namespaceStats && (
-        <Card className="glass-strong border-white/10">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-white flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" />
-              Namespace Stats for {selectedAvatar}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-5 gap-4">
-              {Object.entries(namespaceStats.namespaces).map(([ns, stats]) => (
-                <div key={ns} className="p-3 rounded-lg bg-white/5 border border-white/10">
-                  <div className="text-xs text-white/50 mb-1">{ns.split('_').pop()}</div>
-                  <div className="text-2xl font-bold text-white">{stats.vectorCount}</div>
-                  <div className="text-xs text-white/40">vectors</div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 text-sm text-white/60">
-              Total: {totalVectors.toLocaleString()} vectors
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {lastResult && (
         <Card className="glass-strong border-white/10">
           <CardHeader className="pb-2">
             <CardTitle className="text-lg text-white flex items-center gap-2">
               {lastResult.dryRunPreview ? (
-                <Info className="w-5 h-5 text-blue-400" />
+                <AlertTriangle className="w-5 h-5 text-yellow-400" />
               ) : (
                 <CheckCircle2 className="w-5 h-5 text-green-400" />
               )}
@@ -360,38 +466,25 @@ export function CourseIngestion() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
               <div className="p-3 rounded-lg bg-white/5">
+                <div className="text-xs text-white/50 mb-1">Target Namespace</div>
+                <div className="text-lg font-bold text-white">{lastResult.namespace}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-white/5">
                 <div className="text-xs text-white/50 mb-1">Total Chunks</div>
-                <div className="text-2xl font-bold text-white">{lastResult.totalChunks}</div>
+                <div className="text-lg font-bold text-white">{lastResult.totalChunks}</div>
               </div>
               <div className="p-3 rounded-lg bg-white/5">
                 <div className="text-xs text-white/50 mb-1">Discarded</div>
-                <div className="text-2xl font-bold text-amber-400">{lastResult.discardedCount}</div>
-              </div>
-              <div className="p-3 rounded-lg bg-white/5">
-                <div className="text-xs text-white/50 mb-1">Namespaces</div>
-                <div className="text-2xl font-bold text-white">
-                  {Object.keys(lastResult.chunksByNamespace).length}
-                </div>
+                <div className="text-lg font-bold text-white">{lastResult.discardedCount}</div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm text-white/70 font-medium">By Content Type</div>
+              <div className="text-sm text-white/70">Chunks by Content Type:</div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(lastResult.chunksByType).map(([type, count]) => (
-                  <Badge key={type} variant="secondary" className="bg-white/10 text-white">
+                  <Badge key={type} variant="secondary" className="gap-1">
                     {type}: {count}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-sm text-white/70 font-medium">By Namespace</div>
-              <div className="flex flex-wrap gap-2">
-                {Object.entries(lastResult.chunksByNamespace).map(([ns, count]) => (
-                  <Badge key={ns} variant="outline" className="border-purple-500/50 text-purple-300">
-                    {ns}: {count}
                   </Badge>
                 ))}
               </div>
@@ -399,28 +492,17 @@ export function CourseIngestion() {
 
             {lastResult.dryRunPreview && lastResult.dryRunPreview.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm text-white/70 font-medium">Sample Chunks (first 10)</div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {lastResult.dryRunPreview.map((chunk, idx) => (
-                    <div 
-                      key={idx} 
-                      className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-2"
-                    >
-                      <div className="flex flex-wrap gap-1">
-                        <Badge variant="secondary" className="bg-purple-500/20 text-purple-300 text-xs">
-                          {chunk.content_type}
-                        </Badge>
-                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-300 text-xs">
-                          {chunk.tone}
-                        </Badge>
-                        <Badge variant="secondary" className="bg-green-500/20 text-green-300 text-xs">
-                          {chunk.confidence}
-                        </Badge>
-                        <Badge variant="outline" className="border-white/20 text-white/60 text-xs">
-                          {chunk.topic}
-                        </Badge>
+                <div className="text-sm text-white/70">Sample Chunks (first 5):</div>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {lastResult.dryRunPreview.slice(0, 5).map((chunk, i) => (
+                    <div key={i} className="p-3 rounded-lg bg-white/5 border border-white/10">
+                      <div className="flex gap-2 mb-2 flex-wrap">
+                        <Badge variant="outline">{chunk.content_type}</Badge>
+                        <Badge variant="outline">{chunk.tone}</Badge>
+                        <Badge variant="outline">{chunk.confidence}</Badge>
+                        <Badge variant="secondary">{chunk.topic}</Badge>
                       </div>
-                      <p className="text-sm text-white/80 leading-relaxed">{chunk.text}</p>
+                      <p className="text-sm text-white/80 line-clamp-3">{chunk.text}</p>
                     </div>
                   ))}
                 </div>
@@ -430,25 +512,22 @@ export function CourseIngestion() {
         </Card>
       )}
 
-      <Card className="glass-strong border-amber-500/30">
+      <Card className="glass-strong border-yellow-500/20">
         <CardHeader className="pb-2">
-          <CardTitle className="text-lg text-amber-400 flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
+          <CardTitle className="text-sm text-yellow-400 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
             Ingestion Guidelines
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm text-white/70 space-y-2">
+        <CardContent className="text-sm text-white/60 space-y-1">
           <p>This pipeline will automatically:</p>
           <ul className="list-disc list-inside space-y-1 ml-2">
             <li><strong>Anonymize</strong> - Remove names, places, dates, career markers, unique phrases</li>
             <li><strong>Chunk conversationally</strong> - Create 120-300 token standalone units</li>
             <li><strong>Classify</strong> - Tag each chunk with content_type, tone, topic, confidence</li>
-            <li><strong>Route</strong> - Send chunks to _core, _stories, _advice, _warnings namespaces</li>
             <li><strong>Discard</strong> - Remove lesson intros, CTAs, structural glue, repetition</li>
           </ul>
-          <p className="mt-3 text-amber-400/80">
-            Always do a dry run first to preview results before committing to Pinecone.
-          </p>
+          <p className="text-yellow-400/80 mt-3">Always do a dry run first to preview results before committing to Pinecone.</p>
         </CardContent>
       </Card>
     </div>
