@@ -65,30 +65,20 @@ export function CourseIngestion() {
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [isExtracting, setIsExtracting] = useState(false);
 
-  const { data: namespaceData } = useQuery<NamespaceResponse>({
-    queryKey: ['/api/pinecone/stats'],
-    queryFn: async () => {
-      const response = await fetch('/api/pinecone/stats', {
-        headers: getAdminHeaders()
-      });
-      if (!response.ok) throw new Error('Failed to fetch namespaces');
-      const data = await response.json();
-      const nsObj = data.pinecone?.namespaces || {};
-      const namespaces = Object.entries(nsObj).map(([name, stats]: [string, any]) => ({
-        namespace: name,
-        vectorCount: stats?.recordCount || 0
-      }));
-      return {
-        totalVectorCount: data.pinecone?.totalRecordCount || 0,
-        dimension: data.pinecone?.dimension || 1536,
-        namespaces
-      };
-    }
+  const { data: rawStats } = useQuery<{ success: boolean; pinecone?: { namespaces?: Record<string, { recordCount: number }> } }>({
+    queryKey: ['/api/pinecone/stats']
   });
 
-  const availableNamespaces = namespaceData?.namespaces
-    ?.filter(ns => !isProtectedNamespace(ns.namespace))
-    ?.sort((a, b) => a.namespace.localeCompare(b.namespace)) || [];
+  const availableNamespaces = (() => {
+    const nsObj = rawStats?.pinecone?.namespaces || {};
+    return Object.entries(nsObj)
+      .map(([name, stats]) => ({
+        namespace: name,
+        vectorCount: stats?.recordCount || 0
+      }))
+      .filter(ns => !isProtectedNamespace(ns.namespace))
+      .sort((a, b) => a.namespace.localeCompare(b.namespace));
+  })();
 
   const targetNamespace = customNamespace.trim() || selectedNamespace;
 
