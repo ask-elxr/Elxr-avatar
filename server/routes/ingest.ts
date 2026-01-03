@@ -2,6 +2,12 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { z } from 'zod';
 import { ingestText, queryNamespace, deleteBySourceId } from '../ingest/ingestionService.js';
 import { validateNamespaceParams } from '../ingest/namespaceUtils.js';
+import { 
+  ingestCourseTranscript, 
+  deleteAvatarNamespace, 
+  getAvatarNamespaceStats 
+} from '../ingest/courseIngestionService.js';
+import { isProtectedAvatar } from '../ingest/conversationalTypes.js';
 import { logger } from '../logger.js';
 
 const router = Router();
@@ -227,6 +233,148 @@ router.get('/health', (req: Request, res: Response) => {
     service: 'pinecone-ingestion',
     timestamp: new Date().toISOString()
   });
+});
+
+const CourseIngestionSchema = z.object({
+  avatar: z.string().min(1, 'Avatar ID is required'),
+  source: z.string().min(1, 'Source identifier is required'),
+  rawText: z.string().min(100, 'Text content must be at least 100 characters'),
+  attribution: z.string().optional(),
+  dryRun: z.boolean().optional()
+});
+
+router.post('/course/ingest', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const parseResult = CourseIngestionSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: parseResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    
+    const data = parseResult.data;
+    
+    if (isProtectedAvatar(data.avatar)) {
+      return res.status(403).json({
+        error: 'Protected avatar',
+        message: `Avatar "${data.avatar}" is protected and cannot be modified through this ingestion pipeline`
+      });
+    }
+    
+    logger.info({
+      service: 'course-ingest-routes',
+      operation: 'course_ingest',
+      avatar: data.avatar,
+      source: data.source,
+      textLength: data.rawText.length,
+      dryRun: data.dryRun
+    }, 'Processing course ingestion request');
+    
+    const result = await ingestCourseTranscript({
+      avatar: data.avatar,
+      source: data.source,
+      rawText: data.rawText,
+      attribution: data.attribution,
+      dryRun: data.dryRun
+    });
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    logger.error({
+      service: 'course-ingest-routes',
+      operation: 'course_ingest',
+      error: (error as Error).message
+    }, 'Course ingestion failed');
+    
+    res.status(500).json({
+      error: 'Course ingestion failed',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.get('/course/stats/:avatar', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { avatar } = req.params;
+    
+    if (!avatar) {
+      return res.status(400).json({ error: 'Avatar ID is required' });
+    }
+    
+    const stats = await getAvatarNamespaceStats(avatar);
+    
+    res.json({
+      success: true,
+      avatar,
+      namespaces: stats
+    });
+  } catch (error) {
+    logger.error({
+      service: 'course-ingest-routes',
+      operation: 'get_stats',
+      error: (error as Error).message
+    }, 'Failed to get stats');
+    
+    res.status(500).json({
+      error: 'Failed to get namespace stats',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.delete('/course/namespace/:avatar', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { avatar } = req.params;
+    const { contentType } = req.query;
+    
+    if (!avatar) {
+      return res.status(400).json({ error: 'Avatar ID is required' });
+    }
+    
+    if (isProtectedAvatar(avatar)) {
+      return res.status(403).json({
+        error: 'Protected avatar',
+        message: `Avatar "${avatar}" is protected and cannot be deleted`
+      });
+    }
+    
+    logger.info({
+      service: 'course-ingest-routes',
+      operation: 'delete_namespace',
+      avatar,
+      contentType: contentType || 'all'
+    }, 'Processing namespace deletion request');
+    
+    const result = await deleteAvatarNamespace(
+      avatar, 
+      contentType as any
+    );
+    
+    res.json({
+      success: true,
+      avatar,
+      ...result
+    });
+  } catch (error) {
+    logger.error({
+      service: 'course-ingest-routes',
+      operation: 'delete_namespace',
+      error: (error as Error).message
+    }, 'Namespace deletion failed');
+    
+    res.status(500).json({
+      error: 'Namespace deletion failed',
+      message: (error as Error).message
+    });
+  }
 });
 
 export default router;
