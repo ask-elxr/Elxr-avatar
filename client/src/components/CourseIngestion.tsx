@@ -193,18 +193,30 @@ export function CourseIngestion() {
       const formData = new FormData();
       formData.append('file', file);
 
+      const adminHeaders = getAdminHeaders();
+      console.log('[CourseIngestion] Uploading file:', file.name, 'Admin secret present:', !!adminHeaders['X-Admin-Secret']);
+      
       const response = await fetch('/admin/course/extract-text', {
         method: 'POST',
-        headers: getAdminHeaders(),
+        headers: adminHeaders,
         body: formData
       });
 
+      console.log('[CourseIngestion] Response status:', response.status);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Text extraction failed');
+        let errorMessage = 'Text extraction failed';
+        try {
+          const error = await response.json();
+          errorMessage = error.message || error.error || errorMessage;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
+      console.log('[CourseIngestion] Extraction successful:', result.characterCount, 'chars');
       setRawText(result.text);
       
       if (!source) {
@@ -217,9 +229,10 @@ export function CourseIngestion() {
         description: `Extracted ${result.text.length.toLocaleString()} characters from ${file.name}`
       });
     } catch (error) {
+      console.error('[CourseIngestion] Upload error:', error);
       toast({
         title: "Extraction Failed",
-        description: (error as Error).message,
+        description: (error as Error).message || 'Unknown error occurred',
         variant: "destructive"
       });
       setUploadedFileName("");
