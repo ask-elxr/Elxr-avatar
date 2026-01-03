@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2, Upload } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2, Sparkles } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 import { useLocation } from "wouter";
@@ -94,6 +94,7 @@ export function AvatarManager() {
   const [newBannedWordInput, setNewBannedWordInput] = useState("");
   const [newPhraseInput, setNewPhraseInput] = useState("");
   const [personaUploading, setPersonaUploading] = useState(false);
+  const [pastedPersonaText, setPastedPersonaText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Form state
@@ -482,6 +483,58 @@ export function AvatarManager() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handlePastePersonaText = async () => {
+    if (!pastedPersonaText.trim() || !editingAvatar) return;
+    
+    if (pastedPersonaText.trim().length < 50) {
+      toast({
+        title: "Text too short",
+        description: "Please paste at least 50 characters of personality description",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setPersonaUploading(true);
+    
+    try {
+      const adminSecret = localStorage.getItem('admin_secret');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminSecret) {
+        headers['X-Admin-Secret'] = adminSecret;
+      }
+      
+      const response = await fetch(`/api/admin/personas/${editingAvatar.id}/from-text`, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ text: pastedPersonaText }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setEditablePersona(data.persona);
+        setPersonaEditMode(true);
+        setPastedPersonaText("");
+        toast({
+          title: "Text processed",
+          description: "Review the extracted personality and click Save when ready.",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to process text');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Processing failed",
+        description: error.message || "Could not process the text",
+        variant: "destructive",
+      });
+    }
+    
+    setPersonaUploading(false);
   };
 
   const handleAddNamespace = () => {
@@ -1399,38 +1452,40 @@ export function AvatarManager() {
                     ) : (
                       <div className="space-y-3">
                         <p className="text-sm text-muted-foreground">
-                          No persona configured for this avatar yet.
+                          No persona configured for this avatar yet. Paste a personality description below:
                         </p>
+                        <Textarea
+                          placeholder="Paste your personality description here... (e.g., 'Dr. Smith is a warm, knowledgeable psychologist who specializes in cognitive behavioral therapy. She speaks in a calm, reassuring tone and often uses analogies to explain complex concepts...')"
+                          value={pastedPersonaText}
+                          onChange={(e) => setPastedPersonaText(e.target.value)}
+                          className="min-h-[120px] text-sm"
+                          data-testid="input-persona-text"
+                        />
                         <div className="flex gap-2 flex-wrap">
                           <Button
                             type="button"
                             size="sm"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={personaUploading}
+                            onClick={handlePastePersonaText}
+                            disabled={personaUploading || !pastedPersonaText.trim()}
                             className="bg-purple-600 hover:bg-purple-700"
+                            data-testid="button-extract-persona"
                           >
-                            <Upload className="w-3 h-3 mr-1" />
-                            {personaUploading ? "Processing..." : "Upload Document"}
+                            <Sparkles className="w-3 h-3 mr-1" />
+                            {personaUploading ? "Processing..." : "Extract Persona"}
                           </Button>
                           <Button
                             type="button"
                             size="sm"
                             variant="outline"
                             onClick={createDefaultPersona}
+                            data-testid="button-create-manually"
                           >
                             <Plus className="w-3 h-3 mr-1" />
                             Create Manually
                           </Button>
                         </div>
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept=".txt,.md,.pdf,.docx"
-                          onChange={handleUploadPersonaDocument}
-                          className="hidden"
-                        />
                         <p className="text-xs text-muted-foreground">
-                          Upload a .txt, .md, .pdf, or .docx file describing the personality
+                          AI will analyze your text and extract a structured personality profile
                         </p>
                       </div>
                     )}

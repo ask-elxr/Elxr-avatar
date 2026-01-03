@@ -195,30 +195,8 @@ async function extractTextFromFile(filePath: string, mimeType: string, originalN
   throw new Error('Unsupported file type');
 }
 
-personaRouter.post('/personas/:id/from-document', upload.single('document'), async (req, res) => {
-  const avatarId = req.params.id;
-  const file = req.file;
-  
-  if (!file) {
-    return res.status(400).json({ error: 'No document uploaded' });
-  }
-  
-  try {
-    log.info({ avatarId, filename: file.originalname }, 'Extracting persona from document');
-    
-    const text = await extractTextFromFile(file.path, file.mimetype, file.originalname);
-    
-    if (!text || text.trim().length < 50) {
-      unlinkSync(file.path);
-      return res.status(400).json({ error: 'Document is too short or empty' });
-    }
-    
-    if (!claudeService.isAvailable()) {
-      unlinkSync(file.path);
-      return res.status(503).json({ error: 'AI service not available' });
-    }
-    
-    const systemPrompt = `You are an expert at analyzing personality documents and extracting structured persona specifications.
+function getExtractionSystemPrompt(avatarId: string): string {
+  return `You are an expert at analyzing personality documents and extracting structured persona specifications.
 
 Given a document describing a person's personality, communication style, expertise, and character traits, extract a structured PersonaSpec JSON object.
 
@@ -266,38 +244,92 @@ The PersonaSpec must have this exact structure:
 Analyze the document and extract as much relevant information as possible. For fields not mentioned in the document, provide reasonable defaults based on the overall personality described.
 
 IMPORTANT: Return ONLY valid JSON, no markdown formatting, no explanation text.`;
+}
 
-    const userMessage = `Extract a PersonaSpec from this personality document:\n\n${text.substring(0, 15000)}`;
+async function extractPersonaFromText(avatarId: string, text: string): Promise<PersonaSpec> {
+  if (!claudeService.isAvailable()) {
+    throw new Error('AI service not available');
+  }
+  
+  const client = claudeService.getClient();
+  if (!client) {
+    throw new Error('AI client not available');
+  }
+  
+  const systemPrompt = getExtractionSystemPrompt(avatarId);
+  const userMessage = `Extract a PersonaSpec from this personality document:\n\n${text.substring(0, 15000)}`;
+  
+  const response = await client.messages.create({
+    model: claudeService.getDefaultModel(),
+    max_tokens: 4000,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userMessage }]
+  });
+  
+  const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
+  
+  let cleanJson = responseText.trim();
+  if (cleanJson.startsWith('```json')) {
+    cleanJson = cleanJson.slice(7);
+  } else if (cleanJson.startsWith('```')) {
+    cleanJson = cleanJson.slice(3);
+  }
+  if (cleanJson.endsWith('```')) {
+    cleanJson = cleanJson.slice(0, -3);
+  }
+  cleanJson = cleanJson.trim();
+  
+  const persona = JSON.parse(cleanJson) as PersonaSpec;
+  persona.id = avatarId;
+  
+  return persona;
+}
+
+personaRouter.post('/personas/:id/from-text', async (req, res) => {
+  const avatarId = req.params.id;
+  const { text } = req.body;
+  
+  if (!text || typeof text !== 'string') {
+    return res.status(400).json({ error: 'Text content is required' });
+  }
+  
+  if (text.trim().length < 50) {
+    return res.status(400).json({ error: 'Text is too short (minimum 50 characters)' });
+  }
+  
+  try {
+    log.info({ avatarId, textLength: text.length }, 'Extracting persona from pasted text');
     
-    const client = claudeService.getClient();
-    if (!client) {
+    const persona = await extractPersonaFromText(avatarId, text);
+    
+    log.info({ avatarId, displayName: persona.displayName }, 'Successfully extracted persona from text');
+    res.json({ success: true, persona });
+    
+  } catch (error: any) {
+    log.error({ error: error.message, avatarId }, 'Failed to extract persona from text');
+    res.status(500).json({ error: 'Failed to extract persona: ' + error.message });
+  }
+});
+
+personaRouter.post('/personas/:id/from-document', upload.single('document'), async (req, res) => {
+  const avatarId = req.params.id;
+  const file = req.file;
+  
+  if (!file) {
+    return res.status(400).json({ error: 'No document uploaded' });
+  }
+  
+  try {
+    log.info({ avatarId, filename: file.originalname }, 'Extracting persona from document');
+    
+    const text = await extractTextFromFile(file.path, file.mimetype, file.originalname);
+    
+    if (!text || text.trim().length < 50) {
       unlinkSync(file.path);
-      return res.status(503).json({ error: 'AI client not available' });
+      return res.status(400).json({ error: 'Document is too short or empty' });
     }
     
-    const response = await client.messages.create({
-      model: claudeService.getDefaultModel(),
-      max_tokens: 4000,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }]
-    });
-    
-    const responseText = response.content[0].type === 'text' ? response.content[0].text : '';
-    
-    let cleanJson = responseText.trim();
-    if (cleanJson.startsWith('```json')) {
-      cleanJson = cleanJson.slice(7);
-    } else if (cleanJson.startsWith('```')) {
-      cleanJson = cleanJson.slice(3);
-    }
-    if (cleanJson.endsWith('```')) {
-      cleanJson = cleanJson.slice(0, -3);
-    }
-    cleanJson = cleanJson.trim();
-    
-    const persona = JSON.parse(cleanJson) as PersonaSpec;
-    
-    persona.id = avatarId;
+    const persona = await extractPersonaFromText(avatarId, text);
     
     unlinkSync(file.path);
     
