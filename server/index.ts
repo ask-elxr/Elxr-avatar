@@ -6,7 +6,7 @@ import { moodRouter } from "./routes/mood.js";
 import subscriptionRouter from "./routes/subscription.js";
 import ingestRouter from "./routes/ingest.js";
 import { personaRouter } from "./routes/personas.js";
-import { requireAdmin } from "./replitAuth.js";
+import { requireAdmin, isAuthenticated } from "./replitAuth.js";
 import { subscriptionService } from "./services/subscription.js";
 import { videoGenerationService } from "./services/videoGeneration.js";
 import { chatVideoService } from "./services/chatVideo.js";
@@ -118,7 +118,7 @@ console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
   app.use("/api/mood", moodRouter);
   app.use("/api/subscription", subscriptionRouter);
   app.use("/admin", ingestRouter);
-  app.use("/api/admin", requireAdmin, personaRouter);
+  app.use("/api/admin", isAuthenticated, personaRouter);
   
   // Database initialization with graceful error handling
   // App will start even if database is temporarily unavailable
