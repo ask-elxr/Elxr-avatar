@@ -66,7 +66,19 @@ export function CourseIngestion() {
   const [isExtracting, setIsExtracting] = useState(false);
 
   const { data: namespaceData } = useQuery<NamespaceResponse>({
-    queryKey: ['/api/admin/pinecone/namespaces'],
+    queryKey: ['/api/pinecone/stats'],
+    queryFn: async () => {
+      const response = await fetch('/api/pinecone/stats', {
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to fetch namespaces');
+      const data = await response.json();
+      return {
+        totalVectorCount: data.pinecone?.totalVectorCount || 0,
+        dimension: data.pinecone?.dimension || 1536,
+        namespaces: data.pinecone?.namespaces || []
+      };
+    }
   });
 
   const availableNamespaces = namespaceData?.namespaces
