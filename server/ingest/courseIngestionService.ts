@@ -170,7 +170,8 @@ export async function deleteAvatarNamespace(
         `${avatarSlug}_core`,
         `${avatarSlug}_stories`,
         `${avatarSlug}_advice`,
-        `${avatarSlug}_warnings`
+        `${avatarSlug}_warnings`,
+        `${avatarSlug}_reframes`
       ];
   
   const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
@@ -196,7 +197,8 @@ export async function getAvatarNamespaceStats(avatar: string): Promise<Record<st
     `${avatarSlug}_core`,
     `${avatarSlug}_stories`,
     `${avatarSlug}_advice`,
-    `${avatarSlug}_warnings`
+    `${avatarSlug}_warnings`,
+    `${avatarSlug}_reframes`
   ];
   
   const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);

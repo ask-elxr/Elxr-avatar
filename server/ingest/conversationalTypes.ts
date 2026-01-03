@@ -74,8 +74,9 @@ export function getNamespaceForContentType(avatar: string, contentType: ContentT
       return `${avatarSlug}_advice`;
     case 'warning':
       return `${avatarSlug}_warnings`;
-    case 'explanation':
     case 'reframe':
+      return `${avatarSlug}_reframes`;
+    case 'explanation':
     default:
       return `${avatarSlug}_core`;
   }

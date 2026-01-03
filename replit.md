@@ -109,6 +109,27 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
   - `GET /admin/health` - Health check
 - **Data Model**: Chunk IDs as `{source_id}:{chunk_index}`, metadata includes mentor, kb, env, source_type, title, section, text_preview, created_at
 
+#### Course Transcript Ingestion System (NEW)
+- **Location**: `server/ingest/` directory - `conversationalTypes.ts`, `conversationalChunker.ts`, `courseIngestionService.ts`
+- **Purpose**: Anonymize and conversationally chunk course transcripts using Claude AI, then route to content-type specific namespaces
+- **Anonymization**: Claude-powered removal of names, places, dates, career markers, unique phrases; self-check loop for re-anonymization if needed
+- **Conversational Chunking**: 120-300 token standalone units with metadata classification
+- **Metadata Fields**: 
+  - `content_type`: explanation | advice | story | warning | reframe
+  - `tone`: warm | blunt | reflective | reassuring | provocative
+  - `topic`: lowercase phrase describing the topic
+  - `confidence`: soft | direct | authoritative
+  - `voice_origin`: avatar_native | attributed
+- **Namespace Routing**: Content routed to `{avatar}_core`, `{avatar}_stories`, `{avatar}_advice`, `{avatar}_warnings`, `{avatar}_reframes` based on content_type
+- **Exclusion Rules**: Automatically discards lesson intros, CTAs, structural glue, repetition, long lists, stage directions, brand instructions
+- **Protected Avatars**: Mark Kohl's namespace is protected and cannot be modified through this pipeline
+- **Retry Logic**: Claude API calls retry up to 3 times with exponential backoff
+- **Admin Endpoints** (require `X-Admin-Secret` header):
+  - `POST /admin/course/ingest` - Ingest transcript with anonymization, chunking, and Pinecone upsert
+  - `GET /admin/course/stats/:avatar` - Get namespace vector counts for an avatar
+  - `DELETE /admin/course/namespace/:avatar` - Delete all namespaces for an avatar
+- **Admin UI**: KnowledgeBase page "Courses" tab with transcript paste, dry run mode, namespace stats, and result preview
+
 #### Technical Implementations
 - **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.

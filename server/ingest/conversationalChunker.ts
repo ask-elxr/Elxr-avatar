@@ -17,6 +17,35 @@ const anthropic = new Anthropic();
 
 const MAX_TOKENS_PER_BATCH = 8000;
 const APPROX_CHARS_PER_TOKEN = 4;
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 1000;
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = MAX_RETRIES,
+  delayMs: number = RETRY_DELAY_MS
+): Promise<T> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      logger.warn({ 
+        attempt: attempt + 1, 
+        maxRetries, 
+        error: lastError.message 
+      }, 'Claude API call failed, retrying...');
+      
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, delayMs * (attempt + 1)));
+      }
+    }
+  }
+  
+  throw lastError;
+}
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / APPROX_CHARS_PER_TOKEN);
@@ -51,7 +80,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
   logger.info({ textLength: text.length }, 'Starting anonymization');
   
   try {
-    const response = await anthropic.messages.create({
+    const response = await withRetry(() => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8192,
       system: ANONYMIZATION_SYSTEM_PROMPT,
@@ -61,13 +90,13 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
           content: text
         }
       ]
-    });
+    }));
     
     const anonymizedText = response.content[0].type === 'text' 
       ? response.content[0].text 
       : text;
     
-    const checkResponse = await anthropic.messages.create({
+    const checkResponse = await withRetry(() => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 10,
       messages: [
@@ -76,7 +105,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
           content: `${ANONYMIZATION_CHECK_PROMPT}\n\nText to check:\n${anonymizedText}`
         }
       ]
-    });
+    }));
     
     const checkResult = checkResponse.content[0].type === 'text'
       ? checkResponse.content[0].text.trim().toUpperCase()
@@ -84,7 +113,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
     
     if (checkResult === 'YES') {
       logger.warn('Anonymization check failed, re-anonymizing');
-      const reAnonymized = await anthropic.messages.create({
+      const reAnonymized = await withRetry(() => anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8192,
         system: ANONYMIZATION_SYSTEM_PROMPT + '\n\nThis text was already anonymized once but still contains recognizable elements. Be MORE aggressive in removing identifying patterns.',
@@ -94,7 +123,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
             content: anonymizedText
           }
         ]
-      });
+      }));
       
       const finalText = reAnonymized.content[0].type === 'text'
         ? reAnonymized.content[0].text
@@ -201,7 +230,7 @@ export async function chunkTextConversationally(
     logger.debug({ batchIndex: i, batchLength: batch.length }, 'Processing batch');
     
     try {
-      const response = await anthropic.messages.create({
+      const response = await withRetry(() => anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 8192,
         system: CHUNKING_SYSTEM_PROMPT,
@@ -211,7 +240,7 @@ export async function chunkTextConversationally(
             content: batch
           }
         ]
-      });
+      }));
       
       const responseText = response.content[0].type === 'text'
         ? response.content[0].text
@@ -234,7 +263,7 @@ export async function chunkTextConversationally(
       
       logger.debug({ batchIndex: i, chunksExtracted: chunks.length }, 'Batch complete');
     } catch (error) {
-      logger.error({ batchIndex: i, error: (error as Error).message }, 'Batch processing failed');
+      logger.error({ batchIndex: i, error: (error as Error).message }, 'Batch processing failed after retries');
       throw error;
     }
   }

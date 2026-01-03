@@ -8,7 +8,8 @@ import { DocumentViewer } from "@/components/DocumentViewer";
 import { TopicFolderUpload } from "@/components/TopicFolderUpload";
 import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager";
 import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
-import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2 } from "lucide-react";
+import { CourseIngestion } from "@/components/CourseIngestion";
+import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2, GraduationCap } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -116,7 +117,7 @@ export default function KnowledgeBase() {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 glass p-1">
+            <TabsList className="grid w-full grid-cols-6 glass p-1">
               <TabsTrigger 
                 value="upload" 
                 className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
@@ -156,6 +157,14 @@ export default function KnowledgeBase() {
               >
                 <Link2 className="w-4 h-4" />
                 Mapping
+              </TabsTrigger>
+              <TabsTrigger 
+                value="courses" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-courses"
+              >
+                <GraduationCap className="w-4 h-4" />
+                Courses
               </TabsTrigger>
             </TabsList>
 
@@ -236,6 +245,10 @@ export default function KnowledgeBase() {
 
             <TabsContent value="mapping" className="space-y-6">
               <AvatarNamespaceMatrix />
+            </TabsContent>
+
+            <TabsContent value="courses" className="space-y-6">
+              <CourseIngestion />
             </TabsContent>
           </Tabs>
         </div>
