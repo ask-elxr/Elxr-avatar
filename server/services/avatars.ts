@@ -98,6 +98,8 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     heygenVideoVoiceId: dbAvatar.heygenVideoVoiceId !== undefined ? dbAvatar.heygenVideoVoiceId : (defaultAvatar as any).heygenVideoVoiceId,
     heygenKnowledgeId: dbAvatar.heygenKnowledgeId !== undefined ? dbAvatar.heygenKnowledgeId : defaultAvatar.heygenKnowledgeId,
     elevenlabsVoiceId: dbAvatar.elevenlabsVoiceId !== undefined ? dbAvatar.elevenlabsVoiceId : defaultAvatar.elevenlabsVoiceId,
+    audioOnlyVoiceId: (dbAvatar as any).audioOnlyVoiceId !== undefined ? (dbAvatar as any).audioOnlyVoiceId : (defaultAvatar as any).audioOnlyVoiceId,
+    liveAvatarVoiceId: (dbAvatar as any).liveAvatarVoiceId !== undefined ? (dbAvatar as any).liveAvatarVoiceId : (defaultAvatar as any).liveAvatarVoiceId,
     voiceRate: dbAvatar.voiceRate !== undefined ? dbAvatar.voiceRate : defaultAvatar.voiceRate,
     pineconeNamespaces: mergedNamespaces,
     personalityPrompt: dbAvatar.personalityPrompt !== undefined ? dbAvatar.personalityPrompt : defaultAvatar.personalityPrompt,
