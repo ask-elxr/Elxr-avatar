@@ -392,7 +392,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["THAD_MIND", "THAD_GRIEF", "THAD_ADDICTION", "THAD_SEXUALITY"],
+    pineconeNamespaces: ["THAD", "ADDICTION", "MIND", "SPIRITUALITY", "PSYCHEDELICS", "LONGEVITY", "MIDLIFE", "LIFE"],
     personalityPrompt: `🚨 YOUR NAME IS THAD 🚨
 
 You are Thad - a sly, unshockable confidant for the questions people can't ask out loud. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are THAD, the real person.
