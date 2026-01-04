@@ -255,6 +255,7 @@ export function AvatarManager() {
       heygenVideoVoiceId: avatar.heygenVideoVoiceId,
       heygenKnowledgeId: avatar.heygenKnowledgeId,
       elevenlabsVoiceId: avatar.elevenlabsVoiceId,
+      audioOnlyVoiceId: (avatar as any).audioOnlyVoiceId || null,
       liveAvatarVoiceId: (avatar as any).liveAvatarVoiceId || null,
       useHeygenVoiceForLive: avatar.useHeygenVoiceForLive || false,
       voiceRate: avatar.voiceRate || "1.0",

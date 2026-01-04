@@ -2983,25 +2983,8 @@ This appears to be your first conversation with this person - no prior memories 
     try {
       const { id } = req.params;
       
-      // DEBUG: Log incoming request body
-      logger.info({ 
-        avatarId: id, 
-        incomingFields: Object.keys(req.body),
-        liveAvatarId: req.body.liveAvatarId,
-        audioOnlyVoiceId: req.body.audioOnlyVoiceId,
-        elevenlabsVoiceId: req.body.elevenlabsVoiceId,
-      }, "Avatar update request received");
-      
       // Validate request body
       const validatedData = updateAvatarProfileSchema.parse(req.body);
-      
-      // DEBUG: Log validated data
-      logger.info({ 
-        avatarId: id, 
-        validatedFields: Object.keys(validatedData),
-        validatedLiveAvatarId: validatedData.liveAvatarId,
-        validatedAudioOnlyVoiceId: validatedData.audioOnlyVoiceId,
-      }, "Avatar data validated");
       
       // Additional runtime validation
       if (validatedData.isActive === true && validatedData.pineconeNamespaces?.length === 0) {
@@ -3015,12 +2998,7 @@ This appears to be your first conversation with this person - no prior memories 
         return res.status(404).json({ error: "Avatar not found" });
       }
       
-      // DEBUG: Log result
-      logger.info({ 
-        avatarId: id,
-        resultLiveAvatarId: updatedAvatar.liveAvatarId,
-        resultAudioOnlyVoiceId: updatedAvatar.audioOnlyVoiceId,
-      }, "Avatar updated by admin");
+      logger.info({ avatarId: id }, "Avatar updated by admin");
       res.json(updatedAvatar);
     } catch (error: any) {
       logger.error({ error: error.message }, "Error updating avatar");
