@@ -754,7 +754,7 @@ export function AvatarManager() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
+          <form id="avatar-form" onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="id">Avatar ID *</Label>
@@ -1686,11 +1686,7 @@ export function AvatarManager() {
             >
               Cancel
             </Button>
-            <Button type="submit" form="avatar-form" disabled={isPending} data-testid="button-save" onClick={(e) => {
-              e.preventDefault();
-              const form = document.querySelector('form[class*="space-y-4"]') as HTMLFormElement;
-              if (form) form.requestSubmit();
-            }}>
+            <Button type="submit" form="avatar-form" disabled={isPending} data-testid="button-save">
               {isPending ? (
                 <>
                   <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
