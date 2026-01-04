@@ -744,7 +744,7 @@ export function AvatarManager() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingAvatar ? "Edit Avatar" : "Create Avatar"}</DialogTitle>
             <DialogDescription>
@@ -754,7 +754,7 @@ export function AvatarManager() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="id">Avatar ID *</Label>
@@ -1673,28 +1673,34 @@ export function AvatarManager() {
               <Label htmlFor="isActive">Active</Label>
             </div>
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseDialog}
-                disabled={isPending}
-                data-testid="button-cancel"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isPending} data-testid="button-save">
-                {isPending ? (
-                  <>
-                    <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  "Save Avatar"
-                )}
-              </Button>
-            </DialogFooter>
+            <div className="h-4"></div>
           </form>
+          
+          <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCloseDialog}
+              disabled={isPending}
+              data-testid="button-cancel"
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="avatar-form" disabled={isPending} data-testid="button-save" onClick={(e) => {
+              e.preventDefault();
+              const form = document.querySelector('form[class*="space-y-4"]') as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }}>
+              {isPending ? (
+                <>
+                  <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Avatar"
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
