@@ -11,11 +11,19 @@ import Anthropic from '@anthropic-ai/sdk';
 const BASE_URL = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/';
 const EMAIL = 'support@elxr.ai';
 const TOOL = 'elxr-ai-platform';
+const NCBI_API_KEY = process.env.NCBI_API_KEY || null; // Optional: increases rate limit from 3 to 10 req/sec
 const CACHE_NAMESPACE = 'pubmed-cache';
 const CACHE_INDEX = 'ask-elxr';
 const CACHE_EXPIRY_DAYS = 7;
 
 const OFFLINE_MODE = process.env.OFFLINE_MODE?.toLowerCase() === 'true';
+
+// Log API key status on startup
+if (NCBI_API_KEY) {
+  logger.info({ service: 'pubmed' }, 'NCBI API key configured - using 10 req/sec rate limit');
+} else {
+  logger.info({ service: 'pubmed' }, 'No NCBI API key - using 3 req/sec rate limit (set NCBI_API_KEY to increase)');
+}
 
 export interface PubMedArticle {
   pmid: string;
@@ -85,7 +93,8 @@ class SharedRateLimiter {
   }
 }
 
-const sharedRateLimiter = new SharedRateLimiter(3);
+// Rate limit: 10 req/sec with API key, 3 req/sec without
+const sharedRateLimiter = new SharedRateLimiter(NCBI_API_KEY ? 10 : 3);
 
 let openaiClient: OpenAI | null = null;
 let pineconeClient: Pinecone | null = null;
@@ -293,7 +302,7 @@ async function cacheResults(
 
 async function searchPubMedInternal(query: string, maxResults = 20): Promise<SearchResult> {
   const url = `${BASE_URL}esearch.fcgi`;
-  const params = {
+  const params: Record<string, string> = {
     db: 'pubmed',
     term: query,
     retmode: 'xml',
@@ -301,6 +310,11 @@ async function searchPubMedInternal(query: string, maxResults = 20): Promise<Sea
     email: EMAIL,
     tool: TOOL,
   };
+  
+  // Add API key if configured (increases rate limit from 3 to 10 req/sec)
+  if (NCBI_API_KEY) {
+    params.api_key = NCBI_API_KEY;
+  }
 
   logger.info(
     { service: 'pubmed', operation: 'search', query, maxResults },
@@ -355,7 +369,7 @@ async function fetchArticleDetailsInternal(pmids: string[]): Promise<PubMedArtic
   }
 
   const url = `${BASE_URL}efetch.fcgi`;
-  const params = {
+  const params: Record<string, string> = {
     db: 'pubmed',
     id: pmids.join(','),
     retmode: 'xml',
@@ -363,6 +377,11 @@ async function fetchArticleDetailsInternal(pmids: string[]): Promise<PubMedArtic
     email: EMAIL,
     tool: TOOL,
   };
+  
+  // Add API key if configured (increases rate limit from 3 to 10 req/sec)
+  if (NCBI_API_KEY) {
+    params.api_key = NCBI_API_KEY;
+  }
 
   logger.info(
     { service: 'pubmed', operation: 'fetch', pmidCount: pmids.length },
