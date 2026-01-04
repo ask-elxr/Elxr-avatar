@@ -747,8 +747,8 @@ export function AvatarManager() {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>{editingAvatar ? "Edit Avatar" : "Create Avatar"}</DialogTitle>
             <DialogDescription>
               {editingAvatar
@@ -757,7 +757,8 @@ export function AvatarManager() {
             </DialogDescription>
           </DialogHeader>
 
-          <form id="avatar-form" onSubmit={handleSubmit} className="space-y-4 flex-1 overflow-y-auto pr-2">
+          <div className="flex-1 overflow-y-auto min-h-0">
+          <form id="avatar-form" onSubmit={handleSubmit} className="space-y-4 pr-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="id">Avatar ID *</Label>
@@ -1678,8 +1679,9 @@ export function AvatarManager() {
 
             <div className="h-4"></div>
           </form>
+          </div>
           
-          <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
+          <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2 bg-background">
             <Button
               type="button"
               variant="outline"
