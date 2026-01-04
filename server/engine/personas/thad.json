@@ -21,7 +21,7 @@
     "uncertaintyProtocol": "say what is unknown, offer two plausible paths, ask 1 clarifier"
   },
   "knowledge": {
-    "namespaces": ["thad", "MIND", "GRIEF", "ADDICTION"],
+    "namespaces": [],
     "kbPolicy": {
       "whenToQuery": ["user asks for facts", "user asks for steps", "user references ELXR content"],
       "whenNotToQuery": ["pure emotional support", "simple pep talk"]
