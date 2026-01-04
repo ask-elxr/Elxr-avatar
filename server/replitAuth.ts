@@ -198,15 +198,25 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
   return next();
 };
 
+// Helper to check if a secret is valid (supports multiple comma-separated secrets)
+export function isValidAdminSecret(providedSecret: string): boolean {
+  const envAdminSecret = process.env.ADMIN_SECRET;
+  if (!envAdminSecret || !providedSecret) return false;
+  
+  // Support multiple admin secrets separated by commas
+  const validSecrets = envAdminSecret.split(',').map(s => s.trim());
+  return validSecrets.includes(providedSecret);
+}
+
 // Middleware to require admin role
 // In embedded mode, admin access is controlled via ADMIN_SECRET header
+// Supports multiple admin secrets (comma-separated in ADMIN_SECRET env var)
 export const requireAdmin: RequestHandler = async (req, res, next) => {
   // Check for admin secret in header (for embedded/Webflow mode)
   const adminSecret = req.headers['x-admin-secret'] as string;
-  const envAdminSecret = process.env.ADMIN_SECRET;
   
-  // If admin secret is provided and matches, allow access
-  if (envAdminSecret && adminSecret === envAdminSecret) {
+  // If admin secret is provided and matches one of the valid secrets, allow access
+  if (isValidAdminSecret(adminSecret)) {
     return next();
   }
   

@@ -26,6 +26,7 @@ const Credits = lazy(() => import("@/pages/Credits"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LiveAvatarTest = lazy(() => import("@/pages/liveavatar-test"));
 const SDKTest = lazy(() => import("@/pages/sdk-test"));
+const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 
 const EmbedPage = lazy(() => import("@/pages/embed/index"));
 const EmbedAdmin = lazy(() => import("@/pages/embed/admin"));
@@ -85,6 +86,7 @@ function Router() {
         <Route path="/course-builder" component={CourseBuilder} />
         <Route path="/course-builder/:id" component={CourseBuilder} />
         <Route path="/admin" component={Admin} />
+        <Route path="/admin-login" component={AdminLogin} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/credits" component={Credits} />
         <Route path="/account" component={Account} />

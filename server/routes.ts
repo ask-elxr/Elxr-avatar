@@ -26,7 +26,7 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { elevenlabsService } from "./elevenlabsService.js";
 import { wikipediaService } from "./wikipediaService.js";
-import { setupAuth, isAuthenticated, requireAdmin } from "./replitAuth.js";
+import { setupAuth, isAuthenticated, requireAdmin, isValidAdminSecret } from "./replitAuth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
@@ -384,6 +384,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error updating user profile:", error);
       res.status(500).json({ message: "Failed to update user profile" });
     }
+  });
+
+  // Admin credential verification endpoint (supports multiple admin secrets)
+  app.post("/api/admin/verify", async (req: any, res) => {
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    
+    if (isValidAdminSecret(adminSecret)) {
+      return res.json({ valid: true, message: "Admin access granted" });
+    }
+    
+    return res.status(401).json({ valid: false, message: "Invalid admin credentials" });
   });
 
   // GET available LiveAvatars from HeyGen API (diagnostic endpoint)
