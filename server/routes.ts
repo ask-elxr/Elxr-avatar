@@ -1815,7 +1815,9 @@ This appears to be your first conversation with this person - no prior memories 
       }
 
       const avatarConfig = await getAvatarById(avatarId);
-      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+      // For audio-only mode, prioritize audioOnlyVoiceId, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig?.audioOnlyVoiceId || avatarConfig?.elevenlabsVoiceId;
+      if (!avatarConfig || !voiceId) {
         log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
@@ -1823,11 +1825,11 @@ This appears to be your first conversation with this person - no prior memories 
       // Use provided languageCode override, otherwise fall back to avatar config
       const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
       
-      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating TTS audio");
+      log.debug({ textLength: text.length, voiceId, audioOnlyVoiceId: avatarConfig.audioOnlyVoiceId, languageCode: effectiveLanguageCode }, "Generating TTS audio");
 
       const audioBuffer = await elevenlabsService.generateSpeech(
         text, 
-        avatarConfig.elevenlabsVoiceId,
+        voiceId,
         effectiveLanguageCode
       );
 
@@ -1863,18 +1865,20 @@ This appears to be your first conversation with this person - no prior memories 
       }
 
       const avatarConfig = await getAvatarById(avatarId);
-      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+      // For audio-only mode, prioritize audioOnlyVoiceId, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig?.audioOnlyVoiceId || avatarConfig?.elevenlabsVoiceId;
+      if (!avatarConfig || !voiceId) {
         log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
 
       const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
       
-      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating PCM audio for HeyGen lip-sync");
+      log.debug({ textLength: text.length, voiceId, audioOnlyVoiceId: avatarConfig.audioOnlyVoiceId, languageCode: effectiveLanguageCode }, "Generating PCM audio for HeyGen lip-sync");
 
       const audioBuffer = await elevenlabsService.generateSpeechPCM(
         text, 
-        avatarConfig.elevenlabsVoiceId,
+        voiceId,
         effectiveLanguageCode
       );
 
@@ -1911,18 +1915,20 @@ This appears to be your first conversation with this person - no prior memories 
       }
 
       const avatarConfig = await getAvatarById(avatarId);
-      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+      // For audio-only mode, prioritize audioOnlyVoiceId, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig?.audioOnlyVoiceId || avatarConfig?.elevenlabsVoiceId;
+      if (!avatarConfig || !voiceId) {
         log.error({ avatarId }, "Avatar not found or missing ElevenLabs voice ID");
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
 
       const effectiveLanguageCode = languageCode || avatarConfig.elevenLabsLanguageCode || undefined;
       
-      log.debug({ textLength: text.length, voiceId: avatarConfig.elevenlabsVoiceId, languageCode: effectiveLanguageCode }, "Generating base64 PCM audio for LiveAvatar SDK");
+      log.debug({ textLength: text.length, voiceId, audioOnlyVoiceId: avatarConfig.audioOnlyVoiceId, languageCode: effectiveLanguageCode }, "Generating base64 PCM audio for LiveAvatar SDK");
 
       const audioBase64 = await elevenlabsService.generateSpeechBase64(
         text, 
-        avatarConfig.elevenlabsVoiceId,
+        voiceId,
         effectiveLanguageCode
       );
 
@@ -1945,7 +1951,9 @@ This appears to be your first conversation with this person - no prior memories 
       const { avatarId = "mark-kohl" } = req.body;
       
       const avatarConfig = await getAvatarById(avatarId);
-      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+      // For audio-only mode, prioritize audioOnlyVoiceId, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig?.audioOnlyVoiceId || avatarConfig?.elevenlabsVoiceId;
+      if (!avatarConfig || !voiceId) {
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
 
@@ -1953,14 +1961,16 @@ This appears to be your first conversation with this person - no prior memories 
         return res.status(500).json({ error: "ElevenLabs service not available" });
       }
 
+      log.info({ voiceId, avatarId }, "Pre-caching acknowledgment phrases for voice");
+
       // Start caching in background (don't wait) - pass avatarId for avatar-specific phrases
-      elevenlabsService.preCacheAcknowledgments(avatarConfig.elevenlabsVoiceId, avatarId)
+      elevenlabsService.preCacheAcknowledgments(voiceId, avatarId)
         .catch(err => log.error({ error: err.message }, "Background cache failed"));
 
       res.json({ 
         success: true, 
         message: "Acknowledgment caching started",
-        hasCached: elevenlabsService.hasAcknowledgmentsFor(avatarConfig.elevenlabsVoiceId, avatarId)
+        hasCached: elevenlabsService.hasAcknowledgmentsFor(voiceId, avatarId)
       });
     } catch (error: any) {
       log.error({ error: error.message }, "Error starting acknowledgment cache");
@@ -1976,11 +1986,13 @@ This appears to be your first conversation with this person - no prior memories 
       const { avatarId } = req.params;
       
       const avatarConfig = await getAvatarById(avatarId);
-      if (!avatarConfig || !avatarConfig.elevenlabsVoiceId) {
+      // For audio-only mode, prioritize audioOnlyVoiceId, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig?.audioOnlyVoiceId || avatarConfig?.elevenlabsVoiceId;
+      if (!avatarConfig || !voiceId) {
         return res.status(400).json({ error: "Invalid avatar or missing voice configuration" });
       }
 
-      const cachedAudio = elevenlabsService.getCachedAcknowledgment(avatarConfig.elevenlabsVoiceId, avatarId);
+      const cachedAudio = elevenlabsService.getCachedAcknowledgment(voiceId, avatarId);
       if (!cachedAudio) {
         return res.status(404).json({ error: "No cached acknowledgments available" });
       }
