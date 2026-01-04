@@ -1167,7 +1167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Avatar not found" });
       }
 
-      if (!avatarConfig.elevenlabsVoiceId) {
+      // For audio-only mode, prioritize audioOnlyVoiceId, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig.audioOnlyVoiceId || avatarConfig.elevenlabsVoiceId;
+      if (!voiceId) {
         log.error({ avatarId }, "Avatar missing ElevenLabs voice ID");
         return res.status(400).json({ error: "Avatar not configured for audio mode" });
       }
