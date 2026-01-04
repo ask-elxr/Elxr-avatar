@@ -176,6 +176,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   requiresFullMode: boolean("requires_full_mode").default(false).notNull(), // Some avatars only work with FULL mode (uses LiveAvatar's LLM instead of Claude)
   useHeygenVoiceForLive: boolean("use_heygen_voice_for_live").default(false).notNull(), // Toggle for video generation: false = ElevenLabs voice, true = HeyGen voice
   voiceRate: text("voice_rate").default("1.0"),
+  audioOnlyVoiceId: text("audio_only_voice_id"), // Dedicated ElevenLabs voice ID for audio-only mode
   // Language configuration
   languageCode: text("language_code").default("en-US"), // BCP-47 language code for HeyGen & speech recognition (e.g., "en-US", "es-ES", "fr-FR")
   elevenLabsLanguageCode: text("elevenlabs_language_code").default("en"), // ElevenLabs language code (e.g., "en", "es", "fr", "de", "it", "pt", "pl", "hi", "ar", "zh", "ja", "ko")

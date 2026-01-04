@@ -4931,9 +4931,10 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(404).json({ error: "Avatar not found" });
       }
 
-      const voiceId = avatarConfig.elevenlabsVoiceId;
+      // For audio-only mode, use dedicated audioOnlyVoiceId first, fallback to elevenlabsVoiceId
+      const voiceId = avatarConfig.audioOnlyVoiceId || avatarConfig.elevenlabsVoiceId;
       if (!voiceId) {
-        return res.status(400).json({ error: "Avatar not configured for audio" });
+        return res.status(400).json({ error: "Avatar not configured for audio. Please set ElevenLabs Voice ID in Audio-Only Mode settings." });
       }
 
       // Check for video request intent (streaming audio mode)

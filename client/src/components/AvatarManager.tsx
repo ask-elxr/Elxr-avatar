@@ -1098,9 +1098,23 @@ export function AvatarManager() {
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-2 h-2 rounded-full bg-green-500"></div>
                   <span className="text-sm font-medium text-green-400">Audio-Only Mode</span>
-                  <span className="text-xs text-muted-foreground">(Uses ElevenLabs voice from Interactive Mode)</span>
+                  <span className="text-xs text-muted-foreground">(ElevenLabs voice synthesis)</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="audioOnlyVoiceId" className="text-xs">ElevenLabs Voice ID</Label>
+                    <Input
+                      id="audioOnlyVoiceId"
+                      value={formData.audioOnlyVoiceId || ""}
+                      onChange={(e) => setFormData({ ...formData, audioOnlyVoiceId: e.target.value || null })}
+                      placeholder="ElevenLabs voice ID for audio-only"
+                      className="text-sm"
+                      data-testid="input-audio-only-voice-id"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Dedicated voice for audio-only chat mode
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label htmlFor="voiceRate" className="text-xs">Voice Rate</Label>
                     <Input
@@ -1111,10 +1125,8 @@ export function AvatarManager() {
                       className="text-sm"
                       data-testid="input-voice-rate"
                     />
-                  </div>
-                  <div className="space-y-2 flex items-end">
-                    <p className="text-xs text-muted-foreground pb-2">
-                      Audio-only mode uses the ElevenLabs voice configured above
+                    <p className="text-xs text-muted-foreground">
+                      Speed multiplier (1.0 = normal)
                     </p>
                   </div>
                 </div>
