@@ -8,7 +8,7 @@ export enum PineconeIndexName {
 class PineconeService {
   private client?: Pinecone;
   private apiKey: string;
-  private defaultIndexName: PineconeIndexName = PineconeIndexName.AVATAR_CHAT;
+  private defaultIndexName: PineconeIndexName = PineconeIndexName.ASK_ELXR;
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
