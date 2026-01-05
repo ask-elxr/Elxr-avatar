@@ -130,6 +130,16 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
   - `DELETE /admin/course/namespace/:avatar` - Delete all namespaces for an avatar
 - **Admin UI**: KnowledgeBase page "Courses" tab with transcript paste, dry run mode, namespace stats, and result preview
 
+#### Content Taxonomy System
+- **Location**: `server/contentTaxonomy.ts`
+- **Purpose**: Professional, taxonomy-driven content policy for adult educational wellness platform
+- **Categories**: 8 subject areas - Sexuality & Intimacy, Sexual Health & Safety, Identity/Orientation, Relationships, Mental/Emotional, Psychedelics, Illicit Drugs, Ethics & Culture
+- **Tone**: "Composed expert in a private room" - not buddy, therapist, or cheerleader
+- **Framing**: All discussions are adult, educational, experiential, and harm-reduction oriented
+- **Guardrails**: No explicit storytelling, no illegal instructions, no medical/legal advice, no harm glamorization
+- **Integration**: `ELXR_CONTENT_POLICY` is prepended to all avatar system prompts in `claudeService.ts`
+- **Avatar Prompts**: Each avatar includes a "Content Approach" section referencing the composed expert tone
+
 #### Technical Implementations
 - **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
