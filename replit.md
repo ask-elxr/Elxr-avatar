@@ -13,26 +13,11 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 
 #### Frontend (React + TypeScript)
 - **Core Features**: Avatar selection, LiveAvatar video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
-- **SessionDriver Pattern**: Unified abstraction for avatar sessions (`LiveAvatarDriver`, `AudioOnlyDriver`) with a common interface.
-- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT, Pinecone RAG, Mem0, OpenAI Realtime API, and ElevenLabs Realtime TTS.
+- **SessionDriver Pattern**: Unified abstraction for avatar sessions (`LiveAvatarDriver`, `AudioOnlyDriver`).
+- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT, Pinecone RAG, Mem0, OpenAI Realtime API, and ElevenLabs Realtime TTS. Designed for zero buffering and minimum latency across LLM, TTS, and STT streams.
 - **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency audio, bridging to ElevenLabs STT/TTS and Claude AI.
-- **True Streaming Optimization**: Designed for zero buffering and minimum latency across LLM, TTS, and STT streams.
 - **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately and conditionally including context in the LLM prompt.
-- **End-to-End Streaming Pipeline**:
-    -   User audio → STT streaming (partial transcripts ~100ms)
-    -   STT final → LLM streaming (token-by-token to TTS)
-    -   LLM tokens → TTS streaming (audio chunks ~50ms)
-    -   TTS audio → Avatar SDK (`repeatAudio()` for lip-sync)
-    -   `LiveAvatarDriver` accumulates streaming audio (12KB threshold / 200ms timeout)
-    -   Batched audio sent to SDK for synchronized lip animation
-- **Audio Streaming Mode** (`/api/avatar/response/stream-audio`):
-    -   Immediate thinking sound (~500ms) to mask latency
-    -   Parallel data fetching (Pinecone, Mem0, Wikipedia, Google)
-    -   Claude streaming with sentence buffering (splits on . ! ? or 100 chars)
-    -   Concurrent TTS generation per sentence (ElevenLabs REST API)
-    -   SSE audio events with index metadata for ordered playback
-    -   Frontend buffers by index, plays in order (thinking → sentence 1 → 2...)
-    -   Expected time-to-first-audio: ~3-4s (after thinking sound at ~500ms)
+- **Audio Streaming Mode**: Includes immediate thinking sounds, parallel data fetching, Claude streaming with sentence buffering, concurrent TTS generation, and SSE audio events for ordered playback.
 
 #### Backend (Express + TypeScript + Python)
 - **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
@@ -45,122 +30,92 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Multi-avatar Support**: Includes 10 active avatars with unique expertise, configurable settings, dedicated Pinecone knowledge bases, and per-avatar research source toggles.
 - **HeyGen Integration**: Utilizes dual HeyGen IDs (LiveAvatar for streaming, Instant/Public for video generation) and separate API keys.
 - **Platform & Voice Configuration**: Per-avatar selection for streaming platform (LiveAvatar/HeyGen) and voice source (ElevenLabs/HeyGen).
-- **Avatar Service**: Manages field-level merging and active/inactive avatar states.
 
 #### Video Course System
-- **Workflow**: Users create courses, add lessons, and generate videos via HeyGen, with optional AI script generation using Claude AI and Pinecone knowledge.
-- **Video Modes**: Supports watermarked test videos (Instant Avatars) and watermark-free production videos (Public Avatars).
+- **Workflow**: Users create courses, add lessons, and generate videos via HeyGen, with optional AI script generation using Claude AI and Pinecone knowledge. Supports watermarked test videos and watermark-free production videos.
 - **Robust Video Status Monitoring**: Includes polling, startup recovery, and orphaned lesson detection.
 
 #### Chat Video-on-Demand System
-- **Feature**: Users can request videos during chat via intent detection, generating scripts with Claude AI and creating videos asynchronously via HeyGen.
-- **Global Notification System**: App-wide polling for video status changes with local storage tracking.
+- **Feature**: Users can request videos during chat via intent detection, generating scripts with Claude AI and creating videos asynchronously via HeyGen. Includes a global notification system for video status.
 
 #### Mood Tracker System
 - **Feature**: Users log emotional states, with Claude AI generating personalized, empathetic responses.
 
 #### Subscription System
-- **Tiers**: Free Trial, Basic, and Full plans with varying limits.
-- **Management**: Handles plan activation, usage tracking, and limit enforcement.
+- **Tiers**: Free Trial, Basic, and Full plans with varying limits and management for activation, usage tracking, and limit enforcement.
 
 #### Role-Based Access Control (RBAC)
-- **Roles**: `admin` and `user`.
-- **Protection**: Backend middleware for admin-only routes and frontend guards for UI elements.
+- **Roles**: `admin` and `user`, with backend middleware and frontend guards for protection.
 
 #### Webflow Embedding Mode
 - **Anonymous Access**: Bypasses authentication for user-facing routes, assigning anonymous session IDs.
-- **Admin Secret Authentication**: Admin routes protected by `X-Admin-Secret` header, with UI for input and `localStorage` persistence.
+- **Admin Secret Authentication**: Admin routes protected by `X-Admin-Secret` header.
 - **CORS & CSP**: Configured for embedding from any origin.
-- **Hidden Auth UI**: Login/logout buttons are hidden.
-- **Embed-Only Routes**: Chrome-free pages for iframe embedding without navigation sidebars.
+- **Embed-Only Routes**: Chrome-free pages for iframe embedding.
 
 #### Avatar-Namespace Matrix Visualization
-- **Component**: `AvatarNamespaceMatrix.tsx` provides interactive visualization of avatar-to-Pinecone namespace relationships with matrix and list views, detail panels, and API endpoints.
+- **Component**: `AvatarNamespaceMatrix.tsx` provides interactive visualization of avatar-to-Pinecone namespace relationships.
 
 #### Google Drive Topic Folders Integration
-- **Source**: Integrates with Google Drive topic folders for Pinecone namespace population.
-- **Mapping**: Configured in `shared/pineconeCategories.ts` with case-insensitive folder name matching.
+- **Source**: Integrates with Google Drive topic folders for Pinecone namespace population, configured in `shared/pineconeCategories.ts`.
 - **Admin UI**: KnowledgeBase page offers a "Topic Folders" tab for bulk uploads.
-- **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially to minimize memory usage.
+- **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially.
 
 #### Personality Engine
-- **Location**: `server/engine/` directory with modular architecture
-- **Persona Specs**: JSON files in `server/engine/personas/` defining identity, boundaries, voice, behavior, knowledge policies
-- **Components**:
-  - `personaLoader.ts` - Loads personas from JSON files at runtime (no recompile needed)
-  - `personaRegistry.ts` - Stores and retrieves loaded personas
-  - `promptAssembler.ts` - Generates dynamic system prompts from persona specs
-  - `responseCritic.ts` - Validates responses (banned words, AI references, action descriptions) and rewrites if needed
-  - `avatarIntegration.ts` - Bridges personality engine to existing avatar system
-- **Persona Spec Structure**: id, displayName, oneLiner, role, audience, boundaries (notA, refuseTopics), voice (tone, humor, bannedWords, signaturePhrases), behavior (opensWith, disagreementStyle, uncertaintyProtocol), knowledge (namespaces, kbPolicy), output (maxLength, structure), safety (crisis handling)
-- **Current Personas**: thad.json, mark-kohl.json
+- **Location**: `server/engine/` directory with modular architecture.
+- **Persona Specs**: JSON files defining identity, boundaries, voice, behavior, knowledge policies.
+- **Components**: `personaLoader.ts`, `personaRegistry.ts`, `promptAssembler.ts`, `responseCritic.ts`, `avatarIntegration.ts`.
 
 #### Production Pinecone Ingestion System
-- **Location**: `server/ingest/` directory with modular architecture
-- **Namespace Format**: `{env}:mentor:{mentorSlug}:{kbSlug}:v{version}` (e.g., `prod:mentor:markkohl:psychedelics:v1`)
-- **Chunking**: Token-based (350 tokens default, 60 overlap), heading-aware splitting, breadcrumb context prepended
-- **Breadcrumb Format**: `Title: {title}\nSection: {section}\nMentor: {mentor}\nKB: {kb}\nContent: {chunk_text}`
-- **Embeddings**: OpenAI text-embedding-3-small (1536 dimensions) with batch processing and retry logic
-- **Debug Logging**: JSONL files in `storage/debug/pinecone/{namespace}/` for debugging and reindexing
-- **Admin Endpoints** (require `X-Admin-Secret` header):
-  - `POST /admin/ingest/text` - Ingest text with chunking, embedding, and Pinecone upsert
-  - `POST /admin/query` - Query namespace with citations
-  - `DELETE /admin/source/:source_id` - Remove all chunks for a source
-  - `GET /admin/health` - Health check
-- **Data Model**: Chunk IDs as `{source_id}:{chunk_index}`, metadata includes mentor, kb, env, source_type, title, section, text_preview, created_at
+- **Location**: `server/ingest/` directory with modular architecture.
+- **Namespace Format**: `{env}:mentor:{mentorSlug}:{kbSlug}:v{version}`.
+- **Chunking**: Token-based (350 tokens default, 60 overlap), heading-aware splitting, breadcrumb context.
+- **Embeddings**: OpenAI text-embedding-3-small with batch processing and retry logic.
+- **Debug Logging**: JSONL files for debugging and reindexing.
+- **Admin Endpoints**: For ingesting text, querying namespaces, deleting sources, and health checks.
 
-#### Course Transcript Ingestion System (NEW)
-- **Location**: `server/ingest/` directory - `conversationalTypes.ts`, `conversationalChunker.ts`, `courseIngestionService.ts`
-- **Purpose**: Anonymize and conversationally chunk course transcripts using Claude AI, then route to content-type specific namespaces
-- **Anonymization**: Claude-powered removal of names, places, dates, career markers, unique phrases; self-check loop for re-anonymization if needed
-- **Conversational Chunking**: 120-300 token standalone units with metadata classification
-- **Metadata Fields**: 
-  - `content_type`: explanation | advice | story | warning | reframe
-  - `tone`: warm | blunt | reflective | reassuring | provocative
-  - `topic`: lowercase phrase describing the topic
-  - `confidence`: soft | direct | authoritative
-  - `voice_origin`: avatar_native | attributed
-- **Namespace Routing**: Content routed to `{avatar}_core`, `{avatar}_stories`, `{avatar}_advice`, `{avatar}_warnings`, `{avatar}_reframes` based on content_type
-- **Exclusion Rules**: Automatically discards lesson intros, CTAs, structural glue, repetition, long lists, stage directions, brand instructions
-- **Protected Avatars**: Mark Kohl's namespace is protected and cannot be modified through this pipeline
-- **Retry Logic**: Claude API calls retry up to 3 times with exponential backoff
-- **Admin Endpoints** (require `X-Admin-Secret` header):
-  - `POST /admin/course/ingest` - Ingest transcript with anonymization, chunking, and Pinecone upsert
-  - `GET /admin/course/stats/:avatar` - Get namespace vector counts for an avatar
-  - `DELETE /admin/course/namespace/:avatar` - Delete all namespaces for an avatar
-- **Admin UI**: KnowledgeBase page "Courses" tab with transcript paste, dry run mode, namespace stats, and result preview
+#### Course Transcript Ingestion System
+- **Location**: `server/ingest/`.
+- **Purpose**: Anonymize and conversationally chunk course transcripts using Claude AI, then route to content-type specific Pinecone namespaces.
+- **Anonymization**: Claude-powered removal of sensitive information with a self-check loop.
+- **Conversational Chunking**: 120-300 token standalone units with metadata classification (e.g., `content_type`, `tone`, `topic`, `confidence`, `voice_origin`).
+- **Namespace Routing**: Content routed to `{avatar}_core`, `{avatar}_stories`, etc., based on content type.
+- **Exclusion Rules**: Automatically discards lesson intros, CTAs, structural glue, repetition, long lists, stage directions, brand instructions.
+- **Protected Avatars**: Mark Kohl's namespace is protected.
+- **Admin Endpoints**: For ingesting transcripts, getting namespace stats, and deleting namespaces.
+- **Admin UI**: KnowledgeBase page "Courses" tab with transcript paste, dry run, stats, and preview.
 
 #### Batch Podcast Ingestion System
-- **Location**: `server/ingest/batchPodcastService.ts`, `client/src/components/BatchPodcastIngestion.tsx`
-- **Purpose**: Process large ZIP archives containing hundreds of podcast episode transcripts in batch
-- **Database Tables**: `podcast_batches` (batch tracking), `podcast_episodes` (episode-level progress)
-- **Processing Flow**: ZIP upload → extract transcripts → process each episode through substance extraction + anonymization + chunking → upsert to Pinecone
-- **File Types Supported**: .txt, .md, .srt, .vtt files inside ZIP archives
-- **Rate Limiting**: 2 second delay between episodes to avoid API rate limits
-- **Progress Tracking**: Real-time progress from episode-level states (pending/processing/completed/failed/skipped)
-- **Startup Recovery**: Detects stuck batches (processing/extracting status) and resumes or marks failed
-- **Protected Namespaces**: Mark Kohl's namespace cannot be modified through this pipeline
-- **Admin Endpoints** (require `X-Admin-Secret` header):
-  - `POST /admin/podcast/batch/upload` - Upload ZIP file for batch processing
-  - `GET /admin/podcast/batch/:batchId` - Get batch status and episode progress
-  - `GET /admin/podcast/batches` - List recent batches
-  - `POST /admin/podcast/batch/:batchId/retry` - Retry failed episodes
-- **Admin UI**: KnowledgeBase page "Podcasts" tab → "Batch Upload (ZIP)" sub-tab
+- **Location**: `server/ingest/batchPodcastService.ts`, `client/src/components/BatchPodcastIngestion.tsx`.
+- **Purpose**: Process large ZIP archives of podcast episode transcripts.
+- **Database Tables**: `podcast_batches`, `podcast_episodes` for tracking.
+- **Processing Flow**: ZIP upload → extraction → substance extraction + anonymization + chunking → Pinecone upsert.
+- **Supported File Types**: .txt, .md, .srt, .vtt.
+- **Rate Limiting**: 2-second delay between episodes.
+- **Progress Tracking**: Real-time progress and startup recovery for stuck batches.
+- **Protected Namespaces**: Mark Kohl's namespace cannot be modified.
+- **Admin Endpoints**: For uploading ZIPs, getting batch status, listing batches, and retrying failed episodes.
+- **Admin UI**: KnowledgeBase page "Podcasts" tab → "Batch Upload (ZIP)" sub-tab.
 
 #### Content Taxonomy System
-- **Location**: `server/contentTaxonomy.ts`
-- **Purpose**: Professional, taxonomy-driven content policy for adult educational wellness platform
-- **Categories**: 8 subject areas - Sexuality & Intimacy, Sexual Health & Safety, Identity/Orientation, Relationships, Mental/Emotional, Psychedelics, Illicit Drugs, Ethics & Culture
-- **Tone**: "Composed expert in a private room" - not buddy, therapist, or cheerleader
-- **Framing**: All discussions are adult, educational, experiential, and harm-reduction oriented
-- **Guardrails**: No explicit storytelling, no illegal instructions, no medical/legal advice, no harm glamorization
-- **Integration**: `ELXR_CONTENT_POLICY` is prepended to all avatar system prompts in `claudeService.ts`
-- **Avatar Prompts**: Each avatar includes a "Content Approach" section referencing the composed expert tone
+- **Location**: `server/contentTaxonomy.ts`.
+- **Purpose**: Professional, taxonomy-driven content policy for adult educational wellness platform.
+- **Categories**: 8 subject areas including Sexuality & Intimacy, Mental/Emotional, Psychedelics.
+- **Tone**: "Composed expert in a private room".
+- **Framing**: Adult, educational, experiential, and harm-reduction oriented discussions.
+- **Guardrails**: No explicit storytelling, illegal instructions, medical/legal advice, or harm glamorization.
+- **Integration**: `ELXR_CONTENT_POLICY` is prepended to all avatar system prompts.
+
+#### Avatar Mini-Games System
+- **Location**: `client/src/components/AvatarMiniGames.tsx`, `server/routes/games.ts`.
+- **Purpose**: Interactive games users can play with avatars during chat sessions.
+- **Games Available**: Trivia Challenge, Word Association, Mood Check-in, Would You Rather, Story Builder.
+- **Integration**: Accessible via "Play Games" button in avatar chat dropdown menu.
+- **Backend**: Claude-powered game responses personalized to each avatar's personality.
 
 #### Technical Implementations
 - **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG (Pinecone, PubMed, Wikipedia, Google Search) and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
-- **Pinecone**: Direct namespace-based vector queries with namespace normalization.
 - **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
 - **Anonymous Sessions**: Supports persistent anonymous user sessions.
 
@@ -175,6 +130,6 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Google Search**: Web search.
 - **PostgreSQL**: Relational database.
 - **Drizzle ORM**: TypeScript ORM.
-- **OpenAI**: For embeddings (if configured).
+- **OpenAI**: For embeddings.
 - **ElevenLabs**: Alternative TTS service.
 - **Redis (Upstash)**: For background job queuing.

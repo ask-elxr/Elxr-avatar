@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -17,6 +17,7 @@ import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
 import { LoadingPlaceholder } from "@/components/LoadingPlaceholder";
 import { AvatarSelector } from "@/components/avatar-selector";
+import { AvatarMiniGames } from "@/components/AvatarMiniGames";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay, AudioOnlyDisplayRef } from "@/components/AudioOnlyDisplay";
 import { AudioVideoToggle } from "@/components/AudioVideoToggle";
@@ -67,6 +68,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [inputMessage, setInputMessage] = useState("");
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMiniGames, setShowMiniGames] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [elevenLabsLanguage, setElevenLabsLanguage] = useState("en");
@@ -975,6 +977,15 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       Settings
                     </DropdownMenuItem>
                     
+                    <DropdownMenuItem 
+                      onClick={() => setShowMiniGames(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      data-testid="menu-games"
+                    >
+                      <Gamepad2 className="w-4 h-4 mr-2" />
+                      Play Games
+                    </DropdownMenuItem>
+                    
                     {isSpeaking && audioOnly && (
                       <>
                         <DropdownMenuSeparator className="bg-white/20" />
@@ -1468,6 +1479,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           onSwitch={handleAvatarSwitch}
           disabled={switchingAvatar}
         />
+        
+        {showMiniGames && (
+          <AvatarMiniGames
+            avatarId={selectedAvatarId}
+            userId={userId}
+            onClose={() => setShowMiniGames(false)}
+            onGameMessage={(userMsg, avatarMsg) => {
+              setChatHistory(prev => [
+                ...prev,
+                { id: `game-${Date.now()}-user`, role: 'user', content: userMsg, timestamp: new Date() },
+                { id: `game-${Date.now()}-avatar`, role: 'assistant', content: avatarMsg, timestamp: new Date() }
+              ]);
+            }}
+          />
+        )}
       </div>
     </div>
   );
