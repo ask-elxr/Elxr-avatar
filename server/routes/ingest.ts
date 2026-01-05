@@ -534,7 +534,8 @@ import {
   processBatchEpisodes,
   getBatchStatus,
   retryFailedEpisodes,
-  listBatches
+  listBatches,
+  resumeStuckBatches
 } from '../ingest/batchPodcastService.js';
 
 const batchUpload = multer({
@@ -650,6 +651,26 @@ router.post('/podcast/batch/:batchId/retry', requireAdminAuth, async (req: Reque
   } catch (error) {
     res.status(500).json({
       error: 'Failed to retry episodes',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/podcast/batch/resume-stuck', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    logger.info({ service: 'batch-podcast-routes' }, 'Manually triggering resume of stuck batches');
+    const result = await resumeStuckBatches();
+    
+    res.json({
+      success: true,
+      ...result,
+      message: result.resumedCount > 0 
+        ? `Resumed ${result.resumedCount} stuck batch(es)`
+        : 'No stuck batches found to resume'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to resume stuck batches',
       message: (error as Error).message
     });
   }
