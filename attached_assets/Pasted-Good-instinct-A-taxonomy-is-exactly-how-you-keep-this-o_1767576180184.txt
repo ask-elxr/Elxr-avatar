@@ -1,0 +1,216 @@
+Good instinct. A taxonomy is exactly how you keep this open and professional.
+Rule of thumb: nothing is taboo, everything is framed as education, experience, ethics, and harm-reduction — not locker-room chatter.
+
+Below is a production-ready taxonomy you can use for:
+	•	avatar permissions
+	•	RAG namespaces
+	•	UI filters
+	•	legal/safety language
+	•	internal routing logic
+
+No shame. No joking it away. No “bestie” tone. Calm, adult, grounded.
+
+⸻
+
+ELXR SUBJECT TAXONOMY
+
+(All discussions are adult, educational, experiential, and harm-reduction oriented. No instructions for illegal activity.)
+
+⸻
+
+1. Sexuality & Intimacy
+
+Scope: Understanding, communication, safety, meaning, and impact — not erotic storytelling.
+
+1.1 Sexual Acts & Practices (Educational)
+	•	Anal sex
+	•	Vaginal sex
+	•	Oral sex
+	•	Masturbation (solo & partnered)
+	•	Double penetration
+	•	Group sex dynamics
+	•	Threesomes
+	•	Kink & fetish (consensual contexts)
+	•	BDSM (principles, consent, trust)
+
+1.2 Sexual Experience & Function
+	•	Arousal & desire
+	•	Orgasm challenges
+	•	Erectile dysfunction
+	•	Premature ejaculation
+	•	Pain during sex
+	•	Libido differences
+	•	Aging and sexuality
+	•	Hormonal impacts on sex
+
+1.3 Sexual Communication
+	•	Consent (explicit, ongoing)
+	•	Boundary setting
+	•	Sexual negotiation
+	•	Desire mismatch
+	•	Sexual disclosure
+	•	Erotic communication (high-level)
+
+⸻
+
+2. Sexual Health & Safety
+
+Scope: Risk awareness, prevention, and wellbeing.
+	•	STI education & testing
+	•	Safer sex practices
+	•	Sexual pain & medical red flags
+	•	Medications affecting sex
+	•	Trauma-informed sexuality
+	•	Recovery after sexual injury
+	•	Post-menopause sexuality
+	•	Post-illness sexuality
+
+⸻
+
+3. Identity, Orientation & Expression
+
+Scope: Identity exploration without diagnosis or labeling pressure.
+	•	Sexual orientation
+	•	Sexual fluidity
+	•	Gender identity vs sexuality
+	•	Masculinity & femininity
+	•	Queer relationships
+	•	Coming out later in life
+	•	Cultural & religious sexual conditioning
+	•	Identity-based shame
+
+⸻
+
+4. Relationships & Intimacy Dynamics
+
+Scope: Emotional, psychological, and ethical aspects of connection.
+	•	Attachment styles
+	•	Monogamy (chosen vs default)
+	•	Open relationships
+	•	Non-monogamy & polyamory
+	•	Jealousy & comparison
+	•	Infidelity (emotional & sexual)
+	•	Trust repair
+	•	Power dynamics in relationships
+	•	Sex and money
+	•	Sex and self-worth
+
+⸻
+
+5. Mental & Emotional Wellbeing (Sex-Adjacent)
+
+Scope: Psychological context without therapy claims.
+	•	Sexual shame
+	•	Performance anxiety
+	•	Compulsive sexual behavior
+	•	Porn use & dependency
+	•	Body image
+	•	Dissociation during intimacy
+	•	Trauma and sexual response
+	•	Reclaiming pleasure after trauma
+
+⸻
+
+6. Psychedelics & Altered States
+
+Harm-Reduction / Educational Only
+
+6.1 Psychedelic Substances (High-Level)
+	•	Psilocybin
+	•	LSD
+	•	MDMA (contextual discussion)
+	•	Ketamine (non-instructional)
+	•	Ayahuasca (cultural + psychological context)
+
+6.2 Psychedelics & Life Context
+	•	Psychedelics & sexuality
+	•	Psychedelics & intimacy
+	•	Psychedelics & grief
+	•	Psychedelics & end-of-life anxiety
+	•	Psychedelics & trauma (risks and cautions)
+	•	Integration after altered states
+
+6.3 Safety & Ethics
+	•	Psychological risks
+	•	Contraindications
+	•	Set & setting (conceptual)
+	•	Legal status (high-level, non-advisory)
+	•	Why psychedelics are not for everyone
+
+⸻
+
+7. Illicit Drug Use (Non-Judgmental, Harm-Reduction)
+
+Important: This is not encouragement. This is education, risk awareness, and context.
+
+7.1 Substances (High-Level Discussion)
+	•	Cocaine
+	•	Methamphetamine
+	•	Heroin / opioids
+	•	Benzodiazepines
+	•	Club drugs
+	•	Polysubstance use
+
+7.2 Use Contexts
+	•	Recreational use
+	•	Self-medication patterns
+	•	Use in sexual contexts
+	•	Use in grief or trauma
+	•	Social vs solitary use
+
+7.3 Risks & Consequences
+	•	Addiction risk
+	•	Mental health impact
+	•	Relationship fallout
+	•	Physical health risks
+	•	Legal consequences (high-level)
+
+7.4 Recovery & Change
+	•	Harm-reduction strategies
+	•	Moderation vs abstinence
+	•	Relapse understanding
+	•	Seeking professional help
+	•	Reducing shame while increasing responsibility
+
+⸻
+
+8. Ethics, Culture & Society
+
+Scope: Big-picture thinking, not moralizing.
+	•	Why certain topics are taboo
+	•	Moral panic vs real risk
+	•	Cultural differences in sexuality
+	•	Media & porn influence
+	•	Privacy, anonymity, and trust
+	•	Why curiosity ≠ pathology
+
+⸻
+
+9. Boundaries & Guardrails (System-Enforced)
+
+Not topics — rules for handling topics.
+	•	No explicit sexual storytelling
+	•	No step-by-step illegal instructions
+	•	No medical or legal directives
+	•	No glamorization of harm
+	•	No encouragement of illegal activity
+	•	Professional, grounded tone at all times
+
+⸻
+
+One firm design decision (I strongly agree with your instinct):
+
+Your avatars should sound like a composed expert in a private room, not:
+	•	a buddy
+	•	a therapist
+	•	a cheerleader
+	•	a scolding authority
+
+Think: “I’m comfortable discussing this, and I’m taking it seriously.”
+
+If you want next:
+	•	I can turn this into a machine-readable taxonomy (JSON/YAML) for routing + permissions
+	•	Or map which avatars can access which branches
+	•	Or help you write the public-facing disclaimer that signals confidence, not fear
+
+Say where you want to apply it first: backend, UI, or legal language.
