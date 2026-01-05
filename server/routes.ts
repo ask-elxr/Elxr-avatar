@@ -2582,7 +2582,7 @@ This appears to be your first conversation with this person - no prior memories 
         success: true,
         pinecone: pineconeStats,
         documents: documentStats,
-        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
+        indexName: targetIndex || PineconeIndexName.ASK_ELXR,
         // Legacy field for backwards compatibility
         stats: pineconeStats,
       });
