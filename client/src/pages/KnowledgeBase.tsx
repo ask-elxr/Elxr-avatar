@@ -10,7 +10,8 @@ import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager"
 import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
 import { CourseIngestion } from "@/components/CourseIngestion";
 import { PodcastIngestion } from "@/components/PodcastIngestion";
-import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2, GraduationCap, Mic } from "lucide-react";
+import { BatchPodcastIngestion } from "@/components/BatchPodcastIngestion";
+import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2, GraduationCap, Mic, Package } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -262,6 +263,15 @@ export default function KnowledgeBase() {
 
             <TabsContent value="podcasts" className="space-y-6">
               <PodcastIngestion />
+              
+              {/* Batch ZIP Upload Section */}
+              <div className="pt-4 border-t border-white/10">
+                <div className="flex items-center gap-2 mb-4">
+                  <Package className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-lg font-semibold text-white">Batch Upload (ZIP)</h3>
+                </div>
+                <BatchPodcastIngestion />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
