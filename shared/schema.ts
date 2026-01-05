@@ -578,3 +578,51 @@ export const updateMoodEntrySchema = createInsertSchema(moodEntries).pick({
 export type InsertMoodEntry = z.infer<typeof insertMoodEntrySchema>;
 export type UpdateMoodEntry = z.infer<typeof updateMoodEntrySchema>;
 export type MoodEntry = typeof moodEntries.$inferSelect;
+
+// Podcast batch ingestion for processing zip archives
+export const podcastBatchStatusEnum = ["pending", "extracting", "processing", "completed", "failed"] as const;
+export type PodcastBatchStatus = typeof podcastBatchStatusEnum[number];
+
+export const podcastEpisodeStatusEnum = ["pending", "processing", "completed", "failed", "skipped"] as const;
+export type PodcastEpisodeStatus = typeof podcastEpisodeStatusEnum[number];
+
+export const podcastBatches = pgTable("podcast_batches", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  namespace: varchar("namespace").notNull(),
+  zipFilename: varchar("zip_filename").notNull(),
+  status: varchar("status").notNull().default("pending"),
+  totalEpisodes: integer("total_episodes").default(0),
+  processedEpisodes: integer("processed_episodes").default(0),
+  successfulEpisodes: integer("successful_episodes").default(0),
+  failedEpisodes: integer("failed_episodes").default(0),
+  skippedEpisodes: integer("skipped_episodes").default(0),
+  totalChunks: integer("total_chunks").default(0),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const podcastEpisodes = pgTable("podcast_episodes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  batchId: varchar("batch_id").references(() => podcastBatches.id).notNull(),
+  filename: varchar("filename").notNull(),
+  status: varchar("status").notNull().default("pending"),
+  chunksCount: integer("chunks_count").default(0),
+  discardedCount: integer("discarded_count").default(0),
+  textLength: integer("text_length").default(0),
+  error: text("error"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertPodcastBatchSchema = createInsertSchema(podcastBatches).pick({
+  namespace: true,
+  zipFilename: true,
+}).extend({
+  namespace: z.string().min(1, "Namespace is required"),
+  zipFilename: z.string().min(1, "Filename is required"),
+});
+
+export type InsertPodcastBatch = z.infer<typeof insertPodcastBatchSchema>;
+export type PodcastBatch = typeof podcastBatches.$inferSelect;
+export type PodcastEpisode = typeof podcastEpisodes.$inferSelect;

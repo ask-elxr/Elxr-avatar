@@ -130,6 +130,23 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
   - `DELETE /admin/course/namespace/:avatar` - Delete all namespaces for an avatar
 - **Admin UI**: KnowledgeBase page "Courses" tab with transcript paste, dry run mode, namespace stats, and result preview
 
+#### Batch Podcast Ingestion System
+- **Location**: `server/ingest/batchPodcastService.ts`, `client/src/components/BatchPodcastIngestion.tsx`
+- **Purpose**: Process large ZIP archives containing hundreds of podcast episode transcripts in batch
+- **Database Tables**: `podcast_batches` (batch tracking), `podcast_episodes` (episode-level progress)
+- **Processing Flow**: ZIP upload → extract transcripts → process each episode through substance extraction + anonymization + chunking → upsert to Pinecone
+- **File Types Supported**: .txt, .md, .srt, .vtt files inside ZIP archives
+- **Rate Limiting**: 2 second delay between episodes to avoid API rate limits
+- **Progress Tracking**: Real-time progress from episode-level states (pending/processing/completed/failed/skipped)
+- **Startup Recovery**: Detects stuck batches (processing/extracting status) and resumes or marks failed
+- **Protected Namespaces**: Mark Kohl's namespace cannot be modified through this pipeline
+- **Admin Endpoints** (require `X-Admin-Secret` header):
+  - `POST /admin/podcast/batch/upload` - Upload ZIP file for batch processing
+  - `GET /admin/podcast/batch/:batchId` - Get batch status and episode progress
+  - `GET /admin/podcast/batches` - List recent batches
+  - `POST /admin/podcast/batch/:batchId/retry` - Retry failed episodes
+- **Admin UI**: KnowledgeBase page "Podcasts" tab → "Batch Upload (ZIP)" sub-tab
+
 #### Content Taxonomy System
 - **Location**: `server/contentTaxonomy.ts`
 - **Purpose**: Professional, taxonomy-driven content policy for adult educational wellness platform

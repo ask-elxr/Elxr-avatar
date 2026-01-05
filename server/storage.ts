@@ -6,6 +6,8 @@ import {
   heygenCreditUsage,
   knowledgeBaseSources,
   conversations,
+  podcastBatches,
+  podcastEpisodes,
   type User,
   type UpsertUser,
   type Document,
@@ -20,6 +22,9 @@ import {
   type UpdateKnowledgeBaseSource,
   type Conversation,
   type InsertConversation,
+  type PodcastBatch,
+  type InsertPodcastBatch,
+  type PodcastEpisode,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, gte, sql as drizzleSql, and, desc } from "drizzle-orm";
@@ -107,6 +112,15 @@ export interface IStorage {
   }>;
   getTopUserMessages(limit: number): Promise<{ topic: string; count: number; percentage: number }[]>;
   getEngagementTrend(days: number): Promise<{ date: string; messages: number }[]>;
+  
+  // Podcast batch ingestion operations
+  createPodcastBatch(data: InsertPodcastBatch): Promise<PodcastBatch>;
+  getPodcastBatch(id: string): Promise<PodcastBatch | undefined>;
+  updatePodcastBatch(id: string, data: Partial<PodcastBatch>): Promise<PodcastBatch | undefined>;
+  listPodcastBatches(limit?: number): Promise<PodcastBatch[]>;
+  createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number }): Promise<PodcastEpisode>;
+  getPodcastEpisodesByBatch(batchId: string): Promise<PodcastEpisode[]>;
+  updatePodcastEpisode(id: string, data: Partial<PodcastEpisode>): Promise<PodcastEpisode | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -644,6 +658,64 @@ export class DatabaseStorage implements IStorage {
       date: new Date(row.date).toLocaleDateString(),
       messages: parseInt(row.messages),
     }));
+  }
+
+  // Podcast batch ingestion operations
+  async createPodcastBatch(data: InsertPodcastBatch): Promise<PodcastBatch> {
+    const [batch] = await db
+      .insert(podcastBatches)
+      .values(data)
+      .returning();
+    return batch;
+  }
+
+  async getPodcastBatch(id: string): Promise<PodcastBatch | undefined> {
+    const [batch] = await db.select().from(podcastBatches).where(eq(podcastBatches.id, id));
+    return batch;
+  }
+
+  async updatePodcastBatch(id: string, data: Partial<PodcastBatch>): Promise<PodcastBatch | undefined> {
+    const [batch] = await db
+      .update(podcastBatches)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(podcastBatches.id, id))
+      .returning();
+    return batch;
+  }
+
+  async listPodcastBatches(limit: number = 20): Promise<PodcastBatch[]> {
+    const batches = await db
+      .select()
+      .from(podcastBatches)
+      .orderBy(desc(podcastBatches.createdAt))
+      .limit(limit);
+    return batches;
+  }
+
+  async createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number }): Promise<PodcastEpisode> {
+    const [episode] = await db
+      .insert(podcastEpisodes)
+      .values(data)
+      .returning();
+    return episode;
+  }
+
+  async getPodcastEpisodesByBatch(batchId: string): Promise<PodcastEpisode[]> {
+    const episodes = await db
+      .select()
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.batchId, batchId))
+      .orderBy(podcastEpisodes.filename);
+    return episodes;
+  }
+
+  async updatePodcastEpisode(id: string, data: Partial<PodcastEpisode>): Promise<PodcastEpisode | undefined> {
+    const [episode] = await db
+      .update(podcastEpisodes)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(podcastEpisodes.id, id))
+      .returning();
+    return episode;
   }
 }
 

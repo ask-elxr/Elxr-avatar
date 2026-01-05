@@ -529,4 +529,130 @@ router.post('/podcast/ingest', requireAdminAuth, async (req: Request, res: Respo
   }
 });
 
+import {
+  extractZipAndCreateBatch,
+  processBatchEpisodes,
+  getBatchStatus,
+  retryFailedEpisodes,
+  listBatches
+} from '../ingest/batchPodcastService.js';
+
+const batchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 500 * 1024 * 1024 }
+});
+
+router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFile'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No zip file uploaded' });
+    }
+    
+    const namespace = req.body.namespace;
+    if (!namespace || typeof namespace !== 'string') {
+      return res.status(400).json({ error: 'Namespace is required' });
+    }
+    
+    if (isProtectedNamespace(namespace)) {
+      return res.status(403).json({
+        error: 'Protected namespace',
+        message: `Namespace "${namespace}" is protected and cannot be modified`
+      });
+    }
+    
+    logger.info({
+      service: 'batch-podcast-routes',
+      operation: 'batch_upload',
+      namespace,
+      filename: req.file.originalname,
+      size: req.file.size
+    }, 'Processing batch podcast upload');
+    
+    const result = await extractZipAndCreateBatch(
+      req.file.buffer,
+      namespace,
+      req.file.originalname
+    );
+    
+    processBatchEpisodes(result.batchId).catch(error => {
+      logger.error({ batchId: result.batchId, error: (error as Error).message }, 'Background batch processing failed');
+    });
+    
+    res.json({
+      success: true,
+      ...result,
+      message: `Batch created with ${result.totalEpisodes} episodes. Processing started in background.`
+    });
+  } catch (error) {
+    logger.error({
+      service: 'batch-podcast-routes',
+      operation: 'batch_upload',
+      error: (error as Error).message
+    }, 'Batch upload failed');
+    
+    res.status(500).json({
+      error: 'Batch upload failed',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.get('/podcast/batch/:batchId', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const status = await getBatchStatus(batchId);
+    
+    if (!status) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    
+    res.json({
+      success: true,
+      ...status
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get batch status',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.get('/podcast/batches', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 20;
+    const batches = await listBatches(limit);
+    
+    res.json({
+      success: true,
+      batches
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to list batches',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/podcast/batch/:batchId/retry', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    const result = await retryFailedEpisodes(batchId);
+    
+    res.json({
+      success: true,
+      ...result,
+      message: result.retriedCount > 0 
+        ? `Retrying ${result.retriedCount} failed episodes`
+        : 'No failed episodes to retry'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to retry episodes',
+      message: (error as Error).message
+    });
+  }
+});
+
 export default router;

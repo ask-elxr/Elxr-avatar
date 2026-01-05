@@ -7,6 +7,7 @@ import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
 import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager";
 import { CourseIngestion } from "@/components/CourseIngestion";
 import { PodcastIngestion } from "@/components/PodcastIngestion";
+import { BatchPodcastIngestion } from "@/components/BatchPodcastIngestion";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -716,7 +717,24 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                 </TabsContent>
                 
                 <TabsContent value="podcasts" className="space-y-4">
-                  <PodcastIngestion />
+                  <Tabs defaultValue="single" className="w-full">
+                    <TabsList className="glass-strong border border-white/10 mb-4">
+                      <TabsTrigger value="single" className="gap-2" data-testid="podcast-tab-single">
+                        <Mic className="w-4 h-4" />
+                        Single Transcript
+                      </TabsTrigger>
+                      <TabsTrigger value="batch" className="gap-2" data-testid="podcast-tab-batch">
+                        <Upload className="w-4 h-4" />
+                        Batch Upload (ZIP)
+                      </TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="single">
+                      <PodcastIngestion />
+                    </TabsContent>
+                    <TabsContent value="batch">
+                      <BatchPodcastIngestion />
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
                 
                 <TabsContent value="mapping" className="space-y-4">
