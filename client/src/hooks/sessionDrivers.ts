@@ -5,6 +5,7 @@ import {
   SessionState 
 } from "@heygen/liveavatar-web-sdk";
 import { Room, RoomEvent, Track, RemoteTrack, RemoteTrackPublication, RemoteParticipant } from "livekit-client";
+import { requestMicrophoneOnce } from "@/lib/microphoneCache";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -333,7 +334,10 @@ export class LiveAvatarDriver implements SessionDriver {
             console.warn("⚠️ Video autoplay prevented, trying muted:", err);
             videoEl.muted = true;
             videoEl.play().then(() => {
-              setTimeout(() => { videoEl.muted = false; }, 500);
+              setTimeout(() => { 
+                videoEl.muted = false; 
+                videoEl.volume = 1.0;
+              }, 500);
             });
           });
         }
@@ -456,8 +460,8 @@ export class LiveAvatarDriver implements SessionDriver {
     console.log("🎤 Starting ElevenLabs STT (replacing HeyGen's built-in STT)...");
     
     try {
-      // Request microphone access
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
+      // Request microphone access using cached system to avoid repeated permission prompts
+      this.mediaStream = await requestMicrophoneOnce({
         audio: {
           channelCount: 1,
           sampleRate: 16000,
@@ -465,7 +469,7 @@ export class LiveAvatarDriver implements SessionDriver {
           noiseSuppression: true,
         }
       });
-      console.log("✅ Microphone access granted");
+      console.log("✅ Microphone access granted (using cached stream)");
       
       // Connect to ElevenLabs STT WebSocket
       const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -620,9 +624,10 @@ export class LiveAvatarDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     if (!this.session) return;
 
-    // Ensure video is unmuted - SDK plays audio through WebRTC stream
+    // Ensure video is unmuted with full volume - SDK plays audio through WebRTC stream
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
+      this.config.videoRef.current.volume = 1.0;
     }
     
     if (this.useHeygenVoice) {
@@ -794,9 +799,10 @@ export class LiveAvatarDriver implements SessionDriver {
     }
     console.log("🎵 Started streaming audio accumulation for lip-sync");
     
-    // Ensure video is unmuted for SDK audio playback
+    // Ensure video is unmuted with full volume for SDK audio playback
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
+      this.config.videoRef.current.volume = 1.0;
     }
     
     this.config.onAvatarStartTalking?.();

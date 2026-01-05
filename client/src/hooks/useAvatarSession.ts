@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
 import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken } from "@/lib/mobileAudio";
+import { requestMicrophoneOnce, isMicPermissionGranted } from "@/lib/microphoneCache";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -701,9 +702,10 @@ export function useAvatarSession({
       // 📱 iOS CRITICAL: Request microphone within user gesture context
       // This MUST happen before any async operations (WebSocket, fetch, etc.)
       // Otherwise iOS Safari will deny the permission request
+      // Uses cached microphone system to avoid repeated permission prompts
       try {
-        console.log("🎤 Requesting microphone access...");
-        micStream = await navigator.mediaDevices.getUserMedia({ 
+        console.log("🎤 Requesting microphone access (using cache if available)...");
+        micStream = await requestMicrophoneOnce({
           audio: {
             sampleRate: 16000,
             channelCount: 1,
@@ -1571,23 +1573,18 @@ export function useAvatarSession({
     setSessionActive(true);
     onSessionActiveChange?.(true)
     
-    // ✅ MOBILE: Warm up microphone in background (non-blocking with timeout)
+    // ✅ MOBILE: Request microphone permission once and cache it (non-blocking)
+    // Uses the global microphone cache to avoid repeated permission prompts
     const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
-    if (isMobile && navigator.mediaDevices?.getUserMedia) {
-      // Non-blocking microphone warm-up with timeout
+    if (isMobile && navigator.mediaDevices?.getUserMedia && !isMicPermissionGranted()) {
+      // Request mic once and cache - subsequent calls will reuse the cached stream
       const warmupMic = async () => {
         try {
-          console.log("📱 Warming up microphone (background)...");
-          const timeoutPromise = new Promise<never>((_, reject) => 
-            setTimeout(() => reject(new Error("Microphone warmup timeout")), 3000)
-          );
-          const micPromise = navigator.mediaDevices.getUserMedia({ audio: true });
-          const stream = await Promise.race([micPromise, timeoutPromise]);
-          await new Promise(resolve => setTimeout(resolve, 300));
-          (stream as MediaStream).getTracks().forEach(track => track.stop());
-          console.log("📱 Microphone warmed up successfully");
+          console.log("📱 Requesting microphone permission (cached for session)...");
+          await requestMicrophoneOnce({ audio: true });
+          console.log("📱 Microphone permission cached successfully");
         } catch (error) {
-          console.warn("📱 Microphone warm-up failed (non-critical):", error);
+          console.warn("📱 Microphone permission request failed (non-critical):", error);
         }
       };
       // Fire and forget - don't block session start
