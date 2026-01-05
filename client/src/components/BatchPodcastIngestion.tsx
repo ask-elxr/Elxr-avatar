@@ -278,34 +278,38 @@ export function BatchPodcastIngestion() {
             </div>
           </div>
 
-          {targetNamespace && (
-            <div className="flex items-center gap-4">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip"
-                onChange={handleFileSelect}
-                className="hidden"
-                data-testid="batch-file-input"
-              />
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || !targetNamespace}
-                className="gap-2"
-                data-testid="batch-upload-btn"
-              >
-                {isUploading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
-                {isUploading ? "Uploading..." : "Select ZIP File"}
-              </Button>
+          <div className="flex items-center gap-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".zip,application/zip,application/x-zip-compressed"
+              onChange={handleFileSelect}
+              className="hidden"
+              data-testid="batch-file-input"
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading || !targetNamespace}
+              className="gap-2"
+              data-testid="batch-upload-btn"
+            >
+              {isUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {isUploading ? "Uploading..." : "Select ZIP File"}
+            </Button>
+            {targetNamespace ? (
               <span className="text-sm text-white/50">
                 Target: <span className="text-purple-400 font-medium">{targetNamespace}</span>
               </span>
-            </div>
-          )}
+            ) : (
+              <span className="text-sm text-yellow-400/70">
+                Select or create a namespace first
+              </span>
+            )}
+          </div>
         </CardContent>
       </Card>
 
