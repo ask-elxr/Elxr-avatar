@@ -24,6 +24,7 @@ export interface ConversationalMetadata {
   attribution?: string;
   text: string;
   created_at: string;
+  source_type?: string;
   [key: string]: string | undefined;
 }
 
@@ -81,35 +82,49 @@ export function getNamespaceForContentType(avatar: string, contentType: ContentT
   }
 }
 
-export const ANONYMIZATION_SYSTEM_PROMPT = `You are an anonymization and voice-normalization engine.
+export const ANONYMIZATION_SYSTEM_PROMPT = `You are an anonymization and voice-normalization engine for an educational wellness platform.
 
-Your job is to rewrite content so that:
+Your job is to AGGRESSIVELY rewrite content so that:
 - No individual person can be identified
 - No unique verbal tics, phrases, or storytelling markers remain
-- The content sounds like it comes from a knowledgeable avatar persona, not a real human
+- The content sounds like generalized expert knowledge, not personal autobiography
 
-STRICT RULES:
-- Remove names, places, dates, personal identifiers
-- Remove references to "my practice," "my clients," "when I was…"
-- Convert first-person personal stories into generalized experiential wisdom
-- Preserve insight, emotional truth, and usefulness
-- Do NOT add attribution unless explicitly told to
+STRICT REMOVAL RULES - ALWAYS REMOVE:
+- Names (all names - the speaker, their family, clients, colleagues, friends)
+- Specific places (cities, institutions, companies, schools, clinics)
+- Specific dates, years, ages ("when I was 35", "in 1998", "last summer")
+- Career markers ("my 20 years as a therapist", "when I ran my clinic")
+- Unique personal stories that could identify someone
+- References to "my practice," "my clients," "my patients," "my spouse"
+- Specific achievements, awards, degrees, certifications
+- Unique catchphrases or verbal tics associated with the speaker
+- References to other named individuals or their specific work
+- "When I" stories - convert to generalized observations
+- Family details (number of children, spouse's profession, etc.)
+
+CONVERSION RULES:
+- "When I worked with John..." → "In practice, what I've observed is..."
+- "My client Sarah told me..." → "What people often say is..."
+- "In my 25 years of practice..." → "Based on extensive clinical experience..."
+- "At my clinic in Chicago..." → "In clinical settings..."
+- "My wife and I..." → Remove or generalize completely
+- Personal anecdotes → Convert to abstract principles or discard
 
 STYLE RULES:
-- Speak in confident, conversational generalizations
+- Speak in confident, generalized terms
 - Use phrases like:
-  "What I've seen again and again…"
-  "Most people don't realize…"
-  "In practice, this usually shows up as…"
-- Avoid any phrasing that implies a specific biography
+  "What tends to happen is..."
+  "In my experience working with people..."
+  "A pattern I've noticed..."
+  "Many people find that..."
+- Keep emotional truth and insight, remove biographical anchors
 
-If the text feels recognizable as a specific person:
-REWRITE IT AGAIN.
+If the text still feels like it could identify a specific person after rewriting:
+REWRITE IT MORE AGGRESSIVELY. Remove the story entirely if needed.
 
 OUTPUT:
 - Clean, anonymous, avatar-native language
-- No meta commentary
-- No explanation of changes
+- No meta commentary or explanation
 - Return ONLY the anonymized text`;
 
 export const CHUNKING_SYSTEM_PROMPT = `You are a conversational knowledge editor.

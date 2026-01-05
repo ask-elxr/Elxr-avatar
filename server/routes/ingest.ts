@@ -10,6 +10,7 @@ import {
   deleteNamespaceVectors,
   getNamespaceStats
 } from '../ingest/courseIngestionService.js';
+import { ingestPodcast } from '../ingest/podcastIngestionService.js';
 import { logger } from '../logger.js';
 
 const upload = multer({ 
@@ -454,6 +455,75 @@ router.post('/course/extract-text', requireAdminAuth, upload.single('file'), asy
     
     res.status(500).json({
       error: 'Text extraction failed',
+      message: (error as Error).message
+    });
+  }
+});
+
+const PodcastIngestionSchema = z.object({
+  namespace: z.string().min(1, 'Namespace is required'),
+  source: z.string().min(1, 'Source identifier is required'),
+  rawText: z.string().min(100, 'Text content must be at least 100 characters'),
+  sourceType: z.enum(['podcast', 'video', 'interview']),
+  attribution: z.string().optional(),
+  dryRun: z.boolean().optional()
+});
+
+router.post('/podcast/ingest', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const parseResult = PodcastIngestionSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: parseResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    
+    const data = parseResult.data;
+    
+    if (isProtectedNamespace(data.namespace)) {
+      return res.status(403).json({
+        error: 'Protected namespace',
+        message: `Namespace "${data.namespace}" is protected and cannot be modified`
+      });
+    }
+    
+    logger.info({
+      service: 'podcast-ingest-routes',
+      operation: 'podcast_ingest',
+      namespace: data.namespace,
+      source: data.source,
+      sourceType: data.sourceType,
+      textLength: data.rawText.length,
+      dryRun: data.dryRun
+    }, 'Processing podcast/video ingestion request');
+    
+    const result = await ingestPodcast({
+      namespace: data.namespace,
+      source: data.source,
+      rawText: data.rawText,
+      sourceType: data.sourceType,
+      attribution: data.attribution,
+      dryRun: data.dryRun
+    });
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    logger.error({
+      service: 'podcast-ingest-routes',
+      operation: 'podcast_ingest',
+      error: (error as Error).message
+    }, 'Podcast/video ingestion failed');
+    
+    res.status(500).json({
+      error: 'Podcast/video ingestion failed',
       message: (error as Error).message
     });
   }

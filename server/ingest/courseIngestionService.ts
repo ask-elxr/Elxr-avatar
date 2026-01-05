@@ -92,7 +92,7 @@ export async function ingestCourseTranscript(
   
   for (let i = 0; i < vectors.length; i += UPSERT_BATCH_SIZE) {
     const batch = vectors.slice(i, i + UPSERT_BATCH_SIZE);
-    await ns.upsert(batch);
+    await ns.upsert(batch as any);
     logger.debug({ 
       namespace, 
       batchStart: i, 
