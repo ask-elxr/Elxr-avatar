@@ -785,6 +785,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Auto-cleanup: When switching avatars, end existing sessions first
+      // This prevents "too many concurrent sessions" errors on mobile when users switch avatars
+      // (mobile users typically have only one browser tab, so old sessions should be cleaned up)
+      const existingSessionCount = sessionManager.getActiveSessionCount(userId);
+      if (existingSessionCount > 0 && avatarId) {
+        log.info({
+          userId,
+          avatarId,
+          existingSessionCount,
+        }, "User switching avatars - ending existing sessions to prevent concurrent limit");
+        sessionManager.endAllUserSessions(userId);
+      }
+
       const sessionCheck = sessionManager.canStartSession(userId);
       if (!sessionCheck.allowed) {
         log.warn({
@@ -7479,6 +7492,14 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(400).json({ error: "userId is required" });
       }
 
+      // Auto-cleanup: When switching avatars, end existing sessions first
+      // This prevents "too many concurrent sessions" errors on mobile
+      const existingSessionCount = sessionManager.getActiveSessionCount(userId);
+      if (existingSessionCount > 0 && avatarId) {
+        console.log(`🔄 User ${userId} switching avatars - ending ${existingSessionCount} existing session(s)`);
+        sessionManager.endAllUserSessions(userId);
+      }
+
       const sessionCheck = sessionManager.canStartSession(userId);
       if (!sessionCheck.allowed) {
         return res.status(429).json({
@@ -7595,6 +7616,14 @@ This applies to EVERY response, regardless of conversation length.`;
         return res.status(500).json({ 
           error: "LiveKit not configured. Set LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET" 
         });
+      }
+
+      // Auto-cleanup: When switching avatars, end existing sessions first
+      // This prevents "too many concurrent sessions" errors on mobile
+      const existingSessionCount = sessionManager.getActiveSessionCount(userId);
+      if (existingSessionCount > 0 && avatarId) {
+        console.log(`🔄 Mobile user ${userId} switching avatars - ending ${existingSessionCount} existing session(s)`);
+        sessionManager.endAllUserSessions(userId);
       }
 
       const sessionCheck = sessionManager.canStartSession(userId);
