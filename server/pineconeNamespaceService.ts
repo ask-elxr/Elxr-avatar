@@ -18,7 +18,7 @@ class PineconeNamespaceService {
 
   constructor() {
     this.apiKey = process.env.PINECONE_API_KEY || '';
-    this.indexName = 'avatar-chat-knowledge'; // Use avatar-chat-knowledge index where data is stored
+    this.indexName = 'ask-elxr'; // Use ask-elxr index where data is stored
     this.namespaces = ['mark-kohl', 'default']; // Query Mark's namespace + general
     
     if (!this.apiKey) {

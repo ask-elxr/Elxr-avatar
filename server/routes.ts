@@ -2679,7 +2679,7 @@ This appears to be your first conversation with this person - no prior memories 
       // Query Pinecone directly
       const { Pinecone } = await import("@pinecone-database/pinecone");
       const pinecone = new Pinecone({ apiKey: process.env.PINECONE_API_KEY! });
-      const index = pinecone.index("avatar-chat-knowledge");
+      const index = pinecone.index("ask-elxr");
       
       const queryResponse = await index.namespace(namespace).query({
         vector: embedding,
