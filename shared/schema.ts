@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb, index, boolean, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, index, boolean, integer, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -591,6 +591,7 @@ export const podcastBatches = pgTable("podcast_batches", {
   namespace: varchar("namespace").notNull(),
   zipFilename: varchar("zip_filename").notNull(),
   status: varchar("status").notNull().default("pending"),
+  autoDetect: boolean("auto_detect").default(false),
   totalEpisodes: integer("total_episodes").default(0),
   processedEpisodes: integer("processed_episodes").default(0),
   successfulEpisodes: integer("successful_episodes").default(0),
@@ -610,6 +611,11 @@ export const podcastEpisodes = pgTable("podcast_episodes", {
   chunksCount: integer("chunks_count").default(0),
   discardedCount: integer("discarded_count").default(0),
   textLength: integer("text_length").default(0),
+  predictedNamespaces: text("predicted_namespaces").array(),
+  primaryNamespace: varchar("primary_namespace"),
+  confidence: real("confidence"),
+  classificationRationale: text("classification_rationale"),
+  manualOverride: boolean("manual_override").default(false),
   error: text("error"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -618,9 +624,11 @@ export const podcastEpisodes = pgTable("podcast_episodes", {
 export const insertPodcastBatchSchema = createInsertSchema(podcastBatches).pick({
   namespace: true,
   zipFilename: true,
+  autoDetect: true,
 }).extend({
   namespace: z.string().min(1, "Namespace is required"),
   zipFilename: z.string().min(1, "Filename is required"),
+  autoDetect: z.boolean().optional().default(false),
 });
 
 export type InsertPodcastBatch = z.infer<typeof insertPodcastBatchSchema>;
