@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Upload, AlertTriangle, CheckCircle2, XCircle, Package, RefreshCw, FileArchive, Clock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Upload, AlertTriangle, CheckCircle2, XCircle, Package, RefreshCw, FileArchive, Clock, Sparkles, Play, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminHeaders } from "@/lib/adminAuth";
 
@@ -18,6 +19,11 @@ interface PodcastEpisode {
   chunksCount: number | null;
   discardedCount: number | null;
   error: string | null;
+  predictedNamespaces: string[] | null;
+  primaryNamespace: string | null;
+  confidence: number | null;
+  classificationRationale: string | null;
+  manualOverride: boolean | null;
 }
 
 interface PodcastBatch {
@@ -33,6 +39,7 @@ interface PodcastBatch {
   totalChunks: number | null;
   error: string | null;
   createdAt: string;
+  autoDetect: boolean | null;
 }
 
 interface BatchStatusResult {
@@ -76,6 +83,11 @@ function getStatusBadge(status: string) {
   }
 }
 
+const NAMESPACE_TAXONOMY = [
+  'MIND', 'ADDICTION', 'GRIEF', 'SPIRITUALITY', 'SEXUALITY',
+  'BODY', 'NUTRITION', 'LONGEVITY', 'MIDLIFE', 'LIFE', 'SLEEP', 'WORK', 'TRANSITIONS'
+];
+
 export function BatchPodcastIngestion() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -84,6 +96,8 @@ export function BatchPodcastIngestion() {
   const [customNamespace, setCustomNamespace] = useState<string>("");
   const [activeBatchId, setActiveBatchId] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [autoDetect, setAutoDetect] = useState(false);
+  const [editingEpisodeId, setEditingEpisodeId] = useState<string | null>(null);
 
   const { data: rawStats } = useQuery<{ success: boolean; pinecone?: { namespaces?: Record<string, { recordCount: number }> } }>({
     queryKey: ['/api/pinecone/stats']
@@ -159,6 +173,61 @@ export function BatchPodcastIngestion() {
     }
   });
 
+  const startProcessingMutation = useMutation({
+    mutationFn: async (batchId: string) => {
+      const response = await fetch(`/admin/podcast/batch/${batchId}/start-processing`, {
+        method: 'POST',
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to start processing');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Processing Started",
+        description: "Ingestion started with classified namespaces"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batch', activeBatchId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Processing Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  const updateNamespaceMutation = useMutation({
+    mutationFn: async ({ episodeId, primaryNamespace }: { episodeId: string; primaryNamespace: string }) => {
+      const response = await fetch(`/admin/podcast/episode/${episodeId}/namespace`, {
+        method: 'PATCH',
+        headers: {
+          ...getAdminHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ primaryNamespace })
+      });
+      if (!response.ok) throw new Error('Failed to update namespace');
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Namespace Updated",
+        description: "Episode classification updated"
+      });
+      setEditingEpisodeId(null);
+      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batch', activeBatchId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -196,6 +265,7 @@ export function BatchPodcastIngestion() {
       const formData = new FormData();
       formData.append('zipFile', file);
       formData.append('namespace', targetNamespace);
+      formData.append('autoDetect', String(autoDetect));
 
       const response = await fetch('/admin/podcast/batch/upload', {
         method: 'POST',
@@ -212,8 +282,10 @@ export function BatchPodcastIngestion() {
       setActiveBatchId(result.batchId);
       
       toast({
-        title: "Batch Upload Started",
-        description: `Processing ${result.totalEpisodes} episodes from ${file.name}`
+        title: autoDetect ? "Classification Started" : "Batch Upload Started",
+        description: autoDetect 
+          ? `Classifying ${result.totalEpisodes} episodes - review before processing`
+          : `Processing ${result.totalEpisodes} episodes from ${file.name}`
       });
 
       queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batches'] });
@@ -229,7 +301,7 @@ export function BatchPodcastIngestion() {
         fileInputRef.current.value = '';
       }
     }
-  }, [targetNamespace, toast, queryClient]);
+  }, [targetNamespace, autoDetect, toast, queryClient]);
 
   const batches = batchesData?.batches || [];
   const currentBatch = batchStatus?.batch;
@@ -278,6 +350,33 @@ export function BatchPodcastIngestion() {
             </div>
           </div>
 
+          <div className="flex items-center justify-between p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-purple-400" />
+              <div>
+                <Label className="text-white font-medium">Auto-Detect Namespaces</Label>
+                <p className="text-xs text-white/50">
+                  Use AI to classify each episode into the appropriate namespace(s)
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={autoDetect}
+              onCheckedChange={setAutoDetect}
+              data-testid="auto-detect-toggle"
+            />
+          </div>
+
+          {autoDetect && (
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+              <p className="text-sm text-blue-300">
+                <strong>Auto-Detect Mode:</strong> Episodes will be classified using AI before ingestion. 
+                You can review and adjust classifications before processing starts.
+                The selected namespace will be used as a fallback.
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center gap-4">
             <input
               ref={fileInputRef}
@@ -303,6 +402,7 @@ export function BatchPodcastIngestion() {
             {targetNamespace ? (
               <span className="text-sm text-white/50">
                 Target: <span className="text-purple-400 font-medium">{targetNamespace}</span>
+                {autoDetect && " (fallback)"}
               </span>
             ) : (
               <span className="text-sm text-yellow-400/70">
@@ -377,7 +477,98 @@ export function BatchPodcastIngestion() {
               </>
             )}
 
-            {currentEpisodes.length > 0 && (
+            {currentBatch.autoDetect && currentBatch.status === 'classifying' && (
+              <div className="p-3 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                <div className="flex items-center gap-2 text-purple-300">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Classifying episodes with AI...</span>
+                </div>
+              </div>
+            )}
+
+            {currentBatch.autoDetect && currentBatch.status === 'pending' && currentEpisodes.some(e => e.primaryNamespace) && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-white/70">Review Classifications:</div>
+                  <Button
+                    onClick={() => startProcessingMutation.mutate(currentBatch.id)}
+                    disabled={startProcessingMutation.isPending}
+                    className="gap-2 bg-green-600 hover:bg-green-700"
+                    data-testid="start-processing-btn"
+                  >
+                    {startProcessingMutation.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                    Start Processing
+                  </Button>
+                </div>
+                <div className="max-h-[300px] overflow-y-auto space-y-2">
+                  {currentEpisodes.map(episode => (
+                    <div 
+                      key={episode.id} 
+                      className="p-3 rounded bg-white/5 space-y-2"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-white/80 truncate max-w-[250px] text-sm font-medium">{episode.filename}</span>
+                        <div className="flex items-center gap-2">
+                          {episode.confidence != null && (
+                            <span className={`text-xs ${episode.confidence >= 0.8 ? 'text-green-400' : episode.confidence >= 0.6 ? 'text-yellow-400' : 'text-red-400'}`}>
+                              {Math.round(episode.confidence * 100)}% confidence
+                            </span>
+                          )}
+                          {episode.manualOverride && (
+                            <Badge variant="outline" className="text-xs">Manual</Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {editingEpisodeId === episode.id ? (
+                          <Select
+                            value={episode.primaryNamespace || ''}
+                            onValueChange={(value) => {
+                              updateNamespaceMutation.mutate({ episodeId: episode.id, primaryNamespace: value });
+                            }}
+                          >
+                            <SelectTrigger className="w-[180px] h-8 bg-black/30 border-white/20 text-sm">
+                              <SelectValue placeholder="Select namespace..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {NAMESPACE_TAXONOMY.map(ns => (
+                                <SelectItem key={ns} value={ns}>{ns}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <>
+                            {episode.predictedNamespaces?.map(ns => (
+                              <Badge key={ns} className="bg-purple-600/50">{ns}</Badge>
+                            )) || (
+                              <Badge className="bg-gray-600/50">{currentBatch.namespace}</Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingEpisodeId(episode.id)}
+                              className="h-6 w-6 p-0"
+                              data-testid={`edit-episode-${episode.id}`}
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                      {episode.classificationRationale && (
+                        <p className="text-xs text-white/40 line-clamp-1">{episode.classificationRationale}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(!currentBatch.autoDetect || currentBatch.status === 'processing' || currentBatch.status === 'completed' || currentBatch.status === 'failed') && currentEpisodes.length > 0 && (
               <div className="space-y-2">
                 <div className="text-sm text-white/70">Episodes:</div>
                 <div className="max-h-[200px] overflow-y-auto space-y-1">
@@ -386,8 +577,11 @@ export function BatchPodcastIngestion() {
                       key={episode.id} 
                       className="flex items-center justify-between p-2 rounded bg-white/5 text-sm"
                     >
-                      <span className="text-white/80 truncate max-w-[300px]">{episode.filename}</span>
+                      <span className="text-white/80 truncate max-w-[250px]">{episode.filename}</span>
                       <div className="flex items-center gap-2">
+                        {episode.predictedNamespaces?.length ? (
+                          <span className="text-purple-400 text-xs">{episode.predictedNamespaces.join(', ')}</span>
+                        ) : null}
                         {episode.chunksCount !== null && (
                           <span className="text-white/50">{episode.chunksCount} chunks</span>
                         )}
@@ -422,6 +616,7 @@ export function BatchPodcastIngestion() {
                     <div className="text-white font-medium">{batch.zipFilename}</div>
                     <div className="text-xs text-white/50">
                       {batch.namespace} • {batch.totalEpisodes} episodes • {new Date(batch.createdAt).toLocaleString()}
+                      {batch.autoDetect && <span className="text-purple-400 ml-1">• Auto-detect</span>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
