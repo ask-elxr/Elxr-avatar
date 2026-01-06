@@ -535,12 +535,22 @@ import {
   getBatchStatus,
   retryFailedEpisodes,
   listBatches,
-  resumeStuckBatches
+  resumeStuckBatches,
+  classifyBatchEpisodes,
+  updateEpisodeNamespace
 } from '../ingest/batchPodcastService.js';
+import { getNamespaceTaxonomy } from '../ingest/namespaceClassifier.js';
 
 const batchUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 }
+});
+
+router.get('/podcast/namespaces/taxonomy', requireAdminAuth, async (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    namespaces: getNamespaceTaxonomy()
+  });
 });
 
 router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFile'), async (req: Request, res: Response) => {
@@ -550,11 +560,13 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
     }
     
     const namespace = req.body.namespace;
+    const autoDetect = req.body.autoDetect === 'true' || req.body.autoDetect === true;
+    
     if (!namespace || typeof namespace !== 'string') {
-      return res.status(400).json({ error: 'Namespace is required' });
+      return res.status(400).json({ error: 'Namespace is required (used as fallback when auto-detect is enabled)' });
     }
     
-    if (isProtectedNamespace(namespace)) {
+    if (!autoDetect && isProtectedNamespace(namespace)) {
       return res.status(403).json({
         error: 'Protected namespace',
         message: `Namespace "${namespace}" is protected and cannot be modified`
@@ -565,6 +577,7 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
       service: 'batch-podcast-routes',
       operation: 'batch_upload',
       namespace,
+      autoDetect,
       filename: req.file.originalname,
       size: req.file.size
     }, 'Processing batch podcast upload');
@@ -572,18 +585,33 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
     const result = await extractZipAndCreateBatch(
       req.file.buffer,
       namespace,
-      req.file.originalname
+      req.file.originalname,
+      autoDetect
     );
     
-    processBatchEpisodes(result.batchId).catch(error => {
-      logger.error({ batchId: result.batchId, error: (error as Error).message }, 'Background batch processing failed');
-    });
-    
-    res.json({
-      success: true,
-      ...result,
-      message: `Batch created with ${result.totalEpisodes} episodes. Processing started in background.`
-    });
+    if (autoDetect) {
+      classifyBatchEpisodes(result.batchId).then(() => {
+        logger.info({ batchId: result.batchId }, 'Batch classification complete, ready for review');
+      }).catch(error => {
+        logger.error({ batchId: result.batchId, error: (error as Error).message }, 'Batch classification failed');
+      });
+      
+      res.json({
+        success: true,
+        ...result,
+        message: `Batch created with ${result.totalEpisodes} episodes. Classification started - review before processing.`
+      });
+    } else {
+      processBatchEpisodes(result.batchId).catch(error => {
+        logger.error({ batchId: result.batchId, error: (error as Error).message }, 'Background batch processing failed');
+      });
+      
+      res.json({
+        success: true,
+        ...result,
+        message: `Batch created with ${result.totalEpisodes} episodes. Processing started in background.`
+      });
+    }
   } catch (error) {
     logger.error({
       service: 'batch-podcast-routes',
@@ -671,6 +699,73 @@ router.post('/podcast/batch/resume-stuck', requireAdminAuth, async (req: Request
   } catch (error) {
     res.status(500).json({
       error: 'Failed to resume stuck batches',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/podcast/batch/:batchId/classify', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    
+    logger.info({ batchId }, 'Triggering batch classification');
+    
+    const classifications = await classifyBatchEpisodes(batchId);
+    
+    res.json({
+      success: true,
+      classified: classifications.length,
+      classifications,
+      message: `Classified ${classifications.length} episodes`
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to classify batch',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/podcast/batch/:batchId/start-processing', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    
+    logger.info({ batchId }, 'Starting batch processing after review');
+    
+    processBatchEpisodes(batchId).catch(error => {
+      logger.error({ batchId, error: (error as Error).message }, 'Background batch processing failed');
+    });
+    
+    res.json({
+      success: true,
+      message: 'Processing started in background'
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to start processing',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.patch('/podcast/episode/:episodeId/namespace', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { episodeId } = req.params;
+    const { primaryNamespace, secondaryNamespace } = req.body;
+    
+    if (!primaryNamespace) {
+      return res.status(400).json({ error: 'primaryNamespace is required' });
+    }
+    
+    await updateEpisodeNamespace(episodeId, primaryNamespace, secondaryNamespace);
+    
+    res.json({
+      success: true,
+      message: `Episode namespace updated to ${primaryNamespace}${secondaryNamespace ? `, ${secondaryNamespace}` : ''}`
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to update episode namespace',
       message: (error as Error).message
     });
   }

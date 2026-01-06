@@ -6,6 +6,7 @@ import { Readable } from 'stream';
 import { logger } from '../logger.js';
 import { storage } from '../storage.js';
 import { ingestPodcast } from './podcastIngestionService.js';
+import { classifyTranscript, type ClassificationResult } from './namespaceClassifier.js';
 import type { PodcastBatch, PodcastEpisode } from '@shared/schema';
 
 const TEMP_DIR = '/tmp/podcast-batches';
@@ -16,8 +17,18 @@ const DELAY_BETWEEN_EPISODES_MS = 2000;
 export interface BatchUploadResult {
   batchId: string;
   namespace: string;
+  autoDetect: boolean;
   totalEpisodes: number;
   episodeFilenames: string[];
+}
+
+export interface EpisodeClassification {
+  episodeId: string;
+  filename: string;
+  primaryNamespace: string;
+  secondaryNamespace?: string;
+  confidence: number;
+  rationale: string;
 }
 
 export interface BatchStatusResult {
@@ -60,20 +71,23 @@ function isValidTranscriptFile(filename: string): boolean {
 export async function extractZipAndCreateBatch(
   zipBuffer: Buffer,
   namespace: string,
-  zipFilename: string
+  zipFilename: string,
+  autoDetect: boolean = false
 ): Promise<BatchUploadResult> {
   const batchId = uuidv4();
   
   logger.info({ 
     batchId, 
     namespace, 
-    zipFilename, 
+    zipFilename,
+    autoDetect,
     bufferSize: zipBuffer.length 
   }, 'Starting zip extraction for podcast batch');
   
   const batch = await storage.createPodcastBatch({
     namespace,
     zipFilename,
+    autoDetect,
   });
   
   const batchDir = await ensureTempDir(batch.id);
@@ -115,6 +129,7 @@ export async function extractZipAndCreateBatch(
     return {
       batchId: batch.id,
       namespace,
+      autoDetect,
       totalEpisodes: episodeFilenames.length,
       episodeFilenames,
     };
@@ -132,6 +147,100 @@ export async function extractZipAndCreateBatch(
     await cleanupBatchDir(batch.id);
     throw error;
   }
+}
+
+export async function classifyBatchEpisodes(batchId: string): Promise<EpisodeClassification[]> {
+  const batch = await storage.getPodcastBatch(batchId);
+  if (!batch) {
+    throw new Error(`Batch ${batchId} not found`);
+  }
+  
+  const episodes = await storage.getPodcastEpisodesByBatch(batchId);
+  const unclassifiedEpisodes = episodes.filter(e => !e.primaryNamespace && !e.manualOverride);
+  
+  logger.info({ 
+    batchId, 
+    totalEpisodes: episodes.length,
+    toClassify: unclassifiedEpisodes.length 
+  }, 'Starting batch episode classification');
+  
+  const batchDir = path.join(TEMP_DIR, batchId);
+  const classifications: EpisodeClassification[] = [];
+  
+  for (const episode of unclassifiedEpisodes) {
+    const filePath = path.join(batchDir, episode.filename);
+    
+    try {
+      const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+      
+      if (fileContent.trim().length < 100) {
+        logger.debug({ filename: episode.filename }, 'Content too short for classification');
+        continue;
+      }
+      
+      const result = await classifyTranscript(fileContent, episode.filename);
+      
+      const namespaces = result.secondary 
+        ? [result.primary, result.secondary]
+        : [result.primary];
+      
+      await storage.updatePodcastEpisode(episode.id, {
+        predictedNamespaces: namespaces,
+        primaryNamespace: result.primary,
+        confidence: result.confidence,
+        classificationRationale: result.rationale,
+      });
+      
+      classifications.push({
+        episodeId: episode.id,
+        filename: episode.filename,
+        primaryNamespace: result.primary,
+        secondaryNamespace: result.secondary,
+        confidence: result.confidence,
+        rationale: result.rationale,
+      });
+      
+      logger.info({ 
+        filename: episode.filename,
+        primary: result.primary,
+        secondary: result.secondary || 'none',
+        confidence: result.confidence
+      }, 'Episode classified');
+      
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+    } catch (error) {
+      logger.error({ 
+        episodeId: episode.id, 
+        error: (error as Error).message 
+      }, 'Failed to classify episode');
+    }
+  }
+  
+  logger.info({ 
+    batchId, 
+    classified: classifications.length 
+  }, 'Batch classification complete');
+  
+  return classifications;
+}
+
+export async function updateEpisodeNamespace(
+  episodeId: string,
+  primaryNamespace: string,
+  secondaryNamespace?: string
+): Promise<void> {
+  const namespaces = secondaryNamespace 
+    ? [primaryNamespace, secondaryNamespace]
+    : [primaryNamespace];
+    
+  await storage.updatePodcastEpisode(episodeId, {
+    predictedNamespaces: namespaces,
+    primaryNamespace,
+    manualOverride: true,
+  });
+  
+  logger.info({ episodeId, primaryNamespace, secondaryNamespace }, 'Episode namespace updated manually');
 }
 
 export async function processBatchEpisodes(batchId: string): Promise<void> {
@@ -185,27 +294,50 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
       
       const sourceId = `batch-${batchId}-${episode.filename.replace(/\.[^/.]+$/, '')}`;
       
-      const result = await ingestPodcast({
-        namespace: batch.namespace,
-        source: sourceId,
-        rawText: fileContent,
-        sourceType: 'podcast',
-        dryRun: false,
-      });
+      const namespacesToIngest = batch.autoDetect && episode.predictedNamespaces?.length
+        ? episode.predictedNamespaces
+        : [batch.namespace];
+      
+      let episodeTotalChunks = 0;
+      let episodeDiscardedCount = 0;
+      
+      for (const ns of namespacesToIngest) {
+        const nsSourceId = namespacesToIngest.length > 1 
+          ? `${sourceId}-${ns.toLowerCase()}`
+          : sourceId;
+          
+        const result = await ingestPodcast({
+          namespace: ns,
+          source: nsSourceId,
+          rawText: fileContent,
+          sourceType: 'podcast',
+          dryRun: false,
+        });
+        
+        episodeTotalChunks += result.totalChunks;
+        episodeDiscardedCount += result.discardedCount;
+        
+        logger.debug({ 
+          episodeId: episode.id, 
+          namespace: ns, 
+          chunks: result.totalChunks 
+        }, 'Ingested to namespace');
+      }
       
       await storage.updatePodcastEpisode(episode.id, {
         status: 'completed',
-        chunksCount: result.totalChunks,
-        discardedCount: result.discardedCount,
+        chunksCount: episodeTotalChunks,
+        discardedCount: episodeDiscardedCount,
       });
       
-      totalChunks += result.totalChunks;
+      totalChunks += episodeTotalChunks;
       successCount++;
       
       logger.info({ 
         episodeId: episode.id, 
         filename: episode.filename,
-        chunks: result.totalChunks 
+        chunks: episodeTotalChunks,
+        namespaces: namespacesToIngest
       }, 'Episode processed successfully');
       
     } catch (error) {
