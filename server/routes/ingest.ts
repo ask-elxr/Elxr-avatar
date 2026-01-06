@@ -30,13 +30,17 @@ function requireAdminAuth(req: Request, res: Response, next: NextFunction) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
   
-  if (!adminKey || adminKey !== ADMIN_SECRET) {
+  // Normalize both values - trim whitespace and handle array case
+  const normalizedAdminKey = Array.isArray(adminKey) ? adminKey[0] : String(adminKey || '').trim();
+  const normalizedSecret = ADMIN_SECRET.trim();
+  
+  if (!normalizedAdminKey || normalizedAdminKey !== normalizedSecret) {
     logger.warn({
       service: 'ingest-routes',
       operation: 'auth_failed',
       hasAdminKey: !!adminKey,
-      adminKeyLength: adminKey ? String(adminKey).length : 0,
-      expectedLength: ADMIN_SECRET.length,
+      adminKeyLength: normalizedAdminKey.length,
+      expectedLength: normalizedSecret.length,
       path: req.path
     }, 'Admin authentication failed');
     return res.status(401).json({ error: 'Unauthorized: Invalid or missing X-Admin-Secret header' });
