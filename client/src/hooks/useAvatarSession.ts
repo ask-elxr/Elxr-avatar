@@ -565,10 +565,48 @@ export function useAvatarSession({
     const trimmedTranscript = transcript.trim();
     if (!trimmedTranscript) return;
     
-    // Echo protection: Block transcripts while audio is playing
+    // INTERRUPTION MODE: If audio is playing, treat user speech as interruption request
+    // Don't block - instead stop the current audio and process the new message
     if (audioOnlyRef.current && currentAudioRef.current) {
-      console.log("🔇 ECHO BLOCKED (ElevenLabs STT): Ignoring while audio playing:", trimmedTranscript.substring(0, 50));
-      return;
+      // Normalize function: remove punctuation, collapse whitespace, lowercase
+      const normalize = (text: string) => text.toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove punctuation
+        .replace(/\s+/g, ' ')    // Collapse whitespace
+        .trim();
+      
+      // Whitelisted short interruption phrases (always allowed)
+      const interruptPhrases = ['stop', 'wait', 'pause', 'hold on', 'excuse me', 'actually', 'but', 'hey', 'no', 'yes', 'ok', 'okay'];
+      const normalizedTranscript = normalize(trimmedTranscript);
+      const isInterruptPhrase = interruptPhrases.some(phrase => 
+        normalizedTranscript === phrase || normalizedTranscript.startsWith(phrase + ' ')
+      );
+      
+      // Content-based echo detection: Only interrupt if this is NOT an echo of what avatar said
+      const timeSinceAvatarSpoke = Date.now() - lastAvatarResponseTimeRef.current;
+      if (timeSinceAvatarSpoke < 10000 && lastAvatarResponseRef.current && !isInterruptPhrase) {
+        const normalizedAvatar = normalize(lastAvatarResponseRef.current);
+        // Check if transcript appears in avatar's recent speech (echo detection)
+        // Use fuzzy match: transcript is substring of avatar response
+        if (normalizedAvatar.includes(normalizedTranscript) && normalizedTranscript.length < 30) {
+          console.log("🔇 ECHO during playback (ignored):", trimmedTranscript.substring(0, 30));
+          return;
+        }
+      }
+      
+      // NOT an echo - this is a real interruption!
+      console.log("🛑 INTERRUPTION DETECTED:", trimmedTranscript);
+      // Stop current audio immediately
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        if (currentAudioRef.current.src?.startsWith('blob:')) {
+          URL.revokeObjectURL(currentAudioRef.current.src);
+        }
+        currentAudioRef.current = null;
+      }
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false); // Update UI state
+      // Fall through to process the new message as an interruption
     }
     
     if (isSpeakingRef.current && !audioOnlyRef.current) {
@@ -580,16 +618,27 @@ export function useAvatarSession({
     
     // Content-based echo detection: Check if transcript matches what avatar just said
     // This catches echo that arrives after the avatar "stopped speaking" according to SDK
-    const timeSinceAvatarSpoke = Date.now() - lastAvatarResponseTimeRef.current;
-    if (timeSinceAvatarSpoke < 15000 && lastAvatarResponseRef.current) {
-      // Check if transcript is a substring of or very similar to what avatar said
-      const avatarResponseLower = lastAvatarResponseRef.current.toLowerCase();
-      const transcriptLower = trimmedTranscript.toLowerCase();
+    // Use same normalization logic as during-playback detection
+    const postPlaybackTimeSince = Date.now() - lastAvatarResponseTimeRef.current;
+    if (postPlaybackTimeSince < 15000 && lastAvatarResponseRef.current) {
+      // Normalize function: remove punctuation, collapse whitespace, lowercase
+      const normalizeText = (text: string) => text.toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove punctuation
+        .replace(/\s+/g, ' ')    // Collapse whitespace
+        .trim();
       
-      // Check if the transcript is contained in what the avatar said (echo)
-      if (avatarResponseLower.includes(transcriptLower) || 
-          transcriptLower.includes(avatarResponseLower.substring(0, Math.min(50, avatarResponseLower.length)))) {
-        console.log("🔇 ECHO DETECTED: Transcript matches avatar's recent speech, ignoring:", trimmedTranscript.substring(0, 50));
+      const normalizedAvatarResponse = normalizeText(lastAvatarResponseRef.current);
+      const normalizedTranscriptText = normalizeText(trimmedTranscript);
+      
+      // Whitelisted short interruption phrases (always allowed)
+      const allowedPhrases = ['stop', 'wait', 'pause', 'hold on', 'excuse me', 'actually', 'but', 'hey', 'no', 'yes', 'ok', 'okay'];
+      const isAllowedPhrase = allowedPhrases.some(phrase => 
+        normalizedTranscriptText === phrase || normalizedTranscriptText.startsWith(phrase + ' ')
+      );
+      
+      // Check if the transcript is contained in what the avatar said (echo) - unless it's an allowed phrase
+      if (!isAllowedPhrase && normalizedAvatarResponse.includes(normalizedTranscriptText) && normalizedTranscriptText.length < 30) {
+        console.log("🔇 ECHO DETECTED (post-playback): Transcript matches avatar's recent speech, ignoring:", trimmedTranscript.substring(0, 50));
         return;
       }
     }
@@ -2353,15 +2402,22 @@ export function useAvatarSession({
     isSpeakingRef.current = true;
     setIsSpeakingState(true);
     
-    // 🔇 Then stop voice recognition to prevent echo/feedback (Web Speech API or ElevenLabs STT)
+    // 🎤 KEEP STT LISTENING for interruptions during audio playback (audio-only mode)
+    // In video mode, pause recognition to prevent echo
     if (useElevenLabsSttRef.current && elevenLabsSttReadyRef.current) {
-      // For ElevenLabs STT: just pause the microphone, keep connection alive for quick resume
-      if (elevenLabsSttProcessorRef.current) {
-        elevenLabsSttProcessorRef.current.disconnect();
-        elevenLabsSttProcessorRef.current = null;
+      if (audioOnlyRef.current) {
+        // Audio-only mode: Keep STT connected for interruption detection
+        // Echo protection is handled in handleElevenLabsSttTranscript
+        console.log("🎤 ElevenLabs STT stays active (interruption enabled)");
+      } else {
+        // Video mode: Pause the microphone
+        if (elevenLabsSttProcessorRef.current) {
+          elevenLabsSttProcessorRef.current.disconnect();
+          elevenLabsSttProcessorRef.current = null;
+        }
+        recognitionRunningRef.current = false;
+        console.log("🔇 ElevenLabs STT microphone paused (video mode)");
       }
-      recognitionRunningRef.current = false;
-      console.log("🔇 ElevenLabs STT microphone paused (processing user message)");
     } else if (recognitionRef.current && recognitionRunningRef.current) {
       try {
         recognitionRef.current.stop();
