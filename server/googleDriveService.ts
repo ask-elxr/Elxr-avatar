@@ -369,7 +369,14 @@ export class GoogleDriveService {
         'application/x-zip-compressed'
       ];
       
-      // Exclude unsupported types (archives except ZIP, and media files)
+      // Media file types (audio/video) - NOW SUPPORTED via Whisper transcription
+      const mediaMimeTypes = [
+        'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska', 'video/mpeg',
+        'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac'
+      ];
+      const mediaExtensions = ['.mp4', '.mov', '.m4a', '.mp3', '.wav', '.avi', '.mkv', '.webm', '.m4v', '.flv', '.mpeg', '.mpg', '.ogg', '.flac'];
+      
+      // Exclude unsupported types (archives except ZIP)
       const excludedMimeTypes = [
         'application/x-rar-compressed',
         'application/x-7z-compressed',
@@ -388,7 +395,7 @@ export class GoogleDriveService {
         
         const { files: folderFiles } = await this.listFolderContents(folder.id);
         
-        // Filter to only uploadable files (ZIP files now supported, larger files allowed)
+        // Filter to only uploadable files (ZIP, media files now supported)
         const uploadableFiles = folderFiles.filter(f => {
           // Skip folders
           if (f.mimeType === 'application/vnd.google-apps.folder') return false;
@@ -398,8 +405,11 @@ export class GoogleDriveService {
           // Skip large files
           const fileSize = parseInt(f.size || '0', 10);
           if (fileSize > maxFileSize) return false;
-          // Check if supported type (includes ZIP and markdown now)
-          return supportedMimeTypes.includes(f.mimeType || '') || 
+          // Check if media file (now supported for transcription)
+          const isMediaFile = mediaMimeTypes.includes(f.mimeType || '') || 
+            mediaExtensions.some(ext => f.name?.toLowerCase().endsWith(ext));
+          // Check if supported type (includes ZIP, markdown, and media now)
+          return isMediaFile || supportedMimeTypes.includes(f.mimeType || '') || 
             f.name?.endsWith('.pdf') || 
             f.name?.endsWith('.docx') || 
             f.name?.endsWith('.txt') ||
@@ -442,11 +452,11 @@ export class GoogleDriveService {
       'application/gzip'
     ];
     
-    // Media file types (audio/video) - can't extract text
-    const mediaExtensions = ['.mp4', '.mov', '.m4a', '.mp3', '.wav', '.avi', '.mkv', '.webm', '.m4v', '.flv'];
+    // Media file types (audio/video) - NOW SUPPORTED via Whisper transcription
+    const mediaExtensions = ['.mp4', '.mov', '.m4a', '.mp3', '.wav', '.avi', '.mkv', '.webm', '.m4v', '.flv', '.mpeg', '.mpg', '.ogg', '.flac'];
     const mediaMimeTypes = [
-      'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska',
-      'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/webm'
+      'video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm', 'video/x-matroska', 'video/mpeg',
+      'audio/mpeg', 'audio/mp4', 'audio/x-m4a', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/flac'
     ];
     
     // Max file size: 100MB (increased to support larger documents)
@@ -490,15 +500,12 @@ export class GoogleDriveService {
         if (isUnsupportedArchive) {
           uploadable = false;
           skipReason = 'Unsupported archive (RAR/7z) - only ZIP files supported';
-        } else if (isMediaFile) {
-          uploadable = false;
-          skipReason = 'Audio/video file - cannot extract text for knowledge base';
         } else if (isTooLarge) {
           uploadable = false;
           skipReason = `File too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 100MB limit)`;
-        } else if (!isSupportedType) {
+        } else if (!isSupportedType && !isMediaFile) {
           uploadable = false;
-          skipReason = 'Unsupported file type - only PDF, Word, text, markdown, and ZIP files supported';
+          skipReason = 'Unsupported file type - only PDF, Word, text, markdown, ZIP, and video/audio files supported';
         }
         
         // Format file size nicely

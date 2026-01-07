@@ -6114,6 +6114,86 @@ This applies to EVERY response, regardless of conversation length.`;
           const pdfParse = await import('pdf-parse').then(m => m.default);
           const pdfData = await pdfParse(buffer);
           text = pdfData.text || '';
+        } else if (mimeType.startsWith('video/') || mimeType.startsWith('audio/') || 
+                   processedFileName?.match(/\.(mp4|mov|mpeg|mpg|avi|webm|mkv|mp3|wav|m4a|ogg|flac)$/i)) {
+          // Video/Audio transcription using OpenAI Whisper
+          log.info({ fileName: processedFileName, mimeType }, "Processing video/audio file for transcription");
+          
+          const openaiKey = process.env.OPENAI_API_KEY;
+          if (!openaiKey) {
+            throw new Error("OPENAI_API_KEY not configured for transcription");
+          }
+          
+          // Save buffer to temp file for ffmpeg processing
+          const tempDir = 'uploads';
+          if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+          }
+          const tempInputPath = path.join(tempDir, `input_${Date.now()}_${processedFileName}`);
+          const tempAudioPath = path.join(tempDir, `audio_${Date.now()}.mp3`);
+          
+          try {
+            fs.writeFileSync(tempInputPath, buffer);
+            
+            // Extract audio using ffmpeg (convert to mp3 for Whisper compatibility)
+            const { spawn } = await import('child_process');
+            await new Promise<void>((resolve, reject) => {
+              const ffmpeg = spawn('ffmpeg', [
+                '-i', tempInputPath,
+                '-vn',  // No video
+                '-acodec', 'libmp3lame',
+                '-ar', '16000',  // 16kHz sample rate
+                '-ac', '1',  // Mono
+                '-b:a', '64k',  // 64kbps bitrate (smaller file)
+                '-y',  // Overwrite output
+                tempAudioPath
+              ]);
+              
+              let stderr = '';
+              ffmpeg.stderr.on('data', (data) => { stderr += data.toString(); });
+              ffmpeg.on('close', (code) => {
+                if (code === 0) resolve();
+                else reject(new Error(`ffmpeg failed with code ${code}: ${stderr.slice(-500)}`));
+              });
+              ffmpeg.on('error', reject);
+            });
+            
+            // Check audio file size (Whisper limit is 25MB)
+            const audioStats = fs.statSync(tempAudioPath);
+            if (audioStats.size > 25 * 1024 * 1024) {
+              throw new Error(`Audio too large for transcription (${Math.round(audioStats.size / 1024 / 1024)}MB, limit 25MB)`);
+            }
+            
+            log.info({ audioSize: audioStats.size }, "Audio extracted, sending to Whisper");
+            
+            // Transcribe using OpenAI Whisper
+            const formData = new FormData();
+            const audioBlob = new Blob([fs.readFileSync(tempAudioPath)], { type: 'audio/mpeg' });
+            formData.append('file', audioBlob, 'audio.mp3');
+            formData.append('model', 'whisper-1');
+            formData.append('response_format', 'text');
+            
+            const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${openaiKey}`
+              },
+              body: formData
+            });
+            
+            if (!whisperResponse.ok) {
+              const errorText = await whisperResponse.text();
+              throw new Error(`Whisper transcription failed: ${errorText}`);
+            }
+            
+            text = await whisperResponse.text();
+            log.info({ transcriptLength: text.length }, "Transcription complete");
+            
+          } finally {
+            // Cleanup temp files
+            if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath);
+            if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
+          }
         } else if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed' || processedFileName?.endsWith('.zip')) {
           // Handle ZIP files - extract and process documents inside
           log.info({ fileName: processedFileName }, "Processing ZIP file");
