@@ -6406,21 +6406,29 @@ This applies to EVERY response, regardless of conversation length.`;
       }
 
       log.info({ fileName: processedFileName, namespace: normalizedNamespace, chunksProcessed }, "File uploaded successfully");
-      res.json({ 
-        success: true, 
-        message: `File uploaded successfully (${chunksProcessed} chunks)`,
-        fileName: processedFileName,
-        namespace: normalizedNamespace,
-        documentId,
-        chunksProcessed
-      });
+      
+      // Check if response was already sent (timeout occurred during processing)
+      if (!res.headersSent) {
+        res.json({ 
+          success: true, 
+          message: `File uploaded successfully (${chunksProcessed} chunks)`,
+          fileName: processedFileName,
+          namespace: normalizedNamespace,
+          documentId,
+          chunksProcessed
+        });
+      } else {
+        log.warn({ fileName: processedFileName }, "Response already sent (likely timeout), but file was processed successfully");
+      }
 
     } catch (error) {
       log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to upload file");
-      res.status(500).json({
-        error: "Failed to upload file from topic folder",
-        details: error instanceof Error ? error.message : "Unknown error",
-      });
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: "Failed to upload file from topic folder",
+          details: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
     }
   });
 
