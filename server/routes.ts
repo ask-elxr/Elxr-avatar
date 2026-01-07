@@ -6129,7 +6129,9 @@ This applies to EVERY response, regardless of conversation length.`;
           if (!fs.existsSync(tempDir)) {
             fs.mkdirSync(tempDir, { recursive: true });
           }
-          const tempInputPath = path.join(tempDir, `input_${Date.now()}_${processedFileName}`);
+          // Sanitize filename to avoid path traversal and special chars
+          const safeFileName = (processedFileName || 'media').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 50);
+          const tempInputPath = path.join(tempDir, `input_${Date.now()}_${safeFileName}`);
           const tempAudioPath = path.join(tempDir, `audio_${Date.now()}.mp3`);
           
           try {
@@ -6166,27 +6168,17 @@ This applies to EVERY response, regardless of conversation length.`;
             
             log.info({ audioSize: audioStats.size }, "Audio extracted, sending to Whisper");
             
-            // Transcribe using OpenAI Whisper
-            const formData = new FormData();
-            const audioBlob = new Blob([fs.readFileSync(tempAudioPath)], { type: 'audio/mpeg' });
-            formData.append('file', audioBlob, 'audio.mp3');
-            formData.append('model', 'whisper-1');
-            formData.append('response_format', 'text');
+            // Transcribe using OpenAI SDK (handles FormData correctly in Node.js)
+            const OpenAI = (await import('openai')).default;
+            const openaiClient = new OpenAI({ apiKey: openaiKey });
             
-            const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${openaiKey}`
-              },
-              body: formData
+            const transcription = await openaiClient.audio.transcriptions.create({
+              file: fs.createReadStream(tempAudioPath),
+              model: 'whisper-1'
             });
             
-            if (!whisperResponse.ok) {
-              const errorText = await whisperResponse.text();
-              throw new Error(`Whisper transcription failed: ${errorText}`);
-            }
-            
-            text = await whisperResponse.text();
+            // SDK returns { text: string } object
+            text = transcription.text;
             log.info({ transcriptLength: text.length }, "Transcription complete");
             
           } finally {
