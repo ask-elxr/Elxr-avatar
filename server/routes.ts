@@ -1771,6 +1771,17 @@ This appears to be your first conversation with this person - no prior memories 
         log.error({ error: error.message }, 'Failed to log ElevenLabs API call');
       });
 
+      // Save conversation to database for history (essential for follow-up context)
+      if (userId) {
+        try {
+          await storage.saveConversation({ userId, avatarId, role: 'user', text: message });
+          await storage.saveConversation({ userId, avatarId, role: 'assistant', text: responseText });
+          log.info({ userId, avatarId }, 'Saved audio conversation to history');
+        } catch (saveError) {
+          log.error({ error: saveError }, 'Error saving conversation history');
+        }
+      }
+      
       // Store conversation in memory if enabled
       if (memoryEnabled && userId && memoryService.isAvailable()) {
         try {
