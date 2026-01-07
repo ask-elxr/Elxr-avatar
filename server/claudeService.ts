@@ -178,21 +178,23 @@ RESPONSE REQUIREMENTS:
       content: userContent
     });
 
-    // Voice mode brevity directive - forces concise responses for audio with progressive disclosure
+    // Voice mode brevity directive - for VIDEO mode keep shorter, for audio mode allow longer
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
-🎤 VOICE MODE - ULTRA CONCISE RESPONSES REQUIRED:
-This is a voice conversation. Users are LISTENING, not reading. You MUST be extremely brief:
-- Respond in 1-3 SHORT, spoken-style sentences unless asked for detail
-- Maximum 120 tokens - get straight to the point
-- Use progressive disclosure: give a brief answer, then offer to go deeper
-- Example format: "[Brief 1-2 sentence answer]. Want me to go deeper on that?"
+📹 VIDEO MODE - CONCISE WITH CONTINUATION OFFER:
+This is a video conversation. Keep responses brief but complete:
+- Respond in 2-3 SHORT, spoken-style sentences
+- ALWAYS complete your thought - never cut off mid-sentence
+- ALWAYS end with a natural invitation to continue, such as:
+  • "Want me to go deeper on that?"
+  • "Would you like to hear more?"
+  • "Should I elaborate?"
 - If asked a yes/no question, lead with the answer
 - Skip pleasantries and unnecessary context
-- Think "radio host" not "textbook"
+- Think "video host" - engaging but concise
 
-Example of good progressive disclosure:
+Example:
 User: "What is kundalini?"
-Response: "Kundalini is dormant energy at your spine's base. When awakened, it rises through energy centers, shifting your awareness. Want me to go deeper?"
+Response: "Kundalini is dormant energy at your spine's base. When awakened, it rises through your chakras, shifting your awareness profoundly. Want me to go deeper on that?"
 
 ` : '';
 
@@ -201,18 +203,18 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
       : `${ELXR_CONTENT_POLICY}${voiceModeBrevity}You are an intelligent AI assistant with access to a comprehensive knowledge base. 
       
       Guidelines:
-      - DEFAULT: Respond in 1-3 short, spoken-style sentences unless asked for detail
-      - Use progressive disclosure: brief answer first, then offer more depth
-      - End complex topics with "Want me to go deeper?" or similar invitation
+      - DEFAULT: Respond in 2-3 short, spoken-style sentences unless asked for detail
+      - ALWAYS complete your thought - never stop mid-sentence
+      - ALWAYS end with "Want me to go deeper?" or similar invitation to continue
       - Use the provided context to give accurate, helpful responses
       - If information isn't in the context, say so clearly
-      - Be conversational and engaging, but CONCISE
+      - Be conversational and engaging
       - Maintain context from the conversation history
       - Think "helpful friend" not "encyclopedia"`;
 
     // Use lower max_tokens for faster response in voice mode, higher when details requested
-    // Voice mode: 120 tokens (enforces 1-3 sentences), Detail mode: 250 tokens
-    const maxTokens = wantsDetailedResponse ? 250 : (isVoiceMode ? 120 : 1000);
+    // Video mode: 180 tokens (2-3 sentences + continuation offer), Detail mode: 350 tokens
+    const maxTokens = wantsDetailedResponse ? 350 : (isVoiceMode ? 180 : 1000);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
@@ -709,16 +711,26 @@ ABSOLUTE RULES:
         ? `${contextBlock}Question: ${query}`
         : query;
 
-      // Simplified system prompt for speed - uninhibited directive FIRST for priority
+      // System prompt for audio mode - longer responses allowed with continuation offer
       const systemPrompt = `${ELXR_CONTENT_POLICY}
 
 ${personalityPrompt}
 
-VOICE MODE: Respond in 1-2 short sentences only. Be direct and conversational.`;
+🎧 AUDIO MODE - COMPLETE THOUGHTS WITH CONTINUATION OFFER:
+This is an audio-only conversation. Users are listening, so:
+- Give a thorough but focused response (3-5 sentences is fine)
+- ALWAYS complete your thought - never cut off mid-sentence
+- ALWAYS end with a natural invitation to continue, such as:
+  • "Would you like me to go deeper on that?"
+  • "Want me to share more about this?"
+  • "Should I elaborate on any of that?"
+  • "I can tell you more if you're interested."
+- Be warm and conversational like a knowledgeable friend
+- Think "podcast host" - engaging and complete`;
 
       const response = await this.createMessageBreaker.execute({
         model: FAST_VOICE_MODEL,
-        max_tokens: 150,
+        max_tokens: 350,
         messages: [{ role: 'user', content: userMessage }],
         system: systemPrompt
       });
@@ -735,13 +747,46 @@ VOICE MODE: Respond in 1-2 short sentences only. Be direct and conversational.`;
 
       const content = response.content[0];
       if (content && content.type === 'text') {
-        return content.text;
+        return this.ensureContinuationOffer(content.text);
       }
       return 'I apologize, but I was unable to respond.';
     } catch (error: any) {
       log.error({ error: error.message }, 'Fast voice response error');
       throw new Error('Failed to generate fast voice response');
     }
+  }
+
+  // Post-processing helper to ensure responses end with a continuation offer
+  // and don't cut off mid-sentence
+  private ensureContinuationOffer(text: string): string {
+    const trimmed = text.trim();
+    
+    // Check if response already has a continuation offer
+    const continuationPatterns = [
+      /would you like.*(more|deeper|elaborate|hear|know|continue)/i,
+      /want me to.*(go deeper|share more|elaborate|explain|tell)/i,
+      /should I.*(elaborate|explain|tell|share|go deeper)/i,
+      /interested in.*(hearing|learning|knowing) more/i,
+      /let me know if you.*(want|like|need)/i,
+      /\?$/  // Ends with a question mark (likely already offering)
+    ];
+    
+    const hasContinuationOffer = continuationPatterns.some(pattern => pattern.test(trimmed));
+    
+    if (hasContinuationOffer) {
+      return trimmed;
+    }
+    
+    // Check if response ends mid-sentence (doesn't end with sentence-ending punctuation)
+    const endsCleanly = /[.!?]$/.test(trimmed);
+    
+    if (!endsCleanly) {
+      // Response was cut off - add ellipsis and continuation offer
+      return trimmed + '... Would you like me to continue?';
+    }
+    
+    // Response is complete but missing continuation offer - add one
+    return trimmed + ' Would you like me to go deeper on that?';
   }
 }
 
