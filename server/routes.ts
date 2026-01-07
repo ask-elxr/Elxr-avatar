@@ -6432,6 +6432,348 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // ===== N8N WEBHOOK ENDPOINTS =====
+  // These endpoints are designed for n8n workflow automation with admin secret auth
+  
+  // List all files available for ingestion from topic folders (n8n webhook)
+  app.get("/api/webhook/n8n/list-files", async (req, res) => {
+    const log = logger.child({ service: "n8n-webhook", operation: "listFiles" });
+    
+    // Authenticate via admin secret
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized - invalid admin secret" });
+    }
+    
+    try {
+      log.info("Fetching all topic folders and files for n8n");
+      
+      // Get all topic folders
+      const folders = await googleDriveService.getTopicFolders();
+      
+      // Build flat list of all files with their folder/namespace info
+      const allFiles: Array<{
+        fileId: string;
+        fileName: string;
+        namespace: string;
+        folderName: string;
+        folderId: string;
+        mimeType: string;
+        size: number;
+      }> = [];
+      
+      for (const folder of folders) {
+        for (const file of folder.files) {
+          allFiles.push({
+            fileId: file.id,
+            fileName: file.name,
+            namespace: folder.namespace,
+            folderName: folder.name,
+            folderId: folder.id,
+            mimeType: file.mimeType || 'unknown',
+            size: file.size || 0
+          });
+        }
+      }
+      
+      log.info({ totalFiles: allFiles.length, folderCount: folders.length }, "Files listed for n8n");
+      
+      res.json({
+        success: true,
+        totalFiles: allFiles.length,
+        totalFolders: folders.length,
+        files: allFiles
+      });
+      
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to list files");
+      res.status(500).json({
+        error: "Failed to list files",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
+  // Ingest a single file from Google Drive (n8n webhook - no timeout concerns)
+  app.post("/api/webhook/n8n/ingest-file", async (req, res) => {
+    const log = logger.child({ service: "n8n-webhook", operation: "ingestFile" });
+    
+    // Authenticate via admin secret
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized - invalid admin secret" });
+    }
+    
+    // Set a longer timeout for n8n requests (5 minutes)
+    req.setTimeout(300000);
+    res.setTimeout(300000);
+    
+    try {
+      const { fileId, fileName, namespace } = req.body;
+      
+      if (!fileId || !namespace) {
+        return res.status(400).json({
+          error: "Missing required fields: fileId, namespace"
+        });
+      }
+      
+      log.info({ fileId, fileName, namespace }, "n8n triggered file ingestion");
+      
+      // Download and process file
+      // Note: downloadFile handles Google Docs by exporting as PDF automatically
+      const downloadResult = await googleDriveService.downloadFile(fileId);
+      const processedFileName = fileName || downloadResult.fileName || `file_${fileId}`;
+      const mimeType = downloadResult.mimeType;
+      
+      // Guard against missing buffer (shouldn't happen but be safe)
+      if (!downloadResult.buffer) {
+        return res.status(400).json({
+          error: "Failed to download file - no content received",
+          fileName: processedFileName
+        });
+      }
+      
+      log.info({ fileName: processedFileName, mimeType, bufferSize: downloadResult.buffer.length }, "File downloaded");
+      
+      // Extract text based on file type
+      let text = '';
+      
+      if (mimeType === 'text/plain' || processedFileName.endsWith('.txt') || processedFileName.endsWith('.md')) {
+        text = downloadResult.buffer.toString('utf-8');
+      } else if (mimeType === 'application/pdf' || processedFileName.endsWith('.pdf')) {
+        // This also handles Google Docs which are exported as PDF by downloadFile
+        const pdfParse = await import('pdf-parse').then(m => m.default);
+        const pdfData = await pdfParse(downloadResult.buffer);
+        text = pdfData.text || '';
+      } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || processedFileName.endsWith('.docx')) {
+        const mammoth = await import('mammoth');
+        const result = await mammoth.extractRawText({ buffer: downloadResult.buffer });
+        text = result.value;
+      } else if (mimeType === 'application/zip' || processedFileName.endsWith('.zip')) {
+        // Handle ZIP files - extract text from supported files within
+        const unzipper = await import('unzipper');
+        const directory = await unzipper.Open.buffer(downloadResult.buffer);
+        const extractedTexts: string[] = [];
+        
+        for (const entry of directory.files) {
+          if (entry.type === 'Directory') continue;
+          
+          const entryName = entry.path.toLowerCase();
+          if (entry.uncompressedSize > 5 * 1024 * 1024) {
+            log.warn({ entryName, size: entry.uncompressedSize }, "Skipping large file in ZIP");
+            continue;
+          }
+          
+          try {
+            const entryBuffer = await entry.buffer();
+            let entryText = '';
+            
+            if (entryName.endsWith('.txt') || entryName.endsWith('.md')) {
+              entryText = entryBuffer.toString('utf-8');
+            } else if (entryName.endsWith('.pdf')) {
+              const pdfParse = await import('pdf-parse').then(m => m.default);
+              const pdfData = await pdfParse(entryBuffer);
+              entryText = pdfData.text || '';
+            } else if (entryName.endsWith('.docx')) {
+              const mammoth = await import('mammoth');
+              const result = await mammoth.extractRawText({ buffer: entryBuffer });
+              entryText = result.value;
+            }
+            
+            if (entryText.trim().length > 50) {
+              extractedTexts.push(`--- ${entry.path} ---\n${entryText}`);
+            }
+          } catch (entryError: any) {
+            log.warn({ entryName, error: entryError.message }, "Failed to extract text from ZIP entry");
+          }
+        }
+        
+        text = extractedTexts.join('\n\n');
+        log.info({ filesProcessed: extractedTexts.length, totalTextLength: text.length }, "ZIP file processed");
+      } else {
+        return res.status(400).json({
+          error: `Unsupported file type: ${mimeType}`,
+          fileName: processedFileName
+        });
+      }
+      
+      if (!text || text.trim().length < 50) {
+        return res.json({
+          success: true,
+          message: "File skipped - insufficient text content",
+          fileName: processedFileName,
+          skipped: true
+        });
+      }
+      
+      // Limit text size
+      const maxTextSize = 500 * 1024;
+      if (text.length > maxTextSize) {
+        log.warn({ originalLength: text.length, truncatedTo: maxTextSize }, "Text truncated");
+        text = text.substring(0, maxTextSize);
+      }
+      
+      const documentId = `doc_n8n_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      
+      // Claude-powered processing
+      const openaiKey = process.env.OPENAI_API_KEY;
+      if (!openaiKey) {
+        throw new Error("OPENAI_API_KEY not configured");
+      }
+      
+      let processedText = text;
+      let validChunks: any[] = [];
+      
+      // Step 1: Extract substance
+      log.info({ fileName: processedFileName, originalLength: text.length }, "Starting substance extraction");
+      processedText = await extractSubstance(text);
+      log.info({ 
+        originalLength: text.length, 
+        extractedLength: processedText.length,
+        reductionPercent: Math.round((1 - processedText.length / text.length) * 100)
+      }, "Substance extraction complete");
+      
+      if (processedText.trim().length < 100) {
+        return res.status(422).json({
+          error: "Insufficient substantive content after extraction",
+          details: `Extracted text (${processedText.length} chars) is below minimum threshold`,
+          fileName: processedFileName,
+          failed: true
+        });
+      }
+      
+      // Step 2: Anonymize
+      log.info({ textLength: processedText.length }, "Starting anonymization");
+      const anonymizeResult = await anonymizeText(processedText);
+      processedText = anonymizeResult.text;
+      log.info({ wasModified: anonymizeResult.wasModified, finalLength: processedText.length }, "Anonymization complete");
+      
+      // Step 3: Create conversational chunks
+      log.info({ textLength: processedText.length }, "Creating conversational chunks");
+      const chunkingResult = await chunkTextConversationally(processedText);
+      validChunks = chunkingResult.chunks;
+      log.info({ totalChunks: validChunks.length, discarded: chunkingResult.discardedCount }, "Chunking complete");
+      
+      if (validChunks.length === 0) {
+        return res.status(422).json({
+          error: "Failed to process document content",
+          details: "Claude processing produced no valid chunks",
+          fileName: processedFileName,
+          failed: true
+        });
+      }
+      
+      // Step 4: Generate embeddings and store in Pinecone
+      const BATCH_SIZE = 20;
+      let chunksProcessed = 0;
+      
+      for (let batchStart = 0; batchStart < validChunks.length; batchStart += BATCH_SIZE) {
+        const batchChunks = validChunks.slice(batchStart, batchStart + BATCH_SIZE);
+        
+        const embeddingResponse = await fetch("https://api.openai.com/v1/embeddings", {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "text-embedding-3-small",
+            input: batchChunks.map(c => c.text),
+          }),
+        });
+        
+        if (!embeddingResponse.ok) {
+          const errorText = await embeddingResponse.text();
+          throw new Error(`OpenAI embedding failed: ${errorText}`);
+        }
+        
+        const embeddingData = await embeddingResponse.json();
+        
+        for (let i = 0; i < batchChunks.length; i++) {
+          const chunkIndex = batchStart + i;
+          const chunkId = `${documentId}_chunk_${chunkIndex}`;
+          const chunk = batchChunks[i];
+          const embedding = embeddingData.data[i].embedding;
+          
+          const createdAt = new Date().toISOString();
+          const metadata = {
+            documentId,
+            chunkIndex,
+            totalChunks: validChunks.length,
+            type: 'document_chunk',
+            fileType: mimeType,
+            text: chunk.text,
+            content_type: chunk.content_type || 'explanation',
+            tone: chunk.tone || 'warm',
+            topic: chunk.topic || 'general',
+            confidence: chunk.confidence || 'direct',
+            voice_origin: chunk.voice_origin || 'avatar_native',
+            source_type: 'document',
+            created_at: createdAt,
+            timestamp: createdAt,
+            category: normalizedNamespace,
+            namespace: normalizedNamespace,
+            source: 'n8n-ingestion',
+            originalFilename: processedFileName,
+            gdriveFileId: fileId,
+            processing: 'claude-extracted-anonymized'
+          };
+          
+          await pineconeService.storeConversation(chunkId, chunk.text, embedding, metadata);
+          chunksProcessed++;
+        }
+      }
+      
+      log.info({ 
+        fileName: processedFileName, 
+        namespace: normalizedNamespace, 
+        chunksProcessed 
+      }, "n8n file ingestion complete");
+      
+      res.json({
+        success: true,
+        message: `File ingested successfully (${chunksProcessed} chunks)`,
+        fileName: processedFileName,
+        namespace: normalizedNamespace,
+        documentId,
+        chunksProcessed
+      });
+      
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "n8n ingestion failed");
+      res.status(500).json({
+        error: "Failed to ingest file",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+  
+  // Get ingestion status/stats (n8n webhook)
+  app.get("/api/webhook/n8n/stats", async (req, res) => {
+    const log = logger.child({ service: "n8n-webhook", operation: "stats" });
+    
+    // Authenticate via admin secret
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized - invalid admin secret" });
+    }
+    
+    try {
+      const stats = await pineconeService.getStats();
+      res.json({
+        success: true,
+        stats
+      });
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to get stats");
+      res.status(500).json({
+        error: "Failed to get stats",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Batch upload files from a Google Drive folder to Pinecone
   app.post("/api/google-drive/batch-upload", isAuthenticated, async (req: any, res) => {
     const log = logger.child({ service: "google-drive", operation: "batchUpload" });
