@@ -56,6 +56,8 @@ import { chatVideoService } from "./services/chatVideo.js";
 import { subscriptionService } from "./services/subscription.js";
 import { liveKitService } from "./services/livekit.js";
 import { getAvatarSystemPrompt } from "./engine/avatarIntegration.js";
+import { anonymizeText, chunkTextConversationally } from "./ingest/conversationalChunker.js";
+import { extractSubstance } from "./ingest/podcastIngestionService.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
@@ -6268,60 +6270,77 @@ This applies to EVERY response, regardless of conversation length.`;
       const documentId = `doc_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       
-      // Chunk settings: ~350 tokens per chunk with 60 token overlap (like podcast ingestion)
-      const CHUNK_TOKENS = 350;
-      const CHUNK_OVERLAP = 60;
-      const CHARS_PER_TOKEN = 4;
-      const maxChunkChars = CHUNK_TOKENS * CHARS_PER_TOKEN; // ~1400 chars
-      const overlapChars = CHUNK_OVERLAP * CHARS_PER_TOKEN; // ~240 chars
-      
-      // Split text into chunks with sentence-boundary awareness
-      const chunks: string[] = [];
-      let position = 0;
-      
-      while (position < text.length) {
-        let endPosition = Math.min(position + maxChunkChars, text.length);
-        
-        // Try to end at sentence boundary (only if not at end of text)
-        if (endPosition < text.length) {
-          const searchStart = position + Math.floor(maxChunkChars / 2);
-          const searchText = text.slice(searchStart, endPosition);
-          const sentenceEnd = searchText.lastIndexOf('. ');
-          const questionEnd = searchText.lastIndexOf('? ');
-          const exclamEnd = searchText.lastIndexOf('! ');
-          const bestEnd = Math.max(sentenceEnd, questionEnd, exclamEnd);
-          if (bestEnd >= 0) {
-            endPosition = searchStart + bestEnd + 1;
-          }
-        }
-        
-        const chunkText = text.slice(position, endPosition).trim();
-        if (chunkText.length > 50) {
-          chunks.push(chunkText);
-        }
-        
-        // If we've reached the end, break
-        if (endPosition >= text.length) break;
-        
-        // Move position with overlap, ensuring we always advance
-        const nextPosition = endPosition - overlapChars;
-        position = Math.max(nextPosition, position + 100); // Always advance at least 100 chars
-      }
-      
-      log.info({ fileName: processedFileName, totalChunks: chunks.length, textLength: text.length }, "Text chunked for embedding");
-      
-      // Generate embedding using OpenAI directly
+      // ===== CLAUDE-POWERED PROCESSING (using shared podcast/conversational ingestion helpers) =====
       const openaiKey = process.env.OPENAI_API_KEY;
       if (!openaiKey) {
         throw new Error("OPENAI_API_KEY not configured");
       }
       
-      // Process chunks in batches for efficiency (OpenAI supports batch embeddings)
+      let processedText = text;
+      let validChunks: any[] = [];
+      let claudeProcessingSucceeded = false;
+      
+      try {
+        // Step 1: Extract substance and remove filler using shared podcast helper
+        log.info({ fileName: processedFileName, originalLength: text.length }, "Starting Claude substance extraction");
+        processedText = await extractSubstance(text);
+        log.info({ 
+          originalLength: text.length, 
+          extractedLength: processedText.length,
+          reductionPercent: Math.round((1 - processedText.length / text.length) * 100)
+        }, "Substance extraction complete");
+        
+        // Check minimum length after extraction (like podcast ingestion - abort with error)
+        if (processedText.trim().length < 100) {
+          log.error({ extractedLength: processedText.length }, "Extracted text too short, aborting");
+          return res.status(422).json({ 
+            error: "Insufficient substantive content after extraction",
+            details: `Extracted text (${processedText.length} chars) is below minimum threshold of 100 chars`,
+            fileName: processedFileName,
+            failed: true
+          });
+        }
+        
+        // Step 2: Anonymize the content using shared helper
+        log.info({ textLength: processedText.length }, "Starting anonymization");
+        const anonymizeResult = await anonymizeText(processedText);
+        processedText = anonymizeResult.anonymizedText;
+        log.info({ wasModified: anonymizeResult.wasModified, finalLength: processedText.length }, "Anonymization complete");
+        
+        // Step 3: Create conversational chunks using shared helper (handles batching, retry, validation)
+        log.info({ textLength: processedText.length }, "Creating conversational chunks with Claude");
+        const chunkingResult = await chunkTextConversationally(processedText);
+        
+        validChunks = chunkingResult.chunks;
+        log.info({ 
+          totalChunks: validChunks.length, 
+          discarded: chunkingResult.discardedCount 
+        }, "Conversational chunking complete");
+        
+        claudeProcessingSucceeded = validChunks.length > 0;
+        
+      } catch (claudeError) {
+        log.error({ error: (claudeError as Error).message }, "Claude processing failed, falling back to basic chunking");
+      }
+      
+      // Abort if Claude processing failed entirely (no fallback to maintain data integrity)
+      if (!claudeProcessingSucceeded || validChunks.length === 0) {
+        log.error("Claude processing failed and produced no valid chunks - aborting upload");
+        return res.status(422).json({
+          error: "Failed to process document content",
+          details: "Claude processing produced no valid chunks. The document may lack substantive content.",
+          fileName: processedFileName,
+          failed: true
+        });
+      }
+      
+      // Step 4: Generate embeddings and store in Pinecone
       const BATCH_SIZE = 20;
       let chunksProcessed = 0;
       
-      for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
-        const batchChunks = chunks.slice(batchStart, batchStart + BATCH_SIZE);
+      for (let batchStart = 0; batchStart < validChunks.length; batchStart += BATCH_SIZE) {
+        const batchChunks = validChunks.slice(batchStart, batchStart + BATCH_SIZE);
+        const batchTexts = batchChunks.map(c => c.text);
         
         const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
           method: 'POST',
@@ -6331,7 +6350,7 @@ This applies to EVERY response, regardless of conversation length.`;
           },
           body: JSON.stringify({
             model: 'text-embedding-3-small',
-            input: batchChunks
+            input: batchTexts
           })
         });
 
@@ -6342,35 +6361,44 @@ This applies to EVERY response, regardless of conversation length.`;
 
         const embeddingData = await embeddingResponse.json();
         
-        // Store each chunk in Pinecone
+        // Store each chunk in Pinecone with rich metadata
         for (let i = 0; i < batchChunks.length; i++) {
           const chunkIndex = batchStart + i;
           const chunkId = `${documentId}_chunk_${chunkIndex}`;
-          const chunkText = batchChunks[i];
+          const chunk = batchChunks[i];
           const embedding = embeddingData.data[i].embedding;
           
+          const createdAt = new Date().toISOString();
           const metadata = { 
             documentId,
             chunkIndex,
-            totalChunks: chunks.length,
+            totalChunks: validChunks.length,
             type: 'document_chunk',
             fileType: mimeType,
-            text: chunkText,
-            timestamp: new Date().toISOString(),
+            text: chunk.text,
+            content_type: chunk.content_type || 'explanation',
+            tone: chunk.tone || 'warm',
+            topic: chunk.topic || 'general',
+            confidence: chunk.confidence || 'direct',
+            voice_origin: chunk.voice_origin || 'avatar_native',
+            source_type: 'document',
+            created_at: createdAt,
+            timestamp: createdAt,
             userId, 
             category: normalizedNamespace,
             namespace: normalizedNamespace,
-            source: 'google-drive-topic', 
+            source: 'google-drive-topic-claude', 
             originalFilename: fileName || processedFileName,
-            gdriveFileId: fileId
+            gdriveFileId: fileId,
+            processing: 'claude-extracted-anonymized'
           };
 
-          await pineconeService.storeConversation(chunkId, chunkText, embedding, metadata);
+          await pineconeService.storeConversation(chunkId, chunk.text, embedding, metadata);
           chunksProcessed++;
         }
       }
       
-      log.info({ chunksProcessed, fileName: processedFileName }, "All chunks stored in Pinecone");
+      log.info({ chunksProcessed, fileName: processedFileName }, "All Claude-processed chunks stored in Pinecone");
 
       // Force garbage collection after processing
       if (global.gc) {

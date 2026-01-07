@@ -90,7 +90,7 @@ function splitTextIntoBatches(text: string, maxTokens: number = MAX_TOKENS_PER_B
   return batches;
 }
 
-async function extractSubstance(text: string): Promise<string> {
+export async function extractSubstance(text: string): Promise<string> {
   logger.info({ textLength: text.length }, 'Starting podcast substance extraction');
   
   const batches = splitTextIntoBatches(text);
