@@ -59,12 +59,12 @@ class PineconeNamespaceService {
     );
   }
 
-  // Helper to normalize namespace names (ADDICTION -> addiction, MARK_KOHL -> mark-kohl)
+  // Helper to normalize namespace names - keep UPPERCASE to match Pinecone storage
   private normalizeNamespace(namespace: string): string {
-    return namespace.toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
+    return namespace.toUpperCase()
+      .replace(/[^A-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
   }
 
   async retrieveContext(query: string, topK: number = 3, customNamespaces?: string[]): Promise<any[]> {

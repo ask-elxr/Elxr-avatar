@@ -256,7 +256,9 @@ async function chunkPodcastContent(
 export async function ingestPodcast(
   request: PodcastIngestionRequest
 ): Promise<PodcastIngestionResult> {
-  const { namespace, source, rawText, sourceType, attribution, dryRun } = request;
+  const { source, rawText, sourceType, attribution, dryRun } = request;
+  // Normalize namespace to UPPERCASE for consistency with Pinecone storage
+  const namespace = request.namespace.toUpperCase();
   
   if (isProtectedNamespace(namespace)) {
     throw new Error(`Namespace "${namespace}" is protected and cannot be modified`);
