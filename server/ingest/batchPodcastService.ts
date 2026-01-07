@@ -41,6 +41,7 @@ export interface BatchStatusResult {
     successful: number;
     failed: number;
     skipped: number;
+    classifiedCount: number;
   };
 }
 
@@ -408,19 +409,29 @@ export async function getBatchStatus(batchId: string): Promise<BatchStatusResult
     skipped: episodes.filter(e => e.status === 'skipped').length,
   };
   
+  // Count classified episodes (those with a primary namespace assigned)
+  const classifiedCount = episodes.filter(e => e.primaryNamespace !== null).length;
+  
   const processed = episodeCounts.completed + episodeCounts.failed + episodeCounts.skipped;
   const totalChunks = episodes.reduce((sum, e) => sum + (e.chunksCount || 0), 0);
+  
+  // During classifying phase, show classification progress instead of processing progress
+  const isClassifying = batch.status === 'classifying' || (batch.autoDetect && batch.status === 'extracting');
+  const progressPercentage = isClassifying
+    ? (episodeCounts.total > 0 ? Math.round((classifiedCount / episodeCounts.total) * 100) : 0)
+    : (episodeCounts.total > 0 ? Math.round((processed / episodeCounts.total) * 100) : 0);
   
   return {
     batch,
     episodes,
     progress: {
-      percentage: episodeCounts.total > 0 ? Math.round((processed / episodeCounts.total) * 100) : 0,
+      percentage: progressPercentage,
       processed,
       total: episodeCounts.total,
       successful: episodeCounts.completed,
       failed: episodeCounts.failed,
       skipped: episodeCounts.skipped,
+      classifiedCount,
     },
   };
 }

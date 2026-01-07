@@ -52,6 +52,7 @@ interface BatchStatusResult {
     successful: number;
     failed: number;
     skipped: number;
+    classifiedCount?: number;
   };
 }
 
@@ -430,7 +431,12 @@ export function BatchPodcastIngestion() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-white/70">Progress</span>
-                    <span className="text-white">{currentProgress.processed}/{currentProgress.total} episodes ({currentProgress.percentage}%)</span>
+                    <span className="text-white">
+                      {currentBatch.status === 'classifying' || (currentBatch.autoDetect && currentBatch.status === 'extracting')
+                        ? `${currentProgress.classifiedCount || 0}/${currentProgress.total} classified (${currentProgress.percentage}%)`
+                        : `${currentProgress.processed}/${currentProgress.total} episodes (${currentProgress.percentage}%)`
+                      }
+                    </span>
                   </div>
                   <Progress value={currentProgress.percentage} className="h-2" />
                 </div>
