@@ -6462,17 +6462,23 @@ This applies to EVERY response, regardless of conversation length.`;
         size: number;
       }> = [];
       
+      // Fetch files from each folder
       for (const folder of folders) {
-        for (const file of folder.files) {
-          allFiles.push({
-            fileId: file.id,
-            fileName: file.name,
-            namespace: folder.namespace,
-            folderName: folder.name,
-            folderId: folder.id,
-            mimeType: file.mimeType || 'unknown',
-            size: file.size || 0
-          });
+        try {
+          const files = await googleDriveService.getFilesInTopicFolder(folder.id);
+          for (const file of files) {
+            allFiles.push({
+              fileId: file.id,
+              fileName: file.name,
+              namespace: folder.namespace,
+              folderName: folder.name,
+              folderId: folder.id,
+              mimeType: file.mimeType || 'unknown',
+              size: file.size || 0
+            });
+          }
+        } catch (folderError) {
+          log.warn({ folderId: folder.id, folderName: folder.name, error: folderError instanceof Error ? folderError.message : "Unknown" }, "Failed to list files in folder");
         }
       }
       
