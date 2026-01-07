@@ -525,6 +525,92 @@ export class GoogleDriveService {
     
     return allFiles;
   }
+
+  // List ZIP files from a folder (for batch podcast ingestion)
+  async listZipFiles(folderId?: string): Promise<{ id: string; name: string; size: number; modifiedTime: string }[]> {
+    try {
+      this.log.info({ folderId }, 'Listing ZIP files from Google Drive');
+      const drive = await getUncachableGoogleDriveClient();
+      
+      const zipFiles: { id: string; name: string; size: number; modifiedTime: string }[] = [];
+      let pageToken: string | undefined;
+      
+      do {
+        const query = folderId 
+          ? `'${folderId}' in parents and (mimeType='application/zip' or mimeType='application/x-zip-compressed' or name contains '.zip') and trashed=false`
+          : `(mimeType='application/zip' or mimeType='application/x-zip-compressed' or name contains '.zip') and trashed=false`;
+        
+        const response = await drive.files.list({
+          q: query,
+          fields: 'nextPageToken, files(id, name, size, modifiedTime)',
+          pageSize: 100,
+          pageToken,
+          orderBy: 'modifiedTime desc',
+          supportsAllDrives: true,
+          includeItemsFromAllDrives: true,
+        });
+        
+        for (const file of response.data.files || []) {
+          if (file.id && file.name) {
+            zipFiles.push({
+              id: file.id,
+              name: file.name,
+              size: parseInt(file.size || '0', 10),
+              modifiedTime: file.modifiedTime || '',
+            });
+          }
+        }
+        
+        pageToken = response.data.nextPageToken || undefined;
+      } while (pageToken);
+      
+      return zipFiles;
+    } catch (error: any) {
+      this.log.error({ error: error.message }, 'Failed to list ZIP files');
+      throw new Error('Failed to list ZIP files from Google Drive');
+    }
+  }
+
+  // Download a ZIP file as a buffer (for batch podcast ingestion)
+  async downloadZipFile(fileId: string): Promise<{ buffer: Buffer; fileName: string }> {
+    try {
+      this.log.info({ fileId }, 'Downloading ZIP file from Google Drive');
+      const drive = await getUncachableGoogleDriveClient();
+      
+      // Get file metadata
+      const metadata = await drive.files.get({
+        fileId,
+        fields: 'name, size',
+        supportsAllDrives: true,
+      });
+      
+      const fileName = metadata.data.name || 'download.zip';
+      const fileSize = parseInt(metadata.data.size || '0', 10);
+      
+      // Max 500MB for ZIP files
+      const maxSize = 500 * 1024 * 1024;
+      if (fileSize > maxSize) {
+        throw new Error(`ZIP file too large (${(fileSize / 1024 / 1024).toFixed(1)}MB > 500MB limit)`);
+      }
+      
+      // Download the file
+      const response = await drive.files.get({
+        fileId,
+        alt: 'media',
+        supportsAllDrives: true,
+      }, {
+        responseType: 'arraybuffer',
+      });
+      
+      const buffer = Buffer.from(response.data as ArrayBuffer);
+      this.log.info({ fileId, fileName, size: buffer.length }, 'ZIP file downloaded');
+      
+      return { buffer, fileName };
+    } catch (error: any) {
+      this.log.error({ error: error.message, fileId }, 'Failed to download ZIP file');
+      throw error;
+    }
+  }
 }
 
 export const googleDriveService = new GoogleDriveService();
