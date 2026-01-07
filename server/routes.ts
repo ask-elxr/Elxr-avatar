@@ -6248,11 +6248,11 @@ This applies to EVERY response, regardless of conversation length.`;
       // @ts-ignore
       downloadResult.buffer = null;
 
-      // Limit text size (max 100KB for lightweight processing)
-      const maxTextSize = 100 * 1024;
+      // Limit text size (max 500KB - allows for longer transcripts while preventing memory issues)
+      const maxTextSize = 500 * 1024;
       if (text.length > maxTextSize) {
+        log.warn({ originalLength: text.length, truncatedTo: maxTextSize }, "Text truncated for memory safety");
         text = text.substring(0, maxTextSize);
-        log.warn({ originalLength: text.length }, "Text truncated for memory safety");
       }
 
       if (!text || text.trim().length < 50) {
@@ -6268,67 +6268,123 @@ This applies to EVERY response, regardless of conversation length.`;
       const documentId = `doc_topic_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
       
-      // Create a single chunk for lightweight processing (avoid chunking overhead)
-      const chunkText = text.substring(0, 8000); // Limit to ~2000 tokens for embedding
+      // Chunk settings: ~350 tokens per chunk with 60 token overlap (like podcast ingestion)
+      const CHUNK_TOKENS = 350;
+      const CHUNK_OVERLAP = 60;
+      const CHARS_PER_TOKEN = 4;
+      const maxChunkChars = CHUNK_TOKENS * CHARS_PER_TOKEN; // ~1400 chars
+      const overlapChars = CHUNK_OVERLAP * CHARS_PER_TOKEN; // ~240 chars
       
-      // Generate embedding using OpenAI directly (bypass heavy processor)
+      // Split text into chunks with sentence-boundary awareness
+      const chunks: string[] = [];
+      let position = 0;
+      
+      while (position < text.length) {
+        let endPosition = Math.min(position + maxChunkChars, text.length);
+        
+        // Try to end at sentence boundary (only if not at end of text)
+        if (endPosition < text.length) {
+          const searchStart = position + Math.floor(maxChunkChars / 2);
+          const searchText = text.slice(searchStart, endPosition);
+          const sentenceEnd = searchText.lastIndexOf('. ');
+          const questionEnd = searchText.lastIndexOf('? ');
+          const exclamEnd = searchText.lastIndexOf('! ');
+          const bestEnd = Math.max(sentenceEnd, questionEnd, exclamEnd);
+          if (bestEnd >= 0) {
+            endPosition = searchStart + bestEnd + 1;
+          }
+        }
+        
+        const chunkText = text.slice(position, endPosition).trim();
+        if (chunkText.length > 50) {
+          chunks.push(chunkText);
+        }
+        
+        // If we've reached the end, break
+        if (endPosition >= text.length) break;
+        
+        // Move position with overlap, ensuring we always advance
+        const nextPosition = endPosition - overlapChars;
+        position = Math.max(nextPosition, position + 100); // Always advance at least 100 chars
+      }
+      
+      log.info({ fileName: processedFileName, totalChunks: chunks.length, textLength: text.length }, "Text chunked for embedding");
+      
+      // Generate embedding using OpenAI directly
       const openaiKey = process.env.OPENAI_API_KEY;
       if (!openaiKey) {
         throw new Error("OPENAI_API_KEY not configured");
       }
       
-      const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${openaiKey}`
-        },
-        body: JSON.stringify({
-          model: 'text-embedding-3-small',
-          input: chunkText
-        })
-      });
+      // Process chunks in batches for efficiency (OpenAI supports batch embeddings)
+      const BATCH_SIZE = 20;
+      let chunksProcessed = 0;
+      
+      for (let batchStart = 0; batchStart < chunks.length; batchStart += BATCH_SIZE) {
+        const batchChunks = chunks.slice(batchStart, batchStart + BATCH_SIZE);
+        
+        const embeddingResponse = await fetch('https://api.openai.com/v1/embeddings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiKey}`
+          },
+          body: JSON.stringify({
+            model: 'text-embedding-3-small',
+            input: batchChunks
+          })
+        });
 
-      if (!embeddingResponse.ok) {
-        const errorText = await embeddingResponse.text();
-        throw new Error(`OpenAI embedding failed: ${errorText}`);
+        if (!embeddingResponse.ok) {
+          const errorText = await embeddingResponse.text();
+          throw new Error(`OpenAI embedding failed: ${errorText}`);
+        }
+
+        const embeddingData = await embeddingResponse.json();
+        
+        // Store each chunk in Pinecone
+        for (let i = 0; i < batchChunks.length; i++) {
+          const chunkIndex = batchStart + i;
+          const chunkId = `${documentId}_chunk_${chunkIndex}`;
+          const chunkText = batchChunks[i];
+          const embedding = embeddingData.data[i].embedding;
+          
+          const metadata = { 
+            documentId,
+            chunkIndex,
+            totalChunks: chunks.length,
+            type: 'document_chunk',
+            fileType: mimeType,
+            text: chunkText,
+            timestamp: new Date().toISOString(),
+            userId, 
+            category: normalizedNamespace,
+            namespace: normalizedNamespace,
+            source: 'google-drive-topic', 
+            originalFilename: fileName || processedFileName,
+            gdriveFileId: fileId
+          };
+
+          await pineconeService.storeConversation(chunkId, chunkText, embedding, metadata);
+          chunksProcessed++;
+        }
       }
-
-      const embeddingData = await embeddingResponse.json();
-      const embedding = embeddingData.data[0].embedding;
-
-      // Store directly in Pinecone
-      const chunkId = `${documentId}_chunk_0`;
-      const metadata = { 
-        documentId,
-        chunkIndex: 0,
-        type: 'document_chunk',
-        fileType: mimeType,
-        text: chunkText,
-        timestamp: new Date().toISOString(),
-        userId, 
-        category: normalizedNamespace,
-        namespace: normalizedNamespace,
-        source: 'google-drive-topic', 
-        originalFilename: fileName || processedFileName,
-        gdriveFileId: fileId  // Store Google Drive file ID for duplicate detection
-      };
-
-      await pineconeService.storeConversation(chunkId, chunkText, embedding, metadata);
+      
+      log.info({ chunksProcessed, fileName: processedFileName }, "All chunks stored in Pinecone");
 
       // Force garbage collection after processing
       if (global.gc) {
         global.gc();
       }
 
-      log.info({ fileName: processedFileName, namespace: normalizedNamespace }, "File uploaded successfully");
+      log.info({ fileName: processedFileName, namespace: normalizedNamespace, chunksProcessed }, "File uploaded successfully");
       res.json({ 
         success: true, 
-        message: "File uploaded successfully",
+        message: `File uploaded successfully (${chunksProcessed} chunks)`,
         fileName: processedFileName,
         namespace: normalizedNamespace,
         documentId,
-        chunksProcessed: 1
+        chunksProcessed
       });
 
     } catch (error) {
