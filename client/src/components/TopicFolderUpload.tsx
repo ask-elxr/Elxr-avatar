@@ -43,6 +43,8 @@ export function TopicFolderUpload() {
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Record<string, Set<string>>>({}); // folderId -> Set of fileIds
+  const [isBulkUploading, setIsBulkUploading] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, currentFolder: '' });
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -197,7 +199,7 @@ export function TopicFolderUpload() {
     }
   };
 
-  const handleUploadFolder = async (folder: TopicFolder) => {
+  const handleUploadFolder = async (folder: TopicFolder, silent: boolean = false): Promise<{ successCount: number; errorCount: number }> => {
     const status: UploadStatus = {
       folderId: folder.id,
       status: 'uploading',
@@ -229,16 +231,18 @@ export function TopicFolderUpload() {
       const files = allFiles.filter(f => f.uploadable !== false);
 
       if (files.length === 0) {
-        toast({
-          title: "No files to upload",
-          description: `${folder.name} has no supported files (${allFiles.length} files skipped due to size or type)`,
-          variant: "default",
-        });
+        if (!silent) {
+          toast({
+            title: "No files to upload",
+            description: `${folder.name} has no supported files (${allFiles.length} files skipped due to size or type)`,
+            variant: "default",
+          });
+        }
         setUploadStatuses(prev => ({
           ...prev,
           [folder.id]: { ...prev[folder.id], status: 'success', progress: 100 }
         }));
-        return;
+        return { successCount: 0, errorCount: 0 };
       }
 
       let successCount = 0;
@@ -291,13 +295,17 @@ export function TopicFolderUpload() {
         }
       }));
 
-      toast({
-        title: "Upload complete",
-        description: `${folder.name}: ${successCount} succeeded, ${errorCount} failed`,
-        variant: errorCount > 0 ? "destructive" : "default",
-      });
+      if (!silent) {
+        toast({
+          title: "Upload complete",
+          description: `${folder.name}: ${successCount} succeeded, ${errorCount} failed`,
+          variant: errorCount > 0 ? "destructive" : "default",
+        });
+      }
 
       queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+      
+      return { successCount, errorCount };
 
     } catch (error: any) {
       setUploadStatuses(prev => ({
@@ -309,11 +317,15 @@ export function TopicFolderUpload() {
         }
       }));
 
-      toast({
-        title: "Upload failed",
-        description: error.message || "Failed to upload folder",
-        variant: "destructive",
-      });
+      if (!silent) {
+        toast({
+          title: "Upload failed",
+          description: error.message || "Failed to upload folder",
+          variant: "destructive",
+        });
+      }
+      
+      return { successCount: 0, errorCount: 0 };
     }
   };
 
@@ -327,6 +339,68 @@ export function TopicFolderUpload() {
       }
       return next;
     });
+  };
+
+  // Bulk upload all folders automatically
+  const handleBulkUploadAll = async () => {
+    if (!topicFolders || topicFolders.length === 0) {
+      toast({
+        title: "No folders available",
+        description: "No topic folders found to upload",
+        variant: "default",
+      });
+      return;
+    }
+
+    const foldersWithFiles = topicFolders.filter(f => f.supportedFiles > 0);
+    if (foldersWithFiles.length === 0) {
+      toast({
+        title: "No files to upload",
+        description: "All topic folders are empty",
+        variant: "default",
+      });
+      return;
+    }
+
+    setIsBulkUploading(true);
+    setBulkProgress({ current: 0, total: foldersWithFiles.length, currentFolder: '' });
+
+    let totalSuccess = 0;
+    let totalError = 0;
+
+    try {
+      for (let i = 0; i < foldersWithFiles.length; i++) {
+        const folder = foldersWithFiles[i];
+        setBulkProgress({ current: i + 1, total: foldersWithFiles.length, currentFolder: folder.name });
+
+        // Process this folder (silent mode - don't show individual toasts)
+        const result = await handleUploadFolder(folder, true);
+        
+        // Use the returned counts directly
+        totalSuccess += result.successCount;
+        totalError += result.errorCount;
+
+        // Small delay between folders
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      toast({
+        title: "Bulk upload complete",
+        description: `Processed ${foldersWithFiles.length} folders: ${totalSuccess} files succeeded, ${totalError} failed`,
+        variant: totalError > 0 ? "destructive" : "default",
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Bulk upload failed",
+        description: error.message || "Failed to complete bulk upload",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBulkUploading(false);
+      setBulkProgress({ current: 0, total: 0, currentFolder: '' });
+      queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+    }
   };
 
   const getStatusBadge = (status: UploadStatus | undefined) => {
@@ -373,19 +447,37 @@ export function TopicFolderUpload() {
               <span className="block text-xs mt-1 text-white/50">Click on a folder to expand and select files. Supports PDF, Word, text, markdown, and ZIP (up to 100MB).</span>
             </CardDescription>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              queryClient.invalidateQueries({ queryKey: ['/api/google-drive/topic-folders'] });
-              refetch();
-            }}
-            className="gap-1"
-            data-testid="button-refresh-folders"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleBulkUploadAll}
+              disabled={isBulkUploading || !topicFolders?.some(f => f.supportedFiles > 0)}
+              className="gap-1 bg-green-600 hover:bg-green-700"
+              data-testid="button-upload-all-folders"
+            >
+              {isBulkUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {isBulkUploading ? `Processing ${bulkProgress.current}/${bulkProgress.total}...` : 'Upload All Folders'}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['/api/google-drive/topic-folders'] });
+                refetch();
+              }}
+              className="gap-1"
+              disabled={isBulkUploading}
+              data-testid="button-refresh-folders"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
         <div className="flex gap-4 mt-2">
           <Badge variant="outline" className="text-purple-400 border-purple-400/50">
@@ -395,6 +487,15 @@ export function TopicFolderUpload() {
             {totalFiles} files ready
           </Badge>
         </div>
+        {isBulkUploading && (
+          <div className="mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+            <div className="flex items-center gap-2 text-green-300 mb-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Processing folder {bulkProgress.current}/{bulkProgress.total}: {bulkProgress.currentFolder}</span>
+            </div>
+            <Progress value={(bulkProgress.current / bulkProgress.total) * 100} className="h-2" />
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
