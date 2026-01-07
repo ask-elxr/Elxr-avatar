@@ -199,7 +199,7 @@ export function TopicFolderUpload() {
     }
   };
 
-  const handleUploadFolder = async (folder: TopicFolder, silent: boolean = false): Promise<{ successCount: number; errorCount: number }> => {
+  const handleUploadFolder = async (folder: TopicFolder, silent: boolean = false): Promise<{ successCount: number; errorCount: number; skippedCount: number }> => {
     const status: UploadStatus = {
       folderId: folder.id,
       status: 'uploading',
@@ -215,7 +215,9 @@ export function TopicFolderUpload() {
     try {
       // Get admin secret for authentication
       const adminSecret = localStorage.getItem('admin_secret');
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
       if (adminSecret) {
         headers['X-Admin-Secret'] = adminSecret;
       }
@@ -228,9 +230,9 @@ export function TopicFolderUpload() {
       const allFiles: FileInfo[] = filesData.files || [];
       
       // Only upload files that are marked as uploadable
-      const files = allFiles.filter(f => f.uploadable !== false);
+      const uploadableFiles = allFiles.filter(f => f.uploadable !== false);
 
-      if (files.length === 0) {
+      if (uploadableFiles.length === 0) {
         if (!silent) {
           toast({
             title: "No files to upload",
@@ -242,7 +244,51 @@ export function TopicFolderUpload() {
           ...prev,
           [folder.id]: { ...prev[folder.id], status: 'success', progress: 100 }
         }));
-        return { successCount: 0, errorCount: 0 };
+        return { successCount: 0, errorCount: 0, skippedCount: 0 };
+      }
+
+      // Check for existing files (duplicates) in Pinecone
+      setUploadStatuses(prev => ({
+        ...prev,
+        [folder.id]: { ...prev[folder.id], currentFile: 'Checking for duplicates...' }
+      }));
+
+      let existingFileIds: Set<string> = new Set();
+      try {
+        const checkResponse = await fetch('/api/pinecone/check-existing-files', {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: JSON.stringify({
+            namespace: folder.namespace,
+            fileIds: uploadableFiles.map(f => f.id)
+          })
+        });
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          existingFileIds = new Set(checkData.existingFileIds || []);
+        }
+      } catch (checkError) {
+        console.warn('Failed to check for duplicates, proceeding with upload:', checkError);
+      }
+
+      // Filter out files that already exist
+      const files = uploadableFiles.filter(f => !existingFileIds.has(f.id));
+      const skippedCount = existingFileIds.size;
+
+      if (files.length === 0) {
+        if (!silent) {
+          toast({
+            title: "All files already uploaded",
+            description: `${folder.name}: ${skippedCount} files already exist in Pinecone`,
+            variant: "default",
+          });
+        }
+        setUploadStatuses(prev => ({
+          ...prev,
+          [folder.id]: { ...prev[folder.id], status: 'success', progress: 100, currentFile: '' }
+        }));
+        return { successCount: 0, errorCount: 0, skippedCount };
       }
 
       let successCount = 0;
@@ -296,16 +342,17 @@ export function TopicFolderUpload() {
       }));
 
       if (!silent) {
+        const skippedMsg = skippedCount > 0 ? `, ${skippedCount} duplicates skipped` : '';
         toast({
           title: "Upload complete",
-          description: `${folder.name}: ${successCount} succeeded, ${errorCount} failed`,
+          description: `${folder.name}: ${successCount} uploaded, ${errorCount} failed${skippedMsg}`,
           variant: errorCount > 0 ? "destructive" : "default",
         });
       }
 
       queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
       
-      return { successCount, errorCount };
+      return { successCount, errorCount, skippedCount };
 
     } catch (error: any) {
       setUploadStatuses(prev => ({
@@ -325,7 +372,7 @@ export function TopicFolderUpload() {
         });
       }
       
-      return { successCount: 0, errorCount: 0 };
+      return { successCount: 0, errorCount: 0, skippedCount: 0 };
     }
   };
 
@@ -367,6 +414,7 @@ export function TopicFolderUpload() {
 
     let totalSuccess = 0;
     let totalError = 0;
+    let totalSkipped = 0;
 
     try {
       for (let i = 0; i < foldersWithFiles.length; i++) {
@@ -379,14 +427,16 @@ export function TopicFolderUpload() {
         // Use the returned counts directly
         totalSuccess += result.successCount;
         totalError += result.errorCount;
+        totalSkipped += result.skippedCount;
 
         // Small delay between folders
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
 
+      const skippedMsg = totalSkipped > 0 ? `, ${totalSkipped} duplicates skipped` : '';
       toast({
         title: "Bulk upload complete",
-        description: `Processed ${foldersWithFiles.length} folders: ${totalSuccess} files succeeded, ${totalError} failed`,
+        description: `Processed ${foldersWithFiles.length} folders: ${totalSuccess} uploaded, ${totalError} failed${skippedMsg}`,
         variant: totalError > 0 ? "destructive" : "default",
       });
 

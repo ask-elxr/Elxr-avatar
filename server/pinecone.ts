@@ -474,6 +474,66 @@ class PineconeService {
       throw error;
     }
   }
+
+  // Check if files with given gdriveFileIds exist in a namespace
+  async checkExistingGdriveFiles(
+    namespace: string,
+    gdriveFileIds: string[],
+    indexName: PineconeIndexName = this.defaultIndexName
+  ): Promise<Set<string>> {
+    if (!this.client || gdriveFileIds.length === 0) {
+      return new Set();
+    }
+
+    const existingIds = new Set<string>();
+    
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+      
+      // Scan through namespace vectors to find existing gdriveFileIds
+      // Using pagination to handle large namespaces efficiently
+      let paginationToken: string | undefined = undefined;
+      const batchSize = 100;
+      
+      do {
+        const listResponse = await ns.listPaginated({
+          limit: batchSize,
+          paginationToken
+        });
+
+        if (listResponse.vectors && listResponse.vectors.length > 0) {
+          const vectorIds = listResponse.vectors.map(v => v.id).filter((id): id is string => id !== undefined);
+          
+          if (vectorIds.length > 0) {
+            const fetchResponse = await ns.fetch(vectorIds);
+            
+            if (fetchResponse.records) {
+              for (const [_, record] of Object.entries(fetchResponse.records)) {
+                const gdriveFileId = (record.metadata as any)?.gdriveFileId;
+                if (gdriveFileId && gdriveFileIds.includes(gdriveFileId)) {
+                  existingIds.add(gdriveFileId);
+                }
+              }
+            }
+          }
+        }
+
+        paginationToken = listResponse.pagination?.next;
+        
+        // Early exit if we found all files
+        if (existingIds.size >= gdriveFileIds.length) {
+          break;
+        }
+      } while (paginationToken);
+
+      return existingIds;
+    } catch (error) {
+      console.error(`Error checking existing files in namespace "${namespace}":`, error);
+      // Return empty set on error to allow upload to proceed
+      return new Set();
+    }
+  }
 }
 
 export const pineconeService = new PineconeService();

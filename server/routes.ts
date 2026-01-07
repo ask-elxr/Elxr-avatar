@@ -6025,6 +6025,39 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // Check for existing files in a namespace by Google Drive file IDs
+  app.post("/api/pinecone/check-existing-files", isAuthenticated, requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "pinecone", operation: "checkExistingFiles" });
+    try {
+      const { namespace, fileIds } = req.body;
+
+      if (!namespace || !fileIds || !Array.isArray(fileIds)) {
+        return res.status(400).json({
+          error: "Missing required fields: namespace, fileIds (array)",
+        });
+      }
+
+      const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+      log.info({ namespace: normalizedNamespace, fileCount: fileIds.length }, "Checking for existing files");
+
+      const existingIds = await pineconeService.checkExistingGdriveFiles(normalizedNamespace, fileIds);
+      
+      res.json({
+        success: true,
+        namespace: normalizedNamespace,
+        existingFileIds: Array.from(existingIds),
+        existingCount: existingIds.size,
+        totalChecked: fileIds.length
+      });
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to check existing files");
+      res.status(500).json({
+        error: "Failed to check existing files",
+        details: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  });
+
   // Upload a single file from a topic folder to its namespace (admin only)
   // Uses lightweight processing to avoid memory issues
   app.post("/api/google-drive/topic-upload-single", isAuthenticated, requireAdmin, async (req: any, res) => {
@@ -6205,7 +6238,8 @@ This applies to EVERY response, regardless of conversation length.`;
         category: normalizedNamespace,
         namespace: normalizedNamespace,
         source: 'google-drive-topic', 
-        originalFilename: fileName || processedFileName
+        originalFilename: fileName || processedFileName,
+        gdriveFileId: fileId  // Store Google Drive file ID for duplicate detection
       };
 
       await pineconeService.storeConversation(chunkId, chunkText, embedding, metadata);
