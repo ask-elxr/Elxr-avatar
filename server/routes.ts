@@ -6874,8 +6874,9 @@ This applies to EVERY response, regardless of conversation length.`;
           }
           
           // Process with conversational chunker
-          const { processTranscriptToChunks } = await import('./ingest/conversationalChunker');
-          const chunks = await processTranscriptToChunks(text, file.fileName);
+          const { processTranscript } = await import('./ingest/conversationalChunker');
+          const result = await processTranscript(text, file.fileName);
+          const chunks = result.chunks;
           
           if (chunks.length === 0) {
             results.skipped++;
@@ -6894,8 +6895,10 @@ This applies to EVERY response, regardless of conversation length.`;
               source: file.fileName,
               gdriveFileId: file.fileId,
               namespace: file.namespace,
-              contentType: chunk.metadata?.contentType || 'general',
-              ...chunk.metadata
+              contentType: chunk.content_type || 'general',
+              tone: chunk.tone,
+              topic: chunk.topic,
+              confidence: chunk.confidence
             }
           }));
           
