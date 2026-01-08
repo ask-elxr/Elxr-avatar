@@ -6779,6 +6779,160 @@ This applies to EVERY response, regardless of conversation length.`;
       });
     }
   });
+  
+  // Bulk ingest ALL files from topic folders (n8n webhook)
+  app.post("/api/webhook/n8n/ingest-all", async (req, res) => {
+    const log = logger.child({ service: "n8n-webhook", operation: "ingestAll" });
+    
+    // Authenticate via admin secret
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized - invalid admin secret" });
+    }
+    
+    // Long timeout for bulk operations (30 minutes)
+    req.setTimeout(1800000);
+    res.setTimeout(1800000);
+    
+    try {
+      log.info("Starting bulk ingestion of all topic folder files");
+      
+      // Get all topic folders
+      const folders = await googleDriveService.getTopicFolders();
+      
+      // Build flat list of all files
+      const allFiles: Array<{
+        fileId: string;
+        fileName: string;
+        namespace: string;
+        folderName: string;
+      }> = [];
+      
+      for (const folder of folders) {
+        try {
+          const files = await googleDriveService.getFilesInTopicFolder(folder.id);
+          for (const file of files) {
+            allFiles.push({
+              fileId: file.id,
+              fileName: file.name,
+              namespace: folder.namespace,
+              folderName: folder.name
+            });
+          }
+        } catch (folderError) {
+          log.warn({ folderId: folder.id, folderName: folder.name }, "Failed to list files in folder");
+        }
+      }
+      
+      log.info({ totalFiles: allFiles.length }, "Files collected, starting ingestion");
+      
+      const results = {
+        total: allFiles.length,
+        success: 0,
+        failed: 0,
+        skipped: 0,
+        errors: [] as Array<{ fileName: string; error: string }>
+      };
+      
+      // Process each file sequentially (to avoid rate limits)
+      for (let i = 0; i < allFiles.length; i++) {
+        const file = allFiles[i];
+        log.info({ progress: `${i + 1}/${allFiles.length}`, fileName: file.fileName, namespace: file.namespace }, "Processing file");
+        
+        try {
+          // Download file
+          const downloadResult = await googleDriveService.downloadFile(file.fileId);
+          
+          if (!downloadResult.buffer) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Extract text based on file type
+          let text = '';
+          const mimeType = downloadResult.mimeType;
+          const fileName = file.fileName.toLowerCase();
+          
+          if (mimeType === 'text/plain' || fileName.endsWith('.txt') || fileName.endsWith('.md')) {
+            text = downloadResult.buffer.toString('utf-8');
+          } else if (mimeType === 'application/pdf' || fileName.endsWith('.pdf')) {
+            const pdfParse = await import('pdf-parse').then(m => m.default);
+            const pdfData = await pdfParse(downloadResult.buffer);
+            text = pdfData.text || '';
+          } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileName.endsWith('.docx')) {
+            const mammoth = await import('mammoth');
+            const result = await mammoth.extractRawText({ buffer: downloadResult.buffer });
+            text = result.value;
+          } else {
+            results.skipped++;
+            continue;
+          }
+          
+          if (!text || text.trim().length < 50) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Process with conversational chunker
+          const { processTranscriptToChunks } = await import('./ingest/conversationalChunker');
+          const chunks = await processTranscriptToChunks(text, file.fileName);
+          
+          if (chunks.length === 0) {
+            results.skipped++;
+            continue;
+          }
+          
+          // Generate embeddings and store in Pinecone
+          const { generateEmbeddings } = await import('./embeddings');
+          const embeddings = await generateEmbeddings(chunks.map(c => c.text));
+          
+          const vectors = chunks.map((chunk, idx) => ({
+            id: `${file.fileId}_chunk_${idx}`,
+            values: embeddings[idx],
+            metadata: {
+              text: chunk.text,
+              source: file.fileName,
+              gdriveFileId: file.fileId,
+              namespace: file.namespace,
+              contentType: chunk.metadata?.contentType || 'general',
+              ...chunk.metadata
+            }
+          }));
+          
+          // Upsert to Pinecone
+          await pineconeService.upsertVectors(vectors, file.namespace);
+          
+          results.success++;
+          log.info({ fileName: file.fileName, chunks: chunks.length, namespace: file.namespace }, "File ingested successfully");
+          
+          // Small delay between files to avoid rate limits
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+        } catch (fileError) {
+          results.failed++;
+          results.errors.push({
+            fileName: file.fileName,
+            error: fileError instanceof Error ? fileError.message : "Unknown error"
+          });
+          log.error({ fileName: file.fileName, error: fileError instanceof Error ? fileError.message : "Unknown" }, "Failed to ingest file");
+        }
+      }
+      
+      log.info(results, "Bulk ingestion complete");
+      
+      res.json({
+        success: true,
+        results
+      });
+      
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Bulk ingestion failed");
+      res.status(500).json({
+        error: "Bulk ingestion failed",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
 
   // Batch upload files from a Google Drive folder to Pinecone
   app.post("/api/google-drive/batch-upload", isAuthenticated, async (req: any, res) => {
