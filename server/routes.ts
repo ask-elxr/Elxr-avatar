@@ -6884,7 +6884,7 @@ This applies to EVERY response, regardless of conversation length.`;
           }
           
           // Generate embeddings and store in Pinecone
-          const { generateEmbeddings } = await import('./embeddings');
+          const { generateEmbeddings } = await import('./documentService.js');
           const embeddings = await generateEmbeddings(chunks.map(c => c.text));
           
           const vectors = chunks.map((chunk, idx) => ({
