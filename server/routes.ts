@@ -6883,30 +6883,53 @@ This applies to EVERY response, regardless of conversation length.`;
             continue;
           }
           
+          // Classify content to detect namespaces (content-based, not folder-based)
+          const { classifyTranscript } = await import('./ingest/namespaceClassifier.js');
+          const classification = await classifyTranscript(text, file.fileName);
+          const targetNamespaces = [classification.primary];
+          if (classification.secondary) {
+            targetNamespaces.push(classification.secondary);
+          }
+          
+          log.info({ 
+            fileName: file.fileName, 
+            folderNamespace: file.namespace,
+            detectedNamespaces: targetNamespaces,
+            confidence: classification.confidence,
+            rationale: classification.rationale
+          }, "Content-based namespace detection");
+          
           // Generate embeddings and store in Pinecone
           const { generateEmbeddings } = await import('./documentService.js');
           const embeddings = await generateEmbeddings(chunks.map(c => c.text));
           
-          const vectors = chunks.map((chunk, idx) => ({
-            id: `${file.fileId}_chunk_${idx}`,
-            values: embeddings[idx],
-            metadata: {
-              text: chunk.text,
-              source: file.fileName,
-              gdriveFileId: file.fileId,
-              namespace: file.namespace,
-              contentType: chunk.content_type || 'general',
-              tone: chunk.tone,
-              topic: chunk.topic,
-              confidence: chunk.confidence
-            }
-          }));
-          
-          // Upsert to Pinecone
-          await pineconeService.upsertVectors(vectors, file.namespace);
+          // Upsert to ALL detected namespaces (primary and secondary)
+          for (const targetNs of targetNamespaces) {
+            const vectors = chunks.map((chunk, idx) => ({
+              id: `${file.fileId}_${targetNs}_chunk_${idx}`,
+              values: embeddings[idx],
+              metadata: {
+                text: chunk.text,
+                source: file.fileName,
+                gdriveFileId: file.fileId,
+                folderNamespace: file.namespace,
+                detectedNamespace: targetNs,
+                contentType: chunk.content_type || 'general',
+                tone: chunk.tone,
+                topic: chunk.topic,
+                confidence: chunk.confidence
+              }
+            }));
+            
+            await pineconeService.upsertVectors(vectors, targetNs);
+          }
           
           results.success++;
-          log.info({ fileName: file.fileName, chunks: chunks.length, namespace: file.namespace }, "File ingested successfully");
+          log.info({ 
+            fileName: file.fileName, 
+            chunks: chunks.length, 
+            namespaces: targetNamespaces 
+          }, "File ingested successfully to detected namespaces");
           
           // Small delay between files to avoid rate limits
           await new Promise(resolve => setTimeout(resolve, 500));
