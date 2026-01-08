@@ -534,6 +534,34 @@ class PineconeService {
       return new Set();
     }
   }
+
+  /**
+   * Upsert vectors directly to a namespace
+   * Used for bulk ingestion with content-based namespace detection
+   */
+  async upsertVectors(
+    vectors: { id: string; values: number[]; metadata: Record<string, any> }[],
+    namespace: string,
+    indexName: PineconeIndexName = this.defaultIndexName
+  ) {
+    try {
+      const index = await this.initializeIndex(indexName);
+      const ns = index.namespace(namespace);
+      
+      // Upsert in batches of 100 to avoid API limits
+      const batchSize = 100;
+      for (let i = 0; i < vectors.length; i += batchSize) {
+        const batch = vectors.slice(i, i + batchSize);
+        await ns.upsert(batch);
+      }
+      
+      console.log(`Upserted ${vectors.length} vectors to namespace "${namespace}"`);
+      return { success: true, count: vectors.length };
+    } catch (error) {
+      console.error(`Error upserting vectors to namespace "${namespace}":`, error);
+      throw error;
+    }
+  }
 }
 
 export const pineconeService = new PineconeService();
