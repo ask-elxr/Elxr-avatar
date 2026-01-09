@@ -27,7 +27,7 @@ export default function AdminLogin() {
       });
 
       if (response.ok) {
-        localStorage.setItem("adminSecret", secret);
+        localStorage.setItem("admin_secret", secret);
         toast({
           title: "Welcome back",
           description: "Redirecting to admin panel...",
