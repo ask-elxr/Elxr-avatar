@@ -212,9 +212,9 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
       - Maintain context from the conversation history
       - Think "helpful friend" not "encyclopedia"`;
 
-    // Use lower max_tokens for faster response in voice mode, higher when details requested
-    // Video mode: 180 tokens (2-3 sentences + continuation offer), Detail mode: 350 tokens
-    const maxTokens = wantsDetailedResponse ? 350 : (isVoiceMode ? 180 : 1000);
+    // Use appropriate max_tokens for voice mode to allow complete responses
+    // Voice mode: 400 tokens (4-5 sentences), Detail mode: 800 tokens, Text mode: 1000 tokens
+    const maxTokens = wantsDetailedResponse ? 800 : (isVoiceMode ? 400 : 1000);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
