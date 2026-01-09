@@ -13,6 +13,7 @@ export interface PersonaSpec {
   voice: {
     tone: string[];
     humor: string;
+    humorStyle?: string;
     readingLevel: string;
     bannedWords: string[];
     signaturePhrases: string[];

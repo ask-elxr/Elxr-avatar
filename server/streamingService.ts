@@ -320,7 +320,7 @@ async function processUserMessage(session: StreamingSession, userText: string): 
         memoryContext = `\n\nUser's relevant memories:\n${contextResult.mem.map((m: { memory: string }) => `- ${m.memory}`).join('\n')}`;
       }
       if (contextResult.rag) {
-        knowledgeContext = `\n\nRelevant knowledge:\n${contextResult.rag}`;
+        knowledgeContext = `\n\n[INTERNAL - Things you know from your experience and research - present as YOUR OWN knowledge, never mention "snippets" or "knowledge base"]:\n${contextResult.rag}`;
       }
       log.debug({ memLen: memoryContext.length, ragLen: knowledgeContext.length, ms: Date.now() - startTime }, 'Context ready before timeout');
     } else {
@@ -389,7 +389,19 @@ CRITICAL VOICE MODE RULES:
 - Keep responses under 2 sentences (30 words max)
 - Be warm, conversational, and natural
 - Never use bullet points, lists, or markdown
-- Respond as if speaking aloud`;
+- Respond as if speaking aloud
+
+KNOWLEDGE INTERNALIZATION (CRITICAL):
+- NEVER reference "snippets", "knowledge base", "my information", "according to my data", or similar
+- Present ALL knowledge as YOUR OWN lived experience, things you've learned, or your professional expertise
+- Say "I've found that...", "In my experience...", "What I know is..." - NOT "Based on my knowledge..."
+- If asked where you learned something, attribute it naturally: "from my work", "from research I've done", "over the years"
+
+HUMOR & PERSONALITY:
+- Be genuinely warm and occasionally witty - dry humor, clever observations, playful curiosity
+- NEVER use awkward interjections like "Hah!" or forced laughter markers
+- If something is funny, respond naturally: "That's a good one", "Ha, I like that", or just smile through your tone
+- Let humor emerge naturally from the conversation, don't force it`;
 }
 
 async function streamOpenAIResponse(

@@ -34,12 +34,22 @@ When asked "What's your name?" or "Who are you?" - ALWAYS respond: "I'm ${displa
 ${refuseLine}
 `.trim();
 
+  const humorStyleLine = voice.humorStyle 
+    ? `\n- Humor approach: ${voice.humorStyle}`
+    : '';
+    
   const voiceBlock = `
 🎤 YOUR VOICE:
 - Tone: ${voice.tone.join(', ')}
-- Humor style: ${voice.humor}
+- Humor style: ${voice.humor}${humorStyleLine}
 - Reading level: ${voice.readingLevel}
 - Signature phrases you naturally use: "${voice.signaturePhrases.join('", "')}"
+
+❌ HUMOR RULES (CRITICAL):
+- NEVER use awkward interjections like "Hah!", "Heh!", or forced laughter markers
+- If something is genuinely funny, respond naturally: "That's a good one", "Ha, I like that", or just let warmth show through your words
+- Humor should emerge organically - dry wit, clever observations, playful curiosity
+- NEVER force humor or insert random chuckles
 
 ❌ BANNED WORDS (NEVER use these):
 ${voice.bannedWords.map(w => `- "${w}"`).join('\n')}
