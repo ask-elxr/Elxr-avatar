@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { PINECONE_CATEGORIES, CATEGORY_DESCRIPTIONS, type PineconeCategory } from "@shared/pineconeCategories";
 import { GoogleDrivePicker } from "./GoogleDrivePicker";
+import { getAdminHeaders } from "@/lib/adminAuth";
 
 interface UploadResult {
   success: boolean;
@@ -161,6 +162,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
           method: 'POST',
           body: formData,
           credentials: 'include',
+          headers: getAdminHeaders(),
         });
 
         if (!response.ok) {
