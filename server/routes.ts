@@ -6837,6 +6837,15 @@ This applies to EVERY response, regardless of conversation length.`;
       // Process each file sequentially (to avoid rate limits)
       for (let i = 0; i < allFiles.length; i++) {
         const file = allFiles[i];
+        const fileNameLower = file.fileName.toLowerCase();
+        
+        // Skip ZIP files entirely (user request - podcasts handled separately)
+        if (fileNameLower.endsWith('.zip')) {
+          log.info({ progress: `${i + 1}/${allFiles.length}`, fileName: file.fileName }, "Skipping ZIP file");
+          results.skipped++;
+          continue;
+        }
+        
         log.info({ progress: `${i + 1}/${allFiles.length}`, fileName: file.fileName, namespace: file.namespace }, "Processing file");
         
         try {
