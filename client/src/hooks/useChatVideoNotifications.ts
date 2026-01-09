@@ -1,6 +1,7 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, createElement } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import type { ChatGeneratedVideo } from "@shared/schema";
 
 const NOTIFICATION_WINDOW_MS = 10 * 60 * 1000;
@@ -127,19 +128,29 @@ export function useChatVideoNotifications(userId: string | null) {
 
       if (isNewlyCompleted && notAlreadySeen) {
         addSeenNotification(userId, videoId);
+        const action = video.videoUrl ? createElement(ToastAction, {
+          altText: "Watch Video",
+          onClick: () => window.open(video.videoUrl!, '_blank'),
+        } as any, "Watch Now") : undefined;
         toast({
           title: "Video Ready! 🎬",
-          description: `Your video about "${video.topic}" is ready to view in the Video Courses section.`,
-          duration: 10000,
+          description: `Your video about "${video.topic}" is ready!`,
+          duration: 20000,
+          action: action as any,
         });
         hasNewCompletions = true;
         console.log(`[Notification] Chat video completed: ${video.topic}`);
       } else if (isInitialLoadRef.current && isRecentCompletion && notAlreadySeen) {
         addSeenNotification(userId, videoId);
+        const action = video.videoUrl ? createElement(ToastAction, {
+          altText: "Watch Video",
+          onClick: () => window.open(video.videoUrl!, '_blank'),
+        } as any, "Watch Now") : undefined;
         toast({
           title: "Video Ready! 🎬",
-          description: `Your video about "${video.topic}" is ready to view in the Video Courses section.`,
-          duration: 10000,
+          description: `Your video about "${video.topic}" is ready!`,
+          duration: 20000,
+          action: action as any,
         });
         hasNewCompletions = true;
         console.log(`[Notification] Recent chat video detected: ${video.topic}`);
