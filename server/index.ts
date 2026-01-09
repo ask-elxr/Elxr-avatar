@@ -111,9 +111,17 @@ app.use('/attached_assets', express.static(attachedAssetsPath));
 console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
 
 // Serve demo pages directly (before Vite middleware catches them)
-const publicPath = path.resolve(process.cwd(), 'public');
+// Check multiple locations for production compatibility
+const productionPublicPath = path.resolve(import.meta.dirname, '..', 'public');
+const devPublicPath = path.resolve(process.cwd(), 'public');
+const publicPath = fs.existsSync(productionPublicPath) ? productionPublicPath : devPublicPath;
 app.get('/demo/mark-kohl', (req, res) => {
-  res.sendFile(path.join(publicPath, 'demo-mark-kohl.html'));
+  const filePath = path.join(publicPath, 'demo-mark-kohl.html');
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send('Demo page not found');
+  }
 });
 app.use('/demo', express.static(publicPath));
 console.log(`📄 Serving demo pages from: ${publicPath}`);
