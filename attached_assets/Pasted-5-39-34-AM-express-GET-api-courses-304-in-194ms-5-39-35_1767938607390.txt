@@ -1,0 +1,1076 @@
+5:39:34 AM [express] GET /api/courses 304 in 194ms :: []
+5:39:35 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:39:40 AM [express] GET /api/courses 304 in 240ms :: []
+5:39:40 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:39:45 AM [express] GET /api/courses 304 in 194ms :: []
+5:39:46 AM [express] GET /api/courses/chat-videos 304 in 404ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:39:51 AM [express] GET /api/courses 304 in 214ms :: []
+5:39:51 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:39:54 AM [express] GET /api/auth/user 304 in 197ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:39:56 AM [express] GET /api/courses 304 in 197ms :: []
+5:39:56 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:02 AM [express] GET /api/courses 304 in 200ms :: []
+5:40:02 AM [express] GET /api/courses/chat-videos 304 in 263ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:04 AM [express] GET /api/heygen/credits 304 in 329ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:40:04] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:40:07 AM [express] GET /api/courses 304 in 198ms :: []
+5:40:07 AM [express] GET /api/courses/chat-videos 304 in 259ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:13 AM [express] GET /api/courses 304 in 204ms :: []
+5:40:13 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:18 AM [express] GET /api/courses 304 in 196ms :: []
+5:40:18 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:24 AM [express] GET /api/courses 304 in 196ms :: []
+5:40:24 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:24 AM [express] GET /api/auth/user 304 in 415ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:40:29 AM [express] GET /api/courses 304 in 199ms :: []
+5:40:29 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:35 AM [express] GET /api/courses 304 in 198ms :: []
+5:40:35 AM [express] GET /api/courses/chat-videos 304 in 397ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:35 AM [express] GET /api/heygen/credits 304 in 330ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:40:35] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:40:40 AM [express] GET /api/courses 304 in 205ms :: []
+5:40:40 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:46 AM [express] GET /api/courses 304 in 198ms :: []
+5:40:46 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:51 AM [express] GET /api/courses 304 in 201ms :: []
+5:40:51 AM [express] GET /api/courses/chat-videos 304 in 211ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:40:54 AM [express] GET /api/auth/user 304 in 197ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:40:57 AM [express] GET /api/courses 304 in 199ms :: []
+5:40:57 AM [express] GET /api/courses/chat-videos 304 in 205ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:02 AM [express] GET /api/courses 304 in 206ms :: []
+5:41:02 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:05 AM [express] GET /api/heygen/credits 304 in 345ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:41:05] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:41:07 AM [express] GET /api/courses 304 in 197ms :: []
+5:41:08 AM [express] GET /api/courses/chat-videos 304 in 259ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:13 AM [express] GET /api/courses 304 in 201ms :: []
+5:41:13 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:18 AM [express] GET /api/courses 304 in 195ms :: []
+5:41:19 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:24 AM [express] GET /api/auth/user 304 in 194ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:41:24 AM [express] GET /api/courses 304 in 201ms :: []
+5:41:24 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:29 AM [express] GET /api/courses 304 in 209ms :: []
+5:41:30 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:35 AM [express] GET /api/courses 304 in 195ms :: []
+5:41:35 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:36 AM [express] GET /api/heygen/credits 304 in 327ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:41:36] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:41:40 AM [express] GET /api/courses 304 in 196ms :: []
+5:41:41 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:46 AM [express] GET /api/courses 304 in 194ms :: []
+5:41:46 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:51 AM [express] GET /api/courses 304 in 197ms :: []
+5:41:52 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:41:54 AM [express] GET /api/auth/user 304 in 196ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:41:57 AM [express] GET /api/courses 304 in 201ms :: []
+5:41:57 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:02 AM [express] GET /api/courses 304 in 196ms :: []
+5:42:03 AM [express] GET /api/courses/chat-videos 304 in 208ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:06 AM [express] GET /api/heygen/credits 304 in 339ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:42:06] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:42:07 AM [express] GET /api/courses 304 in 197ms :: []
+5:42:08 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:13 AM [express] GET /api/courses 304 in 206ms :: []
+5:42:13 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:18 AM [express] GET /api/courses 304 in 200ms :: []
+5:42:19 AM [express] GET /api/courses/chat-videos 304 in 258ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:24 AM [express] GET /api/auth/user 304 in 196ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:42:24 AM [express] GET /api/courses 304 in 395ms :: []
+5:42:24 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:30 AM [express] GET /api/courses/chat-videos 304 in 192ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:30 AM [express] GET /api/courses 304 in 197ms :: []
+5:42:35 AM [express] GET /api/courses 304 in 191ms :: []
+5:42:35 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:37 AM [express] GET /api/heygen/credits 304 in 327ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:42:37] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:42:40 AM [express] GET /api/courses 304 in 195ms :: []
+5:42:41 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:46 AM [express] GET /api/courses 304 in 196ms :: []
+5:42:46 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:51 AM [express] GET /api/courses 304 in 197ms :: []
+5:42:51 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:42:54 AM [express] GET /api/auth/user 304 in 197ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:42:57 AM [express] GET /api/courses 304 in 199ms :: []
+5:42:57 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:02 AM [express] GET /api/courses 304 in 201ms :: []
+5:43:02 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:07 AM [express] GET /api/heygen/credits 304 in 327ms :: {"limit":1000,"totalUsed":320,"remainin…
+5:43:08 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:08 AM [express] GET /api/courses 304 in 400ms :: []
+[05:43:07] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:43:13 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:13 AM [express] GET /api/courses 304 in 198ms :: []
+5:43:19 AM [express] GET /api/courses 304 in 193ms :: []
+5:43:19 AM [express] GET /api/courses/chat-videos 304 in 201ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:24 AM [express] GET /api/auth/user 304 in 201ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:43:24 AM [express] GET /api/courses 304 in 197ms :: []
+5:43:24 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:30 AM [express] GET /api/courses 304 in 194ms :: []
+5:43:30 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:35 AM [express] GET /api/courses 304 in 197ms :: []
+5:43:35 AM [express] GET /api/courses/chat-videos 304 in 192ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:38 AM [express] GET /api/heygen/credits 304 in 322ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:43:38] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:43:40 AM [express] GET /api/courses 304 in 194ms :: []
+5:43:40 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:46 AM [express] GET /api/courses 304 in 197ms :: []
+5:43:46 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:51 AM [express] GET /api/courses 304 in 197ms :: []
+5:43:51 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:43:54 AM [express] GET /api/auth/user 304 in 198ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:43:57 AM [express] GET /api/courses 304 in 195ms :: []
+5:43:57 AM [express] GET /api/courses/chat-videos 304 in 193ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:02 AM [express] GET /api/courses 304 in 194ms :: []
+5:44:02 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:08 AM [express] GET /api/courses 304 in 198ms :: []
+5:44:08 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:08 AM [express] GET /api/heygen/credits 304 in 321ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:44:08] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:44:13 AM [express] GET /api/courses 304 in 194ms :: []
+5:44:13 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:19 AM [express] GET /api/courses 304 in 205ms :: []
+5:44:19 AM [express] GET /api/courses/chat-videos 304 in 254ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:24 AM [express] GET /api/auth/user 304 in 193ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:44:24 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:24 AM [express] GET /api/courses 304 in 202ms :: []
+5:44:30 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:30 AM [express] GET /api/courses 304 in 194ms :: []
+5:44:35 AM [express] GET /api/courses 304 in 198ms :: []
+5:44:35 AM [express] GET /api/courses/chat-videos 304 in 253ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:39 AM [express] GET /api/heygen/credits 304 in 322ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:44:39] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:44:40 AM [express] GET /api/courses 304 in 193ms :: []
+5:44:41 AM [express] GET /api/courses/chat-videos 304 in 255ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:46 AM [express] GET /api/courses 304 in 195ms :: []
+5:44:46 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:51 AM [express] GET /api/courses 304 in 194ms :: []
+5:44:51 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:44:54 AM [express] GET /api/auth/user 304 in 194ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:44:57 AM [express] GET /api/courses 304 in 202ms :: []
+5:44:57 AM [express] GET /api/courses/chat-videos 304 in 193ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:02 AM [express] GET /api/courses 304 in 193ms :: []
+5:45:02 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:07 AM [express] GET /api/courses 304 in 193ms :: []
+5:45:08 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:10 AM [express] GET /api/heygen/credits 304 in 324ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:45:10] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:45:13 AM [express] GET /api/courses 304 in 194ms :: []
+5:45:13 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:18 AM [express] GET /api/courses 304 in 213ms :: []
+5:45:19 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:24 AM [express] GET /api/auth/user 304 in 198ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:45:24 AM [express] GET /api/courses 304 in 206ms :: []
+5:45:24 AM [express] GET /api/courses/chat-videos 304 in 203ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:29 AM [express] GET /api/courses 304 in 194ms :: []
+5:45:30 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:35 AM [express] GET /api/courses 304 in 197ms :: []
+5:45:35 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:40 AM [express] GET /api/courses 304 in 199ms :: []
+5:45:40 AM [express] GET /api/heygen/credits 304 in 321ms :: {"limit":1000,"totalUsed":320,"remainin…
+5:45:41 AM [express] GET /api/courses/chat-videos 304 in 400ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[05:45:40] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:45:46 AM [express] GET /api/courses 304 in 198ms :: []
+5:45:46 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:51 AM [express] GET /api/courses 304 in 197ms :: []
+5:45:52 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:45:54 AM [express] GET /api/auth/user 304 in 196ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:45:56 AM [express] GET /api/courses 304 in 197ms :: []
+5:45:57 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:02 AM [express] GET /api/courses 304 in 198ms :: []
+5:46:02 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:07 AM [express] GET /api/courses 304 in 198ms :: []
+5:46:07 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:11 AM [express] GET /api/heygen/credits 304 in 328ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:46:11] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:46:13 AM [express] GET /api/courses 304 in 200ms :: []
+5:46:13 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:18 AM [express] GET /api/courses 304 in 197ms :: []
+5:46:18 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:24 AM [express] GET /api/courses 304 in 201ms :: []
+5:46:24 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:24 AM [express] GET /api/auth/user 304 in 408ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:46:29 AM [express] GET /api/courses 304 in 197ms :: []
+5:46:29 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:35 AM [express] GET /api/courses 304 in 200ms :: []
+5:46:35 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:40 AM [express] GET /api/courses 304 in 199ms :: []
+5:46:40 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:41 AM [express] GET /api/heygen/credits 304 in 331ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:46:41] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:46:45 AM [express] GET /api/courses 304 in 199ms :: []
+5:46:46 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:51 AM [express] GET /api/courses 304 in 201ms :: []
+5:46:51 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:46:54 AM [express] GET /api/auth/user 304 in 198ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:46:56 AM [express] GET /api/courses 304 in 198ms :: []
+5:46:57 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:02 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:02 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:07 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:07 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:12 AM [express] GET /api/heygen/credits 304 in 329ms :: {"limit":1000,"totalUsed":320,"remainin…
+5:47:12 AM [express] GET /api/courses 304 in 198ms :: []
+[05:47:12] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:47:13 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:18 AM [express] GET /api/courses 304 in 194ms :: []
+5:47:18 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:23 AM [express] GET /api/courses 304 in 194ms :: []
+5:47:23 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:24 AM [express] GET /api/auth/user 304 in 199ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:47:29 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:29 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:34 AM [express] GET /api/courses 304 in 226ms :: []
+5:47:34 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:40 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:40 AM [express] GET /api/courses/chat-videos 304 in 237ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[05:47:42] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:47:43 AM [express] GET /api/heygen/credits 304 in 330ms :: {"limit":1000,"totalUsed":320,"remainin…
+5:47:45 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:45 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:50 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:51 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:47:54 AM [express] GET /api/auth/user 304 in 198ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:47:56 AM [express] GET /api/courses 304 in 198ms :: []
+5:47:56 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:01 AM [express] GET /api/courses 304 in 198ms :: []
+5:48:01 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:06 AM [express] GET /api/courses 304 in 198ms :: []
+5:48:07 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:12 AM [express] GET /api/courses 304 in 198ms :: []
+5:48:12 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:13 AM [express] GET /api/heygen/credits 304 in 329ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:48:13] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:48:17 AM [express] GET /api/courses 304 in 198ms :: []
+5:48:18 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:23 AM [express] GET /api/courses 304 in 197ms :: []
+5:48:23 AM [express] GET /api/courses/chat-videos 304 in 199ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:24 AM [express] GET /api/auth/user 304 in 196ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:48:28 AM [express] GET /api/courses 304 in 198ms :: []
+5:48:29 AM [express] GET /api/courses/chat-videos 304 in 204ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:34 AM [express] GET /api/courses 304 in 199ms :: []
+5:48:34 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:39 AM [express] GET /api/courses 304 in 197ms :: []
+5:48:39 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:44 AM [express] GET /api/heygen/credits 304 in 329ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:48:44] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:48:45 AM [express] GET /api/courses 304 in 200ms :: []
+5:48:45 AM [express] GET /api/courses/chat-videos 304 in 201ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:50 AM [express] GET /api/courses 304 in 197ms :: []
+5:48:50 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:48:54 AM [express] GET /api/auth/user 304 in 200ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:48:55 AM [express] GET /api/courses 304 in 198ms :: []
+5:48:55 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:01 AM [express] GET /api/courses 304 in 202ms :: []
+5:49:01 AM [express] GET /api/courses/chat-videos 304 in 261ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:06 AM [express] GET /api/courses 304 in 198ms :: []
+5:49:06 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:12 AM [express] GET /api/courses 304 in 199ms :: []
+5:49:12 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:14 AM [express] GET /api/heygen/credits 304 in 330ms :: {"limit":1000,"totalUsed":320,"remainin…
+[05:49:14] INFO: Credit stats retrieved
+    env: "development"
+    service: "heygen-credit"
+    operation: "getCredits"
+    stats: {
+      "limit": 1000,
+      "totalUsed": 320,
+      "remaining": 680,
+      "last24h": 4,
+      "last7d": 42,
+      "warningThreshold": 20,
+      "criticalThreshold": 10,
+      "status": "ok"
+    }
+5:49:17 AM [express] GET /api/courses 304 in 199ms :: []
+5:49:18 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:23 AM [express] GET /api/courses 304 in 197ms :: []
+5:49:23 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:24 AM [express] GET /api/auth/user 304 in 196ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:49:28 AM [express] GET /api/courses 304 in 195ms :: []
+5:49:29 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[05:49:34] DEBUG: WebSocket upgrade request received
+    env: "development"
+    pathname: "/"
+5:49:35 AM [express] GET /api/courses 304 in 535ms :: []
+5:49:35 AM [express] GET /api/courses/chat-videos 304 in 535ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:35 AM [express] GET /api/auth/user 304 in 538ms :: {"id":"webflow_1767392488632_yw858e","email"…
+Slow request: GET /src/pages/admin.tsx - 1135.26ms
+5:49:36 AM [express] GET /api/courses 304 in 369ms :: []
+5:49:36 AM [express] GET /api/courses/chat-videos 304 in 369ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:38 AM [express] GET /api/admin/avatars 200 in 322ms :: [{"id":"mark-kohl","name":"Mark Kohl","d…
+5:49:38 AM [express] GET /api/courses 304 in 194ms :: []
+5:49:38 AM [express] GET /api/courses/chat-videos 304 in 230ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:38 AM [express] GET /api/admin/avatars 304 in 461ms :: [{"id":"mark-kohl","name":"Mark Kohl","d…
+5:49:39 AM [express] GET /api/admin/users 200 in 818ms :: [{"id":"temp_1767797263463_t98eun","email"…
+5:49:39 AM [express] GET /api/pinecone/stats 200 in 899ms :: {"success":true,"pinecone":{"namespaces…
+5:49:41 AM [express] GET /api/admin/service-status 200 in 2866ms :: {"timestamp":"2026-01-09T05:49:4…
+Slow request: GET /api/admin/service-status - 2795.51ms
+[05:49:41] INFO: Service status check completed
+    env: "development"
+    service: "admin"
+    operation: "serviceStatus"
+    healthyCount: 3
+    totalCount: 5
+    services: [
+      {
+        "name": "ElevenLabs (Voice)",
+        "status": "healthy"
+      },
+      {
+        "name": "LiveAvatar",
+        "status": "unhealthy"
+      },
+      {
+        "name": "HeyGen Streaming",
+        "status": "unhealthy"
+      },
+      {
+        "name": "Pinecone",
+        "status": "healthy"
+      },
+      {
+        "name": "Claude AI",
+        "status": "healthy"
+      }
+    ]
+5:49:42 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:42 AM [express] GET /api/courses 304 in 196ms :: []
+5:49:47 AM [express] GET /api/courses/chat-videos 304 in 259ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:48 AM [express] GET /api/courses 304 in 199ms :: []
+5:49:48 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:53 AM [express] GET /api/courses/chat-videos 304 in 268ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:53 AM [express] GET /api/courses 304 in 197ms :: []
+5:49:59 AM [express] GET /api/courses 304 in 197ms :: []
+5:49:59 AM [express] GET /api/courses/chat-videos 304 in 206ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:49:59 AM [express] GET /api/courses/chat-videos 304 in 206ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:50:04 AM [express] GET /api/courses 304 in 200ms :: []
+5:50:04 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:50:05 AM [express] GET /api/auth/user 304 in 199ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:50:09 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:50:09 AM [express] GET /api/courses 304 in 195ms :: []
+5:50:09 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:50:35 AM [express] GET /api/auth/user 304 in 397ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:51:06 AM [express] GET /api/auth/user 304 in 424ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:51:35 AM [express] GET /api/auth/user 304 in 406ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:52:05 AM [express] GET /api/auth/user 304 in 401ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:52:34 AM [express] GET /api/courses 304 in 204ms :: []
+5:52:34 AM [express] GET /api/courses/chat-videos 304 in 388ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:52:34 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:52:35 AM [express] GET /api/auth/user 304 in 194ms :: {"id":"webflow_1767392488632_yw858e","email"…
+[05:52:36] INFO: Getting topic folders from source
+    env: "development"
+    service: "google-drive"
+    operation: "getTopicFolders"
+[05:52:36] INFO: Getting topic folders from source
+    env: "development"
+    service: "google-drive"
+    sourceFolderId: "0AL_h7e92I2C8Uk9PVA"
+[05:52:36] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "0AL_h7e92I2C8Uk9PVA"
+[05:52:37] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1aVTZ1atRCPsn8mRogLH0JFealU6OmVxV"
+[05:52:37] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1oiXGeeU1m4p0KPJ2o96Lh7oLkhBy0j10"
+[05:52:37] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1wPbsGu3HwIug7qEOQ1Lw8bNC-iTFmlNA"
+[05:52:37] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1Ld0wyvBi32aP4IgiqDlidBrIfMgLip4F"
+[05:52:38] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1qCygoSQvopAwxw6ttkZE74LggyTu7VW1"
+[05:52:38] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1DX3jEHUU408gbfVFi_yUxYPYvuzEdo84"
+[05:52:39] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "18oKK8ACVkhVi9iKZheU0I5dBK5mGQxfc"
+[05:52:39] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq"
+5:52:39 AM [express] GET /api/courses 304 in 193ms :: []
+5:52:39 AM [express] GET /api/courses/chat-videos 304 in 193ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[05:52:39] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1731m5PysuYrzMtYqmx1VoJmIS8Lvzgzd"
+[05:52:40] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1mmR_maBijFkZg7xf5Ed1n4Z7sxv19A6l"
+[05:52:40] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1zC11QbpXh-Cx772Q0na43bMzYMSwEvgq"
+[05:52:40] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1ylshDQ9whvm0GXxKeGEkW0eo4mu_Bn47"
+[05:52:40] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "14_o47XHd1PQ88kF-sqS5cjg6hq2Nkqr2"
+[05:52:41] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1P2jghCAmww5-8H20ZFSsHbuj4d84_Z18"
+[05:52:42] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1K7lU2R4wcyiaUEdSQwDH5RQ9a6LIqZcx"
+[05:52:42] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1b2xtAQizjXzZ2FinrCli8Y2Ar56xLXmB"
+[05:52:42] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1vetXSs0coGZhuPeRnUBCAOqRgNzhk_hc"
+[05:52:43] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1I28GS5GCxTX3LYD6chW-gvNvlehNu4hE"
+[05:52:43] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "10fvNI_L423GDpt2fzdYYiyLlSWqGlbUD"
+[05:52:44] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1ZZcXPcXwJwTDyXCb588DJ3-LmoH4V0rV"
+[05:52:44] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1fkJDSbuF8E4q864ye7Rl84YQC9xvEuvU"
+5:52:44 AM [express] GET /api/google-drive/topic-folders 304 in 8364ms :: {"success":true,"folders":…
+Slow request: GET /api/google-drive/topic-folders - 8299.86ms
+[05:52:44] INFO: Topic folders retrieved
+    env: "development"
+    service: "google-drive"
+    folderCount: 21
+5:52:44 AM [express] GET /api/courses/chat-videos 304 in 202ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:52:45 AM [express] GET /api/courses 304 in 193ms :: []
+5:52:45 AM [express] GET /api/courses/chat-videos 304 in 395ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:52:50 AM [express] GET /api/courses 304 in 194ms :: []
+5:52:50 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:52:50 AM [express] GET /api/google-drive/topic-folder/1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq/files 304 …
+[05:52:50] INFO: Getting files in topic folder
+    env: "development"
+    service: "google-drive"
+    operation: "getTopicFolderFiles"
+    folderId: "1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq"
+[05:52:50] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq"
+5:52:55 AM [express] GET /api/courses/chat-videos 304 in 256ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:52:55 AM [express] GET /api/courses 304 in 193ms :: []
+5:52:56 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:53:01 AM [express] GET /api/courses 304 in 193ms :: []
+5:53:01 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:53:05 AM [express] GET /api/auth/user 304 in 194ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:53:36 AM [express] GET /api/auth/user 304 in 402ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:53:52 AM [express] GET /api/courses 304 in 406ms :: []
+5:53:52 AM [express] GET /api/courses/chat-videos 304 in 395ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:53:55 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:53:57 AM [express] GET /api/courses 304 in 195ms :: []
+5:53:57 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:02 AM [express] GET /api/courses 304 in 195ms :: []
+5:54:03 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:05 AM [express] GET /api/auth/user 304 in 195ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:54:05 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:08 AM [express] GET /api/courses 304 in 195ms :: []
+5:54:08 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:09 AM [express] GET /api/pinecone/stats 200 in 3527ms :: {"success":true,"pinecone":{"namespace…
+Slow request: GET /api/pinecone/stats - 3461.15ms
+5:54:13 AM [express] GET /api/courses 304 in 195ms :: []
+5:54:14 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:16 AM [express] GET /api/courses/chat-videos 304 in 255ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:19 AM [express] GET /api/courses 304 in 193ms :: []
+5:54:19 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:54:35 AM [express] GET /api/auth/user 304 in 404ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:55:05 AM [express] GET /api/auth/user 304 in 417ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:55:45 AM [express] GET /api/auth/user 304 in 399ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:56:45 AM [express] GET /api/auth/user 304 in 399ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:57:24 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:24 AM [express] GET /api/auth/user 304 in 194ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:57:24 AM [express] GET /api/courses 304 in 395ms :: []
+5:57:24 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:29 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:30 AM [express] GET /api/courses 304 in 195ms :: []
+5:57:35 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:35 AM [express] GET /api/courses 304 in 197ms :: []
+5:57:35 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:35 AM [express] GET /api/auth/user 304 in 392ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:57:41 AM [express] GET /api/courses 304 in 195ms :: []
+5:57:41 AM [express] GET /api/courses/chat-videos 304 in 202ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:43 AM [express] GET /api/pinecone/stats 200 in 3284ms :: {"success":true,"pinecone":{"namespace…
+Slow request: GET /api/pinecone/stats - 3218.85ms
+5:57:45 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:46 AM [express] GET /api/courses 304 in 195ms :: []
+5:57:47 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:52 AM [express] GET /api/courses 304 in 196ms :: []
+5:57:52 AM [express] GET /api/courses/chat-videos 304 in 257ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:55 AM [express] GET /api/courses/chat-videos 304 in 256ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:57:57 AM [express] GET /api/courses 304 in 195ms :: []
+5:57:58 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:03 AM [express] GET /api/courses 304 in 201ms :: []
+5:58:03 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:05 AM [express] GET /api/auth/user 304 in 202ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:58:06 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:08 AM [express] GET /api/courses 304 in 195ms :: []
+5:58:35 AM [express] GET /api/auth/user 304 in 411ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:58:39 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:39 AM [express] GET /api/courses 304 in 410ms :: []
+5:58:44 AM [express] GET /api/pinecone/stats 200 in 734ms :: {"success":true,"pinecone":{"namespaces…
+5:58:44 AM [express] GET /api/courses/chat-videos 304 in 257ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:44 AM [express] GET /api/courses 304 in 193ms :: []
+5:58:46 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:50 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:50 AM [express] GET /api/courses 304 in 195ms :: []
+5:58:55 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:58:55 AM [express] GET /api/courses 304 in 195ms :: []
+5:58:56 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:01 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:01 AM [express] GET /api/courses 304 in 197ms :: []
+5:59:05 AM [express] GET /api/auth/user 304 in 196ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:59:26 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:26 AM [express] GET /api/courses 304 in 194ms :: []
+5:59:27 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:32 AM [express] GET /api/courses/chat-videos 304 in 193ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:32 AM [express] GET /api/courses 304 in 193ms :: []
+5:59:35 AM [express] GET /api/auth/user 304 in 193ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:59:37 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:37 AM [express] GET /api/courses 304 in 194ms :: []
+5:59:37 AM [express] GET /api/courses/chat-videos 304 in 192ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:43 AM [express] GET /api/courses 304 in 193ms :: []
+5:59:43 AM [express] GET /api/courses/chat-videos 304 in 192ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:46 AM [express] GET /api/pinecone/stats 200 in 1372ms :: {"success":true,"pinecone":{"namespace…
+Slow request: GET /api/pinecone/stats - 1310.57ms
+5:59:48 AM [express] GET /api/courses/chat-videos 304 in 192ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:48 AM [express] GET /api/courses 304 in 192ms :: []
+5:59:48 AM [express] GET /api/courses/chat-videos 304 in 193ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:53 AM [express] GET /api/courses 304 in 190ms :: []
+5:59:54 AM [express] GET /api/courses/chat-videos 304 in 192ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[05:59:55] DEBUG: WebSocket upgrade request received
+    env: "development"
+    pathname: "/"
+5:59:56 AM [express] GET /api/courses 304 in 193ms :: []
+5:59:56 AM [express] GET /api/auth/user 304 in 201ms :: {"id":"webflow_1767392488632_yw858e","email"…
+5:59:56 AM [express] GET /api/courses/chat-videos 304 in 256ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:57 AM [express] GET /api/courses 304 in 191ms :: []
+5:59:57 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:58 AM [express] GET /api/admin/avatars 304 in 258ms :: [{"id":"mark-kohl","name":"Mark Kohl","d…
+5:59:58 AM [express] GET /api/admin/avatars 304 in 199ms :: [{"id":"mark-kohl","name":"Mark Kohl","d…
+5:59:58 AM [express] GET /api/courses 304 in 210ms :: []
+5:59:58 AM [express] GET /api/courses/chat-videos 304 in 261ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+5:59:59 AM [express] GET /api/admin/users 304 in 817ms :: [{"id":"temp_1767797263463_t98eun","email"…
+6:00:00 AM [express] GET /api/admin/service-status 200 in 1976ms :: {"timestamp":"2026-01-09T06:00:0…
+Slow request: GET /api/admin/service-status - 1913.10ms
+[06:00:00] INFO: Service status check completed
+    env: "development"
+    service: "admin"
+    operation: "serviceStatus"
+    healthyCount: 3
+    totalCount: 5
+    services: [
+      {
+        "name": "ElevenLabs (Voice)",
+        "status": "healthy"
+      },
+      {
+        "name": "LiveAvatar",
+        "status": "unhealthy"
+      },
+      {
+        "name": "HeyGen Streaming",
+        "status": "unhealthy"
+      },
+      {
+        "name": "Pinecone",
+        "status": "healthy"
+      },
+      {
+        "name": "Claude AI",
+        "status": "healthy"
+      }
+    ]
+6:00:00 AM [express] GET /api/pinecone/stats 200 in 2269ms :: {"success":true,"pinecone":{"namespace…
+Slow request: GET /api/pinecone/stats - 2199.55ms
+[06:00:01] INFO: Getting topic folders from source
+    env: "development"
+    service: "google-drive"
+    operation: "getTopicFolders"
+[06:00:01] INFO: Getting topic folders from source
+    env: "development"
+    service: "google-drive"
+    sourceFolderId: "0AL_h7e92I2C8Uk9PVA"
+[06:00:01] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "0AL_h7e92I2C8Uk9PVA"
+[06:00:01] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1aVTZ1atRCPsn8mRogLH0JFealU6OmVxV"
+[06:00:02] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1oiXGeeU1m4p0KPJ2o96Lh7oLkhBy0j10"
+[06:00:02] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1wPbsGu3HwIug7qEOQ1Lw8bNC-iTFmlNA"
+[06:00:02] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1Ld0wyvBi32aP4IgiqDlidBrIfMgLip4F"
+6:00:02 AM [express] GET /api/courses 304 in 198ms :: []
+6:00:02 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[06:00:03] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1qCygoSQvopAwxw6ttkZE74LggyTu7VW1"
+[06:00:03] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1DX3jEHUU408gbfVFi_yUxYPYvuzEdo84"
+[06:00:03] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "18oKK8ACVkhVi9iKZheU0I5dBK5mGQxfc"
+[06:00:04] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq"
+[06:00:04] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1731m5PysuYrzMtYqmx1VoJmIS8Lvzgzd"
+[06:00:04] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1mmR_maBijFkZg7xf5Ed1n4Z7sxv19A6l"
+[06:00:05] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1zC11QbpXh-Cx772Q0na43bMzYMSwEvgq"
+[06:00:05] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1ylshDQ9whvm0GXxKeGEkW0eo4mu_Bn47"
+[06:00:05] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "14_o47XHd1PQ88kF-sqS5cjg6hq2Nkqr2"
+[06:00:06] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1P2jghCAmww5-8H20ZFSsHbuj4d84_Z18"
+[06:00:06] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1K7lU2R4wcyiaUEdSQwDH5RQ9a6LIqZcx"
+[06:00:06] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1b2xtAQizjXzZ2FinrCli8Y2Ar56xLXmB"
+[06:00:07] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1vetXSs0coGZhuPeRnUBCAOqRgNzhk_hc"
+[06:00:07] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1I28GS5GCxTX3LYD6chW-gvNvlehNu4hE"
+[06:00:07] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "10fvNI_L423GDpt2fzdYYiyLlSWqGlbUD"
+6:00:08 AM [express] GET /api/courses 304 in 193ms :: []
+[06:00:08] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1ZZcXPcXwJwTDyXCb588DJ3-LmoH4V0rV"
+6:00:08 AM [express] GET /api/courses/chat-videos 304 in 200ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[06:00:08] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1fkJDSbuF8E4q864ye7Rl84YQC9xvEuvU"
+6:00:08 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:08 AM [express] GET /api/google-drive/topic-folders 200 in 7546ms :: {"success":true,"folders":…
+Slow request: GET /api/google-drive/topic-folders - 7482.54ms
+[06:00:08] INFO: Topic folders retrieved
+    env: "development"
+    service: "google-drive"
+    folderCount: 21
+6:00:13 AM [express] GET /api/courses 304 in 198ms :: []
+6:00:13 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:17 AM [express] GET /api/google-drive/topic-folder/1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq/files 304 …
+[06:00:17] INFO: Getting files in topic folder
+    env: "development"
+    service: "google-drive"
+    operation: "getTopicFolderFiles"
+    folderId: "1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq"
+[06:00:17] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1aVNhAY9PYD_JquzX58fOc9Qxs58lU7Aq"
+6:00:19 AM [express] GET /api/courses 304 in 196ms :: []
+6:00:19 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:19 AM [express] GET /api/courses/chat-videos 304 in 197ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:24 AM [express] GET /api/courses 304 in 194ms :: []
+6:00:24 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:26 AM [express] GET /api/auth/user 304 in 195ms :: {"id":"webflow_1767392488632_yw858e","email"…
+6:00:29 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:30 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:30 AM [express] GET /api/courses 304 in 396ms :: []
+6:00:35 AM [express] GET /api/courses/chat-videos 304 in 193ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:35 AM [express] GET /api/courses 304 in 199ms :: []
+6:00:36 AM [express] GET /api/pinecone/stats 200 in 4736ms :: {"success":true,"pinecone":{"namespace…
+Slow request: GET /api/pinecone/stats - 4672.46ms
+6:00:40 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:40 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:41 AM [express] GET /api/courses 304 in 193ms :: []
+6:00:46 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:46 AM [express] GET /api/courses 304 in 194ms :: []
+6:00:50 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:51 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:51 AM [express] GET /api/courses 304 in 195ms :: []
+6:00:56 AM [express] GET /api/auth/user 304 in 194ms :: {"id":"webflow_1767392488632_yw858e","email"…
+6:00:56 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:00:57 AM [express] GET /api/courses 304 in 195ms :: []
+6:01:01 AM [express] GET /api/google-drive/status 304 in 309ms :: {"connected":true}
+6:01:01 AM [express] GET /api/courses/chat-videos 304 in 396ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:01 AM [express] GET /api/google-drive/shared-drives 304 in 373ms :: {"drives":[]}
+6:01:02 AM [express] GET /api/google-drive/folders 200 in 641ms :: {"folders":[{"id":"1hgsbtHJCbaMPv…
+[06:01:01] INFO: Listing shared folders from Google Drive
+    env: "development"
+    service: "google-drive"
+[06:01:01] INFO: Listing Shared Drives from Google Drive
+    env: "development"
+    service: "google-drive"
+[06:01:01] ERROR: Failed to list Shared Drives
+    env: "development"
+    service: "google-drive"
+    error: "Request had insufficient authentication scopes."
+6:01:02 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:02 AM [express] GET /api/courses 304 in 195ms :: []
+6:01:06 AM [express] GET /api/google-drive/folder/1hgsbtHJCbaMPvJTxIxRxcIuoShKT6GtO 200 in 558ms :: …
+[06:01:06] INFO: Listing folder contents
+    env: "development"
+    service: "google-drive"
+    folderId: "1hgsbtHJCbaMPvJTxIxRxcIuoShKT6GtO"
+6:01:07 AM [express] GET /api/courses/chat-videos 304 in 257ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:07 AM [express] GET /api/courses 304 in 195ms :: []
+6:01:11 AM [express] GET /api/pinecone/stats 200 in 5174ms :: {"success":true,"pinecone":{"namespace…
+Slow request: GET /api/pinecone/stats - 5110.08ms
+6:01:11 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:13 AM [express] GET /api/courses/chat-videos 304 in 196ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:13 AM [express] GET /api/courses 304 in 195ms :: []
+6:01:18 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:18 AM [express] GET /api/courses 304 in 195ms :: []
+6:01:21 AM [express] GET /api/courses/chat-videos 304 in 198ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:23 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:24 AM [express] GET /api/courses 304 in 194ms :: []
+6:01:26 AM [express] GET /api/auth/user 304 in 195ms :: {"id":"webflow_1767392488632_yw858e","email"…
+6:01:29 AM [express] GET /api/courses/chat-videos 304 in 201ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:29 AM [express] GET /api/courses 304 in 194ms :: []
+6:01:32 AM [express] GET /api/courses/chat-videos 304 in 194ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:34 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+6:01:34 AM [express] GET /api/courses 304 in 194ms :: []
+[06:01:39] INFO: Downloading file from Google Drive
+    env: "development"
+    service: "google-drive"
+    fileId: "1-zTLWBJWCOjgSuJcDAH0XPzueFrYLMVt"
+[06:01:39] INFO: File metadata retrieved
+    env: "development"
+    service: "google-drive"
+    fileId: "1-zTLWBJWCOjgSuJcDAH0XPzueFrYLMVt"
+    fileName: "Book edition-Frequency — Origins, Medicine, And Transformation (draft Book) (7).docx"
+    mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    fileSize: 31701
+6:01:40 AM [express] GET /api/courses/chat-videos 304 in 195ms :: [{"id":"0e1d09f9-d66b-49b8-b340-f3…
+[06:01:40] INFO: Processing document
+    env: "development"
+    service: "documentProcessor"
+    operation: "processDocument"
+    documentId: "doc_gdrive_1767938500345_1k0yt9hy4"
+    fileType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    filePath: "uploads/gdrive_1767938500342_Book edition-Frequency — Origins, Medicine, And Transformation (draft Book) (7).docx"
+
+<--- Last few GCs --->
+
+[290:0x29d34240]  1888951 ms: Scavenge 4051.3 (4115.8) -> 4049.0 (4119.0) MB, 14.83 / 0.00 ms  (average mu = 0.316, current mu = 0.128) allocation failure; 
+[290:0x29d34240]  1888970 ms: Scavenge 4054.4 (4119.0) -> 4051.8 (4137.0) MB, 14.41 / 0.00 ms  (average mu = 0.316, current mu = 0.128) allocation failure; 
+[290:0x29d34240]  1895380 ms: Mark-Compact 4064.5 (4137.0) -> 4057.8 (4146.8) MB, 6394.50 / 0.00 ms  (average mu = 0.171, current mu = 0.024) allocation failure; scavenge might not succeed
+
+
+<--- JS stacktrace --->
+
+FATAL ERROR: Reached heap limit Allocation failed - JavaScript heap out of memory
+----- Native stack trace -----
+
+ 1: 0xaa132b node::OOMErrorHandler(char const*, v8::OOMDetails const&) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 2: 0xe74030 v8::Utils::ReportOOMFailure(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 3: 0xe7443b v8::internal::V8::FatalProcessOutOfMemory(v8::internal::Isolate*, char const*, v8::OOMDetails const&) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 4: 0x10aaaa7  [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 5: 0x10c36d9 v8::internal::Heap::CollectGarbage(v8::internal::AllocationSpace, v8::internal::GarbageCollectionReason, v8::GCCallbackFlags) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 6: 0x109b36c v8::internal::HeapAllocator::AllocateRawWithLightRetrySlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 7: 0x109c984 v8::internal::HeapAllocator::AllocateRawWithRetryOrFailSlowPath(int, v8::internal::AllocationType, v8::internal::AllocationOrigin, v8::internal::AllocationAlignment) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 8: 0x107b617 v8::internal::Factory::NewFillerObject(int, v8::internal::AllocationAlignment, v8::internal::AllocationType, v8::internal::AllocationOrigin) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+ 9: 0x14f8630 v8::internal::Runtime_AllocateInYoungGeneration(int, unsigned long*, v8::internal::Isolate*) [/nix/store/lz7iav1hd92jbv44zf2rdd7b2mj23536-nodejs-20.19.3/bin/node]
+10: 0x7ff457ed9ef6 
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 11.7.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.7.0
+npm notice To update run: npm install -g npm@11.7.0
+npm notice
