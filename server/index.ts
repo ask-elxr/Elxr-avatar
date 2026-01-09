@@ -110,8 +110,11 @@ const attachedAssetsPath = fs.existsSync(productionAssetsPath) ? productionAsset
 app.use('/attached_assets', express.static(attachedAssetsPath));
 console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
 
-// Serve public folder for demo pages
+// Serve demo pages directly (before Vite middleware catches them)
 const publicPath = path.resolve(process.cwd(), 'public');
+app.get('/demo/mark-kohl', (req, res) => {
+  res.sendFile(path.join(publicPath, 'demo-mark-kohl.html'));
+});
 app.use('/demo', express.static(publicPath));
 console.log(`📄 Serving demo pages from: ${publicPath}`);
 
