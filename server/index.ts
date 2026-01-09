@@ -110,6 +110,11 @@ const attachedAssetsPath = fs.existsSync(productionAssetsPath) ? productionAsset
 app.use('/attached_assets', express.static(attachedAssetsPath));
 console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
 
+// Serve public folder for demo pages
+const publicPath = path.resolve(process.cwd(), 'public');
+app.use('/demo', express.static(publicPath));
+console.log(`📄 Serving demo pages from: ${publicPath}`);
+
 (async () => {
   const server = await registerRoutes(app);
   
