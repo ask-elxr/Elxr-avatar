@@ -632,11 +632,11 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                             <div className="w-2 h-2 rounded-full bg-green-500"></div>
                             <span className="text-xs sm:text-sm text-green-600 dark:text-green-400">Active</span>
                           </div>
-                          <Link href={`/?avatar=${avatar.id}`}>
+                          <a href={`/?avatar=${avatar.id}`} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" variant="outline" data-testid={`button-chat-${avatar.id}`}>
                               Chat
                             </Button>
-                          </Link>
+                          </a>
                         </div>
                       </div>
                     ))}
