@@ -5,6 +5,53 @@ let audioContext: AudioContext | null = null;
 // Session token to prevent voice overlap between avatar switches
 let currentSessionToken = 0;
 
+// Global volume setting (0.0 to 1.0), persisted in localStorage
+const VOLUME_STORAGE_KEY = 'avatar-volume';
+let globalVolume = 1.0;
+
+// Initialize volume from localStorage
+if (typeof window !== 'undefined') {
+  const storedVolume = localStorage.getItem(VOLUME_STORAGE_KEY);
+  if (storedVolume !== null) {
+    const parsed = parseFloat(storedVolume);
+    if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+      globalVolume = parsed;
+    }
+  }
+}
+
+export function getGlobalVolume(): number {
+  return globalVolume;
+}
+
+// Track all active audio/video elements for volume updates
+const activeMediaElements = new Set<HTMLAudioElement | HTMLVideoElement>();
+
+export function registerMediaElement(element: HTMLAudioElement | HTMLVideoElement): void {
+  activeMediaElements.add(element);
+  element.volume = globalVolume;
+}
+
+export function unregisterMediaElement(element: HTMLAudioElement | HTMLVideoElement): void {
+  activeMediaElements.delete(element);
+}
+
+export function setGlobalVolume(volume: number): void {
+  globalVolume = Math.max(0, Math.min(1, volume));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(VOLUME_STORAGE_KEY, globalVolume.toString());
+  }
+  // Apply to shared audio element if it exists
+  if (sharedAudioElement) {
+    sharedAudioElement.volume = globalVolume;
+  }
+  // Apply to all tracked active media elements
+  activeMediaElements.forEach(element => {
+    element.volume = globalVolume;
+  });
+  console.log('🔊 Global volume set to:', globalVolume, '- updated', activeMediaElements.size, 'active elements');
+}
+
 export function incrementSessionToken(): number {
   currentSessionToken++;
   console.log('🔄 Session token incremented to:', currentSessionToken);
@@ -32,19 +79,33 @@ export function getSharedAudioElement(): HTMLAudioElement {
     sharedAudioElement.setAttribute('playsinline', 'true');
     sharedAudioElement.setAttribute('webkit-playsinline', 'true');
     sharedAudioElement.preload = 'auto';
-    sharedAudioElement.volume = 1.0;
+    sharedAudioElement.volume = globalVolume;
+    // Register shared element for volume updates
+    activeMediaElements.add(sharedAudioElement);
   }
   return sharedAudioElement;
 }
 
 // 📱 iOS FIX: Create a fresh audio element for each playback
 // This avoids the issue where reused audio elements get stuck on iOS Safari
+// Automatically registers for volume updates and unregisters on end/error
 export function createFreshAudioElement(): HTMLAudioElement {
   const audio = document.createElement('audio');
   audio.setAttribute('playsinline', 'true');
   audio.setAttribute('webkit-playsinline', 'true');
   audio.preload = 'auto';
-  audio.volume = 1.0;
+  audio.volume = globalVolume;
+  
+  // Register for volume updates
+  activeMediaElements.add(audio);
+  
+  // Auto-unregister when playback ends or errors
+  const cleanup = () => {
+    activeMediaElements.delete(audio);
+  };
+  audio.addEventListener('ended', cleanup, { once: true });
+  audio.addEventListener('error', cleanup, { once: true });
+  
   return audio;
 }
 
@@ -210,7 +271,7 @@ export async function playAudioBlob(blob: Blob, sessionToken?: number): Promise<
   
   const audioUrl = URL.createObjectURL(blob);
   audio.src = audioUrl;
-  audio.volume = 1.0;
+  audio.volume = globalVolume;
   audio.muted = false;
   
   return new Promise((resolve, reject) => {

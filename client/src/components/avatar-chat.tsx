@@ -24,7 +24,8 @@ import { AudioVideoToggle } from "@/components/AudioVideoToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { TrialCountdown } from "@/components/TrialCountdown";
-import { unlockMobileAudio, stopSharedAudio } from "@/lib/mobileAudio";
+import { Slider } from "@/components/ui/slider";
+import { unlockMobileAudio, stopSharedAudio, getGlobalVolume, setGlobalVolume, getSharedAudioElement, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -84,6 +85,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [elevenLabsAgentConfig, setElevenLabsAgentConfig] = useState<{ enabled: boolean; agentId: string } | null>(null);
   const [elevenLabsAgentActive, setElevenLabsAgentActive] = useState(false); // Track when ElevenLabs Agent mode is active
   const [avatarVoiceId, setAvatarVoiceId] = useState<string>(''); // Track avatar's ElevenLabs voice ID
+  const [volume, setVolume] = useState(() => getGlobalVolume() * 100); // Volume 0-100 for slider
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -244,6 +246,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         : "Memory has been turned off",
     });
   };
+
+  const handleVolumeChange = useCallback((values: number[]) => {
+    const newVolume = values[0];
+    const normalizedVolume = newVolume / 100; // Convert to 0-1 range
+    
+    setVolume(newVolume);
+    // setGlobalVolume updates all registered media elements including video, audio, and shared elements
+    setGlobalVolume(normalizedVolume);
+    
+    // Also update video element directly (for video mode)
+    if (videoRef.current) {
+      videoRef.current.volume = normalizedVolume;
+    }
+  }, []);
   
   // Debug: Log when memoryEnabled changes
   useEffect(() => {
@@ -357,6 +373,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
     return undefined;
   }, [sessionStarting, audioOnly]);
+  
+  // Register video element for volume updates when session becomes active
+  useEffect(() => {
+    if (sessionActive && videoRef.current) {
+      registerMediaElement(videoRef.current);
+      return () => {
+        if (videoRef.current) {
+          unregisterMediaElement(videoRef.current);
+        }
+      };
+    }
+  }, [sessionActive]);
   
   // Reset Start button when session ends
   const prevSessionActiveRef = useRef(sessionActive);
@@ -1319,6 +1347,30 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             <h3 className="text-white font-semibold mb-4">Settings</h3>
             
             <div className="space-y-4">
+              {/* Volume Control */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label htmlFor="volume" className="text-white text-sm flex items-center gap-2">
+                    {volume === 0 ? (
+                      <VolumeX className="w-4 h-4" />
+                    ) : (
+                      <Volume2 className="w-4 h-4" />
+                    )}
+                    Volume
+                  </label>
+                  <span className="text-white/70 text-xs">{Math.round(volume)}%</span>
+                </div>
+                <Slider
+                  id="volume"
+                  value={[volume]}
+                  onValueChange={handleVolumeChange}
+                  min={0}
+                  max={100}
+                  step={5}
+                  className="w-full"
+                />
+              </div>
+
               <div className="flex items-center justify-between">
                 <label htmlFor="memory" className="text-white text-sm">
                   Conversation Memory

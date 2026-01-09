@@ -6,6 +6,7 @@ import {
 } from "@heygen/liveavatar-web-sdk";
 import { Room, RoomEvent, Track, RemoteTrack, RemoteTrackPublication, RemoteParticipant } from "livekit-client";
 import { requestMicrophoneOnce } from "@/lib/microphoneCache";
+import { getGlobalVolume } from "@/lib/mobileAudio";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -330,13 +331,14 @@ export class LiveAvatarDriver implements SessionDriver {
           // Force play
           const videoEl = this.config.videoRef.current;
           videoEl.muted = false;
+          videoEl.volume = getGlobalVolume();
           videoEl.play().catch(err => {
             console.warn("⚠️ Video autoplay prevented, trying muted:", err);
             videoEl.muted = true;
             videoEl.play().then(() => {
               setTimeout(() => { 
                 videoEl.muted = false; 
-                videoEl.volume = 1.0;
+                videoEl.volume = getGlobalVolume();
               }, 500);
             });
           });
@@ -624,10 +626,10 @@ export class LiveAvatarDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     if (!this.session) return;
 
-    // Ensure video is unmuted with full volume - SDK plays audio through WebRTC stream
+    // Ensure video is unmuted with current volume - SDK plays audio through WebRTC stream
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
-      this.config.videoRef.current.volume = 1.0;
+      this.config.videoRef.current.volume = getGlobalVolume();
     }
     
     if (this.useHeygenVoice) {
@@ -799,10 +801,10 @@ export class LiveAvatarDriver implements SessionDriver {
     }
     console.log("🎵 Started streaming audio accumulation for lip-sync");
     
-    // Ensure video is unmuted with full volume for SDK audio playback
+    // Ensure video is unmuted with current volume for SDK audio playback
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
-      this.config.videoRef.current.volume = 1.0;
+      this.config.videoRef.current.volume = getGlobalVolume();
     }
     
     this.config.onAvatarStartTalking?.();
@@ -957,7 +959,7 @@ export class HeyGenStreamingDriver implements SessionDriver {
           
           // Ensure audio is enabled
           videoEl.muted = false;
-          videoEl.volume = 1.0;
+          videoEl.volume = getGlobalVolume();
           
           videoEl.onloadedmetadata = async () => {
             try {
@@ -1088,7 +1090,7 @@ export class HeyGenStreamingDriver implements SessionDriver {
       // Ensure video is unmuted before speaking - audio comes through video stream
       if (this.config.videoRef.current) {
         this.config.videoRef.current.muted = false;
-        this.config.videoRef.current.volume = 1.0;
+        this.config.videoRef.current.volume = getGlobalVolume();
       }
       
       console.log(`🗣️ Speaking via HeyGen avatar: "${text.substring(0, 50)}..."`);

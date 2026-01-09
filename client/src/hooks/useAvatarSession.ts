@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId } from "@/lib/queryClient";
-import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken } from "@/lib/mobileAudio";
+import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken, getGlobalVolume, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { requestMicrophoneOnce, isMicPermissionGranted } from "@/lib/microphoneCache";
 
 interface AvatarSessionConfig {
@@ -387,7 +387,12 @@ export function useAvatarSession({
         const blob = await response.blob();
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
+        
+        // Register for real-time volume updates
+        registerMediaElement(audio);
+        
         audio.preload = "auto";
+        audio.volume = getGlobalVolume() * 0.8; // Use global volume with 80% multiplier for acknowledgment
         // Mobile-specific: Add attributes for iOS/Android compatibility
         audio.setAttribute('playsinline', 'true');
         audio.setAttribute('webkit-playsinline', 'true');
@@ -450,13 +455,18 @@ export function useAvatarSession({
         const blob = await response.blob();
         const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
-        audio.volume = 0.8; // Slightly lower volume for acknowledgment
+        
+        // Register for real-time volume updates
+        registerMediaElement(audio);
+        
+        audio.volume = getGlobalVolume() * 0.8; // Use global volume with 80% multiplier for acknowledgment
         // Mobile-specific: Add attributes for iOS/Android compatibility
         audio.setAttribute('playsinline', 'true');
         audio.setAttribute('webkit-playsinline', 'true');
         audio.preload = 'auto';
         audio.onended = () => {
           URL.revokeObjectURL(audioUrl);
+          unregisterMediaElement(audio);
           if (currentAcknowledgmentRef.current === audio) {
             currentAcknowledgmentRef.current = null;
           }
@@ -1020,8 +1030,12 @@ export function useAvatarSession({
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       
+      // CRITICAL: Register for volume updates immediately upon creation (before async load)
+      // This ensures slider changes propagate even during initial playback window
+      registerMediaElement(audio);
+      
       // Ensure audio is properly configured for playback
-      audio.volume = 1.0; // Maximum volume
+      audio.volume = getGlobalVolume(); // Use global volume setting
       audio.muted = false;
       
       // Mobile-specific: Add attributes for iOS/Android compatibility
@@ -1035,7 +1049,7 @@ export function useAvatarSession({
       document.body.appendChild(audio);
       
       // For debugging - check audio context state
-      console.log(`🔊 Creating audio element: volume=${audio.volume}, muted=${audio.muted}, attached to DOM`);
+      console.log(`🔊 Creating audio element: volume=${audio.volume}, muted=${audio.muted}, attached to DOM, registered for volume updates`);
       
       elevenLabsVideoAudioRef.current = audio;
 
@@ -1072,6 +1086,9 @@ export function useAvatarSession({
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
           
+          // Unregister from volume updates
+          unregisterMediaElement(audio);
+          
           // Remove audio element from DOM
           if (audio.parentNode) {
             audio.parentNode.removeChild(audio);
@@ -1092,6 +1109,9 @@ export function useAvatarSession({
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
+          
+          // Unregister from volume updates
+          unregisterMediaElement(audio);
           
           // Remove audio element from DOM
           if (audio.parentNode) {
