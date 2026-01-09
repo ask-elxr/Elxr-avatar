@@ -12,6 +12,7 @@ interface STTSession {
   sttReady: boolean;
   languageCode: string;
   sampleRate: number;
+  isReconnecting: boolean; // Prevent race conditions during language updates
 }
 
 const activeSessions = new Map<string, STTSession>();
@@ -70,6 +71,7 @@ async function handleControlMessage(
         sttReady: false,
         languageCode,
         sampleRate,
+        isReconnecting: false,
       };
       
       activeSessions.set(sessionId, session);
@@ -97,6 +99,61 @@ async function handleControlMessage(
       }
       cleanupSession(sessionId);
       clientWs.send(JSON.stringify({ type: 'stopped' }));
+      break;
+    }
+    
+    case 'update_language': {
+      const session = activeSessions.get(sessionId);
+      if (!session) {
+        log.warn({ sessionId }, 'No session found for language update');
+        clientWs.send(JSON.stringify({ type: 'error', message: 'No active session' }));
+        break;
+      }
+      
+      const { languageCode } = message;
+      if (!languageCode) {
+        log.warn({ sessionId }, 'No language code provided for update');
+        break;
+      }
+      
+      if (session.languageCode === languageCode) {
+        log.debug({ sessionId, languageCode }, 'Language already set, skipping update');
+        break;
+      }
+      
+      // Prevent race conditions - skip if already reconnecting
+      if (session.isReconnecting) {
+        log.warn({ sessionId, languageCode }, 'Already reconnecting, ignoring language update');
+        break;
+      }
+      
+      log.info({ sessionId, oldLanguage: session.languageCode, newLanguage: languageCode }, 'Updating STT language');
+      
+      // Mark as reconnecting to prevent race conditions
+      session.isReconnecting = true;
+      session.sttReady = false;
+      
+      // Close existing STT connection
+      if (session.sttWs?.readyState === WebSocket.OPEN) {
+        session.sttWs.close();
+      }
+      session.sttWs = null;
+      session.languageCode = languageCode;
+      
+      // Reconnect with new language
+      try {
+        await startSTTStream(session);
+        session.isReconnecting = false;
+        clientWs.send(JSON.stringify({
+          type: 'language_updated',
+          languageCode,
+        }));
+        log.info({ sessionId, languageCode }, 'STT language updated successfully');
+      } catch (error) {
+        session.isReconnecting = false;
+        log.error({ sessionId, error }, 'Failed to update STT language');
+        clientWs.send(JSON.stringify({ type: 'error', message: 'Failed to update language. Please restart session.' }));
+      }
       break;
     }
   }

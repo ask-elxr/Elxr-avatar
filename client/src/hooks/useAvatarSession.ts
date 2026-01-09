@@ -119,6 +119,7 @@ export function useAvatarSession({
   const elevenLabsSttStreamRef = useRef<MediaStream | null>(null);
   const useElevenLabsSttRef = useRef(false); // Track if we're using ElevenLabs STT instead of Web Speech API
   const usingHeygenMobileVoiceChatRef = useRef(false); // Track if we're using HeyGen's built-in voice chat (LiveKit WebRTC) for mobile
+  const pendingLanguageUpdateRef = useRef<string | null>(null); // Queue language updates when STT is reconnecting
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -147,6 +148,25 @@ export function useAvatarSession({
 
   useEffect(() => {
     elevenLabsLanguageCodeRef.current = elevenLabsLanguageCode;
+    
+    // Update ElevenLabs STT language if active during a session
+    // Always track pending language until server confirms (handles race conditions during reconnect)
+    if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && sessionActiveRef.current) {
+      // Always set pending - will be cleared only when server confirms with language_updated
+      pendingLanguageUpdateRef.current = elevenLabsLanguageCode;
+      
+      if (elevenLabsSttReadyRef.current) {
+        // STT is ready, send update immediately
+        console.log(`🌐 Sending language update to ElevenLabs STT: ${elevenLabsLanguageCode}`);
+        elevenLabsSttWsRef.current.send(JSON.stringify({
+          type: 'update_language',
+          languageCode: elevenLabsLanguageCode,
+        }));
+      } else {
+        // STT is reconnecting, pending update will be replayed on stt_ready
+        console.log(`🌐 Queuing language update (STT reconnecting): ${elevenLabsLanguageCode}`);
+      }
+    }
   }, [elevenLabsLanguageCode]);
 
   // Safari iOS workaround: The browser suspends JavaScript during startup
@@ -832,6 +852,24 @@ export function useAvatarSession({
             elevenLabsSttReadyRef.current = true;
             // Connect the pre-acquired microphone stream to the WebSocket
             connectMicToWebSocket();
+            
+            // Check for pending language update (queued while STT was reconnecting)
+            // Always replay if there's a pending update - it means user changed language during reconnect
+            if (pendingLanguageUpdateRef.current) {
+              console.log(`🌐 Replaying queued language update: ${pendingLanguageUpdateRef.current}`);
+              ws.send(JSON.stringify({
+                type: 'update_language',
+                languageCode: pendingLanguageUpdateRef.current,
+              }));
+              // Don't clear yet - wait for language_updated confirmation
+            }
+            break;
+          
+          case 'language_updated':
+            console.log(`🌐 Language updated confirmed: ${message.languageCode}`);
+            elevenLabsSttReadyRef.current = true;
+            // Clear pending update now that server has confirmed the language change
+            pendingLanguageUpdateRef.current = null;
             break;
             
           case 'partial':
@@ -1645,7 +1683,7 @@ export function useAvatarSession({
     // ✅ MOBILE: Request microphone permission once and cache it (non-blocking)
     // Uses the global microphone cache to avoid repeated permission prompts
     const isMobile = /iPad|iPhone|iPod|Android|mobile/i.test(navigator.userAgent);
-    if (isMobile && navigator.mediaDevices?.getUserMedia && !isMicPermissionGranted()) {
+    if (isMobile && navigator.mediaDevices?.getUserMedia && !isMicPermissionGranted?.()) {
       // Request mic once and cache - subsequent calls will reuse the cached stream
       const warmupMic = async () => {
         try {

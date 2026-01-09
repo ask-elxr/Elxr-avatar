@@ -349,16 +349,30 @@ async function processUserMessage(session: StreamingSession, userText: string): 
 
 async function searchPineconeNamespaces(namespaces: string[], query: string): Promise<string> {
   if (!pineconeNamespaceService.isAvailable() || namespaces.length === 0) {
+    log.debug({ namespaces, queryLen: query.length }, '📚 RAG: Skipping search - no Pinecone or empty namespaces');
     return '';
   }
   
+  const startTime = Date.now();
   try {
+    log.info({ namespaces, query: query.substring(0, 80) }, '📚 RAG: Querying Pinecone namespaces');
     const results = await pineconeNamespaceService.retrieveContext(query, 3, namespaces);
+    const duration = Date.now() - startTime;
+    
     if (results.length > 0) {
+      log.info({ 
+        namespaces,
+        resultCount: results.length,
+        scores: results.map((r: { text: string; score: number }) => r.score.toFixed(3)),
+        textPreviews: results.map((r: { text: string; score: number }) => r.text.substring(0, 60) + '...'),
+        duration
+      }, '📚 RAG: Retrieved context successfully');
       return results.map((r: { text: string; score: number }) => r.text).join('\n\n');
+    } else {
+      log.info({ namespaces, duration }, '📚 RAG: No matching context found');
     }
   } catch (error) {
-    log.warn({ namespaces, error }, 'Failed to search Pinecone');
+    log.warn({ namespaces, error, duration: Date.now() - startTime }, '📚 RAG: Failed to search Pinecone');
   }
   
   return '';
