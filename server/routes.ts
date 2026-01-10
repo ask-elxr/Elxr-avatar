@@ -630,6 +630,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to test Mark Kohl with different configurations
+  app.post("/api/heygen/debug-mark-kohl", requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "heygen", operation: "debugMarkKohl" });
+    const apiKey = process.env.LIVEAVATAR_API_KEY;
+    
+    if (!apiKey) {
+      return res.status(500).json({ error: "LIVEAVATAR_API_KEY not configured" });
+    }
+
+    const avatarId = "98917de8-81a1-4a24-ad0b-584fff35c168"; // Mark Kohl's LiveAvatar ID
+    const { voiceId, useMinimalConfig } = req.body;
+    
+    try {
+      // Try different configurations
+      const configs = [];
+      
+      // Config 1: Minimal CUSTOM mode (just avatar_id)
+      if (useMinimalConfig) {
+        configs.push({
+          name: "Minimal CUSTOM",
+          body: { mode: "CUSTOM", avatar_id: avatarId }
+        });
+      }
+      
+      // Config 2: CUSTOM with explicit voice_id (if provided)
+      if (voiceId) {
+        configs.push({
+          name: "CUSTOM with voice_id",
+          body: { mode: "CUSTOM", avatar_id: avatarId, voice_id: voiceId }
+        });
+      }
+      
+      // Config 3: Default CUSTOM (what we normally send)
+      configs.push({
+        name: "Default CUSTOM",
+        body: { mode: "CUSTOM", avatar_id: avatarId }
+      });
+      
+      const results = [];
+      
+      for (const config of configs) {
+        try {
+          log.info({ config: config.name, body: config.body }, "Testing configuration");
+          
+          const response = await fetch("https://api.liveavatar.com/v1/sessions/token", {
+            method: "POST",
+            headers: {
+              "X-API-KEY": apiKey,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(config.body),
+          });
+          
+          const responseText = await response.text();
+          let responseData;
+          try {
+            responseData = JSON.parse(responseText);
+          } catch {
+            responseData = { raw: responseText };
+          }
+          
+          results.push({
+            config: config.name,
+            requestBody: config.body,
+            status: response.status,
+            success: response.ok,
+            response: responseData,
+            sessionId: responseData?.data?.session_id,
+            hasToken: !!responseData?.data?.session_token,
+          });
+          
+        } catch (err: any) {
+          results.push({
+            config: config.name,
+            requestBody: config.body,
+            success: false,
+            error: err.message
+          });
+        }
+        
+        await new Promise(r => setTimeout(r, 300));
+      }
+      
+      log.info({ results }, "Mark Kohl debug test completed");
+      
+      res.json({
+        avatarId,
+        voiceIdTested: voiceId || "none",
+        results,
+        note: "If sessions are created but SDK can't connect, the issue is on HeyGen's infrastructure side, not our configuration."
+      });
+      
+    } catch (error: any) {
+      log.error({ error: error.message }, "Error in Mark Kohl debug test");
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // GET HeyGen credit usage endpoint
   app.get("/api/heygen/credits", async (req: any, res) => {
     const log = logger.child({ service: "heygen-credit", operation: "getCredits" });
