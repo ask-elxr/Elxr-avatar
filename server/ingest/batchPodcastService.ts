@@ -104,16 +104,21 @@ export async function extractZipAndCreateBatch(
         const filePath = path.join(batchDir, filename);
         
         const content = await file.buffer();
+        const transcriptText = content.toString('utf-8');
+        
+        // Write to temp dir for backward compatibility (will be removed later)
         await fs.promises.writeFile(filePath, content);
         
+        // Store transcript in database for reliability (survives server restarts)
         await storage.createPodcastEpisode({
           batchId: batch.id,
           filename,
           textLength: content.length,
+          transcriptText,
         });
         
         episodeFilenames.push(filename);
-        logger.debug({ batchId: batch.id, filename }, 'Extracted episode file');
+        logger.debug({ batchId: batch.id, filename }, 'Extracted episode file to DB');
       }
     }
     
@@ -169,10 +174,18 @@ export async function classifyBatchEpisodes(batchId: string): Promise<EpisodeCla
   const classifications: EpisodeClassification[] = [];
   
   for (const episode of unclassifiedEpisodes) {
-    const filePath = path.join(batchDir, episode.filename);
-    
     try {
-      const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+      // First try to read from database (reliable), then fall back to temp file (legacy)
+      let fileContent: string;
+      if (episode.transcriptText) {
+        fileContent = episode.transcriptText;
+        logger.debug({ filename: episode.filename }, 'Reading transcript from database');
+      } else {
+        // Fallback to temp file for backward compatibility
+        const filePath = path.join(batchDir, episode.filename);
+        fileContent = await fs.promises.readFile(filePath, 'utf-8');
+        logger.debug({ filename: episode.filename }, 'Reading transcript from temp file (legacy)');
+      }
       
       if (fileContent.trim().length < 100) {
         logger.debug({ filename: episode.filename }, 'Content too short for classification');
@@ -269,19 +282,31 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
   
   for (let i = 0; i < pendingEpisodes.length; i++) {
     const episode = pendingEpisodes[i];
-    const filePath = path.join(batchDir, episode.filename);
     
     logger.info({ 
       batchId, 
       episodeId: episode.id, 
       filename: episode.filename,
-      progress: `${i + 1}/${pendingEpisodes.length}` 
+      progress: `${i + 1}/${pendingEpisodes.length}`,
+      hasDbTranscript: !!episode.transcriptText
     }, 'Processing episode');
     
     try {
       await storage.updatePodcastEpisode(episode.id, { status: 'processing' });
       
-      const fileContent = await fs.promises.readFile(filePath, 'utf-8');
+      // First try to read from database (reliable), then fall back to temp file (legacy)
+      let fileContent: string;
+      if (episode.transcriptText) {
+        fileContent = episode.transcriptText;
+      } else {
+        // Fallback to temp file for backward compatibility
+        const filePath = path.join(batchDir, episode.filename);
+        try {
+          fileContent = await fs.promises.readFile(filePath, 'utf-8');
+        } catch (readError) {
+          throw new Error(`Transcript not found in database or temp file. Server may have restarted. Please re-upload.`);
+        }
+      }
       
       if (fileContent.trim().length < 100) {
         logger.warn({ episodeId: episode.id, filename: episode.filename }, 'Episode too short, skipping');
