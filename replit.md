@@ -85,16 +85,26 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Admin Endpoints**: For ingesting transcripts, getting namespace stats, and deleting namespaces.
 - **Admin UI**: KnowledgeBase page "Courses" tab with transcript paste, dry run, stats, and preview.
 
-#### Batch Podcast Ingestion System
-- **Location**: `server/ingest/batchPodcastService.ts`, `client/src/components/BatchPodcastIngestion.tsx`.
-- **Purpose**: Process large ZIP archives of podcast episode transcripts.
-- **Database Tables**: `podcast_batches`, `podcast_episodes` for tracking.
-- **Processing Flow**: ZIP upload → extraction → substance extraction + anonymization + chunking → Pinecone upsert.
+#### Batch Podcast Ingestion System (Replit-Safe Architecture)
+- **Location**: `server/ingest/batchPodcastService.ts`, `server/ingest/microBatchIngestion.ts`, `client/src/components/BatchPodcastIngestion.tsx`.
+- **Purpose**: Process large ZIP archives of podcast episode transcripts with full resumability.
+- **Database Tables**: `podcast_batches`, `podcast_episodes` (with `transcript_text`, `chunks_json`, `chunks_uploaded` columns for persistence).
+- **Processing Flow**:
+  1. ZIP upload → extraction → store transcript in database (`transcript_text`)
+  2. Substance extraction + chunking → save pre-chunked data as JSON (`chunks_json`)
+  3. Micro-batch embedding (15 chunks at a time) with 500ms sleep intervals
+  4. Micro-batch upserting (50 vectors at a time) with 300ms sleep intervals
+  5. Per-namespace progress tracking for multi-namespace support
+- **Resumability**: Survives server restarts by storing all intermediate state in database:
+  - Transcripts stored in `transcript_text` column (no temp file dependency)
+  - Pre-chunked data stored in `chunks_json` column
+  - Upload progress tracked in `chunks_uploaded` column
+  - Automatic startup recovery calls `resumeStuckBatches()` 5 seconds after server start
+- **Micro-Batch Design**: Prevents memory/timeout issues on Replit by processing in small batches with retry logic and rate limiting.
 - **Supported File Types**: .txt, .md, .srt, .vtt.
-- **Rate Limiting**: 2-second delay between episodes.
-- **Progress Tracking**: Real-time progress and startup recovery for stuck batches.
+- **Rate Limiting**: 2-second delay between episodes, 500ms between embedding batches, 300ms between upsert batches.
 - **Protected Namespaces**: Mark Kohl's namespace cannot be modified.
-- **Admin Endpoints**: For uploading ZIPs, getting batch status, listing batches, and retrying failed episodes.
+- **Admin Endpoints**: For uploading ZIPs, getting batch status, listing batches, retrying failed episodes, and manually triggering recovery.
 - **Admin UI**: KnowledgeBase page "Podcasts" tab → "Batch Upload (ZIP)" sub-tab.
 
 #### Content Taxonomy System

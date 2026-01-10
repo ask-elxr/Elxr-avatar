@@ -70,8 +70,10 @@ export async function embedAndUploadMicroBatch(
   namespace: string,
   source: string,
   sourceType: string,
-  startFromChunk: number = 0
+  startFromChunk: number = 0,
+  options: { updateEpisodeProgress?: boolean } = {}
 ): Promise<MicroBatchProgress> {
+  const { updateEpisodeProgress = false } = options; // Default: don't update episode (caller manages progress)
   const embedder = getEmbedder();
   const createdAt = new Date().toISOString();
   const normalizedNamespace = namespace.toUpperCase();
@@ -151,9 +153,12 @@ export async function embedAndUploadMicroBatch(
     
     chunksUploaded = startFromChunk + i + batch.length;
     
-    await storage.updatePodcastEpisode(episodeId, {
-      chunksUploaded,
-    });
+    // Only update episode progress if explicitly requested (for single-namespace use)
+    if (updateEpisodeProgress) {
+      await storage.updatePodcastEpisode(episodeId, {
+        chunksUploaded,
+      });
+    }
     
     if (i + UPSERT_BATCH_SIZE < allVectors.length) {
       await sleep(SLEEP_BETWEEN_UPSERT_MS);

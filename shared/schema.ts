@@ -613,7 +613,8 @@ export const podcastEpisodes = pgTable("podcast_episodes", {
   textLength: integer("text_length").default(0),
   transcriptText: text("transcript_text"),
   chunksJson: jsonb("chunks_json"), // Pre-processed chunks as JSON for resumable uploads
-  chunksUploaded: integer("chunks_uploaded").default(0), // Track how many chunks uploaded (for resumability)
+  chunksUploaded: integer("chunks_uploaded").default(0), // Track how many chunks uploaded (for single-namespace)
+  namespaceProgress: jsonb("namespace_progress"), // Per-namespace upload progress: { "NAMESPACE_NAME": chunks_uploaded }
   predictedNamespaces: text("predicted_namespaces").array(),
   primaryNamespace: varchar("primary_namespace"),
   confidence: real("confidence"),

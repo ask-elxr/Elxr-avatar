@@ -265,11 +265,24 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
   }
   
   const episodes = await storage.getPodcastEpisodesByBatch(batchId);
-  // Include episodes that are pending OR processing (for resume) OR have partial uploads
+  
+  // Helper to check if all namespaces are complete for an episode
+  const isEpisodeFullyComplete = (e: typeof episodes[0]): boolean => {
+    if (!e.chunksJson || !e.chunksCount) return e.status === 'completed';
+    
+    const namespacesToCheck = batch.autoDetect && e.predictedNamespaces?.length
+      ? e.predictedNamespaces
+      : [batch.namespace];
+    
+    const progress = (e.namespaceProgress as Record<string, number>) || {};
+    return namespacesToCheck.every(ns => (progress[ns.toUpperCase()] || 0) >= e.chunksCount);
+  };
+  
+  // Include episodes that are pending, processing, or have incomplete namespace uploads
   const episodesToProcess = episodes.filter(e => 
     e.status === 'pending' || 
     e.status === 'processing' ||
-    (e.chunksJson && (e.chunksUploaded || 0) < (e.chunksCount || 0))
+    (e.chunksJson && !isEpisodeFullyComplete(e))
   );
   
   logger.info({ 
@@ -381,51 +394,90 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
         : [batch.namespace];
       
       // Step 7: Micro-batch embed and upload to each namespace
+      // IMPORTANT: For multi-namespace, we embed once and upload to each namespace separately
+      // Each namespace gets its own upload progress tracking (persisted to DB for resumability)
       const sourceId = `batch-${batchId}-${episode.filename.replace(/\.[^/.]+$/, '')}`;
-      let episodeTotalChunks = 0;
+      let episodeTotalChunks = chunks.length;
+      
+      // Get namespace-specific progress from database (for resumability)
+      const namespaceProgress: Record<string, number> = 
+        (episode.namespaceProgress as Record<string, number>) || {};
       
       for (const ns of namespacesToIngest) {
         const nsSourceId = namespacesToIngest.length > 1 
           ? `${sourceId}-${ns.toLowerCase()}`
           : sourceId;
         
-        // Resume from where we left off
-        const startFromChunk = (episode.chunksUploaded || 0);
+        // For each namespace, check if already fully uploaded
+        const nsKey = ns.toUpperCase();
+        const nsChunksUploaded = namespaceProgress[nsKey] || 0;
         
+        if (nsChunksUploaded >= chunks.length) {
+          logger.info({ 
+            episodeId: episode.id, 
+            namespace: ns, 
+            alreadyUploaded: nsChunksUploaded
+          }, 'Namespace already fully uploaded, skipping');
+          continue;
+        }
+        
+        // Each namespace starts fresh (we re-embed and upload all chunks)
+        // This is necessary because Pinecone stores per-namespace
         const result = await embedAndUploadMicroBatch(
           episode.id,
           chunks,
           ns,
           nsSourceId,
           'podcast',
-          startFromChunk
+          nsChunksUploaded // Resume from where this namespace left off
         );
         
-        episodeTotalChunks = result.totalChunks;
+        // Track per-namespace progress and persist to database (for resumability)
+        namespaceProgress[nsKey] = result.chunksUploaded;
+        
+        // Save namespace progress to database after each namespace completes
+        await storage.updatePodcastEpisode(episode.id, {
+          namespaceProgress: namespaceProgress,
+        });
         
         logger.info({ 
           episodeId: episode.id, 
           namespace: ns, 
-          chunks: result.chunksUploaded
+          chunks: result.chunksUploaded,
+          namespaceProgress
         }, 'Micro-batch upload complete for namespace');
       }
       
-      await storage.updatePodcastEpisode(episode.id, {
-        status: 'completed',
-        chunksCount: episodeTotalChunks,
-        chunksUploaded: episodeTotalChunks,
-        discardedCount,
-      });
+      // Check if all namespaces are complete
+      const allNamespacesComplete = namespacesToIngest.every(ns => 
+        (namespaceProgress[ns.toUpperCase()] || 0) >= chunks.length
+      );
       
-      totalChunks += episodeTotalChunks;
-      successCount++;
-      
-      logger.info({ 
-        episodeId: episode.id, 
-        filename: episode.filename,
-        chunks: episodeTotalChunks,
-        namespaces: namespacesToIngest
-      }, 'Episode processed successfully (micro-batch mode)');
+      if (allNamespacesComplete) {
+        await storage.updatePodcastEpisode(episode.id, {
+          status: 'completed',
+          chunksCount: episodeTotalChunks,
+          chunksUploaded: episodeTotalChunks,
+          discardedCount,
+        });
+        
+        totalChunks += episodeTotalChunks;
+        successCount++;
+        
+        logger.info({ 
+          episodeId: episode.id, 
+          filename: episode.filename,
+          chunks: episodeTotalChunks,
+          namespaces: namespacesToIngest
+        }, 'Episode processed successfully (micro-batch mode)');
+      } else {
+        // Still processing - update progress but don't mark complete
+        logger.warn({ 
+          episodeId: episode.id, 
+          namespaceProgress,
+          totalChunks: chunks.length
+        }, 'Not all namespaces complete - episode still in progress');
+      }
       
     } catch (error) {
       logger.error({ 
