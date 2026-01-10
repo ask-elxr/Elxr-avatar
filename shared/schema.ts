@@ -611,6 +611,7 @@ export const podcastEpisodes = pgTable("podcast_episodes", {
   chunksCount: integer("chunks_count").default(0),
   discardedCount: integer("discarded_count").default(0),
   textLength: integer("text_length").default(0),
+  transcriptText: text("transcript_text"),
   predictedNamespaces: text("predicted_namespaces").array(),
   primaryNamespace: varchar("primary_namespace"),
   confidence: real("confidence"),

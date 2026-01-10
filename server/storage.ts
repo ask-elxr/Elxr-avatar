@@ -118,7 +118,7 @@ export interface IStorage {
   getPodcastBatch(id: string): Promise<PodcastBatch | undefined>;
   updatePodcastBatch(id: string, data: Partial<PodcastBatch>): Promise<PodcastBatch | undefined>;
   listPodcastBatches(limit?: number): Promise<PodcastBatch[]>;
-  createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number }): Promise<PodcastEpisode>;
+  createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number; transcriptText?: string }): Promise<PodcastEpisode>;
   getPodcastEpisodesByBatch(batchId: string): Promise<PodcastEpisode[]>;
   updatePodcastEpisode(id: string, data: Partial<PodcastEpisode>): Promise<PodcastEpisode | undefined>;
 }
@@ -692,7 +692,7 @@ export class DatabaseStorage implements IStorage {
     return batches;
   }
 
-  async createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number }): Promise<PodcastEpisode> {
+  async createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number; transcriptText?: string }): Promise<PodcastEpisode> {
     const [episode] = await db
       .insert(podcastEpisodes)
       .values(data)
