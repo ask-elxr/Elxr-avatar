@@ -11,6 +11,7 @@ import { requireAdmin, isAuthenticated } from "./replitAuth.js";
 import { subscriptionService } from "./services/subscription.js";
 import { videoGenerationService } from "./services/videoGeneration.js";
 import { chatVideoService } from "./services/chatVideo.js";
+import { resumeStuckBatches } from "./ingest/batchPodcastService.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 import path from "path";
@@ -241,5 +242,17 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    
+    // Automatically resume any stuck podcast batch processing on startup
+    setTimeout(async () => {
+      try {
+        const result = await resumeStuckBatches();
+        if (result.resumedCount > 0 || result.failedCount > 0) {
+          log(`🎙️ Podcast batch recovery: ${result.resumedCount} resumed, ${result.failedCount} failed`);
+        }
+      } catch (error: any) {
+        console.error('Error during podcast batch recovery:', error.message);
+      }
+    }, 5000); // Wait 5 seconds after startup before attempting recovery
   });
 })();
