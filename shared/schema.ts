@@ -612,6 +612,8 @@ export const podcastEpisodes = pgTable("podcast_episodes", {
   discardedCount: integer("discarded_count").default(0),
   textLength: integer("text_length").default(0),
   transcriptText: text("transcript_text"),
+  chunksJson: jsonb("chunks_json"), // Pre-processed chunks as JSON for resumable uploads
+  chunksUploaded: integer("chunks_uploaded").default(0), // Track how many chunks uploaded (for resumability)
   predictedNamespaces: text("predicted_namespaces").array(),
   primaryNamespace: varchar("primary_namespace"),
   confidence: real("confidence"),

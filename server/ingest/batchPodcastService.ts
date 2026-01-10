@@ -5,7 +5,8 @@ import * as path from 'path';
 import { Readable } from 'stream';
 import { logger } from '../logger.js';
 import { storage } from '../storage.js';
-import { ingestPodcast } from './podcastIngestionService.js';
+import { extractSubstance, chunkPodcastContent } from './podcastIngestionService.js';
+import { embedAndUploadMicroBatch, prepareChunksForStorage, loadChunksFromStorage, type ChunkRecord } from './microBatchIngestion.js';
 import { classifyTranscript, type ClassificationResult } from './namespaceClassifier.js';
 import type { PodcastBatch, PodcastEpisode } from '@shared/schema';
 
@@ -264,96 +265,156 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
   }
   
   const episodes = await storage.getPodcastEpisodesByBatch(batchId);
-  const pendingEpisodes = episodes.filter(e => e.status === 'pending');
+  // Include episodes that are pending OR processing (for resume) OR have partial uploads
+  const episodesToProcess = episodes.filter(e => 
+    e.status === 'pending' || 
+    e.status === 'processing' ||
+    (e.chunksJson && (e.chunksUploaded || 0) < (e.chunksCount || 0))
+  );
   
   logger.info({ 
     batchId, 
     totalEpisodes: episodes.length,
-    pendingEpisodes: pendingEpisodes.length 
-  }, 'Starting batch episode processing');
+    episodesToProcess: episodesToProcess.length 
+  }, 'Starting micro-batch episode processing');
   
   await storage.updatePodcastBatch(batchId, { status: 'processing' });
   
   const batchDir = path.join(TEMP_DIR, batchId);
-  let successCount = 0;
-  let failCount = 0;
-  let skipCount = 0;
-  let totalChunks = 0;
+  let successCount = episodes.filter(e => e.status === 'completed').length;
+  let failCount = episodes.filter(e => e.status === 'failed').length;
+  let skipCount = episodes.filter(e => e.status === 'skipped').length;
+  let totalChunks = episodes.reduce((sum, e) => sum + (e.chunksCount || 0), 0);
   
-  for (let i = 0; i < pendingEpisodes.length; i++) {
-    const episode = pendingEpisodes[i];
+  for (let i = 0; i < episodesToProcess.length; i++) {
+    const episode = episodesToProcess[i];
     
     logger.info({ 
       batchId, 
       episodeId: episode.id, 
       filename: episode.filename,
-      progress: `${i + 1}/${pendingEpisodes.length}`,
-      hasDbTranscript: !!episode.transcriptText
-    }, 'Processing episode');
+      progress: `${i + 1}/${episodesToProcess.length}`,
+      hasDbTranscript: !!episode.transcriptText,
+      hasPreChunked: !!episode.chunksJson,
+      chunksUploaded: episode.chunksUploaded || 0,
+    }, 'Processing episode (micro-batch mode)');
     
     try {
       await storage.updatePodcastEpisode(episode.id, { status: 'processing' });
       
-      // First try to read from database (reliable), then fall back to temp file (legacy)
-      let fileContent: string;
-      if (episode.transcriptText) {
-        fileContent = episode.transcriptText;
+      let chunks: ChunkRecord[];
+      let discardedCount = episode.discardedCount || 0;
+      
+      // Check if we already have pre-chunked data (resuming interrupted upload)
+      if (episode.chunksJson && Array.isArray(episode.chunksJson)) {
+        chunks = loadChunksFromStorage(episode.chunksJson);
+        logger.info({ 
+          episodeId: episode.id, 
+          existingChunks: chunks.length,
+          alreadyUploaded: episode.chunksUploaded || 0
+        }, 'Resuming from pre-chunked data');
       } else {
-        // Fallback to temp file for backward compatibility
-        const filePath = path.join(batchDir, episode.filename);
-        try {
-          fileContent = await fs.promises.readFile(filePath, 'utf-8');
-        } catch (readError) {
-          throw new Error(`Transcript not found in database or temp file. Server may have restarted. Please re-upload.`);
+        // Step 1: Get transcript from DB or temp file
+        let fileContent: string;
+        if (episode.transcriptText) {
+          fileContent = episode.transcriptText;
+        } else {
+          const filePath = path.join(batchDir, episode.filename);
+          try {
+            fileContent = await fs.promises.readFile(filePath, 'utf-8');
+          } catch (readError) {
+            throw new Error(`Transcript not found in database or temp file. Server may have restarted. Please re-upload.`);
+          }
         }
-      }
-      
-      if (fileContent.trim().length < 100) {
-        logger.warn({ episodeId: episode.id, filename: episode.filename }, 'Episode too short, skipping');
-        await storage.updatePodcastEpisode(episode.id, { 
-          status: 'skipped',
-          error: 'Content too short (less than 100 characters)'
+        
+        if (fileContent.trim().length < 100) {
+          logger.warn({ episodeId: episode.id, filename: episode.filename }, 'Episode too short, skipping');
+          await storage.updatePodcastEpisode(episode.id, { 
+            status: 'skipped',
+            error: 'Content too short (less than 100 characters)'
+          });
+          skipCount++;
+          continue;
+        }
+        
+        // Step 2: Extract substance (Claude AI processing)
+        logger.info({ episodeId: episode.id }, 'Extracting substance from transcript');
+        const extractedText = await extractSubstance(fileContent);
+        
+        if (extractedText.length < 100) {
+          logger.warn({ episodeId: episode.id }, 'Not enough substantive content after extraction');
+          await storage.updatePodcastEpisode(episode.id, { 
+            status: 'skipped',
+            error: 'Not enough substantive content after extraction'
+          });
+          skipCount++;
+          continue;
+        }
+        
+        // Step 3: Chunk the content (Claude AI processing)
+        logger.info({ episodeId: episode.id }, 'Chunking extracted content');
+        const chunkResult = await chunkPodcastContent(extractedText);
+        discardedCount = chunkResult.discardedCount;
+        
+        // Step 4: Prepare chunks with IDs for storage
+        const sourceId = `batch-${batchId}-${episode.filename.replace(/\.[^/.]+$/, '')}`;
+        chunks = prepareChunksForStorage(chunkResult.chunks, sourceId);
+        
+        // Step 5: Save pre-chunked data to database (CRITICAL for resumability)
+        await storage.updatePodcastEpisode(episode.id, {
+          chunksJson: chunks,
+          chunksCount: chunks.length,
+          discardedCount,
+          chunksUploaded: 0,
         });
-        skipCount++;
-        continue;
+        
+        logger.info({ 
+          episodeId: episode.id, 
+          chunksCount: chunks.length,
+          discardedCount 
+        }, 'Pre-chunked data saved to database');
       }
       
-      const sourceId = `batch-${batchId}-${episode.filename.replace(/\.[^/.]+$/, '')}`;
-      
+      // Step 6: Determine namespaces
       const namespacesToIngest = batch.autoDetect && episode.predictedNamespaces?.length
         ? episode.predictedNamespaces
         : [batch.namespace];
       
+      // Step 7: Micro-batch embed and upload to each namespace
+      const sourceId = `batch-${batchId}-${episode.filename.replace(/\.[^/.]+$/, '')}`;
       let episodeTotalChunks = 0;
-      let episodeDiscardedCount = 0;
       
       for (const ns of namespacesToIngest) {
         const nsSourceId = namespacesToIngest.length > 1 
           ? `${sourceId}-${ns.toLowerCase()}`
           : sourceId;
-          
-        const result = await ingestPodcast({
-          namespace: ns,
-          source: nsSourceId,
-          rawText: fileContent,
-          sourceType: 'podcast',
-          dryRun: false,
-        });
         
-        episodeTotalChunks += result.totalChunks;
-        episodeDiscardedCount += result.discardedCount;
+        // Resume from where we left off
+        const startFromChunk = (episode.chunksUploaded || 0);
         
-        logger.debug({ 
+        const result = await embedAndUploadMicroBatch(
+          episode.id,
+          chunks,
+          ns,
+          nsSourceId,
+          'podcast',
+          startFromChunk
+        );
+        
+        episodeTotalChunks = result.totalChunks;
+        
+        logger.info({ 
           episodeId: episode.id, 
           namespace: ns, 
-          chunks: result.totalChunks 
-        }, 'Ingested to namespace');
+          chunks: result.chunksUploaded
+        }, 'Micro-batch upload complete for namespace');
       }
       
       await storage.updatePodcastEpisode(episode.id, {
         status: 'completed',
         chunksCount: episodeTotalChunks,
-        discardedCount: episodeDiscardedCount,
+        chunksUploaded: episodeTotalChunks,
+        discardedCount,
       });
       
       totalChunks += episodeTotalChunks;
@@ -364,7 +425,7 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
         filename: episode.filename,
         chunks: episodeTotalChunks,
         namespaces: namespacesToIngest
-      }, 'Episode processed successfully');
+      }, 'Episode processed successfully (micro-batch mode)');
       
     } catch (error) {
       logger.error({ 
@@ -381,28 +442,42 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
       failCount++;
     }
     
+    // Update batch progress
+    const allEpisodes = await storage.getPodcastEpisodesByBatch(batchId);
+    const processedCount = allEpisodes.filter(e => 
+      e.status === 'completed' || e.status === 'failed' || e.status === 'skipped'
+    ).length;
+    
     await storage.updatePodcastBatch(batchId, {
-      processedEpisodes: i + 1,
-      successfulEpisodes: successCount,
-      failedEpisodes: failCount,
-      skippedEpisodes: skipCount,
-      totalChunks,
+      processedEpisodes: processedCount,
+      successfulEpisodes: allEpisodes.filter(e => e.status === 'completed').length,
+      failedEpisodes: allEpisodes.filter(e => e.status === 'failed').length,
+      skippedEpisodes: allEpisodes.filter(e => e.status === 'skipped').length,
+      totalChunks: allEpisodes.reduce((sum, e) => sum + (e.chunksCount || 0), 0),
     });
     
-    if (i < pendingEpisodes.length - 1) {
+    // Sleep between episodes
+    if (i < episodesToProcess.length - 1) {
       await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_EPISODES_MS));
     }
   }
   
-  const finalStatus = failCount === pendingEpisodes.length ? 'failed' : 'completed';
+  // Recalculate final counts
+  const finalEpisodes = await storage.getPodcastEpisodesByBatch(batchId);
+  const finalSuccess = finalEpisodes.filter(e => e.status === 'completed').length;
+  const finalFail = finalEpisodes.filter(e => e.status === 'failed').length;
+  const finalSkip = finalEpisodes.filter(e => e.status === 'skipped').length;
+  const finalChunks = finalEpisodes.reduce((sum, e) => sum + (e.chunksCount || 0), 0);
+  
+  const finalStatus = finalFail === finalEpisodes.length ? 'failed' : 'completed';
   
   await storage.updatePodcastBatch(batchId, {
     status: finalStatus,
-    processedEpisodes: pendingEpisodes.length,
-    successfulEpisodes: successCount,
-    failedEpisodes: failCount,
-    skippedEpisodes: skipCount,
-    totalChunks,
+    processedEpisodes: finalEpisodes.length,
+    successfulEpisodes: finalSuccess,
+    failedEpisodes: finalFail,
+    skippedEpisodes: finalSkip,
+    totalChunks: finalChunks,
   });
   
   await cleanupBatchDir(batchId);
@@ -410,11 +485,11 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
   logger.info({ 
     batchId, 
     status: finalStatus,
-    successful: successCount,
-    failed: failCount,
-    skipped: skipCount,
-    totalChunks
-  }, 'Batch processing complete');
+    successful: finalSuccess,
+    failed: finalFail,
+    skipped: finalSkip,
+    totalChunks: finalChunks
+  }, 'Micro-batch processing complete');
 }
 
 export async function getBatchStatus(batchId: string): Promise<BatchStatusResult | null> {

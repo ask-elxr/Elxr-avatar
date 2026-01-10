@@ -199,7 +199,7 @@ function parseChunksFromResponse(responseText: string): ConversationalChunk[] {
   }
 }
 
-async function chunkPodcastContent(
+export async function chunkPodcastContent(
   text: string,
   attribution?: string
 ): Promise<{ chunks: ConversationalChunk[]; discardedCount: number }> {
