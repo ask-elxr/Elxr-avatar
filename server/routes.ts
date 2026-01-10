@@ -1443,6 +1443,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log.error({ error: histError }, 'Error fetching conversation history synchronously');
           }
         }
+        
+        // 📚 SYNC RAG FETCH for first message - ensures knowledge base works on first turn
+        // This is critical for questions that need avatar's expertise right away
+        const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+        if (pineconeNamespaceService.isAvailable() && avatarConfig.pineconeNamespaces?.length > 0) {
+          try {
+            const ragStart = Date.now();
+            const allNamespaces = [...avatarConfig.pineconeNamespaces];
+            
+            // Add user's custom knowledge sources if available
+            if (userId && !userId.startsWith('temp_')) {
+              try {
+                const userSources = await storage.listKnowledgeSources(userId);
+                const activeSourceNamespaces = userSources
+                  .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
+                  .map(source => source.pineconeNamespace);
+                allNamespaces.push(...activeSourceNamespaces);
+              } catch (error) {
+                // Ignore errors
+              }
+            }
+            
+            log.info({ namespaces: allNamespaces, query: message.substring(0, 80) }, '📚 SYNC RAG: Querying Pinecone namespaces');
+            const results = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
+            const ragTime = Date.now() - ragStart;
+            
+            if (results.length > 0) {
+              knowledgeContext = results.map((r: { text: string; score: number }) => r.text).join('\n\n');
+              log.info({ 
+                namespaces: allNamespaces,
+                resultCount: results.length,
+                scores: results.map((r: { text: string; score: number }) => r.score.toFixed(3)),
+                textPreviews: results.map((r: { text: string; score: number }) => r.text.substring(0, 60) + '...'),
+                duration: ragTime
+              }, '📚 SYNC RAG: Retrieved knowledge context successfully');
+              console.log(`📚 SYNC RAG: Found ${results.length} results from ${allNamespaces.length} namespaces in ${ragTime}ms`);
+            } else {
+              console.log(`📚 SYNC RAG: No matching context found in ${ragTime}ms`);
+            }
+          } catch (ragError) {
+            log.error({ error: ragError }, 'Error fetching RAG synchronously');
+          }
+        } else {
+          console.log(`📚 SYNC RAG: Skipped - Pinecone unavailable or no namespaces configured`);
+        }
       }
       
       const hasConversationHistory = dbConversationHistory.length > 0;
