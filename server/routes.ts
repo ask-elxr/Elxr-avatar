@@ -4416,7 +4416,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
         combinedKnowledgeContext += googleSearchContext;
       }
       
-      // === CULTIVATION BYPASS: Check if query needs KB-direct response (bypasses Claude's safety limits) ===
+      // === CULTIVATION BYPASS: Route cultivation queries to KB directly (Claude refuses these) ===
       const cultivationResult = await handleCultivationQuery(
         message || '',
         avatarConfig.pineconeNamespaces || [],
@@ -4424,11 +4424,10 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       );
       
       if (cultivationResult.shouldBypass && (cultivationResult.kbContent || cultivationResult.leadIn)) {
-        console.log(`🌿 CULTIVATION BYPASS ACTIVE (non-streaming) - returning KB content directly`);
+        console.log(`🌿 CULTIVATION BYPASS (non-streaming) - returning KB content`);
         
         const directResponse = formatKBResponseForVoice(cultivationResult.leadIn, cultivationResult.kbContent);
         
-        // Save conversation
         if (userId) {
           await storage.saveConversation({ userId, avatarId, role: 'assistant', text: directResponse }).catch(() => {});
         }
@@ -4443,7 +4442,6 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
           personalityUsed: avatarConfig.personalityPrompt,
           usedClaude: false,
           kbDirect: true,
-          bypassReason: cultivationResult.reason,
           performance: perfTimings,
         });
       }
@@ -5038,7 +5036,7 @@ This applies to EVERY response, regardless of conversation length.`;
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
-      // === CULTIVATION BYPASS: Check if query needs KB-direct response (bypasses Claude's safety limits) ===
+      // === CULTIVATION BYPASS: Route cultivation queries to KB directly (Claude refuses these) ===
       const cultivationResult = await handleCultivationQuery(
         message || '',
         avatarConfig.pineconeNamespaces || [],
@@ -5046,14 +5044,13 @@ This applies to EVERY response, regardless of conversation length.`;
       );
       
       if (cultivationResult.shouldBypass && (cultivationResult.kbContent || cultivationResult.leadIn)) {
-        console.log(`🌿 CULTIVATION BYPASS ACTIVE (text mode) - returning KB content directly`);
+        console.log(`🌿 CULTIVATION BYPASS (text streaming) - returning KB content`);
         
         const directResponse = formatKBResponseForVoice(cultivationResult.leadIn, cultivationResult.kbContent);
         
         sendEvent('text', { content: directResponse });
         sendEvent('sentence', { content: directResponse, index: 1 });
         
-        // Save conversation
         if (userId) {
           await storage.saveConversation({ userId, avatarId, role: 'assistant', text: directResponse }).catch(() => {});
         }
@@ -5061,10 +5058,7 @@ This applies to EVERY response, regardless of conversation length.`;
         sendEvent('done', {
           fullResponse: directResponse,
           kbDirect: true,
-          performance: {
-            totalMs: Date.now() - perfStart,
-            bypassReason: cultivationResult.reason
-          }
+          performance: { totalMs: Date.now() - perfStart }
         });
         
         return res.end();
@@ -5481,7 +5475,7 @@ This applies to EVERY response, regardless of conversation length.`;
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
 
-      // === CULTIVATION BYPASS: Check if query needs KB-direct response (bypasses Claude's safety limits) ===
+      // === CULTIVATION BYPASS: Route cultivation queries to KB directly (Claude refuses these) ===
       const cultivationResult = await handleCultivationQuery(
         message || '',
         avatarConfig.pineconeNamespaces || [],
@@ -5489,11 +5483,10 @@ This applies to EVERY response, regardless of conversation length.`;
       );
       
       if (cultivationResult.shouldBypass && (cultivationResult.kbContent || cultivationResult.leadIn)) {
-        console.log(`🌿 [${Date.now() - perfStart}ms] CULTIVATION BYPASS ACTIVE - returning KB content directly`);
+        console.log(`🌿 [${Date.now() - perfStart}ms] CULTIVATION BYPASS (audio) - returning KB content`);
         
         const directResponse = formatKBResponseForVoice(cultivationResult.leadIn, cultivationResult.kbContent);
         
-        // Generate TTS for the KB response
         try {
           const ssmlText = `${directResponse}<break time="70ms"/>`;
           const audioBase64 = await elevenlabsService.generateSpeechBase64(ssmlText, voiceId, languageCode);
@@ -5509,7 +5502,6 @@ This applies to EVERY response, regardless of conversation length.`;
             ttsMs: Date.now() - perfStart
           });
           
-          // Save conversation
           if (userId) {
             await storage.saveConversation({ userId, avatarId, role: 'assistant', text: directResponse }).catch(() => {});
           }
@@ -5518,17 +5510,12 @@ This applies to EVERY response, regardless of conversation length.`;
             fullResponse: directResponse,
             sentenceCount: 1,
             kbDirect: true,
-            performance: {
-              totalMs: Date.now() - perfStart,
-              timeToFirstAudioMs: Date.now() - perfStart,
-              bypassReason: cultivationResult.reason
-            }
+            performance: { totalMs: Date.now() - perfStart }
           });
           
           return res.end();
         } catch (ttsError: any) {
-          log.error({ error: ttsError.message }, "TTS failed for KB-direct response");
-          // Fall through to Claude as backup
+          log.error({ error: ttsError.message }, "TTS failed for KB-direct response, falling through to Claude");
         }
       }
       // === END CULTIVATION BYPASS ===
