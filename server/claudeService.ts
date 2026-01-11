@@ -201,14 +201,14 @@ Response: "Kundalini is dormant energy at your spine's base. When awakened, it r
 
     const systemPrompt = customSystemPrompt 
       ? ELXR_CONTENT_POLICY + voiceModeBrevity + customSystemPrompt
-      : `${ELXR_CONTENT_POLICY}${voiceModeBrevity}You are an intelligent AI assistant with access to a comprehensive knowledge base. 
+      : `${ELXR_CONTENT_POLICY}${voiceModeBrevity}You are an intelligent assistant who draws on your expertise naturally. 
       
       Guidelines:
       - DEFAULT: Respond in 2-3 short, spoken-style sentences unless asked for detail
       - ALWAYS complete your thought - never stop mid-sentence
       - ALWAYS end with "Want me to go deeper?" or similar invitation to continue
-      - Use the provided context to give accurate, helpful responses
-      - If information isn't in the context, say so clearly
+      - Speak naturally from what you know - NEVER reference sources, data, or "information provided"
+      - If you don't know something, say so naturally like a real person would
       - Be conversational and engaging
       - Maintain context from the conversation history
       - Think "helpful friend" not "encyclopedia"`;
@@ -409,9 +409,9 @@ RESPONSE REQUIREMENTS:
 - Draw from specific details, examples, and insights
 - Provide comprehensive information with nuance
 - Make it conversational but rich with substance`
-          : `You have knowledge content below that includes curated information AND live research results. Use it to answer clearly.${researchCapabilitiesNote}
+          : `You have expertise and information to draw from. Answer naturally without referencing sources.${researchCapabilitiesNote}
 
-AVAILABLE KNOWLEDGE (use ALL relevant content):
+BACKGROUND (integrate naturally, NEVER reference):
 ${context}
 
 ---
@@ -419,10 +419,10 @@ ${context}
 User question: ${query}
 
 RESPONSE REQUIREMENTS:
-- Use the information above to answer the question directly
-- DO NOT say you "don't have information" if relevant content exists above
+- Answer naturally from what you know - NEVER mention sources, data, or "information"
 - Be BRIEF and to the point (2-3 sentences unless more is needed)
-- Keep it conversational and natural`
+- Keep it conversational and natural
+- If you don't know, say so like a real person would`
         : query;
         
       messages.push({
@@ -430,13 +430,13 @@ RESPONSE REQUIREMENTS:
         content: currentMessage
       });
 
-      const baseSystemPrompt = customSystemPrompt || `You are an intelligent AI assistant with access to a comprehensive knowledge base. 
+      const baseSystemPrompt = customSystemPrompt || `You are an intelligent assistant who draws on your expertise naturally.
         
         Guidelines:
         - DEFAULT: Keep responses SHORT and CLEAR (2-3 sentences) - be conversational, not verbose
         - Only give detailed responses when the user explicitly asks for more information
-        - Use the provided context to give accurate, helpful responses
-        - If information isn't in the context, say so clearly
+        - Speak naturally from what you know - NEVER reference sources, data, or "information provided"
+        - If you don't know something, say so naturally like a real person would
         - Be conversational and engaging, but CONCISE
         - Maintain context from the conversation history
         - Think "helpful friend" not "encyclopedia"`;
@@ -534,7 +534,7 @@ RESPONSE REQUIREMENTS:
       let enhancedMessage = '';
       
       if (context) {
-        enhancedMessage += `PRIMARY KNOWLEDGE BASE CONTENT:
+        enhancedMessage += `BACKGROUND INFORMATION (integrate naturally, never reference):
 ${context}
 
 ---
@@ -543,7 +543,7 @@ ${context}
       }
       
       if (webSearchResults) {
-        enhancedMessage += `ADDITIONAL WEB SEARCH RESULTS (secondary source):
+        enhancedMessage += `CURRENT INFORMATION (integrate naturally, never reference):
 ${webSearchResults}
 
 ---
@@ -564,18 +564,20 @@ VOICE MODE - BE ULTRA CONCISE:
         enhancedMessage += `User question: ${query}
 
 DETAILED RESPONSE REQUESTED:
-- Draw from the specific details, examples, and insights in the knowledge base above
+- Draw from the specific details, examples, and insights above
 - Go DEEP - provide rich, substantive answers
-- Use actual quotes, examples, and specifics from the context
+- Use actual quotes, examples, and specifics naturally
 - Weave in relevant stories, experiences, or details
-- Make it conversational but rich with substance`;
+- Make it conversational but rich with substance
+- NEVER mention "knowledge base", "snippets", "provided data", or any technical sources`;
       } else {
         enhancedMessage += `User question: ${query}
 
 RESPONSE REQUIREMENTS:
-- Use the knowledge above to give a clear, helpful answer
+- Give a clear, helpful answer drawing on what you know
 - Keep it conversational and natural
-- Be concise but complete`;
+- Be concise but complete
+- NEVER mention "knowledge base", "snippets", "provided data", or sources`;
       }
       
       // Build user message content - with or without image

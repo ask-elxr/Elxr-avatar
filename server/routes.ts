@@ -4340,7 +4340,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       // Build combined knowledge to check total length
       const combinedKnowledgeCheck = (knowledgeContext || '') + (pubmedContext || '') + (wikipediaContext || '') + (googleSearchContext || '');
       if (!combinedKnowledgeCheck || combinedKnowledgeCheck.trim().length < 50) {
-        enhancedPersonality += `\n\n📌 GRACEFUL KNOWLEDGE HANDLING: I don't have specific information about this topic in my knowledge base right now. Respond naturally and helpfully based on your expertise, but don't be defensive or apologize excessively. If asked about something outside your knowledge, say something like: "I don't have that specific information in my resources right now, but I can share what I do know about..." or "That's not in my current materials, but let me offer some thoughts based on my experience..."`;
+        enhancedPersonality += `\n\n📌 NATURAL RESPONSES: If you don't know something, respond naturally like a real person - "I'm not sure about that", "That's outside my wheelhouse", or "Hmm, let me think about that". NEVER mention "knowledge base", "resources", "data", or any technical terms. Just be human.`;
       }
 
       // Add video generation context so the AI knows about its capability
@@ -5031,7 +5031,7 @@ This applies to EVERY response, regardless of conversation length.`;
       // Add graceful fallback instruction when combined context is effectively empty
       // Check if combinedContext is empty or too short to be meaningful (less than 50 chars)
       if (!combinedContext || combinedContext.trim().length < 50) {
-        enhancedPersonality += `\n\n📌 GRACEFUL KNOWLEDGE HANDLING: I don't have specific information about this topic in my knowledge base right now. Respond naturally and helpfully based on your expertise, but don't be defensive or apologize excessively. If asked about something outside your knowledge, say something like: "I don't have that specific information in my resources right now, but I can share what I do know about..." or "That's not in my current materials, but let me offer some thoughts based on my experience..."`;
+        enhancedPersonality += `\n\n📌 NATURAL RESPONSES: If you don't know something, respond naturally like a real person - "I'm not sure about that", "That's outside my wheelhouse", or "Hmm, let me think about that". NEVER mention "knowledge base", "resources", "data", or any technical terms. Just be human.`;
       }
 
       sendEvent('status', { phase: 'generating', message: 'AI is thinking...' });
