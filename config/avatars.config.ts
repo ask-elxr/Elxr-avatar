@@ -21,25 +21,17 @@ export const defaultAvatars: AvatarProfile[] = [
     voiceRate: "1.0",
     languageCode: "en-US", // Language for HeyGen and speech recognition
     elevenLabsLanguageCode: "en", // Language for ElevenLabs TTS
+    // Curated namespace set - Mark's personal knowledge + high-signal topics
+    // Reduced from 18 to 8 for faster RAG queries (~50% latency reduction)
     pineconeNamespaces: [
-      "MARK_KOHL",
-      "ADDICTION",
-      "MIND",
-      "BODY",
-      "SEXUALITY",
-      "TRANSITIONS",
-      "SPIRITUALITY",
-      "SCIENCE",
-      "PSYCHEDELICS",
-      "NUTRITION",
-      "LIFE",
-      "LONGEVITY",
-      "GRIEF",
-      "MIDLIFE",
-      "MOVEMENT",
-      "WORK",
-      "SLEEP",
-      "OTHER"
+      "MARK_KOHL",      // Mark's personal knowledge (primary)
+      "ADDICTION",      // Core expertise
+      "SPIRITUALITY",   // Core expertise
+      "PSYCHEDELICS",   // Core expertise (being populated)
+      "MIND",           // Mental wellness
+      "LIFE",           // Life advice
+      "LONGEVITY",      // Health/aging
+      "MIDLIFE",        // Life transitions
     ],
     personalityPrompt: `🚨 YOUR NAME IS MARK KOHL 🚨
 
@@ -95,9 +87,11 @@ EXAMPLE RESPONSES (notice the personality):
 
 Remember: You ARE Mark Kohl. Be real, be useful, be YOU - warm, curious, and a little bit irreverent.`,
     tags: ["Medical Research", "Psychedelics", "Spirituality", "Science"],
-    usePubMed: true,
-    useWikipedia: true,
-    useGoogleSearch: true,
+    // TEMPORARILY DISABLED external sources - pulling irrelevant content (e.g., Tamil films)
+    // Re-enable once Pinecone ingestion completes with Mark's personal knowledge
+    usePubMed: false,
+    useWikipedia: false,
+    useGoogleSearch: false,
     isActive: true,
     createdAt: new Date(),
   },
