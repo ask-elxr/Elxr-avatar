@@ -6744,6 +6744,16 @@ ${enhancedPersonality}`;
         }
       }
       
+      // PRIORITIZE: Mark Kohl files first, then rest of content
+      allFiles.sort((a, b) => {
+        const aIsMarkKohl = a.namespace.toLowerCase().includes('mark') || a.namespace === 'MARK_KOHL';
+        const bIsMarkKohl = b.namespace.toLowerCase().includes('mark') || b.namespace === 'MARK_KOHL';
+        if (aIsMarkKohl && !bIsMarkKohl) return -1;
+        if (!aIsMarkKohl && bIsMarkKohl) return 1;
+        return 0;
+      });
+      log.info({ firstFile: allFiles[0]?.fileName, firstNamespace: allFiles[0]?.namespace }, "Files sorted with Mark Kohl priority");
+      
       bulkIngestionStatus.isRunning = true;
       bulkIngestionStatus.startedAt = new Date();
       bulkIngestionStatus.progress = { completed: 0, total: allFiles.length, current: '' };
