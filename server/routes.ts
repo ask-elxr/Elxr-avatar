@@ -6681,6 +6681,130 @@ This applies to EVERY response, regardless of conversation length.`;
     }
   });
 
+  // Background bulk ingestion status tracking
+  const bulkIngestionStatus: {
+    isRunning: boolean;
+    startedAt: Date | null;
+    progress: { completed: number; total: number; current: string };
+    results: Array<{ namespace: string; fileName: string; success: boolean; chunks?: number; error?: string }>;
+  } = {
+    isRunning: false,
+    startedAt: null,
+    progress: { completed: 0, total: 0, current: '' },
+    results: []
+  };
+
+  // Start background bulk ingestion of all topic folders (admin only)
+  app.post("/api/google-drive/bulk-ingest-start", async (req, res) => {
+    const log = logger.child({ service: "google-drive", operation: "bulkIngestStart" });
+    
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized - invalid admin secret" });
+    }
+    
+    if (bulkIngestionStatus.isRunning) {
+      return res.status(409).json({ 
+        error: "Bulk ingestion already in progress",
+        progress: bulkIngestionStatus.progress
+      });
+    }
+    
+    try {
+      const folders = await googleDriveService.getTopicFolders();
+      const protectedNames = ['mark_kohl', 'mark-kohl'];
+      const foldersToProcess = folders.filter((f: any) => 
+        f.supportedFiles > 0 && !protectedNames.some(p => f.namespace.toLowerCase().includes(p))
+      );
+      
+      let allFiles: Array<{ fileId: string; fileName: string; namespace: string }> = [];
+      for (const folder of foldersToProcess) {
+        const files = await googleDriveService.getFilesInTopicFolder(folder.id);
+        for (const file of files) {
+          allFiles.push({ fileId: file.id, fileName: file.name, namespace: folder.namespace });
+        }
+      }
+      
+      bulkIngestionStatus.isRunning = true;
+      bulkIngestionStatus.startedAt = new Date();
+      bulkIngestionStatus.progress = { completed: 0, total: allFiles.length, current: '' };
+      bulkIngestionStatus.results = [];
+      
+      log.info({ totalFiles: allFiles.length, totalFolders: foldersToProcess.length }, "Starting bulk ingestion");
+      
+      res.json({ 
+        success: true, 
+        message: "Bulk ingestion started",
+        totalFiles: allFiles.length,
+        totalFolders: foldersToProcess.length
+      });
+      
+      // Process files in background
+      (async () => {
+        for (let i = 0; i < allFiles.length; i++) {
+          const file = allFiles[i];
+          bulkIngestionStatus.progress.current = file.fileName;
+          
+          try {
+            const result = await fetch(`http://localhost:5000/api/google-drive/topic-upload-single`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'X-Admin-Secret': process.env.ADMIN_SECRET || ''
+              },
+              body: JSON.stringify(file)
+            });
+            
+            const data = await result.json();
+            bulkIngestionStatus.results.push({
+              namespace: file.namespace,
+              fileName: file.fileName,
+              success: data.success === true,
+              chunks: data.chunksProcessed,
+              error: data.error
+            });
+          } catch (err: any) {
+            bulkIngestionStatus.results.push({
+              namespace: file.namespace,
+              fileName: file.fileName,
+              success: false,
+              error: err.message
+            });
+          }
+          
+          bulkIngestionStatus.progress.completed = i + 1;
+          await new Promise(r => setTimeout(r, 3000));
+        }
+        
+        bulkIngestionStatus.isRunning = false;
+        log.info({ completed: bulkIngestionStatus.progress.completed }, "Bulk ingestion completed");
+      })();
+      
+    } catch (error) {
+      bulkIngestionStatus.isRunning = false;
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to start bulk ingestion");
+      res.status(500).json({ error: "Failed to start bulk ingestion" });
+    }
+  });
+
+  // Get bulk ingestion status (admin only)
+  app.get("/api/google-drive/bulk-ingest-status", async (req, res) => {
+    const adminSecret = req.headers['x-admin-secret'] as string;
+    if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized - invalid admin secret" });
+    }
+    
+    res.json({
+      isRunning: bulkIngestionStatus.isRunning,
+      startedAt: bulkIngestionStatus.startedAt,
+      progress: bulkIngestionStatus.progress,
+      resultsCount: bulkIngestionStatus.results.length,
+      successCount: bulkIngestionStatus.results.filter(r => r.success).length,
+      failedCount: bulkIngestionStatus.results.filter(r => !r.success).length,
+      recentResults: bulkIngestionStatus.results.slice(-10)
+    });
+  });
+
   // ===== N8N WEBHOOK ENDPOINTS =====
   // These endpoints are designed for n8n workflow automation with admin secret auth
   
