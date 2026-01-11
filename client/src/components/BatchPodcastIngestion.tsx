@@ -199,6 +199,31 @@ export function BatchPodcastIngestion() {
     }
   });
 
+  const resumeStuckMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/admin/podcast/resume', {
+        method: 'POST',
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to resume stuck batches');
+      return response.json();
+    },
+    onSuccess: (result) => {
+      toast({
+        title: "Resume Complete",
+        description: result.message
+      });
+      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batches'] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Resume Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const updateNamespaceMutation = useMutation({
     mutationFn: async ({ episodeId, primaryNamespace }: { episodeId: string; primaryNamespace: string }) => {
       const response = await fetch(`/admin/podcast/episode/${episodeId}/namespace`, {
@@ -605,7 +630,23 @@ export function BatchPodcastIngestion() {
       {batches.length > 0 && (
         <Card className="glass-strong border-white/10">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-white">Recent Batches</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg text-white">Recent Batches</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => resumeStuckMutation.mutate()}
+                disabled={resumeStuckMutation.isPending}
+                className="border-amber-500/50 text-amber-400 hover:bg-amber-500/20"
+              >
+                {resumeStuckMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                )}
+                Resume Stuck Batches
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
