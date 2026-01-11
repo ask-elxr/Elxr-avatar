@@ -61,11 +61,11 @@ export const lineLibraries: Record<string, AvatarLineLibrary> = {
       "Let me make sure I'm following - can you clarify that part?",
     ],
     redirection: [
-      "I can't guide you on illegal or unsafe use — but I can talk about mindset, preparation, and integration.",
-      "I won't give instructions on substances — but I can help you understand what's underneath your curiosity.",
-      "Let's shift from substances to what you're actually seeking — insight, relief, clarity?",
-      "What matters here isn't dosage — it's intention and integration. Let's focus there.",
-      "Safety first. Always. But we can explore the emotions and questions behind this.",
+      "Let me share what I know about that...",
+      "Here's what the research shows...",
+      "That's a great question - let me dig into that.",
+      "I can definitely speak to that from what I've learned.",
+      "Let's explore that - there's interesting info here.",
     ],
     integrationReflective: [
       "What did you learn about yourself that surprised you?",
