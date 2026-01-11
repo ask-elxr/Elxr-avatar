@@ -1782,7 +1782,14 @@ This applies to EVERY response, regardless of conversation length.`;
           "id": "Indonesian", "id-ID": "Indonesian",
         };
         const languageName = languageNames[languageCode] || languageCode;
-        enhancedPersonality = `🌐 LANGUAGE REQUIREMENT: You MUST respond entirely in ${languageName}. The user has selected ${languageName} as their preferred language. All your responses should be in ${languageName}, maintaining your personality and expertise while speaking naturally in ${languageName}.\n\n${enhancedPersonality}`;
+        enhancedPersonality = `🚨🌐 CRITICAL LANGUAGE REQUIREMENT - READ THIS FIRST 🌐🚨
+YOU MUST RESPOND ENTIRELY IN ${languageName.toUpperCase()}. 
+- EVERY word of your response must be in ${languageName}
+- Do NOT respond in English - the user has selected ${languageName}
+- Maintain your personality and warmth while speaking naturally in ${languageName}
+- This is NON-NEGOTIABLE - ${languageName} ONLY
+
+${enhancedPersonality}`;
         log.info({ languageCode, languageName }, 'Language instruction added to Claude prompt');
       }
       
@@ -4286,7 +4293,14 @@ This applies to EVERY response, regardless of conversation length.`;
           "id": "Indonesian", "id-ID": "Indonesian",
         };
         const languageName = languageNames[languageCode] || languageCode;
-        enhancedPersonality = `🌐 LANGUAGE REQUIREMENT: You MUST respond entirely in ${languageName}. The user has selected ${languageName} as their preferred language. All your responses should be in ${languageName}, maintaining your personality and expertise while speaking naturally in ${languageName}.\n\n${enhancedPersonality}`;
+        enhancedPersonality = `🚨🌐 CRITICAL LANGUAGE REQUIREMENT - READ THIS FIRST 🌐🚨
+YOU MUST RESPOND ENTIRELY IN ${languageName.toUpperCase()}. 
+- EVERY word of your response must be in ${languageName}
+- Do NOT respond in English - the user has selected ${languageName}
+- Maintain your personality and warmth while speaking naturally in ${languageName}
+- This is NON-NEGOTIABLE - ${languageName} ONLY
+
+${enhancedPersonality}`;
         logger.info({ languageCode, languageName }, 'Language instruction added to Claude prompt');
       }
       
@@ -5010,7 +5024,14 @@ This applies to EVERY response, regardless of conversation length.`;
           "id": "Indonesian", "id-ID": "Indonesian",
         };
         const languageName = languageNames[languageCode] || languageCode;
-        enhancedPersonality = `🌐 LANGUAGE REQUIREMENT: You MUST respond entirely in ${languageName}. The user has selected ${languageName} as their preferred language. All your responses should be in ${languageName}, maintaining your personality and expertise while speaking naturally in ${languageName}.\n\n${enhancedPersonality}`;
+        enhancedPersonality = `🚨🌐 CRITICAL LANGUAGE REQUIREMENT - READ THIS FIRST 🌐🚨
+YOU MUST RESPOND ENTIRELY IN ${languageName.toUpperCase()}. 
+- EVERY word of your response must be in ${languageName}
+- Do NOT respond in English - the user has selected ${languageName}
+- Maintain your personality and warmth while speaking naturally in ${languageName}
+- This is NON-NEGOTIABLE - ${languageName} ONLY
+
+${enhancedPersonality}`;
         log.info({ languageCode, languageName }, 'Language instruction added to Claude prompt (streaming)');
       }
       
