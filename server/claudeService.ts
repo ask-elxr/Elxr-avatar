@@ -16,8 +16,9 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-sonnet-4-5";
 // </important_do_not_delete>
 
-// Fast model for voice mode - Haiku is ~5x faster than Sonnet
-const FAST_VOICE_MODEL = "claude-3-5-haiku-20241022";
+// Voice model - Using Sonnet 4.5 to ensure content policy compliance
+// Haiku has hardcoded safety that ignores ELXR content policy for sensitive topics
+const FAST_VOICE_MODEL = "claude-sonnet-4-5";
 
 // Content policy is now imported from contentTaxonomy.ts for professional, taxonomy-based approach
 
