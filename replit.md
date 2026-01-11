@@ -61,10 +61,10 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Admin UI**: KnowledgeBase page offers a "Topic Folders" tab for bulk uploads.
 - **Memory Optimization**: Implements file size limits, excludes archives, and processes sequentially.
 - **Bulk Ingestion Endpoints** (Admin Only, authenticated via X-Admin-Secret header):
-  - `POST /api/google-drive/bulk-ingest-start`: Starts server-side background ingestion of all topic folders (excludes protected Mark Kohl namespace)
+  - `POST /api/google-drive/bulk-ingest-start`: Starts server-side background ingestion of all topic folders
   - `GET /api/google-drive/bulk-ingest-status`: Returns current ingestion progress, success/fail counts, and recent results
 - **Processing Pipeline**: Claude substance extraction (85-90% reduction) → conversational chunking → OpenAI embeddings → Pinecone upsert
-- **Current Status** (Jan 2026): Bulk ingestion of 189 files across 16 namespaces running server-side (~5-7 min per file)
+- **Current Status** (Jan 2026): Bulk ingestion of 277 files across 17 namespaces running server-side (~5-7 min per file)
 
 #### Personality Engine
 - **Location**: `server/engine/` directory with modular architecture.

@@ -6712,10 +6712,8 @@ This applies to EVERY response, regardless of conversation length.`;
     
     try {
       const folders = await googleDriveService.getTopicFolders();
-      const protectedNames = ['mark_kohl', 'mark-kohl'];
-      const foldersToProcess = folders.filter((f: any) => 
-        f.supportedFiles > 0 && !protectedNames.some(p => f.namespace.toLowerCase().includes(p))
-      );
+      // Include ALL folders including Mark Kohl for re-ingestion with new pipeline
+      const foldersToProcess = folders.filter((f: any) => f.supportedFiles > 0);
       
       let allFiles: Array<{ fileId: string; fileName: string; namespace: string }> = [];
       for (const folder of foldersToProcess) {
