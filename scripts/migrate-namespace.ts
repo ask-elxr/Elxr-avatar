@@ -14,7 +14,7 @@ async function migrateNamespace() {
     const result = await pineconeService.migrateNamespace(
       sourceNamespace,
       targetNamespace,
-      PineconeIndexName.AVATAR_CHAT,
+      PineconeIndexName.ASK_ELXR,
       deleteSource
     );
 

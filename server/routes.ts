@@ -2362,7 +2362,7 @@ This appears to be your first conversation with this person - no prior memories 
           success: true,
           id: conversationId,
           message: "Conversation stored successfully",
-          indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
+          indexName: targetIndex || PineconeIndexName.ASK_ELXR,
         });
       } else {
         res.status(400).json({
@@ -2412,7 +2412,7 @@ This appears to be your first conversation with this person - no prior memories 
           text: match.metadata?.text,
           metadata: match.metadata,
         })),
-        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
+        indexName: targetIndex || PineconeIndexName.ASK_ELXR,
       });
     } catch (error) {
       console.error("Error searching conversations:", error);
@@ -2447,7 +2447,7 @@ This appears to be your first conversation with this person - no prior memories 
       res.json({
         success: true,
         message: "Conversation deleted successfully",
-        indexName: targetIndex || PineconeIndexName.AVATAR_CHAT,
+        indexName: targetIndex || PineconeIndexName.ASK_ELXR,
       });
     } catch (error) {
       console.error("Error deleting conversation:", error);
@@ -3247,7 +3247,7 @@ This appears to be your first conversation with this person - no prior memories 
       const result = await pineconeService.migrateNamespace(
         sourceNamespace,
         targetNamespace,
-        indexName || PineconeIndexName.AVATAR_CHAT,
+        indexName || PineconeIndexName.ASK_ELXR,
         deleteSource
       );
       

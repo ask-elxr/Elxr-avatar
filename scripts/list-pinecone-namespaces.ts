@@ -4,7 +4,7 @@ async function listNamespaces() {
   try {
     console.log('\nFetching Pinecone index statistics...\n');
     
-    const stats = await pineconeService.getStats(PineconeIndexName.AVATAR_CHAT);
+    const stats = await pineconeService.getStats(PineconeIndexName.ASK_ELXR);
     
     console.log('=== Pinecone Index Stats ===');
     console.log(`Total vectors: ${stats.totalRecordCount || 0}`);
