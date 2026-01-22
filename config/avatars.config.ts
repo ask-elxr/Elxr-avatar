@@ -16,7 +16,7 @@ export const defaultAvatars: AvatarProfile[] = [
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
     heygenKnowledgeId: null, // ❌ DISABLED - Using Claude Sonnet 4.5 instead of HeyGen's AI
-    elevenlabsVoiceId: "onwK4e9ZLuTAKqWW03F9",
+    elevenlabsVoiceId: "Am7G7QzYkKkdR8bmdQqY", // Psychedelics Mark Kohl
     sortOrder: 1,
     voiceRate: "1.0",
     languageCode: "en-US", // Language for HeyGen and speech recognition

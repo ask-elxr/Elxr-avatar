@@ -9619,6 +9619,17 @@ export async function seedDefaultAvatars(): Promise<void> {
         logger.info({ avatarId }, "Fixed avatar voice source: liveavatar -> elevenlabs");
       }
     }
+    
+    // Fix Mark Kohl's voice ID (was incorrectly set to "Daniel" voice)
+    const markKohl = await storage.getAvatar('mark-kohl');
+    const correctMarkVoiceId = 'Am7G7QzYkKkdR8bmdQqY'; // Psychedelics Mark Kohl
+    if (markKohl && markKohl.elevenlabsVoiceId !== correctMarkVoiceId) {
+      await storage.updateAvatar('mark-kohl', { 
+        elevenlabsVoiceId: correctMarkVoiceId,
+        audioOnlyVoiceId: correctMarkVoiceId 
+      });
+      logger.info({ oldVoice: markKohl.elevenlabsVoiceId, newVoice: correctMarkVoiceId }, "Fixed Mark Kohl voice ID");
+    }
   } catch (error: any) {
     logger.error({ error: error.message }, "Failed to seed default avatars");
     // Don't throw - allow server to start even if seeding fails
