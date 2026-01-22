@@ -9609,6 +9609,16 @@ export async function seedDefaultAvatars(): Promise<void> {
     } else {
       logger.info({ count: existingAvatars.length }, "Avatars already exist in database, skipping seed");
     }
+    
+    // Fix voice settings for avatars that need ElevenLabs (LiveAvatar voice IDs don't work)
+    const voiceFixAvatars = ['mark-kohl', 'shawn'];
+    for (const avatarId of voiceFixAvatars) {
+      const avatar = await storage.getAvatar(avatarId);
+      if (avatar && avatar.interactiveVoiceSource === 'liveavatar') {
+        await storage.updateAvatar(avatarId, { interactiveVoiceSource: 'elevenlabs' });
+        logger.info({ avatarId }, "Fixed avatar voice source: liveavatar -> elevenlabs");
+      }
+    }
   } catch (error: any) {
     logger.error({ error: error.message }, "Failed to seed default avatars");
     // Don't throw - allow server to start even if seeding fails
