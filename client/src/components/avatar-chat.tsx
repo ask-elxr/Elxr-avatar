@@ -56,7 +56,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // UI-only state
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
-  const [audioOnly, setAudioOnly] = useState(true); // Default to audio mode
+  const [audioOnly, setAudioOnly] = useState(false); // Default to video mode
   const [isModeSwitching, setIsModeSwitching] = useState(false);
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean | null>(null);
   const [requestingMicPermission, setRequestingMicPermission] = useState(false);
@@ -917,7 +917,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {(sessionActive || elevenLabsAgentActive) && (
           <>
             {/* Top Controls Bar - Dropdown menu for clean interface */}
-            <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-2 sm:p-4 z-30 safe-area-inset-top">
+            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4 sm:px-6 z-30 safe-area-inset-top">
               {/* Left side - Audio/Video toggle and language */}
               <div className="flex items-center gap-2">
                 <AudioVideoToggle
@@ -939,11 +939,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="bg-black/40 hover:bg-black/60 border border-white/10 text-white/70 hover:text-white min-w-[40px] min-h-[40px] backdrop-blur-sm"
+                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
                       size="sm"
                       data-testid="button-menu"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <MoreVertical className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md">
@@ -1038,18 +1038,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 
                 <Button
                   onClick={endChat}
-                  className="bg-red-500/80 hover:bg-red-600 text-white min-w-[40px] min-h-[40px]"
+                  className="bg-red-500/90 hover:bg-red-600 text-white min-w-[44px] min-h-[44px] shadow-lg border border-red-400/30"
                   size="sm"
                   data-testid="button-end-chat"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </Button>
               </div>
             </div>
 
             {/* Mic Blocked Status - only show when permission denied */}
             {microphoneStatus === 'permission-denied' && (
-              <div className="absolute top-20 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
+              <div className="absolute top-20 right-6 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
                 <MicOff className="w-4 h-4 text-red-400" />
                 <span className="text-sm text-red-400 font-medium">Mic blocked</span>
               </div>
@@ -1057,7 +1057,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             
             {/* Voice Not Supported - Only show if microphone truly not working after session is fully active */}
             {microphoneStatus === 'not-supported' && !isLoading && (
-              <div className="absolute top-20 right-4 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
+              <div className="absolute top-20 right-6 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
                 <div className="flex items-center gap-2">
                   <MicOff className="w-4 h-4 text-amber-400" />
                   <span className="text-sm text-amber-400 font-medium">Voice connecting...</span>
@@ -1070,7 +1070,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             {microphoneStatus === 'needs-gesture' && (
               <button
                 onClick={manualStartVoice}
-                className="absolute top-20 right-4 flex items-center gap-2 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/60 px-4 py-2 rounded-full backdrop-blur-sm z-30 transition-all active:scale-95"
+                className="absolute top-20 right-6 flex items-center gap-2 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/60 px-4 py-2 rounded-full backdrop-blur-sm z-30 transition-all active:scale-95"
                 data-testid="button-tap-to-speak"
               >
                 <Mic className="w-4 h-4 text-blue-400" />
@@ -1343,7 +1343,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
         {/* Settings Panel */}
         {showSettings && sessionActive && (
-          <div className="absolute top-16 right-4 bg-black/90 backdrop-blur-lg border border-white/20 rounded-lg p-4 w-72 z-10">
+          <div className="absolute top-20 right-6 bg-black/90 backdrop-blur-lg border border-white/20 rounded-lg p-4 w-72 z-10">
             <h3 className="text-white font-semibold mb-4">Settings</h3>
             
             <div className="space-y-4">
