@@ -51,6 +51,30 @@ export function LoadingPlaceholder({
   
   const mediaSrc = loadingAnimationUrl || gifSrc;
   
+  if (isVideo) {
+    return (
+      <div className={`absolute inset-0 flex items-center justify-center bg-black ${className}`} {...props}>
+        {(!mediaLoaded || mediaError) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+            <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
+          </div>
+        )}
+        <video
+          src={mediaSrc}
+          autoPlay
+          loop
+          muted
+          playsInline
+          className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+          onLoadedData={() => setMediaLoaded(true)}
+          onError={() => setMediaError(true)}
+          data-testid="avatar-video"
+        />
+        <p className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/80 text-sm z-20">Starting session...</p>
+      </div>
+    );
+  }
+  
   return (
     <div className={`flex flex-col items-center justify-center bg-black ${className}`} {...props}>
       <div 
@@ -65,28 +89,14 @@ export function LoadingPlaceholder({
             <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
           </div>
         )}
-        {isVideo ? (
-          <video
-            src={mediaSrc}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
-            onLoadedData={() => setMediaLoaded(true)}
-            onError={() => setMediaError(true)}
-            data-testid="avatar-video"
-          />
-        ) : (
-          <img
-            src={mediaSrc}
-            alt="Avatar"
-            className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
-            onLoad={() => setMediaLoaded(true)}
-            onError={() => setMediaError(true)}
-            data-testid="avatar-gif"
-          />
-        )}
+        <img
+          src={mediaSrc}
+          alt="Avatar"
+          className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setMediaLoaded(true)}
+          onError={() => setMediaError(true)}
+          data-testid="avatar-gif"
+        />
       </div>
       <p className="text-white/80 mt-4 text-sm">Starting session...</p>
     </div>
