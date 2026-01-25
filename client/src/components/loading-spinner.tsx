@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import loadingVideo from "@assets/elxr_Transparent-DarkBg_1763952442851.mp4";
+import mumLogo from "@assets/mum_logo_small_1769326661442.gif";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
@@ -16,7 +16,7 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
   return (
     <div 
       className={cn(
-        "flex items-center justify-center",
+        "flex items-center justify-center bg-black",
         sizeClasses[size],
         className
       )}
@@ -24,16 +24,12 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
       aria-hidden="true"
       role="presentation"
     >
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
+      <img
+        src={mumLogo}
+        alt="Loading"
         className="w-full h-full object-contain"
         aria-hidden="true"
-      >
-        <source src={loadingVideo} type="video/mp4" />
-      </video>
+      />
     </div>
   );
 }
