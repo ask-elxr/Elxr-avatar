@@ -3300,6 +3300,33 @@ export function useAvatarSession({
 
   useEffect(() => {
     return () => {
+      // Stop avatar session on unmount (prevents audio continuing when navigating away)
+      if (sessionDriverRef.current) {
+        try {
+          intentionalStopRef.current = true;
+          sessionDriverRef.current.stop();
+          sessionDriverRef.current = null;
+          console.log("🛑 Avatar session stopped on unmount");
+        } catch (err) {
+          console.error("Failed to stop avatar session on unmount:", err);
+        }
+      }
+      
+      // Stop any playing audio
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      
+      // Stop voice recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionIntentionalStopRef.current = true;
+          recognitionRef.current.abort();
+          recognitionRef.current = null;
+        } catch (e) {}
+      }
+      
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
         reconnectTimeoutRef.current = null;
