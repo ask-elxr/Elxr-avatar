@@ -18,6 +18,8 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **WebRTC Streaming Pipeline**: LiveKit-based WebRTC transport for ultra-low latency audio, bridging to ElevenLabs STT/TTS and Claude AI.
 - **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately and conditionally including context in the LLM prompt.
 - **Audio Streaming Mode**: Includes immediate thinking sounds, parallel data fetching, Claude streaming with sentence buffering, concurrent TTS generation, and SSE audio events for ordered playback.
+- **Templated Responses**: Pre-written greetings, buffer fillers, and idle outros in `server/templatedResponses.ts` - never LLM-generated, rotated randomly with no repeats.
+- **Warmth Engine**: `server/warmthEngine.ts` implements banter level detection (0-3), context condensing (score ≥0.78, max 1200 chars), and warmth protocol for natural responses.
 
 #### Backend (Express + TypeScript + Python)
 - **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
