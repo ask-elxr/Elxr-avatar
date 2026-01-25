@@ -134,19 +134,12 @@ export class ClaudeService {
     }
 
     const textMessage = context 
-      ? `You have knowledge content below. Use it to answer clearly.${researchCapabilitiesNote}
-
-AVAILABLE KNOWLEDGE:
+      ? `KNOWLEDGE:
 ${context}
 
----
+Q: ${query}
 
-User question: ${query}
-
-RESPONSE REQUIREMENTS:
-- Use the information above to answer the question directly
-- Be BRIEF and to the point (2-3 sentences unless more is needed)
-- Keep it conversational and natural`
+Draw on the knowledge above to give a warm, substantive answer. Be yourself - conversational and genuine.`
       : query;
 
     // Build user message content - can include both text and image
@@ -179,23 +172,14 @@ RESPONSE REQUIREMENTS:
       content: userContent
     });
 
-    // Voice mode brevity directive - for VIDEO mode keep shorter, for audio mode allow longer
+    // Voice mode directive - conversational but not too long
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
-📹 VIDEO MODE - CONCISE WITH CONTINUATION OFFER:
-This is a video conversation. Keep responses brief but complete:
-- Respond in 2-3 SHORT, spoken-style sentences
-- ALWAYS complete your thought - never cut off mid-sentence
-- ALWAYS end with a natural invitation to continue, such as:
-  • "Want me to go deeper on that?"
-  • "Would you like to hear more?"
-  • "Should I elaborate?"
-- If asked a yes/no question, lead with the answer
-- Skip pleasantries and unnecessary context
-- Think "video host" - engaging but concise
-
-Example:
-User: "What is kundalini?"
-Response: "Kundalini is dormant energy at your spine's base. When awakened, it rises through your chakras, shifting your awareness profoundly. Want me to go deeper on that?"
+🎙️ CONVERSATIONAL MODE:
+You're having a real conversation. Be warm and present:
+- Respond naturally in 3-5 sentences - enough to connect, not lecture
+- Complete your thoughts fully
+- End with a natural invitation like "What else is on your mind?" or "Want me to go deeper?"
+- Be genuine - you're talking to a friend, not giving a presentation
 
 ` : '';
 
