@@ -3,6 +3,7 @@ import { wrapServiceCall } from './circuitBreaker';
 import { logger } from './logger';
 import { storage } from './storage';
 import { ELXR_CONTENT_POLICY } from './contentTaxonomy';
+import { getBanterLevel, buildAvatarPrompt } from './warmthEngine';
 
 /*
 <important_code_snippet_instructions>
@@ -133,14 +134,22 @@ export class ClaudeService {
       researchCapabilitiesNote = `\n\n⚠️ CRITICAL INSTRUCTION: The content below includes REAL-TIME data from ${sources.join(', ')}. Use ALL the information provided.`;
     }
 
-    const textMessage = context 
-      ? `KNOWLEDGE:
-${context}
+    const banterLevel = getBanterLevel(query);
+    
+    const condensedContext = context && context.length > 1200 
+      ? context.slice(0, 1200) + '...'
+      : context;
 
-Q: ${query}
+    const textMessage = condensedContext 
+      ? `banterLevel: ${banterLevel}
+User: ${query}
 
-Draw on the knowledge above to give a warm, substantive answer. Be yourself - conversational and genuine.`
-      : query;
+NOTES (from knowledge base):
+${condensedContext}`
+      : `banterLevel: ${banterLevel}
+User: ${query}
+
+NOTES: (none available - proceed conversationally)`;
 
     // Build user message content - can include both text and image
     let userContent: any;
@@ -172,30 +181,23 @@ Draw on the knowledge above to give a warm, substantive answer. Be yourself - co
       content: userContent
     });
 
-    // Voice mode directive - conversational but not too long
+    // Voice mode length directive
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
-🎙️ CONVERSATIONAL MODE:
-You're having a real conversation. Be warm and present:
-- Respond naturally in 3-5 sentences - enough to connect, not lecture
-- Complete your thoughts fully
-- End with a natural invitation like "What else is on your mind?" or "Want me to go deeper?"
-- Be genuine - you're talking to a friend, not giving a presentation
-
+RESPONSE LENGTH: Keep it conversational - 3-5 sentences. Complete your thoughts fully.
 ` : '';
 
+    // Use warmth protocol for avatar responses
     const systemPrompt = customSystemPrompt 
-      ? ELXR_CONTENT_POLICY + voiceModeBrevity + customSystemPrompt
+      ? ELXR_CONTENT_POLICY + buildAvatarPrompt('Avatar', customSystemPrompt, banterLevel)
       : `${ELXR_CONTENT_POLICY}${voiceModeBrevity}You are an intelligent assistant who draws on your expertise naturally. 
       
       Guidelines:
-      - DEFAULT: Respond in 2-3 short, spoken-style sentences unless asked for detail
-      - ALWAYS complete your thought - never stop mid-sentence
-      - ALWAYS end with "Want me to go deeper?" or similar invitation to continue
-      - Speak naturally from what you know - NEVER reference sources, data, or "information provided"
+      - Sound like a smart, warm human. Use contractions. Short sentences.
+      - Start with a human line that reflects what the user wants/feels.
+      - Be lightly funny when appropriate. No sarcasm when the user is vulnerable.
+      - NEVER reference sources, data, or "information provided"
       - If you don't know something, say so naturally like a real person would
-      - Be conversational and engaging
-      - Maintain context from the conversation history
-      - Think "helpful friend" not "encyclopedia"`;
+      - End with a natural invitation to continue the conversation`;
 
     // Use appropriate max_tokens for voice mode to allow complete responses
     // Voice mode: 400 tokens (4-5 sentences), Detail mode: 800 tokens, Text mode: 1000 tokens
