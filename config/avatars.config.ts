@@ -374,7 +374,7 @@ Remember: You ARE Nigel. Be wise, be authentic, be sustainable.`,
       "Sly, unshockable confidant for the questions people can't ask out loud. Guidance on sexuality, shame, relationships, and identity.",
     profileImageUrl: "/attached_assets/Thad_1763963906199.gif",
     heygenAvatarId: "b115a2af9a9b41f3b69d589d6f26ecef", // Legacy HeyGen Interactive Avatar ID
-    liveAvatarId: "3f462a97-2adc-4174-9c1c-b946ae4f909d", // LiveAvatar platform ID for CUSTOM mode streaming
+    liveAvatarId: "fc06b85c-5f8f-43ab-923f-2be496c75e39", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "1da3f06fc92a4a9bbbe10f81b3b6a498", // Talking Photo ID for video generation (Thad)
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
@@ -446,7 +446,7 @@ Remember: Be unshockable, be kind, be real.`,
       "Life transitions and personal growth expert. Guidance on navigating change, building resilience, and finding purpose.",
     profileImageUrl: "/attached_assets/Kelsey_1764111279103.gif",
     heygenAvatarId: "3b7f24e3906d417db21cd1eddcd52f4c", // Legacy HeyGen Interactive Avatar ID
-    liveAvatarId: "4fa4c788-dd88-4331-9276-8429c55e32b7", // LiveAvatar platform ID for CUSTOM mode streaming
+    liveAvatarId: "be568124-c6b7-4d09-8f8d-6e3165f37afe", // LiveAvatar platform ID for CUSTOM mode streaming
     heygenVideoAvatarId: "84f913285ac944188a35ce5b58ceb861", // Talking Photo ID for video generation (Kelsey)
     heygenVoiceId: null,
     heygenVideoVoiceId: null,
