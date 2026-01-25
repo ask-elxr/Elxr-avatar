@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 
 interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   avatarId?: string;
+  loadingAnimationUrl?: string | null;
 }
 
 const avatarGifs: Record<string, string> = {
@@ -23,11 +24,21 @@ const avatarGifs: Record<string, string> = {
 export function LoadingPlaceholder({ 
   className = "", 
   avatarId = "mark-kohl",
+  loadingAnimationUrl,
   ...props 
 }: LoadingPlaceholderProps) {
   const gifSrc = avatarGifs[avatarId] || avatarGifs["mark-kohl"];
-  const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
+  const [mediaLoaded, setMediaLoaded] = useState(false);
+  const [mediaError, setMediaError] = useState(false);
+  
+  const isVideo = loadingAnimationUrl && (
+    loadingAnimationUrl.endsWith('.mp4') || 
+    loadingAnimationUrl.endsWith('.webm') ||
+    loadingAnimationUrl.includes('mp4') ||
+    loadingAnimationUrl.includes('webm')
+  );
+  
+  const mediaSrc = loadingAnimationUrl || gifSrc;
   
   return (
     <div className={`flex flex-col items-center justify-center bg-black ${className}`} {...props}>
@@ -38,20 +49,33 @@ export function LoadingPlaceholder({
           height: '240px',
         }}
       >
-        {/* Show spinner while image loads or on error */}
-        {(!imageLoaded || imageError) && (
+        {(!mediaLoaded || mediaError) && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
             <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
           </div>
         )}
-        <img
-          src={gifSrc}
-          alt="Avatar"
-          className={`w-full h-full object-cover transition-opacity duration-300 ${imageLoaded && !imageError ? 'opacity-100' : 'opacity-0'}`}
-          onLoad={() => setImageLoaded(true)}
-          onError={() => setImageError(true)}
-          data-testid="avatar-gif"
-        />
+        {isVideo ? (
+          <video
+            src={mediaSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+            onLoadedData={() => setMediaLoaded(true)}
+            onError={() => setMediaError(true)}
+            data-testid="avatar-video"
+          />
+        ) : (
+          <img
+            src={mediaSrc}
+            alt="Avatar"
+            className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+            onLoad={() => setMediaLoaded(true)}
+            onError={() => setMediaError(true)}
+            data-testid="avatar-gif"
+          />
+        )}
       </div>
       <p className="text-white/80 mt-4 text-sm">Starting session...</p>
     </div>

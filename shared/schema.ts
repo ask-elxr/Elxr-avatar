@@ -190,6 +190,7 @@ export const avatarProfiles = pgTable("avatar_profiles", {
   enableAudioMode: boolean("enable_audio_mode").default(true).notNull(), // Enable/disable audio-only chat
   enableVideoMode: boolean("enable_video_mode").default(true).notNull(), // Enable/disable video streaming chat
   enableVideoCreation: boolean("enable_video_creation").default(true).notNull(), // Enable/disable video/course generation
+  loadingAnimationUrl: text("loading_animation_url"), // Custom video/animation URL shown while avatar is loading (mp4/webm/gif)
   isActive: boolean("is_active").default(true).notNull(),
   sortOrder: integer("sort_order").default(0).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
