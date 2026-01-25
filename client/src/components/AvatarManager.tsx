@@ -26,7 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2, Sparkles } from "lucide-react";
+import { Pencil, Trash2, Plus, X, Video, Brain, RefreshCw, Eye, Edit2, Sparkles, Upload, Film } from "lucide-react";
 import type { AvatarProfile, InsertAvatarProfile } from "@shared/schema";
 import { PINECONE_CATEGORIES } from "@shared/pineconeCategories";
 import { useLocation } from "wouter";
@@ -96,6 +96,8 @@ export function AvatarManager() {
   const [personaUploading, setPersonaUploading] = useState(false);
   const [pastedPersonaText, setPastedPersonaText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const loadingAnimationInputRef = useRef<HTMLInputElement>(null);
+  const [loadingAnimationUploading, setLoadingAnimationUploading] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState<InsertAvatarProfile>({
@@ -127,6 +129,7 @@ export function AvatarManager() {
     enableAudioMode: true,
     enableVideoMode: true,
     enableVideoCreation: true,
+    loadingAnimationUrl: null,
     isActive: true,
   });
 
@@ -230,6 +233,7 @@ export function AvatarManager() {
       enableAudioMode: true,
       enableVideoMode: true,
       enableVideoCreation: true,
+      loadingAnimationUrl: null,
       isActive: true,
     });
     setIsDialogOpen(true);
@@ -269,6 +273,7 @@ export function AvatarManager() {
       enableAudioMode: avatar.enableAudioMode ?? true,
       enableVideoMode: avatar.enableVideoMode ?? true,
       enableVideoCreation: avatar.enableVideoCreation ?? true,
+      loadingAnimationUrl: avatar.loadingAnimationUrl || null,
       isActive: avatar.isActive,
     });
     setIsDialogOpen(true);
@@ -643,6 +648,7 @@ export function AvatarManager() {
       voiceRate: formData.voiceRate?.trim() || null,
       languageCode: formData.languageCode?.trim() || "en-US",
       elevenLabsLanguageCode: formData.elevenLabsLanguageCode?.trim() || "en",
+      loadingAnimationUrl: formData.loadingAnimationUrl?.trim() || null,
     };
 
     if (editingAvatar) {
@@ -837,6 +843,120 @@ export function AvatarManager() {
                       Create Custom Videos
                     </Button>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Loading Animation Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="loadingAnimationUrl" className="flex items-center gap-2">
+                <Film className="w-4 h-4" />
+                Loading Animation (Chat)
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="loadingAnimationUrl"
+                  value={formData.loadingAnimationUrl || ""}
+                  onChange={(e) => setFormData({ ...formData, loadingAnimationUrl: e.target.value || null })}
+                  placeholder="URL to video/gif shown while avatar loads"
+                  className="flex-1"
+                  data-testid="input-loading-animation-url"
+                />
+                <input
+                  type="file"
+                  ref={loadingAnimationInputRef}
+                  accept="video/mp4,video/webm,image/gif"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    
+                    setLoadingAnimationUploading(true);
+                    try {
+                      const formDataUpload = new FormData();
+                      formDataUpload.append('file', file);
+                      
+                      const response = await fetch('/api/admin/upload-asset', {
+                        method: 'POST',
+                        headers: {
+                          'X-Admin-Secret': localStorage.getItem('adminSecret') || '',
+                        },
+                        body: formDataUpload,
+                      });
+                      
+                      if (!response.ok) {
+                        throw new Error('Failed to upload file');
+                      }
+                      
+                      const data = await response.json();
+                      setFormData({ ...formData, loadingAnimationUrl: data.url });
+                      toast({
+                        title: "Upload successful",
+                        description: "Loading animation uploaded",
+                      });
+                    } catch (error) {
+                      toast({
+                        title: "Upload failed",
+                        description: "Could not upload loading animation",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setLoadingAnimationUploading(false);
+                      if (loadingAnimationInputRef.current) {
+                        loadingAnimationInputRef.current.value = '';
+                      }
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={loadingAnimationUploading}
+                  onClick={() => loadingAnimationInputRef.current?.click()}
+                  className="gap-1"
+                >
+                  {loadingAnimationUploading ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )}
+                  Upload
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Optional. Video or GIF shown while avatar is loading in chat. Accepts MP4, WebM, or GIF.
+              </p>
+              
+              {/* Loading Animation Preview */}
+              {formData.loadingAnimationUrl && (
+                <div className="flex flex-col items-center gap-2 p-4 border rounded-lg bg-muted/30">
+                  {formData.loadingAnimationUrl.includes('mp4') || formData.loadingAnimationUrl.includes('webm') ? (
+                    <video 
+                      src={formData.loadingAnimationUrl}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"
+                    />
+                  ) : (
+                    <img 
+                      src={formData.loadingAnimationUrl}
+                      alt="Loading animation preview"
+                      className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, loadingAnimationUrl: null })}
+                    className="text-xs text-destructive hover:text-destructive"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Remove
+                  </Button>
                 </div>
               )}
             </div>

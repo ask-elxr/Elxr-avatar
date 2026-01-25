@@ -5779,6 +5779,46 @@ ${enhancedPersonality}`;
   });
   const objectStorageService = new ObjectStorageService();
 
+  // Admin asset upload endpoint - uploads files to attached_assets folder
+  app.post("/api/admin/upload-asset", upload.single('file'), async (req: any, res) => {
+    try {
+      // Verify admin secret
+      const adminSecret = req.headers['x-admin-secret'];
+      if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+
+      // Generate unique filename
+      const ext = path.extname(file.originalname);
+      const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
+      const uniqueFileName = `${baseName}_${Date.now()}${ext}`;
+      const destPath = path.join(process.cwd(), 'attached_assets', uniqueFileName);
+
+      // Move file from uploads to attached_assets
+      await fs.promises.rename(file.path, destPath);
+
+      const url = `/attached_assets/${uniqueFileName}`;
+      console.log(`[Admin] Asset uploaded: ${url}`);
+      
+      res.json({ 
+        success: true, 
+        url,
+        filename: uniqueFileName 
+      });
+    } catch (error: any) {
+      console.error("Error uploading asset:", error);
+      res.status(500).json({ 
+        error: "Failed to upload asset",
+        details: error?.message 
+      });
+    }
+  });
+
   // Import document queue for background processing
   const { enqueueDocumentJob, getJobStatus } = await import(
     "./documentQueue.js"

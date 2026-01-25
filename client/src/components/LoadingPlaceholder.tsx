@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import type { AvatarProfile } from "@shared/schema";
 
 interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   avatarId?: string;
@@ -24,12 +26,21 @@ const avatarGifs: Record<string, string> = {
 export function LoadingPlaceholder({ 
   className = "", 
   avatarId = "mark-kohl",
-  loadingAnimationUrl,
+  loadingAnimationUrl: propAnimationUrl,
   ...props 
 }: LoadingPlaceholderProps) {
-  const gifSrc = avatarGifs[avatarId] || avatarGifs["mark-kohl"];
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const [mediaError, setMediaError] = useState(false);
+
+  const { data: avatars } = useQuery<AvatarProfile[]>({
+    queryKey: ['/api/avatars'],
+    staleTime: 60000,
+  });
+
+  const avatar = avatars?.find(a => a.id === avatarId);
+  const loadingAnimationUrl = propAnimationUrl ?? avatar?.loadingAnimationUrl;
+  
+  const gifSrc = avatarGifs[avatarId] || avatarGifs["mark-kohl"];
   
   const isVideo = loadingAnimationUrl && (
     loadingAnimationUrl.endsWith('.mp4') || 
