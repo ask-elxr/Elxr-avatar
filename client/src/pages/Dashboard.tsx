@@ -762,9 +762,9 @@ export default function Dashboard({
           </div>
         )}
 
-        {/* Active Chat View - Full Screen within Dashboard */}
+        {/* Active Chat View - True Full Screen overlay */}
         {currentView === "active-chat" && activeChatAvatarId && (
-          <div className="h-full w-full">
+          <div className="fixed inset-0 z-50 bg-black">
             <AvatarChat userId={chatUserId} avatarId={activeChatAvatarId} />
           </div>
         )}
