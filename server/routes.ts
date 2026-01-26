@@ -5779,6 +5779,23 @@ ${enhancedPersonality}`;
   });
   const objectStorageService = new ObjectStorageService();
 
+  // Serve public files from Object Storage (for production video URLs)
+  app.get("/api/public-storage/:filename", async (req, res) => {
+    try {
+      const { filename } = req.params;
+      const file = await objectStorageService.searchPublicObject(filename);
+      
+      if (!file) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      
+      await objectStorageService.downloadObject(file, res, 86400); // 24h cache
+    } catch (error: any) {
+      console.error("Error serving public file:", error);
+      res.status(500).json({ error: "Failed to serve file" });
+    }
+  });
+
   // Admin asset upload endpoint - uploads files to attached_assets folder
   app.post("/api/admin/upload-asset", upload.single('file'), async (req: any, res) => {
     try {
