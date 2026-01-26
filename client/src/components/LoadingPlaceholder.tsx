@@ -63,6 +63,7 @@ export function LoadingPlaceholder({
           src={mediaSrc}
           autoPlay
           loop
+          muted
           playsInline
           className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
           onLoadedData={(e) => {
