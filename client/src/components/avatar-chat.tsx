@@ -1146,45 +1146,34 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </>
         )}
 
-        {/* Microphone Permission Button - shown before Start Chat if permission not yet granted */}
-        {showChatButton && !showAvatarSelector && micPermissionGranted !== true && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/50 z-20">
-            <div className="text-center mb-2">
-              <p className="text-white/80 text-sm mb-1">Voice chat requires microphone access</p>
-              <p className="text-white/60 text-xs">Click below to allow microphone</p>
-            </div>
-            <Button
-              onClick={requestMicrophonePermission}
-              disabled={requestingMicPermission}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg flex items-center gap-3"
-              data-testid="button-allow-microphone"
-            >
-              {requestingMicPermission ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  Requesting...
-                </>
-              ) : (
-                <>
-                  <Mic className="w-5 h-5" />
-                  Allow Microphone
-                </>
-              )}
-            </Button>
-            {micPermissionGranted === false && (
-              <p className="text-red-400 text-sm mt-2">
-                Microphone access was denied. Please check browser settings.
-              </p>
-            )}
-          </div>
-        )}
-
-        {/* Start Button - shown after microphone permission is granted */}
-        {showChatButton && !showAvatarSelector && micPermissionGranted === true && (
+        {/* Start Button - requests microphone permission if needed, then starts chat */}
+        {showChatButton && !showAvatarSelector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
             <Button
-              onClick={() => {
+              onClick={async () => {
                 console.log("📱 BUTTON CLICKED - Start Chat pressed");
+                
+                // Request microphone permission if not already granted
+                if (micPermissionGranted !== true) {
+                  setRequestingMicPermission(true);
+                  try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    stream.getTracks().forEach(track => track.stop());
+                    setMicPermissionGranted(true);
+                  } catch (error: any) {
+                    console.error('Microphone permission denied:', error);
+                    setMicPermissionGranted(false);
+                    setRequestingMicPermission(false);
+                    toast({
+                      variant: "destructive",
+                      title: "Microphone Access Required",
+                      description: "Please allow microphone access to start voice chat",
+                    });
+                    return; // Don't proceed if mic denied
+                  }
+                  setRequestingMicPermission(false);
+                }
+                
                 setShowChatButton(false);
                 setSessionStarting(true); // Show loading immediately to prevent black screen
                 console.log("📱 State updated, about to call startSession");
@@ -1289,11 +1278,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   });
                 }
               }}
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg"
+              disabled={requestingMicPermission}
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg flex items-center gap-2"
               data-testid="button-start-session"
             >
-              Start Chat
+              {requestingMicPermission ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Requesting...
+                </>
+              ) : (
+                'Start Chat'
+              )}
             </Button>
+            {micPermissionGranted === false && (
+              <p className="text-red-400 text-sm mt-4 text-center">
+                Microphone access was denied. Please check browser settings.
+              </p>
+            )}
           </div>
         )}
 
