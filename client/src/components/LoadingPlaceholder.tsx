@@ -6,21 +6,21 @@ interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   loadingAnimationUrl?: string | null;
 }
 
-// Hardcoded intro GIFs - these are the correct animated loading GIFs for each avatar
+// Hardcoded intro GIFs - the new high-quality intro animations uploaded Jan 2026
 // We use hardcoded values to ensure consistency between development and production
 const avatarGifs: Record<string, string> = {
-  "mark-kohl": "/attached_assets/MArk-kohl-loop_1763964600000.gif",
-  "mark": "/attached_assets/MArk-kohl-loop_1763964600000.gif",
-  "willie-gault": "/attached_assets/Willie gault gif-low_1763964813725.gif",
-  "willie": "/attached_assets/Willie gault gif-low_1763964813725.gif",
-  "june": "/attached_assets/June-low_1764106896823.gif",
-  "thad": "/attached_assets/Thad_1763963906199.gif",
+  "mark-kohl": "/attached_assets/mark_1769406181436.gif",
+  "mark": "/attached_assets/mark_1769406181436.gif",
+  "willie-gault": "/attached_assets/willie_intro_gif_1769406181436.gif",
+  "willie": "/attached_assets/willie_intro_gif_1769406181436.gif",
+  "june": "/attached_assets/june_gif_1769406181436.gif",
+  "thad": "/attached_assets/thad_gif_1769406181435.gif",
   "nigel": "/attached_assets/Nigel-Loop-avatar_1763964600000.gif",
-  "ann": "/attached_assets/Ann_1763966361095.gif",
-  "kelsey": "/attached_assets/Kelsey_1764111279103.gif",
-  "judy": "/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif",
-  "dexter": "/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif",
-  "shawn": "/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif",
+  "ann": "/attached_assets/ann_gif_1769406181436.gif",
+  "kelsey": "/attached_assets/kelsey_gif_1769406181436.gif",
+  "judy": "/attached_assets/judy__1769406181436.gif",
+  "dexter": "/attached_assets/dexter_gif_1769406181435.gif",
+  "shawn": "/attached_assets/shawn_gif_1769406181436.gif",
 };
 
 export function LoadingPlaceholder({ 
