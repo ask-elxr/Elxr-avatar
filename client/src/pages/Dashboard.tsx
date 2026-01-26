@@ -764,7 +764,10 @@ export default function Dashboard({
 
         {/* Active Chat View - True Full Screen overlay (z-[100] to be above sidebar z-50) */}
         {currentView === "active-chat" && activeChatAvatarId && (
-          <div className="fixed inset-0 z-[100] bg-black">
+          <div 
+            className="fixed inset-0 z-[100] bg-black w-screen h-screen"
+            style={{ minHeight: '100dvh', height: '100dvh' }}
+          >
             <AvatarChat userId={chatUserId} avatarId={activeChatAvatarId} />
           </div>
         )}
