@@ -48,3 +48,6 @@ externalPort = 80
 HEYGEN_CREDIT_LIMIT = "1000"
 NODE_OPTIONS = "--max-old-space-size=4096"
 ELEVENLABS_AGENT_ID = "agent_1401k3g0sdzmecbv8paxd2rq9d99"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-18db0a26-0231-41af-965f-0348195ecbd4"
