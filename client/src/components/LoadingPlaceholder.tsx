@@ -56,7 +56,11 @@ export function LoadingPlaceholder({
   );
   
   // Use video URL if available, otherwise fall back to gif
-  const mediaSrc = loadingAnimationUrl || gifSrc;
+  // Encode URL to handle spaces and special characters in filenames
+  const rawMediaSrc = loadingAnimationUrl || gifSrc;
+  const mediaSrc = rawMediaSrc.startsWith('/attached_assets/') 
+    ? `/attached_assets/${encodeURIComponent(rawMediaSrc.replace('/attached_assets/', ''))}`
+    : rawMediaSrc;
   
   // Show loading spinner while fetching avatar data (if no propAnimationUrl provided)
   if (!propAnimationUrl && avatarsLoading) {
