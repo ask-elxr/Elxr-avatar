@@ -846,9 +846,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }
 
   return (
-    <div ref={containerRef} className="relative w-full h-screen bg-black overflow-hidden">
+    <div ref={containerRef} className="relative w-full h-full bg-black overflow-hidden">
       {/* Full Screen Avatar Video */}
-      <div className="relative w-full h-screen bg-black">
+      <div className="relative w-full h-full bg-black">
         {/* Video Element */}
         <div className="w-full h-full flex items-center justify-center relative">
           {(() => {
