@@ -191,8 +191,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }, [selectedAvatarId]);
 
   // Check initial microphone permission status
+  // Note: Safari/iOS don't support permissions.query for microphone, so we skip it there
   useEffect(() => {
     const checkMicPermission = async () => {
+      // Skip permissions API on iOS/Safari - it's not supported and will fail
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+      
+      if (isIOS || isSafari) {
+        console.log('📱 iOS/Safari detected - skipping permissions.query, will request on button click');
+        return; // Leave as null, will prompt on button click
+      }
+      
       try {
         const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
         if (result.state === 'granted') {
@@ -940,10 +950,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
               {/* Right side - Dropdown menu + End chat button */}
               <div className="flex items-center gap-2">
-                <DropdownMenu>
+                <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
+                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                       size="sm"
                       data-testid="button-menu"
                     >
@@ -1286,6 +1297,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               }}
               disabled={requestingMicPermission}
               className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg font-semibold rounded-full shadow-lg flex items-center gap-2"
+              style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
               data-testid="button-start-session"
             >
               {requestingMicPermission ? (
