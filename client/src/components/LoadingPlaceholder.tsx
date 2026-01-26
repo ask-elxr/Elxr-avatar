@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import type { AvatarProfile } from "@shared/schema";
 
 interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   avatarId?: string;
   loadingAnimationUrl?: string | null;
 }
 
+// Hardcoded intro GIFs - these are the correct animated loading GIFs for each avatar
+// We use hardcoded values to ensure consistency between development and production
 const avatarGifs: Record<string, string> = {
   "mark-kohl": "/attached_assets/MArk-kohl-loop_1763964600000.gif",
   "mark": "/attached_assets/MArk-kohl-loop_1763964600000.gif",
@@ -38,38 +38,25 @@ export function LoadingPlaceholder({
     setMediaError(false);
   }, [avatarId, propAnimationUrl]);
 
-  const { data: avatars, isLoading: avatarsLoading } = useQuery<AvatarProfile[]>({
-    queryKey: ['/api/avatars'],
-    staleTime: 60000,
-  });
-
-  const avatar = avatars?.find(a => a.id === avatarId);
-  const loadingAnimationUrl = propAnimationUrl ?? avatar?.loadingAnimationUrl;
-  
+  // Always use hardcoded GIF map for consistency between dev and production
+  // This avoids issues with production database having different values
   const gifSrc = avatarGifs[avatarId] || avatarGifs["mark-kohl"];
   
-  const isVideo = loadingAnimationUrl && (
-    loadingAnimationUrl.endsWith('.mp4') || 
-    loadingAnimationUrl.endsWith('.webm') ||
-    loadingAnimationUrl.includes('mp4') ||
-    loadingAnimationUrl.includes('webm')
+  // Only use propAnimationUrl if explicitly passed (for video URLs from external sources)
+  // Otherwise always use the hardcoded GIF
+  const rawMediaSrc = propAnimationUrl || gifSrc;
+  
+  const isVideo = rawMediaSrc && (
+    rawMediaSrc.endsWith('.mp4') || 
+    rawMediaSrc.endsWith('.webm') ||
+    rawMediaSrc.includes('mp4') ||
+    rawMediaSrc.includes('webm')
   );
   
-  // Use video URL if available, otherwise fall back to gif
   // Encode URL to handle spaces and special characters in filenames
-  const rawMediaSrc = loadingAnimationUrl || gifSrc;
   const mediaSrc = rawMediaSrc.startsWith('/attached_assets/') 
     ? `/attached_assets/${encodeURIComponent(rawMediaSrc.replace('/attached_assets/', ''))}`
     : rawMediaSrc;
-  
-  // Show loading spinner while fetching avatar data (if no propAnimationUrl provided)
-  if (!propAnimationUrl && avatarsLoading) {
-    return (
-      <div className={`absolute inset-0 flex items-center justify-center bg-black ${className}`} {...props}>
-        <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
-      </div>
-    );
-  }
   
   if (isVideo) {
     return (
