@@ -67,10 +67,6 @@ export function LoadingPlaceholder({
           className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
           onLoadedData={(e) => {
             setMediaLoaded(true);
-            // Set volume to 25% for Willie Gault
-            if (avatarId === 'willie-gault' || avatarId === 'willie') {
-              (e.target as HTMLVideoElement).volume = 0.25;
-            }
           }}
           onError={() => setMediaError(true)}
           data-testid="avatar-video"
