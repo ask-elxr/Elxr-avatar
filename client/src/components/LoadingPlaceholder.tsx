@@ -98,29 +98,21 @@ export function LoadingPlaceholder({
   }
   
   return (
-    <div className={`flex flex-col items-center justify-center bg-black ${className}`} {...props}>
-      <div 
-        className="rounded-full overflow-hidden relative"
-        style={{
-          width: '240px',
-          height: '240px',
-        }}
-      >
-        {(!mediaLoaded || mediaError) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
-            <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
-          </div>
-        )}
-        <img
-          src={mediaSrc}
-          alt="Avatar"
-          className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
-          onLoad={() => setMediaLoaded(true)}
-          onError={() => setMediaError(true)}
-          data-testid="avatar-gif"
-        />
-      </div>
-      <p className="text-white/80 mt-4 text-sm">Starting session...</p>
+    <div className={`absolute inset-0 flex items-center justify-center bg-black ${className}`} {...props}>
+      {(!mediaLoaded || mediaError) && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+          <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
+        </div>
+      )}
+      <img
+        src={mediaSrc}
+        alt="Avatar"
+        className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+        onLoad={() => setMediaLoaded(true)}
+        onError={() => setMediaError(true)}
+        data-testid="avatar-gif"
+      />
+      <p className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/80 text-sm z-20">Starting session...</p>
     </div>
   );
 }
