@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { pineconeService, PineconeIndexName } from "./pinecone.js";
 import { documentProcessor } from "./documentProcessor.js";
-import { ObjectStorageService } from "./objectStorage.js";
+import { ObjectStorageService, getSignedPublicReadURL } from "./objectStorage.js";
 import {
   insertConversationSchema,
   insertDocumentSchema,
@@ -5783,13 +5783,9 @@ ${enhancedPersonality}`;
   app.get("/api/public-storage/:filename", async (req, res) => {
     try {
       const { filename } = req.params;
-      const file = await objectStorageService.searchPublicObject(filename);
-      
-      if (!file) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      
-      await objectStorageService.downloadObject(file, res, 86400); // 24h cache
+      // Generate a signed URL and redirect to it
+      const signedUrl = await getSignedPublicReadURL(filename, 3600); // 1 hour TTL
+      res.redirect(signedUrl);
     } catch (error: any) {
       console.error("Error serving public file:", error);
       res.status(500).json({ error: "Failed to serve file" });

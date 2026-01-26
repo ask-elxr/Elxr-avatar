@@ -260,6 +260,28 @@ function parseObjectPath(path: string): {
   };
 }
 
+// Export helper to get signed read URL for public files
+export async function getSignedPublicReadURL(filename: string, ttlSec: number = 3600): Promise<string> {
+  const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || "";
+  const paths = pathsStr.split(",").map(p => p.trim()).filter(p => p.length > 0);
+  
+  if (paths.length === 0) {
+    throw new Error("PUBLIC_OBJECT_SEARCH_PATHS not set");
+  }
+  
+  // Use first public path
+  const publicPath = paths[0];
+  const fullPath = `${publicPath}/${filename}`;
+  const { bucketName, objectName } = parseObjectPath(fullPath);
+  
+  return signObjectURL({
+    bucketName,
+    objectName,
+    method: "GET",
+    ttlSec,
+  });
+}
+
 async function signObjectURL({
   bucketName,
   objectName,
