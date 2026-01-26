@@ -29,7 +29,7 @@ export function AudioVideoToggle({
   if (onlyAudio) {
     return (
       <div 
-        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20"
+        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2"
         data-testid="audio-video-toggle"
       >
         <Volume2 className="w-4 h-4 text-white mr-2" />
@@ -53,7 +53,7 @@ export function AudioVideoToggle({
     }
     return (
       <div 
-        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2 border border-white/20"
+        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full px-4 py-2"
         data-testid="audio-video-toggle"
       >
         <Video className="w-4 h-4 text-white mr-2" />
@@ -65,7 +65,7 @@ export function AudioVideoToggle({
   // Both modes available - show full toggle
   return (
     <div 
-      className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full p-1 border border-white/20"
+      className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full p-1"
       data-testid="audio-video-toggle"
     >
       <button
