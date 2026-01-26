@@ -950,7 +950,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       <MoreVertical className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md">
+                  <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
                     <DropdownMenuItem 
                       onClick={() => setShowAvatarSwitcher(true)}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
@@ -1152,6 +1152,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             <Button
               onClick={async () => {
                 console.log("📱 BUTTON CLICKED - Start Chat pressed");
+                
+                // 📱 CRITICAL: Unlock mobile audio FIRST during user interaction
+                // iOS requires this to be done during a user gesture
+                const { unlockMobileAudio } = await import('@/lib/mobileAudio');
+                await unlockMobileAudio();
+                console.log("📱 Mobile audio unlocked");
                 
                 // Request microphone permission if not already granted
                 if (micPermissionGranted !== true) {
