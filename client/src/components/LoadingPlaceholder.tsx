@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import type { AvatarProfile } from "@shared/schema";
@@ -32,7 +32,13 @@ export function LoadingPlaceholder({
   const [mediaLoaded, setMediaLoaded] = useState(false);
   const [mediaError, setMediaError] = useState(false);
 
-  const { data: avatars } = useQuery<AvatarProfile[]>({
+  // Reset states when avatar changes
+  useEffect(() => {
+    setMediaLoaded(false);
+    setMediaError(false);
+  }, [avatarId, propAnimationUrl]);
+
+  const { data: avatars, isLoading: avatarsLoading } = useQuery<AvatarProfile[]>({
     queryKey: ['/api/avatars'],
     staleTime: 60000,
   });
@@ -49,7 +55,17 @@ export function LoadingPlaceholder({
     loadingAnimationUrl.includes('webm')
   );
   
+  // Use video URL if available, otherwise fall back to gif
   const mediaSrc = loadingAnimationUrl || gifSrc;
+  
+  // Show loading spinner while fetching avatar data (if no propAnimationUrl provided)
+  if (!propAnimationUrl && avatarsLoading) {
+    return (
+      <div className={`absolute inset-0 flex items-center justify-center bg-black ${className}`} {...props}>
+        <Loader2 className="w-12 h-12 text-violet-400 animate-spin" />
+      </div>
+    );
+  }
   
   if (isVideo) {
     return (
