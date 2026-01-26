@@ -201,6 +201,7 @@ export default function Dashboard({
 
   const [, chatParams] = useRoute("/dashboard/chat/:avatarId");
   const [, mentorParams] = useRoute("/dashboard/mentors/:avatarId");
+  const [, shortMentorParams] = useRoute("/mentors/:avatarId");
   const [, courseViewParams] = useRoute("/dashboard/courses/:courseId");
   const [, courseEditParams] = useRoute("/dashboard/courses/:courseId/edit");
 
@@ -214,7 +215,9 @@ export default function Dashboard({
       return "active-chat";
     if (location.startsWith("/dashboard/mentors/") && mentorParams?.avatarId)
       return "active-chat";
-    if (location === "/dashboard/chat" || location === "/dashboard/mentors") return "chat";
+    if (location.startsWith("/mentors/") && shortMentorParams?.avatarId)
+      return "active-chat";
+    if (location === "/dashboard/chat" || location === "/dashboard/mentors" || location === "/mentors") return "chat";
     if (location === "/dashboard/courses/new/edit") return "course-edit";
     if (location.endsWith("/edit") && courseEditParams?.courseId)
       return "course-edit";
@@ -231,9 +234,9 @@ export default function Dashboard({
     if (location === "/dashboard/credits") return "credits";
     if (location === "/dashboard/settings") return "settings";
     return "dashboard";
-  }, [location, chatParams, mentorParams, courseViewParams, courseEditParams, isEmbed, embedView, embedAvatarId]);
+  }, [location, chatParams, mentorParams, shortMentorParams, courseViewParams, courseEditParams, isEmbed, embedView, embedAvatarId]);
 
-  const activeChatAvatarId = isEmbed && embedAvatarId ? embedAvatarId : (chatParams?.avatarId || mentorParams?.avatarId || null);
+  const activeChatAvatarId = isEmbed && embedAvatarId ? embedAvatarId : (chatParams?.avatarId || mentorParams?.avatarId || shortMentorParams?.avatarId || null);
   
   // Parse avatar filter from query params for courses view
   const avatarFilterId = useMemo(() => {
