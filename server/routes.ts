@@ -9663,26 +9663,8 @@ export async function seedDefaultAvatars(): Promise<void> {
       logger.info({ count: existingAvatars.length }, "Avatars already exist in database, skipping seed");
     }
     
-    // Fix voice settings for avatars that need ElevenLabs (LiveAvatar voice IDs don't work)
-    const voiceFixAvatars = ['mark-kohl', 'shawn'];
-    for (const avatarId of voiceFixAvatars) {
-      const avatar = await storage.getAvatar(avatarId);
-      if (avatar && avatar.interactiveVoiceSource === 'liveavatar') {
-        await storage.updateAvatar(avatarId, { interactiveVoiceSource: 'elevenlabs' });
-        logger.info({ avatarId }, "Fixed avatar voice source: liveavatar -> elevenlabs");
-      }
-    }
-    
-    // Fix Mark Kohl's voice ID (was incorrectly set to "Daniel" voice)
-    const markKohl = await storage.getAvatar('mark-kohl');
-    const correctMarkVoiceId = 'Am7G7QzYkKkdR8bmdQqY'; // Psychedelics Mark Kohl
-    if (markKohl && markKohl.elevenlabsVoiceId !== correctMarkVoiceId) {
-      await storage.updateAvatar('mark-kohl', { 
-        elevenlabsVoiceId: correctMarkVoiceId,
-        audioOnlyVoiceId: correctMarkVoiceId 
-      });
-      logger.info({ oldVoice: markKohl.elevenlabsVoiceId, newVoice: correctMarkVoiceId }, "Fixed Mark Kohl voice ID");
-    }
+    // Note: Removed automatic voice setting overrides that were changing user-configured settings on every startup
+    // Avatar settings are now fully controlled by the admin dashboard
   } catch (error: any) {
     logger.error({ error: error.message }, "Failed to seed default avatars");
     // Don't throw - allow server to start even if seeding fails
