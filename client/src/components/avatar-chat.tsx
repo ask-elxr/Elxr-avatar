@@ -70,7 +70,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMiniGames, setShowMiniGames] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [elevenLabsLanguage, setElevenLabsLanguage] = useState("en");
@@ -954,24 +953,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg cursor-pointer"
-                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none' }}
+                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
+                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                       size="sm"
                       data-testid="button-menu"
-                      type="button"
                     >
                       <MoreVertical className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent 
-                    align="end" 
-                    className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[9999]"
-                    sideOffset={5}
-                    style={{ touchAction: 'manipulation' }}
-                  >
+                  <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
                     <DropdownMenuItem 
                       onClick={() => setShowAvatarSwitcher(true)}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      data-testid="menu-switch-avatar"
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
                       Switch Avatar
@@ -981,6 +975,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       <DropdownMenuItem 
                         onClick={() => togglePause()}
                         className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                        data-testid="menu-pause"
                       >
                         {isPaused ? (
                           <>
@@ -1000,6 +995,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       <DropdownMenuItem 
                         onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
                         className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                        data-testid="menu-fullscreen"
                       >
                         {isFullscreen ? (
                           <>
@@ -1018,6 +1014,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     <DropdownMenuItem 
                       onClick={() => setShowSettings(!showSettings)}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      data-testid="menu-settings"
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       Settings
@@ -1026,6 +1023,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     <DropdownMenuItem 
                       onClick={() => setShowMiniGames(true)}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      data-testid="menu-games"
                     >
                       <Gamepad2 className="w-4 h-4 mr-2" />
                       Play Games
@@ -1043,6 +1041,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                             });
                           }}
                           className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10"
+                          data-testid="menu-stop-audio"
                         >
                           <VolumeX className="w-4 h-4 mr-2" />
                           Stop Audio
