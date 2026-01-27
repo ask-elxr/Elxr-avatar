@@ -73,7 +73,7 @@ export function AvatarSwitcher({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-black border-gray-800">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto bg-black border-gray-800 z-[300]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl md:text-3xl pr-8 font-satoshi text-white">
             <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">

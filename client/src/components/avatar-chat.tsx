@@ -963,7 +963,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
                     <DropdownMenuItem 
-                      onSelect={() => setShowAvatarSwitcher(true)}
+                      onSelect={() => {
+                        console.log("📱 Switch Avatar menu item selected");
+                        setShowAvatarSwitcher(true);
+                      }}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
                       data-testid="menu-switch-avatar"
                     >
