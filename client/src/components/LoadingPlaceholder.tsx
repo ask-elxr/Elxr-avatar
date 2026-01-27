@@ -72,7 +72,7 @@ export function LoadingPlaceholder({
           loop
           muted
           playsInline
-          className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+          className={`w-full h-full object-contain md:object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
           onLoadedData={(e) => {
             setMediaLoaded(true);
           }}
@@ -94,7 +94,7 @@ export function LoadingPlaceholder({
       <img
         src={mediaSrc}
         alt="Avatar"
-        className={`w-full h-full object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
+        className={`w-full h-full object-contain md:object-cover transition-opacity duration-300 ${mediaLoaded && !mediaError ? 'opacity-100' : 'opacity-0'}`}
         onLoad={() => setMediaLoaded(true)}
         onError={() => setMediaError(true)}
         data-testid="avatar-gif"
