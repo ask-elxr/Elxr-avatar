@@ -49,9 +49,10 @@ export class LiveAvatarDriver implements SessionDriver {
   private session: LiveAvatarSession | null = null;
   private config: DriverConfig;
   private currentAudio: HTMLAudioElement | null = null;
-  private useHeygenVoice: boolean = false; // Toggle between HeyGen voice (repeat) and ElevenLabs voice (repeatAudio)
+  private useHeygenVoice: boolean = false; // Toggle between built-in voice (repeat) and ElevenLabs voice (repeatAudio)
   private languageCode: string = "en";
   private sessionId: string | null = null;
+  private intentionalStop: boolean = false; // Track if disconnect was intentional
   private liveAvatarSessionToken: string | null = null; // Store token for proper cleanup
   private videoAttached: boolean = false;
   private audioContext: AudioContext | null = null;
@@ -82,10 +83,12 @@ export class LiveAvatarDriver implements SessionDriver {
     
     // Check avatar config for voice source preference
     // Use the INTERACTIVE voice setting (not the video creation one)
-    this.useHeygenVoice = config.avatarConfig?.useHeygenVoiceForInteractive === true;
+    // "liveavatar" uses session.repeat() (built-in voice), "elevenlabs" uses session.repeatAudio()
+    const voiceSource = config.avatarConfig?.interactiveVoiceSource || "liveavatar";
+    this.useHeygenVoice = voiceSource === "liveavatar" || voiceSource === "heygen";
     
-    const voiceSource = this.useHeygenVoice ? "HeyGen voice (session.repeat)" : "ElevenLabs voice (session.repeatAudio)";
-    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ${voiceSource} for ${config.avatarConfig.name || config.avatarId}`);
+    const voiceMethod = this.useHeygenVoice ? "built-in voice (session.repeat)" : "ElevenLabs voice (session.repeatAudio)";
+    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ${voiceMethod} for ${config.avatarConfig?.name || config.avatarId}`);
   }
 
   /**
