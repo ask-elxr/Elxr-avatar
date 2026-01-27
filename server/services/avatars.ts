@@ -100,6 +100,7 @@ function mergeSingleAvatar(dbAvatar: AvatarProfile | undefined, defaultAvatar: A
     elevenlabsVoiceId: dbAvatar.elevenlabsVoiceId !== undefined ? dbAvatar.elevenlabsVoiceId : defaultAvatar.elevenlabsVoiceId,
     audioOnlyVoiceId: (dbAvatar as any).audioOnlyVoiceId !== undefined ? (dbAvatar as any).audioOnlyVoiceId : (defaultAvatar as any).audioOnlyVoiceId,
     liveAvatarVoiceId: (dbAvatar as any).liveAvatarVoiceId !== undefined ? (dbAvatar as any).liveAvatarVoiceId : (defaultAvatar as any).liveAvatarVoiceId,
+    interactiveVoiceSource: (dbAvatar as any).interactiveVoiceSource !== undefined ? (dbAvatar as any).interactiveVoiceSource : (defaultAvatar as any).interactiveVoiceSource,
     voiceRate: dbAvatar.voiceRate !== undefined ? dbAvatar.voiceRate : defaultAvatar.voiceRate,
     pineconeNamespaces: mergedNamespaces,
     personalityPrompt: dbAvatar.personalityPrompt !== undefined ? dbAvatar.personalityPrompt : defaultAvatar.personalityPrompt,
