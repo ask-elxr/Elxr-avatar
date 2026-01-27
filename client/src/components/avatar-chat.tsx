@@ -970,124 +970,82 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     style={{ touchAction: 'manipulation' }}
                   >
                     <DropdownMenuItem 
-                      asChild
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
-                      data-testid="menu-switch-avatar"
+                      onClick={() => setShowAvatarSwitcher(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
                     >
-                      <button 
-                        type="button" 
-                        onClick={() => setShowAvatarSwitcher(true)}
-                        className="w-full flex items-center px-2 py-1.5"
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Switch Avatar
-                      </button>
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Switch Avatar
                     </DropdownMenuItem>
                     
                     {!elevenLabsAgentActive && (
                       <DropdownMenuItem 
-                        asChild
-                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
-                        data-testid="menu-pause"
+                        onClick={() => togglePause()}
+                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
                       >
-                        <button 
-                          type="button" 
-                          onClick={() => togglePause()}
-                          className="w-full flex items-center px-2 py-1.5"
-                        >
-                          {isPaused ? (
-                            <>
-                              <Play className="w-4 h-4 mr-2" />
-                              Resume
-                            </>
-                          ) : (
-                            <>
-                              <Pause className="w-4 h-4 mr-2" />
-                              Pause
-                            </>
-                          )}
-                        </button>
+                        {isPaused ? (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Resume
+                          </>
+                        ) : (
+                          <>
+                            <Pause className="w-4 h-4 mr-2" />
+                            Pause
+                          </>
+                        )}
                       </DropdownMenuItem>
                     )}
                     
                     {fullscreenSupported && (
                       <DropdownMenuItem 
-                        asChild
-                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
-                        data-testid="menu-fullscreen"
+                        onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
+                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
                       >
-                        <button 
-                          type="button" 
-                          onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
-                          className="w-full flex items-center px-2 py-1.5"
-                        >
-                          {isFullscreen ? (
-                            <>
-                              <Minimize className="w-4 h-4 mr-2" />
-                              Exit Fullscreen
-                            </>
-                          ) : (
-                            <>
-                              <Maximize className="w-4 h-4 mr-2" />
-                              Fullscreen
-                            </>
-                          )}
-                        </button>
+                        {isFullscreen ? (
+                          <>
+                            <Minimize className="w-4 h-4 mr-2" />
+                            Exit Fullscreen
+                          </>
+                        ) : (
+                          <>
+                            <Maximize className="w-4 h-4 mr-2" />
+                            Fullscreen
+                          </>
+                        )}
                       </DropdownMenuItem>
                     )}
                     
                     <DropdownMenuItem 
-                      asChild
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
-                      data-testid="menu-settings"
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
                     >
-                      <button 
-                        type="button" 
-                        onClick={() => setShowSettings(!showSettings)}
-                        className="w-full flex items-center px-2 py-1.5"
-                      >
-                        <Settings className="w-4 h-4 mr-2" />
-                        Settings
-                      </button>
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
                     </DropdownMenuItem>
                     
                     <DropdownMenuItem 
-                      asChild
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
-                      data-testid="menu-games"
+                      onClick={() => setShowMiniGames(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
                     >
-                      <button 
-                        type="button" 
-                        onClick={() => setShowMiniGames(true)}
-                        className="w-full flex items-center px-2 py-1.5"
-                      >
-                        <Gamepad2 className="w-4 h-4 mr-2" />
-                        Play Games
-                      </button>
+                      <Gamepad2 className="w-4 h-4 mr-2" />
+                      Play Games
                     </DropdownMenuItem>
                     
                     {isSpeaking && audioOnly && (
                       <>
                         <DropdownMenuSeparator className="bg-white/20" />
                         <DropdownMenuItem 
-                          asChild
-                          className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10 cursor-pointer min-h-[44px]"
-                          data-testid="menu-stop-audio"
+                          onClick={() => {
+                            stopAudio();
+                            toast({
+                              title: "Audio Stopped",
+                              description: "Playback stopped",
+                            });
+                          }}
+                          className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10"
                         >
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              stopAudio();
-                              toast({
-                                title: "Audio Stopped",
-                                description: "Playback stopped",
-                              });
-                            }}
-                            className="w-full flex items-center px-2 py-1.5"
-                          >
-                            <VolumeX className="w-4 h-4 mr-2" />
-                            Stop Audio
-                          </button>
+                          <VolumeX className="w-4 h-4 mr-2" />
+                          Stop Audio
                         </DropdownMenuItem>
                       </>
                     )}
