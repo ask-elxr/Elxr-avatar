@@ -963,8 +963,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
                     <DropdownMenuItem 
-                      onClick={() => setShowAvatarSwitcher(true)}
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      onSelect={() => setShowAvatarSwitcher(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
                       data-testid="menu-switch-avatar"
                     >
                       <RefreshCw className="w-4 h-4 mr-2" />
@@ -973,8 +973,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     
                     {!elevenLabsAgentActive && (
                       <DropdownMenuItem 
-                        onClick={() => togglePause()}
-                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                        onSelect={() => togglePause()}
+                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
                         data-testid="menu-pause"
                       >
                         {isPaused ? (
@@ -993,8 +993,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     
                     {fullscreenSupported && (
                       <DropdownMenuItem 
-                        onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
-                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                        onSelect={() => toggleFullscreen(containerRef.current, videoRef.current)}
+                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
                         data-testid="menu-fullscreen"
                       >
                         {isFullscreen ? (
@@ -1012,8 +1012,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     )}
                     
                     <DropdownMenuItem 
-                      onClick={() => setShowSettings(!showSettings)}
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      onSelect={() => setShowSettings(!showSettings)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
                       data-testid="menu-settings"
                     >
                       <Settings className="w-4 h-4 mr-2" />
@@ -1021,8 +1021,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     </DropdownMenuItem>
                     
                     <DropdownMenuItem 
-                      onClick={() => setShowMiniGames(true)}
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
+                      onSelect={() => setShowMiniGames(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
                       data-testid="menu-games"
                     >
                       <Gamepad2 className="w-4 h-4 mr-2" />
@@ -1033,14 +1033,14 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       <>
                         <DropdownMenuSeparator className="bg-white/20" />
                         <DropdownMenuItem 
-                          onClick={() => {
+                          onSelect={() => {
                             stopAudio();
                             toast({
                               title: "Audio Stopped",
                               description: "Playback stopped",
                             });
                           }}
-                          className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10"
+                          className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10 cursor-pointer"
                           data-testid="menu-stop-audio"
                         >
                           <VolumeX className="w-4 h-4 mr-2" />
