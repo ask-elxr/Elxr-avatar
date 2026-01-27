@@ -950,7 +950,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
               {/* Right side - Dropdown menu + End chat button */}
               <div className="flex items-center gap-2">
-                <DropdownMenu modal={false}>
+                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
