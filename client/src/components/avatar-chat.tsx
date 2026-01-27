@@ -953,15 +953,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <DropdownMenu modal={false}>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
-                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg cursor-pointer"
+                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', WebkitUserSelect: 'none', userSelect: 'none' }}
                       size="sm"
                       data-testid="button-menu"
+                      type="button"
                     >
                       <MoreVertical className="w-5 h-5" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
+                  <DropdownMenuContent 
+                    align="end" 
+                    className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[9999]"
+                    sideOffset={5}
+                    style={{ touchAction: 'manipulation' }}
+                  >
                     <DropdownMenuItem 
                       onClick={() => setShowAvatarSwitcher(true)}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10"
