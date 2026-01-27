@@ -1309,7 +1309,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   Requesting...
                 </>
               ) : (
-                'Start Chat'
+                "Let's have a word"
               )}
             </Button>
             {micPermissionGranted === false && (
