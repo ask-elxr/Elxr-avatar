@@ -970,88 +970,124 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     style={{ touchAction: 'manipulation' }}
                   >
                     <DropdownMenuItem 
-                      onSelect={() => setShowAvatarSwitcher(true)}
+                      asChild
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
                       data-testid="menu-switch-avatar"
                     >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Switch Avatar
+                      <button 
+                        type="button" 
+                        onClick={() => setShowAvatarSwitcher(true)}
+                        className="w-full flex items-center px-2 py-1.5"
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Switch Avatar
+                      </button>
                     </DropdownMenuItem>
                     
                     {!elevenLabsAgentActive && (
                       <DropdownMenuItem 
-                        onSelect={() => togglePause()}
+                        asChild
                         className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
                         data-testid="menu-pause"
                       >
-                        {isPaused ? (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            Resume
-                          </>
-                        ) : (
-                          <>
-                            <Pause className="w-4 h-4 mr-2" />
-                            Pause
-                          </>
-                        )}
+                        <button 
+                          type="button" 
+                          onClick={() => togglePause()}
+                          className="w-full flex items-center px-2 py-1.5"
+                        >
+                          {isPaused ? (
+                            <>
+                              <Play className="w-4 h-4 mr-2" />
+                              Resume
+                            </>
+                          ) : (
+                            <>
+                              <Pause className="w-4 h-4 mr-2" />
+                              Pause
+                            </>
+                          )}
+                        </button>
                       </DropdownMenuItem>
                     )}
                     
                     {fullscreenSupported && (
                       <DropdownMenuItem 
-                        onSelect={() => toggleFullscreen(containerRef.current, videoRef.current)}
+                        asChild
                         className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
                         data-testid="menu-fullscreen"
                       >
-                        {isFullscreen ? (
-                          <>
-                            <Minimize className="w-4 h-4 mr-2" />
-                            Exit Fullscreen
-                          </>
-                        ) : (
-                          <>
-                            <Maximize className="w-4 h-4 mr-2" />
-                            Fullscreen
-                          </>
-                        )}
+                        <button 
+                          type="button" 
+                          onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
+                          className="w-full flex items-center px-2 py-1.5"
+                        >
+                          {isFullscreen ? (
+                            <>
+                              <Minimize className="w-4 h-4 mr-2" />
+                              Exit Fullscreen
+                            </>
+                          ) : (
+                            <>
+                              <Maximize className="w-4 h-4 mr-2" />
+                              Fullscreen
+                            </>
+                          )}
+                        </button>
                       </DropdownMenuItem>
                     )}
                     
                     <DropdownMenuItem 
-                      onSelect={() => setShowSettings(!showSettings)}
+                      asChild
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
                       data-testid="menu-settings"
                     >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
+                      <button 
+                        type="button" 
+                        onClick={() => setShowSettings(!showSettings)}
+                        className="w-full flex items-center px-2 py-1.5"
+                      >
+                        <Settings className="w-4 h-4 mr-2" />
+                        Settings
+                      </button>
                     </DropdownMenuItem>
                     
                     <DropdownMenuItem 
-                      onSelect={() => setShowMiniGames(true)}
+                      asChild
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer min-h-[44px]"
                       data-testid="menu-games"
                     >
-                      <Gamepad2 className="w-4 h-4 mr-2" />
-                      Play Games
+                      <button 
+                        type="button" 
+                        onClick={() => setShowMiniGames(true)}
+                        className="w-full flex items-center px-2 py-1.5"
+                      >
+                        <Gamepad2 className="w-4 h-4 mr-2" />
+                        Play Games
+                      </button>
                     </DropdownMenuItem>
                     
                     {isSpeaking && audioOnly && (
                       <>
                         <DropdownMenuSeparator className="bg-white/20" />
                         <DropdownMenuItem 
-                          onSelect={() => {
-                            stopAudio();
-                            toast({
-                              title: "Audio Stopped",
-                              description: "Playback stopped",
-                            });
-                          }}
+                          asChild
                           className="text-amber-400 hover:text-amber-300 focus:text-amber-300 focus:bg-white/10 cursor-pointer min-h-[44px]"
                           data-testid="menu-stop-audio"
                         >
-                          <VolumeX className="w-4 h-4 mr-2" />
-                          Stop Audio
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              stopAudio();
+                              toast({
+                                title: "Audio Stopped",
+                                description: "Playback stopped",
+                              });
+                            }}
+                            className="w-full flex items-center px-2 py-1.5"
+                          >
+                            <VolumeX className="w-4 h-4 mr-2" />
+                            Stop Audio
+                          </button>
                         </DropdownMenuItem>
                       </>
                     )}
