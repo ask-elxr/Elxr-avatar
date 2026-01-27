@@ -70,6 +70,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [switchingAvatar, setSwitchingAvatar] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showMiniGames, setShowMiniGames] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState("en-US");
   const [elevenLabsLanguage, setElevenLabsLanguage] = useState("en");
