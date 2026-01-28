@@ -1008,9 +1008,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (selectedAvatarId) {
             avatarConfig = {
               avatarId: selectedAvatarId,
-              voiceId: requiresFullMode 
-                ? (avatar.liveAvatarVoiceId || undefined)  // FULL mode uses LiveAvatar voice
-                : (useHeygenVoiceForInteractive ? (avatar.heygenVoiceId || undefined) : undefined),
+              voiceId: avatar.liveAvatarVoiceId || undefined,  // Always use LiveAvatar voice for LiveAvatar sessions
               contextId: requiresFullMode ? (avatar.liveAvatarContextId || undefined) : undefined,
               mode,
             };
