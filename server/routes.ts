@@ -95,6 +95,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           avatar_id: avatarConfig?.avatarId,
         };
         
+        // Include voice_id if provided (for custom voice selection)
+        if (avatarConfig?.voiceId) {
+          requestBody.voice_id = avatarConfig.voiceId;
+        }
+        
         // Only include livekit_config if provided (optional)
         if (avatarConfig?.livekit_config) {
           requestBody.livekit_config = avatarConfig.livekit_config;
@@ -105,6 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           operation: 'create_session_token',
           mode: 'CUSTOM',
           avatarId: avatarConfig?.avatarId,
+          voiceId: avatarConfig?.voiceId ? `${avatarConfig.voiceId.substring(0, 8)}...` : 'none',
           usesOwnLiveKit: !avatarConfig?.livekit_config,
         }, 'Creating LiveAvatar session with CUSTOM mode');
       } else {
