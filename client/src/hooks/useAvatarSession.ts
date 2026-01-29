@@ -149,6 +149,12 @@ export function useAvatarSession({
   useEffect(() => {
     elevenLabsLanguageCodeRef.current = elevenLabsLanguageCode;
     
+    // Update session driver language if active (for TTS)
+    if (sessionDriverRef.current?.setLanguage && sessionActiveRef.current) {
+      console.log(`🌐 Updating session driver language to: ${elevenLabsLanguageCode}`);
+      sessionDriverRef.current.setLanguage(elevenLabsLanguageCode);
+    }
+    
     // Update ElevenLabs STT language if active during a session
     // Always track pending language until server confirms (handles race conditions during reconnect)
     if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && sessionActiveRef.current) {
@@ -1332,8 +1338,8 @@ export function useAvatarSession({
                 console.log("🗣️ sessionDriverRef.current exists:", !!sessionDriverRef.current);
                 if (greeting && sessionDriverRef.current) {
                   console.log("🗣️ Avatar greeting:", greeting);
-                  // Small delay to ensure session is fully ready for speaking
-                  await new Promise(resolve => setTimeout(resolve, 500));
+                  // Minimal delay to ensure session is fully ready for speaking
+                  await new Promise(resolve => setTimeout(resolve, 100));
                   await sessionDriverRef.current.speak(greeting, elevenLabsLanguageCodeRef.current);
                   console.log("🗣️ Greeting speak() completed");
                 } else {

@@ -617,6 +617,15 @@ export class LiveAvatarDriver implements SessionDriver {
   setLanguage(languageCode: string): void {
     this.languageCode = languageCode;
     console.log(`🌐 LiveAvatarDriver language set to: ${languageCode}`);
+    
+    // Update ElevenLabs STT language if it's active (mobile voice chat)
+    if (this.sttWebSocket?.readyState === WebSocket.OPEN && this.sttReady) {
+      console.log(`🌐 Updating LiveAvatarDriver STT language to: ${languageCode}`);
+      this.sttWebSocket.send(JSON.stringify({
+        type: 'update_language',
+        languageCode: languageCode.split('-')[0] || 'en',
+      }));
+    }
   }
 
   /**
