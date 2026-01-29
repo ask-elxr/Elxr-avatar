@@ -98,12 +98,18 @@ const idleOutros = [
   "Let's call this a pause, not an ending."
 ];
 
-const lastUsed: Record<string, string> = {};
+const recentHistory: Record<string, string[]> = {};
+const HISTORY_SIZE = 5;
 
 function pickRandom(pool: string[], poolKey: string): string {
-  const available = pool.filter(item => item !== lastUsed[poolKey]);
-  const choice = available[Math.floor(Math.random() * available.length)] || pool[0];
-  lastUsed[poolKey] = choice;
+  const recent = recentHistory[poolKey] || [];
+  const available = pool.filter(item => !recent.includes(item));
+  
+  const choice = available.length > 0 
+    ? available[Math.floor(Math.random() * available.length)]
+    : pool[Math.floor(Math.random() * pool.length)];
+  
+  recentHistory[poolKey] = [choice, ...recent].slice(0, HISTORY_SIZE);
   return choice;
 }
 
