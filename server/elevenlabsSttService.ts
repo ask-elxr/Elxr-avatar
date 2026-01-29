@@ -5,6 +5,27 @@ const log = logger.child({ service: 'elevenlabs-stt' });
 
 const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/realtime';
 
+const GARBAGE_WORDS = [
+  'foreign',
+  '[foreign]',
+  '(foreign)',
+  '[music]',
+  '(music)',
+  '[inaudible]',
+  '(inaudible)',
+  '[unintelligible]',
+  '(unintelligible)',
+];
+
+function cleanTranscript(text: string): string {
+  if (!text) return '';
+  let cleaned = text;
+  for (const word of GARBAGE_WORDS) {
+    cleaned = cleaned.replace(new RegExp(word, 'gi'), '');
+  }
+  return cleaned.replace(/\s+/g, ' ').trim();
+}
+
 interface STTSession {
   sessionId: string;
   clientWs: WebSocket;
@@ -231,9 +252,9 @@ async function startSTTStream(session: STTSession): Promise<void> {
           } else if (msgType === 'partial_transcript' || msgType === 'transcript') {
             // Handle partial transcripts (speech_final=false) vs final (speech_final=true)
             const isFinal = event.speech_final === true || event.is_final === true;
-            const transcriptText = event.text || '';
+            const transcriptText = cleanTranscript(event.text || '');
             if (isFinal) {
-              // Only send final if there's actual text
+              // Only send final if there's actual text after cleaning
               if (transcriptText) {
                 log.info({ sessionId: session.sessionId, text: transcriptText }, 'Final transcript received');
                 session.clientWs.send(JSON.stringify({
@@ -242,7 +263,7 @@ async function startSTTStream(session: STTSession): Promise<void> {
                 }));
               }
             } else {
-              // Only send partial if there's actual text
+              // Only send partial if there's actual text after cleaning
               if (transcriptText) {
                 session.clientWs.send(JSON.stringify({
                   type: 'partial',
