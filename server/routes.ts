@@ -3976,8 +3976,8 @@ This appears to be your first conversation with this person - no prior memories 
         }
       }, 'Avatar research source settings loaded');
 
-      // PARALLEL DATA FETCHING: Launch all enrichment operations concurrently
-      const [memoryResultSettled, pubmedResultSettled, wikipediaResultSettled, googleSearchResultSettled, knowledgeResultSettled] = await Promise.allSettled([
+      // PHASE 1: Fetch Memory + Knowledge Base first (always needed)
+      const [memoryResultSettled, knowledgeResultSettled] = await Promise.allSettled([
         // 1. Memory search
         (async () => {
           const memStart = Date.now();
@@ -3995,13 +3995,69 @@ This appears to be your first conversation with this person - no prior memories 
           }
         })(),
 
-        // 2. PubMed research
+        // 2. Knowledge base (Pinecone + user sources) - run FIRST
         (async () => {
-          const pubmedStart = Date.now();
-          // Trigger PubMed if: explicit command, research question, OR avatar has usePubMed enabled
-          if (!pubmedCommandMatch && !isResearchQuestion && !avatarUsePubMed) {
-            return null;
+          const kbStart = Date.now();
+          try {
+            let allNamespaces = [...avatarConfig.pineconeNamespaces];
+            
+            if (userId && !userId.startsWith('temp_')) {
+              const userSources = await storage.listKnowledgeSources(userId);
+              const activeSourceNamespaces = userSources
+                .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
+                .map(source => source.pineconeNamespace);
+              
+              const documentNamespaces = [`documents-${userId}`, `video-transcripts-${userId}`];
+              allNamespaces = [...allNamespaces, ...activeSourceNamespaces, ...documentNamespaces];
+            }
+
+            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
+            if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
+              perfTimings.knowledge = Date.now() - kbStart;
+              return { context: "", namespaces: 0, hasGoodResults: false };
+            }
+
+            const knowledgeResults = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
+            perfTimings.knowledge = Date.now() - kbStart;
+            
+            const context = knowledgeResults.length > 0 ? knowledgeResults[0].text : "";
+            const hasGoodResults = knowledgeResults.length > 0 && context.length > 100;
+            return { context, namespaces: allNamespaces.length, hasGoodResults };
+          } catch (error) {
+            perfTimings.knowledge = Date.now() - kbStart;
+            logger.error({ error }, 'Error fetching knowledge base');
+            return { context: "", namespaces: 0, hasGoodResults: false };
           }
+        })(),
+      ]);
+
+      // Extract Phase 1 results
+      const memoryResult = memoryResultSettled.status === 'fulfilled' ? memoryResultSettled.value : { success: false, memories: [] };
+      const knowledgeResult = knowledgeResultSettled.status === 'fulfilled' ? knowledgeResultSettled.value : { context: "", namespaces: 0, hasGoodResults: false };
+
+      // PHASE 2: Only query external sources if Pinecone doesn't have good results OR explicit research request
+      const needsExternalSources = !knowledgeResult.hasGoodResults || pubmedCommandMatch || isResearchQuestion;
+      
+      logger.debug({
+        avatarId,
+        hasGoodPineconeResults: knowledgeResult.hasGoodResults,
+        isResearchQuestion,
+        pubmedCommand: !!pubmedCommandMatch,
+        willQueryExternal: needsExternalSources
+      }, 'External source decision');
+
+      let pubmedResult = null;
+      let wikipediaResult = null;
+      let googleSearchResult = null;
+
+      if (needsExternalSources) {
+        const [pubmedResultSettled, wikipediaResultSettled, googleSearchResultSettled] = await Promise.allSettled([
+          // PubMed research - only if enabled AND needed
+          (async () => {
+            const pubmedStart = Date.now();
+            if (!avatarUsePubMed && !pubmedCommandMatch && !isResearchQuestion) {
+              return null;
+            }
           try {
             const { searchHybrid, isAvailable } = await import("./pubmedService.js");
             if (!isAvailable()) {
@@ -4031,109 +4087,70 @@ This appears to be your first conversation with this person - no prior memories 
           }
         })(),
 
-        // 3. Wikipedia search
-        (async () => {
-          const wikiStart = Date.now();
-          if (!avatarUseWikipedia) {
-            return null;
-          }
-          try {
-            const { wikipediaService } = await import("./wikipediaService.js");
-            if (!wikipediaService || !wikipediaService.isAvailable()) {
-              perfTimings.wikipedia = Date.now() - wikiStart;
+          // Wikipedia search - only if enabled
+          (async () => {
+            const wikiStart = Date.now();
+            if (!avatarUseWikipedia) {
               return null;
             }
-            
-            logger.info({ userId, query: message }, 'Searching Wikipedia for avatar response');
-            
-            // Use the new searchAndSummarize function
-            const wikiResult = await wikipediaService.searchAndSummarize(message);
-            perfTimings.wikipedia = Date.now() - wikiStart;
-            
-            if (wikiResult) {
-              logger.info({ userId, resultLength: wikiResult.length }, 'Wikipedia results retrieved');
-            }
-            return wikiResult;
-          } catch (error: any) {
-            perfTimings.wikipedia = Date.now() - wikiStart;
-            logger.error({ error: error.message }, 'Error fetching Wikipedia results');
-            return null;
-          }
-        })(),
-
-        // 4. Google Search
-        (async () => {
-          const googleStart = Date.now();
-          if (!avatarUseGoogleSearch) {
-            return null;
-          }
-          try {
-            if (!googleSearchService || !googleSearchService.isAvailable()) {
-              perfTimings.googleSearch = Date.now() - googleStart;
-              return null;
-            }
-            
-            logger.info({ userId, query: message }, 'Searching Google for avatar response');
-            
-            const searchResults = await googleSearchService.search(message, 3);
-            perfTimings.googleSearch = Date.now() - googleStart;
-            
-            if (searchResults) {
-              logger.info({ userId, resultsLength: searchResults.length }, 'Google search results retrieved');
-              return searchResults;
-            }
-            return null;
-          } catch (error: any) {
-            perfTimings.googleSearch = Date.now() - googleStart;
-            logger.error({ error: error.message }, 'Error fetching Google search results');
-            return null;
-          }
-        })(),
-
-        // 5. Knowledge base (Pinecone + user sources)
-        (async () => {
-          const kbStart = Date.now();
-          try {
-            // Use avatarConfig from outer scope (already loaded above)
-            let allNamespaces = [...avatarConfig.pineconeNamespaces];
-            
-            // Add user's knowledge sources and documents
-            if (userId && !userId.startsWith('temp_')) {
-              const userSources = await storage.listKnowledgeSources(userId);
-              const activeSourceNamespaces = userSources
-                .filter(source => source.status === 'active' && (source.itemsCount || 0) > 0)
-                .map(source => source.pineconeNamespace);
+            try {
+              const { wikipediaService } = await import("./wikipediaService.js");
+              if (!wikipediaService || !wikipediaService.isAvailable()) {
+                perfTimings.wikipedia = Date.now() - wikiStart;
+                return null;
+              }
               
-              const documentNamespaces = [`documents-${userId}`, `video-transcripts-${userId}`];
-              allNamespaces = [...allNamespaces, ...activeSourceNamespaces, ...documentNamespaces];
+              logger.info({ userId, query: message }, 'Searching Wikipedia for avatar response (fallback)');
+              
+              const wikiResult = await wikipediaService.searchAndSummarize(message);
+              perfTimings.wikipedia = Date.now() - wikiStart;
+              
+              if (wikiResult) {
+                logger.info({ userId, resultLength: wikiResult.length }, 'Wikipedia results retrieved');
+              }
+              return wikiResult;
+            } catch (error: any) {
+              perfTimings.wikipedia = Date.now() - wikiStart;
+              logger.error({ error: error.message }, 'Error fetching Wikipedia results');
+              return null;
             }
+          })(),
 
-            const { pineconeNamespaceService } = await import("./pineconeNamespaceService.js");
-            if (!pineconeNamespaceService.isAvailable() || allNamespaces.length === 0) {
-              perfTimings.knowledge = Date.now() - kbStart;
-              return { context: "", namespaces: 0 };
+          // Google Search - only if enabled
+          (async () => {
+            const googleStart = Date.now();
+            if (!avatarUseGoogleSearch) {
+              return null;
             }
+            try {
+              if (!googleSearchService || !googleSearchService.isAvailable()) {
+                perfTimings.googleSearch = Date.now() - googleStart;
+                return null;
+              }
+              
+              logger.info({ userId, query: message }, 'Searching Google for avatar response (fallback)');
+              
+              const searchResults = await googleSearchService.search(message, 3);
+              perfTimings.googleSearch = Date.now() - googleStart;
+              
+              if (searchResults) {
+                logger.info({ userId, resultsLength: searchResults.length }, 'Google search results retrieved');
+                return searchResults;
+              }
+              return null;
+            } catch (error: any) {
+              perfTimings.googleSearch = Date.now() - googleStart;
+              logger.error({ error: error.message }, 'Error fetching Google search results');
+              return null;
+            }
+          })(),
+        ]);
 
-            const knowledgeResults = await pineconeNamespaceService.retrieveContext(message, 3, allNamespaces);
-            perfTimings.knowledge = Date.now() - kbStart;
-            
-            const context = knowledgeResults.length > 0 ? knowledgeResults[0].text : "";
-            return { context, namespaces: allNamespaces.length };
-          } catch (error) {
-            perfTimings.knowledge = Date.now() - kbStart;
-            logger.error({ error }, 'Error fetching knowledge base');
-            return { context: "", namespaces: 0 };
-          }
-        })(),
-
-      ]);
-
-      // Extract results from settled promises
-      const memoryResult = memoryResultSettled.status === 'fulfilled' ? memoryResultSettled.value : { success: false, memories: [] };
-      const pubmedResult = pubmedResultSettled.status === 'fulfilled' ? pubmedResultSettled.value : null;
-      const wikipediaResult = wikipediaResultSettled.status === 'fulfilled' ? wikipediaResultSettled.value : null;
-      const googleSearchResult = googleSearchResultSettled.status === 'fulfilled' ? googleSearchResultSettled.value : null;
-      const knowledgeResult = knowledgeResultSettled.status === 'fulfilled' ? knowledgeResultSettled.value : { context: "", namespaces: 0 };
+        // Extract Phase 2 results
+        pubmedResult = pubmedResultSettled.status === 'fulfilled' ? pubmedResultSettled.value : null;
+        wikipediaResult = wikipediaResultSettled.status === 'fulfilled' ? wikipediaResultSettled.value : null;
+        googleSearchResult = googleSearchResultSettled.status === 'fulfilled' ? googleSearchResultSettled.value : null;
+      }
 
       // Build memory context
       let memoryContext = "";
