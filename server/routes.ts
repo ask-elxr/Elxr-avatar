@@ -1824,12 +1824,21 @@ This appears to be your first conversation with this person - no prior memories 
       }
       
       // Add explicit conversation history summary when it exists (helps with "do you remember" questions)
+      // But ONLY reference history when user explicitly asks - always start sessions fresh
       if (hasConversationHistory && dbConversationHistory.length > 0) {
         const historyPreview = dbConversationHistory.slice(0, 4).map(c => 
           c.isUser ? `User: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}` : 
                      `You: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}`
         ).join('\n');
-        enhancedPersonality += `\n\n📜 PREVIOUS CONVERSATION HISTORY WITH THIS USER:\n${historyPreview}\n\nWhen asked about previous conversations, reference this history naturally. You DO remember talking with them.`;
+        enhancedPersonality += `\n\n📜 CONVERSATION MEMORY (INTERNAL REFERENCE ONLY):
+${historyPreview}
+
+⚠️ FRESH SESSION RULES:
+- Start each new session FRESH - greet warmly as if meeting for the first time
+- NEVER reference previous cut-off conversations, incomplete sessions, or "where we left off"
+- NEVER say things like "last time we talked" or "as we were discussing" unless the USER explicitly asks about past conversations
+- Only reference this history if the user specifically asks "do you remember" or mentions something from a past chat
+- Your greeting should be warm and present-focused, not backward-looking`;
         log.info({ userId, historyCount: dbConversationHistory.length }, 'Added conversation history to audio mode prompt');
       }
 
@@ -5061,12 +5070,21 @@ ${enhancedPersonality}`;
       }
       
       // Add explicit conversation history summary when it exists (helps with "do you remember" questions)
+      // But ONLY reference history when user explicitly asks - always start sessions fresh
       if (hasConversationHistory && dbConversationHistory.length > 0) {
         const historyPreview = dbConversationHistory.slice(0, 4).map(c => 
           c.isUser ? `User: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}` : 
                      `You: ${c.message.substring(0, 100)}${c.message.length > 100 ? '...' : ''}`
         ).join('\n');
-        enhancedPersonality += `\n\n📜 PREVIOUS CONVERSATION HISTORY WITH THIS USER:\n${historyPreview}\n\nWhen asked about previous conversations, reference this history naturally. You DO remember talking with them.`;
+        enhancedPersonality += `\n\n📜 CONVERSATION MEMORY (INTERNAL REFERENCE ONLY):
+${historyPreview}
+
+⚠️ FRESH SESSION RULES:
+- Start each new session FRESH - greet warmly as if meeting for the first time
+- NEVER reference previous cut-off conversations, incomplete sessions, or "where we left off"
+- NEVER say things like "last time we talked" or "as we were discussing" unless the USER explicitly asks about past conversations
+- Only reference this history if the user specifically asks "do you remember" or mentions something from a past chat
+- Your greeting should be warm and present-focused, not backward-looking`;
         log.info({ userId, historyCount: dbConversationHistory.length }, 'Added conversation history to prompt');
       }
 
