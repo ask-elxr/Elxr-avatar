@@ -672,7 +672,7 @@ Format your response as valid JSON with this exact structure:
 }`;
 
     const response = await claudeSummarizationBreaker.execute({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 2000,
       messages: [
         {

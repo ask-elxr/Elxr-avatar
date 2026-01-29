@@ -462,7 +462,7 @@ function detectVideoIntentWithPatterns(message: string): VideoIntentResult {
 async function detectVideoIntentWithAI(message: string): Promise<VideoIntentResult> {
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 300,
       system: `You are an expert video request detector. Analyze user messages and determine if they are requesting a video to be created/generated for them.
 
@@ -609,7 +609,7 @@ export async function refineVideoTopic(
 ): Promise<TopicRefinementResult> {
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-5",
       max_tokens: 200,
       system: `You analyze video topic refinements. When a user is asked to clarify what they want in a video, they may:
 1. REPLACE: Provide a new/clarified topic that should replace the original (e.g., "protein intake for athletes" replaces "nutrition")

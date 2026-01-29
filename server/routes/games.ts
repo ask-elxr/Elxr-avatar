@@ -60,7 +60,7 @@ async function getAvatarContext(avatarId: string): Promise<string> {
 
 async function generateGameResponse(prompt: string, maxTokens: number = 500): Promise<string> {
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-5',
     max_tokens: maxTokens,
     messages: [{ role: 'user', content: prompt }]
   });

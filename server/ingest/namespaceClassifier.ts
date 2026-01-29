@@ -56,7 +56,7 @@ export async function classifyTranscript(
     log.debug({ excerptLength: excerpt.length }, 'Classifying transcript');
     
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 200,
       messages: [
         {
