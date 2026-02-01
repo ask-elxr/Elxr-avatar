@@ -21,6 +21,13 @@ const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
 
 const elevenLabsClient = ELEVENLABS_API_KEY ? new ElevenLabsClient({ apiKey: ELEVENLABS_API_KEY }) : null;
 
+// Track count of chat videos in "generating" state to avoid unnecessary DB queries
+// This allows the database to scale to zero when no videos are being generated
+let knownChatGeneratingCount = 0;
+let lastChatDbCheckTime = 0;
+const CHAT_DB_CHECK_INTERVAL_IDLE = 10 * 60 * 1000; // 10 minutes when idle
+const CHAT_DB_CHECK_INTERVAL_ACTIVE = 2 * 60 * 1000; // 2 minutes when active
+
 // Talking Photo IDs - these require different API format (type: "talking_photo" instead of "avatar")
 const TALKING_PHOTO_IDS = new Set([
   "84f913285ac944188a35ce5b58ceb861",
@@ -55,6 +62,22 @@ export class ChatVideoService {
     "Content-Type": "application/json",
     "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
   };
+
+  /**
+   * Increment known generating count when a video generation starts
+   */
+  incrementGeneratingCount(): void {
+    knownChatGeneratingCount++;
+    console.log(`📹 Chat video generating count: ${knownChatGeneratingCount}`);
+  }
+
+  /**
+   * Decrement known generating count when a video completes or fails
+   */
+  decrementGeneratingCount(): void {
+    knownChatGeneratingCount = Math.max(0, knownChatGeneratingCount - 1);
+    console.log(`📹 Chat video generating count: ${knownChatGeneratingCount}`);
+  }
 
   /**
    * Generate audio using ElevenLabs and upload to HeyGen
@@ -458,6 +481,9 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
         })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
 
+      // Track that we have a video generating (for smart background checker)
+      this.incrementGeneratingCount();
+      
       this.pollVideoStatus(heygenVideoId, videoRecordId, userId, avatar.id, topic);
 
     } catch (error: any) {
@@ -526,6 +552,7 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
             },
           });
 
+          this.decrementGeneratingCount();
           console.log(`✅ Chat video completed: ${heygenVideoId}`);
           
           // Send email notification if user has email
@@ -552,6 +579,7 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
             },
           });
 
+          this.decrementGeneratingCount();
           console.error(`❌ Chat video failed: ${heygenVideoId}`, error);
         } else if (attempts < maxAttempts) {
           setTimeout(poll, 5000);
@@ -565,6 +593,7 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
             })
             .where(eq(chatGeneratedVideos.id, videoRecordId));
 
+          this.decrementGeneratingCount();
           console.error(`⏰ Chat video timed out: ${heygenVideoId}`);
         }
       } catch (error: any) {
@@ -753,16 +782,27 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
 
   /**
    * Start background checker that periodically checks generating chat videos
+   * Uses smart checking to avoid unnecessary DB queries when idle
    */
   startBackgroundChecker(): void {
-    const CHECK_INTERVAL = 2 * 60 * 1000; // 2 minutes
-
     const check = async () => {
+      const now = Date.now();
+      
+      // Skip check if we haven't waited long enough and no videos are generating
+      if (knownChatGeneratingCount === 0 && 
+          (now - lastChatDbCheckTime) < CHAT_DB_CHECK_INTERVAL_IDLE) {
+        return;
+      }
+      
       try {
+        lastChatDbCheckTime = now;
         const generatingVideos = await db
           .select()
           .from(chatGeneratedVideos)
           .where(eq(chatGeneratedVideos.status, "generating"));
+
+        // Sync our known count with reality
+        knownChatGeneratingCount = generatingVideos.length;
 
         if (generatingVideos.length > 0) {
           console.log(`🔄 Chat video background check: ${generatingVideos.length} videos in generating state`);
@@ -778,10 +818,12 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
       }
     };
 
-    // Run check immediately and then every 2 minutes
+    // Run initial check to sync state on startup
     check();
-    setInterval(check, CHECK_INTERVAL);
-    console.log("📹 Chat video background checker started (interval: 2 minutes)");
+    
+    // Use a single interval that respects the dynamic check logic
+    setInterval(check, CHAT_DB_CHECK_INTERVAL_ACTIVE);
+    console.log("📹 Chat video background checker started (smart mode: 2min active / 10min idle)");
   }
 }
 

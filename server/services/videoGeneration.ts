@@ -21,6 +21,13 @@ const elevenLabsClient = ELEVENLABS_API_KEY ? new ElevenLabsClient({ apiKey: ELE
 // Track videos currently being polled to avoid duplicate polling
 const activePollingSet = new Set<string>();
 
+// Track count of videos in "generating" state to avoid unnecessary DB queries
+// This allows the database to scale to zero when no videos are being generated
+let knownGeneratingCount = 0;
+let lastDbCheckTime = 0;
+const DB_CHECK_INTERVAL_IDLE = 10 * 60 * 1000; // 10 minutes when idle (no known generating videos)
+const DB_CHECK_INTERVAL_ACTIVE = 2 * 60 * 1000; // 2 minutes when active (videos being generated)
+
 // Talking Photo IDs - these require different API format (type: "talking_photo" instead of "avatar")
 // Identified from HeyGen API: these are in the talking_photos category, not avatars
 const TALKING_PHOTO_IDS = new Set([
@@ -329,6 +336,9 @@ export class VideoGenerationService {
         .set({ status: "generating" })
         .where(eq(lessons.id, lessonId));
 
+      // Track that we have a video generating (for smart background checker)
+      this.incrementGeneratingCount();
+
       // Start polling for completion (in background)
       this.pollVideoStatus(videoId, lessonId);
 
@@ -418,6 +428,7 @@ export class VideoGenerationService {
           await this.updateCourseStatusIfComplete(lessonId);
 
           activePollingSet.delete(heygenVideoId);
+          this.decrementGeneratingCount();
           console.log(`✅ Video generation completed: ${heygenVideoId}`);
           
           // Send email notification for course video (await to ensure it completes)
@@ -441,6 +452,7 @@ export class VideoGenerationService {
             .where(eq(lessons.id, lessonId));
 
           activePollingSet.delete(heygenVideoId);
+          this.decrementGeneratingCount();
           console.error(`❌ Video generation failed: ${heygenVideoId}`, error);
         } else if (attempts < maxAttempts) {
           // Still processing, check again in 5 seconds
@@ -450,6 +462,7 @@ export class VideoGenerationService {
           // Background checker will pick this up if it completes later
           console.log(`⏱️ Video generation timeout: ${heygenVideoId}`);
           activePollingSet.delete(heygenVideoId);
+          this.decrementGeneratingCount();
         }
       } catch (error: any) {
         console.error("Error polling video status:", error.message);
@@ -458,6 +471,7 @@ export class VideoGenerationService {
           setTimeout(poll, 5000);
         } else {
           activePollingSet.delete(heygenVideoId);
+          this.decrementGeneratingCount();
         }
       }
     };
@@ -621,17 +635,45 @@ export class VideoGenerationService {
   }
 
   /**
+   * Increment known generating count when a video generation starts
+   */
+  incrementGeneratingCount(): void {
+    knownGeneratingCount++;
+    console.log(`📹 Video generating count: ${knownGeneratingCount}`);
+  }
+
+  /**
+   * Decrement known generating count when a video completes or fails
+   */
+  decrementGeneratingCount(): void {
+    knownGeneratingCount = Math.max(0, knownGeneratingCount - 1);
+    console.log(`📹 Video generating count: ${knownGeneratingCount}`);
+  }
+
+  /**
    * Start background checker that periodically checks generating videos
+   * Uses smart checking to avoid unnecessary DB queries when idle
    */
   startBackgroundChecker(): void {
-    const CHECK_INTERVAL = 2 * 60 * 1000; // 2 minutes
-
     const check = async () => {
+      const now = Date.now();
+      
+      // Skip check if we haven't waited long enough and no videos are generating
+      // This allows the database to scale to zero when idle
+      if (knownGeneratingCount === 0 && activePollingSet.size === 0 && 
+          (now - lastDbCheckTime) < DB_CHECK_INTERVAL_IDLE) {
+        return;
+      }
+      
       try {
+        lastDbCheckTime = now;
         const generatingVideos = await db
           .select()
           .from(generatedVideos)
           .where(eq(generatedVideos.status, "generating"));
+
+        // Sync our known count with reality
+        knownGeneratingCount = generatingVideos.length;
 
         if (generatingVideos.length > 0) {
           console.log(`🔄 Background check: ${generatingVideos.length} videos in generating state`);
@@ -647,10 +689,12 @@ export class VideoGenerationService {
       }
     };
 
-    // Run check immediately and then every 2 minutes
+    // Run initial check to sync state on startup
     check();
-    setInterval(check, CHECK_INTERVAL);
-    console.log("📹 Video background checker started (interval: 2 minutes)");
+    
+    // Use a single interval that respects the dynamic check logic
+    setInterval(check, DB_CHECK_INTERVAL_ACTIVE);
+    console.log("📹 Video background checker started (smart mode: 2min active / 10min idle)");
   }
 
   /**
