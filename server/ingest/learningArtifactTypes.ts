@@ -93,6 +93,35 @@ export interface BatchIngestionResult {
   errors: Array<{ lessonId: string; error: string }>;
 }
 
+export interface DetectedLesson {
+  lessonId: string;
+  lessonTitle: string;
+  text: string;
+  startLine?: number;
+  endLine?: number;
+}
+
+export interface FullCourseIngestionRequest {
+  kb: string;
+  courseId: string;
+  courseTitle?: string;
+  rawText: string;
+  dryRun?: boolean;
+}
+
+export interface FullCourseIngestionResult {
+  kb: string;
+  courseId: string;
+  courseTitle: string;
+  detectedLessons: DetectedLesson[];
+  lessonsProcessed: number;
+  totalArtifacts: number;
+  artifactsByType: Record<ArtifactType, number>;
+  results: IngestionResult[];
+  errors: Array<{ lessonId: string; error: string }>;
+  dryRun: boolean;
+}
+
 export const KNOWN_KBS = [
   'psychedelics',
   'sexuality',

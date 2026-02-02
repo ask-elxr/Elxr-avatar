@@ -124,6 +124,8 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
   3. Each artifact includes: title, content, steps, example, topic, subtopic, tags, confidence, safety_notes
   4. Artifacts packed for vector search and embedded via OpenAI
   5. Upsert to Pinecone with structured IDs and comprehensive metadata
+- **Auto-Lesson Detection**: Full course transcripts can be uploaded and automatically split into lessons using Claude AI boundary detection based on headings, markers, and topic transitions.
+- **Full Course Ingestion**: `detectLessons()` method analyzes transcript to find lesson boundaries, then `ingestFullCourse()` processes each lesson separately for artifact extraction.
 - **ID Format**: `${courseId}:${lessonId}:${artifact_type}:${artifact_index}:${sha1_hash}`
 - **Metadata**: kb, course_id, lesson_id, lesson_title, artifact_type, title, topic, subtopic, tags, confidence, rights, source_type
 - **Known KBs**: psychedelics, sexuality, grief, relationships, mental_health, wellness, spirituality, general
@@ -131,9 +133,10 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
   - `GET /admin/learning-artifacts/kbs`: List valid knowledge bases
   - `POST /admin/learning-artifacts/ingest`: Ingest single transcript
   - `POST /admin/learning-artifacts/ingest-batch`: Batch ingest multiple transcripts
+  - `POST /admin/learning-artifacts/ingest-full-course`: Full course with auto-lesson detection
   - `GET /admin/learning-artifacts/stats/:namespace`: Get namespace stats
   - `DELETE /admin/learning-artifacts/:namespace/:courseId`: Delete artifacts by source
-- **Admin UI**: KnowledgeBase page "Artifacts" tab with dry run preview and artifact type breakdown.
+- **Admin UI**: KnowledgeBase page "Artifacts" tab with tabs for "Single Lesson" and "Full Course (Auto-Detect)" modes, dry run preview and artifact type breakdown.
 - **Evaluation**: `server/ingest/eval.ts` and `eval_queries.json` for testing retrieval quality.
 
 #### Content Taxonomy System

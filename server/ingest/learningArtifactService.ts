@@ -13,6 +13,9 @@ import {
   IngestionResult,
   BatchIngestionRequest,
   BatchIngestionResult,
+  DetectedLesson,
+  FullCourseIngestionRequest,
+  FullCourseIngestionResult,
 } from './learningArtifactTypes.js';
 
 const EMBED_BATCH_SIZE = 15;
@@ -65,6 +68,36 @@ Schema to output:
     }
   ]
 }`;
+
+const LESSON_DETECTION_SYSTEM_PROMPT = `You are a course structure analyzer. Your job is to detect individual lessons within a full course transcript.
+
+Look for:
+• Lesson headings, module numbers, chapter markers
+• Section breaks indicated by "Lesson 1:", "Module 2:", "Chapter 3:", "Part 1:", etc.
+• Clear topic transitions with new introductions
+• Timestamps or time markers that indicate new segments
+• Speaker introductions of new topics
+• Significant subject matter changes
+
+Output ONLY valid JSON with this schema:
+{
+  "course_title": "string (detected or inferred course title)",
+  "lessons": [
+    {
+      "lesson_id": "string (e.g., lesson_01, module_02, chapter_03)",
+      "lesson_title": "string (descriptive title for this lesson)",
+      "start_marker": "string (first few words that start this lesson)",
+      "end_marker": "string (last few words of this lesson, or 'END' if last lesson)"
+    }
+  ]
+}
+
+Rules:
+• Each lesson should be a coherent unit of learning (typically 5-30 minutes of content)
+• If no clear lesson boundaries exist, create logical divisions based on topic changes
+• Minimum 1 lesson, but try to detect natural divisions
+• Generate clean lesson_id values (lowercase, underscores, no special chars)
+• lesson_title should be descriptive of the content`;
 
 function normalizeTranscript(text: string): string {
   let normalized = text
@@ -430,6 +463,174 @@ class LearningArtifactService {
       logger.error({ namespace, courseId, lessonId, error }, 'Failed to delete artifacts');
       throw error;
     }
+  }
+
+  async detectLessons(rawText: string): Promise<{ courseTitle: string; lessons: DetectedLesson[] }> {
+    const normalizedText = normalizeTranscript(rawText);
+    const truncatedText = normalizedText.slice(0, 100000);
+    
+    logger.info({ textLength: normalizedText.length }, 'Detecting lessons in course transcript');
+
+    const response = await withRetry(async () => {
+      return await this.anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 8000,
+        system: LESSON_DETECTION_SYSTEM_PROMPT,
+        messages: [
+          { role: 'user', content: `Analyze this course transcript and detect individual lessons:\n\n${truncatedText}` }
+        ]
+      });
+    });
+
+    const content = response.content[0];
+    if (content.type !== 'text') {
+      throw new Error('Unexpected response type from Claude');
+    }
+
+    let jsonText = content.text.trim();
+    if (jsonText.startsWith('```json')) {
+      jsonText = jsonText.slice(7);
+    }
+    if (jsonText.startsWith('```')) {
+      jsonText = jsonText.slice(3);
+    }
+    if (jsonText.endsWith('```')) {
+      jsonText = jsonText.slice(0, -3);
+    }
+    jsonText = jsonText.trim();
+
+    try {
+      const parsed = JSON.parse(jsonText) as {
+        course_title: string;
+        lessons: Array<{
+          lesson_id: string;
+          lesson_title: string;
+          start_marker: string;
+          end_marker: string;
+        }>;
+      };
+
+      const detectedLessons: DetectedLesson[] = [];
+      
+      for (let i = 0; i < parsed.lessons.length; i++) {
+        const lesson = parsed.lessons[i];
+        const nextLesson = parsed.lessons[i + 1];
+        
+        const startIdx = normalizedText.indexOf(lesson.start_marker);
+        let endIdx: number;
+        
+        if (lesson.end_marker === 'END' || i === parsed.lessons.length - 1) {
+          endIdx = normalizedText.length;
+        } else if (nextLesson) {
+          const nextStartIdx = normalizedText.indexOf(nextLesson.start_marker);
+          endIdx = nextStartIdx > startIdx ? nextStartIdx : normalizedText.length;
+        } else {
+          const endMarkerIdx = normalizedText.indexOf(lesson.end_marker, startIdx);
+          endIdx = endMarkerIdx > 0 ? endMarkerIdx + lesson.end_marker.length : normalizedText.length;
+        }
+        
+        const lessonText = startIdx >= 0 
+          ? normalizedText.slice(startIdx, endIdx).trim()
+          : normalizedText.slice(0, Math.floor(normalizedText.length / parsed.lessons.length)).trim();
+        
+        if (lessonText.length > 100) {
+          detectedLessons.push({
+            lessonId: lesson.lesson_id,
+            lessonTitle: lesson.lesson_title,
+            text: lessonText,
+          });
+        }
+      }
+
+      if (detectedLessons.length === 0) {
+        detectedLessons.push({
+          lessonId: 'lesson_01',
+          lessonTitle: parsed.course_title || 'Full Course',
+          text: normalizedText,
+        });
+      }
+
+      logger.info({ 
+        courseTitle: parsed.course_title, 
+        lessonsDetected: detectedLessons.length 
+      }, 'Lesson detection complete');
+
+      return {
+        courseTitle: parsed.course_title,
+        lessons: detectedLessons,
+      };
+    } catch (error) {
+      logger.error({ error, rawResponse: content.text.slice(0, 500) }, 'Failed to parse lesson detection response');
+      return {
+        courseTitle: 'Unknown Course',
+        lessons: [{
+          lessonId: 'lesson_01',
+          lessonTitle: 'Full Course',
+          text: normalizedText,
+        }],
+      };
+    }
+  }
+
+  async ingestFullCourse(request: FullCourseIngestionRequest): Promise<FullCourseIngestionResult> {
+    const { kb, courseId, courseTitle, rawText, dryRun = false } = request;
+    
+    logger.info({ kb, courseId, dryRun }, 'Starting full course ingestion with auto-detection');
+
+    const { courseTitle: detectedTitle, lessons } = await this.detectLessons(rawText);
+    const finalCourseTitle = courseTitle || detectedTitle;
+
+    logger.info({ 
+      courseTitle: finalCourseTitle, 
+      lessonsDetected: lessons.length 
+    }, 'Lessons detected, starting artifact extraction');
+
+    if (dryRun) {
+      return {
+        kb,
+        courseId,
+        courseTitle: finalCourseTitle,
+        detectedLessons: lessons.map(l => ({ ...l, text: l.text.slice(0, 500) + '...' })),
+        lessonsProcessed: 0,
+        totalArtifacts: 0,
+        artifactsByType: {
+          principle: 0,
+          mental_model: 0,
+          heuristic: 0,
+          failure_mode: 0,
+          checklist: 0,
+          qa_pair: 0,
+          scenario: 0,
+        },
+        results: [],
+        errors: [],
+        dryRun: true,
+      };
+    }
+
+    const batchResult = await this.ingestBatch({
+      kb,
+      courseId,
+      transcripts: lessons.map(l => ({
+        lessonId: l.lessonId,
+        lessonTitle: l.lessonTitle,
+        text: l.text,
+      })),
+      dryRun: false,
+    });
+
+    return {
+      kb,
+      courseId,
+      courseTitle: finalCourseTitle,
+      detectedLessons: lessons.map(l => ({ ...l, text: l.text.slice(0, 200) + '...' })),
+      lessonsProcessed: batchResult.lessonsProcessed,
+      totalArtifacts: batchResult.totalArtifacts,
+      artifactsByType: batchResult.artifactsByType,
+      results: batchResult.results,
+      errors: batchResult.errors,
+      dryRun: false,
+    };
   }
 }
 

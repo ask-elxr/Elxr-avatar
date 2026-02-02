@@ -68,13 +68,16 @@ export function LearningArtifactIngestion() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [ingestionMode, setIngestionMode] = useState<"single" | "full">("single");
   const [kb, setKb] = useState<string>("");
   const [courseId, setCourseId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
   const [lessonTitle, setLessonTitle] = useState<string>("");
+  const [courseTitle, setCourseTitle] = useState<string>("");
   const [rawText, setRawText] = useState<string>("");
   const [dryRun, setDryRun] = useState<boolean>(true);
   const [lastResult, setLastResult] = useState<IngestionResult | null>(null);
+  const [fullCourseResult, setFullCourseResult] = useState<any>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [isExtracting, setIsExtracting] = useState(false);
 
@@ -145,6 +148,58 @@ export function LearningArtifactIngestion() {
     }
   });
 
+  const fullCourseMutation = useMutation({
+    mutationFn: async (data: {
+      kb: string;
+      courseId: string;
+      courseTitle?: string;
+      rawText: string;
+      dryRun?: boolean;
+    }) => {
+      const response = await fetch('/admin/learning-artifacts/ingest-full-course', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAdminHeaders()
+        },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Full course ingestion failed');
+      }
+      
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setFullCourseResult(data);
+      queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+      
+      if (data.dryRun) {
+        toast({
+          title: "Lesson Detection Complete",
+          description: `Detected ${data.detectedLessons?.length || 0} lessons in "${data.courseTitle}"`,
+        });
+      } else {
+        toast({
+          title: "Full Course Ingestion Complete",
+          description: `Processed ${data.lessonsProcessed} lessons, created ${data.totalArtifacts} artifacts`,
+        });
+        setRawText("");
+        setCourseTitle("");
+        setUploadedFileName("");
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Full Course Ingestion Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -199,6 +254,25 @@ export function LearningArtifactIngestion() {
     });
   };
 
+  const handleFullCourseSubmit = () => {
+    if (!kb || !courseId || !rawText.trim()) {
+      toast({
+        title: "Missing Fields",
+        description: "Please fill in Knowledge Base, Course ID, and paste the course transcript",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    fullCourseMutation.mutate({
+      kb,
+      courseId,
+      courseTitle: courseTitle || undefined,
+      rawText,
+      dryRun
+    });
+  };
+
   const getArtifactIcon = (type: string) => {
     const Icon = ARTIFACT_TYPE_ICONS[type] || Lightbulb;
     return <Icon className="w-4 h-4" />;
@@ -218,139 +292,343 @@ export function LearningArtifactIngestion() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-white/80">Knowledge Base *</Label>
-              <Select value={kb} onValueChange={setKb}>
-                <SelectTrigger className="glass border-white/20 text-white">
-                  <SelectValue placeholder="Select knowledge base" />
-                </SelectTrigger>
-                <SelectContent>
-                  {knowledgeBases.map((kbName) => (
-                    <SelectItem key={kbName} value={kbName}>
-                      {kbName.charAt(0).toUpperCase() + kbName.slice(1).replace(/_/g, ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-white/50">
-                Namespace in Pinecone where artifacts will be stored
-              </p>
-            </div>
+          <Tabs value={ingestionMode} onValueChange={(v) => setIngestionMode(v as "single" | "full")}>
+            <TabsList className="grid grid-cols-2 w-full max-w-md">
+              <TabsTrigger value="single" className="flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                Single Lesson
+              </TabsTrigger>
+              <TabsTrigger value="full" className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4" />
+                Full Course (Auto-Detect)
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <Label className="text-white/80">Course ID *</Label>
-              <Input
-                value={courseId}
-                onChange={(e) => setCourseId(e.target.value)}
-                placeholder="e.g., psychedelics_101"
-                className="glass border-white/20 text-white placeholder:text-white/40"
-              />
-              <p className="text-xs text-white/50">
-                Unique identifier for the course
-              </p>
-            </div>
-          </div>
+            <TabsContent value="single" className="space-y-6 mt-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white/80">Knowledge Base *</Label>
+                  <Select value={kb} onValueChange={setKb}>
+                    <SelectTrigger className="glass border-white/20 text-white">
+                      <SelectValue placeholder="Select knowledge base" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {knowledgeBases.map((kbName) => (
+                        <SelectItem key={kbName} value={kbName}>
+                          {kbName.charAt(0).toUpperCase() + kbName.slice(1).replace(/_/g, ' ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-white/50">
+                    Namespace in Pinecone where artifacts will be stored
+                  </p>
+                </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-white/80">Lesson ID *</Label>
-              <Input
-                value={lessonId}
-                onChange={(e) => setLessonId(e.target.value)}
-                placeholder="e.g., lesson_01_intro"
-                className="glass border-white/20 text-white placeholder:text-white/40"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-white/80">Lesson Title</Label>
-              <Input
-                value={lessonTitle}
-                onChange={(e) => setLessonTitle(e.target.value)}
-                placeholder="e.g., Introduction to Set and Setting"
-                className="glass border-white/20 text-white placeholder:text-white/40"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-white/80">Transcript Text *</Label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  accept=".txt,.md,.srt,.vtt"
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isExtracting}
-                  className="glass border-white/20 text-white/80 hover:text-white"
-                >
-                  {isExtracting ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <FileUp className="w-4 h-4 mr-2" />
-                  )}
-                  {uploadedFileName || "Upload File"}
-                </Button>
+                <div className="space-y-2">
+                  <Label className="text-white/80">Course ID *</Label>
+                  <Input
+                    value={courseId}
+                    onChange={(e) => setCourseId(e.target.value)}
+                    placeholder="e.g., psychedelics_101"
+                    className="glass border-white/20 text-white placeholder:text-white/40"
+                  />
+                  <p className="text-xs text-white/50">
+                    Unique identifier for the course
+                  </p>
+                </div>
               </div>
-            </div>
-            <Textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder="Paste the course transcript here..."
-              className="glass border-white/20 text-white placeholder:text-white/40 min-h-[200px] font-mono text-sm"
-            />
-            <p className="text-xs text-white/50">
-              {rawText.length.toLocaleString()} characters
-            </p>
-          </div>
 
-          <div className="flex items-center justify-between p-4 rounded-lg glass border border-white/10">
-            <div className="flex items-center gap-3">
-              <Switch
-                id="dry-run"
-                checked={dryRun}
-                onCheckedChange={setDryRun}
-              />
-              <div>
-                <Label htmlFor="dry-run" className="text-white/80 cursor-pointer">
-                  Dry Run Mode
-                </Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white/80">Lesson ID *</Label>
+                  <Input
+                    value={lessonId}
+                    onChange={(e) => setLessonId(e.target.value)}
+                    placeholder="e.g., lesson_01_intro"
+                    className="glass border-white/20 text-white placeholder:text-white/40"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white/80">Lesson Title</Label>
+                  <Input
+                    value={lessonTitle}
+                    onChange={(e) => setLessonTitle(e.target.value)}
+                    placeholder="e.g., Introduction to Set and Setting"
+                    className="glass border-white/20 text-white placeholder:text-white/40"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-white/80">Transcript Text *</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept=".txt,.md,.srt,.vtt"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isExtracting}
+                      className="glass border-white/20 text-white/80 hover:text-white"
+                    >
+                      {isExtracting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileUp className="w-4 h-4 mr-2" />
+                      )}
+                      {uploadedFileName || "Upload File"}
+                    </Button>
+                  </div>
+                </div>
+                <Textarea
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  placeholder="Paste the lesson transcript here..."
+                  className="glass border-white/20 text-white placeholder:text-white/40 min-h-[200px] font-mono text-sm"
+                />
                 <p className="text-xs text-white/50">
-                  Preview artifacts without saving to Pinecone
+                  {rawText.length.toLocaleString()} characters
                 </p>
               </div>
-            </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={ingestMutation.isPending || !kb || !courseId || !lessonId || !rawText.trim()}
-              className="bg-gradient-primary hover:opacity-90"
-            >
-              {ingestMutation.isPending ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  {dryRun ? "Preview Artifacts" : "Ingest Artifacts"}
-                </>
-              )}
-            </Button>
-          </div>
+              <div className="flex items-center justify-between p-4 rounded-lg glass border border-white/10">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="dry-run"
+                    checked={dryRun}
+                    onCheckedChange={setDryRun}
+                  />
+                  <div>
+                    <Label htmlFor="dry-run" className="text-white/80 cursor-pointer">
+                      Dry Run Mode
+                    </Label>
+                    <p className="text-xs text-white/50">
+                      Preview artifacts without saving to Pinecone
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={ingestMutation.isPending || !kb || !courseId || !lessonId || !rawText.trim()}
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  {ingestMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {dryRun ? "Preview Artifacts" : "Ingest Artifacts"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="full" className="space-y-6 mt-6">
+              <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-200 text-sm">
+                <strong>Auto-Lesson Detection:</strong> Paste a full course transcript and the system will automatically 
+                detect individual lessons based on headings, markers, and topic transitions. Each lesson will be 
+                processed separately for artifact extraction.
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-white/80">Knowledge Base *</Label>
+                  <Select value={kb} onValueChange={setKb}>
+                    <SelectTrigger className="glass border-white/20 text-white">
+                      <SelectValue placeholder="Select knowledge base" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {knowledgeBases.map((kbName) => (
+                        <SelectItem key={kbName} value={kbName}>
+                          {kbName.charAt(0).toUpperCase() + kbName.slice(1).replace(/_/g, ' ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-white/80">Course ID *</Label>
+                  <Input
+                    value={courseId}
+                    onChange={(e) => setCourseId(e.target.value)}
+                    placeholder="e.g., psychedelics_mastery"
+                    className="glass border-white/20 text-white placeholder:text-white/40"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-white/80">Course Title (Optional)</Label>
+                <Input
+                  value={courseTitle}
+                  onChange={(e) => setCourseTitle(e.target.value)}
+                  placeholder="e.g., Complete Guide to Psychedelic Integration"
+                  className="glass border-white/20 text-white placeholder:text-white/40"
+                />
+                <p className="text-xs text-white/50">
+                  If not provided, will be auto-detected from the transcript
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-white/80">Full Course Transcript *</Label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept=".txt,.md,.srt,.vtt"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={isExtracting}
+                      className="glass border-white/20 text-white/80 hover:text-white"
+                    >
+                      {isExtracting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileUp className="w-4 h-4 mr-2" />
+                      )}
+                      {uploadedFileName || "Upload File"}
+                    </Button>
+                  </div>
+                </div>
+                <Textarea
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  placeholder="Paste the FULL course transcript here (all lessons combined). The system will automatically detect lesson boundaries..."
+                  className="glass border-white/20 text-white placeholder:text-white/40 min-h-[250px] font-mono text-sm"
+                />
+                <p className="text-xs text-white/50">
+                  {rawText.length.toLocaleString()} characters
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg glass border border-white/10">
+                <div className="flex items-center gap-3">
+                  <Switch
+                    id="dry-run-full"
+                    checked={dryRun}
+                    onCheckedChange={setDryRun}
+                  />
+                  <div>
+                    <Label htmlFor="dry-run-full" className="text-white/80 cursor-pointer">
+                      Dry Run Mode
+                    </Label>
+                    <p className="text-xs text-white/50">
+                      Detect lessons and preview without processing
+                    </p>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={handleFullCourseSubmit}
+                  disabled={fullCourseMutation.isPending || !kb || !courseId || !rawText.trim()}
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  {fullCourseMutation.isPending ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {dryRun ? "Detecting Lessons..." : "Processing Course..."}
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      {dryRun ? "Detect Lessons" : "Process Full Course"}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
-      {lastResult && (
+      {fullCourseResult && ingestionMode === "full" && (
+        <Card className="glass-strong border-white/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-white">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              {fullCourseResult.dryRun ? "Detected Lessons Preview" : "Full Course Results"}
+            </CardTitle>
+            <CardDescription className="text-white/60">
+              {fullCourseResult.courseTitle} - {fullCourseResult.detectedLessons?.length || 0} lessons detected
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {fullCourseResult.detectedLessons && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-white/80">Detected Lessons:</h4>
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                  {fullCourseResult.detectedLessons.map((lesson: any, i: number) => (
+                    <div key={i} className="p-3 rounded-lg glass border border-white/10">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs">{lesson.lessonId}</Badge>
+                        <span className="font-medium text-white">{lesson.lessonTitle}</span>
+                      </div>
+                      <p className="text-xs text-white/50 line-clamp-2">{lesson.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!fullCourseResult.dryRun && (
+              <div className="grid grid-cols-4 gap-4">
+                <div className="p-3 rounded-lg glass border border-white/10 text-center">
+                  <div className="text-2xl font-bold text-white">{fullCourseResult.totalArtifacts}</div>
+                  <div className="text-xs text-white/50">Total Artifacts</div>
+                </div>
+                {Object.entries(fullCourseResult.artifactsByType || {})
+                  .filter(([_, count]) => (count as number) > 0)
+                  .map(([type, count]) => (
+                    <div key={type} className={`p-3 rounded-lg border ${ARTIFACT_TYPE_COLORS[type] || 'glass border-white/10'} text-center`}>
+                      <div className="text-2xl font-bold">{count as number}</div>
+                      <div className="text-xs capitalize">{type.replace(/_/g, ' ')}</div>
+                    </div>
+                  ))
+                }
+              </div>
+            )}
+
+            {fullCourseResult.dryRun && (
+              <div className="flex justify-end pt-4 border-t border-white/10">
+                <Button
+                  onClick={() => {
+                    setDryRun(false);
+                    handleFullCourseSubmit();
+                  }}
+                  disabled={fullCourseMutation.isPending}
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Process All {fullCourseResult.detectedLessons?.length || 0} Lessons
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {lastResult && ingestionMode === "single" && (
         <Card className="glass-strong border-white/10">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white">

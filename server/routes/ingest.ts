@@ -916,6 +916,68 @@ router.post('/learning-artifacts/ingest-batch', requireAdminAuth, async (req: Re
   }
 });
 
+const FullCourseIngestionSchema = z.object({
+  kb: z.string().min(1, 'Knowledge base is required'),
+  courseId: z.string().min(1, 'Course ID is required'),
+  courseTitle: z.string().optional(),
+  rawText: z.string().min(500, 'Course transcript must be at least 500 characters'),
+  dryRun: z.boolean().optional().default(false)
+});
+
+router.post('/learning-artifacts/ingest-full-course', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const parseResult = FullCourseIngestionSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: parseResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    
+    const data = parseResult.data;
+    
+    if (!isValidKb(data.kb)) {
+      return res.status(400).json({
+        error: 'Invalid knowledge base',
+        message: `Unknown KB "${data.kb}". Valid options: ${KNOWN_KBS.join(', ')}`,
+        validKbs: KNOWN_KBS
+      });
+    }
+    
+    logger.info({
+      service: 'learning-artifacts',
+      operation: 'full_course_ingest',
+      kb: data.kb,
+      courseId: data.courseId,
+      textLength: data.rawText.length,
+      dryRun: data.dryRun
+    }, 'Starting full course ingestion with auto-detection');
+    
+    const result = await learningArtifactService.ingestFullCourse({
+      kb: data.kb,
+      courseId: data.courseId,
+      courseTitle: data.courseTitle,
+      rawText: data.rawText,
+      dryRun: data.dryRun
+    });
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    logger.error({ error: (error as Error).message }, 'Full course ingestion failed');
+    res.status(500).json({
+      error: 'Full course ingestion failed',
+      message: (error as Error).message
+    });
+  }
+});
+
 router.get('/learning-artifacts/stats/:namespace', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { namespace } = req.params;
