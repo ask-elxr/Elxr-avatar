@@ -114,6 +114,28 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Admin Endpoints**: For uploading ZIPs, getting batch status, listing batches, retrying failed episodes, and manually triggering recovery.
 - **Admin UI**: KnowledgeBase page "Podcasts" tab → "Batch Upload (ZIP)" sub-tab.
 
+#### Learning Artifact Ingestion System
+- **Location**: `server/ingest/learningArtifactService.ts`, `server/ingest/learningArtifactTypes.ts`, `client/src/components/LearningArtifactIngestion.tsx`.
+- **Purpose**: Transform course transcripts into derived learning artifacts instead of storing verbatim text. Safer for copyright and more useful for retrieval.
+- **Artifact Types**: `principle`, `mental_model`, `heuristic`, `failure_mode`, `checklist`, `qa_pair`, `scenario`.
+- **Processing Flow**:
+  1. Transcript normalization (remove boilerplate, clean whitespace)
+  2. Claude AI extracts 30-120 learning artifacts per lesson in structured JSON
+  3. Each artifact includes: title, content, steps, example, topic, subtopic, tags, confidence, safety_notes
+  4. Artifacts packed for vector search and embedded via OpenAI
+  5. Upsert to Pinecone with structured IDs and comprehensive metadata
+- **ID Format**: `${courseId}:${lessonId}:${artifact_type}:${artifact_index}:${sha1_hash}`
+- **Metadata**: kb, course_id, lesson_id, lesson_title, artifact_type, title, topic, subtopic, tags, confidence, rights, source_type
+- **Known KBs**: psychedelics, sexuality, grief, relationships, mental_health, wellness, spirituality, general
+- **Admin Endpoints** (X-Admin-Secret authenticated):
+  - `GET /admin/learning-artifacts/kbs`: List valid knowledge bases
+  - `POST /admin/learning-artifacts/ingest`: Ingest single transcript
+  - `POST /admin/learning-artifacts/ingest-batch`: Batch ingest multiple transcripts
+  - `GET /admin/learning-artifacts/stats/:namespace`: Get namespace stats
+  - `DELETE /admin/learning-artifacts/:namespace/:courseId`: Delete artifacts by source
+- **Admin UI**: KnowledgeBase page "Artifacts" tab with dry run preview and artifact type breakdown.
+- **Evaluation**: `server/ingest/eval.ts` and `eval_queries.json` for testing retrieval quality.
+
 #### Content Taxonomy System
 - **Location**: `server/contentTaxonomy.ts`.
 - **Purpose**: Professional, taxonomy-driven content policy for adult educational wellness platform.
