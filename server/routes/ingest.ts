@@ -925,6 +925,10 @@ const FullCourseIngestionSchema = z.object({
 });
 
 router.post('/learning-artifacts/ingest-full-course', requireAdminAuth, async (req: Request, res: Response) => {
+  // Extend timeout for long-running full course ingestion (30 minutes)
+  req.setTimeout(30 * 60 * 1000);
+  res.setTimeout(30 * 60 * 1000);
+  
   try {
     const parseResult = FullCourseIngestionSchema.safeParse(req.body);
     
