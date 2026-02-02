@@ -8,12 +8,13 @@ import { PineconeNamespaceManager } from "@/components/PineconeNamespaceManager"
 import { CourseIngestion } from "@/components/CourseIngestion";
 import { PodcastIngestion } from "@/components/PodcastIngestion";
 import { BatchPodcastIngestion } from "@/components/BatchPodcastIngestion";
+import { LearningArtifactIngestion } from "@/components/LearningArtifactIngestion";
 import CourseBuilderPage from "@/pages/course-builder";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Users, FileText, Settings, Home, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown, Lock, FolderUp, Upload, Link2, GraduationCap, Mic } from "lucide-react";
+import { LayoutDashboard, Users, FileText, Settings, Home, Video, Plus, Play, CreditCard, BarChart3, Menu, ChevronLeft, UserCog, Crown, Clock, Activity, Loader2, AlertCircle, Check, Trash2, ChevronUp, ChevronDown, Lock, FolderUp, Upload, Link2, GraduationCap, Mic, Brain } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation, useSearch } from "wouter";
@@ -667,7 +668,7 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
               <DatabaseStatus />
               
               <Tabs defaultValue="folders" className="w-full">
-                <TabsList className="grid w-full grid-cols-6 mb-4">
+                <TabsList className="grid w-full grid-cols-7 mb-4">
                   <TabsTrigger value="folders" className="gap-2" data-testid="admin-tab-folders">
                     <FolderUp className="w-4 h-4" />
                     Folders
@@ -683,6 +684,10 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                   <TabsTrigger value="podcasts" className="gap-2" data-testid="admin-tab-podcasts">
                     <Mic className="w-4 h-4" />
                     Podcasts
+                  </TabsTrigger>
+                  <TabsTrigger value="artifacts" className="gap-2" data-testid="admin-tab-artifacts">
+                    <Brain className="w-4 h-4" />
+                    Artifacts
                   </TabsTrigger>
                   <TabsTrigger value="mapping" className="gap-2" data-testid="admin-tab-mapping">
                     <Link2 className="w-4 h-4" />
@@ -735,6 +740,10 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                       <BatchPodcastIngestion />
                     </TabsContent>
                   </Tabs>
+                </TabsContent>
+                
+                <TabsContent value="artifacts" className="space-y-4">
+                  <LearningArtifactIngestion />
                 </TabsContent>
                 
                 <TabsContent value="mapping" className="space-y-4">
