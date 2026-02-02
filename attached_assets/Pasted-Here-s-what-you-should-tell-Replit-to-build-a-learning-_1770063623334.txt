@@ -1,0 +1,144 @@
+Here’s what you should tell Replit to build: a “learning artifact” generator (principles/models/heuristics) + a Pinecone upsert pipeline with real metadata + sane chunking.
+
+1) Paste this to Replit as your build prompt (end-to-end spec)
+
+REPLIT PROMPT (copy/paste):
+
+Build a Node/TypeScript ingestion pipeline for Pinecone that ingests course transcripts as learned knowledge artifacts, NOT verbatim transcripts.
+
+Goal
+	•	Input: raw transcript text files (txt/md) with optional lesson headings and speaker turns.
+	•	Output: Pinecone records where each record is a “learning artifact” (principle, mental_model, heuristic, failure_mode, checklist, qa_pair, scenario).
+	•	Absolutely avoid copying recognizable phrasing. No quotes. No long contiguous passages from source.
+	•	Use stable metadata so retrieval can filter by domain (kb), course, lesson, topic, artifact_type, confidence.
+
+Architecture
+	1.	normalizeTranscript(text):
+	•	normalize newlines, remove repeated boilerplate (subscribe, intros/outros), collapse excessive whitespace.
+	2.	extractLearningArtifacts(text):
+	•	Call an LLM with a strict JSON schema (see below).
+	•	It must output 30–120 artifacts per lesson depending on length.
+	•	Each artifact must be written in our voice, not the source’s phrasing.
+	•	Each artifact must be short: 1–6 sentences max.
+	•	Add tags (3–10), topic, subtopic, confidence (low/med/high), and safety_notes if relevant.
+	3.	packForVectorSearch(artifacts):
+	•	Create chunk_text as: title + "\n" + content + "\n" + bullet_steps(if any).
+	•	Keep each record under ~350–800 tokens; if longer, split by semantic boundary into 2–3 records with overlap in meaning (not copy/paste overlap).
+	4.	upsertToPinecone(records):
+	•	Use Pinecone TypeScript SDK upsertRecords if index has integrated embedding; otherwise generate embeddings externally and upsert vectors.
+	•	Use namespace = kb (e.g., psychedelics / sexuality / grief).
+	•	IDs must be deterministic: ${courseId}:${lessonId}:${artifact_type}:${artifact_index}:${sha1(chunk_text).slice(0,12)}
+	•	Metadata fields:
+	•	kb, course_id, lesson_id, lesson_title, artifact_type, artifact_index, topic, subtopic, tags[], confidence, created_at, rights=“original_derivative”, source_type=“derived_learning”
+	•	DO NOT store raw transcript in Pinecone.
+	5.	CLI:
+	•	node ingest --kb psychedelics --course course_001 --path ./transcripts/
+	•	Supports batch, retry with exponential backoff, and logs counts.
+	6.	Add a eval_queries.json and an eval.ts script:
+	•	For each query, run topK=8 retrieval and print the top hits with metadata for manual spot checks.
+
+LLM JSON Schema (must follow exactly)
+Return:
+{
+“lesson_title”: string,
+“artifacts”: [
+{
+“artifact_type”: “principle” | “mental_model” | “heuristic” | “failure_mode” | “checklist” | “qa_pair” | “scenario”,
+“title”: string,
+“content”: string,
+“steps”: string[] | null,
+“example”: string | null,
+“topic”: string,
+“subtopic”: string,
+“tags”: string[],
+“confidence”: “low” | “med” | “high”,
+“safety_notes”: string | null
+}
+]
+}
+
+Hard constraints
+	•	No direct quotes.
+	•	No “as the instructor says” or naming the source.
+	•	No distinctive phrasing longer than ~12 words that could be traced.
+	•	Prefer generalizable learning and synthesized patterns across “what we’ve learned,” not attribution.
+	•	Must be consistent in tone: calm, practical, slightly witty, not academic.
+
+Deliverables in repo:
+	•	src/ingest.ts, src/llm/extract.ts, src/pinecone/client.ts, src/utils/chunk.ts, src/eval.ts
+	•	.env.example with required keys
+	•	README with run commands
+
+Also follow Pinecone best practices:
+	•	Use namespaces for partitioning by kb.
+	•	Use comprehensive metadata and structured IDs.
+	•	Use batch upserts for throughput.
+
+(End prompt)
+
+Why this is “correct Pinecone ingestion”: it aligns with Pinecone’s guidance to upsert chunks with structured IDs + metadata, and to use namespaces for partitioning.  ￼
+
+⸻
+
+2) The LLM “learning model” prompt Replit should use inside extractLearningArtifacts()
+
+SYSTEM / INSTRUCTION PROMPT (paste as-is):
+
+You convert course transcripts into original learning artifacts.
+You must output ONLY valid JSON matching the schema provided.
+
+Rules:
+	•	Do NOT quote the transcript.
+	•	Do NOT reuse distinctive phrasing. If any sentence feels “copyable,” rewrite it.
+	•	Write as synthesized learning: principles, mental models, heuristics, failure modes, checklists, scenarios, and Q&A.
+	•	Keep artifacts short and useful (1–6 sentences).
+	•	Prefer general, transferable knowledge over story details.
+	•	Add tags and topic/subtopic so retrieval works.
+	•	If content involves medical/mental-health/illegal risk, add brief safety_notes (e.g., “seek professional help”, “harm reduction”, etc.) without being preachy.
+
+Output requirements:
+	•	JSON only.
+	•	30–120 artifacts depending on length.
+	•	Confidence: high if broadly established, med if plausible but context-dependent, low if speculative.
+
+Schema to output:
+{…the schema…}
+
+(End)
+
+This is basically: “eat the transcript, poop out wisdom.” Charming, but effective.
+
+⸻
+
+3) “What other app should I use to load the knowledge base into Pinecone?”
+
+Replit is fine for serving the app. For ingestion, you’ll get better reliability and better chunking using one of these:
+
+Option A (my pick): Unstructured + a simple Python ingestion runner
+
+Use Unstructured to partition/structure text (headings, sections) and chunk on semantic boundaries. Their chunking is built around document elements, which is exactly what transcripts and course notes need.  ￼
+Then push derived learning artifacts into Pinecone.
+
+Why it wins: fewer “mangled chunks,” better structure, less Replit jank.
+
+Option B: LlamaIndex (great for document → nodes → vector store)
+
+It’s very good at turning documents into structured nodes, adding metadata, and evaluating retrieval quality. (You’ll still do the “learning artifacts” step, but it’s a clean framework.)
+
+Option C: LangChain ingestion
+
+Totally workable; Pinecone even documents the integration.  ￼
+But LangChain pipelines can become “dependency spaghetti” fast—fine if your dev is disciplined.
+
+Option D: Pinecone “integrated embedding + upsertRecords”
+
+If your Pinecone index is configured for integrated embedding, you can upsert text records directly (no separate embedding call).  ￼
+Still: you should be upserting derived artifacts, not transcripts.
+
+⸻
+
+Two hard truths (so you don’t get sued or embarrass yourself)
+	1.	Derived learning ≠ zero risk, but it’s dramatically safer than storing transcripts.
+	2.	The real risk reducer is provenance + controls: store rights="original_derivative" and enforce “no long quotes” at response time.
+
+If you tell me your embedding setup (integrated embedding index vs external embeddings) and your kb split (psychedelics/sexuality/grief), I’ll tailor the exact folder structure + env vars + the record schema so retrieval filters cleanly.

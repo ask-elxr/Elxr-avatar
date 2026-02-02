@@ -1,0 +1,50 @@
+[
+  {
+    "query": "How do I prepare for a psychedelic experience?",
+    "kb": "psychedelics",
+    "expectedTopics": ["set and setting", "preparation", "safety"],
+    "expectedArtifactTypes": ["checklist", "heuristic", "principle"]
+  },
+  {
+    "query": "What are the warning signs during a psychedelic experience?",
+    "kb": "psychedelics",
+    "expectedTopics": ["bad trip", "difficult experience", "warning", "distress"],
+    "expectedArtifactTypes": ["failure_mode", "heuristic"]
+  },
+  {
+    "query": "How do I integrate a psychedelic experience afterwards?",
+    "kb": "psychedelics",
+    "expectedTopics": ["integration", "processing", "meaning"],
+    "expectedArtifactTypes": ["checklist", "principle", "mental_model"]
+  },
+  {
+    "query": "What is the right dosage for beginners?",
+    "kb": "psychedelics",
+    "expectedTopics": ["dosage", "beginner", "first time"],
+    "expectedArtifactTypes": ["heuristic", "checklist", "failure_mode"]
+  },
+  {
+    "query": "How can I improve communication about intimacy?",
+    "kb": "sexuality",
+    "expectedTopics": ["communication", "intimacy", "desire"],
+    "expectedArtifactTypes": ["principle", "heuristic", "qa_pair"]
+  },
+  {
+    "query": "What are healthy boundaries in relationships?",
+    "kb": "relationships",
+    "expectedTopics": ["boundaries", "healthy", "relationship"],
+    "expectedArtifactTypes": ["principle", "mental_model", "heuristic"]
+  },
+  {
+    "query": "How do I cope with the loss of a loved one?",
+    "kb": "grief",
+    "expectedTopics": ["grief", "loss", "coping", "mourning"],
+    "expectedArtifactTypes": ["principle", "checklist", "heuristic"]
+  },
+  {
+    "query": "What are the stages of grief?",
+    "kb": "grief",
+    "expectedTopics": ["stages", "grief", "process"],
+    "expectedArtifactTypes": ["mental_model", "principle"]
+  }
+]

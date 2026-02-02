@@ -11,7 +11,8 @@ import { AvatarNamespaceMatrix } from "@/components/AvatarNamespaceMatrix";
 import { CourseIngestion } from "@/components/CourseIngestion";
 import { PodcastIngestion } from "@/components/PodcastIngestion";
 import { BatchPodcastIngestion } from "@/components/BatchPodcastIngestion";
-import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2, GraduationCap, Mic, Package } from "lucide-react";
+import { LearningArtifactIngestion } from "@/components/LearningArtifactIngestion";
+import { FileText, Upload, Home, Shield, FolderOpen, Database, Link2, GraduationCap, Mic, Package, Brain } from "lucide-react";
 import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -119,7 +120,7 @@ export default function KnowledgeBase() {
 
           {/* Main Content */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7 glass p-1">
+            <TabsList className="grid w-full grid-cols-8 glass p-1">
               <TabsTrigger 
                 value="upload" 
                 className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
@@ -175,6 +176,14 @@ export default function KnowledgeBase() {
               >
                 <Mic className="w-4 h-4" />
                 Podcasts
+              </TabsTrigger>
+              <TabsTrigger 
+                value="artifacts" 
+                className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+                data-testid="tab-artifacts"
+              >
+                <Brain className="w-4 h-4" />
+                Artifacts
               </TabsTrigger>
             </TabsList>
 
@@ -272,6 +281,10 @@ export default function KnowledgeBase() {
                 </div>
                 <BatchPodcastIngestion />
               </div>
+            </TabsContent>
+
+            <TabsContent value="artifacts" className="space-y-6">
+              <LearningArtifactIngestion />
             </TabsContent>
           </Tabs>
         </div>

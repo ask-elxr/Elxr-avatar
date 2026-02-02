@@ -11,6 +11,8 @@ import {
   getNamespaceStats
 } from '../ingest/courseIngestionService.js';
 import { ingestPodcast } from '../ingest/podcastIngestionService.js';
+import { learningArtifactService } from '../ingest/learningArtifactService.js';
+import { KNOWN_KBS, isValidKb } from '../ingest/learningArtifactTypes.js';
 import { logger } from '../logger.js';
 
 const upload = multer({ 
@@ -770,6 +772,186 @@ router.patch('/podcast/episode/:episodeId/namespace', requireAdminAuth, async (r
   } catch (error) {
     res.status(500).json({
       error: 'Failed to update episode namespace',
+      message: (error as Error).message
+    });
+  }
+});
+
+// ============================================================================
+// LEARNING ARTIFACT INGESTION ROUTES
+// ============================================================================
+
+const LearningArtifactIngestSchema = z.object({
+  kb: z.string().min(1, 'Knowledge base is required'),
+  courseId: z.string().min(1, 'Course ID is required'),
+  lessonId: z.string().min(1, 'Lesson ID is required'),
+  lessonTitle: z.string().optional(),
+  rawText: z.string().min(100, 'Transcript must be at least 100 characters'),
+  dryRun: z.boolean().optional().default(false)
+});
+
+const LearningArtifactBatchSchema = z.object({
+  kb: z.string().min(1, 'Knowledge base is required'),
+  courseId: z.string().min(1, 'Course ID is required'),
+  transcripts: z.array(z.object({
+    lessonId: z.string().min(1),
+    lessonTitle: z.string().optional(),
+    text: z.string().min(100)
+  })).min(1, 'At least one transcript is required'),
+  dryRun: z.boolean().optional().default(false)
+});
+
+router.get('/learning-artifacts/kbs', requireAdminAuth, async (_req: Request, res: Response) => {
+  res.json({
+    success: true,
+    knowledgeBases: KNOWN_KBS
+  });
+});
+
+router.post('/learning-artifacts/ingest', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const parseResult = LearningArtifactIngestSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: parseResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    
+    const data = parseResult.data;
+    
+    if (!isValidKb(data.kb)) {
+      return res.status(400).json({
+        error: 'Invalid knowledge base',
+        message: `Unknown KB "${data.kb}". Valid options: ${KNOWN_KBS.join(', ')}`,
+        validKbs: KNOWN_KBS
+      });
+    }
+    
+    logger.info({
+      service: 'learning-artifacts',
+      operation: 'ingest',
+      kb: data.kb,
+      courseId: data.courseId,
+      lessonId: data.lessonId,
+      dryRun: data.dryRun
+    }, 'Starting learning artifact ingestion');
+    
+    const result = await learningArtifactService.ingestTranscript({
+      kb: data.kb,
+      courseId: data.courseId,
+      lessonId: data.lessonId,
+      lessonTitle: data.lessonTitle,
+      rawText: data.rawText,
+      dryRun: data.dryRun
+    });
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    logger.error({ error: (error as Error).message }, 'Learning artifact ingestion failed');
+    res.status(500).json({
+      error: 'Ingestion failed',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/learning-artifacts/ingest-batch', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const parseResult = LearningArtifactBatchSchema.safeParse(req.body);
+    
+    if (!parseResult.success) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: parseResult.error.errors.map(e => ({
+          field: e.path.join('.'),
+          message: e.message
+        }))
+      });
+    }
+    
+    const data = parseResult.data;
+    
+    if (!isValidKb(data.kb)) {
+      return res.status(400).json({
+        error: 'Invalid knowledge base',
+        message: `Unknown KB "${data.kb}". Valid options: ${KNOWN_KBS.join(', ')}`,
+        validKbs: KNOWN_KBS
+      });
+    }
+    
+    logger.info({
+      service: 'learning-artifacts',
+      operation: 'batch_ingest',
+      kb: data.kb,
+      courseId: data.courseId,
+      lessonCount: data.transcripts.length,
+      dryRun: data.dryRun
+    }, 'Starting batch learning artifact ingestion');
+    
+    const result = await learningArtifactService.ingestBatch({
+      kb: data.kb,
+      courseId: data.courseId,
+      transcripts: data.transcripts,
+      dryRun: data.dryRun
+    });
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    logger.error({ error: (error as Error).message }, 'Batch learning artifact ingestion failed');
+    res.status(500).json({
+      error: 'Batch ingestion failed',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.get('/learning-artifacts/stats/:namespace', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { namespace } = req.params;
+    const stats = await learningArtifactService.getNamespaceStats(namespace);
+    
+    res.json({
+      success: true,
+      namespace,
+      ...stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get stats',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.delete('/learning-artifacts/:namespace/:courseId', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { namespace, courseId } = req.params;
+    const { lessonId } = req.query;
+    
+    const result = await learningArtifactService.deleteBySource(
+      namespace, 
+      courseId, 
+      lessonId as string | undefined
+    );
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to delete artifacts',
       message: (error as Error).message
     });
   }
