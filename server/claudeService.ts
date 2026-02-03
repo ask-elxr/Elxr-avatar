@@ -224,8 +224,8 @@ RESPONSE LENGTH: Keep it conversational - 3-5 sentences. Complete your thoughts 
     let sentenceCount = 0;
     const sentenceEnders = /([.!?])\s+/g;
     
-    // Truncation settings: max 3 sentences in voice mode (unless detailed)
-    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 3 : 10;
+    // Truncation settings: max 8 sentences in voice mode (unless detailed)
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 8 : 15;
     let shouldTruncate = false;
 
     for await (const event of stream) {
