@@ -2717,7 +2717,7 @@ export function useAvatarSession({
           
           // Ordered playback state - audio chunks may arrive out of order
           const audioBuffer: Map<number, { content: string; type: string; isFinal: boolean }> = new Map();
-          let nextPlayIndex = 1; // Start at 1 - thinking sound is disabled, sentences start at index 1
+          let nextPlayIndex = 0; // Start at 0 - thinking phrase at index 0, sentences start at index 1
           let streamingComplete = false;
           let streamError = false;
           

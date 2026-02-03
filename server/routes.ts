@@ -5488,6 +5488,26 @@ ${historyPreview}
       console.log(`   └─ Memory: ${perfTimings.memory || 'skipped'}ms, Wiki: ${perfTimings.wikipedia || 'skipped'}ms, Google: ${perfTimings.googleSearch || 'skipped'}ms, Knowledge: ${perfTimings.knowledge || 0}ms`);
       sendEvent('timing', { dataFetch: perfTimings.dataFetch });
 
+      // 2b. Send thinking phrase audio (generated in parallel with data fetch)
+      const thinkingAudio = await thinkingTtsPromise;
+      if (thinkingAudio) {
+        perfTimings.thinkingSound = Date.now() - perfStart;
+        console.log(`⏱️ [${perfTimings.thinkingSound}ms] 1b. Thinking phrase audio ready, sending...`);
+        sendEvent('audio', {
+          content: thinkingAudio,
+          type: 'thinking',
+          text: thinkingPhrase,
+          index: 0,
+          format: 'pcm_24000',
+          isFinal: false,
+          ttsMs: perfTimings.thinkingSound
+        });
+        console.log(`✅ Thinking phrase sent: "${thinkingPhrase.substring(0, 40)}..."`);
+      } else {
+        perfTimings.thinkingSound = 0;
+        console.log(`⚠️ Thinking phrase audio failed, skipping`);
+      }
+
       // Process results
       let memoryContext = "";
       let wikipediaContext = "";
