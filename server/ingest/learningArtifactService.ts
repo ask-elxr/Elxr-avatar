@@ -733,15 +733,31 @@ export async function listFullCourseJobs(): Promise<FullCourseJob[]> {
 
 // Resume interrupted jobs on server startup
 export async function resumeInterruptedJobs(): Promise<void> {
-  const rows = await db.select().from(ingestionJobs)
+  // Find jobs that were interrupted mid-processing (have lessons detected)
+  const processingRows = await db.select().from(ingestionJobs)
     .where(eq(ingestionJobs.status, 'processing'));
   
-  if (rows.length === 0) {
+  // Also find jobs stuck in detecting phase (crashed during lesson detection)
+  const detectingRows = await db.select().from(ingestionJobs)
+    .where(eq(ingestionJobs.status, 'detecting'));
+  
+  if (processingRows.length === 0 && detectingRows.length === 0) {
     logger.info({ service: 'ingestion-jobs' }, 'No interrupted jobs to resume');
     return;
   }
 
-  for (const row of rows) {
+  // Mark stuck detecting jobs as failed (can't resume without raw text)
+  for (const row of detectingRows) {
+    const job = dbRowToJob(row);
+    job.status = 'failed';
+    job.errors.push({ lessonId: 'global', error: 'Job interrupted during lesson detection - cannot resume (raw text not stored)' });
+    job.completedAt = new Date();
+    await saveJobToDb(job);
+    logger.warn({ jobId: job.id }, 'Job stuck in detecting phase - marked as failed');
+  }
+
+  // Resume processing jobs that have lessons already detected
+  for (const row of processingRows) {
     const job = dbRowToJob(row);
     
     // If we have detected lessons, we can resume from where we left off
