@@ -635,3 +635,177 @@ class LearningArtifactService {
 }
 
 export const learningArtifactService = new LearningArtifactService();
+
+// Background job tracking for full course ingestion
+export interface FullCourseJob {
+  id: string;
+  status: 'detecting' | 'processing' | 'completed' | 'failed';
+  kb: string;
+  courseId: string;
+  courseTitle?: string;
+  lessonsDetected: number;
+  lessonsProcessed: number;
+  totalArtifacts: number;
+  currentLesson?: string;
+  errors: Array<{ lessonId: string; error: string }>;
+  startedAt: Date;
+  completedAt?: Date;
+  result?: FullCourseIngestionResult;
+}
+
+const fullCourseJobs = new Map<string, FullCourseJob>();
+
+export function getFullCourseJob(jobId: string): FullCourseJob | undefined {
+  return fullCourseJobs.get(jobId);
+}
+
+export function listFullCourseJobs(): FullCourseJob[] {
+  return Array.from(fullCourseJobs.values()).sort((a, b) => 
+    b.startedAt.getTime() - a.startedAt.getTime()
+  );
+}
+
+export async function startFullCourseIngestionJob(
+  request: FullCourseIngestionRequest
+): Promise<string> {
+  const jobId = `fc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const { kb, courseId, courseTitle, rawText, dryRun = false } = request;
+
+  const job: FullCourseJob = {
+    id: jobId,
+    status: 'detecting',
+    kb,
+    courseId,
+    courseTitle,
+    lessonsDetected: 0,
+    lessonsProcessed: 0,
+    totalArtifacts: 0,
+    errors: [],
+    startedAt: new Date(),
+  };
+
+  fullCourseJobs.set(jobId, job);
+
+  // Run in background (non-blocking)
+  (async () => {
+    try {
+      logger.info({ jobId, kb, courseId }, 'Background job: Starting lesson detection');
+
+      const { courseTitle: detectedTitle, lessons } = await learningArtifactService.detectLessons(rawText);
+      const finalCourseTitle = courseTitle || detectedTitle;
+
+      job.courseTitle = finalCourseTitle;
+      job.lessonsDetected = lessons.length;
+      job.status = 'processing';
+
+      logger.info({ 
+        jobId, 
+        courseTitle: finalCourseTitle, 
+        lessonsDetected: lessons.length 
+      }, 'Background job: Lessons detected, starting artifact extraction');
+
+      if (dryRun) {
+        job.status = 'completed';
+        job.completedAt = new Date();
+        job.result = {
+          kb,
+          courseId,
+          courseTitle: finalCourseTitle,
+          detectedLessons: lessons.map(l => ({ ...l, text: l.text.slice(0, 500) + '...' })),
+          lessonsProcessed: 0,
+          totalArtifacts: 0,
+          artifactsByType: {
+            principle: 0, mental_model: 0, heuristic: 0, 
+            failure_mode: 0, checklist: 0, qa_pair: 0, scenario: 0,
+          },
+          results: [],
+          errors: [],
+          dryRun: true,
+        };
+        return;
+      }
+
+      // Process lessons one by one to track progress
+      const results: any[] = [];
+      let totalArtifacts = 0;
+      const artifactsByType: Record<string, number> = {
+        principle: 0, mental_model: 0, heuristic: 0, 
+        failure_mode: 0, checklist: 0, qa_pair: 0, scenario: 0,
+      };
+
+      for (let i = 0; i < lessons.length; i++) {
+        const lesson = lessons[i];
+        job.currentLesson = lesson.lessonTitle;
+
+        try {
+          logger.info({ 
+            jobId, 
+            lessonIndex: i + 1, 
+            totalLessons: lessons.length,
+            lessonId: lesson.lessonId 
+          }, 'Background job: Processing lesson');
+
+          const result = await learningArtifactService.ingestTranscript({
+            kb,
+            courseId,
+            lessonId: lesson.lessonId,
+            lessonTitle: lesson.lessonTitle,
+            rawText: lesson.text,
+            dryRun: false,
+          });
+
+          results.push(result);
+          job.lessonsProcessed = i + 1;
+          totalArtifacts += result.totalArtifacts;
+          job.totalArtifacts = totalArtifacts;
+
+          // Aggregate artifact counts
+          for (const [type, count] of Object.entries(result.artifactsByType)) {
+            artifactsByType[type] = (artifactsByType[type] || 0) + (count as number);
+          }
+
+          logger.info({ 
+            jobId, 
+            lessonIndex: i + 1,
+            artifactsExtracted: result.totalArtifacts 
+          }, 'Background job: Lesson processed');
+
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+          job.errors.push({ lessonId: lesson.lessonId, error: errorMsg });
+          logger.error({ jobId, lessonId: lesson.lessonId, error: errorMsg }, 'Background job: Lesson failed');
+        }
+      }
+
+      job.status = 'completed';
+      job.completedAt = new Date();
+      job.result = {
+        kb,
+        courseId,
+        courseTitle: finalCourseTitle,
+        detectedLessons: lessons.map(l => ({ ...l, text: l.text.slice(0, 200) + '...' })),
+        lessonsProcessed: job.lessonsProcessed,
+        totalArtifacts,
+        artifactsByType: artifactsByType as any,
+        results,
+        errors: job.errors,
+        dryRun: false,
+      };
+
+      logger.info({ 
+        jobId, 
+        lessonsProcessed: job.lessonsProcessed,
+        totalArtifacts 
+      }, 'Background job: Full course ingestion completed');
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      job.status = 'failed';
+      job.completedAt = new Date();
+      job.errors.push({ lessonId: 'global', error: errorMsg });
+      logger.error({ jobId, error: errorMsg }, 'Background job: Full course ingestion failed');
+    }
+  })();
+
+  return jobId;
+}

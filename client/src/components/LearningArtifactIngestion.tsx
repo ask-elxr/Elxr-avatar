@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,11 @@ export function LearningArtifactIngestion() {
   const [fullCourseResult, setFullCourseResult] = useState<any>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const [isExtracting, setIsExtracting] = useState(false);
+  
+  // Background job tracking
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<any>(null);
+  const [isPolling, setIsPolling] = useState(false);
 
   const { data: kbsData } = useQuery<KbsResponse>({
     queryKey: ['/admin/learning-artifacts/kbs'],
@@ -148,6 +153,53 @@ export function LearningArtifactIngestion() {
     }
   });
 
+  // Poll for job status when we have an active job
+  useEffect(() => {
+    if (!activeJobId || !isPolling) return;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        const response = await fetch(`/admin/learning-artifacts/job/${activeJobId}`, {
+          headers: getAdminHeaders()
+        });
+        
+        if (!response.ok) {
+          console.error('Failed to poll job status');
+          return;
+        }
+        
+        const data = await response.json();
+        setJobStatus(data.job);
+        
+        // Check if job is complete or failed
+        if (data.job.status === 'completed') {
+          setIsPolling(false);
+          setFullCourseResult(data.job.result);
+          queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+          toast({
+            title: "Full Course Ingestion Complete",
+            description: `Processed ${data.job.lessonsProcessed} lessons, created ${data.job.totalArtifacts} artifacts`,
+          });
+          setRawText("");
+          setCourseTitle("");
+          setUploadedFileName("");
+        } else if (data.job.status === 'failed') {
+          setIsPolling(false);
+          const errorMsg = data.job.errors?.[0]?.error || 'Unknown error';
+          toast({
+            title: "Full Course Ingestion Failed",
+            description: errorMsg,
+            variant: "destructive"
+          });
+        }
+      } catch (error) {
+        console.error('Error polling job status:', error);
+      }
+    }, 2000); // Poll every 2 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [activeJobId, isPolling, queryClient, toast]);
+
   const fullCourseMutation = useMutation({
     mutationFn: async (data: {
       kb: string;
@@ -173,22 +225,34 @@ export function LearningArtifactIngestion() {
       return response.json();
     },
     onSuccess: (data) => {
-      setFullCourseResult(data);
-      queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
-      
-      if (data.dryRun) {
+      if (data.jobId) {
+        // Background job started - begin polling
+        setActiveJobId(data.jobId);
+        setJobStatus({ status: 'detecting', lessonsDetected: 0, lessonsProcessed: 0 });
+        setIsPolling(true);
         toast({
-          title: "Lesson Detection Complete",
-          description: `Detected ${data.detectedLessons?.length || 0} lessons in "${data.courseTitle}"`,
+          title: "Processing Started",
+          description: "Detecting lessons in course transcript...",
         });
       } else {
-        toast({
-          title: "Full Course Ingestion Complete",
-          description: `Processed ${data.lessonsProcessed} lessons, created ${data.totalArtifacts} artifacts`,
-        });
-        setRawText("");
-        setCourseTitle("");
-        setUploadedFileName("");
+        // Immediate result (shouldn't happen with new API but handle for safety)
+        setFullCourseResult(data);
+        queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+        
+        if (data.dryRun) {
+          toast({
+            title: "Lesson Detection Complete",
+            description: `Detected ${data.detectedLessons?.length || 0} lessons in "${data.courseTitle}"`,
+          });
+        } else {
+          toast({
+            title: "Full Course Ingestion Complete",
+            description: `Processed ${data.lessonsProcessed} lessons, created ${data.totalArtifacts} artifacts`,
+          });
+          setRawText("");
+          setCourseTitle("");
+          setUploadedFileName("");
+        }
       }
     },
     onError: (error: Error) => {
@@ -541,13 +605,19 @@ export function LearningArtifactIngestion() {
 
                 <Button
                   onClick={handleFullCourseSubmit}
-                  disabled={fullCourseMutation.isPending || !kb || !courseId || !rawText.trim()}
+                  disabled={fullCourseMutation.isPending || isPolling || !kb || !courseId || !rawText.trim()}
                   className="bg-gradient-primary hover:opacity-90"
                 >
                   {fullCourseMutation.isPending ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      {dryRun ? "Detecting Lessons..." : "Processing Course..."}
+                      Starting...
+                    </>
+                  ) : isPolling ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      {jobStatus?.status === 'detecting' ? 'Detecting Lessons...' : 
+                       `Processing ${jobStatus?.lessonsProcessed || 0}/${jobStatus?.lessonsDetected || '?'} lessons...`}
                     </>
                   ) : (
                     <>
@@ -556,6 +626,37 @@ export function LearningArtifactIngestion() {
                     </>
                   )}
                 </Button>
+                
+                {/* Progress indicator for background job */}
+                {isPolling && jobStatus && (
+                  <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-400" />
+                      <span className="text-blue-400 font-medium">
+                        {jobStatus.status === 'detecting' ? 'Detecting lessons...' :
+                         jobStatus.status === 'processing' ? `Processing lesson ${jobStatus.lessonsProcessed + 1} of ${jobStatus.lessonsDetected}` :
+                         'Processing...'}
+                      </span>
+                    </div>
+                    {jobStatus.courseTitle && (
+                      <p className="text-sm text-white/60 mb-2">Course: {jobStatus.courseTitle}</p>
+                    )}
+                    {jobStatus.currentLesson && (
+                      <p className="text-sm text-white/60 mb-2">Current: {jobStatus.currentLesson}</p>
+                    )}
+                    {jobStatus.lessonsDetected > 0 && (
+                      <div className="w-full bg-white/10 rounded-full h-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${(jobStatus.lessonsProcessed / jobStatus.lessonsDetected) * 100}%` }}
+                        />
+                      </div>
+                    )}
+                    {jobStatus.totalArtifacts > 0 && (
+                      <p className="text-xs text-white/40 mt-2">{jobStatus.totalArtifacts} artifacts created so far</p>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -616,11 +717,20 @@ export function LearningArtifactIngestion() {
                     setDryRun(false);
                     handleFullCourseSubmit();
                   }}
-                  disabled={fullCourseMutation.isPending}
+                  disabled={fullCourseMutation.isPending || isPolling}
                   className="bg-gradient-primary hover:opacity-90"
                 >
-                  <Upload className="w-4 h-4 mr-2" />
-                  Process All {fullCourseResult.detectedLessons?.length || 0} Lessons
+                  {isPolling ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing {jobStatus?.lessonsProcessed || 0}/{jobStatus?.lessonsDetected || fullCourseResult.detectedLessons?.length || 0}...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Process All {fullCourseResult.detectedLessons?.length || 0} Lessons
+                    </>
+                  )}
                 </Button>
               </div>
             )}

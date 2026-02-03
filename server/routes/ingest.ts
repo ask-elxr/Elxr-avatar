@@ -11,7 +11,13 @@ import {
   getNamespaceStats
 } from '../ingest/courseIngestionService.js';
 import { ingestPodcast } from '../ingest/podcastIngestionService.js';
-import { learningArtifactService } from '../ingest/learningArtifactService.js';
+import { 
+  learningArtifactService, 
+  startFullCourseIngestionJob, 
+  getFullCourseJob, 
+  listFullCourseJobs,
+  FullCourseJob 
+} from '../ingest/learningArtifactService.js';
 import { KNOWN_KBS, isValidKb } from '../ingest/learningArtifactTypes.js';
 import { logger } from '../logger.js';
 
@@ -924,11 +930,8 @@ const FullCourseIngestionSchema = z.object({
   dryRun: z.boolean().optional().default(false)
 });
 
+// Start full course ingestion as background job (returns immediately with job ID)
 router.post('/learning-artifacts/ingest-full-course', requireAdminAuth, async (req: Request, res: Response) => {
-  // Extend timeout for long-running full course ingestion (30 minutes)
-  req.setTimeout(30 * 60 * 1000);
-  res.setTimeout(30 * 60 * 1000);
-  
   try {
     const parseResult = FullCourseIngestionSchema.safeParse(req.body);
     
@@ -954,14 +957,15 @@ router.post('/learning-artifacts/ingest-full-course', requireAdminAuth, async (r
     
     logger.info({
       service: 'learning-artifacts',
-      operation: 'full_course_ingest',
+      operation: 'full_course_ingest_start',
       kb: data.kb,
       courseId: data.courseId,
       textLength: data.rawText.length,
       dryRun: data.dryRun
-    }, 'Starting full course ingestion with auto-detection');
+    }, 'Starting full course ingestion as background job');
     
-    const result = await learningArtifactService.ingestFullCourse({
+    // Start background job and return immediately
+    const jobId = await startFullCourseIngestionJob({
       kb: data.kb,
       courseId: data.courseId,
       courseTitle: data.courseTitle,
@@ -971,12 +975,82 @@ router.post('/learning-artifacts/ingest-full-course', requireAdminAuth, async (r
     
     res.json({
       success: true,
-      ...result
+      jobId,
+      message: 'Full course ingestion started. Poll /learning-artifacts/job/:jobId for status.'
     });
   } catch (error) {
-    logger.error({ error: (error as Error).message }, 'Full course ingestion failed');
+    logger.error({ error: (error as Error).message }, 'Failed to start full course ingestion');
     res.status(500).json({
-      error: 'Full course ingestion failed',
+      error: 'Failed to start full course ingestion',
+      message: (error as Error).message
+    });
+  }
+});
+
+// Get status of a full course ingestion job
+router.get('/learning-artifacts/job/:jobId', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { jobId } = req.params;
+    const job = getFullCourseJob(jobId);
+    
+    if (!job) {
+      return res.status(404).json({
+        error: 'Job not found',
+        message: `No job found with ID "${jobId}"`
+      });
+    }
+    
+    res.json({
+      success: true,
+      job: {
+        id: job.id,
+        status: job.status,
+        kb: job.kb,
+        courseId: job.courseId,
+        courseTitle: job.courseTitle,
+        lessonsDetected: job.lessonsDetected,
+        lessonsProcessed: job.lessonsProcessed,
+        totalArtifacts: job.totalArtifacts,
+        currentLesson: job.currentLesson,
+        errors: job.errors,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+        // Only include result when completed
+        result: job.status === 'completed' ? job.result : undefined
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to get job status',
+      message: (error as Error).message
+    });
+  }
+});
+
+// List all full course ingestion jobs
+router.get('/learning-artifacts/jobs', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const jobs = listFullCourseJobs();
+    
+    res.json({
+      success: true,
+      jobs: jobs.map(job => ({
+        id: job.id,
+        status: job.status,
+        kb: job.kb,
+        courseId: job.courseId,
+        courseTitle: job.courseTitle,
+        lessonsDetected: job.lessonsDetected,
+        lessonsProcessed: job.lessonsProcessed,
+        totalArtifacts: job.totalArtifacts,
+        startedAt: job.startedAt,
+        completedAt: job.completedAt,
+        hasErrors: job.errors.length > 0
+      }))
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to list jobs',
       message: (error as Error).message
     });
   }
