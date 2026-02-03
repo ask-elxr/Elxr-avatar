@@ -318,7 +318,7 @@ export function LearningArtifactIngestion() {
     });
   };
 
-  const handleFullCourseSubmit = () => {
+  const handleFullCourseSubmit = (overrideDryRun?: boolean) => {
     if (!kb || !courseId || !rawText.trim()) {
       toast({
         title: "Missing Fields",
@@ -328,12 +328,15 @@ export function LearningArtifactIngestion() {
       return;
     }
 
+    // Use override if provided (for "Process All Lessons" button), otherwise use state
+    const effectiveDryRun = overrideDryRun !== undefined ? overrideDryRun : dryRun;
+
     fullCourseMutation.mutate({
       kb,
       courseId,
       courseTitle: courseTitle || undefined,
       rawText,
-      dryRun
+      dryRun: effectiveDryRun
     });
   };
 
@@ -604,7 +607,7 @@ export function LearningArtifactIngestion() {
                 </div>
 
                 <Button
-                  onClick={handleFullCourseSubmit}
+                  onClick={() => handleFullCourseSubmit()}
                   disabled={fullCourseMutation.isPending || isPolling || !kb || !courseId || !rawText.trim()}
                   className="bg-gradient-primary hover:opacity-90"
                 >
@@ -715,7 +718,7 @@ export function LearningArtifactIngestion() {
                 <Button
                   onClick={() => {
                     setDryRun(false);
-                    handleFullCourseSubmit();
+                    handleFullCourseSubmit(false); // Explicitly pass false to bypass async state update
                   }}
                   disabled={fullCourseMutation.isPending || isPolling}
                   className="bg-gradient-primary hover:opacity-90"
