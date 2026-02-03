@@ -33,6 +33,7 @@ import { metrics } from "./metrics.js";
 import { logger } from "./logger.js";
 import { wrapServiceCall } from "./circuitBreaker.js";
 import { getAvatarById, getAllAvatars } from "./services/avatars.js";
+import { getThinkingPhrase } from "./config/lineLibrary.js";
 import { multiAssistantService } from "./multiAssistantService.js";
 import { sessionManager } from "./sessionManager.js";
 import { heygenCreditService } from "./heygenCreditService.js";
@@ -5340,11 +5341,17 @@ ${historyPreview}
       console.log('\n🚀 ==================== STREAM-AUDIO REQUEST START ====================');
       console.log(`⏱️ [0ms] Request received - message: "${(message || '').substring(0, 50)}..."`);
 
-      // 1. Thinking sound DISABLED - users reported it sounded strange
-      // Previously: await elevenlabsService.getThinkingSound(voiceId, languageCode)
-      // Now we skip straight to generating the actual response for faster, cleaner experience
-      perfTimings.thinkingSound = 0;
-      console.log(`⏱️ [${Date.now() - perfStart}ms] 1. Thinking sound: SKIPPED (disabled)`);
+      // 1. Generate thinking phrase TTS in parallel with data fetch to mask latency
+      // Using natural phrases from lineLibrary instead of short "Hmm..." sounds
+      const thinkingPhrase = getThinkingPhrase(avatarId);
+      console.log(`⏱️ [${Date.now() - perfStart}ms] 1. Generating thinking phrase: "${thinkingPhrase.substring(0, 40)}..."`);
+      
+      // Start thinking phrase TTS generation (don't await yet)
+      const thinkingTtsPromise = elevenlabsService.generateSpeechBase64(thinkingPhrase, voiceId, languageCode)
+        .catch(err => {
+          console.log(`⚠️ Thinking phrase TTS failed: ${err.message}`);
+          return null;
+        });
 
       sendEvent('status', { phase: 'fetching_context', message: 'Gathering knowledge...' });
 
