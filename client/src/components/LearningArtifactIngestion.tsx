@@ -87,9 +87,9 @@ export function LearningArtifactIngestion() {
   const [isPolling, setIsPolling] = useState(false);
 
   const { data: kbsData } = useQuery<KbsResponse>({
-    queryKey: ['/admin/learning-artifacts/kbs'],
+    queryKey: ['/api/admin/learning-artifacts/kbs'],
     queryFn: async () => {
-      const response = await fetch('/admin/learning-artifacts/kbs', {
+      const response = await fetch('/api/admin/learning-artifacts/kbs', {
         headers: getAdminHeaders()
       });
       if (!response.ok) throw new Error('Failed to fetch knowledge bases');
@@ -108,7 +108,7 @@ export function LearningArtifactIngestion() {
       rawText: string;
       dryRun?: boolean;
     }) => {
-      const response = await fetch('/admin/learning-artifacts/ingest', {
+      const response = await fetch('/api/admin/learning-artifacts/ingest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -159,7 +159,7 @@ export function LearningArtifactIngestion() {
     
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/admin/learning-artifacts/job/${activeJobId}`, {
+        const response = await fetch(`/api/admin/learning-artifacts/job/${activeJobId}`, {
           headers: getAdminHeaders()
         });
         
@@ -208,7 +208,7 @@ export function LearningArtifactIngestion() {
       rawText: string;
       dryRun?: boolean;
     }) => {
-      const response = await fetch('/admin/learning-artifacts/ingest-full-course', {
+      const response = await fetch('/api/admin/learning-artifacts/ingest-full-course', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

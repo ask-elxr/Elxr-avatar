@@ -135,7 +135,7 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
   app.use("/api/courses", coursesRouter);
   app.use("/api/mood", moodRouter);
   app.use("/api/subscription", subscriptionRouter);
-  app.use("/admin", ingestRouter);
+  app.use("/api/admin", ingestRouter);
   app.use("/api/admin", isAuthenticated, personaRouter);
   app.use("/api/games", gamesRouter);
   
