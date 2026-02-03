@@ -16,8 +16,12 @@ import {
   startFullCourseIngestionJob, 
   getFullCourseJob, 
   listFullCourseJobs,
+  resumeInterruptedJobs,
   FullCourseJob 
 } from '../ingest/learningArtifactService.js';
+
+// Export resume function for server startup
+export { resumeInterruptedJobs };
 import { KNOWN_KBS, isValidKb } from '../ingest/learningArtifactTypes.js';
 import { logger } from '../logger.js';
 
@@ -991,7 +995,7 @@ router.post('/learning-artifacts/ingest-full-course', requireAdminAuth, async (r
 router.get('/learning-artifacts/job/:jobId', requireAdminAuth, async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
-    const job = getFullCourseJob(jobId);
+    const job = await getFullCourseJob(jobId);
     
     if (!job) {
       return res.status(404).json({
@@ -1030,7 +1034,7 @@ router.get('/learning-artifacts/job/:jobId', requireAdminAuth, async (req: Reque
 // List all full course ingestion jobs
 router.get('/learning-artifacts/jobs', requireAdminAuth, async (req: Request, res: Response) => {
   try {
-    const jobs = listFullCourseJobs();
+    const jobs = await listFullCourseJobs();
     
     res.json({
       success: true,

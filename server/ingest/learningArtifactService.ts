@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import { pineconeService, PineconeIndexName } from '../pinecone.js';
 import { getEmbedder } from './embedder.js';
 import { logger } from '../logger.js';
+import { db } from '../db.js';
+import { ingestionJobs } from '@shared/schema.js';
+import { eq } from 'drizzle-orm';
 import {
   LearningArtifact,
   LessonArtifacts,
@@ -636,33 +639,226 @@ class LearningArtifactService {
 
 export const learningArtifactService = new LearningArtifactService();
 
-// Background job tracking for full course ingestion
+// Background job tracking for full course ingestion - now database-backed for persistence
 export interface FullCourseJob {
   id: string;
   status: 'detecting' | 'processing' | 'completed' | 'failed';
   kb: string;
   courseId: string;
   courseTitle?: string;
+  dryRun: boolean;
   lessonsDetected: number;
   lessonsProcessed: number;
   totalArtifacts: number;
   currentLesson?: string;
+  detectedLessons?: DetectedLesson[];
+  processedLessonIds: string[];
   errors: Array<{ lessonId: string; error: string }>;
   startedAt: Date;
   completedAt?: Date;
   result?: FullCourseIngestionResult;
 }
 
-const fullCourseJobs = new Map<string, FullCourseJob>();
+// In-memory cache for raw text (too large for DB, only needed during processing)
+const jobRawTextCache = new Map<string, string>();
 
-export function getFullCourseJob(jobId: string): FullCourseJob | undefined {
-  return fullCourseJobs.get(jobId);
+async function saveJobToDb(job: FullCourseJob): Promise<void> {
+  await db.insert(ingestionJobs).values({
+    id: job.id,
+    status: job.status,
+    kb: job.kb,
+    courseId: job.courseId,
+    courseTitle: job.courseTitle,
+    dryRun: job.dryRun,
+    lessonsDetected: job.lessonsDetected,
+    lessonsProcessed: job.lessonsProcessed,
+    totalArtifacts: job.totalArtifacts,
+    currentLesson: job.currentLesson,
+    detectedLessons: job.detectedLessons as any,
+    processedLessonIds: job.processedLessonIds as any,
+    errors: job.errors as any,
+    result: job.result as any,
+    startedAt: job.startedAt,
+    completedAt: job.completedAt,
+  }).onConflictDoUpdate({
+    target: ingestionJobs.id,
+    set: {
+      status: job.status,
+      courseTitle: job.courseTitle,
+      lessonsDetected: job.lessonsDetected,
+      lessonsProcessed: job.lessonsProcessed,
+      totalArtifacts: job.totalArtifacts,
+      currentLesson: job.currentLesson,
+      detectedLessons: job.detectedLessons as any,
+      processedLessonIds: job.processedLessonIds as any,
+      errors: job.errors as any,
+      result: job.result as any,
+      completedAt: job.completedAt,
+      updatedAt: new Date(),
+    },
+  });
 }
 
-export function listFullCourseJobs(): FullCourseJob[] {
-  return Array.from(fullCourseJobs.values()).sort((a, b) => 
-    b.startedAt.getTime() - a.startedAt.getTime()
-  );
+function dbRowToJob(row: any): FullCourseJob {
+  return {
+    id: row.id,
+    status: row.status as FullCourseJob['status'],
+    kb: row.kb,
+    courseId: row.courseId,
+    courseTitle: row.courseTitle || undefined,
+    dryRun: row.dryRun ?? false,
+    lessonsDetected: row.lessonsDetected ?? 0,
+    lessonsProcessed: row.lessonsProcessed ?? 0,
+    totalArtifacts: row.totalArtifacts ?? 0,
+    currentLesson: row.currentLesson || undefined,
+    detectedLessons: row.detectedLessons as DetectedLesson[] | undefined,
+    processedLessonIds: (row.processedLessonIds as string[]) ?? [],
+    errors: (row.errors as Array<{ lessonId: string; error: string }>) ?? [],
+    startedAt: row.startedAt ?? new Date(),
+    completedAt: row.completedAt || undefined,
+    result: row.result as FullCourseIngestionResult | undefined,
+  };
+}
+
+export async function getFullCourseJob(jobId: string): Promise<FullCourseJob | undefined> {
+  const rows = await db.select().from(ingestionJobs).where(eq(ingestionJobs.id, jobId)).limit(1);
+  if (rows.length === 0) return undefined;
+  return dbRowToJob(rows[0]);
+}
+
+export async function listFullCourseJobs(): Promise<FullCourseJob[]> {
+  const rows = await db.select().from(ingestionJobs).orderBy(ingestionJobs.startedAt);
+  return rows.map(dbRowToJob).reverse(); // Most recent first
+}
+
+// Resume interrupted jobs on server startup
+export async function resumeInterruptedJobs(): Promise<void> {
+  const rows = await db.select().from(ingestionJobs)
+    .where(eq(ingestionJobs.status, 'processing'));
+  
+  if (rows.length === 0) {
+    logger.info({ service: 'ingestion-jobs' }, 'No interrupted jobs to resume');
+    return;
+  }
+
+  for (const row of rows) {
+    const job = dbRowToJob(row);
+    
+    // If we have detected lessons, we can resume from where we left off
+    if (job.detectedLessons && job.detectedLessons.length > 0) {
+      logger.info({ 
+        jobId: job.id, 
+        lessonsProcessed: job.lessonsProcessed,
+        totalLessons: job.lessonsDetected 
+      }, 'Resuming interrupted job');
+      
+      // Resume processing in background
+      resumeJobProcessing(job);
+    } else {
+      // Can't resume without lesson data - mark as failed
+      job.status = 'failed';
+      job.errors.push({ lessonId: 'global', error: 'Job interrupted before lessons were detected - cannot resume' });
+      job.completedAt = new Date();
+      await saveJobToDb(job);
+      logger.warn({ jobId: job.id }, 'Job interrupted before lesson detection - marked as failed');
+    }
+  }
+}
+
+async function resumeJobProcessing(job: FullCourseJob): Promise<void> {
+  const lessons = job.detectedLessons!;
+  const processedSet = new Set(job.processedLessonIds);
+  
+  // Find lessons that haven't been processed yet
+  const remainingLessons = lessons.filter(l => !processedSet.has(l.lessonId));
+  
+  if (remainingLessons.length === 0) {
+    job.status = 'completed';
+    job.completedAt = new Date();
+    await saveJobToDb(job);
+    logger.info({ jobId: job.id }, 'Resumed job - all lessons already processed');
+    return;
+  }
+
+  logger.info({ 
+    jobId: job.id, 
+    remainingLessons: remainingLessons.length 
+  }, 'Resuming job processing');
+
+  // Continue processing
+  const artifactsByType: Record<string, number> = {
+    principle: 0, mental_model: 0, heuristic: 0, 
+    failure_mode: 0, checklist: 0, qa_pair: 0, scenario: 0,
+  };
+
+  for (const lesson of remainingLessons) {
+    job.currentLesson = lesson.lessonTitle;
+    await saveJobToDb(job);
+
+    try {
+      logger.info({ 
+        jobId: job.id, 
+        lessonIndex: job.lessonsProcessed + 1, 
+        totalLessons: lessons.length,
+        lessonId: lesson.lessonId 
+      }, 'Background job: Processing lesson (resumed)');
+
+      const result = await learningArtifactService.ingestTranscript({
+        kb: job.kb,
+        courseId: job.courseId,
+        lessonId: lesson.lessonId,
+        lessonTitle: lesson.lessonTitle,
+        rawText: lesson.text,
+        dryRun: false,
+      });
+
+      job.lessonsProcessed += 1;
+      job.totalArtifacts += result.totalArtifacts;
+      job.processedLessonIds.push(lesson.lessonId);
+
+      // Aggregate artifact counts
+      for (const [type, count] of Object.entries(result.artifactsByType)) {
+        artifactsByType[type] = (artifactsByType[type] || 0) + (count as number);
+      }
+
+      await saveJobToDb(job);
+
+      logger.info({ 
+        jobId: job.id, 
+        lessonIndex: job.lessonsProcessed,
+        artifactsExtracted: result.totalArtifacts 
+      }, 'Background job: Lesson processed (resumed)');
+
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      job.errors.push({ lessonId: lesson.lessonId, error: errorMsg });
+      job.processedLessonIds.push(lesson.lessonId); // Mark as processed even on error
+      await saveJobToDb(job);
+      logger.error({ jobId: job.id, lessonId: lesson.lessonId, error: errorMsg }, 'Background job: Lesson failed (resumed)');
+    }
+  }
+
+  job.status = 'completed';
+  job.completedAt = new Date();
+  job.result = {
+    kb: job.kb,
+    courseId: job.courseId,
+    courseTitle: job.courseTitle || 'Unknown',
+    detectedLessons: lessons.map(l => ({ ...l, text: l.text.slice(0, 200) + '...' })),
+    lessonsProcessed: job.lessonsProcessed,
+    totalArtifacts: job.totalArtifacts,
+    artifactsByType: artifactsByType as any,
+    results: [],
+    errors: job.errors,
+    dryRun: false,
+  };
+  await saveJobToDb(job);
+
+  logger.info({ 
+    jobId: job.id, 
+    lessonsProcessed: job.lessonsProcessed,
+    totalArtifacts: job.totalArtifacts 
+  }, 'Background job: Full course ingestion completed (resumed)');
 }
 
 export async function startFullCourseIngestionJob(
@@ -677,14 +873,17 @@ export async function startFullCourseIngestionJob(
     kb,
     courseId,
     courseTitle,
+    dryRun,
     lessonsDetected: 0,
     lessonsProcessed: 0,
     totalArtifacts: 0,
+    processedLessonIds: [],
     errors: [],
     startedAt: new Date(),
   };
 
-  fullCourseJobs.set(jobId, job);
+  // Save to database immediately
+  await saveJobToDb(job);
 
   // Run in background (non-blocking)
   (async () => {
@@ -696,7 +895,9 @@ export async function startFullCourseIngestionJob(
 
       job.courseTitle = finalCourseTitle;
       job.lessonsDetected = lessons.length;
+      job.detectedLessons = lessons; // Store full lesson data for resume capability
       job.status = 'processing';
+      await saveJobToDb(job);
 
       logger.info({ 
         jobId, 
@@ -722,6 +923,7 @@ export async function startFullCourseIngestionJob(
           errors: [],
           dryRun: true,
         };
+        await saveJobToDb(job);
         return;
       }
 
@@ -736,6 +938,7 @@ export async function startFullCourseIngestionJob(
       for (let i = 0; i < lessons.length; i++) {
         const lesson = lessons[i];
         job.currentLesson = lesson.lessonTitle;
+        await saveJobToDb(job);
 
         try {
           logger.info({ 
@@ -758,11 +961,14 @@ export async function startFullCourseIngestionJob(
           job.lessonsProcessed = i + 1;
           totalArtifacts += result.totalArtifacts;
           job.totalArtifacts = totalArtifacts;
+          job.processedLessonIds.push(lesson.lessonId);
 
           // Aggregate artifact counts
           for (const [type, count] of Object.entries(result.artifactsByType)) {
             artifactsByType[type] = (artifactsByType[type] || 0) + (count as number);
           }
+
+          await saveJobToDb(job);
 
           logger.info({ 
             jobId, 
@@ -773,6 +979,8 @@ export async function startFullCourseIngestionJob(
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : 'Unknown error';
           job.errors.push({ lessonId: lesson.lessonId, error: errorMsg });
+          job.processedLessonIds.push(lesson.lessonId); // Mark as processed even on error
+          await saveJobToDb(job);
           logger.error({ jobId, lessonId: lesson.lessonId, error: errorMsg }, 'Background job: Lesson failed');
         }
       }
@@ -791,6 +999,7 @@ export async function startFullCourseIngestionJob(
         errors: job.errors,
         dryRun: false,
       };
+      await saveJobToDb(job);
 
       logger.info({ 
         jobId, 
@@ -803,6 +1012,7 @@ export async function startFullCourseIngestionJob(
       job.status = 'failed';
       job.completedAt = new Date();
       job.errors.push({ lessonId: 'global', error: errorMsg });
+      await saveJobToDb(job);
       logger.error({ jobId, error: errorMsg }, 'Background job: Full course ingestion failed');
     }
   })();

@@ -84,6 +84,28 @@ export const jobs = pgTable("jobs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Full course ingestion jobs - persistent across server restarts
+export const ingestionJobs = pgTable("ingestion_jobs", {
+  id: varchar("id").primaryKey(),
+  status: varchar("status").notNull().default("detecting"), // detecting, processing, completed, failed
+  kb: varchar("kb").notNull(),
+  courseId: varchar("course_id").notNull(),
+  courseTitle: varchar("course_title"),
+  dryRun: boolean("dry_run").default(false),
+  lessonsDetected: integer("lessons_detected").default(0),
+  lessonsProcessed: integer("lessons_processed").default(0),
+  totalArtifacts: integer("total_artifacts").default(0),
+  currentLesson: varchar("current_lesson"),
+  detectedLessons: jsonb("detected_lessons"), // Array of {lessonId, title, startIndex, endIndex}
+  processedLessonIds: jsonb("processed_lesson_ids").default(sql`'[]'::jsonb`), // Array of completed lesson IDs
+  errors: jsonb("errors").default(sql`'[]'::jsonb`), // Array of error messages
+  result: jsonb("result"), // Final result data
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Schema for Replit Auth user operations
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,

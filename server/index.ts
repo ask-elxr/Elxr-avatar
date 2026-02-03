@@ -4,7 +4,7 @@ import { avatarRouter } from "./routes/avatars.js";
 import { coursesRouter } from "./routes/courses.js";
 import { moodRouter } from "./routes/mood.js";
 import subscriptionRouter from "./routes/subscription.js";
-import ingestRouter from "./routes/ingest.js";
+import ingestRouter, { resumeInterruptedJobs } from "./routes/ingest.js";
 import { personaRouter } from "./routes/personas.js";
 import gamesRouter from "./routes/games.js";
 import { requireAdmin, isAuthenticated } from "./replitAuth.js";
@@ -252,6 +252,13 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
         }
       } catch (error: any) {
         console.error('Error during podcast batch recovery:', error.message);
+      }
+      
+      // Resume any interrupted full course ingestion jobs
+      try {
+        await resumeInterruptedJobs();
+      } catch (error: any) {
+        console.error('Error during ingestion job recovery:', error.message);
       }
     }, 5000); // Wait 5 seconds after startup before attempting recovery
   });
