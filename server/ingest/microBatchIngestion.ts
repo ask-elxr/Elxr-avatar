@@ -124,6 +124,15 @@ export async function embedAndUploadMicroBatch(
         metadata.attribution = chunk.attribution;
       }
       
+      // Copy any extended metadata fields from distillation mode
+      // (doc_type, kind, mentor, derived)
+      const chunkAny = chunk as unknown as Record<string, unknown>;
+      for (const key of ['doc_type', 'kind', 'mentor', 'derived']) {
+        if (chunkAny[key] !== undefined && typeof chunkAny[key] === 'string') {
+          metadata[key] = chunkAny[key] as string;
+        }
+      }
+      
       return {
         id: chunk.id,
         values: embeddings[idx],

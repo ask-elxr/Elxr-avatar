@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, AlertTriangle, CheckCircle2, XCircle, Package, RefreshCw, FileArchive, Clock, Sparkles, Play, Edit2 } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, CheckCircle2, XCircle, Package, RefreshCw, FileArchive, Clock, Sparkles, Play, Edit2, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminHeaders } from "@/lib/adminAuth";
 
@@ -99,6 +99,8 @@ export function BatchPodcastIngestion() {
   const [isUploading, setIsUploading] = useState(false);
   const [autoDetect, setAutoDetect] = useState(false);
   const [editingEpisodeId, setEditingEpisodeId] = useState<string | null>(null);
+  const [distillMode, setDistillMode] = useState<'chunks' | 'mentor_memory'>('chunks');
+  const [mentorName, setMentorName] = useState<string>('');
 
   const { data: rawStats } = useQuery<{ success: boolean; pinecone?: { namespaces?: Record<string, { recordCount: number }> } }>({
     queryKey: ['/api/pinecone/stats']
@@ -292,6 +294,10 @@ export function BatchPodcastIngestion() {
       formData.append('zipFile', file);
       formData.append('namespace', targetNamespace);
       formData.append('autoDetect', String(autoDetect));
+      formData.append('distillMode', distillMode);
+      if (distillMode === 'mentor_memory' && mentorName.trim()) {
+        formData.append('mentorName', mentorName.trim());
+      }
 
       const response = await fetch('/admin/podcast/batch/upload', {
         method: 'POST',
@@ -307,8 +313,9 @@ export function BatchPodcastIngestion() {
       const result = await response.json();
       setActiveBatchId(result.batchId);
       
+      const modeLabel = distillMode === 'mentor_memory' ? 'Mentor Wisdom' : 'Chunks';
       toast({
-        title: autoDetect ? "Classification Started" : "Batch Upload Started",
+        title: autoDetect ? "Classification Started" : `Batch Upload Started (${modeLabel})`,
         description: autoDetect 
           ? `Classifying ${result.totalEpisodes} episodes - review before processing`
           : `Processing ${result.totalEpisodes} episodes from ${file.name}`
@@ -327,7 +334,7 @@ export function BatchPodcastIngestion() {
         fileInputRef.current.value = '';
       }
     }
-  }, [targetNamespace, autoDetect, toast, queryClient]);
+  }, [targetNamespace, autoDetect, distillMode, mentorName, toast, queryClient]);
 
   const batches = batchesData?.batches || [];
   const currentBatch = batchStatus?.batch;
@@ -399,6 +406,39 @@ export function BatchPodcastIngestion() {
                 <strong>Auto-Detect Mode:</strong> Episodes will be classified using AI before ingestion. 
                 You can review and adjust classifications before processing starts.
                 The selected namespace will be used as a fallback.
+              </p>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <div className="flex items-center gap-3">
+              <Brain className="w-5 h-5 text-amber-400" />
+              <div>
+                <Label className="text-white font-medium">Mentor Wisdom Mode</Label>
+                <p className="text-xs text-white/50">
+                  Distill transcripts into principles, mental models & mentor voice (copyright-safe)
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={distillMode === 'mentor_memory'}
+              onCheckedChange={(checked) => setDistillMode(checked ? 'mentor_memory' : 'chunks')}
+              data-testid="distill-mode-toggle"
+            />
+          </div>
+
+          {distillMode === 'mentor_memory' && (
+            <div className="space-y-2">
+              <Label className="text-white/80">Mentor Name</Label>
+              <Input
+                value={mentorName}
+                onChange={(e) => setMentorName(e.target.value)}
+                placeholder="e.g., Esther, Mark, Dr. Joe..."
+                className="bg-black/30 border-white/20"
+                data-testid="mentor-name-input"
+              />
+              <p className="text-xs text-amber-300/70">
+                Insights will be rewritten in this mentor's voice (e.g., "I've noticed...", "What tends to help...")
               </p>
             </div>
           )}

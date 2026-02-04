@@ -8,6 +8,7 @@ import { storage } from '../storage.js';
 import { extractSubstance, chunkPodcastContent } from './podcastIngestionService.js';
 import { embedAndUploadMicroBatch, prepareChunksForStorage, loadChunksFromStorage, type ChunkRecord } from './microBatchIngestion.js';
 import { classifyTranscript, type ClassificationResult } from './namespaceClassifier.js';
+import { distillAndChunkTranscript } from './podcastDistillationService.js';
 import type { PodcastBatch, PodcastEpisode } from '@shared/schema';
 
 const TEMP_DIR = '/tmp/podcast-batches';
@@ -74,7 +75,9 @@ export async function extractZipAndCreateBatch(
   zipBuffer: Buffer,
   namespace: string,
   zipFilename: string,
-  autoDetect: boolean = false
+  autoDetect: boolean = false,
+  distillMode: 'chunks' | 'mentor_memory' = 'chunks',
+  mentorName?: string
 ): Promise<BatchUploadResult> {
   const batchId = uuidv4();
   
@@ -83,6 +86,8 @@ export async function extractZipAndCreateBatch(
     namespace, 
     zipFilename,
     autoDetect,
+    distillMode,
+    mentorName,
     bufferSize: zipBuffer.length 
   }, 'Starting zip extraction for podcast batch');
   
@@ -90,6 +95,8 @@ export async function extractZipAndCreateBatch(
     namespace,
     zipFilename,
     autoDetect,
+    distillMode,
+    mentorName,
   });
   
   const batchDir = await ensureTempDir(batch.id);
@@ -350,28 +357,80 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
           continue;
         }
         
-        // Step 2: Extract substance (Claude AI processing)
-        logger.info({ episodeId: episode.id }, 'Extracting substance from transcript');
-        const extractedText = await extractSubstance(fileContent);
-        
-        if (extractedText.length < 100) {
-          logger.warn({ episodeId: episode.id }, 'Not enough substantive content after extraction');
-          await storage.updatePodcastEpisode(episode.id, { 
-            status: 'skipped',
-            error: 'Not enough substantive content after extraction'
-          });
-          skipCount++;
-          continue;
-        }
-        
-        // Step 3: Chunk the content (Claude AI processing)
-        logger.info({ episodeId: episode.id }, 'Chunking extracted content');
-        const chunkResult = await chunkPodcastContent(extractedText);
-        discardedCount = chunkResult.discardedCount;
-        
-        // Step 4: Prepare chunks with IDs for storage
+        // Step 2: Process content based on distillMode
         const sourceId = `batch-${batchId}-${episode.filename.replace(/\.[^/.]+$/, '')}`;
-        chunks = prepareChunksForStorage(chunkResult.chunks, sourceId);
+        
+        if (batch.distillMode === 'mentor_memory') {
+          // DISTILLATION MODE: Extract wisdom and convert to mentor memory
+          logger.info({ episodeId: episode.id, distillMode: batch.distillMode, mentorName: batch.mentorName }, 
+            'Distilling transcript into mentor wisdom');
+          
+          const distillationChunks = await distillAndChunkTranscript(
+            fileContent,
+            batch.namespace,
+            batch.mentorName || 'Mentor',
+            'mentor_memory'
+          );
+          
+          if (distillationChunks.length === 0) {
+            logger.warn({ episodeId: episode.id }, 'No wisdom extracted from transcript');
+            await storage.updatePodcastEpisode(episode.id, { 
+              status: 'skipped',
+              error: 'No extractable wisdom from transcript (may be low-signal content)'
+            });
+            skipCount++;
+            continue;
+          }
+          
+          // Convert distillation chunks to ChunkRecord format with extended metadata
+          // The additional fields (doc_type, kind, mentor, derived) are preserved via ChunkRecord's
+          // flexible structure and will be included in Pinecone metadata
+          chunks = distillationChunks.map(dc => ({
+            id: dc.id,
+            text: dc.text,
+            content_type: dc.metadata.doc_type, // 'mentor_memory' or 'learned_wisdom'
+            tone: 'reflective', // distilled wisdom has a reflective tone
+            topic: dc.metadata.kind, // 'principle', 'mental_model', 'heuristic', etc.
+            confidence: dc.metadata.confidence || 'medium',
+            voice_origin: 'avatar_native', // distilled wisdom is in mentor's voice
+            attribution: `distilled:${dc.metadata.mentor || 'Mentor'}`,
+            // Extended metadata for distillation tracking
+            doc_type: dc.metadata.doc_type,
+            kind: dc.metadata.kind,
+            mentor: dc.metadata.mentor || batch.mentorName || 'Mentor',
+            derived: 'true' // string because metadata values must be strings
+          } as ChunkRecord & Record<string, string>));
+          discardedCount = 0;
+          
+          logger.info({ 
+            episodeId: episode.id, 
+            wisdomChunks: chunks.length,
+            types: distillationChunks.map(c => c.metadata.kind).filter((v, i, a) => a.indexOf(v) === i)
+          }, 'Distillation complete');
+          
+        } else {
+          // CONVERSATIONAL CHUNKS MODE: Original extraction + chunking
+          logger.info({ episodeId: episode.id }, 'Extracting substance from transcript');
+          const extractedText = await extractSubstance(fileContent);
+          
+          if (extractedText.length < 100) {
+            logger.warn({ episodeId: episode.id }, 'Not enough substantive content after extraction');
+            await storage.updatePodcastEpisode(episode.id, { 
+              status: 'skipped',
+              error: 'Not enough substantive content after extraction'
+            });
+            skipCount++;
+            continue;
+          }
+          
+          // Step 3: Chunk the content (Claude AI processing)
+          logger.info({ episodeId: episode.id }, 'Chunking extracted content');
+          const chunkResult = await chunkPodcastContent(extractedText);
+          discardedCount = chunkResult.discardedCount;
+          
+          // Step 4: Prepare chunks with IDs for storage
+          chunks = prepareChunksForStorage(chunkResult.chunks, sourceId);
+        }
         
         // Step 5: Save pre-chunked data to database (CRITICAL for resumability)
         await storage.updatePodcastEpisode(episode.id, {

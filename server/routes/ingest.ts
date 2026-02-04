@@ -577,9 +577,21 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
     
     const namespace = req.body.namespace;
     const autoDetect = req.body.autoDetect === 'true' || req.body.autoDetect === true;
+    const distillMode = req.body.distillMode === 'mentor_memory' ? 'mentor_memory' : 'chunks';
+    const mentorName = req.body.mentorName?.trim() || undefined;
     
     if (!namespace || typeof namespace !== 'string') {
       return res.status(400).json({ error: 'Namespace is required (used as fallback when auto-detect is enabled)' });
+    }
+    
+    // When using mentor_memory mode, a mentor name is highly recommended for better output
+    if (distillMode === 'mentor_memory' && !mentorName) {
+      logger.warn({
+        service: 'batch-podcast-routes',
+        operation: 'batch_upload',
+        namespace,
+        distillMode
+      }, 'Mentor Wisdom mode selected without a mentor name - using "Mentor" as default');
     }
     
     if (!autoDetect && isProtectedNamespace(namespace)) {
@@ -594,6 +606,8 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
       operation: 'batch_upload',
       namespace,
       autoDetect,
+      distillMode,
+      mentorName,
       filename: req.file.originalname,
       size: req.file.size
     }, 'Processing batch podcast upload');
@@ -602,7 +616,9 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
       req.file.buffer,
       namespace,
       req.file.originalname,
-      autoDetect
+      autoDetect,
+      distillMode as 'chunks' | 'mentor_memory',
+      mentorName
     );
     
     if (autoDetect) {

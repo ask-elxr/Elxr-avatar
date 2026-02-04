@@ -615,6 +615,8 @@ export const podcastBatches = pgTable("podcast_batches", {
   zipFilename: varchar("zip_filename").notNull(),
   status: varchar("status").notNull().default("pending"),
   autoDetect: boolean("auto_detect").default(false),
+  distillMode: varchar("distill_mode").default("chunks"), // 'chunks' or 'mentor_memory'
+  mentorName: varchar("mentor_name"),
   totalEpisodes: integer("total_episodes").default(0),
   processedEpisodes: integer("processed_episodes").default(0),
   successfulEpisodes: integer("successful_episodes").default(0),
@@ -652,10 +654,14 @@ export const insertPodcastBatchSchema = createInsertSchema(podcastBatches).pick(
   namespace: true,
   zipFilename: true,
   autoDetect: true,
+  distillMode: true,
+  mentorName: true,
 }).extend({
   namespace: z.string().min(1, "Namespace is required"),
   zipFilename: z.string().min(1, "Filename is required"),
   autoDetect: z.boolean().optional().default(false),
+  distillMode: z.enum(['chunks', 'mentor_memory']).optional().default('chunks'),
+  mentorName: z.string().optional(),
 });
 
 export type InsertPodcastBatch = z.infer<typeof insertPodcastBatchSchema>;
