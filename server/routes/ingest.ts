@@ -19,6 +19,11 @@ import {
   resumeInterruptedJobs,
   FullCourseJob 
 } from '../ingest/learningArtifactService.js';
+import {
+  listAllNamespaces,
+  findDuplicateNamespaces,
+  consolidateNamespaces
+} from '../ingest/namespaceConsolidation.js';
 
 // Export resume function for server startup
 export { resumeInterruptedJobs };
@@ -1112,6 +1117,78 @@ router.delete('/learning-artifacts/:namespace/:courseId', requireAdminAuth, asyn
   } catch (error) {
     res.status(500).json({
       error: 'Failed to delete artifacts',
+      message: (error as Error).message
+    });
+  }
+});
+
+// ============================================
+// Namespace Management Routes
+// ============================================
+
+router.get('/namespaces', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const namespaces = await listAllNamespaces();
+    res.json({ namespaces, total: namespaces.length });
+  } catch (error) {
+    logger.error({
+      service: 'ingest-routes',
+      operation: 'list_namespaces',
+      error: (error as Error).message
+    }, 'Failed to list namespaces');
+    res.status(500).json({
+      error: 'Failed to list namespaces',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.get('/namespaces/duplicates', requireAdminAuth, async (_req: Request, res: Response) => {
+  try {
+    const duplicates = await findDuplicateNamespaces();
+    res.json({ 
+      duplicates, 
+      count: duplicates.length,
+      totalVectorsToMove: duplicates.reduce((sum, d) => sum + d.uppercaseCount, 0)
+    });
+  } catch (error) {
+    logger.error({
+      service: 'ingest-routes',
+      operation: 'find_duplicates',
+      error: (error as Error).message
+    }, 'Failed to find duplicate namespaces');
+    res.status(500).json({
+      error: 'Failed to find duplicates',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/namespaces/consolidate', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const dryRun = req.body.dryRun !== false;
+    
+    logger.info({
+      service: 'ingest-routes',
+      operation: 'consolidate_namespaces',
+      dryRun
+    }, 'Starting namespace consolidation');
+    
+    const result = await consolidateNamespaces(dryRun);
+    
+    res.json({
+      success: true,
+      dryRun,
+      ...result
+    });
+  } catch (error) {
+    logger.error({
+      service: 'ingest-routes',
+      operation: 'consolidate_namespaces',
+      error: (error as Error).message
+    }, 'Failed to consolidate namespaces');
+    res.status(500).json({
+      error: 'Failed to consolidate namespaces',
       message: (error as Error).message
     });
   }
