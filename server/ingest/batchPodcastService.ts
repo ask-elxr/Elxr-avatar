@@ -1,4 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
+import * as crypto from 'crypto';
 import * as unzipper from 'unzipper';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -10,6 +11,10 @@ import { embedAndUploadMicroBatch, prepareChunksForStorage, loadChunksFromStorag
 import { classifyTranscript, type ClassificationResult } from './namespaceClassifier.js';
 import { distillAndChunkTranscript } from './podcastDistillationService.js';
 import type { PodcastBatch, PodcastEpisode } from '@shared/schema';
+
+function computeContentHash(text: string): string {
+  return crypto.createHash('sha256').update(text).digest('hex');
+}
 
 const TEMP_DIR = '/tmp/podcast-batches';
 const VALID_EXTENSIONS = ['.txt', '.md', '.srt', '.vtt'];
@@ -106,6 +111,8 @@ export async function extractZipAndCreateBatch(
     const zipStream = Readable.from(zipBuffer);
     const directory = await unzipper.Open.buffer(zipBuffer);
     
+    let skippedDuplicates = 0;
+    
     for (const file of directory.files) {
       if (file.type === 'File' && isValidTranscriptFile(file.path)) {
         const filename = path.basename(file.path);
@@ -113,6 +120,20 @@ export async function extractZipAndCreateBatch(
         
         const content = await file.buffer();
         const transcriptText = content.toString('utf-8');
+        const contentHash = computeContentHash(transcriptText);
+        
+        // Check for duplicate content (same transcript already processed)
+        const existingEpisode = await storage.findPodcastEpisodeByHash(contentHash);
+        if (existingEpisode && existingEpisode.status === 'completed') {
+          skippedDuplicates++;
+          logger.info({ 
+            batchId: batch.id, 
+            filename,
+            existingEpisodeId: existingEpisode.id,
+            existingFilename: existingEpisode.filename 
+          }, 'Skipping duplicate episode - content already ingested');
+          continue;
+        }
         
         // Write to temp dir for backward compatibility (will be removed later)
         await fs.promises.writeFile(filePath, content);
@@ -123,11 +144,20 @@ export async function extractZipAndCreateBatch(
           filename,
           textLength: content.length,
           transcriptText,
+          contentHash,
         });
         
         episodeFilenames.push(filename);
-        logger.debug({ batchId: batch.id, filename }, 'Extracted episode file to DB');
+        logger.debug({ batchId: batch.id, filename, contentHash: contentHash.slice(0, 8) }, 'Extracted episode file to DB');
       }
+    }
+    
+    if (skippedDuplicates > 0) {
+      logger.info({ 
+        batchId: batch.id, 
+        skippedDuplicates,
+        newEpisodes: episodeFilenames.length 
+      }, 'Skipped duplicate episodes during extraction');
     }
     
     await storage.updatePodcastBatch(batch.id, {
@@ -282,7 +312,7 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
       : [batch.namespace];
     
     const progress = (e.namespaceProgress as Record<string, number>) || {};
-    return namespacesToCheck.every(ns => (progress[ns.toUpperCase()] || 0) >= e.chunksCount);
+    return namespacesToCheck.every(ns => (progress[ns.toUpperCase()] || 0) >= (e.chunksCount || 0));
   };
   
   // Include episodes that are pending, processing, or have incomplete namespace uploads

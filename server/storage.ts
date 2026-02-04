@@ -118,9 +118,10 @@ export interface IStorage {
   getPodcastBatch(id: string): Promise<PodcastBatch | undefined>;
   updatePodcastBatch(id: string, data: Partial<PodcastBatch>): Promise<PodcastBatch | undefined>;
   listPodcastBatches(limit?: number): Promise<PodcastBatch[]>;
-  createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number; transcriptText?: string }): Promise<PodcastEpisode>;
+  createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number; transcriptText?: string; contentHash?: string }): Promise<PodcastEpisode>;
   getPodcastEpisodesByBatch(batchId: string): Promise<PodcastEpisode[]>;
   updatePodcastEpisode(id: string, data: Partial<PodcastEpisode>): Promise<PodcastEpisode | undefined>;
+  findPodcastEpisodeByHash(contentHash: string): Promise<PodcastEpisode | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -692,7 +693,7 @@ export class DatabaseStorage implements IStorage {
     return batches;
   }
 
-  async createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number; transcriptText?: string }): Promise<PodcastEpisode> {
+  async createPodcastEpisode(data: { batchId: string; filename: string; textLength?: number; transcriptText?: string; contentHash?: string }): Promise<PodcastEpisode> {
     const [episode] = await db
       .insert(podcastEpisodes)
       .values(data)
@@ -715,6 +716,15 @@ export class DatabaseStorage implements IStorage {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(podcastEpisodes.id, id))
       .returning();
+    return episode;
+  }
+
+  async findPodcastEpisodeByHash(contentHash: string): Promise<PodcastEpisode | undefined> {
+    const [episode] = await db
+      .select()
+      .from(podcastEpisodes)
+      .where(eq(podcastEpisodes.contentHash, contentHash))
+      .limit(1);
     return episode;
   }
 }

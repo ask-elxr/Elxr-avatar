@@ -632,6 +632,7 @@ export const podcastEpisodes = pgTable("podcast_episodes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   batchId: varchar("batch_id").references(() => podcastBatches.id).notNull(),
   filename: varchar("filename").notNull(),
+  contentHash: varchar("content_hash"), // SHA-256 hash of transcript text for duplicate detection
   status: varchar("status").notNull().default("pending"),
   chunksCount: integer("chunks_count").default(0),
   discardedCount: integer("discarded_count").default(0),
