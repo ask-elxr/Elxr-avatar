@@ -76,7 +76,7 @@ export async function embedAndUploadMicroBatch(
   const { updateEpisodeProgress = false } = options; // Default: don't update episode (caller manages progress)
   const embedder = getEmbedder();
   const createdAt = new Date().toISOString();
-  const normalizedNamespace = namespace.toUpperCase();
+  const normalizedNamespace = namespace.toLowerCase();
   
   logger.info({
     episodeId,
