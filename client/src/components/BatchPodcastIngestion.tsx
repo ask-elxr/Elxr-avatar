@@ -447,7 +447,6 @@ export function BatchPodcastIngestion() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="*/*"
               onChange={handleFileSelect}
               className="hidden"
               data-testid="batch-file-input"
