@@ -1,0 +1,400 @@
+/**
+ * scripts/ingest_podcasts_to_pinecone.mjs
+ *
+ * Replit-ready podcast transcript ingestion for Mum/ELXR:
+ * - Distill transcripts into copyright-safer "learned wisdom" (no quotes, no names)
+ * - Optionally rewrite into "mentor memory" voice
+ * - Embed and upsert to Pinecone
+ *
+ * Usage:
+ *   node scripts/ingest_podcasts_to_pinecone.mjs \
+ *     --input ./data/podcasts \
+ *     --namespace mum_podcasts_learned \
+ *     --mentor "Mark" \
+ *     --mode mentor_memory
+ *
+ * Modes:
+ *   --mode learned        => distilled principles/models/heuristics (neutral voice)
+ *   --mode mentor_memory  => distilled + rewritten into mentor voice (recommended for avatars)
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import process from "node:process";
+
+import { Pinecone } from "@pinecone-database/pinecone";
+
+// -------------------------
+// Config via ENV
+// -------------------------
+const {
+  PINECONE_API_KEY,
+  PINECONE_INDEX,
+  OPENAI_API_KEY,
+  OPENAI_BASE_URL, // optional, e.g. "https://api.openai.com/v1"
+  LLM_MODEL = "gpt-4.1-mini",
+  EMBED_MODEL = "text-embedding-3-large",
+  MAX_INPUT_CHARS = "120000", // hard cap per transcript sent to LLM
+  UPSERT_BATCH = "50",
+  CONCURRENCY = "2",
+} = process.env;
+
+if (!PINECONE_API_KEY || !PINECONE_INDEX) {
+  throw new Error("Missing PINECONE_API_KEY or PINECONE_INDEX in env.");
+}
+if (!OPENAI_API_KEY) {
+  throw new Error("Missing OPENAI_API_KEY in env.");
+}
+
+const argv = parseArgs(process.argv.slice(2));
+const inputDir = argv.input ?? "./data/podcasts";
+const namespace = argv.namespace ?? "mum_podcasts_learned";
+const mentorName = argv.mentor ?? "Mentor";
+const mode = argv.mode ?? "mentor_memory"; // "learned" or "mentor_memory"
+
+// -------------------------
+// Prompts
+// -------------------------
+const SYSTEM_DISTILL = `
+You are extracting "learned wisdom" from podcast transcripts for a private knowledge base.
+
+CRITICAL RULES:
+- Do NOT quote or closely paraphrase the transcript.
+- Do NOT include names of hosts/guests, show titles, episode titles, dates, or unique anecdotes.
+- Do NOT include distinctive phrasing that could identify the source.
+- Transform content into generalized insights, patterns, and guidance that could apply broadly.
+- If the transcript is low-signal (banter, ads), say so and extract only what is truly reusable.
+- Avoid medical claims; use cautious language and recommend professional help when appropriate.
+
+Output MUST be valid JSON with this shape:
+{
+  "topics": ["..."],
+  "principles": [{"text":"...", "confidence":"high|medium|low"}],
+  "mental_models": [{"text":"...", "confidence":"high|medium|low"}],
+  "heuristics": [{"if":"...", "then":"...", "confidence":"high|medium|low"}],
+  "misconceptions": [{"text":"...", "confidence":"high|medium|low"}],
+  "red_flags": [{"text":"...", "confidence":"high|medium|low"}],
+  "safe_disclaimer": "one short sentence safety disclaimer"
+}
+`.trim();
+
+function userDistillPrompt(transcriptText) {
+  return `
+TRANSCRIPT (for extraction only; do NOT quote):
+${transcriptText}
+`.trim();
+}
+
+const SYSTEM_MENTOR_MEMORY = `
+You are rewriting distilled insights into a mentor's conversational "memory and guidance style" for an avatar.
+
+CRITICAL RULES:
+- Do NOT reference the podcast, episode, transcript, or any names.
+- Do NOT quote or paraphrase uniquely identifiable phrasing.
+- Keep it practical and conversational.
+- Use first-person voice ("I’ve noticed…", "What tends to help…") but DO NOT claim to be human.
+- Encourage honesty; avoid cheerleading; prefer clarity over comfort.
+- If sensitive topics arise, include gentle safety guidance (professional help, crisis resources where appropriate).
+
+Output MUST be valid JSON with this shape:
+{
+  "mentor": "Name",
+  "voice_rules": ["..."],
+  "go_to_moves": [{"trigger":"...", "response_style":"...", "why_it_helps":"..."}],
+  "signature_principles": [{"text":"...", "when_to_use":"..."}],
+  "question_prompts": ["..."],
+  "boundary_notes": ["..."]
+}
+`.trim();
+
+function userMentorMemoryPrompt(mentor, distilledJson) {
+  return `
+MENTOR NAME: ${mentor}
+
+DISTILLED INSIGHTS (input JSON):
+${JSON.stringify(distilledJson, null, 2)}
+`.trim();
+}
+
+// -------------------------
+// OpenAI minimal client (no SDK)
+// -------------------------
+async function openaiChatJSON({ system, user, model }) {
+  const baseUrl = OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const res = await fetch(`${baseUrl}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model,
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`OpenAI chat failed: ${res.status} ${txt}`);
+  }
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error("No content from OpenAI.");
+  return JSON.parse(content);
+}
+
+async function openaiEmbed(texts) {
+  const baseUrl = OPENAI_BASE_URL || "https://api.openai.com/v1";
+  const res = await fetch(`${baseUrl}/embeddings`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: EMBED_MODEL,
+      input: texts,
+    }),
+  });
+
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`OpenAI embeddings failed: ${res.status} ${txt}`);
+  }
+  const data = await res.json();
+  return data.data.map((d) => d.embedding);
+}
+
+// -------------------------
+// Pinecone
+// -------------------------
+const pc = new Pinecone({ apiKey: PINECONE_API_KEY });
+const index = pc.index(PINECONE_INDEX).namespace(namespace);
+
+// -------------------------
+// Main
+// -------------------------
+(async function main() {
+  console.log(`\n[Ingest] input=${inputDir}`);
+  console.log(`[Ingest] namespace=${namespace}`);
+  console.log(`[Ingest] mode=${mode}`);
+  console.log(`[Ingest] mentor=${mentorName}\n`);
+
+  const files = listFilesRecursive(inputDir).filter((f) =>
+    [".txt", ".md", ".json"].includes(path.extname(f).toLowerCase())
+  );
+
+  if (!files.length) {
+    console.log("No transcript files found. Expect .txt, .md, or .json");
+    process.exit(0);
+  }
+
+  const concurrency = Number(CONCURRENCY);
+  const queue = [...files];
+  const workers = Array.from({ length: concurrency }, (_, i) => worker(i + 1, queue));
+  await Promise.all(workers);
+
+  console.log("\nDone.\n");
+})().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});
+
+async function worker(workerId, queue) {
+  while (queue.length) {
+    const file = queue.pop();
+    if (!file) return;
+
+    try {
+      console.log(`[W${workerId}] Processing ${file}`);
+      const raw = readTranscriptFile(file);
+      const trimmed = raw.slice(0, Number(MAX_INPUT_CHARS));
+
+      // 1) Distill transcript => learned wisdom JSON
+      const distilled = await withRetry(
+        () => openaiChatJSON({ system: SYSTEM_DISTILL, user: userDistillPrompt(trimmed), model: LLM_MODEL }),
+        3
+      );
+
+      // 2) Optional: convert learned wisdom => mentor memory JSON
+      let finalDoc = distilled;
+      let docType = "learned_wisdom";
+
+      if (mode === "mentor_memory") {
+        finalDoc = await withRetry(
+          () => openaiChatJSON({
+            system: SYSTEM_MENTOR_MEMORY,
+            user: userMentorMemoryPrompt(mentorName, distilled),
+            model: LLM_MODEL,
+          }),
+          3
+        );
+        docType = "mentor_memory";
+      }
+
+      // 3) Flatten into chunks for vector DB
+      const chunks = buildChunks(finalDoc, docType);
+
+      if (!chunks.length) {
+        console.log(`[W${workerId}] No chunks extracted (low signal). Skipping upsert.\n`);
+        continue;
+      }
+
+      // 4) Embed
+      const embeddings = await withRetry(() => openaiEmbed(chunks.map((c) => c.text)), 3);
+
+      // 5) Upsert in batches
+      const vectors = chunks.map((c, idx) => ({
+        id: c.id,
+        values: embeddings[idx],
+        metadata: c.metadata,
+      }));
+
+      const batchSize = Number(UPSERT_BATCH);
+      for (let i = 0; i < vectors.length; i += batchSize) {
+        const batch = vectors.slice(i, i + batchSize);
+        await withRetry(() => index.upsert(batch), 3);
+      }
+
+      console.log(`[W${workerId}] Upserted ${vectors.length} vectors.\n`);
+    } catch (err) {
+      console.error(`[W${workerId}] ERROR on ${file}:`, err?.message || err);
+    }
+  }
+}
+
+// -------------------------
+// Chunk building (RAG-friendly)
+// -------------------------
+function buildChunks(doc, docType) {
+  const chunks = [];
+  const baseMeta = {
+    kb: "podcasts",
+    doc_type: docType,
+    mentor: doc.mentor || null,
+    // IMPORTANT: do not store source titles/names; keep it derived
+    derived: true,
+  };
+
+  // Helper to add chunk
+  function add(text, extraMeta = {}) {
+    const normalized = (text || "").trim();
+    if (!normalized) return;
+    const id = crypto.createHash("sha1").update(docType + "::" + normalized).digest("hex");
+    chunks.push({
+      id,
+      text: normalized,
+      metadata: { ...baseMeta, ...extraMeta, text: normalized },
+    });
+  }
+
+  if (docType === "learned_wisdom") {
+    (doc.topics || []).forEach((t) => add(`Topic: ${t}`, { kind: "topic" }));
+
+    (doc.principles || []).forEach((p) => add(p.text, { kind: "principle", confidence: p.confidence || "medium" }));
+    (doc.mental_models || []).forEach((m) => add(m.text, { kind: "mental_model", confidence: m.confidence || "medium" }));
+
+    (doc.heuristics || []).forEach((h) => {
+      add(`If: ${h.if}\nThen: ${h.then}`, { kind: "heuristic", confidence: h.confidence || "medium" });
+    });
+
+    (doc.misconceptions || []).forEach((m) =>
+      add(m.text, { kind: "misconception", confidence: m.confidence || "medium" })
+    );
+
+    (doc.red_flags || []).forEach((r) =>
+      add(r.text, { kind: "red_flag", confidence: r.confidence || "medium" })
+    );
+
+    if (doc.safe_disclaimer) add(doc.safe_disclaimer, { kind: "disclaimer" });
+  }
+
+  if (docType === "mentor_memory") {
+    add(`Voice rules:\n- ${(doc.voice_rules || []).join("\n- ")}`, { kind: "voice_rules" });
+
+    (doc.go_to_moves || []).forEach((m) => {
+      add(
+        `Trigger: ${m.trigger}\nResponse style: ${m.response_style}\nWhy it helps: ${m.why_it_helps}`,
+        { kind: "go_to_move" }
+      );
+    });
+
+    (doc.signature_principles || []).forEach((p) =>
+      add(`${p.text}\nWhen to use: ${p.when_to_use}`, { kind: "signature_principle" })
+    );
+
+    add(`Question prompts:\n- ${(doc.question_prompts || []).join("\n- ")}`, { kind: "question_prompts" });
+    add(`Boundary notes:\n- ${(doc.boundary_notes || []).join("\n- ")}`, { kind: "boundary_notes" });
+  }
+
+  // Safety: keep chunks reasonably sized
+  return chunks
+    .map((c) => ({ ...c, text: c.text.slice(0, 2000) }))
+    .filter((c) => c.text.length > 25);
+}
+
+// -------------------------
+// File utilities
+// -------------------------
+function readTranscriptFile(filepath) {
+  const ext = path.extname(filepath).toLowerCase();
+  const raw = fs.readFileSync(filepath, "utf8");
+
+  if (ext === ".json") {
+    // Accept either { transcript: "..." } or a raw array of segments
+    try {
+      const j = JSON.parse(raw);
+      if (typeof j === "string") return j;
+      if (j.transcript && typeof j.transcript === "string") return j.transcript;
+      if (Array.isArray(j)) return j.map((x) => (typeof x === "string" ? x : JSON.stringify(x))).join("\n");
+      return JSON.stringify(j);
+    } catch {
+      return raw;
+    }
+  }
+
+  return raw;
+}
+
+function listFilesRecursive(dir) {
+  const out = [];
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...listFilesRecursive(full));
+    else out.push(full);
+  }
+  return out;
+}
+
+function parseArgs(args) {
+  const out = {};
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i];
+    if (a.startsWith("--")) {
+      const k = a.slice(2);
+      const v = args[i + 1] && !args[i + 1].startsWith("--") ? args[++i] : true;
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+async function withRetry(fn, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try {
+      return await fn();
+    } catch (e) {
+      lastErr = e;
+      const wait = 700 * Math.pow(2, i);
+      await new Promise((r) => setTimeout(r, wait));
+    }
+  }
+  throw lastErr;
+}
