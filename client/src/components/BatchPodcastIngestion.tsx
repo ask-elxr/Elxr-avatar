@@ -447,7 +447,7 @@ export function BatchPodcastIngestion() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".zip,.ZIP,application/zip,application/x-zip,application/x-zip-compressed,application/octet-stream"
+              accept="*/*"
               onChange={handleFileSelect}
               className="hidden"
               data-testid="batch-file-input"
