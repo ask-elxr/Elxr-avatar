@@ -201,6 +201,65 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
     enabled: isAdminVerified,
   });
 
+  // Ingestion jobs queries
+  interface LearningArtifactJob {
+    id: string;
+    status: string;
+    kb: string;
+    courseTitle: string;
+    lessonsDetected: number;
+    lessonsProcessed: number;
+    totalArtifacts: number;
+    createdAt: string;
+    updatedAt: string;
+  }
+
+  interface PodcastBatch {
+    id: string;
+    namespace: string;
+    zipFilename: string;
+    status: string;
+    totalEpisodes: number;
+    processedEpisodes: number;
+    successfulEpisodes: number;
+    totalChunks: number;
+    createdAt: string;
+    updatedAt: string;
+  }
+
+  const getAdminHeaders = useCallback((): Record<string, string> => {
+    const secret = localStorage.getItem('admin_secret');
+    return secret ? { 'X-Admin-Secret': secret } : {};
+  }, []);
+
+  const { data: learningArtifactJobs } = useQuery<{ success: boolean; jobs: LearningArtifactJob[] }>({
+    queryKey: ['/api/admin/learning-artifacts/jobs'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/learning-artifacts/jobs', {
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to fetch learning artifact jobs');
+      return response.json();
+    },
+    enabled: isAdminVerified,
+    refetchInterval: 10000,
+  });
+
+  const { data: podcastBatchesData } = useQuery<{ success: boolean; batches: PodcastBatch[] }>({
+    queryKey: ['/api/admin/ingest/podcast/batches'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/ingest/podcast/batches', {
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to fetch podcast batches');
+      return response.json();
+    },
+    enabled: isAdminVerified,
+    refetchInterval: 10000,
+  });
+
+  const podcastBatches = podcastBatchesData?.batches || [];
+
   // Reorder avatars mutation
   const reorderMutation = useMutation({
     mutationFn: async (avatarIds: string[]) => {
@@ -565,6 +624,94 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
               <div className="mb-6 sm:mb-8">
                 <ServiceStatusCheck />
               </div>
+
+              {/* Ingestion Jobs Status */}
+              <Card className="mb-6 sm:mb-8">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <Upload className="w-5 h-5" />
+                    Ingestion Jobs
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Track content uploads to knowledge base</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 sm:p-6 pt-0">
+                  {/* Learning Artifact Jobs */}
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <Brain className="w-4 h-4" />
+                      Course Ingestion Jobs
+                    </h4>
+                    {learningArtifactJobs?.jobs && learningArtifactJobs.jobs.length > 0 ? (
+                      <div className="space-y-2">
+                        {learningArtifactJobs.jobs.slice(0, 5).map((job) => (
+                          <div key={job.id} className="flex items-center justify-between p-2 border rounded text-xs sm:text-sm">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{job.courseTitle || 'Untitled Course'}</div>
+                              <div className="text-muted-foreground">
+                                {job.kb} • {job.lessonsProcessed}/{job.lessonsDetected} lessons • {job.totalArtifacts} artifacts
+                              </div>
+                            </div>
+                            <div className={`px-2 py-1 rounded text-xs ${
+                              job.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                              job.status === 'processing' ? 'bg-blue-500/20 text-blue-500' :
+                              job.status === 'failed' ? 'bg-red-500/20 text-red-500' :
+                              'bg-yellow-500/20 text-yellow-500'
+                            }`}>
+                              {job.status}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-muted-foreground">No course ingestion jobs</p>
+                    )}
+                  </div>
+
+                  {/* Podcast Batch Jobs */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <Mic className="w-4 h-4" />
+                      Podcast Batch Jobs
+                    </h4>
+                    {podcastBatches && podcastBatches.length > 0 ? (
+                      <div className="space-y-2">
+                        {podcastBatches.slice(0, 5).map((batch) => (
+                          <div key={batch.id} className="flex items-center justify-between p-2 border rounded text-xs sm:text-sm">
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium truncate">{batch.zipFilename}</div>
+                              <div className="text-muted-foreground">
+                                {batch.namespace} • {batch.processedEpisodes}/{batch.totalEpisodes} episodes • {batch.totalChunks} chunks
+                              </div>
+                            </div>
+                            <div className={`px-2 py-1 rounded text-xs ${
+                              batch.status === 'completed' ? 'bg-green-500/20 text-green-500' :
+                              batch.status === 'processing' ? 'bg-blue-500/20 text-blue-500' :
+                              batch.status === 'failed' ? 'bg-red-500/20 text-red-500' :
+                              batch.status === 'cancelled' ? 'bg-gray-500/20 text-gray-500' :
+                              'bg-yellow-500/20 text-yellow-500'
+                            }`}>
+                              {batch.status}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-muted-foreground">No podcast batch jobs</p>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setCurrentView('knowledge')}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Content
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Avatars Table */}
               <Card>
