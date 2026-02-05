@@ -84,6 +84,20 @@ Output MUST be valid JSON with this shape:
 
 const MAX_INPUT_CHARS = 120000;
 
+function extractJSON(text: string): string {
+  let cleaned = text.trim();
+  const fenceMatch = cleaned.match(/```(?:json)?\s*\n?([\s\S]*?)```/);
+  if (fenceMatch) {
+    cleaned = fenceMatch[1].trim();
+  }
+  const firstBrace = cleaned.indexOf('{');
+  const lastBrace = cleaned.lastIndexOf('}');
+  if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+    cleaned = cleaned.slice(firstBrace, lastBrace + 1);
+  }
+  return cleaned;
+}
+
 export async function distillTranscript(transcriptText: string): Promise<DistilledWisdom> {
   const trimmed = transcriptText.slice(0, MAX_INPUT_CHARS);
   
@@ -107,7 +121,7 @@ export async function distillTranscript(transcriptText: string): Promise<Distill
   }
   
   try {
-    const parsed = JSON.parse(content.text) as DistilledWisdom;
+    const parsed = JSON.parse(extractJSON(content.text)) as DistilledWisdom;
     logger.info({ 
       topicsCount: parsed.topics?.length || 0,
       principlesCount: parsed.principles?.length || 0,
@@ -142,7 +156,7 @@ export async function convertToMentorMemory(distilledWisdom: DistilledWisdom, me
   }
   
   try {
-    const parsed = JSON.parse(content.text) as MentorMemory;
+    const parsed = JSON.parse(extractJSON(content.text)) as MentorMemory;
     logger.info({ 
       mentor: parsed.mentor,
       voiceRulesCount: parsed.voice_rules?.length || 0,
