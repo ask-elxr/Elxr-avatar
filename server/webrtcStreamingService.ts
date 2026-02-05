@@ -386,7 +386,7 @@ Respond naturally and conversationally. Keep responses concise for voice.`;
     
     // Start LLM streaming immediately
     const stream = anthropic.messages.stream({
-      model: 'claude-opus-4-6',
+      model: 'claude-sonnet-4-5',
       max_tokens: 500,
       system: systemPrompt,
       messages: [{ role: 'user', content: userText }],

@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { logger } from '../logger';
 import { getAvatarById } from './avatars';
 
-const DEFAULT_MODEL = "claude-opus-4-6";
+const DEFAULT_MODEL = "claude-sonnet-4-5";
 
 const anthropic = process.env.ANTHROPIC_API_KEY 
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })

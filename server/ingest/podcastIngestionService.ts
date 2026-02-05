@@ -101,7 +101,7 @@ export async function extractSubstance(text: string): Promise<string> {
     logger.debug({ batchIndex: i, batchLength: batch.length }, 'Extracting substance from batch');
     
     const response = await withRetry(() => anthropic.messages.create({
-      model: 'claude-opus-4-6',
+      model: 'claude-sonnet-4-5',
       max_tokens: 8192,
       system: PODCAST_EXTRACTION_PROMPT,
       messages: [
@@ -214,7 +214,7 @@ export async function chunkPodcastContent(
     logger.debug({ batchIndex: i, batchLength: batch.length }, 'Chunking batch');
     
     const response = await withRetry(() => anthropic.messages.create({
-      model: 'claude-opus-4-6',
+      model: 'claude-sonnet-4-5',
       max_tokens: 8192,
       system: PODCAST_CHUNKING_PROMPT,
       messages: [

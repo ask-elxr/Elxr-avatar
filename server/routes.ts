@@ -8708,7 +8708,7 @@ ${historyPreview}
                 'content-type': 'application/json',
               },
               body: JSON.stringify({
-                model: 'claude-opus-4-6',
+                model: 'claude-sonnet-4-5',
                 max_tokens: 1,
                 messages: [{ role: 'user', content: 'Hi' }],
               }),

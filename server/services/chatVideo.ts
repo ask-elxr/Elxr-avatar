@@ -165,7 +165,7 @@ export class ChatVideoService {
     const anthropic = new Anthropic();
     
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-6",
+      model: "claude-sonnet-4-5",
       max_tokens: 1000,
       messages: [
         {
