@@ -196,7 +196,7 @@ export function CourseIngestion() {
       const adminHeaders = getAdminHeaders();
       console.log('[CourseIngestion] Uploading file:', file.name, 'Admin secret present:', !!adminHeaders['X-Admin-Secret']);
       
-      const response = await fetch('/admin/course/extract-text', {
+      const response = await fetch('/api/admin/course/extract-text', {
         method: 'POST',
         headers: adminHeaders,
         body: formData

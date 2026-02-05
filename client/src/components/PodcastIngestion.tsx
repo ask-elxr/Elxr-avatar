@@ -158,7 +158,7 @@ export function PodcastIngestion() {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch('/admin/course/extract-text', {
+      const response = await fetch('/api/admin/course/extract-text', {
         method: 'POST',
         headers: getAdminHeaders(),
         body: formData
