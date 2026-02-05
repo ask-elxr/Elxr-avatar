@@ -203,7 +203,7 @@ export function BatchPodcastIngestion() {
 
   const resumeStuckMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/api/admin/ingest/podcast/batch/resume-stuck', {
+      const response = await fetch('/api/admin/podcast/batch/resume-stuck', {
         method: 'POST',
         headers: getAdminHeaders()
       });
