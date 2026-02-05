@@ -81,7 +81,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
   
   try {
     const response = await withRetry(() => anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-opus-4-6',
       max_tokens: 8192,
       system: ANONYMIZATION_SYSTEM_PROMPT,
       messages: [
@@ -97,7 +97,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
       : text;
     
     const checkResponse = await withRetry(() => anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-opus-4-6',
       max_tokens: 10,
       messages: [
         {
@@ -114,7 +114,7 @@ export async function anonymizeText(text: string): Promise<AnonymizationResult> 
     if (checkResult === 'YES') {
       logger.warn('Anonymization check failed, re-anonymizing');
       const reAnonymized = await withRetry(() => anthropic.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-opus-4-6',
         max_tokens: 8192,
         system: ANONYMIZATION_SYSTEM_PROMPT + '\n\nThis text was already anonymized once but still contains recognizable elements. Be MORE aggressive in removing identifying patterns.',
         messages: [
@@ -231,7 +231,7 @@ export async function chunkTextConversationally(
     
     try {
       const response = await withRetry(() => anthropic.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-opus-4-6',
         max_tokens: 8192,
         system: CHUNKING_SYSTEM_PROMPT,
         messages: [

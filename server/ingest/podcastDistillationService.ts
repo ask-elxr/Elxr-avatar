@@ -90,7 +90,7 @@ export async function distillTranscript(transcriptText: string): Promise<Distill
   logger.info({ textLength: trimmed.length }, 'Distilling transcript into learned wisdom');
   
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-opus-4-6',
     max_tokens: 4000,
     messages: [
       {
@@ -125,7 +125,7 @@ export async function convertToMentorMemory(distilledWisdom: DistilledWisdom, me
   logger.info({ mentorName }, 'Converting distilled wisdom to mentor memory');
   
   const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-opus-4-6',
     max_tokens: 4000,
     messages: [
       {

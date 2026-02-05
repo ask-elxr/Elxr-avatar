@@ -2,7 +2,7 @@ import type { PersonaSpec, CriticResult } from './personaTypes';
 import Anthropic from '@anthropic-ai/sdk';
 
 // <important_do_not_delete>
-const CRITIC_MODEL = "claude-sonnet-4-5";
+const CRITIC_MODEL = "claude-opus-4-6";
 // </important_do_not_delete>
 
 const anthropic = new Anthropic();

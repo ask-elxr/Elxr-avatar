@@ -54,7 +54,7 @@ class Mem0Service {
     
     try {
       const response = await this.anthropic.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-opus-4-6',
         max_tokens: 500,
         system: `You extract memorable facts from conversations. Only extract concrete, reusable information.
 
