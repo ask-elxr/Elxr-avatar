@@ -120,9 +120,9 @@ export function BatchPodcastIngestion() {
   const targetNamespace = customNamespace.trim() || selectedNamespace;
 
   const { data: batchesData } = useQuery<{ success: boolean; batches: PodcastBatch[] }>({
-    queryKey: ['/admin/podcast/batches'],
+    queryKey: ['/api/admin/podcast/batches'],
     queryFn: async () => {
-      const response = await fetch('/admin/podcast/batches', {
+      const response = await fetch('/api/admin/podcast/batches', {
         headers: getAdminHeaders()
       });
       if (!response.ok) throw new Error('Failed to fetch batches');
@@ -132,10 +132,10 @@ export function BatchPodcastIngestion() {
   });
 
   const { data: batchStatus, isLoading: isLoadingStatus } = useQuery<{ success: boolean } & BatchStatusResult>({
-    queryKey: ['/admin/podcast/batch', activeBatchId],
+    queryKey: ['/api/admin/podcast/batch', activeBatchId],
     queryFn: async () => {
       if (!activeBatchId) return null;
-      const response = await fetch(`/admin/podcast/batch/${activeBatchId}`, {
+      const response = await fetch(`/api/admin/podcast/batch/${activeBatchId}`, {
         headers: getAdminHeaders()
       });
       if (!response.ok) throw new Error('Failed to fetch batch status');
@@ -147,13 +147,13 @@ export function BatchPodcastIngestion() {
 
   useEffect(() => {
     if (batchStatus?.batch?.status === 'completed' || batchStatus?.batch?.status === 'failed') {
-      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batches'] });
     }
   }, [batchStatus?.batch?.status, queryClient]);
 
   const retryMutation = useMutation({
     mutationFn: async (batchId: string) => {
-      const response = await fetch(`/admin/podcast/batch/${batchId}/retry`, {
+      const response = await fetch(`/api/admin/podcast/batch/${batchId}/retry`, {
         method: 'POST',
         headers: getAdminHeaders()
       });
@@ -165,7 +165,7 @@ export function BatchPodcastIngestion() {
         title: "Retry Started",
         description: result.message
       });
-      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batch', activeBatchId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batch', activeBatchId] });
     },
     onError: (error: Error) => {
       toast({
@@ -178,7 +178,7 @@ export function BatchPodcastIngestion() {
 
   const startProcessingMutation = useMutation({
     mutationFn: async (batchId: string) => {
-      const response = await fetch(`/admin/podcast/batch/${batchId}/start-processing`, {
+      const response = await fetch(`/api/admin/podcast/batch/${batchId}/start-processing`, {
         method: 'POST',
         headers: getAdminHeaders()
       });
@@ -190,7 +190,7 @@ export function BatchPodcastIngestion() {
         title: "Processing Started",
         description: "Ingestion started with classified namespaces"
       });
-      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batch', activeBatchId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batch', activeBatchId] });
     },
     onError: (error: Error) => {
       toast({
@@ -203,7 +203,7 @@ export function BatchPodcastIngestion() {
 
   const resumeStuckMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch('/admin/podcast/resume', {
+      const response = await fetch('/api/admin/podcast/resume', {
         method: 'POST',
         headers: getAdminHeaders()
       });
@@ -228,7 +228,7 @@ export function BatchPodcastIngestion() {
 
   const updateNamespaceMutation = useMutation({
     mutationFn: async ({ episodeId, primaryNamespace }: { episodeId: string; primaryNamespace: string }) => {
-      const response = await fetch(`/admin/podcast/episode/${episodeId}/namespace`, {
+      const response = await fetch(`/api/admin/podcast/episode/${episodeId}/namespace`, {
         method: 'PATCH',
         headers: {
           ...getAdminHeaders(),
@@ -299,7 +299,7 @@ export function BatchPodcastIngestion() {
         formData.append('mentorName', mentorName.trim());
       }
 
-      const response = await fetch('/admin/podcast/batch/upload', {
+      const response = await fetch('/api/admin/podcast/batch/upload', {
         method: 'POST',
         headers: getAdminHeaders(),
         body: formData
