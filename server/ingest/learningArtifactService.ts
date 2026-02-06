@@ -207,7 +207,7 @@ class LearningArtifactService {
 
     const response = await withRetry(async () => {
       return await this.anthropic.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 16000,
         system: ARTIFACT_EXTRACTION_SYSTEM_PROMPT,
         messages: [
@@ -476,7 +476,7 @@ class LearningArtifactService {
 
     const response = await withRetry(async () => {
       return await this.anthropic.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: 'claude-3-5-haiku-20241022',
         max_tokens: 8000,
         system: LESSON_DETECTION_SYSTEM_PROMPT,
         messages: [
