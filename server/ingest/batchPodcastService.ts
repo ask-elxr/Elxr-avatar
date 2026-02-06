@@ -76,6 +76,78 @@ function isValidTranscriptFile(filename: string): boolean {
          !basename.startsWith('__MACOSX');
 }
 
+async function performZipExtraction(
+  batch: { id: string },
+  zipBuffer: Buffer,
+  namespace: string,
+  autoDetect: boolean,
+  distillMode: 'chunks' | 'mentor_memory',
+  mentorName?: string
+): Promise<{ episodeFilenames: string[]; skippedDuplicates: number }> {
+  const batchDir = await ensureTempDir(batch.id);
+  const episodeFilenames: string[] = [];
+  
+  const directory = await unzipper.Open.buffer(zipBuffer);
+  
+  let skippedDuplicates = 0;
+  
+  for (const file of directory.files) {
+    if (file.type === 'File' && isValidTranscriptFile(file.path)) {
+      const filename = path.basename(file.path);
+      const filePath = path.join(batchDir, filename);
+      
+      const content = await file.buffer();
+      const transcriptText = content.toString('utf-8');
+      const contentHash = computeContentHash(transcriptText);
+      
+      const existingEpisode = await storage.findPodcastEpisodeByHash(contentHash);
+      if (existingEpisode && existingEpisode.status === 'completed') {
+        skippedDuplicates++;
+        logger.info({ 
+          batchId: batch.id, 
+          filename,
+          existingEpisodeId: existingEpisode.id,
+          existingFilename: existingEpisode.filename 
+        }, 'Skipping duplicate episode - content already ingested');
+        continue;
+      }
+      
+      await fs.promises.writeFile(filePath, content);
+      
+      await storage.createPodcastEpisode({
+        batchId: batch.id,
+        filename,
+        textLength: content.length,
+        transcriptText,
+        contentHash,
+      });
+      
+      episodeFilenames.push(filename);
+      logger.debug({ batchId: batch.id, filename, contentHash: contentHash.slice(0, 8) }, 'Extracted episode file to DB');
+    }
+  }
+  
+  if (skippedDuplicates > 0) {
+    logger.info({ 
+      batchId: batch.id, 
+      skippedDuplicates,
+      newEpisodes: episodeFilenames.length 
+    }, 'Skipped duplicate episodes during extraction');
+  }
+  
+  await storage.updatePodcastBatch(batch.id, {
+    status: 'extracting',
+    totalEpisodes: episodeFilenames.length,
+  });
+  
+  logger.info({ 
+    batchId: batch.id, 
+    totalEpisodes: episodeFilenames.length 
+  }, 'Zip extraction complete');
+  
+  return { episodeFilenames, skippedDuplicates };
+}
+
 export async function extractZipAndCreateBatch(
   zipBuffer: Buffer,
   namespace: string,
@@ -84,10 +156,7 @@ export async function extractZipAndCreateBatch(
   distillMode: 'chunks' | 'mentor_memory' = 'chunks',
   mentorName?: string
 ): Promise<BatchUploadResult> {
-  const batchId = uuidv4();
-  
   logger.info({ 
-    batchId, 
     namespace, 
     zipFilename,
     autoDetect,
@@ -104,93 +173,41 @@ export async function extractZipAndCreateBatch(
     mentorName,
   });
   
-  const batchDir = await ensureTempDir(batch.id);
-  const episodeFilenames: string[] = [];
-  
-  try {
-    const zipStream = Readable.from(zipBuffer);
-    const directory = await unzipper.Open.buffer(zipBuffer);
-    
-    let skippedDuplicates = 0;
-    
-    for (const file of directory.files) {
-      if (file.type === 'File' && isValidTranscriptFile(file.path)) {
-        const filename = path.basename(file.path);
-        const filePath = path.join(batchDir, filename);
-        
-        const content = await file.buffer();
-        const transcriptText = content.toString('utf-8');
-        const contentHash = computeContentHash(transcriptText);
-        
-        // Check for duplicate content (same transcript already processed)
-        const existingEpisode = await storage.findPodcastEpisodeByHash(contentHash);
-        if (existingEpisode && existingEpisode.status === 'completed') {
-          skippedDuplicates++;
-          logger.info({ 
-            batchId: batch.id, 
-            filename,
-            existingEpisodeId: existingEpisode.id,
-            existingFilename: existingEpisode.filename 
-          }, 'Skipping duplicate episode - content already ingested');
-          continue;
-        }
-        
-        // Write to temp dir for backward compatibility (will be removed later)
-        await fs.promises.writeFile(filePath, content);
-        
-        // Store transcript in database for reliability (survives server restarts)
-        await storage.createPodcastEpisode({
-          batchId: batch.id,
-          filename,
-          textLength: content.length,
-          transcriptText,
-          contentHash,
+  performZipExtraction(batch, zipBuffer, namespace, autoDetect, distillMode, mentorName)
+    .then(async ({ episodeFilenames }) => {
+      if (autoDetect) {
+        classifyBatchEpisodes(batch.id).then(() => {
+          logger.info({ batchId: batch.id }, 'Batch classification complete, ready for review');
+        }).catch(error => {
+          logger.error({ batchId: batch.id, error: (error as Error).message }, 'Batch classification failed');
         });
-        
-        episodeFilenames.push(filename);
-        logger.debug({ batchId: batch.id, filename, contentHash: contentHash.slice(0, 8) }, 'Extracted episode file to DB');
+      } else {
+        processBatchEpisodes(batch.id).catch(error => {
+          logger.error({ batchId: batch.id, error: (error as Error).message }, 'Background batch processing failed');
+        });
       }
-    }
-    
-    if (skippedDuplicates > 0) {
-      logger.info({ 
+    })
+    .catch(async (error) => {
+      logger.error({ 
         batchId: batch.id, 
-        skippedDuplicates,
-        newEpisodes: episodeFilenames.length 
-      }, 'Skipped duplicate episodes during extraction');
-    }
-    
-    await storage.updatePodcastBatch(batch.id, {
-      status: 'extracting',
-      totalEpisodes: episodeFilenames.length,
+        error: (error as Error).message 
+      }, 'Failed to extract zip file');
+      
+      await storage.updatePodcastBatch(batch.id, {
+        status: 'failed',
+        error: (error as Error).message,
+      });
+      
+      await cleanupBatchDir(batch.id);
     });
-    
-    logger.info({ 
-      batchId: batch.id, 
-      totalEpisodes: episodeFilenames.length 
-    }, 'Zip extraction complete');
-    
-    return {
-      batchId: batch.id,
-      namespace,
-      autoDetect,
-      totalEpisodes: episodeFilenames.length,
-      episodeFilenames,
-    };
-  } catch (error) {
-    logger.error({ 
-      batchId: batch.id, 
-      error: (error as Error).message 
-    }, 'Failed to extract zip file');
-    
-    await storage.updatePodcastBatch(batch.id, {
-      status: 'failed',
-      error: (error as Error).message,
-    });
-    
-    await cleanupBatchDir(batch.id);
-    throw error;
-  }
+  
+  return {
+    batchId: batch.id,
+    namespace,
+    autoDetect,
+    totalEpisodes: 0,
+    episodeFilenames: [],
+  };
 }
 
 export async function classifyBatchEpisodes(batchId: string): Promise<EpisodeClassification[]> {

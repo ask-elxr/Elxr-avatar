@@ -627,29 +627,11 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
       mentorName
     );
     
-    if (autoDetect) {
-      classifyBatchEpisodes(result.batchId).then(() => {
-        logger.info({ batchId: result.batchId }, 'Batch classification complete, ready for review');
-      }).catch(error => {
-        logger.error({ batchId: result.batchId, error: (error as Error).message }, 'Batch classification failed');
-      });
-      
-      res.json({
-        success: true,
-        ...result,
-        message: `Batch created with ${result.totalEpisodes} episodes. Classification started - review before processing.`
-      });
-    } else {
-      processBatchEpisodes(result.batchId).catch(error => {
-        logger.error({ batchId: result.batchId, error: (error as Error).message }, 'Background batch processing failed');
-      });
-      
-      res.json({
-        success: true,
-        ...result,
-        message: `Batch created with ${result.totalEpisodes} episodes. Processing started in background.`
-      });
-    }
+    res.json({
+      success: true,
+      ...result,
+      message: `Batch created. Extraction is running in the background - refresh to see progress.`
+    });
   } catch (error) {
     logger.error({
       service: 'batch-podcast-routes',
