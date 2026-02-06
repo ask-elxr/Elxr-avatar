@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
-import { Loader2, Upload, AlertTriangle, CheckCircle2, XCircle, Package, RefreshCw, FileArchive, Clock, Sparkles, Play, Edit2, Brain } from "lucide-react";
+import { Loader2, Upload, AlertTriangle, CheckCircle2, XCircle, Package, RefreshCw, FileArchive, Clock, Sparkles, Play, Edit2, Brain, Trash2, Square } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAdminHeaders } from "@/lib/adminAuth";
 
@@ -215,7 +215,7 @@ export function BatchPodcastIngestion() {
         title: "Resume Complete",
         description: result.message
       });
-      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batches'] });
     },
     onError: (error: Error) => {
       toast({
@@ -223,6 +223,43 @@ export function BatchPodcastIngestion() {
         description: error.message,
         variant: "destructive"
       });
+    }
+  });
+
+  const cancelBatchMutation = useMutation({
+    mutationFn: async (batchId: string) => {
+      const response = await fetch(`/api/admin/podcast/batch/${batchId}/cancel`, {
+        method: 'POST',
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to cancel batch');
+      return response.json();
+    },
+    onSuccess: (result) => {
+      toast({ title: "Batch Cancelled", description: result.message });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batches'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Cancel Failed", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteBatchMutation = useMutation({
+    mutationFn: async (batchId: string) => {
+      const response = await fetch(`/api/admin/podcast/batch/${batchId}`, {
+        method: 'DELETE',
+        headers: getAdminHeaders()
+      });
+      if (!response.ok) throw new Error('Failed to delete batch');
+      return response.json();
+    },
+    onSuccess: (result) => {
+      toast({ title: "Batch Deleted", description: result.message });
+      setActiveBatchId(null);
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batches'] });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
     }
   });
 
@@ -245,7 +282,7 @@ export function BatchPodcastIngestion() {
         description: "Episode classification updated"
       });
       setEditingEpisodeId(null);
-      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batch', activeBatchId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batch', activeBatchId] });
     },
     onError: (error: Error) => {
       toast({
@@ -321,7 +358,7 @@ export function BatchPodcastIngestion() {
           : `Processing ${result.totalEpisodes} episodes from ${file.name}`
       });
 
-      queryClient.invalidateQueries({ queryKey: ['/admin/podcast/batches'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/podcast/batches'] });
     } catch (error) {
       toast({
         title: "Upload Failed",
@@ -710,6 +747,28 @@ export function BatchPodcastIngestion() {
                       <span className="text-sm text-purple-400">{batch.totalChunks} chunks</span>
                     )}
                     {getStatusBadge(batch.status)}
+                    {(batch.status === 'processing' || batch.status === 'extracting' || batch.status === 'classifying') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => { e.stopPropagation(); if (confirm('Cancel this batch? Pending episodes will be skipped.')) cancelBatchMutation.mutate(batch.id); }}
+                        disabled={cancelBatchMutation.isPending}
+                        className="h-7 w-7 p-0 text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/20"
+                        title="Cancel batch"
+                      >
+                        <Square className="w-3.5 h-3.5" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); if (confirm('Delete this batch and all its episodes? This cannot be undone.')) deleteBatchMutation.mutate(batch.id); }}
+                      disabled={deleteBatchMutation.isPending}
+                      className="h-7 w-7 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                      title="Delete batch"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
                 </div>
               ))}

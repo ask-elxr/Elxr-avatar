@@ -1,4 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from 'express';
+import { storage } from '../storage.js';
 import { z } from 'zod';
 import multer from 'multer';
 import pdfParse from 'pdf-parse';
@@ -736,6 +737,59 @@ router.post('/podcast/batch/resume-stuck', requireAdminAuth, async (req: Request
   } catch (error) {
     res.status(500).json({
       error: 'Failed to resume stuck batches',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.delete('/podcast/batch/:batchId', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    logger.info({ batchId, service: 'batch-podcast-routes' }, 'Deleting batch and all episodes');
+    
+    const batch = await storage.getPodcastBatch(batchId);
+    if (!batch) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    
+    await storage.deletePodcastBatch(batchId);
+    
+    res.json({
+      success: true,
+      message: `Deleted batch "${batch.zipFilename}" and all its episodes`
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to delete batch',
+      message: (error as Error).message
+    });
+  }
+});
+
+router.post('/podcast/batch/:batchId/cancel', requireAdminAuth, async (req: Request, res: Response) => {
+  try {
+    const { batchId } = req.params;
+    logger.info({ batchId, service: 'batch-podcast-routes' }, 'Cancelling batch');
+    
+    const batch = await storage.getPodcastBatch(batchId);
+    if (!batch) {
+      return res.status(404).json({ error: 'Batch not found' });
+    }
+    
+    const episodes = await storage.getPodcastEpisodesByBatch(batchId);
+    for (const ep of episodes.filter((e: any) => e.status === 'pending' || e.status === 'processing')) {
+      await storage.updatePodcastEpisode(ep.id, { status: 'skipped', error: 'Cancelled by user' });
+    }
+    
+    await storage.updatePodcastBatch(batchId, { status: 'failed', error: 'Cancelled by user' });
+    
+    res.json({
+      success: true,
+      message: `Cancelled batch "${batch.zipFilename}"`
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to cancel batch',
       message: (error as Error).message
     });
   }

@@ -122,6 +122,7 @@ export interface IStorage {
   getPodcastEpisodesByBatch(batchId: string): Promise<PodcastEpisode[]>;
   updatePodcastEpisode(id: string, data: Partial<PodcastEpisode>): Promise<PodcastEpisode | undefined>;
   findPodcastEpisodeByHash(contentHash: string): Promise<PodcastEpisode | undefined>;
+  deletePodcastBatch(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -717,6 +718,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(podcastEpisodes.id, id))
       .returning();
     return episode;
+  }
+
+  async deletePodcastBatch(id: string): Promise<void> {
+    await db.delete(podcastEpisodes).where(eq(podcastEpisodes.batchId, id));
+    await db.delete(podcastBatches).where(eq(podcastBatches.id, id));
   }
 
   async findPodcastEpisodeByHash(contentHash: string): Promise<PodcastEpisode | undefined> {
