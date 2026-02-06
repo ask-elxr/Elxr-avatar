@@ -197,9 +197,9 @@ RESPONSE LENGTH: Keep it conversational - 3-5 sentences. Complete your thoughts 
       - If you don't know something, say so naturally like a real person would
       - End with a natural invitation to continue the conversation`;
 
-    // Use appropriate max_tokens for voice mode to allow complete responses
-    // Voice mode: 400 tokens (4-5 sentences), Detail mode: 800 tokens, Text mode: 1000 tokens
-    const maxTokens = wantsDetailedResponse ? 800 : (isVoiceMode ? 400 : 1000);
+    // Use appropriate max_tokens so avatars can finish their thoughts
+    // Voice mode: 600 tokens (~8-10 sentences), Detail mode: 1000 tokens, Text mode: 1200 tokens
+    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 600 : 1200);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
@@ -222,8 +222,8 @@ RESPONSE LENGTH: Keep it conversational - 3-5 sentences. Complete your thoughts 
     let sentenceCount = 0;
     const sentenceEnders = /([.!?])\s+/g;
     
-    // Truncation settings: max 8 sentences in voice mode (unless detailed)
-    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 8 : 15;
+    // Truncation settings: allow avatars to finish their thoughts naturally
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 12 : 18;
     let shouldTruncate = false;
 
     for await (const event of stream) {
