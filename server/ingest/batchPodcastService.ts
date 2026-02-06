@@ -711,7 +711,7 @@ export async function listBatches(limit: number = 20): Promise<PodcastBatch[]> {
 export async function resumeStuckBatches(): Promise<{ resumedCount: number; failedCount: number }> {
   const batches = await storage.listPodcastBatches(50);
   const stuckBatches = batches.filter(b => 
-    b.status === 'processing' || b.status === 'extracting' || b.status === 'classifying' || b.status === 'failed'
+    b.status === 'processing' || b.status === 'extracting' || b.status === 'classifying' || b.status === 'failed' || (b.status === 'pending' && b.totalEpisodes === 0)
   );
   
   if (stuckBatches.length === 0) {
@@ -740,7 +740,12 @@ export async function resumeStuckBatches(): Promise<{ resumedCount: number; fail
         await storage.updatePodcastEpisode(ep.id, { status: 'pending', error: null });
       }
       
-      await storage.updatePodcastBatch(batch.id, { status: 'processing', error: null });
+      const totalCount = episodes.length;
+      await storage.updatePodcastBatch(batch.id, { 
+        status: 'processing', 
+        error: null,
+        totalEpisodes: totalCount > (batch.totalEpisodes || 0) ? totalCount : batch.totalEpisodes 
+      });
       
       processBatchEpisodes(batch.id).catch(error => {
         logger.error({ batchId: batch.id, error: (error as Error).message }, 'Failed to resume batch');
