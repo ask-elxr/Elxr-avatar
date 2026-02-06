@@ -711,7 +711,7 @@ export async function listBatches(limit: number = 20): Promise<PodcastBatch[]> {
 export async function resumeStuckBatches(): Promise<{ resumedCount: number; failedCount: number }> {
   const batches = await storage.listPodcastBatches(50);
   const stuckBatches = batches.filter(b => 
-    b.status === 'processing' || b.status === 'extracting' || b.status === 'classifying'
+    b.status === 'processing' || b.status === 'extracting' || b.status === 'classifying' || b.status === 'failed'
   );
   
   if (stuckBatches.length === 0) {
@@ -719,31 +719,29 @@ export async function resumeStuckBatches(): Promise<{ resumedCount: number; fail
     return { resumedCount: 0, failedCount: 0 };
   }
   
-  logger.info({ count: stuckBatches.length }, 'Found stuck batches, attempting recovery');
+  logger.info({ count: stuckBatches.length }, 'Found stuck/failed batches, attempting recovery');
   
   let resumedCount = 0;
   let failedCount = 0;
   
   for (const batch of stuckBatches) {
-    // Check if episodes have transcripts stored in database (new reliable method)
     const episodes = await storage.getPodcastEpisodesByBatch(batch.id);
     const episodesWithTranscripts = episodes.filter(e => e.transcriptText);
-    const pendingEpisodes = episodes.filter(e => e.status === 'pending' || e.status === 'processing');
+    const retryableEpisodes = episodes.filter(e => e.status === 'pending' || e.status === 'processing' || e.status === 'failed');
     
-    // If episodes have transcripts in DB, we can resume without temp files
-    if (episodesWithTranscripts.length > 0 && pendingEpisodes.length > 0) {
+    if (episodesWithTranscripts.length > 0 && retryableEpisodes.length > 0) {
       logger.info({ 
         batchId: batch.id, 
         episodesWithTranscripts: episodesWithTranscripts.length,
-        pendingEpisodes: pendingEpisodes.length
+        retryableEpisodes: retryableEpisodes.length
       }, 'Resuming batch from database transcripts');
       
-      // Reset any episodes stuck in 'processing' back to 'pending'
-      for (const ep of episodes.filter(e => e.status === 'processing')) {
-        await storage.updatePodcastEpisode(ep.id, { status: 'pending' });
+      for (const ep of episodes.filter(e => e.status === 'processing' || e.status === 'failed')) {
+        await storage.updatePodcastEpisode(ep.id, { status: 'pending', error: null });
       }
       
-      // Resume processing
+      await storage.updatePodcastBatch(batch.id, { status: 'processing', error: null });
+      
       processBatchEpisodes(batch.id).catch(error => {
         logger.error({ batchId: batch.id, error: (error as Error).message }, 'Failed to resume batch');
       });
@@ -751,12 +749,17 @@ export async function resumeStuckBatches(): Promise<{ resumedCount: number; fail
       continue;
     }
     
-    // Legacy: Check if temp directory exists
     const batchDir = path.join(TEMP_DIR, batch.id);
     const dirExists = await fs.promises.access(batchDir).then(() => true).catch(() => false);
     
     if (dirExists) {
       logger.info({ batchId: batch.id }, 'Resuming stuck batch from temp files (legacy)');
+      
+      for (const ep of episodes.filter(e => e.status === 'failed')) {
+        await storage.updatePodcastEpisode(ep.id, { status: 'pending', error: null });
+      }
+      await storage.updatePodcastBatch(batch.id, { status: 'processing', error: null });
+      
       processBatchEpisodes(batch.id).catch(error => {
         logger.error({ batchId: batch.id, error: (error as Error).message }, 'Failed to resume batch');
       });
@@ -764,12 +767,13 @@ export async function resumeStuckBatches(): Promise<{ resumedCount: number; fail
       continue;
     }
     
-    // No transcripts in DB and no temp files - can't recover
-    logger.warn({ batchId: batch.id }, 'Batch has no transcripts in DB and temp directory missing, marking as failed');
-    await storage.updatePodcastBatch(batch.id, {
-      status: 'failed',
-      error: 'Recovery failed: no transcripts in database and temp directory missing. Please re-upload ZIP.'
-    });
+    if (batch.status !== 'failed') {
+      logger.warn({ batchId: batch.id }, 'Batch has no transcripts in DB and temp directory missing, marking as failed');
+      await storage.updatePodcastBatch(batch.id, {
+        status: 'failed',
+        error: 'Recovery failed: no transcripts in database and temp directory missing. Please re-upload ZIP.'
+      });
+    }
     failedCount++;
   }
   
