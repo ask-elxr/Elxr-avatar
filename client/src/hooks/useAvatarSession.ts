@@ -610,20 +610,18 @@ export function useAvatarSession({
         .replace(/\s+/g, ' ')    // Collapse whitespace
         .trim();
       
-      // Whitelisted short interruption phrases (always allowed)
-      const interruptPhrases = ['stop', 'wait', 'pause', 'hold on', 'excuse me', 'actually', 'but', 'hey', 'no', 'yes', 'ok', 'okay'];
       const normalizedTranscript = normalize(trimmedTranscript);
-      const isInterruptPhrase = interruptPhrases.some(phrase => 
-        normalizedTranscript === phrase || normalizedTranscript.startsWith(phrase + ' ')
-      );
       
-      // Content-based echo detection: Only interrupt if this is NOT an echo of what avatar said
+      // Always allow common interrupt words regardless of echo matching
+      const alwaysAllow = ['stop', 'wait', 'no', 'hey', 'hold on', 'actually', 'excuse me', 'pause'];
+      const isInterruptWord = alwaysAllow.some(w => normalizedTranscript === w || normalizedTranscript.startsWith(w + ' '));
+      
+      // Echo detection: Only block very short phrases that exactly match avatar speech
+      // Keep window short (5s) and threshold tight (< 15 chars) to avoid blocking real interruptions
       const timeSinceAvatarSpoke = Date.now() - lastAvatarResponseTimeRef.current;
-      if (timeSinceAvatarSpoke < 10000 && lastAvatarResponseRef.current && !isInterruptPhrase) {
+      if (!isInterruptWord && timeSinceAvatarSpoke < 5000 && lastAvatarResponseRef.current && normalizedTranscript.length < 15) {
         const normalizedAvatar = normalize(lastAvatarResponseRef.current);
-        // Check if transcript appears in avatar's recent speech (echo detection)
-        // Use fuzzy match: transcript is substring of avatar response
-        if (normalizedAvatar.includes(normalizedTranscript) && normalizedTranscript.length < 30) {
+        if (normalizedAvatar.includes(normalizedTranscript)) {
           console.log("🔇 ECHO during playback (ignored):", trimmedTranscript.substring(0, 30));
           return;
         }
@@ -652,29 +650,19 @@ export function useAvatarSession({
       }
     }
     
-    // Content-based echo detection: Check if transcript matches what avatar just said
-    // This catches echo that arrives after the avatar "stopped speaking" according to SDK
-    // Use same normalization logic as during-playback detection
+    // Post-playback echo detection: Only block very short echoes within a tight window
     const postPlaybackTimeSince = Date.now() - lastAvatarResponseTimeRef.current;
-    if (postPlaybackTimeSince < 15000 && lastAvatarResponseRef.current) {
-      // Normalize function: remove punctuation, collapse whitespace, lowercase
+    if (postPlaybackTimeSince < 3000 && lastAvatarResponseRef.current) {
       const normalizeText = (text: string) => text.toLowerCase()
-        .replace(/[^\w\s]/g, '') // Remove punctuation
-        .replace(/\s+/g, ' ')    // Collapse whitespace
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
         .trim();
       
       const normalizedAvatarResponse = normalizeText(lastAvatarResponseRef.current);
       const normalizedTranscriptText = normalizeText(trimmedTranscript);
       
-      // Whitelisted short interruption phrases (always allowed)
-      const allowedPhrases = ['stop', 'wait', 'pause', 'hold on', 'excuse me', 'actually', 'but', 'hey', 'no', 'yes', 'ok', 'okay'];
-      const isAllowedPhrase = allowedPhrases.some(phrase => 
-        normalizedTranscriptText === phrase || normalizedTranscriptText.startsWith(phrase + ' ')
-      );
-      
-      // Check if the transcript is contained in what the avatar said (echo) - unless it's an allowed phrase
-      if (!isAllowedPhrase && normalizedAvatarResponse.includes(normalizedTranscriptText) && normalizedTranscriptText.length < 30) {
-        console.log("🔇 ECHO DETECTED (post-playback): Transcript matches avatar's recent speech, ignoring:", trimmedTranscript.substring(0, 50));
+      if (normalizedAvatarResponse.includes(normalizedTranscriptText) && normalizedTranscriptText.length < 15) {
+        console.log("🔇 ECHO DETECTED (post-playback):", trimmedTranscript.substring(0, 50));
         return;
       }
     }
@@ -2717,23 +2705,27 @@ export function useAvatarSession({
           
           // Ordered playback state - audio chunks may arrive out of order
           const audioBuffer: Map<number, { content: string; type: string; isFinal: boolean }> = new Map();
-          let nextPlayIndex = 0; // Start at 0 - thinking phrase at index 0, sentences start at index 1
+          let nextPlayIndex = 0;
           let streamingComplete = false;
           let streamError = false;
+          let audioAborted = false;
           
-          // Helper to play audio chunks in order via repeatAudio
           const processAudioQueue = async () => {
-            const maxWaitMs = 30000; // 30 second timeout
+            const maxWaitMs = 30000;
             const startTime = Date.now();
             
             while (!streamingComplete || audioBuffer.size > 0) {
-              // Check for timeout
+              if (audioAborted) {
+                audioBuffer.clear();
+                console.log("🛑 [AUDIO-STREAMING] Audio queue aborted by interruption");
+                break;
+              }
+              
               if (Date.now() - startTime > maxWaitMs) {
                 console.warn("🎯 [AUDIO-STREAMING] Timeout waiting for audio");
                 break;
               }
               
-              // Check for fatal error
               if (streamError) {
                 console.warn("🎯 [AUDIO-STREAMING] Stopping due to stream error");
                 break;
@@ -2779,6 +2771,12 @@ export function useAvatarSession({
             }
             console.log("🎯 [AUDIO-STREAMING] Audio queue fully processed");
           };
+          
+          // Wire abort signal to stop audio queue on interruption
+          controller.signal.addEventListener('abort', () => {
+            audioAborted = true;
+            audioBuffer.clear();
+          });
           
           // Start processing audio queue in background
           const audioProcessor = processAudioQueue();

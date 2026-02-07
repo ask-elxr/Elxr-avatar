@@ -198,11 +198,19 @@ class PineconeNamespaceService {
         .map((r, i) => `[Result ${i + 1} from ${r.metadata.namespace}]\n${r.text}`)
         .join('\n\n---\n\n');
 
+      const namespaceCounts: Record<string, number> = {};
+      topResults.forEach(r => {
+        const ns = r.metadata?.namespace || 'unknown';
+        namespaceCounts[ns] = (namespaceCounts[ns] || 0) + 1;
+      });
+      
       log.info({ 
         totalResults: allResults.length, 
         topResults: topResults.length,
-        combinedLength: combinedText.length 
-      }, `Retrieved ${topResults.length} results from Pinecone`);
+        combinedLength: combinedText.length,
+        namespaceSources: namespaceCounts,
+        topScores: topResults.slice(0, 3).map(r => ({ ns: r.metadata?.namespace, score: r.score?.toFixed(3) }))
+      }, `RAG: ${topResults.length} results from ${Object.keys(namespaceCounts).join(', ')}`);
 
       const results = [{
         text: combinedText,
