@@ -213,7 +213,6 @@ export default function AvatarSelect() {
                           {avatar.pineconeNamespaces && avatar.pineconeNamespaces.length > 0 && avatar.pineconeNamespaces
                             .map((ns) => getNamespaceDisplayName(ns, avatar.id))
                             .filter((name): name is string => name !== null)
-                            .slice(0, 5)
                             .map((displayName, index) => (
                             <span
                               key={index}
