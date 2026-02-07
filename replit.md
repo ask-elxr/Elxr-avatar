@@ -90,7 +90,7 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Purpose**: Interactive games users can play with avatars during chat sessions.
 
 #### Technical Implementations
-- **AI Integration**: Primary LLM is Claude Sonnet 4.5, integrated with RAG and Mem0 for persistent memory.
+- **AI Integration**: Primary LLM is Claude Opus 4.6 for conversations (best quality), Haiku 3.5 for ingestion (cost savings). Integrated with RAG and Mem0 for persistent memory.
 - **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
 - **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
 
