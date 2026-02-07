@@ -407,6 +407,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.status(401).json({ valid: false, message: "Invalid admin credentials" });
   });
 
+  // Admin: Reset circuit breaker for a service
+  app.post("/api/admin/circuit-breaker/reset", requireAdmin, async (req: any, res) => {
+    const { service } = req.body;
+    if (!service) {
+      return res.status(400).json({ error: "Service name required" });
+    }
+    const { resetCircuitBreaker, getAllBreakerStatuses } = await import('./circuitBreaker');
+    const success = resetCircuitBreaker(service);
+    if (success) {
+      return res.json({ success: true, message: `Circuit breaker reset for ${service}`, statuses: getAllBreakerStatuses() });
+    }
+    return res.status(404).json({ error: `No circuit breaker found for service: ${service}` });
+  });
+
+  // Admin: Get all circuit breaker statuses
+  app.get("/api/admin/circuit-breaker/status", requireAdmin, async (req: any, res) => {
+    const { getAllBreakerStatuses } = await import('./circuitBreaker');
+    return res.json(getAllBreakerStatuses());
+  });
+
   // GET available LiveAvatars from HeyGen API (diagnostic endpoint)
   app.get("/api/heygen/available-avatars", requireAdmin, async (req: any, res) => {
     const log = logger.child({ service: "heygen", operation: "listAvailableAvatars" });

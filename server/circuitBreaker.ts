@@ -86,6 +86,27 @@ export interface WrappedServiceCall<T> {
   execute: (...args: any[]) => Promise<T>;
   isOpen: () => boolean;
   getStats: () => any;
+  reset: () => void;
+}
+
+const registeredBreakers = new Map<string, CircuitBreaker<any, any>>();
+
+export function resetCircuitBreaker(serviceName: string): boolean {
+  const breaker = registeredBreakers.get(serviceName);
+  if (breaker) {
+    breaker.close();
+    logger.info({ service: serviceName }, `Circuit breaker manually reset for ${serviceName}`);
+    return true;
+  }
+  return false;
+}
+
+export function getAllBreakerStatuses(): Record<string, { open: boolean; stats: any }> {
+  const statuses: Record<string, { open: boolean; stats: any }> = {};
+  registeredBreakers.forEach((breaker, name) => {
+    statuses[name] = { open: breaker.opened, stats: breaker.stats };
+  });
+  return statuses;
 }
 
 export function wrapServiceCall<T extends any[], R>(
@@ -94,6 +115,7 @@ export function wrapServiceCall<T extends any[], R>(
   options: CircuitBreakerOptions = {}
 ): WrappedServiceCall<R> {
   const breaker = createCircuitBreaker(fn, serviceName, options);
+  registeredBreakers.set(serviceName, breaker);
 
   return {
     execute: async (...args: T): Promise<R> => {
@@ -115,5 +137,9 @@ export function wrapServiceCall<T extends any[], R>(
     },
     isOpen: () => breaker.opened,
     getStats: () => breaker.stats,
+    reset: () => {
+      breaker.close();
+      logger.info({ service: serviceName }, `Circuit breaker manually reset for ${serviceName}`);
+    },
   };
 }
