@@ -1326,18 +1326,63 @@ export function useAvatarSession({
                 console.log("🗣️ sessionDriverRef.current exists:", !!sessionDriverRef.current);
                 if (greeting && sessionDriverRef.current) {
                   console.log("🗣️ Avatar greeting:", greeting);
-                  // Minimal delay to ensure session is fully ready for speaking
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                  await sessionDriverRef.current.speak(greeting, elevenLabsLanguageCodeRef.current);
-                  console.log("🗣️ Greeting speak() completed");
+                  // Longer delay to ensure session is fully ready for speaking (production may need more time)
+                  await new Promise(resolve => setTimeout(resolve, 500));
+                  // Retry greeting speak up to 2 times if it fails
+                  let greetingSpoken = false;
+                  for (let attempt = 0; attempt < 3 && !greetingSpoken; attempt++) {
+                    try {
+                      if (sessionDriverRef.current) {
+                        await sessionDriverRef.current.speak(greeting, elevenLabsLanguageCodeRef.current);
+                        greetingSpoken = true;
+                        console.log("🗣️ Greeting speak() completed on attempt", attempt + 1);
+                      }
+                    } catch (speakError) {
+                      console.warn(`🗣️ Greeting speak attempt ${attempt + 1} failed:`, speakError);
+                      if (attempt < 2) {
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                      }
+                    }
+                  }
+                  // Fallback: if greeting didn't trigger onAvatarStopTalking, ensure voice recognition starts
+                  if (!greetingSpoken && !recognitionRunningRef.current) {
+                    console.log("🎤 Greeting failed - starting voice recognition as fallback");
+                    recognitionIntentionalStopRef.current = false;
+                    startVoiceRecognition();
+                  } else if (greetingSpoken) {
+                    // Safety net: if onAvatarStopTalking never fires, start recognition after timeout
+                    setTimeout(() => {
+                      if (!recognitionRunningRef.current && sessionActiveRef.current && !isSpeakingRef.current) {
+                        console.log("🎤 Safety net: starting voice recognition 15s after greeting (onAvatarStopTalking may not have fired)");
+                        recognitionIntentionalStopRef.current = false;
+                        startVoiceRecognition();
+                      }
+                    }, 15000);
+                  }
                 } else {
                   console.warn("🗣️ Cannot speak greeting - greeting:", !!greeting, "driver:", !!sessionDriverRef.current);
+                  // Start voice recognition anyway since greeting couldn't be spoken
+                  if (!recognitionRunningRef.current) {
+                    console.log("🎤 No greeting spoken - starting voice recognition");
+                    recognitionIntentionalStopRef.current = false;
+                    startVoiceRecognition();
+                  }
                 }
               } else {
                 console.warn("🗣️ Greeting API failed with status:", greetingResponse.status);
+                // Start voice recognition even if greeting API fails
+                if (!recognitionRunningRef.current) {
+                  recognitionIntentionalStopRef.current = false;
+                  startVoiceRecognition();
+                }
               }
             } catch (error) {
               console.warn("Failed to fetch greeting:", error);
+              // Start voice recognition even if greeting completely fails
+              if (!recognitionRunningRef.current) {
+                recognitionIntentionalStopRef.current = false;
+                startVoiceRecognition();
+              }
             }
           } else {
             console.log("⏭️ Skipping greeting - mode switch (seamless transition)");
