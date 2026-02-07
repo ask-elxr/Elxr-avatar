@@ -896,6 +896,7 @@ export function useAvatarSession({
     ws.onclose = () => {
       console.log("🎤 ElevenLabs STT WebSocket closed");
       elevenLabsSttReadyRef.current = false;
+      elevenLabsSttWsRef.current = null;
       if (useElevenLabsSttRef.current) {
         recognitionRunningRef.current = false;
       }
@@ -3147,6 +3148,46 @@ export function useAvatarSession({
           };
           
           await speakWithRetry();
+          
+          // Safety net: if onAvatarStopTalking doesn't fire after speak completes,
+          // force-clear speaking state and restart voice recognition.
+          // Uses a polling approach: check every 5s up to 30s for voice recognition to resume.
+          let safetyNetAttempts = 0;
+          const safetyNetMaxAttempts = 6; // 6 x 5s = 30s max
+          const safetyNetInterval = setInterval(() => {
+            safetyNetAttempts++;
+            
+            // Stop checking if session ended or recognition already running
+            if (!sessionActiveRef.current || recognitionIntentionalStopRef.current || recognitionRunningRef.current) {
+              clearInterval(safetyNetInterval);
+              return;
+            }
+            
+            // If still "speaking" after 15s, onAvatarStopTalking likely didn't fire
+            if (isSpeakingRef.current && safetyNetAttempts >= 3) {
+              console.log("🎤 Safety net: clearing stuck speaking state after", safetyNetAttempts * 5, "s");
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+            }
+            
+            // Try to restart voice recognition
+            if (!isSpeakingRef.current && !recognitionRunningRef.current) {
+              console.log("🎤 Safety net: restarting voice recognition after speak() (attempt", safetyNetAttempts, ")");
+              recognitionIntentionalStopRef.current = false;
+              startVoiceRecognition();
+              clearInterval(safetyNetInterval);
+              return;
+            }
+            
+            if (safetyNetAttempts >= safetyNetMaxAttempts) {
+              console.log("🎤 Safety net: max attempts reached, forcing voice recognition restart");
+              isSpeakingRef.current = false;
+              setIsSpeakingState(false);
+              recognitionIntentionalStopRef.current = false;
+              startVoiceRecognition();
+              clearInterval(safetyNetInterval);
+            }
+          }, 5000);
           
           // If end session was requested, wait for avatar to finish speaking then end
           if (shouldEndSession) {
