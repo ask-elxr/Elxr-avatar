@@ -56,6 +56,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // UI-only state
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
+  const [showDisclaimer, setShowDisclaimer] = useState(() => {
+    return localStorage.getItem('disclaimer-accepted') !== 'true';
+  });
   const [audioOnly, setAudioOnly] = useState(false); // Default to video mode
   const [chatMode, setChatMode] = useState<ChatMode>('video');
   const [textChatActive, setTextChatActive] = useState(false);
@@ -1441,8 +1444,32 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </>
         )}
 
+        {/* Disclaimer Modal - shows before first session */}
+        {showDisclaimer && !showAvatarSelector && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-30">
+            <div className="bg-zinc-900 border border-white/20 rounded-2xl max-w-md mx-4 p-6 sm:p-8 shadow-2xl">
+              <h2 className="text-xl font-semibold text-white mb-4">Before we start</h2>
+              <div className="text-white/80 text-sm leading-relaxed space-y-3 mb-6">
+                <p>MUM provides general information and conversational guidance only.</p>
+                <p>It does not provide medical, mental health, legal, or professional advice, and it does not replace working with a qualified professional who knows your personal situation.</p>
+                <p>Any insights shared here are meant to help you think, reflect, and explore options — not to diagnose, treat, or direct medical or therapeutic decisions.</p>
+                <p>If you are dealing with a medical condition, mental health concern, or urgent situation, please consult a licensed professional or appropriate services.</p>
+              </div>
+              <Button
+                onClick={() => {
+                  localStorage.setItem('disclaimer-accepted', 'true');
+                  setShowDisclaimer(false);
+                }}
+                className="w-full bg-primary hover:bg-primary/90 text-white py-3 text-base font-medium rounded-xl"
+              >
+                I understand — let's continue
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Start Button - requests microphone permission if needed, then starts chat */}
-        {showChatButton && !showAvatarSelector && (
+        {showChatButton && !showDisclaimer && !showAvatarSelector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
             {/* Mode Toggle above the start button */}
             <div className="absolute top-8 left-0 right-0 flex justify-center z-30">
@@ -1476,6 +1503,25 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 if (chatMode === 'text') {
                   setShowChatButton(false);
                   setTextChatActive(true);
+                  // Fetch and show avatar greeting in text mode (only if no messages yet)
+                  if (chatHistory.length === 0) {
+                    try {
+                      const greetingResponse = await fetch(`/api/avatar/greeting/${selectedAvatarId}`);
+                      if (greetingResponse.ok) {
+                        const { greeting } = await greetingResponse.json();
+                        if (greeting) {
+                          setChatHistory([{
+                            id: `${Date.now()}-assistant`,
+                            role: 'assistant',
+                            content: greeting,
+                            timestamp: new Date()
+                          }]);
+                        }
+                      }
+                    } catch (e) {
+                      console.warn("Failed to fetch text mode greeting:", e);
+                    }
+                  }
                   return;
                 }
                 
