@@ -1,4 +1,6 @@
-import { Volume2, Video } from "lucide-react";
+import { Volume2, Video, MessageSquare } from "lucide-react";
+
+export type ChatMode = 'text' | 'audio' | 'video';
 
 interface AudioVideoToggleProps {
   isVideoMode: boolean;
@@ -6,6 +8,8 @@ interface AudioVideoToggleProps {
   disabled?: boolean;
   enableAudioMode?: boolean;
   enableVideoMode?: boolean;
+  chatMode?: ChatMode;
+  onModeChange?: (mode: ChatMode) => void;
 }
 
 export function AudioVideoToggle({ 
@@ -14,18 +18,64 @@ export function AudioVideoToggle({
   disabled = false,
   enableAudioMode = true,
   enableVideoMode = true,
+  chatMode,
+  onModeChange,
 }: AudioVideoToggleProps) {
-  // If both modes disabled or only one mode available, don't show toggle
   const bothDisabled = !enableAudioMode && !enableVideoMode;
   const onlyAudio = enableAudioMode && !enableVideoMode;
   const onlyVideo = !enableAudioMode && enableVideoMode;
   
-  // Don't render if both disabled
   if (bothDisabled) {
     return null;
   }
+
+  const useTripleMode = !!onModeChange;
+  const currentMode = chatMode || (isVideoMode ? 'video' : 'audio');
+
+  if (useTripleMode) {
+    const modes: { id: ChatMode; icon: typeof MessageSquare; label: string; enabled: boolean }[] = [
+      { id: 'text', icon: MessageSquare, label: 'Text', enabled: true },
+      { id: 'audio', icon: Volume2, label: 'Audio', enabled: enableAudioMode },
+      { id: 'video', icon: Video, label: 'Video', enabled: enableVideoMode },
+    ];
+
+    const availableModes = modes.filter(m => m.enabled);
+
+    return (
+      <div 
+        className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full p-1"
+        data-testid="audio-video-toggle"
+      >
+        {availableModes.map((mode) => {
+          const Icon = mode.icon;
+          const isActive = currentMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              onClick={() => {
+                if (!disabled) {
+                  onModeChange!(mode.id);
+                  if (mode.id === 'video') onToggle(true);
+                  else if (mode.id === 'audio') onToggle(false);
+                }
+              }}
+              disabled={disabled}
+              className={`flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 ${
+                isActive
+                  ? "bg-white/20 text-white shadow-lg"
+                  : "text-white/60 hover:text-white/80"
+              } ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+              data-testid={`toggle-${mode.id}`}
+            >
+              <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>{mode.label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
   
-  // If only one mode available, show a label instead of toggle
   if (onlyAudio) {
     return (
       <div 
@@ -39,7 +89,6 @@ export function AudioVideoToggle({
   }
   
   if (onlyVideo) {
-    // If video-only mode but currently in audio mode (fallback due to error)
     if (!isVideoMode) {
       return (
         <div 
@@ -62,7 +111,6 @@ export function AudioVideoToggle({
     );
   }
   
-  // Both modes available - show full toggle
   return (
     <div 
       className="inline-flex items-center bg-black/60 backdrop-blur-sm rounded-full p-1"
@@ -70,7 +118,6 @@ export function AudioVideoToggle({
     >
       <button
         onClick={() => {
-          console.log(`🔘 Audio button clicked, disabled=${disabled}, isVideoMode=${isVideoMode}`);
           if (!disabled) onToggle(false);
         }}
         disabled={disabled}
@@ -86,7 +133,6 @@ export function AudioVideoToggle({
       </button>
       <button
         onClick={() => {
-          console.log(`🔘 Video button clicked, disabled=${disabled}, isVideoMode=${isVideoMode}`);
           if (!disabled) onToggle(true);
         }}
         disabled={disabled}

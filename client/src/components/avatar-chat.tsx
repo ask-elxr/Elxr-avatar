@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2 } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -20,7 +20,7 @@ import { AvatarSelector } from "@/components/avatar-selector";
 import { AvatarMiniGames } from "@/components/AvatarMiniGames";
 import { AvatarSwitcher } from "@/components/AvatarSwitcher";
 import { AudioOnlyDisplay, AudioOnlyDisplayRef } from "@/components/AudioOnlyDisplay";
-import { AudioVideoToggle } from "@/components/AudioVideoToggle";
+import { AudioVideoToggle, type ChatMode } from "@/components/AudioVideoToggle";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import { TrialCountdown } from "@/components/TrialCountdown";
@@ -57,6 +57,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [memoryEnabled, setMemoryEnabled] = useState(false);
   const [showChatButton, setShowChatButton] = useState(true);
   const [audioOnly, setAudioOnly] = useState(false); // Default to video mode
+  const [chatMode, setChatMode] = useState<ChatMode>('video');
+  const [textChatActive, setTextChatActive] = useState(false);
+  const [textChatLoading, setTextChatLoading] = useState(false);
   const [isModeSwitching, setIsModeSwitching] = useState(false);
   const [micPermissionGranted, setMicPermissionGranted] = useState<boolean | null>(null);
   const [requestingMicPermission, setRequestingMicPermission] = useState(false);
@@ -92,6 +95,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioOnlyRef = useRef<AudioOnlyDisplayRef>(null);
+  const textChatScrollRef = useRef<HTMLDivElement>(null);
   
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -684,6 +688,117 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     });
   };
 
+  // Auto-scroll text chat when new messages arrive
+  useEffect(() => {
+    if (textChatScrollRef.current && chatMode === 'text') {
+      textChatScrollRef.current.scrollTop = textChatScrollRef.current.scrollHeight;
+    }
+  }, [chatHistory, chatMode]);
+
+  // Handle text-only message submission
+  const handleTextSubmit = useCallback(async (message: string) => {
+    if (!message.trim() || textChatLoading) return;
+    
+    setChatHistory(prev => [...prev, {
+      id: `${Date.now()}-user`,
+      role: 'user',
+      content: message.trim(),
+      timestamp: new Date()
+    }]);
+    
+    setTextChatLoading(true);
+    
+    try {
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const memberstackId = typeof window !== 'undefined' ? (window as any).__memberstackId : undefined;
+      if (memberstackId) {
+        headers['X-Member-Id'] = memberstackId;
+      }
+      
+      const response = await fetch("/api/avatar/response", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          message: message.trim(),
+          userId: memoryEnabled ? userId : undefined,
+          avatarId: selectedAvatarId,
+          memoryEnabled,
+        }),
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const claudeResponse = data.knowledgeResponse || data.response;
+        
+        setChatHistory(prev => [...prev, {
+          id: `${Date.now()}-assistant`,
+          role: 'assistant',
+          content: claudeResponse,
+          timestamp: new Date()
+        }]);
+      } else {
+        setChatHistory(prev => [...prev, {
+          id: `${Date.now()}-assistant`,
+          role: 'assistant',
+          content: "I'm having trouble responding right now. Please try again.",
+          timestamp: new Date()
+        }]);
+      }
+    } catch (error) {
+      console.error("Text chat error:", error);
+      setChatHistory(prev => [...prev, {
+        id: `${Date.now()}-assistant`,
+        role: 'assistant',
+        content: "Connection issue. Please try again.",
+        timestamp: new Date()
+      }]);
+    } finally {
+      setTextChatLoading(false);
+    }
+  }, [textChatLoading, memoryEnabled, userId, selectedAvatarId]);
+
+  // Handle triple-mode switching
+  const handleChatModeChange = useCallback(async (newMode: ChatMode) => {
+    if (newMode === chatMode) return;
+    
+    const prevMode = chatMode;
+    setChatMode(newMode);
+    
+    if (newMode === 'text') {
+      // Switching TO text mode - end any active audio/video session
+      stopSharedAudio();
+      if (elevenLabsAgentActive && audioOnlyRef.current) {
+        await audioOnlyRef.current.endAgentConversation().catch(() => {});
+      }
+      setElevenLabsAgentActive(false);
+      if (sessionActive) {
+        await endSession().catch(() => {});
+      }
+      setAudioOnly(false);
+      setShowChatButton(false);
+      setTextChatActive(true);
+      setSessionStarting(false);
+    } else if (newMode === 'audio') {
+      // Switching to audio mode
+      setTextChatActive(false);
+      setAudioOnly(true);
+      if (prevMode === 'text') {
+        setShowChatButton(true);
+      } else {
+        handleModeToggle(false);
+      }
+    } else if (newMode === 'video') {
+      // Switching to video mode
+      setTextChatActive(false);
+      setAudioOnly(false);
+      if (prevMode === 'text') {
+        setShowChatButton(true);
+      } else {
+        handleModeToggle(true);
+      }
+    }
+  }, [chatMode, elevenLabsAgentActive, sessionActive, endSession]);
+
   const handleModeToggle = async (isVideoMode: boolean) => {
     console.log(`🔄 handleModeToggle called: isVideoMode=${isVideoMode}`);
     console.log(`🔄 Current state: audioOnly=${audioOnly}, sessionActive=${sessionActive}, isModeSwitching=${isModeSwitching}, isLoading=${isLoading}, elevenLabsAgentActive=${elevenLabsAgentActive}`);
@@ -927,6 +1042,170 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           )}
         </div>
 
+        {/* Text Chat Mode - GIF background with chat bubbles */}
+        {textChatActive && chatMode === 'text' && (
+          <>
+            {/* GIF Background */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <img
+                src={(() => {
+                  const gifs: Record<string, string> = {
+                    'mark-kohl': '/attached_assets/MArk-kohl-loop_1763964600000.gif',
+                    'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
+                    'june': '/attached_assets/June-low_1764106896823.gif',
+                    'thad': '/attached_assets/Thad_1763963906199.gif',
+                    'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
+                    'ann': '/attached_assets/Ann_1763966361095.gif',
+                    'kelsey': '/attached_assets/Kelsey_1764111279103.gif',
+                    'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
+                    'dexter': '/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif',
+                    'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
+                  };
+                  return gifs[selectedAvatarId] || gifs['mark-kohl'];
+                })()}
+                alt="Avatar"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/30" />
+            </div>
+
+            {/* Chat Messages Overlay */}
+            <div 
+              ref={textChatScrollRef}
+              className="absolute inset-0 overflow-y-auto z-10 pt-20 pb-24 px-4 sm:px-6"
+              style={{ scrollBehavior: 'smooth' }}
+            >
+              <div className="max-w-2xl mx-auto flex flex-col gap-3 min-h-full justify-end">
+                {chatHistory.length === 0 && (
+                  <div className="text-center text-white/70 py-8">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                    <p className="text-sm">Type a message to start chatting</p>
+                  </div>
+                )}
+                {chatHistory.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-primary/90 text-white rounded-br-md'
+                          : 'bg-black/70 backdrop-blur-md text-white/95 rounded-bl-md border border-white/10'
+                      }`}
+                    >
+                      {msg.content}
+                    </div>
+                  </div>
+                ))}
+                {textChatLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-black/70 backdrop-blur-md text-white/70 rounded-2xl rounded-bl-md px-4 py-3 border border-white/10">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Top Controls for text mode */}
+            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4 sm:px-6 z-30 safe-area-inset-top">
+              <div className="flex items-center gap-2">
+                <AudioVideoToggle
+                  isVideoMode={false}
+                  onToggle={handleModeToggle}
+                  disabled={false}
+                  enableAudioMode={avatarCapabilities.enableAudioMode}
+                  enableVideoMode={avatarCapabilities.enableVideoMode}
+                  chatMode={chatMode}
+                  onModeChange={handleChatModeChange}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
+                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
+                      size="sm"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
+                    <DropdownMenuItem 
+                      onSelect={() => setShowAvatarSwitcher(true)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Switch Avatar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onSelect={() => setShowSettings(!showSettings)}
+                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <Button
+                  onClick={() => {
+                    setTextChatActive(false);
+                    setChatHistory([]);
+                    setShowChatButton(true);
+                  }}
+                  className="bg-red-500/90 hover:bg-red-600 text-white min-w-[44px] min-h-[44px] shadow-lg border border-red-400/30"
+                  size="sm"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Text Input */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-20">
+              <form 
+                onSubmit={(e: FormEvent) => {
+                  e.preventDefault();
+                  if (inputMessage.trim() && !textChatLoading) {
+                    handleTextSubmit(inputMessage);
+                    setInputMessage("");
+                  }
+                }}
+                className="flex items-center gap-2 max-w-2xl mx-auto"
+              >
+                <div className="flex-1">
+                  <Input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Type your message..."
+                    className="w-full bg-black/60 border-white/20 text-white placeholder:text-gray-400 backdrop-blur-sm text-base"
+                    autoFocus
+                    disabled={textChatLoading}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={!inputMessage.trim() || textChatLoading}
+                  className="bg-primary hover:bg-primary/90 text-white min-w-[44px] min-h-[44px]"
+                >
+                  {textChatLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                </Button>
+              </form>
+            </div>
+          </>
+        )}
+
         {/* Overlay Controls */}
         {(sessionActive || elevenLabsAgentActive) && (
           <>
@@ -940,6 +1219,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   disabled={isModeSwitching || isLoading}
                   enableAudioMode={avatarCapabilities.enableAudioMode}
                   enableVideoMode={avatarCapabilities.enableVideoMode}
+                  chatMode={chatMode}
+                  onModeChange={handleChatModeChange}
                 />
                 <LanguageSelector
                   selectedLanguage={selectedLanguage}
@@ -1163,9 +1444,40 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Start Button - requests microphone permission if needed, then starts chat */}
         {showChatButton && !showAvatarSelector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
+            {/* Mode Toggle above the start button */}
+            <div className="absolute top-8 left-0 right-0 flex justify-center z-30">
+              <AudioVideoToggle
+                isVideoMode={!audioOnly}
+                onToggle={(isVideo) => {
+                  if (isVideo) {
+                    setChatMode('video');
+                    setAudioOnly(false);
+                  } else {
+                    setChatMode('audio');
+                    setAudioOnly(true);
+                  }
+                }}
+                disabled={false}
+                enableAudioMode={avatarCapabilities.enableAudioMode}
+                enableVideoMode={avatarCapabilities.enableVideoMode}
+                chatMode={chatMode}
+                onModeChange={(newMode) => {
+                  setChatMode(newMode);
+                  if (newMode === 'audio') setAudioOnly(true);
+                  else if (newMode === 'video') setAudioOnly(false);
+                }}
+              />
+            </div>
             <Button
               onClick={async () => {
-                console.log("📱 BUTTON CLICKED - Start Chat pressed");
+                console.log("📱 BUTTON CLICKED - Start Chat pressed, mode:", chatMode);
+                
+                // Text mode: skip mic permission and audio unlock
+                if (chatMode === 'text') {
+                  setShowChatButton(false);
+                  setTextChatActive(true);
+                  return;
+                }
                 
                 // 📱 CRITICAL: Unlock mobile audio FIRST during user interaction
                 // iOS requires this to be done during a user gesture
@@ -1307,6 +1619,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Requesting...
+                </>
+              ) : chatMode === 'text' ? (
+                <>
+                  <MessageSquare className="w-5 h-5" />
+                  Start Text Chat
                 </>
               ) : (
                 "Let's have a word"
