@@ -1123,7 +1123,6 @@ export default function Dashboard({
                                         avatar.pineconeNamespaces
                                           .map((ns) => getNamespaceDisplayName(ns, avatar.id))
                                           .filter((name): name is string => name !== null)
-                                          .slice(0, 3)
                                           .map((displayName, index) => (
                                             <span
                                               key={index}
