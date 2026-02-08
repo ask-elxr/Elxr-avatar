@@ -442,15 +442,13 @@ body.pseudo-fullscreen-active {
   bottom: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  /* Use dynamic viewport height for mobile */
   height: 100dvh !important;
   z-index: 99999 !important;
   background: black !important;
-  /* Handle iOS notch/safe areas */
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
 }
 
 /* Ensure video fills the container in pseudo-fullscreen */

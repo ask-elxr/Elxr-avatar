@@ -97,26 +97,20 @@ export function useFullscreen(): UseFullscreenReturn {
     const targetElement = element || document.documentElement;
     currentElementRef.current = targetElement as HTMLElement;
     
-    // Store video ref for later exit handling
     if (videoElement) {
       currentVideoRef.current = videoElement;
     }
 
-    // Try iOS video fullscreen first (most reliable on iOS)
-    if (isIOS && videoElement && 'webkitEnterFullscreen' in videoElement) {
-      try {
-        // Attach listeners before entering fullscreen
-        attachIOSVideoListeners(videoElement);
-        await (videoElement as any).webkitEnterFullscreen();
-        // State will be set by the event listener
-        return;
-      } catch (error) {
-        console.log('iOS video fullscreen not available, trying alternatives');
-        detachIOSVideoListeners(videoElement);
-      }
+    // Mobile: use pseudo-fullscreen to keep app UI visible
+    // (native video fullscreen hijacks to iOS player, losing all controls)
+    if (isMobile) {
+      applyPseudoFullscreen(targetElement as HTMLElement, true);
+      setIsPseudoFullscreen(true);
+      setIsFullscreen(true);
+      return;
     }
 
-    // Try native Fullscreen API
+    // Desktop: try native Fullscreen API
     try {
       if (targetElement.requestFullscreen) {
         await targetElement.requestFullscreen();
@@ -135,13 +129,11 @@ export function useFullscreen(): UseFullscreenReturn {
       console.log('Native fullscreen failed, using pseudo-fullscreen:', error);
     }
 
-    // Fallback: Pseudo-fullscreen for mobile (especially iOS Safari)
-    if (isMobile) {
-      applyPseudoFullscreen(targetElement as HTMLElement, true);
-      setIsPseudoFullscreen(true);
-      setIsFullscreen(true);
-    }
-  }, [isIOS, isMobile, applyPseudoFullscreen, attachIOSVideoListeners, detachIOSVideoListeners]);
+    // Fallback: pseudo-fullscreen
+    applyPseudoFullscreen(targetElement as HTMLElement, true);
+    setIsPseudoFullscreen(true);
+    setIsFullscreen(true);
+  }, [isMobile, applyPseudoFullscreen]);
 
   const exitFullscreen = useCallback(async () => {
     // Exit iOS video fullscreen first
