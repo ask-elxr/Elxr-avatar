@@ -304,7 +304,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     speakingIntervalRef,
     handleSubmitMessage: originalHandleSubmitMessage,
     stopAudio,
-    manualStartVoice
+    manualStartVoice,
+    isMicMuted,
+    toggleMicMute,
   } = useAvatarSession({
     videoRef,
     userId,
@@ -1378,6 +1380,33 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 <Mic className="w-4 h-4 text-blue-400" />
                 <span className="text-sm text-blue-300 font-medium">Tap to enable voice</span>
               </button>
+            )}
+
+            {/* Mute Button - Bottom center, visible during active voice/video sessions */}
+            {chatMode !== 'text' && !elevenLabsAgentActive && sessionActive && (
+              <div className="absolute bottom-6 left-0 right-0 flex justify-center z-30 safe-area-inset-bottom">
+                <button
+                  onClick={toggleMicMute}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full backdrop-blur-md shadow-lg transition-all active:scale-95 border ${
+                    isMicMuted 
+                      ? 'bg-red-500/80 hover:bg-red-500/90 border-red-400/60 text-white' 
+                      : 'bg-black/60 hover:bg-black/80 border-white/30 text-white/90'
+                  }`}
+                  data-testid="button-mute-mic"
+                >
+                  {isMicMuted ? (
+                    <>
+                      <MicOff className="w-5 h-5" />
+                      <span className="text-sm font-medium">Muted</span>
+                    </>
+                  ) : (
+                    <>
+                      <Mic className="w-5 h-5" />
+                      <span className="text-sm font-medium">Tap to mute</span>
+                    </>
+                  )}
+                </button>
+              </div>
             )}
 
             {/* Video Notifications - Pending and Completed */}

@@ -46,6 +46,8 @@ interface AvatarSessionReturn {
   handleSubmitMessage: (message: string, imageData?: { base64: string; mimeType: string }) => Promise<void>;
   stopAudio: () => void;
   manualStartVoice: () => void;
+  isMicMuted: boolean;
+  toggleMicMute: () => void;
 }
 
 export function useAvatarSession({
@@ -66,6 +68,7 @@ export function useAvatarSession({
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingState, setIsSpeakingState] = useState(false);
   const [microphoneStatus, setMicrophoneStatus] = useState<'listening' | 'stopped' | 'not-supported' | 'permission-denied' | 'needs-gesture'>('stopped');
+  const [isMicMuted, setIsMicMuted] = useState(false);
   const [videoReady, setVideoReady] = useState(false); // Track when LiveKit video track is attached
 
   const sessionDriverRef = useRef<SessionDriver | null>(null);
@@ -86,6 +89,7 @@ export function useAvatarSession({
   const liveAvatarSessionTokenRef = useRef<string | null>(null); // LiveAvatar session token for proper cleanup
   const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null); // Web Speech API for voice input
+  const isMicMutedRef = useRef(false);
   const lastTranscriptRef = useRef<string>(""); // For deduplication
   const lastAvatarResponseRef = useRef<string>(""); // For echo detection - track what avatar last said
   const lastAvatarResponseTimeRef = useRef<number>(0); // When avatar spoke (for echo detection window)
@@ -550,6 +554,13 @@ export function useAvatarSession({
 
   // Connect pre-acquired microphone stream to WebSocket (called after stt_ready)
   // 📱 IMPORTANT: Must be defined BEFORE startElevenLabsSTT which references it
+  const toggleMicMute = useCallback(() => {
+    const newMuted = !isMicMutedRef.current;
+    isMicMutedRef.current = newMuted;
+    setIsMicMuted(newMuted);
+    console.log(newMuted ? "🔇 Microphone muted" : "🔊 Microphone unmuted");
+  }, []);
+
   const connectMicToWebSocket = useCallback(() => {
     const stream = elevenLabsSttStreamRef.current;
     const audioContext = elevenLabsSttAudioContextRef.current;
@@ -564,22 +575,53 @@ export function useAvatarSession({
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
       elevenLabsSttProcessorRef.current = processor;
       
+      const NOISE_GATE_THRESHOLD = 0.008;
+      const HANGOVER_FRAMES = 8;
+      let hangoverCounter = 0;
+      
       processor.onaudioprocess = (e) => {
-        if (elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN && elevenLabsSttReadyRef.current) {
-          const inputData = e.inputBuffer.getChannelData(0);
-          const pcm16 = new Int16Array(inputData.length);
-          for (let i = 0; i < inputData.length; i++) {
-            pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
-          }
-          elevenLabsSttWsRef.current.send(pcm16.buffer);
+        if (elevenLabsSttWsRef.current?.readyState !== WebSocket.OPEN || !elevenLabsSttReadyRef.current) {
+          return;
         }
+        
+        if (isMicMutedRef.current) {
+          const silence = new Int16Array(e.inputBuffer.length);
+          elevenLabsSttWsRef.current.send(silence.buffer);
+          return;
+        }
+        
+        const inputData = e.inputBuffer.getChannelData(0);
+        
+        let sumSquares = 0;
+        for (let i = 0; i < inputData.length; i++) {
+          sumSquares += inputData[i] * inputData[i];
+        }
+        const rms = Math.sqrt(sumSquares / inputData.length);
+        
+        if (rms >= NOISE_GATE_THRESHOLD) {
+          hangoverCounter = HANGOVER_FRAMES;
+        } else {
+          hangoverCounter = Math.max(0, hangoverCounter - 1);
+        }
+        
+        if (hangoverCounter === 0) {
+          const silence = new Int16Array(inputData.length);
+          elevenLabsSttWsRef.current.send(silence.buffer);
+          return;
+        }
+        
+        const pcm16 = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          pcm16[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+        }
+        elevenLabsSttWsRef.current.send(pcm16.buffer);
       };
       
       source.connect(processor);
       processor.connect(audioContext.destination);
       
       recognitionRunningRef.current = true;
-      console.log("🎤 Audio pipeline connected to WebSocket, AudioContext state:", audioContext.state);
+      console.log("🎤 Audio pipeline connected to WebSocket with noise gate, AudioContext state:", audioContext.state);
     } catch (error) {
       console.error("🎤 Failed to connect audio pipeline:", error);
     }
@@ -1718,6 +1760,8 @@ export function useAvatarSession({
     }
 
     setSessionActive(true);
+    isMicMutedRef.current = false;
+    setIsMicMuted(false);
     onSessionActiveChange?.(true)
     
     // ✅ MOBILE: Request microphone permission once and cache it (non-blocking)
@@ -3487,5 +3531,7 @@ export function useAvatarSession({
     handleSubmitMessage,
     stopAudio,
     manualStartVoice,
+    isMicMuted,
+    toggleMicMute,
   };
 }
