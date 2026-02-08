@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -92,6 +92,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [elevenLabsAgentActive, setElevenLabsAgentActive] = useState(false); // Track when ElevenLabs Agent mode is active
   const [avatarVoiceId, setAvatarVoiceId] = useState<string>(''); // Track avatar's ElevenLabs voice ID
   const [volume, setVolume] = useState(() => getGlobalVolume() * 100); // Volume 0-100 for slider
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const toolbarTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -404,6 +406,28 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       };
     }
   }, [sessionActive]);
+
+  const resetToolbarTimer = useCallback(() => {
+    setToolbarVisible(true);
+    if (toolbarTimerRef.current) {
+      clearTimeout(toolbarTimerRef.current);
+    }
+    toolbarTimerRef.current = setTimeout(() => {
+      setToolbarVisible(false);
+    }, 5000);
+  }, []);
+
+  useEffect(() => {
+    if (!sessionActive) {
+      setToolbarVisible(true);
+      if (toolbarTimerRef.current) clearTimeout(toolbarTimerRef.current);
+      return;
+    }
+    resetToolbarTimer();
+    return () => {
+      if (toolbarTimerRef.current) clearTimeout(toolbarTimerRef.current);
+    };
+  }, [sessionActive, resetToolbarTimer]);
   
   // Reset Start button when session ends
   const prevSessionActiveRef = useRef(sessionActive);
@@ -1219,8 +1243,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Overlay Controls */}
         {(sessionActive || elevenLabsAgentActive) && (
           <>
+            {/* Hamburger button - shown when toolbar is hidden */}
+            {sessionActive && !toolbarVisible && (
+              <button
+                onClick={resetToolbarTimer}
+                className="absolute top-3 right-3 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/20 text-white/70 hover:text-white safe-area-inset-top"
+                data-testid="button-hamburger"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
+
             {/* Top Controls Bar - Clean icon-only toolbar */}
-            <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30 safe-area-inset-top">
+            <div 
+              className={`absolute top-3 left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30 safe-area-inset-top transition-opacity duration-300 ${
+                sessionActive && !toolbarVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+              onPointerDown={sessionActive ? resetToolbarTimer : undefined}
+            >
               {/* Left side - Mode toggle icons */}
               <div className="flex items-center gap-1.5">
                 <AudioVideoToggle
