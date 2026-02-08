@@ -1117,9 +1117,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </div>
             </div>
 
-            {/* Top Controls for text mode */}
-            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4 sm:px-6 z-30 safe-area-inset-top">
-              <div className="flex items-center gap-2">
+            {/* Top Controls for text mode - icon-only */}
+            <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30 safe-area-inset-top">
+              <div className="flex items-center gap-1.5">
                 <AudioVideoToggle
                   isVideoMode={false}
                   onToggle={handleModeToggle}
@@ -1128,27 +1128,30 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   enableVideoMode={avatarCapabilities.enableVideoMode}
                   chatMode={chatMode}
                   onModeChange={handleChatModeChange}
+                  iconOnly
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                {/* Switch Avatar */}
+                <button
+                  onClick={() => setShowAvatarSwitcher(true)}
+                  title="Switch Avatar"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                {/* Three-dot menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
+                    <button
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
                       style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                      size="sm"
                     >
-                      <MoreVertical className="w-5 h-5" />
-                    </Button>
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
-                    <DropdownMenuItem 
-                      onSelect={() => setShowAvatarSwitcher(true)}
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Switch Avatar
-                    </DropdownMenuItem>
                     <DropdownMenuItem 
                       onSelect={() => setShowSettings(!showSettings)}
                       className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
@@ -1158,17 +1161,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <Button
+
+                {/* Close */}
+                <button
                   onClick={() => {
                     setTextChatActive(false);
                     setChatHistory([]);
                     setShowChatButton(true);
                   }}
-                  className="bg-red-500/90 hover:bg-red-600 text-white min-w-[44px] min-h-[44px] shadow-lg border border-red-400/30"
-                  size="sm"
+                  title="End Chat"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-600 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-red-400/30 text-white"
                 >
-                  <X className="w-5 h-5" />
-                </Button>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
@@ -1214,10 +1219,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {/* Overlay Controls */}
         {(sessionActive || elevenLabsAgentActive) && (
           <>
-            {/* Top Controls Bar - Dropdown menu for clean interface */}
-            <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4 sm:px-6 z-30 safe-area-inset-top">
-              {/* Left side - Audio/Video toggle and language */}
-              <div className="flex items-center gap-2">
+            {/* Top Controls Bar - Clean icon-only toolbar */}
+            <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30 safe-area-inset-top">
+              {/* Left side - Mode toggle icons */}
+              <div className="flex items-center gap-1.5">
                 <AudioVideoToggle
                   isVideoMode={!audioOnly}
                   onToggle={handleModeToggle}
@@ -1226,6 +1231,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   enableVideoMode={avatarCapabilities.enableVideoMode}
                   chatMode={chatMode}
                   onModeChange={handleChatModeChange}
+                  iconOnly
                 />
                 <LanguageSelector
                   selectedLanguage={selectedLanguage}
@@ -1234,32 +1240,58 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 />
               </div>
 
-              {/* Right side - Dropdown menu + End chat button */}
-              <div className="flex items-center gap-2">
+              {/* Right side - Icon buttons + three-dot menu + close */}
+              <div className="flex items-center gap-1.5">
+                {/* Mute - only in voice/video mode */}
+                {chatMode !== 'text' && !elevenLabsAgentActive && (
+                  <button
+                    onClick={toggleMicMute}
+                    title={isMicMuted ? "Unmute" : "Mute"}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full backdrop-blur-sm shadow-lg transition-all active:scale-95 border ${
+                      isMicMuted 
+                        ? 'bg-red-500/80 hover:bg-red-500/90 border-red-400/60 text-white' 
+                        : 'bg-black/60 hover:bg-black/80 border-white/30 text-white/80 hover:text-white'
+                    }`}
+                    data-testid="button-mute-mic"
+                  >
+                    {isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                )}
+
+                {/* Switch Avatar */}
+                <button
+                  onClick={() => setShowAvatarSwitcher(true)}
+                  title="Switch Avatar"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
+                  data-testid="button-switch-avatar"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                </button>
+
+                {/* Fullscreen */}
+                {fullscreenSupported && (
+                  <button
+                    onClick={() => toggleFullscreen(containerRef.current, videoRef.current)}
+                    title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
+                    data-testid="button-fullscreen"
+                  >
+                    {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                  </button>
+                )}
+
+                {/* Three-dot menu for less-used actions */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      className="bg-black/70 hover:bg-black/90 border border-white/30 text-white hover:text-white min-w-[44px] min-h-[44px] backdrop-blur-sm shadow-lg"
+                    <button
+                      className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
                       style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
-                      size="sm"
                       data-testid="button-menu"
                     >
-                      <MoreVertical className="w-5 h-5" />
-                    </Button>
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-black/90 border-white/20 backdrop-blur-md z-[200]">
-                    <DropdownMenuItem 
-                      onSelect={() => {
-                        console.log("📱 Switch Avatar menu item selected");
-                        setShowAvatarSwitcher(true);
-                      }}
-                      className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
-                      data-testid="menu-switch-avatar"
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Switch Avatar
-                    </DropdownMenuItem>
-                    
                     {!elevenLabsAgentActive && (
                       <DropdownMenuItem 
                         onSelect={() => togglePause()}
@@ -1275,26 +1307,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                           <>
                             <Pause className="w-4 h-4 mr-2" />
                             Pause
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                    )}
-                    
-                    {fullscreenSupported && (
-                      <DropdownMenuItem 
-                        onSelect={() => toggleFullscreen(containerRef.current, videoRef.current)}
-                        className="text-white/90 hover:text-white focus:text-white focus:bg-white/10 cursor-pointer"
-                        data-testid="menu-fullscreen"
-                      >
-                        {isFullscreen ? (
-                          <>
-                            <Minimize className="w-4 h-4 mr-2" />
-                            Exit Fullscreen
-                          </>
-                        ) : (
-                          <>
-                            <Maximize className="w-4 h-4 mr-2" />
-                            Fullscreen
                           </>
                         )}
                       </DropdownMenuItem>
@@ -1340,20 +1352,21 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 
-                <Button
+                {/* Close/End chat */}
+                <button
                   onClick={endChat}
-                  className="bg-red-500/90 hover:bg-red-600 text-white min-w-[44px] min-h-[44px] shadow-lg border border-red-400/30"
-                  size="sm"
+                  title="End Chat"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500/80 hover:bg-red-600 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-red-400/30 text-white"
                   data-testid="button-end-chat"
                 >
-                  <X className="w-5 h-5" />
-                </Button>
+                  <X className="w-4 h-4" />
+                </button>
               </div>
             </div>
 
             {/* Mic Blocked Status - only show when permission denied */}
             {microphoneStatus === 'permission-denied' && (
-              <div className="absolute top-20 right-6 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
+              <div className="absolute top-16 right-4 flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-full backdrop-blur-sm z-30">
                 <MicOff className="w-4 h-4 text-red-400" />
                 <span className="text-sm text-red-400 font-medium">Mic blocked</span>
               </div>
@@ -1361,7 +1374,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             
             {/* Voice Not Supported - Only show if microphone truly not working after session is fully active */}
             {microphoneStatus === 'not-supported' && !isLoading && (
-              <div className="absolute top-20 right-6 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
+              <div className="absolute top-16 right-4 flex flex-col items-end gap-1 bg-amber-500/20 border border-amber-500/40 px-3 py-2 rounded-lg backdrop-blur-sm z-30 max-w-[200px]">
                 <div className="flex items-center gap-2">
                   <MicOff className="w-4 h-4 text-amber-400" />
                   <span className="text-sm text-amber-400 font-medium">Voice connecting...</span>
@@ -1374,39 +1387,12 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             {microphoneStatus === 'needs-gesture' && (
               <button
                 onClick={manualStartVoice}
-                className="absolute top-20 right-6 flex items-center gap-2 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/60 px-4 py-2 rounded-full backdrop-blur-sm z-30 transition-all active:scale-95"
+                className="absolute top-16 right-4 flex items-center gap-2 bg-blue-500/30 hover:bg-blue-500/50 border border-blue-400/60 px-4 py-2 rounded-full backdrop-blur-sm z-30 transition-all active:scale-95"
                 data-testid="button-tap-to-speak"
               >
                 <Mic className="w-4 h-4 text-blue-400" />
                 <span className="text-sm text-blue-300 font-medium">Tap to enable voice</span>
               </button>
-            )}
-
-            {/* Mute Button - Bottom center, visible during active voice/video sessions */}
-            {chatMode !== 'text' && !elevenLabsAgentActive && sessionActive && (
-              <div className="absolute bottom-6 left-0 right-0 flex justify-center z-30 safe-area-inset-bottom">
-                <button
-                  onClick={toggleMicMute}
-                  className={`flex items-center gap-2 px-5 py-3 rounded-full backdrop-blur-md shadow-lg transition-all active:scale-95 border ${
-                    isMicMuted 
-                      ? 'bg-red-500/80 hover:bg-red-500/90 border-red-400/60 text-white' 
-                      : 'bg-black/60 hover:bg-black/80 border-white/30 text-white/90'
-                  }`}
-                  data-testid="button-mute-mic"
-                >
-                  {isMicMuted ? (
-                    <>
-                      <MicOff className="w-5 h-5" />
-                      <span className="text-sm font-medium">Muted</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mic className="w-5 h-5" />
-                      <span className="text-sm font-medium">Tap to mute</span>
-                    </>
-                  )}
-                </button>
-              </div>
             )}
 
             {/* Video Notifications - Pending and Completed */}
@@ -1501,7 +1487,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         {showChatButton && !showDisclaimer && !showAvatarSelector && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-20">
             {/* Mode Toggle above the start button */}
-            <div className="absolute top-8 left-0 right-0 flex justify-center z-30">
+            <div className="absolute top-6 left-0 right-0 flex justify-center z-30">
               <AudioVideoToggle
                 isVideoMode={!audioOnly}
                 onToggle={(isVideo) => {
@@ -1522,6 +1508,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   if (newMode === 'audio') setAudioOnly(true);
                   else if (newMode === 'video') setAudioOnly(false);
                 }}
+                iconOnly
               />
             </div>
             <Button
