@@ -5898,6 +5898,48 @@ ${historyPreview}
     }
   });
 
+  const introVideoFiles: Record<string, string> = {
+    "mark-kohl": "public/Intro videos/mark intro music.mp4",
+    "mark": "public/Intro videos/mark intro music.mp4",
+    "willie-gault": "public/Intro videos/willie music _2.mp4",
+    "willie": "public/Intro videos/willie music _2.mp4",
+    "june": "public/Intro videos/june intro music.mp4",
+    "thad": "public/Intro videos/Thad intro music.mp4",
+    "ann": "public/Intro videos/ann intro music.mp4",
+    "kelsey": "public/Intro videos/kelsey intro music.mp4",
+    "judy": "public/Intro videos/judy intro music2.mp4",
+    "dexter": "public/Intro videos/dexter intro music _2.mp4",
+    "shawn": "public/Intro videos/Shawn intro music.mp4",
+  };
+
+  const { Client: ObjStorageClient } = await import("@replit/object-storage");
+  const objStorageClient = new ObjStorageClient();
+
+  app.get("/api/intro-video/:avatarId", async (req, res) => {
+    try {
+      const { avatarId } = req.params;
+      const objectPath = introVideoFiles[avatarId];
+      if (!objectPath) {
+        return res.status(404).json({ error: "No intro video for this avatar" });
+      }
+      res.set({
+        "Content-Type": "video/mp4",
+        "Cache-Control": "public, max-age=86400",
+      });
+      const stream = objStorageClient.downloadAsStream(objectPath);
+      stream.on("error", (err: any) => {
+        console.error("Intro video stream error:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Failed to stream intro video" });
+        }
+      });
+      stream.pipe(res);
+    } catch (error: any) {
+      console.error("Error serving intro video:", error);
+      res.status(500).json({ error: "Failed to serve intro video" });
+    }
+  });
+
   // Admin asset upload endpoint - uploads files to attached_assets folder
   app.post("/api/admin/upload-asset", upload.single('file'), async (req: any, res) => {
     try {
