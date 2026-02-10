@@ -175,9 +175,14 @@ export function useAvatarSession({
     },
     onAudioStop: (_turnId) => {
       const driver = sessionDriverRef.current;
-      if (driver && !audioOnlyRef.current && driver.endStreamingAudio) {
-        driver.endStreamingAudio();
+      if (driver && !audioOnlyRef.current) {
+        if (driver.endStreamingAudio) {
+          driver.endStreamingAudio();
+        }
+        driver.interrupt().catch(() => {});
       }
+      isSpeakingRef.current = false;
+      setIsSpeakingState(false);
     },
     onSpeakingChange: (speaking) => {
       isSpeakingRef.current = speaking;
