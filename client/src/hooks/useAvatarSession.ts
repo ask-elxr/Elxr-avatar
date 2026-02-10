@@ -152,6 +152,7 @@ export function useAvatarSession({
       lastTranscriptRef.current = text;
     },
     onTurnStart: (_turnId) => {
+      onResetInactivityTimer?.();
       const driver = sessionDriverRef.current;
       if (driver && !audioOnlyRef.current && driver.startStreamingAudio) {
         driver.startStreamingAudio();
@@ -187,9 +188,7 @@ export function useAvatarSession({
     onSpeakingChange: (speaking) => {
       isSpeakingRef.current = speaking;
       setIsSpeakingState(speaking);
-      if (!speaking) {
-        onResetInactivityTimer?.();
-      }
+      onResetInactivityTimer?.();
     },
     onError: (err) => {
       console.error('Conversation WS error:', err);
@@ -300,7 +299,7 @@ export function useAvatarSession({
         // Tab became hidden - stop the avatar session to release resources
         console.log("📱 Tab became hidden - stopping avatar session to release resources...");
         
-        // Stop the HeyGen session to release camera/mic and save credits
+        // Stop the HeyGen session to release camera/mic
         if (sessionDriverRef.current && !audioOnlyRef.current) {
           try {
             intentionalStopRef.current = true;
@@ -1152,12 +1151,12 @@ export function useAvatarSession({
         // Double-check we're still in video mode before stopping
         // User might have switched to audio mode during the 3 minutes
         if (!audioOnlyRef.current && sessionDriverRef.current) {
-          console.log("3min idle timeout - stopping avatar session to save credits");
+          console.log("45s idle timeout - stopping avatar video session");
           stopHeyGenSession();
         } else {
           console.log("Idle timeout fired but not in video mode - skipping");
         }
-      }, 180000); // 3 minutes - allows for longer avatar responses without disconnect
+      }, 45000); // 45 seconds of inactivity
     }
   }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
 
@@ -2591,7 +2590,7 @@ export function useAvatarSession({
 
       setSessionActive(false);
       setIsPaused(true);
-      console.log("Avatar paused - stream stopped to save credits");
+      console.log("Avatar paused - stream stopped");
       onSessionActiveChange?.(false);
       
       endSessionOnServer();

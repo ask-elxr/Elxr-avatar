@@ -17,8 +17,8 @@ interface InactivityTimerReturn {
   clearAllTimers: () => void;
 }
 
-const POLITE_WARNING = "I haven't heard from you in a while — are you still there? Just say something if you'd like to continue chatting.";
-const POLITE_FAREWELL = "It seems like you might be busy. I'll step away for now to save your credits. Just click the reconnect button when you're ready to chat again!";
+const POLITE_WARNING = "Hey, are you still there? Just say something if you'd like to keep chatting.";
+const POLITE_FAREWELL = "Looks like you stepped away. I'll be right here whenever you're ready to pick back up — just hit reconnect!";
 
 // Estimate speech duration: average speaking rate is ~150 words per minute, plus buffer for avatar animation
 function estimateSpeechDuration(message: string): number {
@@ -88,8 +88,8 @@ export function useInactivityTimer({
     hasAskedAnythingElseRef.current = false;
     hasShownWarningRef.current = false;
 
-    const warningDelay = isVideoMode ? 120000 : 180000;
-    const signOffDelay = 30000;
+    const warningDelay = 45000;
+    const signOffDelay = 15000;
 
     inactivityTimerRef.current = setTimeout(async () => {
       console.log(`⏰ Inactivity warning triggered after ${warningDelay / 1000}s - prompting user`);
