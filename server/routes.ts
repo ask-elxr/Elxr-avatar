@@ -9708,6 +9708,7 @@ ${historyPreview}
   const { setupStreamingWebSocket } = await import('./streamingService.js');
   const { initWebRTCStreamingServer } = await import('./webrtcStreamingService.js');
   const { initElevenLabsSttServer } = await import('./elevenlabsSttService.js');
+  const { initConversationWsServer } = await import('./conversationWsService.js');
   
   const wss = new WebSocketServer({ noServer: true });
   setupStreamingWebSocket(wss);
@@ -9719,6 +9720,10 @@ ${historyPreview}
   // Setup ElevenLabs STT WebSocket for mobile voice input
   const sttWss = new WebSocketServer({ noServer: true });
   initElevenLabsSttServer(sttWss);
+  
+  // Setup unified conversation WebSocket (STT + Claude + TTS in one pipe)
+  const convWss = new WebSocketServer({ noServer: true });
+  initConversationWsServer(convWss);
   
   // Handle WebSocket upgrades manually for our streaming endpoints only
   httpServer.on('upgrade', (request, socket, head) => {
@@ -9738,6 +9743,12 @@ ${historyPreview}
         logger.info('ElevenLabs STT WebSocket connection established');
         sttWss.emit('connection', ws, request);
       });
+    } else if (url.pathname === '/ws/conversation') {
+      logger.info('Conversation WebSocket upgrade request - processing...');
+      convWss.handleUpgrade(request, socket, head, (ws) => {
+        logger.info('Conversation WebSocket connection established');
+        convWss.emit('connection', ws, request);
+      });
     }
     // Let other upgrade requests (like Vite HMR) pass through to their handlers
   });
@@ -9745,6 +9756,7 @@ ${historyPreview}
   logger.info('Streaming WebSocket server initialized on /ws/streaming-chat');
   logger.info('WebRTC streaming WebSocket server initialized on /ws/webrtc-streaming');
   logger.info('ElevenLabs STT WebSocket server initialized on /ws/elevenlabs-stt');
+  logger.info('Conversation WebSocket server initialized on /ws/conversation');
   
   return httpServer;
 }

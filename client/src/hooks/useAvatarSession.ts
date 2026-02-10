@@ -3,6 +3,7 @@ import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver
 import { getMemberstackId } from "@/lib/queryClient";
 import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken, getGlobalVolume, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { requestMicrophoneOnce, isMicPermissionGranted } from "@/lib/microphoneCache";
+import { useConversationWs } from "./useConversationWs";
 
 interface AvatarSessionConfig {
   videoRef: React.RefObject<HTMLVideoElement>;
@@ -125,6 +126,45 @@ export function useAvatarSession({
   const useElevenLabsSttRef = useRef(false); // Track if we're using ElevenLabs STT instead of Web Speech API
   const usingHeygenMobileVoiceChatRef = useRef(false); // Track if we're using HeyGen's built-in voice chat (LiveKit WebRTC) for mobile
   const pendingLanguageUpdateRef = useRef<string | null>(null); // Queue language updates when STT is reconnecting
+  const useConversationWsModeRef = useRef(false); // Track if using unified conversation WS (STT+Claude+TTS in one pipe)
+
+  const conversationWs = useConversationWs({
+    avatarId: selectedAvatarId || 'default',
+    userId,
+    memoryEnabled,
+    languageCode: elevenLabsLanguageCode,
+    sampleRate: 16000,
+    onTranscriptPartial: (text) => {
+      if (conversationWsBargeInEnabled()) {
+        if (!bargeInDebounceRef.current && text.length >= 2) {
+          bargeInDebounceRef.current = setTimeout(() => {
+            bargeInDebounceRef.current = null;
+          }, 150);
+        }
+      }
+    },
+    onTranscriptFinal: (text) => {
+      if (bargeInDebounceRef.current) {
+        clearTimeout(bargeInDebounceRef.current);
+        bargeInDebounceRef.current = null;
+      }
+      lastTranscriptRef.current = text;
+    },
+    onSpeakingChange: (speaking) => {
+      isSpeakingRef.current = speaking;
+      setIsSpeakingState(speaking);
+      if (!speaking) {
+        onResetInactivityTimer?.();
+      }
+    },
+    onError: (err) => {
+      console.error('Conversation WS error:', err);
+    },
+  });
+
+  const conversationWsBargeInEnabled = useCallback(() => {
+    return useConversationWsModeRef.current && isSpeakingRef.current;
+  }, []);
 
   // Sync currentAvatarIdRef with selectedAvatarId prop changes
   useEffect(() => {
@@ -1849,8 +1889,14 @@ export function useAvatarSession({
       // 📱 AUDIO MODE: Start voice recognition FIRST and wait for mic to be acquired
       // This ensures mic is ready before we play greeting (critical for post-greeting listening)
       console.log("🎤 Audio mode: Starting voice recognition before greeting...");
-      await startElevenLabsSTT();
-      console.log("🎤 Audio mode: Voice recognition started, now playing greeting...");
+      
+      // Use unified conversation WS (STT + Claude + TTS in one pipe)
+      // This replaces the separate ElevenLabs STT + /api/audio flow
+      useConversationWsModeRef.current = true;
+      conversationWs.connect();
+      await conversationWs.startMic();
+      console.log("🎤 Audio mode: Conversation WS connected with mic streaming");
+      // Skip ElevenLabs STT - conversation WS handles STT internally
       
       // Pre-cache acknowledgment audio for faster responses in audio-only mode
       triggerAcknowledgmentCache(activeAvatarId);
@@ -2052,6 +2098,12 @@ export function useAvatarSession({
     
     // Stop ElevenLabs STT as well
     stopElevenLabsSTT();
+    
+    // Disconnect conversation WS if active
+    if (useConversationWsModeRef.current) {
+      conversationWs.disconnect();
+      useConversationWsModeRef.current = false;
+    }
 
     if (sessionDriverRef.current) {
       try {
@@ -2131,6 +2183,12 @@ export function useAvatarSession({
     
     // Stop ElevenLabs STT as well
     stopElevenLabsSTT();
+    
+    // Disconnect conversation WS if active
+    if (useConversationWsModeRef.current) {
+      conversationWs.disconnect();
+      useConversationWsModeRef.current = false;
+    }
 
     if (sessionDriverRef.current) {
       intentionalStopRef.current = true;
@@ -2531,6 +2589,12 @@ export function useAvatarSession({
         }
       }
       
+      // Stop conversation WS if active
+      if (useConversationWsModeRef.current) {
+        conversationWs.disconnect();
+        useConversationWsModeRef.current = false;
+      }
+      
       // Stop voice recognition (Web Speech API or ElevenLabs STT)
       if (useElevenLabsSttRef.current) {
         stopElevenLabsSTT();
@@ -2627,9 +2691,17 @@ export function useAvatarSession({
     abortControllerRef.current = controller;
 
     try {
-      // Audio-only mode: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
+      // Audio-only mode: Use conversation WS or fallback to /api/audio endpoint
       if (audioOnlyRef.current) {
-        console.log("Audio-only mode: Using /api/audio endpoint");
+        // Conversation WS mode: send text via WS (server handles STT+Claude+TTS streaming)
+        if (useConversationWsModeRef.current && conversationWs.isConnected) {
+          console.log("Audio-only mode: Sending text via conversation WS (streaming pipeline)");
+          conversationWs.sendText(message);
+          return; // WS handles everything - skip /api/audio batch fetch
+        }
+        
+        // Fallback: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
+        console.log("Audio-only mode: Using /api/audio endpoint (fallback)");
         console.log("🧠 Memory settings:", { memoryEnabled: memoryEnabledRef.current, userId });
 
         // Play instant acknowledgment while Claude processes (non-blocking)

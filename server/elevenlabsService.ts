@@ -703,6 +703,81 @@ class ElevenLabsService {
       }, "Evicted oldest thinking sound from cache");
     }
   }
+
+  async *streamSpeechPCM(
+    text: string,
+    voiceId: string = "21m00Tcm4TlvDq8ikWAM",
+    languageCode?: string,
+    signal?: AbortSignal,
+  ): AsyncGenerator<Buffer> {
+    if (!this.apiKey) {
+      throw new Error("ElevenLabs API key not configured");
+    }
+
+    const log = logger.child({
+      service: "elevenlabs",
+      operation: "streamSpeechPCM",
+      textLength: text.length,
+      voiceId,
+    });
+
+    const isNonEnglish = languageCode && !languageCode.startsWith('en');
+    const modelId = isNonEnglish ? "eleven_multilingual_v2" : "eleven_flash_v2_5";
+
+    log.debug({ modelId }, "Starting streaming PCM TTS");
+    const startTime = Date.now();
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=pcm_24000`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "xi-api-key": this.apiKey,
+        },
+        body: JSON.stringify({
+          text,
+          model_id: modelId,
+          voice_settings: {
+            stability: 0.7,
+            similarity_boost: 0.65,
+            style: 0.0,
+            use_speaker_boost: true,
+          },
+          ...(languageCode && { language_code: languageCode.split('-')[0] }),
+        }),
+        signal,
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`ElevenLabs streaming TTS error: ${response.status} - ${errorText}`);
+    }
+
+    if (!response.body) {
+      throw new Error("No response body from ElevenLabs streaming TTS");
+    }
+
+    let totalBytes = 0;
+    const reader = response.body.getReader();
+    try {
+      while (true) {
+        if (signal?.aborted) break;
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = Buffer.from(value);
+        totalBytes += chunk.length;
+        yield chunk;
+      }
+    } finally {
+      reader.releaseLock();
+    }
+
+    const duration = Date.now() - startTime;
+    log.info({ duration, totalBytes, format: "pcm_24000" }, "Streaming PCM TTS completed");
+    metrics.recordElevenLabsTTS(duration);
+  }
 }
 
 export const elevenlabsService = new ElevenLabsService();
