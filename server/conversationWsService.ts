@@ -13,7 +13,7 @@ import { getBanterLevel, buildAvatarPrompt } from './warmthEngine.js';
 
 const log = logger.child({ service: 'conversation-ws' });
 
-const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/ws';
+const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/realtime';
 
 interface ConversationSession {
   ws: WebSocket;
