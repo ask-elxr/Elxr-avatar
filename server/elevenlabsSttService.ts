@@ -33,7 +33,8 @@ interface STTSession {
   sttReady: boolean;
   languageCode: string;
   sampleRate: number;
-  isReconnecting: boolean; // Prevent race conditions during language updates
+  isReconnecting: boolean;
+  keepaliveInterval: NodeJS.Timeout | null;
 }
 
 const activeSessions = new Map<string, STTSession>();
@@ -93,6 +94,7 @@ async function handleControlMessage(
         languageCode,
         sampleRate,
         isReconnecting: false,
+        keepaliveInterval: null,
       };
       
       activeSessions.set(sessionId, session);
@@ -154,7 +156,10 @@ async function handleControlMessage(
       session.isReconnecting = true;
       session.sttReady = false;
       
-      // Close existing STT connection
+      if (session.keepaliveInterval) {
+        clearInterval(session.keepaliveInterval);
+        session.keepaliveInterval = null;
+      }
       if (session.sttWs?.readyState === WebSocket.OPEN) {
         session.sttWs.close();
       }
@@ -207,10 +212,10 @@ async function startSTTStream(session: STTSession): Promise<void> {
     sample_rate: session.sampleRate.toString(),
     audio_format: `pcm_${session.sampleRate}`,
     commit_strategy: 'vad',
-    vad_silence_threshold_secs: '1.5',
-    vad_threshold: '0.2',
-    min_speech_duration_ms: '150',
-    min_silence_duration_ms: '500',
+    vad_silence_threshold_secs: '1.0',
+    vad_threshold: '0.15',
+    min_speech_duration_ms: '100',
+    min_silence_duration_ms: '300',
   });
   
   const sttUrl = `${ELEVENLABS_STT_URL}?${queryParams.toString()}`;
@@ -236,6 +241,13 @@ async function startSTTStream(session: STTSession): Promise<void> {
         log.info({ sessionId: session.sessionId }, 'ElevenLabs STT WebSocket connected');
         session.sttReady = true;
         clearTimeout(connectionTimeout);
+        if (session.keepaliveInterval) clearInterval(session.keepaliveInterval);
+        session.keepaliveInterval = setInterval(() => {
+          if (sttWs.readyState === WebSocket.OPEN) {
+            const silence = Buffer.alloc(3200);
+            sttWs.send(silence);
+          }
+        }, 5000);
         session.clientWs.send(JSON.stringify({ type: 'stt_ready' }));
         resolve();
       });
@@ -324,6 +336,11 @@ async function startSTTStream(session: STTSession): Promise<void> {
 function cleanupSession(sessionId: string): void {
   const session = activeSessions.get(sessionId);
   if (!session) return;
+  
+  if (session.keepaliveInterval) {
+    clearInterval(session.keepaliveInterval);
+    session.keepaliveInterval = null;
+  }
   
   if (session.sttWs?.readyState === WebSocket.OPEN) {
     session.sttWs.close();
