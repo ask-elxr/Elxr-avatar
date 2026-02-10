@@ -47,6 +47,7 @@ export function useConversationWs(config: ConversationWsConfig) {
   const currentTurnIdRef = useRef(0);
   const stoppedRef = useRef(false);
   const nextPlayTimeRef = useRef(0);
+  const speakingRef = useRef(false);
 
   useEffect(() => {
     configRef.current = config;
@@ -64,6 +65,7 @@ export function useConversationWs(config: ConversationWsConfig) {
 
   const hardStopAudio = useCallback(() => {
     stoppedRef.current = true;
+    speakingRef.current = false;
     try {
       sourceNodesRef.current.forEach(n => { try { n.stop(); } catch {} });
     } finally {
@@ -159,6 +161,7 @@ export function useConversationWs(config: ConversationWsConfig) {
       case 'TURN_START':
         currentTurnIdRef.current = msg.turnId;
         stoppedRef.current = false;
+        speakingRef.current = true;
         nextPlayTimeRef.current = 0;
         setState(s => ({ ...s, currentTurnId: msg.turnId, isSpeaking: true }));
         configRef.current.onSpeakingChange?.(true);
@@ -166,11 +169,13 @@ export function useConversationWs(config: ConversationWsConfig) {
         break;
 
       case 'TURN_END':
+        speakingRef.current = false;
         configRef.current.onTurnEnd?.(msg.turnId);
         break;
 
       case 'STOP_AUDIO':
         hardStopAudio();
+        speakingRef.current = false;
         configRef.current.onAudioStop?.(msg.turnId);
         currentTurnIdRef.current = msg.turnId;
         stoppedRef.current = false;
@@ -276,7 +281,7 @@ export function useConversationWs(config: ConversationWsConfig) {
       processorRef.current = processor;
 
       processor.onaudioprocess = (e) => {
-        if (wsRef.current?.readyState === WebSocket.OPEN) {
+        if (wsRef.current?.readyState === WebSocket.OPEN && !speakingRef.current) {
           const inputData = e.inputBuffer.getChannelData(0);
           const pcm16 = new Int16Array(inputData.length);
           for (let i = 0; i < inputData.length; i++) {
