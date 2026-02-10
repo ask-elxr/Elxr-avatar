@@ -1263,6 +1263,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/audio", async (req: any, res) => {
     const log = logger.child({ service: "audio-chat", operation: "processMessage" });
 
+    let requestAborted = false;
+    req.on('close', () => {
+      if (!res.writableEnded) {
+        requestAborted = true;
+        log.info('Client disconnected - aborting audio generation');
+      }
+    });
+
     try {
       const { message, avatarId = "mark-kohl", languageCode, imageBase64, imageMimeType } = req.body;
       
@@ -1863,6 +1871,12 @@ ${historyPreview}
         log.info({ userId, historyCount: dbConversationHistory.length }, 'Added conversation history to audio mode prompt');
       }
 
+      // Abort early if client disconnected during RAG/memory fetch
+      if (requestAborted) {
+        log.info('Request aborted before Claude call - skipping');
+        return;
+      }
+
       // Generate Claude response - use fast Haiku model for text-only, Sonnet for images
       const claudeStart = Date.now();
       let claudeResponseResult: string;
@@ -1921,6 +1935,12 @@ ${historyPreview}
       }).catch((error) => {
         log.error({ error: error.message }, 'Failed to log Claude API call');
       });
+
+      // Abort if client disconnected during Claude generation
+      if (requestAborted) {
+        log.info('Request aborted after Claude response - skipping TTS');
+        return;
+      }
 
       // Step 2: Convert to ElevenLabs audio
       if (!elevenlabsService.isAvailable()) {

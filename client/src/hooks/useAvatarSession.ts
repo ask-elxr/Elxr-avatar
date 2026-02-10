@@ -93,6 +93,7 @@ export function useAvatarSession({
   const lastTranscriptRef = useRef<string>(""); // For deduplication
   const lastAvatarResponseRef = useRef<string>(""); // For echo detection - track what avatar last said
   const lastAvatarResponseTimeRef = useRef<number>(0); // When avatar spoke (for echo detection window)
+  const bargeInDebounceRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer for barge-in on partials
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
   const recognitionRunningRef = useRef(false); // Track if recognition is currently running
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
@@ -389,7 +390,13 @@ export function useAvatarSession({
     }
     stopSharedAudio();
     
-    // 6. Stop acknowledgment audio
+    // 6. Clear barge-in debounce
+    if (bargeInDebounceRef.current) {
+      clearTimeout(bargeInDebounceRef.current);
+      bargeInDebounceRef.current = null;
+    }
+    
+    // 7. Stop acknowledgment audio
     if (currentAcknowledgmentRef.current) {
       currentAcknowledgmentRef.current.pause();
       currentAcknowledgmentRef.current = null;
@@ -627,11 +634,63 @@ export function useAvatarSession({
     }
   }, []);
 
+  // Hard-stop audio + abort fetch in one call (barge-in helper)
+  const performBargeIn = useCallback((reason: string) => {
+    console.log(`🛑 BARGE-IN: ${reason}`);
+    if (currentAudioRef.current) {
+      try {
+        currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        if (currentAudioRef.current.src?.startsWith('blob:')) {
+          URL.revokeObjectURL(currentAudioRef.current.src);
+        }
+        currentAudioRef.current.src = '';
+        currentAudioRef.current = null;
+      } catch (e) {
+        currentAudioRef.current = null;
+      }
+    }
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (sessionDriverRef.current && !audioOnlyRef.current) {
+      sessionDriverRef.current.interrupt().catch(() => {});
+    }
+    isSpeakingRef.current = false;
+    setIsSpeakingState(false);
+  }, []);
+
   // Handle ElevenLabs STT transcript (same flow as Web Speech API)
   const handleElevenLabsSttTranscript = useCallback((transcript: string | undefined | null, isFinal: boolean) => {
+    // PARTIAL TRANSCRIPT BARGE-IN: Interrupt audio as soon as real speech is detected
     if (!isFinal) {
-      // Partial transcript - could show in UI if desired
+      const partialText = (transcript || '').trim();
+      const hasActiveAudio = currentAudioRef.current && !currentAudioRef.current.paused;
+      const hasActiveDriver = sessionDriverRef.current && !audioOnlyRef.current;
+      const assistantSpeaking = hasActiveAudio || hasActiveDriver || isSpeakingRef.current;
+      if (assistantSpeaking && partialText.length >= 2) {
+        if (!bargeInDebounceRef.current) {
+          bargeInDebounceRef.current = setTimeout(() => {
+            bargeInDebounceRef.current = null;
+            const stillPlaying = (currentAudioRef.current && !currentAudioRef.current.paused) || isSpeakingRef.current;
+            if (stillPlaying) {
+              performBargeIn(`partial speech detected: "${partialText.substring(0, 30)}"`);
+            }
+          }, 150);
+        }
+      }
       return;
+    }
+    
+    // Final transcript: if barge-in debounce pending, fire it immediately
+    if (bargeInDebounceRef.current) {
+      clearTimeout(bargeInDebounceRef.current);
+      bargeInDebounceRef.current = null;
+      const stillPlaying = (currentAudioRef.current && !currentAudioRef.current.paused) || isSpeakingRef.current;
+      if (stillPlaying) {
+        performBargeIn(`debounce flushed by final transcript`);
+      }
     }
     
     // Guard against undefined/null transcript
@@ -670,18 +729,7 @@ export function useAvatarSession({
       }
       
       // NOT an echo - this is a real interruption!
-      console.log("🛑 INTERRUPTION DETECTED:", trimmedTranscript);
-      // Stop current audio immediately
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.currentTime = 0;
-        if (currentAudioRef.current.src?.startsWith('blob:')) {
-          URL.revokeObjectURL(currentAudioRef.current.src);
-        }
-        currentAudioRef.current = null;
-      }
-      isSpeakingRef.current = false;
-      setIsSpeakingState(false); // Update UI state
+      performBargeIn(`final transcript interruption: "${trimmedTranscript.substring(0, 30)}"`);
       // Fall through to process the new message as an interruption
     }
     
@@ -715,32 +763,14 @@ export function useAvatarSession({
     
     console.log("🎤 ElevenLabs STT voice input (final):", trimmedTranscript);
     
-    // Interrupt if speaking
-    if (isSpeakingRef.current && currentAudioRef.current) {
-      console.log("🛑 Interrupting audio - user is speaking (ElevenLabs STT)");
-      try {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.currentTime = 0;
-        currentAudioRef.current.src = '';
-        currentAudioRef.current.load();
-        currentAudioRef.current = null;
-      } catch (e) {
-        currentAudioRef.current = null;
-      }
-      isSpeakingRef.current = false;
-      setIsSpeakingState(false);
-    }
-    
-    if (isSpeakingRef.current && sessionDriverRef.current && !audioOnlyRef.current) {
-      console.log("🛑 Interrupting avatar - user is speaking (ElevenLabs STT)");
-      sessionDriverRef.current.interrupt().catch(() => {});
-      isSpeakingRef.current = false;
-      setIsSpeakingState(false);
+    // Interrupt if speaking (audio or video mode)
+    if (isSpeakingRef.current) {
+      performBargeIn(`final transcript: "${trimmedTranscript.substring(0, 30)}"`);
     }
     
     // Submit the message
     handleSubmitMessageRef.current?.(trimmedTranscript);
-  }, []);
+  }, [performBargeIn]);
 
   // Start ElevenLabs STT for mobile devices
   // 📱 CRITICAL iOS FIX: Request microphone FIRST (within user gesture context)

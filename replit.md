@@ -16,6 +16,7 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT, Pinecone RAG, Mem0, OpenAI Realtime API, and ElevenLabs Realtime TTS, designed for zero buffering.
 - **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately.
 - **Audio Streaming Mode**: Includes immediate thinking sounds, parallel data fetching, Claude streaming with sentence buffering, concurrent TTS generation, and SSE audio events.
+- **Barge-in/Cancellation System**: ElevenLabs STT partial transcripts trigger 150ms debounced interruption when avatar is speaking (checks audio element state, not just ref flag). `performBargeIn()` helper hard-stops audio (pause, reset currentTime, revoke blob URL), aborts in-flight fetch, interrupts HeyGen driver, and resets speaking state. Server-side `req.on('close')` handler on `/api/audio` sets `requestAborted` flag checked before Claude and TTS calls. `cancelPendingWork()` also clears barge-in debounce ref.
 
 #### Backend (Express + TypeScript + Python)
 - **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.

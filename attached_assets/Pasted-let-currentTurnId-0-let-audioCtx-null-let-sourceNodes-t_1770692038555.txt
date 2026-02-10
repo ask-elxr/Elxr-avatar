@@ -1,0 +1,98 @@
+let currentTurnId = 0;
+let audioCtx = null;
+let sourceNodes = []; // track nodes so we can stop
+let stopped = false;
+
+function ensureAudio() {
+  if (!audioCtx || audioCtx.state === "closed") {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function hardStopAudio() {
+  stopped = true;
+  currentTurnId += 1; // local bump; server will also bump via STOP_AUDIO/turnId
+  try {
+    sourceNodes.forEach(n => { try { n.stop(); } catch {} });
+  } finally {
+    sourceNodes = [];
+  }
+  // For extra certainty: rebuild context (kills anything buffered)
+  if (audioCtx && audioCtx.state !== "closed") {
+    audioCtx.close().catch(()=>{});
+  }
+  audioCtx = null;
+}
+
+ws.onmessage = async (evt) => {
+  if (typeof evt.data === "string") {
+    const msg = JSON.parse(evt.data);
+
+    if (msg.type === "TURN_START") {
+      currentTurnId = msg.turnId;
+      stopped = false;
+      return;
+    }
+
+    if (msg.type === "STOP_AUDIO") {
+      // stop immediately
+      hardStopAudio();
+      // align with server’s turnId so old audio gets ignored
+      currentTurnId = msg.turnId;
+      stopped = false; // we're listening now; don't block future
+      return;
+    }
+
+    // handle STT_PARTIAL/STT_FINAL if you want UI updates
+    return;
+  }
+
+  // Binary audio frame: [TTS0][turnIdLE32][audioBytes...]
+  const buf = new Uint8Array(await evt.data.arrayBuffer());
+  if (buf.length < 8) return;
+
+  const magic = String.fromCharCode(buf[0], buf[1], buf[2], buf[3]);
+  if (magic !== "TTS0") return;
+
+  const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+  const turnId = dv.getUint32(4, true);
+
+  if (turnId !== currentTurnId) return; // drop late/old audio
+  if (stopped) return;
+
+  // audioBytes = PCM frames (you decide format)
+  const audioBytes = buf.slice(8);
+
+  // TODO: convert PCM bytes to AudioBuffer and play.
+  // If your TTS gives float32 PCM, it’s easiest.
+  // If int16 PCM: convert to float32.
+  ensureAudio();
+
+  const float32 = int16ToFloat32(audioBytes);
+  const audioBuffer = audioCtx.createBuffer(1, float32.length, 16000);
+  audioBuffer.copyToChannel(float32, 0);
+
+  const src = audioCtx.createBufferSource();
+  src.buffer = audioBuffer;
+  src.connect(audioCtx.destination);
+  src.start();
+
+  sourceNodes.push(src);
+  src.onended = () => {
+    sourceNodes = sourceNodes.filter(n => n !== src);
+  };
+
+  // ALSO: forward this same PCM to HeyGen lip-sync pipeline (your existing hook)
+  // forwardToHeyGen(audioBytes, turnId);
+};
+
+function int16ToFloat32(u8) {
+  const len = u8.length / 2;
+  const out = new Float32Array(len);
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  for (let i = 0; i < len; i++) {
+    const v = dv.getInt16(i * 2, true);
+    out[i] = v / 32768;
+  }
+  return out;
+}

@@ -1,0 +1,210 @@
+import WebSocket, { WebSocketServer } from "ws";
+import fetch from "node-fetch";
+import { TextDecoder } from "util";
+
+function createSession(ws) {
+  return {
+    ws,
+    state: "IDLE", // IDLE | LISTENING | THINKING | SPEAKING
+    turnId: 0,
+    active: {
+      llmAbort: null,
+      ttsAbort: null,
+      ttsQueue: [],
+      playing: false,
+    },
+    // STT debouncing
+    bargeTimer: null,
+    // store latest partial for heuristics
+    lastPartial: "",
+  };
+}
+
+function sendJSON(ws, obj) {
+  if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj));
+}
+
+function sendTtsBinary(ws, turnId, audioChunk) {
+  const header = Buffer.alloc(8);
+  header.write("TTS0", 0, 4, "ascii");
+  header.writeUInt32LE(turnId, 4);
+  const payload = Buffer.concat([header, Buffer.from(audioChunk)]);
+  if (ws.readyState === WebSocket.OPEN) ws.send(payload);
+}
+
+function bargeIn(session, reason = "user_started_speaking") {
+  session.turnId += 1;
+
+  // Abort Claude
+  if (session.active.llmAbort) {
+    try { session.active.llmAbort.abort(reason); } catch {}
+    session.active.llmAbort = null;
+  }
+
+  // Abort current TTS request
+  if (session.active.ttsAbort) {
+    try { session.active.ttsAbort.abort(reason); } catch {}
+    session.active.ttsAbort = null;
+  }
+
+  // Clear queued sentences
+  session.active.ttsQueue.length = 0;
+
+  // Stop playback client-side (and HeyGen feed)
+  sendJSON(session.ws, { type: "STOP_AUDIO", turnId: session.turnId, reason });
+
+  session.state = "LISTENING";
+}
+
+function scheduleBargeIn(session) {
+  if (session.bargeTimer) return;
+  session.bargeTimer = setTimeout(() => {
+    session.bargeTimer = null;
+    if (session.state === "SPEAKING" || session.state === "THINKING") {
+      bargeIn(session, "user_started_speaking");
+    }
+  }, 150); // tweak 120–250ms
+}
+
+/**
+ * Heuristics: treat as real user speech if
+ * - VAD speech_start, OR
+ * - partial transcript length >= 2 and confidence >= 0.6
+ */
+function maybeBargeInFromStt(session, sttMsg) {
+  const assistantSpeaking = session.state === "SPEAKING" || session.state === "THINKING";
+  if (!assistantSpeaking) return;
+
+  const speechStart = sttMsg.type === "vad" && sttMsg.event === "speech_start";
+  const partialReal =
+    sttMsg.type === "partial" &&
+    (sttMsg.text?.trim()?.length ?? 0) >= 2 &&
+    (sttMsg.confidence ?? 1) >= 0.6;
+
+  if (speechStart || partialReal) scheduleBargeIn(session);
+}
+
+// Sentence splitter: keeps it simple and fast
+function popCompleteSentences(buffer) {
+  // Split on ., !, ? followed by space/newline OR end
+  const re = /([^\r\n.!?]*[.!?]+)(\s+|$)/g;
+  let match;
+  const complete = [];
+  let lastIndex = 0;
+
+  while ((match = re.exec(buffer)) !== null) {
+    complete.push(match[1].trim());
+    lastIndex = re.lastIndex;
+    // Avoid sending ultra-short “.” fragments
+    if (complete[complete.length - 1].length < 2) complete.pop();
+  }
+
+  return { complete, remaining: buffer.slice(lastIndex) };
+}
+
+async function speakSentence(session, text, myTurn) {
+  const abort = new AbortController();
+  session.active.ttsAbort = abort;
+
+  // IMPORTANT: pick your ElevenLabs streaming endpoint.
+  // This is pseudo; replace with your real TTS streaming call.
+  const res = await fetch(process.env.ELEVEN_TTS_STREAM_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "xi-api-key": process.env.ELEVEN_API_KEY,
+    },
+    body: JSON.stringify({
+      text,
+      voice_id: process.env.ELEVEN_VOICE_ID,
+      // model_id, output_format, etc...
+    }),
+    signal: abort.signal,
+  });
+
+  if (!res.ok) throw new Error(`TTS failed ${res.status}`);
+
+  const reader = res.body.getReader();
+  while (true) {
+    if (session.turnId !== myTurn) break;
+    const { value, done } = await reader.read();
+    if (done) break;
+    sendTtsBinary(session.ws, myTurn, value);
+  }
+}
+
+function enqueueTts(session, sentence, myTurn) {
+  session.active.ttsQueue.push({ sentence, turnId: myTurn });
+  if (!session.active.playing) consumeTtsQueue(session);
+}
+
+async function consumeTtsQueue(session) {
+  session.active.playing = true;
+  try {
+    while (session.active.ttsQueue.length) {
+      const item = session.active.ttsQueue.shift();
+      if (!item) continue;
+      if (item.turnId !== session.turnId) continue;
+
+      await speakSentence(session, item.sentence, item.turnId).catch(() => {});
+      if (item.turnId !== session.turnId) break;
+    }
+  } finally {
+    session.active.playing = false;
+  }
+}
+
+/**
+ * Claude streaming: you already buffer sentences.
+ * Add: AbortController + turnId guard + enqueueTts()
+ */
+async function runClaude(session, promptMessages) {
+  const myTurn = session.turnId;
+  session.state = "THINKING";
+  sendJSON(session.ws, { type: "TURN_START", turnId: myTurn });
+
+  const abort = new AbortController();
+  session.active.llmAbort = abort;
+
+  let buffer = "";
+
+  try {
+    // Replace with your Anthropic SDK call.
+    // Key requirements:
+    // - streaming iterator
+    // - accept abort.signal OR you do soft-cancel via turnId guard
+    const stream = await globalThis.anthropic.messages.stream({
+      model: "claude-opus-4.6",
+      max_tokens: 600,
+      messages: promptMessages,
+      stream: true,
+      signal: abort.signal, // if supported
+    });
+
+    session.state = "SPEAKING";
+
+    for await (const event of stream) {
+      if (session.turnId !== myTurn) break;
+
+      if (event.type === "content_block_delta" && event.delta?.text) {
+        buffer += event.delta.text;
+
+        const { complete, remaining } = popCompleteSentences(buffer);
+        buffer = remaining;
+
+        for (const sentence of complete) {
+          if (session.turnId !== myTurn) break;
+          enqueueTts(session, sentence, myTurn);
+        }
+      }
+    }
+  } catch (e) {
+    // abort is normal
+  } finally {
+    if (session.active.llmAbort === abort) session.active.llmAbort = null;
+    if (session.turnId === myTurn) {
+      sendJSON(session.ws, { type: "TURN_END", turnId: myTurn });
+      session.state = "LISTENING";
+    }
+  }
+}
