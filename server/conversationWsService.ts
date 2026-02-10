@@ -423,17 +423,22 @@ async function startSttStream(session: ConversationSession): Promise<void> {
   sttWs.on('message', async (data: Buffer) => {
     try {
       const event = JSON.parse(data.toString());
+      const msgType = event.type || event.message_type;
 
-      if (event.type === 'transcript') {
-        if (event.is_final && event.text?.trim()) {
-          sendJSON(session.ws, { type: 'STT_FINAL', text: event.text.trim() });
+      if (msgType === 'partial_transcript' || msgType === 'transcript') {
+        const isFinal = event.speech_final === true || event.is_final === true;
+        const text = (event.text || '').trim();
+
+        if (isFinal && text) {
+          sendJSON(session.ws, { type: 'STT_FINAL', text });
+          log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Final transcript');
 
           if (session.bargeTimer) {
             clearTimeout(session.bargeTimer);
             session.bargeTimer = null;
           }
 
-          session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + event.text.trim();
+          session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
 
           if (session.state === 'SPEAKING' || session.state === 'THINKING') {
             bargeIn(session, 'user_started_speaking');
@@ -445,23 +450,48 @@ async function startSttStream(session: ConversationSession): Promise<void> {
           session.turnId += 1;
           await runTurn(session, finalMessage);
 
-        } else if (!event.is_final && event.text?.trim()) {
+        } else if (!isFinal && text) {
           sendJSON(session.ws, {
             type: 'STT_PARTIAL',
-            text: event.text.trim(),
+            text,
             confidence: event.confidence ?? 1.0
           });
 
           maybeBargeInFromStt(session, {
             type: 'partial',
-            text: event.text.trim(),
+            text,
             confidence: event.confidence ?? 1.0
           });
         }
-      } else if (event.type === 'vad') {
+      } else if (msgType === 'committed_transcript' || msgType === 'committed_transcript_with_timestamps' || msgType === 'utterance_end') {
+        const text = (event.text || event.transcript || '').trim();
+        if (text) {
+          sendJSON(session.ws, { type: 'STT_FINAL', text });
+          log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Committed transcript');
+
+          if (session.bargeTimer) {
+            clearTimeout(session.bargeTimer);
+            session.bargeTimer = null;
+          }
+
+          session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
+
+          if (session.state === 'SPEAKING' || session.state === 'THINKING') {
+            bargeIn(session, 'user_started_speaking');
+          }
+
+          const finalMessage = session.accumulatedTranscript;
+          session.accumulatedTranscript = '';
+
+          session.turnId += 1;
+          await runTurn(session, finalMessage);
+        }
+      } else if (msgType === 'vad') {
         if (event.event === 'speech_start') {
           maybeBargeInFromStt(session, { type: 'vad', event: 'speech_start' });
         }
+      } else if (msgType === 'session_started' || msgType === 'session_begin') {
+        log.info({ sessionId: session.sessionId }, 'STT session confirmed started');
       }
     } catch (e: any) {
       log.error({ error: e.message, sessionId: session.sessionId }, 'Error processing STT message');
