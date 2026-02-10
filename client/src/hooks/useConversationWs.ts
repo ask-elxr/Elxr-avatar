@@ -286,8 +286,11 @@ export function useConversationWs(config: ConversationWsConfig) {
         }
       };
 
+      const silentGain = audioContext.createGain();
+      silentGain.gain.value = 0;
       source.connect(processor);
-      processor.connect(audioContext.destination);
+      processor.connect(silentGain);
+      silentGain.connect(audioContext.destination);
 
       console.log('🎙️ Mic streaming to conversation WS');
     } catch (error: any) {
