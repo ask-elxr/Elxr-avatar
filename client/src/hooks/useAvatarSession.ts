@@ -1059,6 +1059,12 @@ export function useAvatarSession({
     // Version check - helps verify fresh code is loaded
     console.log("🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary");
     
+    // Skip if using unified conversation WS (handles STT internally)
+    if (useConversationWsModeRef.current) {
+      console.log("⏭️ Skipping old voice recognition - conversation WS handles STT");
+      return;
+    }
+    
     // Skip if using HeyGen's built-in voice chat (mobile mode with LiveKit WebRTC)
     // HeyGen SDK handles microphone capture and sends USER_TRANSCRIPTION events
     if (usingHeygenMobileVoiceChatRef.current) {
@@ -1881,13 +1887,8 @@ export function useAvatarSession({
       warmupMic();
     }
     
-    // ✅ Start voice recognition for all modes
-    // For video mode: Start immediately (non-blocking)
-    // For audio mode: Wait for mic to be acquired before playing greeting
-    if (!audioOnly) {
-      // Video mode: Start voice recognition in background
-      startVoiceRecognition();
-    }
+    // ✅ Voice recognition is handled by conversation WS (unified STT + Claude + TTS pipe)
+    // Skip starting the old separate ElevenLabs STT - conversation WS handles mic capture internally
     
     // Start HeyGen immediately in video mode for instant avatar appearance
     if (!audioOnly) {
