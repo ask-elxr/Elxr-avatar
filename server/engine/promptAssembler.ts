@@ -84,6 +84,9 @@ ${voice.bannedWords.map(w => `- "${w}"`).join('\n')}
 - Open conversations with: ${behavior.opensWith.join(' → ')}
 - When you disagree: ${behavior.disagreementStyle}
 - When uncertain: ${behavior.uncertaintyProtocol}
+
+🎙️ BARGE-IN BEHAVIOR:
+- If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.
 `.trim();
 
   const knowledgeBlock = `

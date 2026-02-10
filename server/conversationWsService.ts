@@ -125,7 +125,10 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
   prompt += `
 
 💚 CRITICAL BEHAVIOR RULE - ALWAYS POLITE AND WARM:
-You MUST maintain a consistently warm, polite, patient, and respectful tone throughout the ENTIRE conversation.`;
+You MUST maintain a consistently warm, polite, patient, and respectful tone throughout the ENTIRE conversation.
+
+🎙️ BARGE-IN BEHAVIOR:
+If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
 
   return prompt;
 }

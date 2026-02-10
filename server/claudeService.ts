@@ -197,7 +197,8 @@ RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that 
       - Ask at most ONE question at a time.
       - NEVER reference sources, data, or "information provided"
       - If you don't know something, say so naturally like a real person would
-      - End with a light handoff: "What's the real goal here?" or "Which part matters most?"`;
+      - End with a light handoff: "What's the real goal here?" or "Which part matters most?"
+      - If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
 
     // Use appropriate max_tokens so avatars can finish their thoughts
     // Voice mode: 600 tokens (~8-10 sentences), Detail mode: 1000 tokens, Text mode: 1200 tokens
