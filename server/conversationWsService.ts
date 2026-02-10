@@ -231,9 +231,14 @@ async function speakSentence(session: ConversationSession, text: string, myTurn:
   session.active.ttsAbort = abort;
 
   try {
+    const chunks: Buffer[] = [];
     for await (const chunk of elevenlabsService.streamSpeechPCM(text, session.voiceId, session.languageCode, abort.signal)) {
       if (session.turnId !== myTurn || abort.signal.aborted) break;
-      sendTtsBinary(session.ws, myTurn, chunk);
+      chunks.push(chunk);
+    }
+    if (chunks.length > 0 && session.turnId === myTurn && !abort.signal.aborted) {
+      const fullSentenceAudio = Buffer.concat(chunks);
+      sendTtsBinary(session.ws, myTurn, fullSentenceAudio);
     }
   } catch (e: any) {
     if (e.name !== 'AbortError') {
