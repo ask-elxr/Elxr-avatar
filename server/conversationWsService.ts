@@ -37,6 +37,7 @@ interface ConversationSession {
   systemPrompt: string;
   memoryEnabled: boolean;
   sampleRate: number;
+  audioOnly: boolean;
   conversationHistory: Array<{ message: string; isUser: boolean }>;
   accumulatedTranscript: string;
 }
@@ -226,19 +227,51 @@ async function fetchContext(session: ConversationSession, message: string): Prom
   return { knowledgeContext, memoryContext };
 }
 
+const TTS_CHUNK_INTERVAL_MS = 200;
+const TTS_MIN_CHUNK_BYTES = 4800;
+
 async function speakSentence(session: ConversationSession, text: string, myTurn: number): Promise<void> {
   const abort = new AbortController();
   session.active.ttsAbort = abort;
 
   try {
-    const chunks: Buffer[] = [];
-    for await (const chunk of elevenlabsService.streamSpeechPCM(text, session.voiceId, session.languageCode, abort.signal)) {
-      if (session.turnId !== myTurn || abort.signal.aborted) break;
-      chunks.push(chunk);
-    }
-    if (chunks.length > 0 && session.turnId === myTurn && !abort.signal.aborted) {
-      const fullSentenceAudio = Buffer.concat(chunks);
-      sendTtsBinary(session.ws, myTurn, fullSentenceAudio);
+    if (session.audioOnly) {
+      const pendingChunks: Buffer[] = [];
+      let pendingBytes = 0;
+      let lastFlush = Date.now();
+
+      const flush = () => {
+        if (pendingChunks.length > 0 && session.turnId === myTurn && !abort.signal.aborted) {
+          const batch = Buffer.concat(pendingChunks);
+          pendingChunks.length = 0;
+          pendingBytes = 0;
+          sendTtsBinary(session.ws, myTurn, batch);
+        }
+        lastFlush = Date.now();
+      };
+
+      for await (const chunk of elevenlabsService.streamSpeechPCM(text, session.voiceId, session.languageCode, abort.signal)) {
+        if (session.turnId !== myTurn || abort.signal.aborted) break;
+        pendingChunks.push(chunk);
+        pendingBytes += chunk.length;
+
+        const elapsed = Date.now() - lastFlush;
+        if (elapsed >= TTS_CHUNK_INTERVAL_MS && pendingBytes >= TTS_MIN_CHUNK_BYTES) {
+          flush();
+        }
+      }
+
+      flush();
+    } else {
+      const chunks: Buffer[] = [];
+      for await (const chunk of elevenlabsService.streamSpeechPCM(text, session.voiceId, session.languageCode, abort.signal)) {
+        if (session.turnId !== myTurn || abort.signal.aborted) break;
+        chunks.push(chunk);
+      }
+      if (chunks.length > 0 && session.turnId === myTurn && !abort.signal.aborted) {
+        const fullSentenceAudio = Buffer.concat(chunks);
+        sendTtsBinary(session.ws, myTurn, fullSentenceAudio);
+      }
     }
   } catch (e: any) {
     if (e.name !== 'AbortError') {
@@ -296,13 +329,15 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
   log.info({ sessionId: session.sessionId, turnId: myTurn, message: userMessage.substring(0, 80) }, 'Starting turn');
 
   try {
-    const { knowledgeContext, memoryContext } = await fetchContext(session, userMessage);
+    const [ctxResult] = await Promise.all([
+      fetchContext(session, userMessage),
+      !session.systemPrompt ? buildSystemPrompt(session).then(p => { session.systemPrompt = p; }) : Promise.resolve(),
+    ]);
     if (session.turnId !== myTurn) return;
 
-    const systemPrompt = await buildSystemPrompt(session);
-    if (session.turnId !== myTurn) return;
+    const { knowledgeContext, memoryContext } = ctxResult;
 
-    let enhancedPrompt = systemPrompt;
+    let enhancedPrompt = session.systemPrompt;
     if (memoryContext) {
       enhancedPrompt += `\n${memoryContext}\nUse these memories naturally.`;
     }
@@ -322,7 +357,7 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
       undefined,
       undefined,
       true,
-      false
+      true
     );
 
     for await (const event of streamGen) {
@@ -583,6 +618,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         memoryEnabled = false,
         sampleRate = 16000,
         languageCode,
+        audioOnly = false,
       } = message;
 
       const avatarConfig = await getAvatarById(avatarId);
@@ -619,6 +655,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         systemPrompt: '',
         memoryEnabled,
         sampleRate,
+        audioOnly: !!audioOnly,
         conversationHistory: [],
         accumulatedTranscript: '',
       };

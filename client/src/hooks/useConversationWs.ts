@@ -220,6 +220,7 @@ export function useConversationWs(config: ConversationWsConfig) {
           memoryEnabled: configRef.current.memoryEnabled,
           sampleRate: configRef.current.sampleRate || 16000,
           languageCode: configRef.current.languageCode,
+          audioOnly: configRef.current.playLocalAudio ?? false,
         }));
         resolve();
       };

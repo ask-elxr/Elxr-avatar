@@ -17,8 +17,8 @@ When copying code from this code snippet, ensure you also include this informati
 const DEFAULT_MODEL_STR = "claude-opus-4-6";
 // </important_do_not_delete>
 
-// Voice model - Using Opus 4.6 for best conversation quality
-const FAST_VOICE_MODEL = "claude-opus-4-6";
+// Voice model - Using Sonnet 4 for faster voice conversation latency
+const FAST_VOICE_MODEL = "claude-sonnet-4-20250514";
 
 // Content policy is now imported from contentTaxonomy.ts for professional, taxonomy-based approach
 
@@ -200,9 +200,8 @@ RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that 
       - End with a light handoff: "What's the real goal here?" or "Which part matters most?"
       - If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
 
-    // Use appropriate max_tokens so avatars can finish their thoughts
-    // Voice mode: 600 tokens (~8-10 sentences), Detail mode: 1000 tokens, Text mode: 1200 tokens
-    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 600 : 1200);
+    // Voice mode: 350 tokens (~4-6 sentences) for snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
+    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 350 : 1200);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
