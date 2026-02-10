@@ -191,58 +191,62 @@ export function useConversationWs(config: ConversationWsConfig) {
     }
   }, [hardStopAudio]);
 
-  const connect = useCallback(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+  const connect = useCallback((): Promise<void> => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return Promise.resolve();
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/conversation`;
+    return new Promise((resolve, reject) => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/conversation`;
 
-    console.log('🎙️ Connecting to conversation WS...');
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
+      console.log('🎙️ Connecting to conversation WS...');
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
 
-    ws.binaryType = 'arraybuffer';
+      ws.binaryType = 'arraybuffer';
 
-    ws.onopen = () => {
-      console.log('🎙️ Conversation WS connected');
-      setState(s => ({ ...s, isConnected: true }));
+      ws.onopen = () => {
+        console.log('🎙️ Conversation WS connected');
+        setState(s => ({ ...s, isConnected: true }));
 
-      ws.send(JSON.stringify({
-        type: 'START_SESSION',
-        avatarId: configRef.current.avatarId,
-        userId: configRef.current.userId,
-        memoryEnabled: configRef.current.memoryEnabled,
-        sampleRate: configRef.current.sampleRate || 16000,
-        languageCode: configRef.current.languageCode,
-      }));
-    };
+        ws.send(JSON.stringify({
+          type: 'START_SESSION',
+          avatarId: configRef.current.avatarId,
+          userId: configRef.current.userId,
+          memoryEnabled: configRef.current.memoryEnabled,
+          sampleRate: configRef.current.sampleRate || 16000,
+          languageCode: configRef.current.languageCode,
+        }));
+        resolve();
+      };
 
-    ws.onmessage = (event) => {
-      if (event.data instanceof ArrayBuffer) {
-        handleBinaryMessage(event.data);
-      } else if (typeof event.data === 'string') {
-        try {
-          const msg = JSON.parse(event.data);
-          handleJsonMessage(msg);
-        } catch (e) {
-          console.error('Failed to parse WS message:', e);
+      ws.onmessage = (event) => {
+        if (event.data instanceof ArrayBuffer) {
+          handleBinaryMessage(event.data);
+        } else if (typeof event.data === 'string') {
+          try {
+            const msg = JSON.parse(event.data);
+            handleJsonMessage(msg);
+          } catch (e) {
+            console.error('Failed to parse WS message:', e);
+          }
         }
-      }
-    };
+      };
 
-    ws.onerror = () => {
-      configRef.current.onError?.('Connection failed');
-    };
+      ws.onerror = () => {
+        configRef.current.onError?.('Connection failed');
+        reject(new Error('Connection failed'));
+      };
 
-    ws.onclose = () => {
-      console.log('🎙️ Conversation WS closed');
-      setState(s => ({
-        ...s,
-        isConnected: false,
-        isListening: false,
-        isSpeaking: false,
-      }));
-    };
+      ws.onclose = () => {
+        console.log('🎙️ Conversation WS closed');
+        setState(s => ({
+          ...s,
+          isConnected: false,
+          isListening: false,
+          isSpeaking: false,
+        }));
+      };
+    });
   }, [handleBinaryMessage, handleJsonMessage]);
 
   const startMic = useCallback(async () => {

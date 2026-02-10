@@ -1901,7 +1901,7 @@ export function useAvatarSession({
         
         // Start conversation WS for streaming TTS → LiveAvatar lip-sync
         useConversationWsModeRef.current = true;
-        conversationWs.connect();
+        await conversationWs.connect();
         await conversationWs.startMic();
         console.log("🎙️ Video mode: Conversation WS connected for streaming lip-sync");
       } catch (error) {
@@ -1928,7 +1928,7 @@ export function useAvatarSession({
       // Use unified conversation WS (STT + Claude + TTS in one pipe)
       // This replaces the separate ElevenLabs STT + /api/audio flow
       useConversationWsModeRef.current = true;
-      conversationWs.connect();
+      await conversationWs.connect();
       await conversationWs.startMic();
       console.log("🎤 Audio mode: Conversation WS connected with mic streaming");
       // Skip ElevenLabs STT - conversation WS handles STT internally

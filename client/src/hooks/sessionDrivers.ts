@@ -81,14 +81,11 @@ export class LiveAvatarDriver implements SessionDriver {
     this.config = config;
     this.languageCode = config.languageCode || "en";
     
-    // Check avatar config for voice source preference
-    // Use the INTERACTIVE voice setting (not the video creation one)
-    // "liveavatar" uses session.repeat() (built-in voice), "elevenlabs" uses session.repeatAudio()
-    const voiceSource = config.avatarConfig?.interactiveVoiceSource || "liveavatar";
-    this.useHeygenVoice = voiceSource === "liveavatar" || voiceSource === "heygen";
+    // In CUSTOM mode, session.repeat(text) is NOT supported by HeyGen SDK
+    // Always use ElevenLabs TTS + repeatAudio() for lip-sync in CUSTOM mode
+    this.useHeygenVoice = false;
     
-    const voiceMethod = this.useHeygenVoice ? "built-in voice (session.repeat)" : "ElevenLabs voice (session.repeatAudio)";
-    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ${voiceMethod} for ${config.avatarConfig?.name || config.avatarId}`);
+    console.log(`🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs TTS + repeatAudio() for ${config.avatarConfig?.name || config.avatarId}`);
   }
 
   /**
