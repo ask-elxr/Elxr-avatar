@@ -12,6 +12,9 @@ export interface ConversationWsConfig {
   onTurnEnd?: (turnId: number) => void;
   onError?: (error: string) => void;
   onSpeakingChange?: (speaking: boolean) => void;
+  onAudioChunk?: (pcmBytes: Uint8Array, turnId: number) => void;
+  onAudioStop?: (turnId: number) => void;
+  playLocalAudio?: boolean;
 }
 
 interface ConversationWsState {
@@ -78,6 +81,10 @@ export function useConversationWs(config: ConversationWsConfig) {
   const playPcmChunk = useCallback((pcmBytes: Uint8Array, turnId: number) => {
     if (turnId !== currentTurnIdRef.current) return;
     if (stoppedRef.current) return;
+
+    configRef.current.onAudioChunk?.(pcmBytes, turnId);
+
+    if (configRef.current.playLocalAudio !== undefined && !configRef.current.playLocalAudio) return;
 
     const ctx = ensurePlaybackCtx();
     const sampleCount = pcmBytes.length / 2;
@@ -164,6 +171,7 @@ export function useConversationWs(config: ConversationWsConfig) {
 
       case 'STOP_AUDIO':
         hardStopAudio();
+        configRef.current.onAudioStop?.(msg.turnId);
         currentTurnIdRef.current = msg.turnId;
         stoppedRef.current = false;
         setState(s => ({ ...s, currentTurnId: msg.turnId, isSpeaking: false }));

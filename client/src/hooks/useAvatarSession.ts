@@ -134,6 +134,7 @@ export function useAvatarSession({
     memoryEnabled,
     languageCode: elevenLabsLanguageCode,
     sampleRate: 16000,
+    get playLocalAudio() { return audioOnlyRef.current; },
     onTranscriptPartial: (text) => {
       if (conversationWsBargeInEnabled()) {
         if (!bargeInDebounceRef.current && text.length >= 2) {
@@ -149,6 +150,34 @@ export function useAvatarSession({
         bargeInDebounceRef.current = null;
       }
       lastTranscriptRef.current = text;
+    },
+    onTurnStart: (_turnId) => {
+      const driver = sessionDriverRef.current;
+      if (driver && !audioOnlyRef.current && driver.startStreamingAudio) {
+        driver.startStreamingAudio();
+      }
+    },
+    onTurnEnd: (_turnId) => {
+      const driver = sessionDriverRef.current;
+      if (driver && !audioOnlyRef.current && driver.endStreamingAudio) {
+        driver.endStreamingAudio();
+      }
+    },
+    onAudioChunk: (pcmBytes, _turnId) => {
+      const driver = sessionDriverRef.current;
+      if (driver && !audioOnlyRef.current && driver.addAudioChunk) {
+        let binary = '';
+        for (let i = 0; i < pcmBytes.length; i++) {
+          binary += String.fromCharCode(pcmBytes[i]);
+        }
+        driver.addAudioChunk(btoa(binary));
+      }
+    },
+    onAudioStop: (_turnId) => {
+      const driver = sessionDriverRef.current;
+      if (driver && !audioOnlyRef.current && driver.endStreamingAudio) {
+        driver.endStreamingAudio();
+      }
     },
     onSpeakingChange: (speaking) => {
       isSpeakingRef.current = speaking;
@@ -1869,6 +1898,12 @@ export function useAvatarSession({
           clearTimeout(loadingTimeoutRef.current);
           loadingTimeoutRef.current = null;
         }
+        
+        // Start conversation WS for streaming TTS → LiveAvatar lip-sync
+        useConversationWsModeRef.current = true;
+        conversationWs.connect();
+        await conversationWs.startMic();
+        console.log("🎙️ Video mode: Conversation WS connected for streaming lip-sync");
       } catch (error) {
         console.error("Error starting HeyGen in video mode:", error);
         if (loadingTimeoutRef.current) {
@@ -2691,14 +2726,16 @@ export function useAvatarSession({
     abortControllerRef.current = controller;
 
     try {
+      // Conversation WS mode: send text via WS (server handles STT+Claude+TTS streaming)
+      // Works for both audio-only and video modes
+      if (useConversationWsModeRef.current && conversationWs.isConnected) {
+        console.log(`${audioOnlyRef.current ? 'Audio-only' : 'Video'} mode: Sending text via conversation WS (streaming pipeline)`);
+        conversationWs.sendText(message);
+        return; // WS handles everything including LiveAvatar lip-sync feed
+      }
+      
       // Audio-only mode: Use conversation WS or fallback to /api/audio endpoint
       if (audioOnlyRef.current) {
-        // Conversation WS mode: send text via WS (server handles STT+Claude+TTS streaming)
-        if (useConversationWsModeRef.current && conversationWs.isConnected) {
-          console.log("Audio-only mode: Sending text via conversation WS (streaming pipeline)");
-          conversationWs.sendText(message);
-          return; // WS handles everything - skip /api/audio batch fetch
-        }
         
         // Fallback: Use combined /api/audio endpoint (Claude + ElevenLabs in one call)
         console.log("Audio-only mode: Using /api/audio endpoint (fallback)");
