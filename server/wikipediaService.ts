@@ -112,7 +112,7 @@ class WikipediaService {
       const startTime = Date.now();
       
       const response = await this.embeddingBreaker.execute({
-        model: 'text-embedding-ada-002',
+        model: 'text-embedding-3-small',
         input: text,
       });
 

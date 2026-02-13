@@ -1,0 +1,66 @@
+Implement these exact changes (return updated code blocks or a git-style diff). Keep behavior the same except where explicitly changed.
+
+GOAL: Fix Pinecone retrieval quality without re-ingesting. The index contains vectors embedded with OpenAI `text-embedding-3-small` (1536 dims), but retrieval currently embeds queries with `text-embedding-ada-002` (mismatched embedding space). Also increase global recall and stop returning a pre-concatenated blob from the retrieval service.
+
+CHANGES:
+
+1) FIX EMBEDDING MODEL MISMATCH (RETRIEVAL)
+- In `server/pineconeNamespaceService.ts`, change the query embedding model from:
+  model: 'text-embedding-ada-002'
+  to:
+  model: 'text-embedding-3-small'
+- Add a runtime guard:
+  - if embedding.length !== 1536, throw an error
+  - log/track the model name used for query embedding (string)
+
+2) ALIGN OTHER RETRIEVAL-EMBEDDING CALLS (CONSISTENCY)
+Replace `text-embedding-ada-002` with `text-embedding-3-small` in these files/locations (where they are used for RETRIEVAL / SEARCH embeddings, not ingestion):
+- `server/pubmedService.ts`
+- `server/wikipediaService.ts`
+- `server/notionService.ts`
+- `server/offlinePubMedService.ts`
+- `server/routes.ts` (the HTTP `/api/ask` route embedding)
+
+(If any of these rely on a shared helper, update the helper instead.)
+
+3) RETURN STRUCTURED MATCHES FROM Pinecone SERVICE (NO MORE SINGLE BLOB)
+- In `server/pineconeNamespaceService.ts`, inside `retrieveContext()`:
+  - KEEP the namespace normalization, caching, and parallel per-namespace queries
+  - KEEP sorting by score
+  - BUT: do NOT build `combinedText` and do NOT return an array with a single `{ text: combinedText, ... }` object.
+  - Instead return the top matched chunk objects directly, e.g.:
+    [
+      { text: string, score: number, metadata: { namespace: string, ...match.metadata } },
+      ...
+    ]
+  - Cache the returned array (top results) as-is.
+
+4) MOVE FORMATTING INTO `fetchContext()` (CALLER)
+- In `server/conversationWsService.ts` inside `fetchContext()`:
+  - Where it currently does:
+      knowledgeContext = ragResult.value.map((r) => r.text).join('\n\n');
+    replace with formatting that labels each result and separates with "---", e.g.:
+      knowledgeContext = ragResults
+        .map((r, i) => `[Result ${i + 1} from ${r.metadata.namespace}]\n${r.text}`)
+        .join('\n\n---\n\n');
+  - NOTE: ragResult.value will now be an array of top matches, not a single combined blob.
+
+5) INCREASE GLOBAL RETAINED RESULTS (WITHOUT EXTRA PINECONE CALLS)
+- In `server/conversationWsService.ts` change the call:
+    pineconeNamespaceService.retrieveContext(message, 3, avatarConfig.pineconeNamespaces);
+  to:
+    pineconeNamespaceService.retrieveContext(message, 8, avatarConfig.pineconeNamespaces);
+This increases how many results we KEEP globally. (Per-namespace we already retrieve up to N_namespaces * topK candidates, then we slice to topK; now slice to 8 instead of 3.)
+
+IMPORTANT NOTES:
+- Do NOT re-ingest or rebuild the Pinecone index.
+- Keep all existing timeouts, breakers, caching, and namespace logic.
+- Ensure TypeScript types still compile.
+- If any other retrieval path uses ada-002 embeddings, switch it to 3-small for consistency (but do not touch ingestion code that already uses 3-small).
+
+OUTPUT REQUIRED:
+- Provide updated code blocks (or git diff) for:
+  - `server/pineconeNamespaceService.ts`
+  - `server/conversationWsService.ts`
+  - plus any of the other retrieval files that were changed (pubmedService, wikipediaService, notionService, offlinePubMedService, routes.ts)
+- Include the exact final string constants for the embedding model used.

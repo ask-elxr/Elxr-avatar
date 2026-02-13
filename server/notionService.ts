@@ -83,7 +83,7 @@ export class NotionService {
       for (const page of pages) {
         // Generate embedding
         const embeddingResponse = await this.openai.embeddings.create({
-          model: 'text-embedding-ada-002',
+          model: 'text-embedding-3-small',
           input: `${page.title}\n\n${page.content}`
         });
 

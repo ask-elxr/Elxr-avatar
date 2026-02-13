@@ -100,17 +100,23 @@ class PineconeNamespaceService {
       log.debug({ cacheMiss: true }, `Cache MISS for query: "${query.substring(0, 50)}..."`);
       metrics.recordPineconeCacheMiss();
 
-      // Generate embedding for the query using OpenAI
+      const QUERY_EMBEDDING_MODEL = 'text-embedding-3-small';
+
       log.debug('Generating embedding for query');
       const embeddingStartTime = Date.now();
       const embeddingResponse = await this.embeddingBreaker.execute({
-        model: 'text-embedding-ada-002',
+        model: QUERY_EMBEDDING_MODEL,
         input: query,
       });
       
       const embedding = embeddingResponse.data[0].embedding;
       const embeddingDuration = Date.now() - embeddingStartTime;
-      log.debug({ dimensions: embedding.length }, 'Embedding generated successfully');
+
+      if (embedding.length !== 1536) {
+        throw new Error(`Embedding dimension mismatch: expected 1536, got ${embedding.length} from model ${QUERY_EMBEDDING_MODEL}`);
+      }
+
+      log.debug({ dimensions: embedding.length, model: QUERY_EMBEDDING_MODEL }, 'Embedding generated successfully');
 
       // Log OpenAI embedding API call
       storage.logApiCall({
@@ -187,16 +193,9 @@ class PineconeNamespaceService {
         return [];
       }
 
-      // Sort all results by score (highest first)
       allResults.sort((a, b) => (b.score || 0) - (a.score || 0));
       
-      // Take top results
       const topResults = allResults.slice(0, topK);
-      
-      // Combine text from top results
-      const combinedText = topResults
-        .map((r, i) => `[Result ${i + 1} from ${r.metadata.namespace}]\n${r.text}`)
-        .join('\n\n---\n\n');
 
       const namespaceCounts: Record<string, number> = {};
       topResults.forEach(r => {
@@ -207,26 +206,14 @@ class PineconeNamespaceService {
       log.info({ 
         totalResults: allResults.length, 
         topResults: topResults.length,
-        combinedLength: combinedText.length,
         namespaceSources: namespaceCounts,
         topScores: topResults.slice(0, 3).map(r => ({ ns: r.metadata?.namespace, score: r.score?.toFixed(3) }))
       }, `RAG: ${topResults.length} results from ${Object.keys(namespaceCounts).join(', ')}`);
-
-      const results = [{
-        text: combinedText,
-        score: topResults[0]?.score || 0,
-        metadata: {
-          namespaces: namespacesToQuery,
-          totalResults: allResults.length,
-          topResults: topResults.length
-        }
-      }];
       
-      // Cache the results for future queries
-      latencyCache.setPineconeQuery(query, namespacesToQuery, topK, results);
+      latencyCache.setPineconeQuery(query, namespacesToQuery, topK, topResults);
       log.debug({ queryPrefix: query.substring(0, 50) }, 'Cached results for query');
       
-      return results;
+      return topResults;
       
     } catch (error: any) {
       log.error({ error: error.message, stack: error.stack }, 'Error retrieving context from Pinecone');

@@ -158,7 +158,7 @@ async function fetchContext(session: ConversationSession, message: string): Prom
       (async () => {
         const { pineconeNamespaceService } = await import('./pineconeNamespaceService.js');
         if (!pineconeNamespaceService.isAvailable() || !avatarConfig?.pineconeNamespaces?.length) return [];
-        return pineconeNamespaceService.retrieveContext(message, 3, avatarConfig.pineconeNamespaces);
+        return pineconeNamespaceService.retrieveContext(message, 8, avatarConfig.pineconeNamespaces);
       })(),
       (async () => {
         if (!session.userId) return [];
@@ -172,7 +172,10 @@ async function fetchContext(session: ConversationSession, message: string): Prom
         memResult.value.memories.map((m: any) => `- ${m.content}`).join('\n');
     }
     if (ragResult.status === 'fulfilled' && ragResult.value?.length) {
-      knowledgeContext = ragResult.value.map((r: any) => r.text).join('\n\n');
+      const ragResults = ragResult.value as Array<{ text: string; score: number; metadata: { namespace: string; [key: string]: any } }>;
+      knowledgeContext = ragResults
+        .map((r, i) => `[Result ${i + 1} from ${r.metadata.namespace}]\n${r.text}`)
+        .join('\n\n---\n\n');
     }
     if (histResult.status === 'fulfilled' && histResult.value?.length) {
       session.conversationHistory = histResult.value as Array<{ message: string; isUser: boolean }>;
@@ -192,8 +195,8 @@ async function fetchContext(session: ConversationSession, message: string): Prom
           })(),
           (async () => {
             if (!pineconeNamespaceService.isAvailable() || !namespaces.length) return null;
-            const results = await pineconeNamespaceService.retrieveContext(message, 3, namespaces);
-            return results.length > 0 ? results[0].text : null;
+            const results = await pineconeNamespaceService.retrieveContext(message, 8, namespaces);
+            return results.length > 0 ? results : null;
           })(),
           (async () => {
             if (!session.userId) return [];
@@ -208,7 +211,10 @@ async function fetchContext(session: ConversationSession, message: string): Prom
         }
         let newKnowledgeCtx = '';
         if (newRag.status === 'fulfilled' && newRag.value) {
-          newKnowledgeCtx = newRag.value as string;
+          const ragResults = newRag.value as Array<{ text: string; score: number; metadata: { namespace: string; [key: string]: any } }>;
+          newKnowledgeCtx = ragResults
+            .map((r, i) => `[Result ${i + 1} from ${r.metadata.namespace}]\n${r.text}`)
+            .join('\n\n---\n\n');
         }
         const newConvHist = newHist.status === 'fulfilled' ? newHist.value as Array<{ message: string; isUser: boolean }> : [];
 

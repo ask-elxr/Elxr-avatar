@@ -33,7 +33,7 @@ const embeddingBreaker = wrapServiceCall(
       throw new Error('OpenAI client not initialized');
     }
     return await openaiClient.embeddings.create({
-      model: 'text-embedding-ada-002',
+      model: 'text-embedding-3-small',
       input: text,
     });
   },
