@@ -8,8 +8,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square, CheckCircle2, Circle, CloudOff } from "lucide-react";
+import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square, CheckCircle2, Circle, CloudOff, AlertTriangle, ShieldCheck } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+
+const PERSONAL_KNOWLEDGE_PATTERNS = [
+  'markkohl', 'williegault',
+];
+
+function isPersonalNamespace(namespace: string): boolean {
+  const normalized = namespace.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return PERSONAL_KNOWLEDGE_PATTERNS.some(p => normalized.includes(p));
+}
 
 interface TopicFolder {
   id: string;
@@ -627,6 +636,24 @@ export function TopicFolderUpload() {
           <Badge variant="outline" className="text-cyan-400 border-cyan-400/50">
             {totalFiles} files ready
           </Badge>
+          {topicFolders && (() => {
+            const personalCount = topicFolders.filter(f => isPersonalNamespace(f.namespace)).length;
+            const nonPersonalCount = topicFolders.length - personalCount;
+            return (
+              <>
+                <Badge variant="outline" className="gap-1 text-green-400 border-green-500/50">
+                  <ShieldCheck className="w-3 h-3" />
+                  {personalCount} personal
+                </Badge>
+                {nonPersonalCount > 0 && (
+                  <Badge variant="outline" className="gap-1 text-amber-400 border-amber-500/50">
+                    <AlertTriangle className="w-3 h-3" />
+                    {nonPersonalCount} need artifacts
+                  </Badge>
+                )}
+              </>
+            );
+          })()}
           {Object.keys(folderIngestionStatuses).length > 0 && (() => {
             const allStatuses = Object.values(folderIngestionStatuses).filter(s => !s.loading);
             if (allStatuses.length === 0) return null;
@@ -685,6 +712,17 @@ export function TopicFolderUpload() {
                           <Badge variant="secondary" className="ml-2 text-xs">
                             {folder.namespace.toLowerCase()}
                           </Badge>
+                          {isPersonalNamespace(folder.namespace) ? (
+                            <Badge variant="outline" className="text-xs gap-1 text-green-400 border-green-500/40 bg-green-500/10" title="Personal knowledge — verbatim chunks OK">
+                              <ShieldCheck className="w-3 h-3" />
+                              Personal
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs gap-1 text-amber-400 border-amber-500/40 bg-amber-500/10" title="Non-personal namespace — should use Learning Artifacts for new content">
+                              <AlertTriangle className="w-3 h-3" />
+                              Use Artifacts
+                            </Badge>
+                          )}
                           <span className={`text-sm ml-auto mr-4 ${hasFiles ? 'text-white/50' : 'text-white/30'}`}>
                             {folder.supportedFiles} files
                           </span>
