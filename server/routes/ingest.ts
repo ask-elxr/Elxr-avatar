@@ -281,11 +281,14 @@ const CourseIngestionSchema = z.object({
   dryRun: z.boolean().optional()
 });
 
-const PROTECTED_NAMESPACES = ['mark-kohl', 'markkohl', 'mark_kohl'];
+const PERSONAL_KNOWLEDGE_NAMESPACES = [
+  'mark-kohl', 'markkohl', 'mark_kohl', 'mark kohl',
+  'willie-gault', 'williegault', 'willie_gault', 'willie gault',
+];
 
-function isProtectedNamespace(namespace: string): boolean {
+function isPersonalKnowledgeNamespace(namespace: string): boolean {
   const normalized = namespace.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return PROTECTED_NAMESPACES.some(p => 
+  return PERSONAL_KNOWLEDGE_NAMESPACES.some(p => 
     normalized.includes(p.replace(/[^a-z0-9]/g, ''))
   );
 }
@@ -306,10 +309,10 @@ router.post('/course/ingest', requireAdminAuth, async (req: Request, res: Respon
     
     const data = parseResult.data;
     
-    if (isProtectedNamespace(data.namespace)) {
+    if (!isPersonalKnowledgeNamespace(data.namespace)) {
       return res.status(403).json({
-        error: 'Protected namespace',
-        message: `Namespace "${data.namespace}" is protected and cannot be modified through this ingestion pipeline`
+        error: 'Verbatim ingestion restricted',
+        message: `This route stores conversational chunks (near-verbatim). It is only allowed for personal knowledge namespaces (e.g., mark-kohl, willie-gault). For course content, use the Learning Artifact pipeline at /api/admin/learning-artifacts/ingest to ensure anonymity.`
       });
     }
     
@@ -385,10 +388,10 @@ router.delete('/course/namespace/:namespace', requireAdminAuth, async (req: Requ
       return res.status(400).json({ error: 'Namespace is required' });
     }
     
-    if (isProtectedNamespace(namespace)) {
+    if (isPersonalKnowledgeNamespace(namespace)) {
       return res.status(403).json({
         error: 'Protected namespace',
-        message: `Namespace "${namespace}" is protected and cannot be deleted`
+        message: `Namespace "${namespace}" is a personal knowledge namespace and cannot be deleted through this route`
       });
     }
     
@@ -507,10 +510,10 @@ router.post('/podcast/ingest', requireAdminAuth, async (req: Request, res: Respo
     
     const data = parseResult.data;
     
-    if (isProtectedNamespace(data.namespace)) {
+    if (isPersonalKnowledgeNamespace(data.namespace)) {
       return res.status(403).json({
         error: 'Protected namespace',
-        message: `Namespace "${data.namespace}" is protected and cannot be modified`
+        message: `Namespace "${data.namespace}" is a personal knowledge namespace and cannot be modified through podcast ingestion`
       });
     }
     
@@ -600,10 +603,10 @@ router.post('/podcast/batch/upload', requireAdminAuth, batchUpload.single('zipFi
       }, 'Mentor Wisdom mode selected without a mentor name - using "Mentor" as default');
     }
     
-    if (!autoDetect && isProtectedNamespace(namespace)) {
+    if (!autoDetect && isPersonalKnowledgeNamespace(namespace)) {
       return res.status(403).json({
         error: 'Protected namespace',
-        message: `Namespace "${namespace}" is protected and cannot be modified`
+        message: `Namespace "${namespace}" is a personal knowledge namespace and cannot be modified through batch podcast ingestion`
       });
     }
     

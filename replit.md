@@ -8,6 +8,8 @@ This project is an advanced AI chat platform integrating HeyGen video avatars fo
 - **Avatar Merging**: DB overrides take absolute precedence (including null, false, empty string)
 - **Service Facades**: Thin wrappers that re-export existing functionality
 - **Route Extraction**: Incremental migration from monolithic routes.ts to feature-focused modules
+- **Content Anonymity Policy**: Verbatim/conversational chunk ingestion is ONLY for personal knowledge namespaces (real people: mark-kohl, willie-gault). All course/educational content MUST go through the Learning Artifact pipeline to ensure anonymity — no quotes, no recognizable phrasing, no instructor names.
+- **Embedding Model**: All retrieval AND ingestion uses `text-embedding-3-small` (1536 dims). No `ada-002` anywhere.
 
 ### System Architecture
 

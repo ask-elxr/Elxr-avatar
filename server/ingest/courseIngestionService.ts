@@ -13,11 +13,14 @@ import {
 
 const UPSERT_BATCH_SIZE = 50;
 
-const PROTECTED_NAMESPACES = ['mark-kohl', 'markkohl', 'mark_kohl'];
+const PERSONAL_KNOWLEDGE_NAMESPACES = [
+  'mark-kohl', 'markkohl', 'mark_kohl', 'mark kohl',
+  'willie-gault', 'williegault', 'willie_gault', 'willie gault',
+];
 
-function isProtectedNamespace(namespace: string): boolean {
+function isPersonalKnowledgeNamespace(namespace: string): boolean {
   const normalized = namespace.toLowerCase().replace(/[^a-z0-9]/g, '');
-  return PROTECTED_NAMESPACES.some(p => 
+  return PERSONAL_KNOWLEDGE_NAMESPACES.some(p => 
     normalized.includes(p.replace(/[^a-z0-9]/g, ''))
   );
 }
@@ -27,8 +30,8 @@ export async function ingestCourseTranscript(
 ): Promise<CourseIngestionResult> {
   const { namespace, source, rawText, attribution, dryRun } = request;
   
-  if (isProtectedNamespace(namespace)) {
-    throw new Error(`Namespace "${namespace}" is protected and cannot be modified through this ingestion pipeline`);
+  if (!isPersonalKnowledgeNamespace(namespace)) {
+    throw new Error(`Verbatim ingestion restricted: namespace "${namespace}" is not a personal knowledge namespace. Use the Learning Artifact pipeline for course content to ensure anonymity.`);
   }
   
   logger.info({
@@ -126,8 +129,8 @@ export async function ingestCourseTranscript(
 export async function deleteNamespaceVectors(
   namespace: string
 ): Promise<{ deleted: string[] }> {
-  if (isProtectedNamespace(namespace)) {
-    throw new Error(`Namespace "${namespace}" is protected and cannot be deleted`);
+  if (isPersonalKnowledgeNamespace(namespace)) {
+    throw new Error(`Namespace "${namespace}" is a personal knowledge namespace and cannot be deleted through this route`);
   }
   
   const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
