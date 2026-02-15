@@ -1,0 +1,139 @@
+If you ingest courses like you ingest podcasts (verbatim chunks), you’ll build a plagiarism machine. Don’t.
+
+Best practice process: “Learn → Distill → Store → Answer”
+
+1) Don’t ingest transcripts. Ingest “learning artifacts.”
+
+From each lesson/module, generate and store only:
+	•	Principles (general rules)
+	•	Mental models (frameworks)
+	•	Heuristics (rules of thumb in your voice)
+	•	Failure modes (what goes wrong + why)
+	•	Checklists (steps)
+	•	Q&A pairs (common questions + synthesized answers)
+	•	Scenarios (how it plays out in real life)
+
+Hard rule: no quotes, no recognizable phrasing, no “instructor says,” no long passages.
+
+2) Add provenance metadata, but keep it generic
+
+Store:
+	•	derived_from: ["multiple courses", "practitioner interviews", "research"]
+Not:
+	•	exact course name + timestamps + verbatim snippets (that’s a lawsuit breadcrumb trail).
+
+3) Retrieval answers from artifacts, not sources
+
+Your avatar speaks like:
+
+“Here’s the pattern I’ve learned…”
+Not:
+“In Lesson 4 of X, they said…”
+
+4) Output guardrails (this is what actually saves you)
+
+Even if your DB is clean, the model can still “accidentally quote.” Add response rules:
+	•	Never output > ~90 characters of consecutive text that looks like a quote
+	•	No “verbatim recap”
+	•	Prefer synthesis + steps + examples you generate fresh
+
+⸻
+
+Is it the same as the podcast ingestion?
+
+Same philosophy, different tuning.
+
+Podcasts: messy, conversational, lots of stories → you extract claims, anecdotes-as-patterns, Q&A, heuristics.
+Courses: structured, didactic → you extract frameworks, checklists, definitions, failure modes, exercises.
+
+So the pipeline is the same shape, but your extractor prompt and artifact mix differs.
+
+⸻
+
+Prompt to give Replit: build the “Learning Ingestion” pipeline
+
+Copy/paste this to Replit:
+
+REPLIT BUILD PROMPT
+
+Build a Node/TypeScript ingestion pipeline that converts course lesson transcripts into original learning artifacts and upserts those artifacts (not transcripts) to Pinecone.
+
+Inputs
+	•	Folder of lesson transcripts (.txt/.md)
+	•	CLI args: --kb, --course_id, --lesson_id (optional derive from filename), --lesson_title (optional)
+
+Output
+	•	Pinecone records containing ONLY derived artifacts (principles/models/heuristics/etc.), with strong metadata and deterministic IDs.
+	•	Do NOT store raw transcript text in Pinecone.
+
+Processing steps
+	1.	Normalize transcript (clean whitespace, remove boilerplate, keep paragraph breaks).
+	2.	Call LLM extractor to produce JSON artifacts (schema below). Enforce “no quotes, no distinctive phrasing.”
+	3.	Create chunk_text per artifact: title + "\n" + content + "\n" + steps/examples.
+	4.	Ensure chunk sizes are reasonable (aim 350–800 tokens). If too long, split by meaning (not overlap copy/paste).
+	5.	Upsert to Pinecone with:
+	•	namespace = kb
+	•	id = ${course_id}:${lesson_id}:${artifact_type}:${artifact_index}:${sha1(chunk_text).slice(0,12)}
+	•	metadata: kb, course_id, lesson_id, lesson_title, artifact_type, artifact_index, topic, subtopic, tags[], confidence, created_at, rights=“original_derivative”, source_type=“derived_learning”
+	6.	Add an eval script to test 25 queries and print topK hits + metadata for manual checking.
+
+Artifact JSON schema (LLM must output exactly)
+
+{
+“lesson_title”: string,
+“artifacts”: [
+{
+“artifact_type”: “principle” | “mental_model” | “heuristic” | “failure_mode” | “checklist” | “qa_pair” | “scenario” | “exercise”,
+“title”: string,
+“content”: string,
+“steps”: string[] | null,
+“example”: string | null,
+“question”: string | null,
+“answer”: string | null,
+“topic”: string,
+“subtopic”: string,
+“tags”: string[],
+“confidence”: “low” | “med” | “high”,
+“safety_notes”: string | null
+}
+]
+}
+
+Non-negotiable constraints
+	•	No direct quotes from transcript.
+	•	No recognizable phrasing or long contiguous strings from the source.
+	•	No naming the instructor/course.
+	•	Write in our brand voice: plainspoken, practical, a little witty, not academic.
+	•	Generate 30–120 artifacts per lesson depending on length.
+
+Deliver:
+	•	src/ingest.ts, src/extract.ts, src/pinecone.ts, src/chunk.ts, src/eval.ts
+	•	.env.example, README, CLI commands.
+
+(End)
+
+⸻
+
+The extractor prompt (the “learning model”)
+
+Use this as the system prompt for the extraction call:
+
+You convert lesson transcripts into original learning artifacts.
+Output ONLY valid JSON matching the provided schema.
+
+Rules:
+	•	Do NOT quote the transcript.
+	•	Do NOT reuse distinctive phrasing. If a sentence feels traceable, rewrite it.
+	•	Do NOT mention the course/instructor or timestamps.
+	•	Focus on transferable insights: principles, frameworks, heuristics, failure modes, checklists, exercises, and Q&A.
+	•	Each artifact is short (1–6 sentences). Steps/checklists can be bullets.
+	•	Add topic/subtopic/tags for retrieval.
+	•	If medical/mental health/legal risk appears, add brief safety_notes.
+
+Quality bar:
+	•	Prefer “what to do next” over theory.
+	•	Prefer “common mistakes + fixes” over summaries.
+	•	If you can’t express an idea without echoing source wording, drop it.
+
+Return 30–120 artifacts depending on lesson length.
+JSON only.
