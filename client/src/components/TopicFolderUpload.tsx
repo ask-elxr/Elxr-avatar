@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square } from "lucide-react";
+import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square, CheckCircle2, Circle, CloudOff } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface TopicFolder {
@@ -39,14 +39,95 @@ interface UploadStatus {
   totalFiles: number;
 }
 
+interface FolderIngestionStatus {
+  uploaded: number;
+  total: number;
+  loading: boolean;
+}
+
 export function TopicFolderUpload() {
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Record<string, Set<string>>>({}); // folderId -> Set of fileIds
   const [isBulkUploading, setIsBulkUploading] = useState(false);
   const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, currentFolder: '' });
+  const [folderIngestionStatuses, setFolderIngestionStatuses] = useState<Record<string, FolderIngestionStatus>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const [isCheckingAllStatuses, setIsCheckingAllStatuses] = useState(false);
+
+  const updateFolderIngestionStatus = useCallback((folderId: string, status: FolderIngestionStatus) => {
+    setFolderIngestionStatuses(prev => ({ ...prev, [folderId]: status }));
+  }, []);
+
+  const handleCheckAllStatuses = async () => {
+    if (!topicFolders || topicFolders.length === 0) return;
+    setIsCheckingAllStatuses(true);
+
+    const adminSecret = localStorage.getItem('admin_secret');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (adminSecret) headers['X-Admin-Secret'] = adminSecret;
+
+    try {
+      for (const folder of topicFolders) {
+        if (folder.supportedFiles === 0) {
+          setFolderIngestionStatuses(prev => ({ 
+            ...prev, 
+            [folder.id]: { uploaded: 0, total: 0, loading: false } 
+          }));
+          continue;
+        }
+
+        setFolderIngestionStatuses(prev => ({ 
+          ...prev, 
+          [folder.id]: { uploaded: 0, total: folder.supportedFiles, loading: true } 
+        }));
+
+        try {
+          const filesRes = await fetch(`/api/google-drive/topic-folder/${folder.id}/files`, {
+            credentials: 'include',
+            headers,
+          });
+          const filesData = await filesRes.json();
+          const allFiles: FileInfo[] = filesData.files || [];
+          const uploadableFiles = allFiles.filter(f => f.uploadable !== false);
+
+          if (uploadableFiles.length === 0) {
+            setFolderIngestionStatuses(prev => ({
+              ...prev,
+              [folder.id]: { uploaded: 0, total: 0, loading: false }
+            }));
+            continue;
+          }
+
+          const checkRes = await fetch('/api/pinecone/check-existing-files', {
+            method: 'POST',
+            credentials: 'include',
+            headers,
+            body: JSON.stringify({
+              namespace: folder.namespace,
+              fileIds: uploadableFiles.map(f => f.id)
+            })
+          });
+          const checkData = await checkRes.json();
+          const existingCount = checkData.existingFileIds?.length || 0;
+
+          setFolderIngestionStatuses(prev => ({
+            ...prev,
+            [folder.id]: { uploaded: existingCount, total: uploadableFiles.length, loading: false }
+          }));
+        } catch (err) {
+          setFolderIngestionStatuses(prev => ({
+            ...prev,
+            [folder.id]: { uploaded: 0, total: folder.supportedFiles, loading: false }
+          }));
+        }
+      }
+    } finally {
+      setIsCheckingAllStatuses(false);
+    }
+  };
 
   const toggleFileSelection = (folderId: string, fileId: string) => {
     setSelectedFiles(prev => {
@@ -83,11 +164,6 @@ export function TopicFolderUpload() {
     select: (data: any) => data.folders || [],
   });
 
-  const getFilesQuery = (folderId: string) => useQuery<FileInfo[]>({
-    queryKey: ['/api/google-drive/topic-folder', folderId, 'files'],
-    enabled: expandedFolders.has(folderId),
-    select: (data: any) => data.files || [],
-  });
 
   const uploadSingleFile = async (fileId: string, fileName: string, namespace: string) => {
     const response = await apiRequest('/api/google-drive/topic-upload-single', 'POST', {
@@ -501,6 +577,21 @@ export function TopicFolderUpload() {
             <Button
               variant="default"
               size="sm"
+              onClick={handleCheckAllStatuses}
+              disabled={isCheckingAllStatuses || isBulkUploading || !topicFolders?.length}
+              className="gap-1 bg-blue-600 hover:bg-blue-700"
+              data-testid="button-check-all-statuses"
+            >
+              {isCheckingAllStatuses ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
+              {isCheckingAllStatuses ? 'Checking...' : 'Check Status'}
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
               onClick={handleBulkUploadAll}
               disabled={isBulkUploading || !topicFolders?.some(f => f.supportedFiles > 0)}
               className="gap-1 bg-green-600 hover:bg-green-700"
@@ -511,7 +602,7 @@ export function TopicFolderUpload() {
               ) : (
                 <Upload className="w-4 h-4" />
               )}
-              {isBulkUploading ? `Processing ${bulkProgress.current}/${bulkProgress.total}...` : 'Upload All Folders'}
+              {isBulkUploading ? `Processing ${bulkProgress.current}/${bulkProgress.total}...` : 'Upload All'}
             </Button>
             <Button
               variant="outline"
@@ -529,13 +620,33 @@ export function TopicFolderUpload() {
             </Button>
           </div>
         </div>
-        <div className="flex gap-4 mt-2">
+        <div className="flex gap-4 mt-2 flex-wrap">
           <Badge variant="outline" className="text-purple-400 border-purple-400/50">
             {topicFolders?.length || 0} folders
           </Badge>
           <Badge variant="outline" className="text-cyan-400 border-cyan-400/50">
             {totalFiles} files ready
           </Badge>
+          {Object.keys(folderIngestionStatuses).length > 0 && (() => {
+            const allStatuses = Object.values(folderIngestionStatuses).filter(s => !s.loading);
+            if (allStatuses.length === 0) return null;
+            const totalUploaded = allStatuses.reduce((sum, s) => sum + s.uploaded, 0);
+            const totalKnown = allStatuses.reduce((sum, s) => sum + s.total, 0);
+            const pct = totalKnown > 0 ? Math.round((totalUploaded / totalKnown) * 100) : 0;
+            return (
+              <Badge 
+                variant="outline" 
+                className={`gap-1 ${
+                  totalUploaded === totalKnown && totalKnown > 0
+                    ? 'text-green-400 border-green-500/50' 
+                    : 'text-yellow-400 border-yellow-500/50'
+                }`}
+              >
+                <CheckCircle2 className="w-3 h-3" />
+                {totalUploaded}/{totalKnown} uploaded ({pct}%)
+              </Badge>
+            );
+          })()}
         </div>
         {isBulkUploading && (
           <div className="mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
@@ -581,6 +692,42 @@ export function TopicFolderUpload() {
                       </CollapsibleTrigger>
                       
                       <div className="flex items-center gap-2">
+                        {(() => {
+                          const ingestion = folderIngestionStatuses[folder.id];
+                          if (ingestion && !ingestion.loading) {
+                            const pct = ingestion.total > 0 ? Math.round((ingestion.uploaded / ingestion.total) * 100) : 0;
+                            const isComplete = ingestion.uploaded === ingestion.total && ingestion.total > 0;
+                            return (
+                              <Badge 
+                                variant="outline" 
+                                className={`text-xs gap-1 ${
+                                  isComplete 
+                                    ? 'text-green-400 border-green-500/50 bg-green-500/10' 
+                                    : ingestion.uploaded > 0 
+                                      ? 'text-yellow-400 border-yellow-500/50 bg-yellow-500/10' 
+                                      : 'text-white/40 border-white/20'
+                                }`}
+                                title={`${ingestion.uploaded} of ${ingestion.total} files uploaded to Pinecone (${pct}%)`}
+                              >
+                                {isComplete ? (
+                                  <CheckCircle2 className="w-3 h-3" />
+                                ) : (
+                                  <Circle className="w-3 h-3" />
+                                )}
+                                {ingestion.uploaded}/{ingestion.total}
+                              </Badge>
+                            );
+                          }
+                          if (ingestion?.loading) {
+                            return (
+                              <Badge variant="outline" className="text-xs gap-1 text-white/40 border-white/20">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                Checking...
+                              </Badge>
+                            );
+                          }
+                          return null;
+                        })()}
                         {getStatusBadge(status)}
                         <Button
                           size="sm"
@@ -621,6 +768,7 @@ export function TopicFolderUpload() {
                           onDeselectAll={() => deselectAllFiles(folder.id)}
                           onUploadSelected={(files) => handleUploadSelected(folder, files)}
                           isUploading={uploadStatuses[folder.id]?.status === 'uploading'}
+                          onIngestionStatusUpdate={(status) => updateFolderIngestionStatus(folder.id, status)}
                         />
                       ) : (
                         <div className="text-center py-4 text-white/40 text-sm">
@@ -664,6 +812,7 @@ interface FolderFilesProps {
   onDeselectAll: () => void;
   onUploadSelected: (files: FileInfo[]) => void;
   isUploading: boolean;
+  onIngestionStatusUpdate?: (status: FolderIngestionStatus) => void;
 }
 
 function FolderFiles({ 
@@ -675,11 +824,46 @@ function FolderFiles({
   onDeselectAll,
   onUploadSelected,
   isUploading,
+  onIngestionStatusUpdate,
 }: FolderFilesProps) {
   const { data: files, isLoading } = useQuery<FileInfo[]>({
     queryKey: ['/api/google-drive/topic-folder', folderId, 'files'],
     select: (data: any) => data.files || [],
   });
+
+  const uploadableFiles = files?.filter(f => f.uploadable !== false) || [];
+  const uploadableFileIds = uploadableFiles.map(f => f.id);
+
+  const { data: existingFilesData, isLoading: checkingExisting } = useQuery<{ existingFileIds: string[] }>({
+    queryKey: ['/api/pinecone/check-existing-files', folder.namespace, uploadableFileIds.join(',')],
+    enabled: uploadableFileIds.length > 0,
+    queryFn: async () => {
+      const adminSecret = localStorage.getItem('admin_secret');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminSecret) headers['X-Admin-Secret'] = adminSecret;
+      const res = await fetch('/api/pinecone/check-existing-files', {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: JSON.stringify({ namespace: folder.namespace, fileIds: uploadableFileIds })
+      });
+      if (!res.ok) throw new Error('Failed to check existing files');
+      return res.json();
+    },
+    staleTime: 30000,
+  });
+
+  const existingFileIds = new Set(existingFilesData?.existingFileIds || []);
+
+  useEffect(() => {
+    if (onIngestionStatusUpdate && uploadableFileIds.length > 0) {
+      onIngestionStatusUpdate({
+        uploaded: existingFileIds.size,
+        total: uploadableFileIds.length,
+        loading: isLoading || checkingExisting,
+      });
+    }
+  }, [existingFileIds.size, uploadableFileIds.length, isLoading, checkingExisting]);
 
   if (isLoading) {
     return (
@@ -698,30 +882,58 @@ function FolderFiles({
     );
   }
 
-  const uploadableFiles = files.filter(f => f.uploadable !== false);
   const skippedFiles = files.filter(f => f.uploadable === false);
   const selectedCount = selectedFiles.size;
-  const allSelected = selectedCount === uploadableFiles.length && uploadableFiles.length > 0;
-  const someSelected = selectedCount > 0 && selectedCount < uploadableFiles.length;
+  const notUploadedFiles = uploadableFiles.filter(f => !existingFileIds.has(f.id));
+  const allSelected = selectedCount === notUploadedFiles.length && notUploadedFiles.length > 0;
+  const someSelected = selectedCount > 0 && selectedCount < notUploadedFiles.length;
 
   const handleSelectAll = () => {
     if (allSelected) {
       onDeselectAll();
     } else {
-      onSelectAll(uploadableFiles.map(f => f.id));
+      onSelectAll(notUploadedFiles.map(f => f.id));
     }
   };
 
   const handleUploadSelected = () => {
-    const filesToUpload = uploadableFiles.filter(f => selectedFiles.has(f.id));
+    const filesToUpload = notUploadedFiles.filter(f => selectedFiles.has(f.id));
     onUploadSelected(filesToUpload);
   };
 
+  const alreadyUploadedFiles = uploadableFiles.filter(f => existingFileIds.has(f.id));
+
   return (
     <div className="space-y-3 pl-6">
-      {/* Selection controls */}
-      {uploadableFiles.length > 0 && (
-        <div className="flex items-center justify-between border-b border-white/10 pb-2">
+      {checkingExisting && (
+        <div className="flex items-center gap-2 text-xs text-white/50 py-1">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          Checking which files are already in Pinecone...
+        </div>
+      )}
+
+      {!checkingExisting && uploadableFiles.length > 0 && (
+        <div className="flex items-center gap-4 text-xs py-1 border-b border-white/10 pb-2">
+          <span className="flex items-center gap-1 text-green-400">
+            <CheckCircle2 className="w-3 h-3" />
+            {alreadyUploadedFiles.length} uploaded
+          </span>
+          <span className="flex items-center gap-1 text-yellow-400">
+            <Circle className="w-3 h-3" />
+            {notUploadedFiles.length} not uploaded
+          </span>
+          {skippedFiles.length > 0 && (
+            <span className="flex items-center gap-1 text-orange-400/70">
+              <CloudOff className="w-3 h-3" />
+              {skippedFiles.length} skipped
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Selection controls for not-yet-uploaded files */}
+      {notUploadedFiles.length > 0 && (
+        <div className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-3">
             <button
               onClick={handleSelectAll}
@@ -735,7 +947,7 @@ function FolderFiles({
               ) : (
                 <Square className="w-4 h-4 text-white/40" />
               )}
-              {allSelected ? 'Deselect All' : 'Select All'}
+              {allSelected ? 'Deselect All' : 'Select All Not Uploaded'}
             </button>
             {selectedCount > 0 && (
               <Badge variant="secondary" className="text-xs">
@@ -763,15 +975,44 @@ function FolderFiles({
         </div>
       )}
 
-      {/* Uploadable files section */}
-      {uploadableFiles.length > 0 && (
+      {/* Already uploaded files section */}
+      {alreadyUploadedFiles.length > 0 && (
         <div>
           <div className="text-xs text-green-400/70 mb-2 flex items-center gap-1">
-            <Check className="w-3 h-3" />
-            Ready to upload ({uploadableFiles.length})
+            <CheckCircle2 className="w-3 h-3" />
+            Already in Pinecone ({alreadyUploadedFiles.length})
           </div>
           <div className="grid grid-cols-1 gap-1">
-            {uploadableFiles.map(file => (
+            {alreadyUploadedFiles.map(file => (
+              <div 
+                key={file.id} 
+                className="flex items-center gap-2 text-sm py-1.5 px-2 rounded text-white/50"
+                data-testid={`file-item-uploaded-${file.id}`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                <FileText className="w-3 h-3 text-green-400/50 flex-shrink-0" />
+                <span className="truncate flex-1">{file.name}</span>
+                <Badge variant="outline" className="text-[10px] text-green-400/60 border-green-500/30 px-1.5 py-0">
+                  uploaded
+                </Badge>
+                <span className="text-xs text-white/30 flex-shrink-0">
+                  {file.fileSizeFormatted || formatFileSize(file.size)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Not yet uploaded files section */}
+      {notUploadedFiles.length > 0 && (
+        <div>
+          <div className="text-xs text-yellow-400/70 mb-2 flex items-center gap-1">
+            <Circle className="w-3 h-3" />
+            Not yet uploaded ({notUploadedFiles.length})
+          </div>
+          <div className="grid grid-cols-1 gap-1">
+            {notUploadedFiles.map(file => (
               <div 
                 key={file.id} 
                 className={`flex items-center gap-2 text-sm py-1.5 px-2 rounded cursor-pointer transition-colors ${
