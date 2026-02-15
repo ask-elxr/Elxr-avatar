@@ -135,7 +135,14 @@ export const KNOWN_KBS = [
   'life',
   'midlife',
   'mind',
-  'addiction'
+  'addiction',
+  'body',
+  'science',
+  'nutrition',
+  'longevity',
+  'movement',
+  'work',
+  'sleep',
 ] as const;
 
 export type KnowledgeBase = typeof KNOWN_KBS[number];

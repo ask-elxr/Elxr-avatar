@@ -40,6 +40,8 @@ import { heygenCreditService } from "./heygenCreditService.js";
 import { memoryService, MemoryType } from "./memoryService.js";
 import * as pubmedService from "./pubmedService.js";
 import { googleDriveService } from "./googleDriveService.js";
+import { learningArtifactService } from "./ingest/learningArtifactService.js";
+import { KNOWN_KBS, isValidKb } from "./ingest/learningArtifactTypes.js";
 import { 
   detectVideoIntent, 
   generateVideoAcknowledgment,
@@ -6897,6 +6899,157 @@ ${historyPreview}
       if (!res.headersSent) {
         res.status(500).json({
           error: "Failed to upload file from topic folder",
+          details: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    }
+  });
+
+  app.post("/api/google-drive/topic-upload-artifacts", isAuthenticated, requireAdmin, async (req: any, res) => {
+    const log = logger.child({ service: "google-drive", operation: "topicUploadArtifacts" });
+    const userId = req.user.claims.sub;
+    
+    try {
+      const { fileId, fileName, namespace } = req.body;
+
+      if (!fileId || !namespace) {
+        return res.status(400).json({
+          error: "Missing required fields: fileId, namespace",
+        });
+      }
+
+      const normalizedNamespace = namespace.toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+      
+      if (!isValidKb(normalizedNamespace)) {
+        return res.status(400).json({
+          error: "Invalid knowledge base",
+          message: `Namespace "${normalizedNamespace}" is not a recognized knowledge base. Valid KBs: ${KNOWN_KBS.join(', ')}`,
+          validKbs: KNOWN_KBS,
+        });
+      }
+
+      log.info({ fileId, fileName, namespace: normalizedNamespace }, "Processing file through Learning Artifact pipeline");
+
+      latencyCache.cleanup();
+      if (global.gc) global.gc();
+
+      let downloadResult;
+      try {
+        downloadResult = await googleDriveService.downloadFile(fileId);
+      } catch (downloadError: any) {
+        if (downloadError.message?.includes('too large')) {
+          return res.status(413).json({ error: "File too large", details: downloadError.message, skipped: true });
+        }
+        throw downloadError;
+      }
+      
+      const { buffer, mimeType, fileName: processedFileName } = downloadResult;
+
+      let text = '';
+      try {
+        if (mimeType === 'text/plain' || mimeType === 'text/markdown' || processedFileName?.endsWith('.md')) {
+          text = buffer.toString('utf-8');
+        } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+          const mammoth = await import('mammoth');
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value;
+        } else if (mimeType === 'application/pdf') {
+          const pdfParse = await import('pdf-parse').then(m => m.default);
+          const pdfData = await pdfParse(buffer);
+          text = pdfData.text || '';
+        } else if (mimeType.startsWith('video/') || mimeType.startsWith('audio/') ||
+                   processedFileName?.match(/\.(mp4|mov|mpeg|mpg|avi|webm|mkv|mp3|wav|m4a|ogg|flac)$/i)) {
+          const openaiKey = process.env.OPENAI_API_KEY;
+          if (!openaiKey) throw new Error("OPENAI_API_KEY not configured for transcription");
+          
+          const tempDir = 'uploads';
+          if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+          const safeFileName = (processedFileName || 'media').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 50);
+          const tempInputPath = path.join(tempDir, `input_art_${Date.now()}_${safeFileName}`);
+          const tempAudioPath = path.join(tempDir, `audio_art_${Date.now()}.mp3`);
+          
+          try {
+            fs.writeFileSync(tempInputPath, buffer);
+            const { spawn } = await import('child_process');
+            await new Promise<void>((resolve, reject) => {
+              const ffmpeg = spawn('ffmpeg', ['-i', tempInputPath, '-vn', '-acodec', 'libmp3lame', '-ar', '16000', '-ac', '1', '-b:a', '64k', '-y', tempAudioPath]);
+              let stderr = '';
+              ffmpeg.stderr.on('data', (data) => { stderr += data.toString(); });
+              ffmpeg.on('close', (code) => { if (code === 0) resolve(); else reject(new Error(`ffmpeg failed: ${stderr.slice(-500)}`)); });
+              ffmpeg.on('error', reject);
+            });
+            
+            const audioStats = fs.statSync(tempAudioPath);
+            if (audioStats.size > 25 * 1024 * 1024) throw new Error("Audio too large for transcription");
+            
+            const OpenAI = (await import('openai')).default;
+            const openaiClient = new OpenAI({ apiKey: openaiKey });
+            const transcription = await openaiClient.audio.transcriptions.create({
+              file: fs.createReadStream(tempAudioPath),
+              model: 'whisper-1'
+            });
+            text = transcription.text;
+          } finally {
+            if (fs.existsSync(tempInputPath)) fs.unlinkSync(tempInputPath);
+            if (fs.existsSync(tempAudioPath)) fs.unlinkSync(tempAudioPath);
+          }
+        } else {
+          throw new Error(`Unsupported file type: ${mimeType}`);
+        }
+      } catch (extractError: any) {
+        log.error({ error: extractError.message }, "Failed to extract text");
+        throw extractError;
+      }
+
+      // @ts-ignore - free buffer memory
+      downloadResult.buffer = null;
+
+      const maxTextSize = 500 * 1024;
+      if (text.length > maxTextSize) {
+        text = text.substring(0, maxTextSize);
+      }
+
+      if (!text || text.trim().length < 100) {
+        return res.json({ success: true, message: "File skipped - insufficient text content", fileName: processedFileName, skipped: true });
+      }
+
+      const cleanName = (fileName || processedFileName || 'gdrive-file').replace(/\.[^/.]+$/, '');
+      const courseId = `gdrive_${normalizedNamespace}`;
+      const lessonId = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
+      const lessonTitle = cleanName;
+
+      log.info({ kb: normalizedNamespace, courseId, lessonId, lessonTitle, textLength: text.length }, "Sending to Learning Artifact pipeline");
+
+      const result = await learningArtifactService.ingestTranscript({
+        kb: normalizedNamespace,
+        courseId,
+        lessonId,
+        lessonTitle,
+        rawText: text,
+        dryRun: false,
+      });
+
+      if (global.gc) global.gc();
+
+      log.info({ kb: normalizedNamespace, lessonId, artifacts: result.totalArtifacts, records: result.recordsUpserted }, "Learning artifact ingestion complete");
+
+      if (!res.headersSent) {
+        res.json({
+          success: true,
+          message: `Created ${result.recordsUpserted} learning artifacts`,
+          fileName: processedFileName,
+          namespace: normalizedNamespace,
+          totalArtifacts: result.totalArtifacts,
+          recordsUpserted: result.recordsUpserted,
+          artifactsByType: result.artifactsByType,
+        });
+      }
+
+    } catch (error) {
+      log.error({ error: error instanceof Error ? error.message : "Unknown error" }, "Failed to process file through artifact pipeline");
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: "Failed to process file through Learning Artifact pipeline",
           details: error instanceof Error ? error.message : "Unknown error",
         });
       }

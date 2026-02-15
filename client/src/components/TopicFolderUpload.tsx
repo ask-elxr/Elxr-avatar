@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square, CheckCircle2, Circle, CloudOff, AlertTriangle, ShieldCheck } from "lucide-react";
+import { FolderOpen, Upload, Check, AlertCircle, Loader2, ChevronDown, ChevronRight, FileText, RefreshCw, CheckSquare, Square, CheckCircle2, Circle, CloudOff, AlertTriangle, ShieldCheck, Sparkles } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 const PERSONAL_KNOWLEDGE_PATTERNS = [
@@ -48,6 +48,17 @@ interface UploadStatus {
   totalFiles: number;
 }
 
+interface ArtifactProcessingStatus {
+  folderId: string;
+  status: 'idle' | 'processing' | 'success' | 'error';
+  progress: number;
+  currentFile: string;
+  successCount: number;
+  errorCount: number;
+  totalFiles: number;
+  totalArtifacts: number;
+}
+
 interface FolderIngestionStatus {
   uploaded: number;
   total: number;
@@ -56,6 +67,7 @@ interface FolderIngestionStatus {
 
 export function TopicFolderUpload() {
   const [uploadStatuses, setUploadStatuses] = useState<Record<string, UploadStatus>>({});
+  const [artifactStatuses, setArtifactStatuses] = useState<Record<string, ArtifactProcessingStatus>>({});
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [selectedFiles, setSelectedFiles] = useState<Record<string, Set<string>>>({}); // folderId -> Set of fileIds
   const [isBulkUploading, setIsBulkUploading] = useState(false);
@@ -181,6 +193,124 @@ export function TopicFolderUpload() {
       namespace,
     });
     return response;
+  };
+
+  const uploadSingleFileAsArtifact = async (fileId: string, fileName: string, namespace: string) => {
+    const response = await apiRequest('/api/google-drive/topic-upload-artifacts', 'POST', {
+      fileId,
+      fileName,
+      namespace,
+    });
+    return response;
+  };
+
+  const handleProcessAsArtifacts = async (folder: TopicFolder) => {
+    const status: ArtifactProcessingStatus = {
+      folderId: folder.id,
+      status: 'processing',
+      progress: 0,
+      currentFile: 'Loading files...',
+      successCount: 0,
+      errorCount: 0,
+      totalFiles: folder.supportedFiles,
+      totalArtifacts: 0,
+    };
+
+    setArtifactStatuses(prev => ({ ...prev, [folder.id]: status }));
+
+    try {
+      const adminSecret = localStorage.getItem('admin_secret');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminSecret) headers['X-Admin-Secret'] = adminSecret;
+
+      const filesResponse = await fetch(`/api/google-drive/topic-folder/${folder.id}/files`, {
+        credentials: 'include',
+        headers,
+      });
+      const filesData = await filesResponse.json();
+      const allFiles: FileInfo[] = filesData.files || [];
+      const uploadableFiles = allFiles.filter(f => f.uploadable !== false);
+
+      if (uploadableFiles.length === 0) {
+        setArtifactStatuses(prev => ({
+          ...prev,
+          [folder.id]: { ...prev[folder.id], status: 'success', progress: 100, currentFile: '' }
+        }));
+        toast({ title: "No files to process", description: `${folder.name} has no supported files` });
+        return;
+      }
+
+      setArtifactStatuses(prev => ({
+        ...prev,
+        [folder.id]: { ...prev[folder.id], totalFiles: uploadableFiles.length }
+      }));
+
+      let successCount = 0;
+      let errorCount = 0;
+      let totalArtifacts = 0;
+
+      for (let i = 0; i < uploadableFiles.length; i++) {
+        const file = uploadableFiles[i];
+
+        setArtifactStatuses(prev => ({
+          ...prev,
+          [folder.id]: {
+            ...prev[folder.id],
+            currentFile: file.name,
+            progress: Math.round((i / uploadableFiles.length) * 100),
+          }
+        }));
+
+        try {
+          const result: any = await uploadSingleFileAsArtifact(file.id, file.name, folder.namespace);
+          if (result.skipped) {
+            errorCount++;
+          } else {
+            successCount++;
+            totalArtifacts += result.totalArtifacts || 0;
+          }
+        } catch (error: any) {
+          console.error(`Failed to process ${file.name} as artifacts:`, error);
+          errorCount++;
+        }
+
+        setArtifactStatuses(prev => ({
+          ...prev,
+          [folder.id]: { ...prev[folder.id], successCount, errorCount, totalArtifacts }
+        }));
+
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      setArtifactStatuses(prev => ({
+        ...prev,
+        [folder.id]: {
+          ...prev[folder.id],
+          status: errorCount === uploadableFiles.length ? 'error' : 'success',
+          progress: 100,
+          currentFile: '',
+        }
+      }));
+
+      toast({
+        title: "Artifact Processing Complete",
+        description: `${folder.name}: ${successCount} files processed, ${totalArtifacts} artifacts created${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
+        variant: errorCount > 0 && successCount === 0 ? "destructive" : "default",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
+
+    } catch (error: any) {
+      setArtifactStatuses(prev => ({
+        ...prev,
+        [folder.id]: { ...prev[folder.id], status: 'error', progress: 0 }
+      }));
+      toast({
+        title: "Artifact processing failed",
+        description: error.message || "Failed to process files",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleUploadSelected = async (folder: TopicFolder, filesToUpload: FileInfo[]) => {
@@ -767,10 +897,28 @@ export function TopicFolderUpload() {
                           return null;
                         })()}
                         {getStatusBadge(status)}
+                        {!isPersonalNamespace(folder.namespace) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={artifactStatuses[folder.id]?.status === 'processing' || status?.status === 'uploading' || !hasFiles}
+                            onClick={() => handleProcessAsArtifacts(folder)}
+                            className="gap-1 border-amber-500/40 text-amber-400 hover:bg-amber-500/20 hover:text-amber-300"
+                            data-testid={`button-artifacts-folder-${folder.id}`}
+                            title="Process files through Learning Artifact pipeline for better retrieval"
+                          >
+                            {artifactStatuses[folder.id]?.status === 'processing' ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Sparkles className="w-3 h-3" />
+                            )}
+                            Artifacts
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={status?.status === 'uploading' || !hasFiles}
+                          disabled={status?.status === 'uploading' || artifactStatuses[folder.id]?.status === 'processing' || !hasFiles}
                           onClick={() => handleUploadFolder(folder)}
                           className="gap-1"
                           data-testid={`button-upload-folder-${folder.id}`}
@@ -792,6 +940,30 @@ export function TopicFolderUpload() {
                           <span>Uploading: {status.currentFile}</span>
                           <span>{status.successCount}/{status.totalFiles}</span>
                         </div>
+                      </div>
+                    )}
+
+                    {artifactStatuses[folder.id]?.status === 'processing' && (
+                      <div className="mt-3 space-y-1">
+                        <Progress value={artifactStatuses[folder.id].progress} className="h-2 [&>div]:bg-amber-500" />
+                        <div className="flex justify-between text-xs text-amber-400/70">
+                          <span>Creating artifacts: {artifactStatuses[folder.id].currentFile}</span>
+                          <span>{artifactStatuses[folder.id].successCount}/{artifactStatuses[folder.id].totalFiles} files · {artifactStatuses[folder.id].totalArtifacts} artifacts</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {artifactStatuses[folder.id]?.status === 'success' && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-green-400">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>{artifactStatuses[folder.id].successCount} files processed · {artifactStatuses[folder.id].totalArtifacts} artifacts created</span>
+                      </div>
+                    )}
+
+                    {artifactStatuses[folder.id]?.status === 'error' && artifactStatuses[folder.id]?.successCount === 0 && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-red-400">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        <span>Artifact processing failed</span>
                       </div>
                     )}
 
