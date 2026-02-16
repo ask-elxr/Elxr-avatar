@@ -6957,6 +6957,49 @@ ${historyPreview}
           const pdfParse = await import('pdf-parse').then(m => m.default);
           const pdfData = await pdfParse(buffer);
           text = pdfData.text || '';
+        } else if (mimeType === 'application/zip' || mimeType === 'application/x-zip-compressed' ||
+                   processedFileName?.endsWith('.zip')) {
+          const AdmZip = (await import('adm-zip')).default;
+          const zip = new AdmZip(buffer);
+          const zipEntries = zip.getEntries();
+          const extractedTexts: string[] = [];
+          
+          for (const entry of zipEntries) {
+            if (entry.isDirectory) continue;
+            const entryName = entry.entryName.toLowerCase();
+            if (!entryName.endsWith('.txt') && !entryName.endsWith('.md') &&
+                !entryName.endsWith('.pdf') && !entryName.endsWith('.docx')) continue;
+            
+            const entryBuffer = entry.getData();
+            if (entryBuffer.length > 5 * 1024 * 1024) {
+              log.warn({ entryName: entry.entryName, size: entryBuffer.length }, "Skipping large file in ZIP");
+              continue;
+            }
+            
+            try {
+              let entryText = '';
+              if (entryName.endsWith('.txt') || entryName.endsWith('.md')) {
+                entryText = entryBuffer.toString('utf-8');
+              } else if (entryName.endsWith('.pdf')) {
+                const pdfParse = await import('pdf-parse').then(m => m.default);
+                const pdfData = await pdfParse(entryBuffer);
+                entryText = pdfData.text || '';
+              } else if (entryName.endsWith('.docx')) {
+                const mammoth = await import('mammoth');
+                const result = await mammoth.extractRawText({ buffer: entryBuffer });
+                entryText = result.value;
+              }
+              
+              if (entryText.trim().length > 50) {
+                extractedTexts.push(`--- ${entry.entryName} ---\n${entryText}`);
+              }
+            } catch (entryError: any) {
+              log.warn({ entryName: entry.entryName, error: entryError.message }, "Failed to extract text from ZIP entry");
+            }
+          }
+          
+          text = extractedTexts.join('\n\n');
+          log.info({ filesProcessed: extractedTexts.length, totalTextLength: text.length }, "ZIP file processed for artifacts");
         } else if (mimeType.startsWith('video/') || mimeType.startsWith('audio/') ||
                    processedFileName?.match(/\.(mp4|mov|mpeg|mpg|avi|webm|mkv|mp3|wav|m4a|ogg|flac)$/i)) {
           const openaiKey = process.env.OPENAI_API_KEY;
