@@ -448,6 +448,30 @@ class LearningArtifactService {
     }
   }
 
+  async checkExistingArtifacts(namespace: string, courseId: string, lessonId: string): Promise<{ exists: boolean; count: number }> {
+    try {
+      const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
+      const ns = index.namespace(namespace.toUpperCase());
+
+      const dummyEmbedding = new Array(1536).fill(0);
+      const result = await ns.query({
+        vector: dummyEmbedding,
+        topK: 1,
+        filter: {
+          course_id: { $eq: courseId },
+          lesson_id: { $eq: lessonId },
+        },
+        includeMetadata: false,
+      });
+
+      const count = result.matches?.length || 0;
+      return { exists: count > 0, count };
+    } catch (error) {
+      logger.warn({ namespace, courseId, lessonId, error }, 'Failed to check existing artifacts, proceeding');
+      return { exists: false, count: 0 };
+    }
+  }
+
   async deleteBySource(namespace: string, courseId: string, lessonId?: string): Promise<{ deleted: boolean }> {
     try {
       const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);

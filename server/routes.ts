@@ -6928,6 +6928,23 @@ ${historyPreview}
         });
       }
 
+      const cleanName = (fileName || 'gdrive-file').replace(/\.[^/.]+$/, '');
+      const courseId = `gdrive_${normalizedNamespace}`;
+      const lessonId = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
+
+      const existing = await learningArtifactService.checkExistingArtifacts(normalizedNamespace, courseId, lessonId);
+      if (existing.exists) {
+        log.info({ fileId, fileName, namespace: normalizedNamespace, lessonId }, "File already has artifacts in Pinecone, skipping");
+        return res.json({
+          success: true,
+          message: "Already processed — artifacts exist",
+          fileName,
+          namespace: normalizedNamespace,
+          skipped: true,
+          alreadyExists: true,
+        });
+      }
+
       log.info({ fileId, fileName, namespace: normalizedNamespace }, "Processing file through Learning Artifact pipeline");
 
       latencyCache.cleanup();
@@ -7056,9 +7073,6 @@ ${historyPreview}
         return res.json({ success: true, message: "File skipped - insufficient text content", fileName: processedFileName, skipped: true });
       }
 
-      const cleanName = (fileName || processedFileName || 'gdrive-file').replace(/\.[^/.]+$/, '');
-      const courseId = `gdrive_${normalizedNamespace}`;
-      const lessonId = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
       const lessonTitle = cleanName;
 
       log.info({ kb: normalizedNamespace, courseId, lessonId, lessonTitle, textLength: text.length }, "Sending to Learning Artifact pipeline");

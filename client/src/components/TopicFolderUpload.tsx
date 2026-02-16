@@ -247,6 +247,7 @@ export function TopicFolderUpload() {
 
       let successCount = 0;
       let errorCount = 0;
+      let skippedCount = 0;
       let totalArtifacts = 0;
 
       for (let i = 0; i < uploadableFiles.length; i++) {
@@ -263,8 +264,10 @@ export function TopicFolderUpload() {
 
         try {
           const result: any = await uploadSingleFileAsArtifact(file.id, file.name, folder.namespace);
-          if (result.skipped) {
-            errorCount++;
+          if (result.alreadyExists) {
+            skippedCount++;
+          } else if (result.skipped) {
+            skippedCount++;
           } else {
             successCount++;
             totalArtifacts += result.totalArtifacts || 0;
@@ -279,23 +282,28 @@ export function TopicFolderUpload() {
           [folder.id]: { ...prev[folder.id], successCount, errorCount, totalArtifacts }
         }));
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
 
       setArtifactStatuses(prev => ({
         ...prev,
         [folder.id]: {
           ...prev[folder.id],
-          status: errorCount === uploadableFiles.length ? 'error' : 'success',
+          status: errorCount === uploadableFiles.length && successCount === 0 && skippedCount === 0 ? 'error' : 'success',
           progress: 100,
           currentFile: '',
         }
       }));
 
+      const parts = [];
+      if (successCount > 0) parts.push(`${successCount} processed, ${totalArtifacts} artifacts`);
+      if (skippedCount > 0) parts.push(`${skippedCount} already existed`);
+      if (errorCount > 0) parts.push(`${errorCount} failed`);
+
       toast({
         title: "Artifact Processing Complete",
-        description: `${folder.name}: ${successCount} files processed, ${totalArtifacts} artifacts created${errorCount > 0 ? `, ${errorCount} failed` : ''}`,
-        variant: errorCount > 0 && successCount === 0 ? "destructive" : "default",
+        description: `${folder.name}: ${parts.join(', ')}`,
+        variant: errorCount > 0 && successCount === 0 && skippedCount === 0 ? "destructive" : "default",
       });
 
       queryClient.invalidateQueries({ queryKey: ['/api/pinecone/stats'] });
