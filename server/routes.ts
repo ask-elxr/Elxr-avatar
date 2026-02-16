@@ -8983,40 +8983,11 @@ ${historyPreview}
           }
         }),
 
-        // Claude AI (Anthropic)
+        // Claude AI (Anthropic) - key existence check only, no API call
         checkService('Claude AI', async () => {
-          // Claude doesn't have a simple health check endpoint
-          // We'll verify by checking if the API key is configured
           const apiKey = process.env.ANTHROPIC_API_KEY;
           if (!apiKey) return { ok: false, message: 'API key not configured' };
-          
-          // Make a minimal API call to verify the key works
-          try {
-            const response = await fetch('https://api.anthropic.com/v1/messages', {
-              method: 'POST',
-              headers: {
-                'x-api-key': apiKey,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json',
-              },
-              body: JSON.stringify({
-                model: 'claude-sonnet-4-5',
-                max_tokens: 1,
-                messages: [{ role: 'user', content: 'Hi' }],
-              }),
-            });
-            
-            if (response.ok || response.status === 400) {
-              // 400 means API is reachable but request was rejected (still working)
-              return { ok: true, message: 'API reachable and authenticated' };
-            }
-            if (response.status === 401) {
-              return { ok: false, message: 'Invalid API key' };
-            }
-            return { ok: false, message: `API error: ${response.status}` };
-          } catch (error: any) {
-            return { ok: false, message: error.message };
-          }
+          return { ok: true, message: 'API key configured' };
         }),
       ]);
 
