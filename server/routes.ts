@@ -26,7 +26,7 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { elevenlabsService } from "./elevenlabsService.js";
 import { wikipediaService } from "./wikipediaService.js";
-import { setupAuth, isAuthenticated, requireAdmin, isValidAdminSecret } from "./replitAuth.js";
+import { setupAuth, isAuthenticated, requireAdmin, requireMemberstackOrAdmin, isValidAdminSecret } from "./replitAuth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
@@ -62,6 +62,8 @@ import { getAvatarSystemPrompt } from "./engine/avatarIntegration.js";
 import { anonymizeText, chunkTextConversationally } from "./ingest/conversationalChunker.js";
 import { extractSubstance } from "./ingest/podcastIngestionService.js";
 import { handleCultivationQuery, formatKBResponseForVoice } from "./cultivationBypass.js";
+
+import { checkChatRateLimit } from "./chatRateLimit.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
@@ -1262,7 +1264,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Combined audio endpoint: Get Claude response + convert to ElevenLabs audio
-  app.post("/api/audio", async (req: any, res) => {
+  // Requires authenticated user (Memberstack or admin) to prevent anonymous API usage
+  app.post("/api/audio", requireMemberstackOrAdmin, async (req: any, res) => {
     const log = logger.child({ service: "audio-chat", operation: "processMessage" });
 
     let requestAborted = false;
@@ -1274,6 +1277,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
 
     try {
+      const rateLimitUserId = req.user?.claims?.sub || 'unknown';
+      const rateCheck = checkChatRateLimit(rateLimitUserId);
+      if (!rateCheck.allowed) {
+        log.warn({ userId: rateLimitUserId }, 'Daily chat rate limit exceeded');
+        return res.status(429).json({ error: "Daily message limit reached. Please try again tomorrow." });
+      }
+
       const { message, avatarId = "mark-kohl", languageCode, imageBase64, imageMimeType } = req.body;
       
       log.info({ 
@@ -2032,7 +2042,7 @@ ${historyPreview}
   });
 
   // ElevenLabs TTS endpoint for audio-only mode
-  app.post("/api/elevenlabs/tts", async (req, res) => {
+  app.post("/api/elevenlabs/tts", requireMemberstackOrAdmin, async (req, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "generateSpeech" });
 
     try {
@@ -2082,7 +2092,7 @@ ${historyPreview}
   });
 
   // ElevenLabs TTS endpoint for HeyGen lip-sync (PCM 24kHz format)
-  app.post("/api/elevenlabs/tts-pcm", async (req, res) => {
+  app.post("/api/elevenlabs/tts-pcm", requireMemberstackOrAdmin, async (req, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "generateSpeechPCM" });
 
     try {
@@ -2132,7 +2142,7 @@ ${historyPreview}
   });
 
   // ElevenLabs TTS endpoint for LiveAvatar SDK's repeatAudio() (base64 PCM format)
-  app.post("/api/elevenlabs/tts-base64", async (req, res) => {
+  app.post("/api/elevenlabs/tts-base64", requireMemberstackOrAdmin, async (req, res) => {
     const log = logger.child({ service: "elevenlabs", operation: "generateSpeechBase64" });
 
     try {

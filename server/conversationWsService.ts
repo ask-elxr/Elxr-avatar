@@ -10,6 +10,8 @@ import { latencyCache } from './cache.js';
 import { sessionManager } from './sessionManager.js';
 import { ELXR_CONTENT_POLICY } from './contentTaxonomy.js';
 import { getBanterLevel, buildAvatarPrompt } from './warmthEngine.js';
+import { isValidAdminSecret } from './replitAuth.js';
+import { checkChatRateLimit } from './chatRateLimit.js';
 
 const log = logger.child({ service: 'conversation-ws' });
 
@@ -329,6 +331,16 @@ function popCompleteSentences(buffer: string): { complete: string[]; remaining: 
 
 async function runTurn(session: ConversationSession, userMessage: string): Promise<void> {
   const myTurn = session.turnId;
+
+  if (session.userId) {
+    const rateCheck = checkChatRateLimit(session.userId);
+    if (!rateCheck.allowed) {
+      sendJSON(session.ws, { type: 'ERROR', message: 'Daily message limit reached. Please try again tomorrow.' });
+      log.warn({ sessionId: session.sessionId, userId: session.userId }, 'Daily chat rate limit exceeded on WebSocket');
+      return;
+    }
+  }
+
   session.state = 'THINKING';
   sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
 
@@ -625,7 +637,20 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         sampleRate = 16000,
         languageCode,
         audioOnly = false,
+        adminSecret = null,
+        memberstackId = null,
       } = message;
+
+      const hasAdminAccess = adminSecret && isValidAdminSecret(adminSecret);
+      const hasMemberstack = !!memberstackId;
+      const hasRealUser = userId && !userId.startsWith('webflow_') && !userId.startsWith('temp_');
+
+      if (!hasAdminAccess && !hasMemberstack && !hasRealUser) {
+        sendJSON(ws, { type: 'ERROR', message: 'Authentication required to chat with avatars.' });
+        ws.close();
+        log.warn({ sessionId, userId }, 'Anonymous user blocked from conversation WebSocket');
+        return;
+      }
 
       const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig) {

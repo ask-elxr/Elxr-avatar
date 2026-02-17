@@ -156,23 +156,17 @@ export async function setupAuth(app: Express) {
   });
 }
 
-// Authentication is bypassed - this app is embedded in Webflow which handles auth
-// All routes are accessible without login
+// Authentication middleware for embedded Webflow mode
+// All routes are accessible without login for browsing
 // Memberstack user ID can be passed via X-Member-Id header or member_id query param for persistent memory
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // Bypass authentication - Webflow handles auth externally
-  // Create a mock user for session tracking if none exists
   if (!req.user) {
-    // Check for Memberstack user ID from header or query param
     const memberstackId = (req.headers['x-member-id'] as string) || (req.query.member_id as string);
     
-    // Use Memberstack ID if provided, otherwise use session userId or generate a temporary one
     let userId: string;
     const session = req.session as any;
     if (memberstackId) {
-      // Prefix Memberstack IDs to ensure uniqueness across auth providers
       userId = `ms_${memberstackId}`;
-      // Store in session for consistency across requests
       if (session) {
         session.userId = userId;
       }
@@ -196,6 +190,27 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     };
   }
   return next();
+};
+
+// Middleware that requires a Memberstack ID or admin secret for AI-powered endpoints
+// This prevents anonymous users from triggering expensive Claude/TTS API calls
+export const requireMemberstackOrAdmin: RequestHandler = async (req, res, next) => {
+  const adminSecret = req.headers['x-admin-secret'] as string;
+  if (isValidAdminSecret(adminSecret)) {
+    return next();
+  }
+
+  const memberstackId = (req.headers['x-member-id'] as string) || (req.query.member_id as string);
+  if (memberstackId) {
+    return next();
+  }
+
+  const user = req.user as any;
+  if (user?.claims?.sub && !user.claims.sub.startsWith('webflow_') && !user.claims.sub.startsWith('temp_')) {
+    return next();
+  }
+
+  return res.status(401).json({ error: "Authentication required to chat with avatars. Please log in." });
 };
 
 // Helper to check if a secret is valid (supports multiple comma-separated secrets)
