@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { buildAuthenticatedWsUrl } from '@/lib/queryClient';
 
 export interface ConversationWsConfig {
   avatarId: string;
@@ -200,8 +201,7 @@ export function useConversationWs(config: ConversationWsConfig) {
     if (wsRef.current?.readyState === WebSocket.OPEN) return Promise.resolve();
 
     return new Promise((resolve, reject) => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws/conversation`;
+      const wsUrl = buildAuthenticatedWsUrl('/ws/conversation');
 
       console.log('🎙️ Connecting to conversation WS...');
       const ws = new WebSocket(wsUrl);

@@ -892,7 +892,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // HeyGen API token endpoint for Streaming SDK with rate limiting (15 requests per user per minute for conversation flow)
-  app.post("/api/heygen/token", rateLimitMiddleware(15, 60000), async (req, res) => {
+  app.post("/api/heygen/token", requireMemberstackOrAdmin, rateLimitMiddleware(15, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen", operation: "createToken" });
 
     try {
@@ -1195,7 +1195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // HeyGen Streaming Avatar token endpoint (older, more stable API)
   // Uses the @heygen/streaming-avatar SDK which requires a different token format
-  app.post("/api/heygen/streaming-token", rateLimitMiddleware(15, 60000), async (req, res) => {
+  app.post("/api/heygen/streaming-token", requireMemberstackOrAdmin, rateLimitMiddleware(15, 60000), async (req, res) => {
     const log = logger.child({ service: "heygen-streaming", operation: "createToken" });
 
     try {
@@ -4668,7 +4668,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
   });
 
   // STREAMING AVATAR RESPONSE - Sends sentences progressively via SSE
-  app.post("/api/avatar/response/stream", isAuthenticated, async (req: any, res) => {
+  app.post("/api/avatar/response/stream", requireMemberstackOrAdmin, async (req: any, res) => {
     const log = logger.child({ service: 'avatar-stream', operation: 'streamResponse' });
     
     try {
@@ -4676,6 +4676,13 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       let userId = req.user?.claims?.sub || null;
       if (!userId && req.body.userId?.startsWith('temp_')) {
         userId = req.body.userId;
+      }
+
+      if (userId) {
+        const rateCheck = checkChatRateLimit(userId);
+        if (!rateCheck.allowed) {
+          return res.status(429).json({ error: "Daily message limit reached. Please try again tomorrow." });
+        }
       }
 
       if (!message && !imageBase64) {
@@ -5269,7 +5276,7 @@ ${historyPreview}
 
   // STREAMING AUDIO AVATAR RESPONSE - Streams Claude response with per-sentence TTS audio via SSE
   // Reduces time-to-first-audio from 6+ seconds to ~3 seconds by streaming sentences
-  app.post("/api/avatar/response/stream-audio", isAuthenticated, async (req: any, res) => {
+  app.post("/api/avatar/response/stream-audio", requireMemberstackOrAdmin, async (req: any, res) => {
     const log = logger.child({ service: 'avatar-stream-audio', operation: 'streamAudioResponse' });
     
     try {
@@ -5277,6 +5284,13 @@ ${historyPreview}
       let userId = req.user?.claims?.sub || null;
       if (!userId && req.body.userId?.startsWith('temp_')) {
         userId = req.body.userId;
+      }
+
+      if (userId) {
+        const rateCheck = checkChatRateLimit(userId);
+        if (!rateCheck.allowed) {
+          return res.status(429).json({ error: "Daily message limit reached. Please try again tomorrow." });
+        }
       }
 
       if (!message && !imageBase64) {
@@ -9024,7 +9038,7 @@ ${historyPreview}
   });
 
   // Start a session (for audio-only mode or session registration without HeyGen token)
-  app.post("/api/session/start", async (req, res) => {
+  app.post("/api/session/start", requireMemberstackOrAdmin, async (req, res) => {
     try {
       const { userId, avatarId } = req.body;
       
@@ -9143,7 +9157,7 @@ ${historyPreview}
 
   // Start a mobile session with LiveKit-based avatar (bypasses mobile browser throttling)
   // The Python avatar agent handles avatar streaming server-side
-  app.post("/api/session/start-mobile", async (req, res) => {
+  app.post("/api/session/start-mobile", requireMemberstackOrAdmin, async (req, res) => {
     try {
       const { userId, avatarId } = req.body;
       
@@ -9958,6 +9972,15 @@ ${historyPreview}
   const convWss = new WebSocketServer({ noServer: true });
   initConversationWsServer(convWss);
   
+  // Helper: check WebSocket upgrade auth via query params or headers
+  function checkWsAuth(request: any, url: URL): boolean {
+    const adminSecret = url.searchParams.get('admin_secret') || request.headers['x-admin-secret'];
+    if (adminSecret && isValidAdminSecret(adminSecret)) return true;
+    const memberId = url.searchParams.get('member_id') || request.headers['x-member-id'];
+    if (memberId) return true;
+    return false;
+  }
+
   // Handle WebSocket upgrades manually for our streaming endpoints only
   httpServer.on('upgrade', (request, socket, head) => {
     const url = new URL(request.url || '', `http://${request.headers.host}`);
@@ -9971,12 +9994,24 @@ ${historyPreview}
         webrtcWss.emit('connection', ws, request);
       });
     } else if (url.pathname === '/ws/elevenlabs-stt') {
+      if (!checkWsAuth(request, url)) {
+        logger.warn('ElevenLabs STT WebSocket rejected - no auth');
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
       logger.info('ElevenLabs STT WebSocket upgrade request - processing...');
       sttWss.handleUpgrade(request, socket, head, (ws) => {
         logger.info('ElevenLabs STT WebSocket connection established');
         sttWss.emit('connection', ws, request);
       });
     } else if (url.pathname === '/ws/conversation') {
+      if (!checkWsAuth(request, url)) {
+        logger.warn('Conversation WebSocket rejected - no auth');
+        socket.write('HTTP/1.1 401 Unauthorized\r\n\r\n');
+        socket.destroy();
+        return;
+      }
       logger.info('Conversation WebSocket upgrade request - processing...');
       convWss.handleUpgrade(request, socket, head, (ws) => {
         logger.info('Conversation WebSocket connection established');

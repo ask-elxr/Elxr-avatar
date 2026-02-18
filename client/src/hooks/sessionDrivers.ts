@@ -7,6 +7,7 @@ import {
 import { Room, RoomEvent, Track, RemoteTrack, RemoteTrackPublication, RemoteParticipant } from "livekit-client";
 import { requestMicrophoneOnce } from "@/lib/microphoneCache";
 import { getGlobalVolume } from "@/lib/mobileAudio";
+import { buildAuthenticatedWsUrl } from "@/lib/queryClient";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -474,8 +475,7 @@ export class LiveAvatarDriver implements SessionDriver {
       console.log("✅ Microphone access granted (using cached stream)");
       
       // Connect to ElevenLabs STT WebSocket
-      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${wsProtocol}//${window.location.host}/ws/elevenlabs-stt`;
+      const wsUrl = buildAuthenticatedWsUrl('/ws/elevenlabs-stt');
       console.log("🔌 Connecting to ElevenLabs STT WebSocket:", wsUrl);
       
       this.sttWebSocket = new WebSocket(wsUrl);

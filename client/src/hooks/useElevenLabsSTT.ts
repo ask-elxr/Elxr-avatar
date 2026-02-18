@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { buildAuthenticatedWsUrl } from '@/lib/queryClient';
 
 interface ElevenLabsSTTConfig {
   languageCode?: string;
@@ -78,8 +79,7 @@ export function useElevenLabsSTT(config: ElevenLabsSTTConfig = {}) {
       return;
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/elevenlabs-stt`;
+    const wsUrl = buildAuthenticatedWsUrl('/ws/elevenlabs-stt');
     
     console.log('🎤 Connecting to ElevenLabs STT...');
     const ws = new WebSocket(wsUrl);

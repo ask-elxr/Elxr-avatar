@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
-import { getMemberstackId } from "@/lib/queryClient";
+import { getMemberstackId, buildAuthenticatedWsUrl } from "@/lib/queryClient";
 import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken, getGlobalVolume, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { requestMicrophoneOnce, isMicPermissionGranted } from "@/lib/microphoneCache";
 import { useConversationWs } from "./useConversationWs";
@@ -959,8 +959,7 @@ export function useAvatarSession({
     setMicrophoneStatus('listening');
     
     // Now set up WebSocket (async operations are OK after mic is granted)
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/elevenlabs-stt`;
+    const wsUrl = buildAuthenticatedWsUrl('/ws/elevenlabs-stt');
     console.log("🎤 Starting ElevenLabs STT WebSocket...", { wsUrl });
     
     let ws: WebSocket;

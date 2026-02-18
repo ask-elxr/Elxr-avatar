@@ -34,6 +34,21 @@ export function hasMemberstackId(): boolean {
   return !!getMemberstackId();
 }
 
+// Build authenticated WebSocket URL with member_id or admin_secret query params
+export function buildAuthenticatedWsUrl(path: string): string {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = new URL(`${protocol}//${window.location.host}${path}`);
+  const memberId = getMemberstackId();
+  if (memberId) {
+    url.searchParams.set('member_id', memberId);
+  }
+  const adminSecret = getAdminSecret();
+  if (adminSecret) {
+    url.searchParams.set('admin_secret', adminSecret);
+  }
+  return url.toString();
+}
+
 // Check if admin secret is configured
 export function hasAdminAccess(): boolean {
   return !!getAdminSecret();
