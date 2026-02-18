@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, getAuthHeaders } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -1656,7 +1656,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       // Get LiveKit room credentials from server
                       const response = await fetch('/api/session/start-mobile', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                        credentials: 'include',
                         body: JSON.stringify({ 
                           userId: userId,
                           avatarId: selectedAvatarId 

@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
-import { getMemberstackId, buildAuthenticatedWsUrl } from "@/lib/queryClient";
+import { getMemberstackId, buildAuthenticatedWsUrl, getAuthHeaders } from "@/lib/queryClient";
 import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken, getGlobalVolume, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { requestMicrophoneOnce, isMicPermissionGranted } from "@/lib/microphoneCache";
 import { useConversationWs } from "./useConversationWs";
@@ -381,9 +381,8 @@ export function useAvatarSession({
   const fetchAccessToken = async (avatarId: string): Promise<{ token: string; sessionId: string }> => {
     const response = await fetch("/api/heygen/token", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      credentials: "include",
       body: JSON.stringify({
         userId,
         avatarId,
@@ -1814,9 +1813,8 @@ export function useAvatarSession({
           console.log("📱 Registering session with server...");
           const response = await fetch("/api/session/start", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+            credentials: "include",
             body: JSON.stringify({
               userId,
               avatarId: activeAvatarId,
@@ -2751,7 +2749,7 @@ export function useAvatarSession({
         try {
           const audioResponse = await fetch("/api/audio", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...getAuthHeaders() },
             body: JSON.stringify({
               message,
               userId: memoryEnabledRef.current ? userId : undefined,
@@ -3016,11 +3014,7 @@ export function useAvatarSession({
           
           try {
             // Use fetch with streaming body for SSE - AUDIO streaming endpoint
-            const headers: Record<string, string> = { "Content-Type": "application/json" };
-            const memberstackId = getMemberstackId();
-            if (memberstackId) {
-              headers['X-Member-Id'] = memberstackId;
-            }
+            const headers: Record<string, string> = { "Content-Type": "application/json", ...getAuthHeaders() };
             
             const response = await fetch("/api/avatar/response/stream-audio", {
               method: "POST",
@@ -3186,11 +3180,7 @@ export function useAvatarSession({
         }
         
         // Non-streaming fallback
-        const fallbackHeaders: Record<string, string> = { "Content-Type": "application/json" };
-        const fallbackMemberstackId = getMemberstackId();
-        if (fallbackMemberstackId) {
-          fallbackHeaders['X-Member-Id'] = fallbackMemberstackId;
-        }
+        const fallbackHeaders: Record<string, string> = { "Content-Type": "application/json", ...getAuthHeaders() };
         
         const response = await fetch("/api/avatar/response", {
           method: "POST",

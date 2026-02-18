@@ -7,7 +7,7 @@ import {
 import { Room, RoomEvent, Track, RemoteTrack, RemoteTrackPublication, RemoteParticipant } from "livekit-client";
 import { requestMicrophoneOnce } from "@/lib/microphoneCache";
 import { getGlobalVolume } from "@/lib/mobileAudio";
-import { buildAuthenticatedWsUrl } from "@/lib/queryClient";
+import { buildAuthenticatedWsUrl, getAuthHeaders } from "@/lib/queryClient";
 
 export interface SessionDriver {
   start(): Promise<void>;
@@ -756,9 +756,8 @@ export class LiveAvatarDriver implements SessionDriver {
     
     const response = await fetch("/api/heygen/token", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      credentials: "include",
       body: JSON.stringify({
         userId: this.config.userId,
         avatarId: this.config.avatarId,
@@ -1127,7 +1126,8 @@ export class HeyGenStreamingDriver implements SessionDriver {
   private async fetchAccessToken(): Promise<string> {
     const response = await fetch("/api/heygen/streaming-token", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      credentials: "include",
       body: JSON.stringify({
         userId: this.config.userId,
         avatarId: this.config.avatarId,

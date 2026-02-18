@@ -6,14 +6,18 @@ self.onmessage = async (event) => {
   const { type, payload } = event.data;
   
   if (type === 'START_SESSION') {
-    const { avatarId, audioOnly, userId } = payload;
+    const { avatarId, audioOnly, userId, memberstackId, adminSecret } = payload;
+    
+    const authHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (memberstackId) authHeaders['X-Member-Id'] = memberstackId;
+    if (adminSecret) authHeaders['X-Admin-Secret'] = adminSecret;
     
     try {
       // First, end any previous sessions
       try {
         await fetch('/api/session/end-all', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders,
           body: JSON.stringify({ userId }),
         });
       } catch (e) {
@@ -23,7 +27,7 @@ self.onmessage = async (event) => {
       // Register session with server
       const response = await fetch('/api/session/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ avatarId, audioOnly }),
       });
       

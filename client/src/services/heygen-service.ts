@@ -20,11 +20,15 @@ export class HeyGenService {
 
   async fetchAccessToken(): Promise<string> {
     try {
+      const memberstackId = localStorage.getItem('memberstack_id') || new URLSearchParams(window.location.search).get('member_id');
+      const adminSecret = localStorage.getItem('admin_secret') || new URLSearchParams(window.location.search).get('admin_secret');
+      const authHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (memberstackId) authHeaders['X-Member-Id'] = memberstackId;
+      if (adminSecret) authHeaders['X-Admin-Secret'] = adminSecret;
       const response = await fetch("/api/heygen/token", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders,
+        credentials: "include",
       });
 
       if (!response.ok) {

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, MessageSquare, Video, VideoOff } from "lucide-react";
 import StreamingAvatar, { AvatarQuality, StreamingEvents } from "@heygen/streaming-avatar";
+import { getAuthHeaders } from "@/lib/queryClient";
 
 interface StreamingAvatarComponentProps {
   onAvatarResponse?: (response: string) => void;
@@ -27,6 +28,8 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
     try {
       const response = await fetch("/api/heygen/token", {
         method: "POST",
+        headers: { ...getAuthHeaders() },
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -138,7 +141,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
       // Get enhanced response from Claude Sonnet 4 backend with 4-source intelligence
       const response = await fetch("/api/avatar/response", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ 
           message: text,
           useWebSearch: true, // Enable Google Search for current information

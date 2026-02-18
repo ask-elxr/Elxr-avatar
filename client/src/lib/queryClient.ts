@@ -54,6 +54,15 @@ export function hasAdminAccess(): boolean {
   return !!getAdminSecret();
 }
 
+export function getAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const memberstackId = getMemberstackId();
+  if (memberstackId) headers['X-Member-Id'] = memberstackId;
+  const adminSecret = getAdminSecret();
+  if (adminSecret) headers['X-Admin-Secret'] = adminSecret;
+  return headers;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
