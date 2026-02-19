@@ -419,6 +419,7 @@ export function useAvatarSession({
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...getAuthHeaders(),
           },
           body: JSON.stringify(payload),
         });
@@ -518,7 +519,7 @@ export function useAvatarSession({
     try {
       const response = await fetch("/api/audio/acknowledgments/precache", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ avatarId }),
       });
       if (response.ok) {
@@ -1189,7 +1190,7 @@ export function useAvatarSession({
 
       const response = await fetch("/api/elevenlabs/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
           text,
           avatarId: currentAvatarIdRef.current,
@@ -1797,6 +1798,7 @@ export function useAvatarSession({
             method: "POST",
             headers: {
               "Content-Type": "application/json",
+              ...getAuthHeaders(),
             },
             body: JSON.stringify({
               userId,
@@ -1975,7 +1977,7 @@ export function useAvatarSession({
             console.log("🎤 Fetching greeting audio from ElevenLabs...");
             const audioResponse = await fetch("/api/elevenlabs/tts", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...getAuthHeaders() },
               body: JSON.stringify({
                 text: greeting,
                 avatarId: activeAvatarId,

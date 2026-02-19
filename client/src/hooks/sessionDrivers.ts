@@ -682,7 +682,7 @@ export class LiveAvatarDriver implements SessionDriver {
       // Get base64 PCM audio from ElevenLabs (SDK-compatible format)
       const response = await fetch("/api/elevenlabs/tts-base64", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
           text,
           avatarId: this.config.avatarId || this.config.avatarConfig.id,
@@ -1177,7 +1177,7 @@ export class AudioOnlyDriver implements SessionDriver {
 
       const response = await fetch("/api/elevenlabs/tts", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({
           text,
           avatarId: this.avatarId,
