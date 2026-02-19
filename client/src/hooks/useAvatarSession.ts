@@ -1149,21 +1149,9 @@ export function useAvatarSession({
 
   const startIdleTimeout = useCallback(() => {
     clearIdleTimeout();
-    
-    // Only start idle timeout in video mode when not paused
-    if (!audioOnlyRef.current && !isPaused) {
-      idleTimeoutRef.current = setTimeout(() => {
-        // Double-check we're still in video mode before stopping
-        // User might have switched to audio mode during the 3 minutes
-        if (!audioOnlyRef.current && sessionDriverRef.current) {
-          console.log("45s idle timeout - stopping avatar video session");
-          stopHeyGenSession();
-        } else {
-          console.log("Idle timeout fired but not in video mode - skipping");
-        }
-      }, 45000); // 45 seconds of inactivity
-    }
-  }, [isPaused, clearIdleTimeout, stopHeyGenSession]);
+    // Server-side idle nudges (MUM_NUDGE / MUM_SOFT_END) handle inactivity now.
+    // No client-side idle timeout needed — the conversation WS stays open.
+  }, [clearIdleTimeout]);
 
   // Helper to speak with ElevenLabs in video mode (for avatars without HeyGen voice)
   // This mirrors the AVATAR_START_TALKING/STOP_TALKING behavior from HeyGen sessions
