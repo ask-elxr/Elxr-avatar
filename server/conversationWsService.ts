@@ -93,7 +93,7 @@ function scheduleBargeIn(session: ConversationSession): void {
 }
 
 function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
-  const assistantSpeaking = session.state === 'SPEAKING' || session.state === 'THINKING';
+  const assistantSpeaking = session.state === 'SPEAKING';
   if (!assistantSpeaking) return;
 
   const speechStart = sttMsg.type === 'vad' && sttMsg.event === 'speech_start';
@@ -496,10 +496,15 @@ async function startSttStream(session: ConversationSession): Promise<void> {
             session.bargeTimer = null;
           }
 
+          if (session.state === 'SPEAKING') {
+            bargeIn(session, 'user_started_speaking');
+          }
+
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
 
-          if (session.state === 'SPEAKING' || session.state === 'THINKING') {
-            bargeIn(session, 'user_started_speaking');
+          if (session.state === 'THINKING') {
+            log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Queuing transcript while thinking');
+            return;
           }
 
           const finalMessage = session.accumulatedTranscript;
@@ -532,10 +537,15 @@ async function startSttStream(session: ConversationSession): Promise<void> {
             session.bargeTimer = null;
           }
 
+          if (session.state === 'SPEAKING') {
+            bargeIn(session, 'user_started_speaking');
+          }
+
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
 
-          if (session.state === 'SPEAKING' || session.state === 'THINKING') {
-            bargeIn(session, 'user_started_speaking');
+          if (session.state === 'THINKING') {
+            log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Queuing transcript while thinking');
+            return;
           }
 
           const finalMessage = session.accumulatedTranscript;
