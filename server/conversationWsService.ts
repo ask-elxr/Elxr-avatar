@@ -86,10 +86,10 @@ function scheduleBargeIn(session: ConversationSession): void {
   if (session.bargeTimer) return;
   session.bargeTimer = setTimeout(() => {
     session.bargeTimer = null;
-    if (session.state === 'SPEAKING' || session.state === 'THINKING') {
+    if (session.state === 'SPEAKING') {
       bargeIn(session, 'user_started_speaking');
     }
-  }, 150);
+  }, 400);
 }
 
 function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
@@ -99,8 +99,8 @@ function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
   const speechStart = sttMsg.type === 'vad' && sttMsg.event === 'speech_start';
   const partialReal =
     sttMsg.type === 'partial' &&
-    (sttMsg.text?.trim()?.length ?? 0) >= 2 &&
-    (sttMsg.confidence ?? 1) >= 0.6;
+    (sttMsg.text?.trim()?.length ?? 0) >= 4 &&
+    (sttMsg.confidence ?? 1) >= 0.7;
 
   if (speechStart || partialReal) {
     scheduleBargeIn(session);
@@ -450,10 +450,10 @@ async function startSttStream(session: ConversationSession): Promise<void> {
     sample_rate: session.sampleRate.toString(),
     audio_format: `pcm_${session.sampleRate}`,
     commit_strategy: 'vad',
-    vad_silence_threshold_secs: '1.0',
-    vad_threshold: '0.15',
-    min_speech_duration_ms: '100',
-    min_silence_duration_ms: '300',
+    vad_silence_threshold_secs: '1.5',
+    vad_threshold: '0.35',
+    min_speech_duration_ms: '300',
+    min_silence_duration_ms: '800',
   });
 
   const sttUrl = `${ELEVENLABS_STT_URL}?${queryParams.toString()}`;
