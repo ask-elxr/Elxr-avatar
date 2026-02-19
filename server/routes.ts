@@ -3792,7 +3792,7 @@ ${historyPreview}
   // NOTE: This endpoint is intentionally NOT protected by isAuthenticated
   // to allow both authenticated and anonymous users to use the avatar
   // Rate limiting applied: 20 requests per user per minute for natural conversation flow
-  app.post("/api/avatar/response", rateLimitMiddleware(20, 60000), async (req: any, res) => {
+  app.post("/api/avatar/response", requireMemberstackOrAdmin, rateLimitMiddleware(20, 60000), async (req: any, res) => {
     try {
       const {
         message,
@@ -9596,6 +9596,7 @@ ${historyPreview}
   // Enhanced AI chat endpoint with Claude Sonnet and Google Search
   app.post(
     "/api/chat/enhanced",
+    requireMemberstackOrAdmin,
     rateLimitMiddleware(30, 60000),
     async (req, res) => {
       try {
