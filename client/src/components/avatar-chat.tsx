@@ -1785,6 +1785,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             >
               {loadingTimedOut ? "Try Again" : "Reconnect"}
             </Button>
+            {chatMode !== 'text' && (
+              <button
+                onClick={toggleMicMute}
+                title={isMicMuted ? "Unmute" : "Mute"}
+                className={`w-12 h-12 flex items-center justify-center rounded-full backdrop-blur-sm shadow-lg transition-all active:scale-95 border ${
+                  isMicMuted 
+                    ? 'bg-red-500/80 hover:bg-red-500/90 border-red-400/60 text-white' 
+                    : 'bg-black/60 hover:bg-black/80 border-white/30 text-white/80 hover:text-white'
+                }`}
+                data-testid="button-mute-mic-reconnect"
+              >
+                {isMicMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+            )}
           </div>
         )}
 

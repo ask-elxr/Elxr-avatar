@@ -1,0 +1,177 @@
+// Conversation controller: barge-in, listening state, idle nudges, and soft end.
+// Assumes you already have: STT streaming events arriving as sttMsg
+// Assumes you already have: clientWs to send JSON control messages
+
+export function createConversation(session, clientWs) {
+  // --- Config ---
+  const IDLE_NUDGE_1_MS = 12_000;   // 12s of silence -> gentle nudge
+  const IDLE_NUDGE_2_MS = 25_000;   // 25s -> second nudge
+  const IDLE_SOFT_END_MS = 45_000;  // 45s -> soft end (does NOT "hang up" abruptly)
+  const BARGE_DEBOUNCE_MS = 150;
+
+  // --- Phrases (rotate; never abrupt) ---
+  const NUDGES_1 = [
+    "I’m here. Go on.",
+    "Take your time.",
+    "No rush — what’s the bit you can’t say out loud?",
+    "Alright. Where do you want to start?",
+  ];
+  const NUDGES_2 = [
+    "Still with me?",
+    "Want the short version or the real one?",
+    "If you’re stuck, give me one sentence and we’ll work from there.",
+    "We can do this in tiny steps. What’s step one?",
+  ];
+  const SOFT_ENDS = [
+    "Alright — I’ll pause. Tap me when you want to carry on.",
+    "Okay. I’ll be quiet for now. Come back when you’re ready.",
+    "No pressure. I’m here when you want to pick this up again.",
+    "Got it. I’ll stop talking. You restart whenever.",
+  ];
+
+  // --- Runtime state ---
+  let idleTimer1 = null;
+  let idleTimer2 = null;
+  let idleTimer3 = null;
+
+  let bargeTimer = null;
+
+  function rand(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  function send(type, payload = {}) {
+    clientWs.send(JSON.stringify({ type, ...payload }));
+  }
+
+  function clearIdleTimers() {
+    if (idleTimer1) clearTimeout(idleTimer1);
+    if (idleTimer2) clearTimeout(idleTimer2);
+    if (idleTimer3) clearTimeout(idleTimer3);
+    idleTimer1 = idleTimer2 = idleTimer3 = null;
+  }
+
+  // Call whenever user audio/transcript arrives OR when assistant starts/stops speaking.
+  function resetIdleTimers() {
+    clearIdleTimers();
+
+    // Only nudge when we're listening (not when assistant is speaking/thinking)
+    if (session.state !== "LISTENING") return;
+
+    idleTimer1 = setTimeout(() => {
+      if (session.state === "LISTENING") send("MUM_NUDGE", { text: rand(NUDGES_1) });
+    }, IDLE_NUDGE_1_MS);
+
+    idleTimer2 = setTimeout(() => {
+      if (session.state === "LISTENING") send("MUM_NUDGE", { text: rand(NUDGES_2) });
+    }, IDLE_NUDGE_2_MS);
+
+    idleTimer3 = setTimeout(() => {
+      if (session.state === "LISTENING") {
+        send("MUM_SOFT_END", { text: rand(SOFT_ENDS) });
+        // IMPORTANT: do NOT close sockets. Just pause.
+        // Let the user speak again and it will continue.
+      }
+    }, IDLE_SOFT_END_MS);
+  }
+
+  // --- HARD STOP assistant output (barge-in) ---
+  function bargeIn(reason = "user_started_speaking") {
+    session.turnId += 1;
+
+    // Stop Claude
+    if (session.active.llmAbort) {
+      try { session.active.llmAbort.abort(reason); } catch {}
+      session.active.llmAbort = null;
+    }
+
+    // Stop TTS
+    if (session.active.ttsAbort) {
+      try { session.active.ttsAbort.abort(reason); } catch {}
+      session.active.ttsAbort = null;
+    }
+
+    // Drop any queued TTS
+    session.active.ttsQueue.length = 0;
+
+    // Tell client to stop audio NOW
+    send("STOP_AUDIO", { turnId: session.turnId, reason });
+
+    // Crucial: flip back to LISTENING and reset idle timers
+    session.state = "LISTENING";
+    resetIdleTimers();
+  }
+
+  // --- Decide whether to barge in from STT ---
+  function maybeBargeInFromStt(sttMsg) {
+    const assistantTalking = session.state === "SPEAKING" || session.state === "THINKING";
+    if (!assistantTalking) return;
+
+    const speechStart = sttMsg.type === "vad" && sttMsg.event === "speech_start";
+    const partialReal =
+      sttMsg.type === "partial_transcript" &&
+      (sttMsg.text?.trim()?.length ?? 0) >= 2 &&
+      (sttMsg.confidence ?? 1) >= 0.6;
+
+    if (speechStart || partialReal) {
+      if (!bargeTimer) {
+        bargeTimer = setTimeout(() => {
+          bargeTimer = null;
+          if (session.state === "SPEAKING" || session.state === "THINKING") {
+            bargeIn("user_started_speaking");
+          }
+        }, BARGE_DEBOUNCE_MS);
+      }
+    }
+  }
+
+  // --- Public hooks you call from your pipeline ---
+
+  // Call this on EVERY STT event (partial/final/vad) you receive from ElevenLabs
+  function onSttEvent(sttMsg) {
+    // If user is making noise / speaking, reset idle timers (keeps session alive)
+    if (session.state === "LISTENING") resetIdleTimers();
+
+    // If assistant is talking and user begins speaking -> barge in
+    maybeBargeInFromStt(sttMsg);
+
+    // If final transcript arrives, you probably kick off Claude turn here
+    // But do NOT stop listening permanently. Listening should continue between turns.
+    if (sttMsg.type === "final_transcript" && sttMsg.text?.trim()) {
+      send("USER_FINAL", { text: sttMsg.text.trim() });
+      // Your code: startClaudeTurn(sttMsg.text.trim())
+      // While Claude is running you set session.state = THINKING/SPEAKING
+    }
+  }
+
+  // Call when assistant begins speaking (first token / first sentence)
+  function onAssistantStartSpeaking() {
+    session.state = "SPEAKING";
+    clearIdleTimers(); // no nudges while talking
+  }
+
+  // Call when assistant is done speaking (TTS queue empty + LLM done)
+  function onAssistantDoneSpeaking() {
+    session.state = "LISTENING";
+    resetIdleTimers();
+  }
+
+  // Call when you start thinking (Claude stream started)
+  function onAssistantThinking() {
+    session.state = "THINKING";
+    clearIdleTimers();
+  }
+
+  // Initialize
+  session.state = session.state || "LISTENING";
+  resetIdleTimers();
+
+  return {
+    onSttEvent,
+    onAssistantStartSpeaking,
+    onAssistantDoneSpeaking,
+    onAssistantThinking,
+    bargeIn,          // you can call manually too
+    resetIdleTimers,  // optional
+  };
+}
