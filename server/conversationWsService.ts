@@ -601,10 +601,16 @@ export function initConversationWsServer(wss: WebSocketServer): void {
     const sessionId = `conv_${Date.now()}_${Math.random().toString(36).substring(7)}`;
     log.info({ sessionId }, 'New conversation WebSocket connection');
 
+    const urlParams = new URL(request.url || '', `http://${request.headers.host}`).searchParams;
+    const urlAdminSecret = urlParams.get('admin_secret');
+    const urlMemberId = urlParams.get('member_id');
+
     ws.on('message', async (data: Buffer | string) => {
       try {
         if (typeof data === 'string' || (data instanceof Buffer && data[0] === 0x7b)) {
           const message = JSON.parse(data.toString());
+          if (!message.adminSecret && urlAdminSecret) message.adminSecret = urlAdminSecret;
+          if (!message.memberstackId && urlMemberId) message.memberstackId = urlMemberId;
           await handleControlMessage(ws, sessionId, message);
         } else {
           handleAudioData(sessionId, data as Buffer);
