@@ -15,6 +15,8 @@ export interface ConversationWsConfig {
   onSpeakingChange?: (speaking: boolean) => void;
   onAudioChunk?: (pcmBytes: Uint8Array, turnId: number) => void;
   onAudioStop?: (turnId: number) => void;
+  onNudge?: (text: string) => void;
+  onSoftEnd?: (text: string) => void;
   playLocalAudio?: boolean;
 }
 
@@ -190,6 +192,16 @@ export function useConversationWs(config: ConversationWsConfig) {
       case 'ERROR':
         console.error('🎙️ Conversation WS error:', msg.message);
         configRef.current.onError?.(msg.message);
+        break;
+
+      case 'MUM_NUDGE':
+        console.log('[mum nudge]', msg.text);
+        configRef.current.onNudge?.(msg.text);
+        break;
+
+      case 'MUM_SOFT_END':
+        console.log('[mum soft end]', msg.text);
+        configRef.current.onSoftEnd?.(msg.text);
         break;
 
       case 'PONG':

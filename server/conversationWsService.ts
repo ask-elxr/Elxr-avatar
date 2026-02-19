@@ -17,6 +17,33 @@ const log = logger.child({ service: 'conversation-ws' });
 
 const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/realtime';
 
+const IDLE_NUDGE_1_MS = 12_000;
+const IDLE_NUDGE_2_MS = 25_000;
+const IDLE_SOFT_END_MS = 45_000;
+
+const NUDGES_1 = [
+  "I'm here. Go on.",
+  "Take your time.",
+  "No rush — what's on your mind?",
+  "Alright. Where do you want to start?",
+];
+const NUDGES_2 = [
+  "Still with me?",
+  "Want the short version or the real one?",
+  "If you're stuck, give me one sentence and we'll work from there.",
+  "We can do this in tiny steps. What's step one?",
+];
+const SOFT_ENDS = [
+  "Alright — I'll pause. Tap me when you want to carry on.",
+  "Okay. I'll be quiet for now. Come back when you're ready.",
+  "No pressure. I'm here when you want to pick this up again.",
+  "Got it. I'll stop talking. You restart whenever.",
+];
+
+function rand(arr: string[]): string {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 interface ConversationSession {
   ws: WebSocket;
   sessionId: string;
@@ -29,6 +56,9 @@ interface ConversationSession {
     playing: boolean;
   };
   bargeTimer: NodeJS.Timeout | null;
+  idleTimer1: NodeJS.Timeout | null;
+  idleTimer2: NodeJS.Timeout | null;
+  idleTimer3: NodeJS.Timeout | null;
   sttWs: WebSocket | null;
   sttReady: boolean;
   keepaliveInterval: ReturnType<typeof setInterval> | null;
@@ -80,6 +110,42 @@ function bargeIn(session: ConversationSession, reason: string = 'user_started_sp
 
   sendJSON(session.ws, { type: 'STOP_AUDIO', turnId: session.turnId, reason });
   session.state = 'LISTENING';
+  resetIdleTimers(session);
+}
+
+function clearIdleTimers(session: ConversationSession): void {
+  if (session.idleTimer1) { clearTimeout(session.idleTimer1); session.idleTimer1 = null; }
+  if (session.idleTimer2) { clearTimeout(session.idleTimer2); session.idleTimer2 = null; }
+  if (session.idleTimer3) { clearTimeout(session.idleTimer3); session.idleTimer3 = null; }
+}
+
+function resetIdleTimers(session: ConversationSession): void {
+  clearIdleTimers(session);
+  if (session.state !== 'LISTENING') return;
+
+  session.idleTimer1 = setTimeout(() => {
+    if (session.state === 'LISTENING') {
+      const text = rand(NUDGES_1);
+      sendJSON(session.ws, { type: 'MUM_NUDGE', text });
+      log.info({ sessionId: session.sessionId, text }, 'Idle nudge 1');
+    }
+  }, IDLE_NUDGE_1_MS);
+
+  session.idleTimer2 = setTimeout(() => {
+    if (session.state === 'LISTENING') {
+      const text = rand(NUDGES_2);
+      sendJSON(session.ws, { type: 'MUM_NUDGE', text });
+      log.info({ sessionId: session.sessionId, text }, 'Idle nudge 2');
+    }
+  }, IDLE_NUDGE_2_MS);
+
+  session.idleTimer3 = setTimeout(() => {
+    if (session.state === 'LISTENING') {
+      const text = rand(SOFT_ENDS);
+      sendJSON(session.ws, { type: 'MUM_SOFT_END', text });
+      log.info({ sessionId: session.sessionId, text }, 'Idle soft end (session stays open)');
+    }
+  }, IDLE_SOFT_END_MS);
 }
 
 function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
@@ -339,6 +405,7 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
   }
 
   session.state = 'THINKING';
+  clearIdleTimers(session);
   sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
 
   log.info({ sessionId: session.sessionId, turnId: myTurn, message: userMessage.substring(0, 80) }, 'Starting turn');
@@ -403,6 +470,7 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
     if (session.turnId === myTurn) {
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
       session.state = 'LISTENING';
+      resetIdleTimers(session);
 
       if (session.userId && fullResponse) {
         storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -479,6 +547,10 @@ async function startSttStream(session: ConversationSession): Promise<void> {
     try {
       const event = JSON.parse(data.toString());
       const msgType = event.type || event.message_type;
+
+      if (session.state === 'LISTENING') {
+        resetIdleTimers(session);
+      }
 
       if (msgType === 'partial_transcript' || msgType === 'transcript') {
         const isFinal = event.speech_final === true || event.is_final === true;
@@ -581,6 +653,8 @@ function cleanupSession(sessionId: string): void {
     clearTimeout(session.bargeTimer);
     session.bargeTimer = null;
   }
+
+  clearIdleTimers(session);
 
   if (session.keepaliveInterval) {
     clearInterval(session.keepaliveInterval);
@@ -689,6 +763,9 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
           playing: false,
         },
         bargeTimer: null,
+        idleTimer1: null,
+        idleTimer2: null,
+        idleTimer3: null,
         sttWs: null,
         sttReady: false,
         keepaliveInterval: null,
@@ -713,6 +790,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
       try {
         await startSttStream(session);
         session.state = 'LISTENING';
+        resetIdleTimers(session);
         sendJSON(ws, {
           type: 'SESSION_STARTED',
           sessionId,

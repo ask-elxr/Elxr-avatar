@@ -190,6 +190,12 @@ export function useAvatarSession({
       setIsSpeakingState(speaking);
       onResetInactivityTimer?.();
     },
+    onNudge: (text) => {
+      console.log('[mum nudge]', text);
+    },
+    onSoftEnd: (text) => {
+      console.log('[mum soft end]', text);
+    },
     onError: (err) => {
       console.error('Conversation WS error:', err);
     },
