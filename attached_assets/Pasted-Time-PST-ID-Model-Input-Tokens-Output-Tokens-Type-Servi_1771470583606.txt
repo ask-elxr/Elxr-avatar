@@ -1,0 +1,304 @@
+Time (PST)	ID	Model	Input
+Tokens	Output
+Tokens	Type	Service
+Tier	Request
+2026-02-18 18:14:57	req_011CYGcymZRQqqt2mBbNzLbL	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 18:14:52	req_011CYGcyNsfNDAiu5LJDAJnA	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 18:14:49	req_011CYGcy8mLs2j195X8K1SiM	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 18:05:01	req_011CYGcDUH8WeqiUDx5vthJN	claude-opus-4-6	
+61863
+257	Streaming	Standard	
+2026-02-18 18:05:04	req_011CYGcE4Enjp8PjymDktGDv	claude-opus-4-6	
+62202
+40	Streaming	Standard	
+2026-02-18 18:04:50	req_011CYGcCtEWEYg22Rq5DH1BL	claude-opus-4-6	
+13448
+189	Streaming	Standard	
+2026-02-18 17:55:03	req_011CYGbTii4tGZ3hGUJg6E5B	claude-opus-4-6	
+20504
+8	Streaming	Standard	
+2026-02-18 17:55:00	req_011CYGbTJq8DqVSoARMXoxCD	claude-opus-4-6	
+20310
+159	Streaming	Standard	
+2026-02-18 17:54:52	req_011CYGbSu6cXrF7iD2W8mfuC	claude-opus-4-6	
+15942
+133	Streaming	Standard	
+2026-02-18 17:54:49	req_011CYGbSeXGpDpKCo92APMu9	claude-opus-4-6	
+13448
+97	Streaming	Standard	
+2026-02-18 17:45:24	req_011CYGaj7qf9cagqE5G7dRbN	claude-opus-4-6	
+46066
+8	Streaming	Standard	
+2026-02-18 17:45:21	req_011CYGaiQtoT8KJFQNzoHVGT	claude-opus-4-6	
+45780
+251	Streaming	Standard	
+2026-02-18 17:45:01	req_011CYGahCVQHVtqfVrwJ6vfW	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 17:44:55	req_011CYGaguKnDYpYaidr4ThQj	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 17:43:11	req_011CYGaYzoiXNEDfbc1tU9FL	claude-haiku-4-5-20251001	
+572
+648	HTTP	Standard	
+2026-02-18 17:43:12	req_011CYGaZRRJUmKBjMuctJ3bK	claude-haiku-4-5-20251001	
+354
+13	HTTP	Standard	
+2026-02-18 17:38:07	req_011CYGaAvxfpiZHhSzvy9UZn	claude-haiku-4-5-20251001	
+268
+13	HTTP	Standard	
+2026-02-18 17:38:06	req_011CYGaAcTSWawdLkEBkn6Um	claude-haiku-4-5-20251001	
+543
+346	HTTP	Standard	
+2026-02-18 17:36:34	req_011CYGa43TA1oY9v9izZdX6o	claude-haiku-4-5-20251001	
+4072
+47	HTTP	Standard	
+2026-02-18 17:35:06	req_011CYGZwREtDCg4YpY77teF9	claude-opus-4-6	
+25697
+8	Streaming	Standard	
+2026-02-18 17:35:02	req_011CYGZvzpTCDmFeebveFFQ7	claude-opus-4-6	
+25486
+176	Streaming	Standard	
+2026-02-18 17:34:53	req_011CYGZvUgjKjzVy8m4FTSrP	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 17:34:49	req_011CYGZvEXSE1uN2zyjUBTP3	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 17:34:08	req_011CYGZrudJdLZsVDZ2coWzL	claude-haiku-4-5-20251001	
+537
+521	HTTP	Standard	
+2026-02-18 17:34:08	req_011CYGZsPPu3kdnaePdcXg4t	claude-haiku-4-5-20251001	
+415
+13	HTTP	Standard	
+2026-02-18 17:32:37	req_011CYGZkTKLykPxnunAdwD4K	claude-haiku-4-5-20251001	
+3848
+207	HTTP	Standard	
+2026-02-18 17:31:28	req_011CYGZfVtjhyV1hozUp9NLc	claude-haiku-4-5-20251001	
+3768
+63	HTTP	Standard	
+2026-02-18 17:24:57	req_011CYGZAbU3Cg8CxHkmm9y1Y	claude-opus-4-6	
+16101
+20	Streaming	Standard	
+2026-02-18 17:24:52	req_011CYGZABUetuZWKmuxmTigk	claude-opus-4-6	
+15942
+133	Streaming	Standard	
+2026-02-18 17:24:49	req_011CYGZ9xdEvyfsGNJq7f3wm	claude-opus-4-6	
+13448
+97	Streaming	Standard	
+2026-02-18 17:15:06	req_011CYGYR4JMQkR2QLACZhKnU	claude-opus-4-6	
+19212
+8	Streaming	Standard	
+2026-02-18 17:14:59	req_011CYGYQQfBhvjSiNwgBzpnr	claude-opus-4-6	
+18872
+107	Streaming	Standard	
+2026-02-18 17:15:04	req_011CYGYQkvLNQT15j8BbKTcf	claude-opus-4-6	
+19040
+137	Streaming	Standard	
+2026-02-18 17:14:52	req_011CYGYPzkFzUf9uWJEcuyAL	claude-opus-4-6	
+15942
+133	Streaming	Standard	
+2026-02-18 17:14:49	req_011CYGYPkRJ7Sevme9okyrwg	claude-opus-4-6	
+13448
+97	Streaming	Standard	
+2026-02-18 17:05:06	req_011CYGXerjMZobykJind5g5q	claude-opus-4-6	
+27480
+8	Streaming	Standard	
+2026-02-18 17:05:03	req_011CYGXeJZ6cKqfSs1m4ehtY	claude-opus-4-6	
+27272
+173	Streaming	Standard	
+2026-02-18 17:04:54	req_011CYGXdtx2nLhSq8xS51kwZ	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 17:04:51	req_011CYGXddcngqmVgHdWiGJZw	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 17:04:30	req_011CYGXcHv6TiXh8GDpjmoqb	claude-haiku-4-5-20251001	
+189
+13	HTTP	Standard	
+2026-02-18 17:04:29	req_011CYGXc6Ce5ZWnu6GNUfBQa	claude-haiku-4-5-20251001	
+536
+207	HTTP	Standard	
+2026-02-18 17:03:01	req_011CYGXVeTAv58AdVbstW7GG	claude-haiku-4-5-20251001	
+3683
+58	HTTP	Standard	
+2026-02-18 17:01:33	req_011CYGXP9derKLniR5tr23FU	claude-haiku-4-5-20251001	
+3610
+47	HTTP	Standard	
+2026-02-18 17:00:57	req_011CYGXLXjrPY7CFNsZBMvDk	claude-haiku-4-5-20251001	
+3558
+39	HTTP	Standard	
+2026-02-18 16:55:03	req_011CYGWtMHq2d2QHuahKRLS3	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 16:54:56	req_011CYGWsjyoFP77oUr72dVAA	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 16:54:50	req_011CYGWsNErBh4kigAoZe2pU	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 16:44:57	req_011CYGW7hcCJgQ8Zq5F4CChF	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 16:44:52	req_011CYGW7JYsK7Nd1Eaw3LtN3	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 16:44:49	req_011CYGW75KPV4egjAjQaZozA	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 16:35:02	req_011CYGVMqAtTntQs9Rovsux6	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 16:34:56	req_011CYGVMN6DfroVp32Pyfc8h	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 16:34:51	req_011CYGVLzuzprYCBqQU2w1Qh	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 16:25:06	req_011CYGUbubpPZdA3afaJaxDi	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 16:25:00	req_011CYGUbQTsG4R1xrkeKuWYs	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 16:24:54	req_011CYGUazUisvd2Bz7Mn4rPW	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 16:14:54	req_011CYGTpevG7vQvrPt3N3Dw9	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 16:14:59	req_011CYGTq9iNnGdRyXyPRBk6p	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 16:14:50	req_011CYGTpQdXsZVR4BKHuD8zZ	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 16:04:59	req_011CYGT4xwkQ3Kzu1bx14wNA	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 16:04:53	req_011CYGT4QjkxjG9ZtH4gTyon	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 16:04:49	req_011CYGT4Ao765Nh1xDt26FBJ	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 15:54:58	req_011CYGSJeBQdmzZAe6d2JCJK	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 15:54:50	req_011CYGSHzM5YYdMCJS1DJYvi	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 15:54:53	req_011CYGSJFHzuKSm1KG3WwSxh	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 15:49:46	req_011CYGRuTTMP29gqwcdJLKMv	claude-sonnet-4-20250514	
+4658
+139	Streaming	Standard	
+2026-02-18 15:49:11	req_011CYGRs3bbdNkLBuEt789UY	claude-sonnet-4-20250514	
+4630
+54	Streaming	Standard	
+2026-02-18 15:49:01	req_011CYGRrLP7b25T3hMVnB8CV	claude-sonnet-4-20250514	
+4630
+42	Streaming	Standard	
+2026-02-18 15:48:48	req_011CYGRqMDCJXf3XXqf6GSF5	claude-sonnet-4-20250514	
+5022
+31	Streaming	Standard	
+2026-02-18 15:47:37	req_011CYGRk1LxuoKdFLwmPLjwZ	claude-sonnet-4-20250514	
+4640
+72	Streaming	Standard	
+2026-02-18 15:47:07	req_011CYGRhuvyPBE4bTLRWGnmn	claude-sonnet-4-20250514	
+4631
+54	Streaming	Standard	
+2026-02-18 15:46:54	req_011CYGRgzxKNSfYEyr3f2SVu	claude-sonnet-4-20250514	
+4629
+16	Streaming	Standard	
+2026-02-18 15:45:04	req_011CYGRYtAJyBTWxDcztJ5mZ	claude-opus-4-6	
+17172
+8	Streaming	Standard	
+2026-02-18 15:45:02	req_011CYGRYdiAFxNAbM7WpGb7W	claude-opus-4-6	
+17000
+137	Streaming	Standard	
+2026-02-18 15:44:59	req_011CYGRYNoiXtARaAdmDyAtQ	claude-opus-4-6	
+16800
+109	Streaming	Standard	
+2026-02-18 15:44:49	req_011CYGRXi5ozmwCA9C9Kg8ec	claude-opus-4-6	
+13448
+97	Streaming	Standard	
+2026-02-18 15:44:53	req_011CYGRXxSWNaevkKrx6mzHd	claude-opus-4-6	
+15942
+133	Streaming	Standard	
+2026-02-18 15:43:16	req_011CYGRQpS75uZzs3MEYTu5y	claude-haiku-4-5-20251001	
+394
+17	HTTP	Standard	
+2026-02-18 15:43:12	req_011CYGRQGr4opjU7R1Tz1omP	claude-haiku-4-5-20251001	
+592
+697	HTTP	Standard	
+2026-02-18 15:35:04	req_011CYGQnDc6snkmKJGx3up9D	claude-opus-4-6	
+30705
+210	Streaming	Standard	
+2026-02-18 15:35:08	req_011CYGQnoJe2rjQrMRLZMk2s	claude-opus-4-6	
+30950
+8	Streaming	Standard	
+2026-02-18 15:34:54	req_011CYGQmorMTnUzBvr672xLV	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 15:34:50	req_011CYGQmZWeSGDUyyRaBNtZK	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 15:32:34	req_011CYGQbdi8BE57Gk438GL8i	claude-haiku-4-5-20251001	
+260
+13	HTTP	Standard	
+2026-02-18 15:32:32	req_011CYGQbKHMVJUZeL49z5rv4	claude-haiku-4-5-20251001	
+544
+347	HTTP	Standard	
+2026-02-18 15:31:03	req_011CYGQUpfzKp6s6cojEfE6j	claude-haiku-4-5-20251001	
+3426
+110	HTTP	Standard	
+2026-02-18 15:30:24	req_011CYGQS3mTFZnhjSUMnEkDG	claude-haiku-4-5-20251001	
+3348
+65	HTTP	Standard	
+2026-02-18 15:29:44	req_011CYGQNy1d9qd4rcmXRLrKw	claude-haiku-4-5-20251001	
+2788
+154	HTTP	Standard	
+2026-02-18 15:28:59	req_011CYGQKmkcpUHpFVUxCbepo	claude-haiku-4-5-20251001	
+3303
+27	HTTP	Standard	
+2026-02-18 15:24:58	req_011CYGQ1vRWWBSY5VfVLWeLg	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 15:24:53	req_011CYGQ1WkUcBiCHzGXQhBF4	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 15:24:50	req_011CYGQ1GjcXXc4n2NLAFfv7	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 15:14:55	req_011CYGPFQ3RWtJqZxbGqbmUG	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 15:15:01	req_011CYGPFtPk9UqfTiBuaDGLk	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 15:14:50	req_011CYGPF4WvUGvMsiAkdCurw	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 15:04:59	req_011CYGNVZUydnHouGPN7oX4p	claude-opus-4-6	
+16100
+20	Streaming	Standard	
+2026-02-18 15:04:54	req_011CYGNV9Hgon2D9rpoGtqBV	claude-opus-4-6	
+15941
+133	Streaming	Standard	
+2026-02-18 15:04:50	req_011CYGNUq6oHz7YtHQ4Y35ru	claude-opus-4-6	
+13448
+96	Streaming	Standard	
+2026-02-18 14:58:19	req_011CYGMyjnWWs6njR5oQH9Tf	claude-opus-4-6	
+4390
+203	HTTP	Standard	
+2026-02-18 14:57:23	req_011CYGMubS6urch6TLM6rhYS	claude-opus-4-6	
+4388
+226	HTTP	Standard	
