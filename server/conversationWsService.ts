@@ -98,13 +98,12 @@ function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
   const assistantSpeaking = session.state === 'SPEAKING';
   if (!assistantSpeaking) return;
 
-  const speechStart = sttMsg.type === 'vad' && sttMsg.event === 'speech_start';
   const partialReal =
     sttMsg.type === 'partial' &&
-    (sttMsg.text?.trim()?.length ?? 0) >= 4 &&
-    (sttMsg.confidence ?? 1) >= 0.7;
+    (sttMsg.text?.trim()?.length ?? 0) >= 6 &&
+    (sttMsg.confidence ?? 1) >= 0.75;
 
-  if (speechStart || partialReal) {
+  if (partialReal) {
     scheduleBargeIn(session);
   }
 }
@@ -500,7 +499,13 @@ async function startSttStream(session: ConversationSession): Promise<void> {
           }
 
           if (session.state === 'SPEAKING') {
-            bargeIn(session, 'user_started_speaking');
+            const wordCount = text.split(/\s+/).filter((w: string) => w.length > 0).length;
+            if (wordCount >= 3) {
+              bargeIn(session, 'user_started_speaking');
+            } else {
+              log.info({ sessionId: session.sessionId, text, wordCount }, 'Ignoring short transcript during SPEAKING (likely echo)');
+              return;
+            }
           }
 
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
@@ -541,7 +546,13 @@ async function startSttStream(session: ConversationSession): Promise<void> {
           }
 
           if (session.state === 'SPEAKING') {
-            bargeIn(session, 'user_started_speaking');
+            const wordCount = text.split(/\s+/).filter((w: string) => w.length > 0).length;
+            if (wordCount >= 3) {
+              bargeIn(session, 'user_started_speaking');
+            } else {
+              log.info({ sessionId: session.sessionId, text, wordCount }, 'Ignoring short committed transcript during SPEAKING (likely echo)');
+              return;
+            }
           }
 
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
@@ -769,9 +780,6 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
 function handleAudioData(sessionId: string, audioData: Buffer): void {
   const session = activeSessions.get(sessionId);
   if (!session) return;
-
-  if (session.state === 'SPEAKING' || session.state === 'THINKING') return;
-  if (Date.now() < session.echoGuardUntil) return;
 
   if (session.sttWs?.readyState === WebSocket.OPEN && session.sttReady) {
     const audioBase64 = audioData.toString('base64');
