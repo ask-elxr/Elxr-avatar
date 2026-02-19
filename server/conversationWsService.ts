@@ -29,7 +29,6 @@ interface ConversationSession {
     playing: boolean;
   };
   bargeTimer: NodeJS.Timeout | null;
-  echoGuardUntil: number;
   sttWs: WebSocket | null;
   sttReady: boolean;
   keepaliveInterval: ReturnType<typeof setInterval> | null;
@@ -80,31 +79,28 @@ function bargeIn(session: ConversationSession, reason: string = 'user_started_sp
   session.active.ttsQueue.length = 0;
 
   sendJSON(session.ws, { type: 'STOP_AUDIO', turnId: session.turnId, reason });
-  session.echoGuardUntil = Date.now() + 600;
   session.state = 'LISTENING';
 }
 
-function scheduleBargeIn(session: ConversationSession): void {
-  if (session.bargeTimer) return;
-  session.bargeTimer = setTimeout(() => {
-    session.bargeTimer = null;
-    if (session.state === 'SPEAKING') {
-      bargeIn(session, 'user_started_speaking');
-    }
-  }, 400);
-}
-
 function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
-  const assistantSpeaking = session.state === 'SPEAKING';
-  if (!assistantSpeaking) return;
+  const assistantTalking = session.state === 'SPEAKING' || session.state === 'THINKING';
+  if (!assistantTalking) return;
 
+  const speechStart = sttMsg.type === 'vad' && sttMsg.event === 'speech_start';
   const partialReal =
     sttMsg.type === 'partial' &&
-    (sttMsg.text?.trim()?.length ?? 0) >= 6 &&
-    (sttMsg.confidence ?? 1) >= 0.75;
+    (sttMsg.text?.trim()?.length ?? 0) >= 2 &&
+    (sttMsg.confidence ?? 1) >= 0.6;
 
-  if (partialReal) {
-    scheduleBargeIn(session);
+  if (speechStart || partialReal) {
+    if (!session.bargeTimer) {
+      session.bargeTimer = setTimeout(() => {
+        session.bargeTimer = null;
+        if (session.state === 'SPEAKING' || session.state === 'THINKING') {
+          bargeIn(session, 'user_started_speaking');
+        }
+      }, 150);
+    }
   }
 }
 
@@ -406,7 +402,6 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
 
     if (session.turnId === myTurn) {
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-      session.echoGuardUntil = Date.now() + 600;
       session.state = 'LISTENING';
 
       if (session.userId && fullResponse) {
@@ -499,13 +494,7 @@ async function startSttStream(session: ConversationSession): Promise<void> {
           }
 
           if (session.state === 'SPEAKING') {
-            const wordCount = text.split(/\s+/).filter((w: string) => w.length > 0).length;
-            if (wordCount >= 3) {
-              bargeIn(session, 'user_started_speaking');
-            } else {
-              log.info({ sessionId: session.sessionId, text, wordCount }, 'Ignoring short transcript during SPEAKING (likely echo)');
-              return;
-            }
+            bargeIn(session, 'user_started_speaking');
           }
 
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
@@ -546,13 +535,7 @@ async function startSttStream(session: ConversationSession): Promise<void> {
           }
 
           if (session.state === 'SPEAKING') {
-            const wordCount = text.split(/\s+/).filter((w: string) => w.length > 0).length;
-            if (wordCount >= 3) {
-              bargeIn(session, 'user_started_speaking');
-            } else {
-              log.info({ sessionId: session.sessionId, text, wordCount }, 'Ignoring short committed transcript during SPEAKING (likely echo)');
-              return;
-            }
+            bargeIn(session, 'user_started_speaking');
           }
 
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
@@ -706,7 +689,6 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
           playing: false,
         },
         bargeTimer: null,
-        echoGuardUntil: 0,
         sttWs: null,
         sttReady: false,
         keepaliveInterval: null,
