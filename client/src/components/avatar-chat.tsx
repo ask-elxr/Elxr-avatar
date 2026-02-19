@@ -738,7 +738,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTextChatLoading(true);
     
     try {
-      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      const headers: Record<string, string> = { "Content-Type": "application/json", ...getAuthHeaders() };
       const memberstackId = typeof window !== 'undefined' ? (window as any).__memberstackId : undefined;
       if (memberstackId) {
         headers['X-Member-Id'] = memberstackId;

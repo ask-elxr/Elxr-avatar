@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { buildAuthenticatedWsUrl } from '@/lib/queryClient';
 
 interface StreamingChatConfig {
   avatarId: string;
@@ -51,8 +52,8 @@ export function useStreamingChat(config: StreamingChatConfig) {
       return;
     }
 
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/streaming-chat?avatarId=${config.avatarId}&userId=${config.userId}&lang=${config.languageCode || 'en'}`;
+    const baseUrl = buildAuthenticatedWsUrl('/ws/streaming-chat');
+    const wsUrl = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}avatarId=${config.avatarId}&userId=${config.userId}&lang=${config.languageCode || 'en'}`;
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;

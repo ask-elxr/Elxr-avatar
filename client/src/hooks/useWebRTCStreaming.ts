@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Room, RoomEvent, createLocalAudioTrack } from 'livekit-client';
+import { buildAuthenticatedWsUrl } from '@/lib/queryClient';
 import type { LocalAudioTrack } from 'livekit-client';
 import type { SessionDriver } from './sessionDrivers';
 
@@ -218,8 +219,7 @@ export function useWebRTCStreaming(config: WebRTCStreamingConfig) {
   }, [config]);
 
   const connect = useCallback(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/webrtc-streaming`;
+    const wsUrl = buildAuthenticatedWsUrl('/ws/webrtc-streaming');
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
