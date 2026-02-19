@@ -29,6 +29,7 @@ interface ConversationSession {
     playing: boolean;
   };
   bargeTimer: NodeJS.Timeout | null;
+  echoGuardUntil: number;
   sttWs: WebSocket | null;
   sttReady: boolean;
   keepaliveInterval: ReturnType<typeof setInterval> | null;
@@ -79,6 +80,7 @@ function bargeIn(session: ConversationSession, reason: string = 'user_started_sp
   session.active.ttsQueue.length = 0;
 
   sendJSON(session.ws, { type: 'STOP_AUDIO', turnId: session.turnId, reason });
+  session.echoGuardUntil = Date.now() + 600;
   session.state = 'LISTENING';
 }
 
@@ -405,6 +407,7 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
 
     if (session.turnId === myTurn) {
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+      session.echoGuardUntil = Date.now() + 600;
       session.state = 'LISTENING';
 
       if (session.userId && fullResponse) {
@@ -692,6 +695,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
           playing: false,
         },
         bargeTimer: null,
+        echoGuardUntil: 0,
         sttWs: null,
         sttReady: false,
         keepaliveInterval: null,
@@ -765,6 +769,9 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
 function handleAudioData(sessionId: string, audioData: Buffer): void {
   const session = activeSessions.get(sessionId);
   if (!session) return;
+
+  if (session.state === 'SPEAKING' || session.state === 'THINKING') return;
+  if (Date.now() < session.echoGuardUntil) return;
 
   if (session.sttWs?.readyState === WebSocket.OPEN && session.sttReady) {
     const audioBase64 = audioData.toString('base64');
