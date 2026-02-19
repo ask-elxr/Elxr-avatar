@@ -11,8 +11,9 @@ import {
   insertKnowledgeBaseSourceSchema,
   updateKnowledgeBaseSourceSchema,
   moodEntries,
+  users,
 } from "../shared/schema.js";
-import { sql, gte, desc } from "drizzle-orm";
+import { sql, gte, desc, eq } from "drizzle-orm";
 import { db } from "./db.js";
 import multer from "multer";
 import * as fs from "fs";
@@ -8548,7 +8549,18 @@ ${historyPreview}
       const log = logger.child({ service: "document", operation: "uploadZIP" });
       
       try {
-        const userId = req.user.claims.sub;
+        const rawUserId = req.user.claims.sub;
+        
+        // For admin uploads, verify user exists in DB; use null if not (admin temp IDs may not have user records)
+        let userId: string | null = rawUserId;
+        try {
+          const [existingUser] = await db.select().from(users).where(eq(users.id, rawUserId)).limit(1);
+          if (!existingUser) {
+            userId = null;
+          }
+        } catch {
+          userId = null;
+        }
 
         if (!req.file) {
           return res.status(400).json({ error: "No file uploaded" });
