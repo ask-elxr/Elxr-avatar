@@ -1024,7 +1024,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       {/* Full Screen Avatar Video */}
       <div className="relative w-full h-full bg-black">
         {/* Video Element */}
-        <div className="w-full h-full flex items-center justify-center relative">
+        <div className="absolute inset-0 w-full h-full">
           {(() => {
             console.log("🖼️ Render state:", { audioOnly, heygenSessionActive, videoReady, isLoading, showReconnect, 
               videoShouldShow: videoReady && !isLoading && !showReconnect,

@@ -471,9 +471,20 @@ body.pseudo-fullscreen-active::-webkit-scrollbar {
   }
 }
 
+/* Ensure all containers fill the pseudo-fullscreen viewport */
+.pseudo-fullscreen > div,
+.pseudo-fullscreen > div > div {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative !important;
+}
+
 /* Ensure video fills the container in pseudo-fullscreen */
 .pseudo-fullscreen video,
 .pseudo-fullscreen canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
