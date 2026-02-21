@@ -428,37 +428,36 @@ html.pseudo-fullscreen-active,
 body.pseudo-fullscreen-active {
   overflow: hidden !important;
   position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  /* Handle iOS safe areas */
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  margin: 0 !important;
+  padding: 0 !important;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html.pseudo-fullscreen-active::-webkit-scrollbar,
+body.pseudo-fullscreen-active::-webkit-scrollbar {
+  display: none;
 }
 
 .pseudo-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  height: 100dvh !important;
   z-index: 99999 !important;
   background: black !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
+  overflow: hidden !important;
 }
 
-/* Ensure video fills the container in pseudo-fullscreen */
-.pseudo-fullscreen video {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-}
-
-/* Mobile-specific viewport adjustments */
 @supports (height: 100dvh) {
   .pseudo-fullscreen {
     height: 100dvh !important;
@@ -466,14 +465,24 @@ body.pseudo-fullscreen-active {
   }
 }
 
-/* When in fullscreen mode (native or pseudo), hide scrollbars */
-html.pseudo-fullscreen-active::-webkit-scrollbar,
-body.pseudo-fullscreen-active::-webkit-scrollbar {
-  display: none;
+@supports (height: -webkit-fill-available) {
+  .pseudo-fullscreen {
+    height: -webkit-fill-available !important;
+  }
 }
 
-html.pseudo-fullscreen-active,
-body.pseudo-fullscreen-active {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* Ensure video fills the container in pseudo-fullscreen */
+.pseudo-fullscreen video,
+.pseudo-fullscreen canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+/* Safe-area aware overlays inside pseudo-fullscreen */
+.pseudo-fullscreen .safe-area-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pseudo-fullscreen .safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }

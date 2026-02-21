@@ -9,7 +9,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff } from "lucide-react";
+import mumIconPath from "@assets/Mum_flav_256_1771715821899.png";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, getAuthHeaders } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
@@ -54,10 +55,19 @@ interface ChatMessage {
 }
 
 export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
-  // UI-only state — auto-enable memory for Memberstack (authenticated) users
-  const [memoryEnabled, setMemoryEnabled] = useState(() => {
-    return !!localStorage.getItem('memberstack_id');
+  const [mumMode, setMumMode] = useState(() => {
+    const saved = localStorage.getItem('mum-mode');
+    if (saved !== null) return saved === 'true';
+    const legacyMemory = localStorage.getItem('memory-enabled');
+    if (legacyMemory !== null) {
+      const mum = legacyMemory !== 'true';
+      localStorage.setItem('mum-mode', mum.toString());
+      localStorage.removeItem('memory-enabled');
+      return mum;
+    }
+    return !localStorage.getItem('memberstack_id');
   });
+  const memoryEnabled = !mumMode;
   const [showChatButton, setShowChatButton] = useState(true);
   const [showDisclaimer, setShowDisclaimer] = useState(() => {
     return localStorage.getItem('disclaimer-accepted') !== 'true';
@@ -116,12 +126,19 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
   
-  // Memory preference from localStorage
-  useEffect(() => {
-    const memoryPref = localStorage.getItem('memory-enabled');
-    console.log("🧠 Loading memory preference from localStorage:", memoryPref);
-    setMemoryEnabled(memoryPref === 'true');
-  }, []);
+  const toggleMumMode = useCallback(() => {
+    setMumMode(prev => {
+      const next = !prev;
+      localStorage.setItem('mum-mode', next.toString());
+      toast({
+        title: next ? "MUM Mode On" : "MUM Mode Off",
+        description: next
+          ? "Private session — no conversations stored or remembered"
+          : "Memory enabled — conversations will be remembered",
+      });
+      return next;
+    });
+  }, [toast]);
 
   // Fetch ElevenLabs agent configuration on mount
   useEffect(() => {
@@ -257,17 +274,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
   };
 
-  // Save memory preference to localStorage
   const handleMemoryToggle = (checked: boolean) => {
-    console.log("🧠 Memory toggle changed to:", checked);
-    setMemoryEnabled(checked);
-    localStorage.setItem('memory-enabled', checked.toString());
-    toast({
-      title: checked ? "Memory Enabled" : "Memory Disabled",
-      description: checked
-        ? "Your conversations will be remembered across sessions"
-        : "Memory has been turned off",
-    });
+    const newMumMode = !checked;
+    setMumMode(newMumMode);
+    localStorage.setItem('mum-mode', newMumMode.toString());
   };
 
   const handleVolumeChange = useCallback((values: number[]) => {
@@ -284,10 +294,9 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     }
   }, []);
   
-  // Debug: Log when memoryEnabled changes
   useEffect(() => {
-    console.log("🧠 memoryEnabled state is now:", memoryEnabled);
-  }, [memoryEnabled]);
+    console.log("🧠 MUM mode:", mumMode, "memoryEnabled:", memoryEnabled);
+  }, [mumMode, memoryEnabled]);
   
   // Hook 1: Avatar session management
   const {
@@ -1532,12 +1541,35 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           <div className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-30">
             <div className="bg-zinc-900 border border-white/20 rounded-2xl max-w-md mx-4 p-6 sm:p-8 shadow-2xl">
               <h2 className="text-xl font-semibold text-white mb-4">Before we start</h2>
-              <div className="text-white/80 text-sm leading-relaxed space-y-3 mb-6">
+              <div className="text-white/80 text-sm leading-relaxed space-y-3 mb-4">
                 <p>MUM provides general information and conversational guidance only.</p>
                 <p>It does not provide medical, mental health, legal, or professional advice, and it does not replace working with a qualified professional who knows your personal situation.</p>
                 <p>Any insights shared here are meant to help you think, reflect, and explore options — not to diagnose, treat, or direct medical or therapeutic decisions.</p>
                 <p>If you are dealing with a medical condition, mental health concern, or urgent situation, please consult a licensed professional or appropriate services.</p>
               </div>
+
+              <button
+                onClick={toggleMumMode}
+                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-4 ${
+                  mumMode
+                    ? 'bg-purple-600/20 border-purple-500/50'
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                }`}
+              >
+                <img src={mumIconPath} alt="MUM" className="w-10 h-10 rounded-lg flex-shrink-0" />
+                <div className="text-left flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-semibold">MUM Mode</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${mumMode ? 'bg-purple-500/30 text-purple-300' : 'bg-white/10 text-white/50'}`}>
+                      {mumMode ? 'ON' : 'OFF'}
+                    </span>
+                  </div>
+                  <p className="text-white/50 text-xs leading-snug mt-0.5">
+                    In MUM mode, conversations are not stored or remembered. No chat history is retained. Each session stands alone — private, untracked, and separate from your account history.
+                  </p>
+                </div>
+              </button>
+
               <Button
                 onClick={() => {
                   localStorage.setItem('disclaimer-accepted', 'true');
@@ -1860,17 +1892,24 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 />
               </div>
 
-              <div className="flex items-center justify-between">
-                <label htmlFor="memory" className="text-white text-sm">
-                  Conversation Memory
-                </label>
-                <Checkbox
-                  id="memory"
-                  checked={memoryEnabled}
-                  onCheckedChange={handleMemoryToggle}
-                  className="border-white data-[state=checked]:bg-primary"
-                />
-              </div>
+              <button
+                onClick={toggleMumMode}
+                className={`w-full flex items-center gap-3 p-2 rounded-lg border transition-all ${
+                  mumMode
+                    ? 'bg-purple-600/20 border-purple-500/50'
+                    : 'bg-white/5 border-white/10 hover:border-white/20'
+                }`}
+              >
+                <img src={mumIconPath} alt="MUM" className="w-8 h-8 rounded flex-shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm font-medium">MUM Mode</span>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${mumMode ? 'bg-purple-500/30 text-purple-300' : 'bg-white/10 text-white/50'}`}>
+                      {mumMode ? 'ON' : 'OFF'}
+                    </span>
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         )}
@@ -1998,6 +2037,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                       </div>
                     )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={toggleMumMode}
+                    title={mumMode ? "MUM Mode: ON — Private session" : "MUM Mode: OFF — Memory enabled"}
+                    className={`flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-md transition-all ${
+                      mumMode 
+                        ? 'ring-2 ring-purple-500/60 opacity-100' 
+                        : 'opacity-60 hover:opacity-90'
+                    }`}
+                  >
+                    <img src={mumIconPath} alt="MUM" className="w-7 h-7 rounded" />
+                  </button>
                   <Button
                     type="submit"
                     disabled={(!inputMessage.trim() && !attachedImage) || !sessionActive || isPaused}
