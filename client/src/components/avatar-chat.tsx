@@ -26,6 +26,7 @@ import { LoadingSpinner } from "@/components/loading-spinner";
 import { TrialCountdown } from "@/components/TrialCountdown";
 import { Slider } from "@/components/ui/slider";
 import { unlockMobileAudio, stopSharedAudio, getGlobalVolume, setGlobalVolume, getSharedAudioElement, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
+import { useChromaKey } from "@/hooks/useChromaKey";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -105,10 +106,11 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   // UI-only refs
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const chromaCanvasRef = useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
   const { isFullscreen, enterFullscreen, toggleFullscreen, isSupported: fullscreenSupported, isMobile } = useFullscreen();
-  
+
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
   
@@ -334,6 +336,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   useEffect(() => {
     setIsSpeaking(isSpeakingFromHook);
   }, [isSpeakingFromHook]);
+
+  const needsChromaKey = selectedAvatarId === 'nigel';
+  const chromaKeyActive = needsChromaKey && videoReady && !isLoading && !showReconnect && !audioOnly;
+  useChromaKey(videoRef, chromaCanvasRef, { enabled: chromaKeyActive });
 
   // Clear sessionStarting when session becomes active or shows reconnect (prevents stuck loading state)
   useEffect(() => {
@@ -1022,7 +1028,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             muted={false}
             className="w-full h-full object-cover"
             style={{ 
-              display: (videoReady && !isLoading && !showReconnect) ? 'block' : 'none',
+              display: (videoReady && !isLoading && !showReconnect && !chromaKeyActive) ? 'block' : 'none',
               position: 'absolute',
               top: 0,
               left: 0,
@@ -1040,6 +1046,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             onLoadedData={() => console.log("Video loaded data")}
             onCanPlay={() => console.log("Video can play")}
           />
+          {chromaKeyActive && (
+            <canvas
+              ref={chromaCanvasRef}
+              className="w-full h-full object-cover"
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 10,
+                pointerEvents: 'none',
+              }}
+            />
+          )}
           
           {audioOnly && !heygenSessionActive && (sessionActive || isLoading || elevenLabsAgentActive) && (
             <AudioOnlyDisplay 
