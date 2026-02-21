@@ -54,8 +54,10 @@ interface ChatMessage {
 }
 
 export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
-  // UI-only state
-  const [memoryEnabled, setMemoryEnabled] = useState(false);
+  // UI-only state — auto-enable memory for Memberstack (authenticated) users
+  const [memoryEnabled, setMemoryEnabled] = useState(() => {
+    return !!localStorage.getItem('memberstack_id');
+  });
   const [showChatButton, setShowChatButton] = useState(true);
   const [showDisclaimer, setShowDisclaimer] = useState(() => {
     return localStorage.getItem('disclaimer-accepted') !== 'true';

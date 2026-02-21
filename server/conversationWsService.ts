@@ -739,6 +739,9 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         return;
       }
 
+      const effectiveUserId = hasMemberstack ? `ms_${memberstackId}` : userId;
+      const effectiveMemoryEnabled = hasMemberstack ? true : memoryEnabled;
+
       const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig) {
         sendJSON(ws, { type: 'ERROR', message: 'Avatar not found' });
@@ -770,11 +773,11 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         sttReady: false,
         keepaliveInterval: null,
         avatarId,
-        userId,
+        userId: effectiveUserId,
         voiceId,
         languageCode: languageCode || avatarConfig.elevenLabsLanguageCode || undefined,
         systemPrompt: '',
-        memoryEnabled,
+        memoryEnabled: effectiveMemoryEnabled,
         sampleRate,
         audioOnly: !!audioOnly,
         conversationHistory: [],
@@ -783,8 +786,8 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
 
       activeSessions.set(sessionId, session);
 
-      if (userId) {
-        sessionManager.updateActivityByUserId(userId);
+      if (effectiveUserId) {
+        sessionManager.updateActivityByUserId(effectiveUserId);
       }
 
       try {
