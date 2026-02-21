@@ -107,7 +107,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   
   const { toast } = useToast();
-  const { isFullscreen, toggleFullscreen, isSupported: fullscreenSupported } = useFullscreen();
+  const { isFullscreen, enterFullscreen, toggleFullscreen, isSupported: fullscreenSupported, isMobile } = useFullscreen();
   
   // Callback ref bridge to break circular dependency
   const resetTimerRef = useRef<(() => void) | null>(null);
@@ -424,10 +424,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       return;
     }
     resetToolbarTimer();
+    if (isMobile && !isFullscreen && containerRef.current) {
+      enterFullscreen(containerRef.current, videoRef.current);
+    }
     return () => {
       if (toolbarTimerRef.current) clearTimeout(toolbarTimerRef.current);
     };
-  }, [sessionActive, resetToolbarTimer]);
+  }, [sessionActive, resetToolbarTimer, isMobile, isFullscreen, enterFullscreen]);
   
   // Reset Start button when session ends
   const prevSessionActiveRef = useRef(sessionActive);
