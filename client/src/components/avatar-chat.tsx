@@ -1109,7 +1109,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     'willie-gault': '/attached_assets/Willie gault gif-low_1763964813725.gif',
                     'june': '/attached_assets/June-low_1764106896823.gif',
                     'thad': '/attached_assets/Thad_1763963906199.gif',
-                    'nigel': '/attached_assets/Nigel-Loop-avatar_1763964600000.gif',
+                    'nigel': '',
                     'ann': '/attached_assets/Ann_1763966361095.gif',
                     'kelsey': '/attached_assets/Kelsey_1764111279103.gif',
                     'judy': '/attached_assets/Screen Recording 2025-07-14 at 14.35.37-low_1764106921758.gif',
