@@ -21,7 +21,6 @@ export function useFullscreen(): UseFullscreenReturn {
   const currentElementRef = useRef<HTMLElement | null>(null);
   const currentVideoRef = useRef<HTMLVideoElement | null>(null);
 
-  // Detect mobile and iOS
   const isMobile = typeof navigator !== 'undefined' && (
     /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
     ('maxTouchPoints' in navigator && navigator.maxTouchPoints > 0)
@@ -32,7 +31,6 @@ export function useFullscreen(): UseFullscreenReturn {
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   );
 
-  // Check if native fullscreen API is supported
   const isNativeFullscreenSupported = typeof document !== 'undefined' && (
     'fullscreenEnabled' in document ||
     'webkitFullscreenEnabled' in document ||
@@ -40,7 +38,6 @@ export function useFullscreen(): UseFullscreenReturn {
     'msFullscreenEnabled' in document
   );
 
-  // On mobile, we always support fullscreen (via pseudo-fullscreen if needed)
   const isSupported = isNativeFullscreenSupported || isMobile;
 
   const getFullscreenElement = useCallback((): Element | null => {
@@ -54,24 +51,34 @@ export function useFullscreen(): UseFullscreenReturn {
     );
   }, []);
 
-  // Apply pseudo-fullscreen CSS classes
+  const triggerSafariBarHide = useCallback(() => {
+    if (!isIOS) return;
+    const orig = document.body.style.height;
+    document.body.style.height = `${window.innerHeight + 100}px`;
+    window.scrollTo(0, 1);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        document.body.style.height = orig;
+      }, 100);
+    });
+  }, [isIOS]);
+
   const applyPseudoFullscreen = useCallback((element: HTMLElement, enable: boolean) => {
     if (enable) {
       element.classList.add('pseudo-fullscreen');
       document.body.classList.add('pseudo-fullscreen-active');
       document.documentElement.classList.add('pseudo-fullscreen-active');
-      // Hide address bar on mobile by scrolling
-      if (isMobile) {
-        window.scrollTo(0, 1);
+      if (isIOS) {
+        triggerSafariBarHide();
       }
     } else {
       element.classList.remove('pseudo-fullscreen');
       document.body.classList.remove('pseudo-fullscreen-active');
       document.documentElement.classList.remove('pseudo-fullscreen-active');
     }
-  }, [isMobile]);
+  }, [isIOS, triggerSafariBarHide]);
 
-  // Handle iOS video fullscreen events
   const handleIOSVideoFullscreenStart = useCallback(() => {
     setIsIOSVideoFullscreen(true);
     setIsFullscreen(true);
@@ -82,7 +89,6 @@ export function useFullscreen(): UseFullscreenReturn {
     setIsFullscreen(false);
   }, []);
 
-  // Attach/detach iOS video fullscreen event listeners
   const attachIOSVideoListeners = useCallback((videoElement: HTMLVideoElement) => {
     videoElement.addEventListener('webkitbeginfullscreen', handleIOSVideoFullscreenStart);
     videoElement.addEventListener('webkitendfullscreen', handleIOSVideoFullscreenEnd);
@@ -101,8 +107,6 @@ export function useFullscreen(): UseFullscreenReturn {
       currentVideoRef.current = videoElement;
     }
 
-    // Mobile: use pseudo-fullscreen to keep app UI visible
-    // (native video fullscreen hijacks to iOS player, losing all controls)
     if (isMobile) {
       applyPseudoFullscreen(targetElement as HTMLElement, true);
       setIsPseudoFullscreen(true);
@@ -110,7 +114,6 @@ export function useFullscreen(): UseFullscreenReturn {
       return;
     }
 
-    // Desktop: try native Fullscreen API
     try {
       if (targetElement.requestFullscreen) {
         await targetElement.requestFullscreen();
@@ -129,25 +132,21 @@ export function useFullscreen(): UseFullscreenReturn {
       console.log('Native fullscreen failed, using pseudo-fullscreen:', error);
     }
 
-    // Fallback: pseudo-fullscreen
     applyPseudoFullscreen(targetElement as HTMLElement, true);
     setIsPseudoFullscreen(true);
     setIsFullscreen(true);
   }, [isMobile, applyPseudoFullscreen]);
 
   const exitFullscreen = useCallback(async () => {
-    // Exit iOS video fullscreen first
     if (isIOSVideoFullscreen && currentVideoRef.current && 'webkitExitFullscreen' in currentVideoRef.current) {
       try {
         await (currentVideoRef.current as any).webkitExitFullscreen();
-        // State will be updated by the event listener
         return;
       } catch (error) {
         console.log('iOS video exitFullscreen failed:', error);
       }
     }
 
-    // Exit pseudo-fullscreen
     if (isPseudoFullscreen && currentElementRef.current) {
       applyPseudoFullscreen(currentElementRef.current, false);
       setIsPseudoFullscreen(false);
@@ -155,7 +154,6 @@ export function useFullscreen(): UseFullscreenReturn {
       return;
     }
 
-    // Exit native fullscreen
     try {
       if (document.exitFullscreen) {
         await document.exitFullscreen();
@@ -179,7 +177,6 @@ export function useFullscreen(): UseFullscreenReturn {
     }
   }, [isFullscreen, isPseudoFullscreen, isIOSVideoFullscreen, enterFullscreen, exitFullscreen]);
 
-  // Listen for native fullscreen changes
   useEffect(() => {
     const handleFullscreenChange = () => {
       const fsElement = getFullscreenElement();
@@ -201,7 +198,6 @@ export function useFullscreen(): UseFullscreenReturn {
     };
   }, [getFullscreenElement, isIOSVideoFullscreen, isPseudoFullscreen]);
 
-  // Cleanup iOS video listeners on unmount
   useEffect(() => {
     return () => {
       if (currentVideoRef.current) {
@@ -210,7 +206,6 @@ export function useFullscreen(): UseFullscreenReturn {
     };
   }, [detachIOSVideoListeners]);
 
-  // Handle escape key for pseudo-fullscreen
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && isPseudoFullscreen) {

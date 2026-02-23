@@ -1357,6 +1357,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                   </button>
                 )}
 
+                {/* MUM Mode toggle */}
+                <button
+                  onClick={toggleMumMode}
+                  title={mumMode ? "MUM Mode: ON — Private session" : "MUM Mode: OFF — Memory enabled"}
+                  className={`w-10 h-10 flex items-center justify-center rounded-full backdrop-blur-sm shadow-lg transition-all active:scale-95 border ${
+                    mumMode
+                      ? 'bg-purple-600/60 hover:bg-purple-600/80 border-purple-400/60'
+                      : 'bg-black/60 hover:bg-black/80 border-white/30'
+                  }`}
+                  data-testid="button-mum-mode"
+                >
+                  <img src={mumIconPath} alt="MUM" className="w-6 h-6 rounded" />
+                </button>
+
                 {/* Three-dot menu for less-used actions */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
