@@ -51,33 +51,20 @@ export function useFullscreen(): UseFullscreenReturn {
     );
   }, []);
 
-  const triggerSafariBarHide = useCallback(() => {
-    if (!isIOS) return;
-    const orig = document.body.style.height;
-    document.body.style.height = `${window.innerHeight + 100}px`;
-    window.scrollTo(0, 1);
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        window.scrollTo(0, 0);
-        document.body.style.height = orig;
-      }, 100);
-    });
-  }, [isIOS]);
-
   const applyPseudoFullscreen = useCallback((element: HTMLElement, enable: boolean) => {
     if (enable) {
       element.classList.add('pseudo-fullscreen');
       document.body.classList.add('pseudo-fullscreen-active');
       document.documentElement.classList.add('pseudo-fullscreen-active');
-      if (isIOS) {
-        triggerSafariBarHide();
+      if (isMobile) {
+        window.scrollTo(0, 1);
       }
     } else {
       element.classList.remove('pseudo-fullscreen');
       document.body.classList.remove('pseudo-fullscreen-active');
       document.documentElement.classList.remove('pseudo-fullscreen-active');
     }
-  }, [isIOS, triggerSafariBarHide]);
+  }, [isMobile]);
 
   const handleIOSVideoFullscreenStart = useCallback(() => {
     setIsIOSVideoFullscreen(true);
