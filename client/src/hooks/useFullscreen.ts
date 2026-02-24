@@ -94,13 +94,16 @@ export function useFullscreen(): UseFullscreenReturn {
       currentVideoRef.current = videoElement;
     }
 
-    if (isMobile) {
+    // On iOS, native Fullscreen API is not available — go straight to pseudo-fullscreen
+    // On Android Chrome, try native Fullscreen API first (hides browser chrome)
+    if (isIOS) {
       applyPseudoFullscreen(targetElement as HTMLElement, true);
       setIsPseudoFullscreen(true);
       setIsFullscreen(true);
       return;
     }
 
+    // Try native Fullscreen API (works on desktop and Android Chrome)
     try {
       if (targetElement.requestFullscreen) {
         await targetElement.requestFullscreen();
@@ -116,13 +119,14 @@ export function useFullscreen(): UseFullscreenReturn {
         return;
       }
     } catch (error) {
-      console.log('Native fullscreen failed, using pseudo-fullscreen:', error);
+      console.log('Native fullscreen failed, falling back to pseudo-fullscreen:', error);
     }
 
+    // Fallback: pseudo-fullscreen (CSS-based, won't hide browser chrome)
     applyPseudoFullscreen(targetElement as HTMLElement, true);
     setIsPseudoFullscreen(true);
     setIsFullscreen(true);
-  }, [isMobile, applyPseudoFullscreen]);
+  }, [isIOS, applyPseudoFullscreen]);
 
   const exitFullscreen = useCallback(async () => {
     if (isIOSVideoFullscreen && currentVideoRef.current && 'webkitExitFullscreen' in currentVideoRef.current) {
