@@ -94,39 +94,49 @@ export function useFullscreen(): UseFullscreenReturn {
       currentVideoRef.current = videoElement;
     }
 
-    // On iOS, native Fullscreen API is not available — go straight to pseudo-fullscreen
-    // On Android Chrome, try native Fullscreen API first (hides browser chrome)
-    if (isIOS) {
-      applyPseudoFullscreen(targetElement as HTMLElement, true);
-      setIsPseudoFullscreen(true);
-      setIsFullscreen(true);
-      return;
-    }
-
-    // Try native Fullscreen API (works on desktop and Android Chrome)
+    // Strategy 1: Try native Fullscreen API on the container element
+    // Works on desktop and Android Chrome — hides all browser chrome
     try {
       if (targetElement.requestFullscreen) {
         await targetElement.requestFullscreen();
+        console.log('✅ Native fullscreen entered via requestFullscreen');
         return;
       } else if ((targetElement as any).webkitRequestFullscreen) {
         await (targetElement as any).webkitRequestFullscreen();
+        console.log('✅ Native fullscreen entered via webkitRequestFullscreen');
         return;
       } else if ((targetElement as any).mozRequestFullScreen) {
         await (targetElement as any).mozRequestFullScreen();
+        console.log('✅ Native fullscreen entered via mozRequestFullScreen');
         return;
       } else if ((targetElement as any).msRequestFullscreen) {
         await (targetElement as any).msRequestFullscreen();
+        console.log('✅ Native fullscreen entered via msRequestFullscreen');
         return;
       }
     } catch (error) {
-      console.log('Native fullscreen failed, falling back to pseudo-fullscreen:', error);
+      console.log('Native container fullscreen failed:', error);
     }
 
-    // Fallback: pseudo-fullscreen (CSS-based, won't hide browser chrome)
+    // Strategy 2: On iOS, try video element's native fullscreen
+    // This hides all browser chrome but uses iOS native video player
+    if (isIOS && videoElement && (videoElement as any).webkitEnterFullscreen) {
+      try {
+        attachIOSVideoListeners(videoElement);
+        await (videoElement as any).webkitEnterFullscreen();
+        console.log('✅ iOS video native fullscreen entered');
+        return;
+      } catch (error) {
+        console.log('iOS video fullscreen failed:', error);
+      }
+    }
+
+    // Strategy 3: Pseudo-fullscreen (CSS-based fallback)
+    console.log('📐 Using pseudo-fullscreen (CSS-based)');
     applyPseudoFullscreen(targetElement as HTMLElement, true);
     setIsPseudoFullscreen(true);
     setIsFullscreen(true);
-  }, [isIOS, applyPseudoFullscreen]);
+  }, [isIOS, applyPseudoFullscreen, attachIOSVideoListeners]);
 
   const exitFullscreen = useCallback(async () => {
     if (isIOSVideoFullscreen && currentVideoRef.current && 'webkitExitFullscreen' in currentVideoRef.current) {

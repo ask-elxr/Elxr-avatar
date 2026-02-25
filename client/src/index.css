@@ -428,51 +428,63 @@ html.pseudo-fullscreen-active,
 body.pseudo-fullscreen-active {
   overflow: hidden !important;
   position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  margin: 0 !important;
+  padding: 0 !important;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html.pseudo-fullscreen-active::-webkit-scrollbar,
+body.pseudo-fullscreen-active::-webkit-scrollbar {
+  display: none;
 }
 
 .pseudo-fullscreen {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
   height: 100dvh !important;
+  height: -webkit-fill-available !important;
   z-index: 99999 !important;
   background: black !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   border-radius: 0 !important;
+  overflow: hidden !important;
+  touch-action: manipulation !important;
 }
 
-/* Ensure video fills the container in pseudo-fullscreen */
-.pseudo-fullscreen video {
+.pseudo-fullscreen video,
+.pseudo-fullscreen canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  height: -webkit-fill-available !important;
+  object-fit: cover !important;
+  z-index: 1 !important;
+}
+
+.pseudo-fullscreen > div {
   width: 100% !important;
   height: 100% !important;
-  object-fit: cover !important;
 }
 
-/* Mobile-specific viewport adjustments */
-@supports (height: 100dvh) {
-  .pseudo-fullscreen {
-    height: 100dvh !important;
-    min-height: 100dvh !important;
-  }
+.pseudo-fullscreen > div > div {
+  width: 100% !important;
+  height: 100% !important;
 }
 
-/* When in fullscreen mode (native or pseudo), hide scrollbars */
-html.pseudo-fullscreen-active::-webkit-scrollbar,
-body.pseudo-fullscreen-active::-webkit-scrollbar {
-  display: none;
-}
-
-html.pseudo-fullscreen-active,
-body.pseudo-fullscreen-active {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+body.pseudo-fullscreen-active [data-replit-dev-banner],
+body.pseudo-fullscreen-active iframe[src*="replit"] {
+  display: none !important;
 }
