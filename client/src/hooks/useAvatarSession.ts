@@ -95,6 +95,7 @@ export function useAvatarSession({
   const lastAvatarResponseRef = useRef<string>(""); // For echo detection - track what avatar last said
   const lastAvatarResponseTimeRef = useRef<number>(0); // When avatar spoke (for echo detection window)
   const bargeInDebounceRef = useRef<NodeJS.Timeout | null>(null); // Debounce timer for barge-in on partials
+  const performBargeInRef = useRef<((reason: string) => void) | null>(null); // Ref bridge for barge-in from conversation WS
   const recognitionIntentionalStopRef = useRef(false); // Prevent auto-restart during cleanup
   const recognitionRunningRef = useRef(false); // Track if recognition is currently running
   const sessionActiveRef = useRef(false); // Track session active state for voice recognition
@@ -140,6 +141,9 @@ export function useAvatarSession({
         if (!bargeInDebounceRef.current && text.length >= 2) {
           bargeInDebounceRef.current = setTimeout(() => {
             bargeInDebounceRef.current = null;
+            if (isSpeakingRef.current && performBargeInRef.current) {
+              performBargeInRef.current(`conversation WS partial: "${text.substring(0, 30)}"`);
+            }
           }, 150);
         }
       }
@@ -148,6 +152,9 @@ export function useAvatarSession({
       if (bargeInDebounceRef.current) {
         clearTimeout(bargeInDebounceRef.current);
         bargeInDebounceRef.current = null;
+      }
+      if (isSpeakingRef.current && performBargeInRef.current) {
+        performBargeInRef.current(`conversation WS final: "${text.substring(0, 30)}"`);
       }
       lastTranscriptRef.current = text;
     },
@@ -729,6 +736,8 @@ export function useAvatarSession({
         currentAudioRef.current = null;
       }
     }
+    // Stop conversation WS audio pipeline (Web Audio source nodes)
+    conversationWs.hardStopAudio();
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
@@ -738,7 +747,10 @@ export function useAvatarSession({
     }
     isSpeakingRef.current = false;
     setIsSpeakingState(false);
-  }, []);
+  }, [conversationWs]);
+
+  // Keep ref in sync so conversation WS callbacks can trigger barge-in
+  performBargeInRef.current = performBargeIn;
 
   // Handle ElevenLabs STT transcript (same flow as Web Speech API)
   const handleElevenLabsSttTranscript = useCallback((transcript: string | undefined | null, isFinal: boolean) => {
