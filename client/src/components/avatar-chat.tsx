@@ -569,7 +569,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       // Start avatar session with knowledge base (required for voice recognition)
       // We intercept and override responses with Claude
       await avatar.createStartAvatar({
-        quality: AvatarQuality.High,
+        quality: AvatarQuality.Low,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
         knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
         voice: {
