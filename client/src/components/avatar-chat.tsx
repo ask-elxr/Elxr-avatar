@@ -782,38 +782,46 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
   const toggleFullscreen = async () => {
     try {
-      if (isMobile && videoRef.current) {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement
+      );
+
+      if (isCurrentlyFullscreen) {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        }
+        return;
+      }
+
+      const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (isIOSDevice && videoRef.current) {
         const videoElement = videoRef.current as any;
-        
-        // For iOS Safari: Remove playsInline to allow native fullscreen
         videoElement.removeAttribute('playsinline');
-        
-        // Try different fullscreen methods
         if (videoElement.webkitEnterFullscreen) {
-          // iOS Safari - this is the most reliable method
           videoElement.webkitEnterFullscreen();
         } else if (videoElement.webkitRequestFullscreen) {
           await videoElement.webkitRequestFullscreen();
-        } else if (videoElement.requestFullscreen) {
-          await videoElement.requestFullscreen();
         }
-        
-        // Restore playsInline after a delay (when exiting fullscreen)
         setTimeout(() => {
           videoElement.setAttribute('playsinline', '');
         }, 500);
-      } else {
-        // Desktop: Use container fullscreen
-        if (!document.fullscreenElement) {
-          await containerRef.current?.requestFullscreen();
-        } else {
-          await document.exitFullscreen();
-        }
+        return;
+      }
+
+      const target = containerRef.current || document.documentElement;
+      if (target.requestFullscreen) {
+        await target.requestFullscreen({ navigationUI: 'hide' } as any);
+      } else if ((target as any).webkitRequestFullscreen) {
+        await (target as any).webkitRequestFullscreen();
       }
     } catch (error) {
       console.error('Error toggling fullscreen:', error);
-      // Restore playsInline on error
-      if (isMobile && videoRef.current) {
+      if (videoRef.current) {
         (videoRef.current as any).setAttribute('playsinline', '');
       }
     }

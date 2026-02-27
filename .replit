@@ -14,42 +14,6 @@ run = ["npm", "run", "start"]
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 33893
-externalPort = 6800
-
-[[ports]]
-localPort = 37071
-externalPort = 3002
-
-[[ports]]
-localPort = 39157
-externalPort = 3003
-
-[[ports]]
-localPort = 39979
-externalPort = 3000
-
-[[ports]]
-localPort = 41929
-externalPort = 5000
-
-[[ports]]
-localPort = 42765
-externalPort = 6000
-
-[[ports]]
-localPort = 43661
-externalPort = 5173
-
-[[ports]]
-localPort = 44849
-externalPort = 4200
-
-[[ports]]
-localPort = 45571
-externalPort = 3001
-
 [env]
 PORT = "5000"
 
@@ -75,4 +39,4 @@ args = "npm run dev"
 waitForPort = 5000
 
 [agent]
-integrations = ["javascript_object_storage==1.0.0", "javascript_log_in_with_replit==1.0.0", "javascript_database==1.0.0"]
+integrations = ["javascript_object_storage:1.0.0", "javascript_log_in_with_replit:1.0.0", "javascript_database:1.0.0"]

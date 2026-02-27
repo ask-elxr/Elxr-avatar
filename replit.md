@@ -8,7 +8,15 @@ Preferred communication style: Simple, everyday language.
 
 # Recent Changes
 
-## Latest Updates (October 28, 2025)
+## Latest Updates (February 27, 2026)
+- **Fixed Pinecone Knowledge Base Upload Bug** - Documents uploaded via knowledge base were not appearing in avatar conversations
+  - Bug 1: Storage now uses `ask-elxr` index with `mark-kohl` namespace (was storing to wrong location)
+  - Bug 2: Standardized embedding model to `text-embedding-ada-002` (storage and retrieval now match)
+  - Bug 3: Lowered score threshold from 0.75 to 0.5 (was filtering out valid results)
+  - Bonus: Max chunks per document raised from 25 to 100 for richer content
+- **Fixed Mobile Fullscreen** - Chrome Android now uses native Fullscreen API with `navigationUI: 'hide'` to properly hide browser bars; iOS uses video-specific fullscreen; desktop uses container fullscreen
+
+## Previous Updates (October 28, 2025)
 - **MAJOR: Deeper, Richer Responses** - Increased Claude token limit (1000→2500), improved prompting for substantive answers, better knowledge retrieval (3→5 results)
 - **Fixed Mid-Answer Cutoffs** - Timer now resets every 10 seconds while avatar is speaking, preventing timeout during long responses
 - **Fixed Timeout Interruptions** - If user speaks during sign-off, avatar immediately stops goodbye message and listens to new question
