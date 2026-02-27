@@ -4,7 +4,7 @@ import { X, Maximize2, Minimize2, Pause, Play } from "lucide-react";
 import loadingVideo from "@assets/intro logo_1760052672430.mp4";
 import unpinchGraphic1 from "@assets/Unpinch 1__1760076687886.png";
 import unpinchGraphic2 from "@assets/unpinch 2_1760076687886.png";
-import StreamingAvatar, { AvatarQuality, StreamingEvents, TaskType } from "@heygen/streaming-avatar";
+import { LiveAvatarSession, SessionEvent, SessionState, AgentEventsEnum } from "@heygen/liveavatar-web-sdk";
 
 interface AvatarChatProps {
   userId: string;
@@ -32,7 +32,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
   }, []);
   
   const videoRef = useRef<HTMLVideoElement>(null);
-  const avatarRef = useRef<StreamingAvatar | null>(null);
+  const avatarRef = useRef<LiveAvatarSession | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hasStartedRef = useRef(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -110,7 +110,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       
       // Interrupt avatar if it's speaking the sign-off message
       if (avatarRef.current) {
-        avatarRef.current.interrupt().catch(() => {});
+        try { avatarRef.current.interrupt(); } catch(e) {}
       }
     }
     
@@ -131,15 +131,12 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       if (avatarRef.current) {
         try {
           // Interrupt any ongoing speech
-          await avatarRef.current.interrupt().catch(() => {});
+          try { avatarRef.current.interrupt(); } catch(e) {}
           
           // Ask if there's anything else before ending
           const anythingElseMessage = "Is there anything else I can help you with today?";
           
-          await avatarRef.current.speak({
-            text: anythingElseMessage,
-            task_type: TaskType.REPEAT
-          });
+          avatarRef.current.repeat(anythingElseMessage);
           
           console.log("'Anything else?' message delivered");
           
@@ -150,10 +147,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
             const finalMessage = "Alright. Thanks for the conversation - hope it was helpful. Take care.";
             
             if (avatarRef.current) {
-              await avatarRef.current.speak({
-                text: finalMessage,
-                task_type: TaskType.REPEAT
-              });
+              avatarRef.current.repeat(finalMessage);
               
               // Wait 5 seconds for final message to finish, then end
               setTimeout(() => {
@@ -351,36 +345,64 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
     try {
       const token = await fetchAccessToken();
-      const avatar = new StreamingAvatar({ token });
-      avatarRef.current = avatar;
+      const session = new LiveAvatarSession(token, { voiceChat: true });
+      avatarRef.current = session;
 
-      avatar.on(StreamingEvents.STREAM_READY, (event) => {
-        console.log("Stream ready:", event.detail);
+      session.on(SessionEvent.SESSION_STREAM_READY, () => {
+        console.log("LiveAvatar stream ready");
         if (videoRef.current) {
-          videoRef.current.srcObject = event.detail;
+          session.attach(videoRef.current);
           videoRef.current.play().catch(console.error);
         }
+        
+        setTimeout(() => {
+          const greetings = [
+            "Hey there — I'm Mark Kohl. You're actually talking to my digital self, but everything you'll hear comes directly from my real experiences, my research, and my life's work.",
+            "Hi, I'm Mark Kohl. This is my avatar — but what you're about to hear comes straight from me. I helped build this AI so my work could reach more people, in more ways.",
+            "Hello. I'm Mark Kohl — or at least, the AI version of me. I've spent years teaching, learning, and exploring what makes us human. This is my way of sharing that knowledge with anyone who needs it.",
+            "Hey there. I'm Mark Kohl. You're talking to my avatar — but rest assured, what comes out of my mouth was written, spoken, and lived by me.",
+            "Hi, I'm Mark Kohl. Think of this as a conversation with my digital twin — powered by AI, but shaped by decades of lived experience.",
+            "Hey, I'm Mark Kohl. You're meeting the AI version of me — something I created so I could be here even when I can't be in person.",
+            "Hi there. I'm Mark Kohl. What you're seeing is my avatar, but the thoughts, insights, and stories are all mine — carefully trained so this version of me could keep sharing what matters most.",
+            "Hey. I'm Mark Kohl — the human behind this AI avatar. I created this so that the things I've learned through experience don't just live in one lifetime.",
+            "Hi, I'm Mark Kohl. I know it might feel strange talking to an avatar — but everything I say here is rooted in years of study, teaching, and real human connection.",
+            "Hey there, I'm Mark Kohl. I built this AI version of myself to do what one person alone can't — make real knowledge accessible to anyone who needs it, 24/7.",
+            "Hi, I'm Mark Kohl. The world changes fast, but wisdom shouldn't get lost along the way. That's why I helped create this AI — to share my work and insights with anyone, anywhere.",
+            "Hello. I'm Mark Kohl — the human behind the avatar. Together, we're here to bridge the gap between technology and truth, between information and wisdom.",
+            "Hey, I'm Mark Kohl. Yep, I'm an avatar — but don't worry, this version of me is powered by the real one.",
+            "Hi there, I'm Mark Kohl. This is the AI version of me — kind of like me on my best day, when I've had enough sleep and plenty of coffee.",
+            "Hello, I'm Mark Kohl. You're chatting with my AI self — think of it as me multiplied, so I can have a lot more of these conversations.",
+            "Hi, I'm Mark Kohl. The version you're seeing here might be digital, but the heart, intention, and voice behind it are 100% human."
+          ];
+          const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+          try {
+            session.repeat(randomGreeting);
+            console.log("Greeting sent to avatar");
+          } catch (e) {
+            console.error("Error sending greeting:", e);
+          }
+          
+          setTimeout(() => {
+            resetInactivityTimer();
+          }, 2000);
+        }, 1000);
       });
 
-      avatar.on(StreamingEvents.STREAM_DISCONNECTED, () => {
-        console.log("Stream disconnected - intentionalStop flag:", intentionalStopRef.current);
-        // NEVER auto-restart - always show reconnect screen to prevent credit drain
+      session.on(SessionEvent.SESSION_DISCONNECTED, (reason) => {
+        console.log("Stream disconnected - reason:", reason, "intentionalStop:", intentionalStopRef.current);
         console.log("Session disconnected - showing reconnect screen to save credits");
-        intentionalStopRef.current = false; // Reset flag
+        intentionalStopRef.current = false;
         setSessionActive(false);
-        setShowReconnect(true); // Show manual reconnect option
+        setShowReconnect(true);
         if (inactivityTimerRef.current) {
           clearTimeout(inactivityTimerRef.current);
         }
       });
 
-      // Listen for user message events - fires when user talks
-      avatar.on(StreamingEvents.USER_TALKING_MESSAGE, async (message: any) => {
+      session.on(AgentEventsEnum.USER_TRANSCRIPTION, async (event) => {
         try {
-          console.log("USER_TALKING_MESSAGE event received:", message);
-          
-          const userMessage = message?.detail?.message || message?.message || message;
-          console.log("User message extracted:", userMessage);
+          const userMessage = event.text;
+          console.log("User transcription received:", userMessage);
           
           if (userMessage) {
             // Check if we just asked "anything else" and user said no
@@ -408,11 +430,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
                 ];
                 const goodbye = goodbyeMessages[Math.floor(Math.random() * goodbyeMessages.length)];
                 
-                await avatar.interrupt().catch(() => {});
-                await avatar.speak({
-                  text: goodbye,
-                  task_type: TaskType.REPEAT
-                });
+                session.interrupt();
+                session.repeat(goodbye);
                 
                 // Wait for goodbye to finish, then end session
                 setTimeout(() => {
@@ -460,43 +479,29 @@ export function AvatarChat({ userId }: AvatarChatProps) {
               "Almost there..."
             ];
             
-            // Reset inactivity timer before thinking phrase to prevent timeout
             resetInactivityTimer();
             
-            // Interrupt any HeyGen response
-            await avatar.interrupt().catch(() => {});
+            session.interrupt();
             
-            // 50% chance of silence, 50% chance of saying a brief phrase
             if (Math.random() > 0.5) {
               const randomPhrase = thinkingPhrases[Math.floor(Math.random() * thinkingPhrases.length)];
-              await avatar.speak({
-                text: randomPhrase,
-                task_type: TaskType.REPEAT
-              });
+              session.repeat(randomPhrase);
             }
             
-            // Set up interval to add follow-up phrases every 9 seconds while waiting
-            const fillerInterval = setInterval(async () => {
+            const fillerInterval = setInterval(() => {
               const followUpPhrase = followUpPhrases[Math.floor(Math.random() * followUpPhrases.length)];
-              
-              // Reset timer before each filler phrase to keep session alive
               resetInactivityTimer();
-              
-              await avatar.interrupt().catch(() => {});
-              await avatar.speak({
-                text: followUpPhrase,
-                task_type: TaskType.REPEAT
-              }).catch(() => {}); // Catch errors if response arrives during speak
+              try {
+                session.interrupt();
+                session.repeat(followUpPhrase);
+              } catch (e) {}
             }, 9000);
             
-            // Wait for Claude response (already started processing above)
             try {
               const response = await responsePromise;
               
-              // Clear the filler interval once response arrives
               clearInterval(fillerInterval);
 
-              // Check if this is still the current request - ignore if a newer one exists
               if (requestId !== currentRequestIdRef.current) {
                 console.log("Ignoring old response - newer request in progress");
                 return;
@@ -507,49 +512,31 @@ export function AvatarChat({ userId }: AvatarChatProps) {
                 const claudeResponse = data.knowledgeResponse || data.response;
                 console.log("Claude response received:", claudeResponse);
                 
-                // Reset inactivity timer before avatar starts speaking to prevent timeout mid-response
                 resetInactivityTimer();
                 
-                // Interrupt thinking phrase and speak the real response
-                await avatar.interrupt().catch(() => {});
+                session.interrupt();
                 
-                // Clear any existing speaking interval
                 if (speakingIntervalRef.current) {
                   clearInterval(speakingIntervalRef.current);
                 }
                 
-                // Set up interval to keep resetting timer while avatar speaks (every 10 seconds)
-                // This prevents timeout during long responses
-                // Store in ref so it persists even after speak() resolves
                 speakingIntervalRef.current = setInterval(() => {
                   resetInactivityTimer();
                   console.log("Resetting timer during avatar speech");
                 }, 10000);
                 
-                // Safety timeout: stop the speaking interval after 3 minutes max
-                // (avatar should be done by then, and this prevents infinite loop)
                 setTimeout(() => {
                   if (speakingIntervalRef.current) {
                     clearInterval(speakingIntervalRef.current);
                     speakingIntervalRef.current = null;
                     console.log("Cleared speaking interval - max duration reached");
-                    // Start fresh 60-second timer now that avatar is done
                     resetInactivityTimer();
                   }
-                }, 180000); // 3 minutes
+                }, 180000);
                 
-                // Make avatar speak Claude's response using REPEAT (not TALK)
-                // NOTE: This promise resolves immediately after queueing, NOT after vocalization completes
-                await avatar.speak({
-                  text: claudeResponse,
-                  task_type: TaskType.REPEAT
-                });
-                
-                // DON'T clear interval here - avatar is still speaking!
-                // Interval will be cleared when user speaks again OR after 3 minutes
+                session.repeat(claudeResponse);
               }
             } catch (error) {
-              // Clear the filler interval on error
               clearInterval(fillerInterval);
               console.error("Error getting Claude response:", error);
             }
@@ -566,56 +553,13 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         }
       });
 
-      // Start avatar session with knowledge base (required for voice recognition)
-      // We intercept and override responses with Claude
-      await avatar.createStartAvatar({
-        quality: AvatarQuality.Low,
-        avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0",
-        knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4",
-        voice: {
-          rate: 1.0
-        },
-        language: "en",
-        disableIdleTimeout: false
-      });
+      await session.start();
+      console.log("LiveAvatar session started");
 
-      // Start voice chat to enable microphone input
-      console.log("Starting voice chat...");
-      await avatar.startVoiceChat();
+      session.startListening();
       console.log("Voice chat started - you can now speak to the avatar");
 
       setSessionActive(true);
-      
-      // Mark greets users with a random intro
-      const greetings = [
-        "Hey there — I'm Mark Kohl. You're actually talking to my digital self, but everything you'll hear comes directly from my real experiences, my research, and my life's work.",
-        "Hi, I'm Mark Kohl. This is my avatar — but what you're about to hear comes straight from me. I helped build this AI so my work could reach more people, in more ways.",
-        "Hello. I'm Mark Kohl — or at least, the AI version of me. I've spent years teaching, learning, and exploring what makes us human. This is my way of sharing that knowledge with anyone who needs it.",
-        "Hey there. I'm Mark Kohl. You're talking to my avatar — but rest assured, what comes out of my mouth was written, spoken, and lived by me.",
-        "Hi, I'm Mark Kohl. Think of this as a conversation with my digital twin — powered by AI, but shaped by decades of lived experience.",
-        "Hey, I'm Mark Kohl. You're meeting the AI version of me — something I created so I could be here even when I can't be in person.",
-        "Hi there. I'm Mark Kohl. What you're seeing is my avatar, but the thoughts, insights, and stories are all mine — carefully trained so this version of me could keep sharing what matters most.",
-        "Hey. I'm Mark Kohl — the human behind this AI avatar. I created this so that the things I've learned through experience don't just live in one lifetime.",
-        "Hi, I'm Mark Kohl. I know it might feel strange talking to an avatar — but everything I say here is rooted in years of study, teaching, and real human connection.",
-        "Hey there, I'm Mark Kohl. I built this AI version of myself to do what one person alone can't — make real knowledge accessible to anyone who needs it, 24/7.",
-        "Hi, I'm Mark Kohl. The world changes fast, but wisdom shouldn't get lost along the way. That's why I helped create this AI — to share my work and insights with anyone, anywhere.",
-        "Hello. I'm Mark Kohl — the human behind the avatar. Together, we're here to bridge the gap between technology and truth, between information and wisdom.",
-        "Hey, I'm Mark Kohl. Yep, I'm an avatar — but don't worry, this version of me is powered by the real one.",
-        "Hi there, I'm Mark Kohl. This is the AI version of me — kind of like me on my best day, when I've had enough sleep and plenty of coffee.",
-        "Hello, I'm Mark Kohl. You're chatting with my AI self — think of it as me multiplied, so I can have a lot more of these conversations.",
-        "Hi, I'm Mark Kohl. The version you're seeing here might be digital, but the heart, intention, and voice behind it are 100% human."
-      ];
-      
-      const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-      await avatar.speak({
-        text: randomGreeting,
-        task_type: TaskType.REPEAT
-      }).catch(console.error);
-      
-      // Start inactivity timer AFTER greeting is done (wait 2 seconds for it to finish)
-      setTimeout(() => {
-        resetInactivityTimer();
-      }, 2000);
     } catch (error) {
       console.error("Error starting avatar session:", error);
       setIsLoading(false);
@@ -643,31 +587,22 @@ export function AvatarChat({ userId }: AvatarChatProps) {
       signOffTimeoutRef.current = null;
     }
     
-    // Make avatar say goodbye message before stopping
     if (avatarRef.current) {
       try {
-        // Avatar speaks a funny timeout message
-        await avatarRef.current.speak({
-          text: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!",
-          task_type: TaskType.REPEAT
-        });
+        avatarRef.current.repeat("Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!");
         
-        // Wait a moment for the message to finish
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        // Mark this as intentional stop so it doesn't auto-restart
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for timeout");
         
-        // Now stop the avatar stream (saves credits!)
-        await avatarRef.current.stopAvatar().catch(console.error);
+        await avatarRef.current.stop().catch(console.error);
         avatarRef.current = null;
       } catch (error) {
         console.error("Error in timeout message:", error);
-        // Stop avatar anyway
         if (avatarRef.current) {
           intentionalStopRef.current = true;
-          await avatarRef.current.stopAvatar().catch(console.error);
+          await avatarRef.current.stop().catch(console.error);
           avatarRef.current = null;
         }
       }
@@ -705,9 +640,8 @@ export function AvatarChat({ userId }: AvatarChatProps) {
     }
     
     if (avatarRef.current) {
-      // Mark as intentional stop to prevent auto-restart loops
       intentionalStopRef.current = true;
-      avatarRef.current.stopAvatar().catch(console.error);
+      avatarRef.current.stop().catch(console.error);
       avatarRef.current = null;
     }
     
@@ -752,7 +686,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
         // Mark this as intentional stop so it doesn't auto-restart
         intentionalStopRef.current = true;
         console.log("Setting intentionalStop flag to TRUE for pause");
-        await avatarRef.current.stopAvatar().catch(console.error);
+        await avatarRef.current.stop().catch(console.error);
         avatarRef.current = null;
       }
       

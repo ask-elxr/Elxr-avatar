@@ -33,48 +33,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-  // HeyGen API token endpoint for Streaming SDK
   app.post("/api/heygen/token", async (req, res) => {
     try {
-      const apiKey = process.env.HEYGEN_API_KEY;
+      const apiKey = process.env.LIVEAVATAR_API_KEY;
       
       if (!apiKey) {
         return res.status(500).json({ 
-          error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable." 
+          error: "LiveAvatar API key not configured. Please set LIVEAVATAR_API_KEY environment variable." 
         });
       }
 
-      console.log('Creating HeyGen access token...');
+      const avatarId = req.body.avatarId || "98917de8-81a1-4a24-ad0b-584fff35c168";
+
+      console.log('Creating LiveAvatar session token for avatar:', avatarId);
       
-      const response = await fetch('https://api.heygen.com/v1/streaming.create_token', {
+      const response = await fetch('https://api.liveavatar.com/v1/sessions/token', {
         method: 'POST',
         headers: {
           'x-api-key': apiKey,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({
+          mode: "LITE",
+          avatar_id: avatarId
+        })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('HeyGen API error:', response.status, errorText);
+        console.error('LiveAvatar API error:', response.status, errorText);
         return res.status(response.status).json({ 
-          error: `HeyGen API error: ${response.statusText}`,
+          error: `LiveAvatar API error: ${response.statusText}`,
           details: errorText
         });
       }
 
       const data = await response.json();
-      console.log('HeyGen token created successfully');
       
-      // Return the token in the expected format
+      if (data.code !== 1000) {
+        console.error('LiveAvatar token error:', data.message);
+        return res.status(400).json({ error: data.message });
+      }
+
+      console.log('LiveAvatar token created - session:', data.data?.session_id);
       res.json({ 
-        token: data.data?.token || data.token,
-        ...data 
+        token: data.data?.session_token,
+        sessionId: data.data?.session_id
       });
     } catch (error) {
-      console.error('Error creating HeyGen token:', error);
+      console.error('Error creating LiveAvatar token:', error);
       res.status(500).json({ 
-        error: "Failed to create HeyGen access token" 
+        error: "Failed to create LiveAvatar session token" 
       });
     }
   });

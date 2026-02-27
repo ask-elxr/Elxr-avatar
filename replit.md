@@ -1,6 +1,6 @@
 # Overview
 
-This is a full-stack AI avatar chat platform that combines HeyGen's streaming avatar technology with Claude Sonnet 4 AI and real-time Google web search. The application features a React-based frontend with a Node.js/Express backend, allowing users to have intelligent conversations with the Mark Kohl personality-driven avatar that accesses both a comprehensive Pinecone knowledge base and current web information.
+This is a full-stack AI avatar chat platform using LiveAvatar SDK (`@heygen/liveavatar-web-sdk`) for real-time video streaming, combined with Claude Sonnet 4 AI for intelligent responses and Pinecone RAG for knowledge retrieval. The application features a React-based frontend with a Node.js/Express backend, allowing users to have conversations with the Mark Kohl personality-driven avatar.
 
 # User Preferences
 
@@ -9,6 +9,15 @@ Preferred communication style: Simple, everyday language.
 # Recent Changes
 
 ## Latest Updates (February 27, 2026)
+- **MAJOR: Migrated from HeyGen Streaming Avatar to LiveAvatar SDK** - Complete SDK swap
+  - Now uses `@heygen/liveavatar-web-sdk` (`LiveAvatarSession` class) instead of `@heygen/streaming-avatar`
+  - Server creates session tokens via `POST https://api.liveavatar.com/v1/sessions/token` with `LIVEAVATAR_API_KEY`
+  - Token creation uses LITE mode with Mark Kohl avatar ID `98917de8-81a1-4a24-ad0b-584fff35c168`
+  - SDK uses LiveKit for video/audio transport — `session.attach(videoElement)` for stream display
+  - Voice commands: `session.repeat(text)` for TTS, `session.interrupt()` to stop, `session.stop()` to end
+  - Events: `SessionEvent.SESSION_STREAM_READY`, `AgentEventsEnum.USER_TRANSCRIPTION` for user speech
+  - Greeting now sent inside STREAM_READY callback to ensure connection is established
+  - All existing features preserved: fullscreen, pause/resume, inactivity timeout, reconnect, Claude AI responses
 - **Fixed Pinecone Knowledge Base Upload Bug** - Documents uploaded via knowledge base were not appearing in avatar conversations
   - Bug 1: Storage now uses `ask-elxr` index with `mark-kohl` namespace (was storing to wrong location)
   - Bug 2: Standardized embedding model to `text-embedding-ada-002` (storage and retrieval now match)
