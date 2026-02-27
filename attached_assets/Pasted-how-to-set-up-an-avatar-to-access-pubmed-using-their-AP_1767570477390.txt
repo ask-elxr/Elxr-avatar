@@ -1,0 +1,23 @@
+how to set up an avatar to access pubmed using their API
+In 2026, setting up an "avatar" or programmatic agent to access PubMed requires using the NCBI Entrez Programming Utilities (E-utilities) API. While there is no official "avatar" interface, you can configure a persistent identity for your agent by following these steps: 
+1. Create an NCBI API Key 
+An API key identifies your agent and increases your rate limit from 3 to 10 requests per second. 
+Sign In: Access your NCBI Account via a third-party sign-in (e.g., Google, ORCID, or Microsoft), as direct NCBI accounts were retired in 2022.
+Generate Key: Navigate to Account Settings and scroll to the API Key Management section.
+Save Key: Click "Create an API Key" and copy the alphanumeric string. Note: Only one key is allowed per user. 
+2. Configure Your Agent (Avatar) Identity 
+To identify your service or tool to NCBI and avoid being blocked, your agent must include two specific parameters in every request: 
+tool: A string identifying your application (e.g., tool=MyHealthBot2026).
+email: A valid email address for the maintainer so NCBI can contact you if there are issues.
+api_key: The key generated in Step 1. 
+3. Use E-utilities for Access
+Your agent will typically use these primary API endpoints:
+ESearch: To find PubMed IDs (PMIDs) matching a query.
+Example: eutils.ncbi.nlm.nih.gov
+EFetch: To retrieve the full records (XML or text) for specific PMIDs.
+ESummary: To get brief "DocSum" information for a list of PMIDs. 
+4. Best Practices for 2026
+Rate Limits: Do not exceed 10 requests per second with a key.
+Concurrent Requests: Do not make concurrent requests; queue them sequentially.
+Libraries: For easier setup, use established Python libraries like Biopython or PyMed, which handle the identity parameters and key management automatically.
+Public Access Policy: As of July 1, 2025, most NIH-funded research is immediately available in PubMed Central without an embargo, making full-text retrieval via the PMC API more accessible for agents. 

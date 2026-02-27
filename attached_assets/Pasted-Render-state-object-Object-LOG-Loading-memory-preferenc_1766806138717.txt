@@ -1,0 +1,104 @@
+Render state: [object Object]
+LOG🧠 Loading memory preference from localStorage: 
+LOG🧠 memoryEnabled state is now: false
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🌐 Loaded avatar language: en-US
+LOG🎛️ Loaded avatar capabilities: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG📱 Unlocking mobile audio on user gesture...
+LOG📱 Unlocking mobile audio...
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+ERROR📱 Failed to unlock mobile audio: AbortError: The operation was aborted.
+LOG🖼️ Render state: [object Object]
+LOGAudio-only mode: Video disabled, session registered
+LOG📱 Warming up microphone...
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer started for first time
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG📱 Tab became visible - resuming audio contexts...
+LOG🎤 Restarting voice recognition after tab visibility change
+LOG🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+LOG🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+LOG🎤 ElevenLabs STT state check: [object Object]
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+LOG🖼️ Render state: [object Object]
+LOG📱 Microphone warmed up successfully
+LOG🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+LOG🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+LOG🎤 ElevenLabs STT state check: [object Object]
+LOG⚠️ ElevenLabs STT in incomplete/stale state - cleaning up and restarting
+LOG🎤 Starting ElevenLabs STT for mobile... [object Object]
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🗣️ Audio-only greeting: Good to have you here. I'm Nigel. Don't be shy about interrupting - that's fine. What's the edge you're working on?
+LOG🎤 Fetching greeting audio from ElevenLabs...
+LOG🔊 Acknowledgment pre-cache triggered for: nigel (already cached)
+LOG🎤 ElevenLabs STT WebSocket connected successfully
+LOG🔊 Acknowledgment audio preloaded for: nigel
+LOG🎤 ElevenLabs STT ready - starting microphone
+LOG🎤 Requesting microphone access for ElevenLabs STT...
+LOG🎤 ElevenLabs STT microphone listening
+LOG🖼️ Render state: [object Object]
+LOG🎤 Greeting audio response status: 200
+LOG🎤 Greeting audio blob size: 79457 bytes, type: audio/mpeg
+LOG🎤 Attempting to play greeting audio...
+ERROR🎤 Greeting audio play() FAILED: NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+LOG🖼️ Render state: [object Object]
+LOG🎤 Greeting audio loaded - duration: 4.963265306122449 s
+LOGInactivity timer cleared and reset
+LOG📱 Session start completed, checking state propagation...
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT voice input (final): Now
+LOG📝 handleSubmitMessage called with: [object Object]
+LOG🔇 ElevenLabs STT microphone paused (processing user message)
+LOGInactivity timer cleared and reset
+LOG✅ Processing message - Request ID: 17668060862710.wbbdgjox7v
+LOGAudio-only mode: Using /api/audio endpoint
+LOG🧠 Memory settings: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOGAcknowledgment not available, proceeding...
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG
+🎧 ═══════════════════════════════════════════════════════════════
+LOG🎧 AUDIO MODE - Nigel
+LOG🎧 ═══════════════════════════════════════════════════════════════
+LOG📥 USER: "Now"
+LOG📤 CLAUDE RESPONSE:
+LOG───────────────────────────────────────────────────────────────
+LOGI'm ready. What leadership challenge or personal development goal can I help you explore today? I'm here to support your journey toward more conscious, purposeful performance.
+LOG───────────────────────────────────────────────────────────────
+LOG📊 Response: 175 chars
+LOG🎧 ═══════════════════════════════════════════════════════════════
+LOG🔇 Acknowledgment audio stopped
+LOG🔊 Audio blob received: 132.7 KB, type: audio/mpeg
+LOG🔊 Audio element configured, volume: 1, muted: false, unlocked: false
+LOG🔊 Audio metadata loaded: duration=8.49s, volume=1
+LOG🔊 Audio playback STARTED via shared element - duration: 8.49s
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG📱 Tab became hidden - stopping avatar session to release resources...
+LOG✅ Audio paused (tab hidden)
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]

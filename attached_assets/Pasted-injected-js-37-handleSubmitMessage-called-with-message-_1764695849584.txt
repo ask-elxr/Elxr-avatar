@@ -1,0 +1,124 @@
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi thad. how is it going?', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17646957539010.w95glavcwwj
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 669ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 5048ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "I'm doing well, thanks for asking...."
+injected.js:37 🚀 [STREAMING] Sentence 2: "How are things going with you?..."
+injected.js:37 🚀 [STREAMING] Sentence 3: "What's on your mind today - whether it's financial..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 3
+injected.js:37 🚀 [STREAMING] First sentence delay: 5048ms
+injected.js:37 🚀 [STREAMING] Total time: 5048ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 3280, dataFetchMs: 669, claudeMs: 2477, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: hi thad. how is it going?
+injected.js:37 🤖 CLAUDE RESPONSE: Hey! I'm doing well, thanks for asking.
+
+How are things going with you? What's on your mind today - whether it's financial challenges, building resilience, or working through any setbacks?
+injected.js:37 ---
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 8852ms ===
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🎤 Voice recognition already running
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 📝 handleSubmitMessage called with: {message: 'I need the video that show the how can I success in fincial problem', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17646958026640.d1vpwozw35c
+injected.js:37 🔊 Audio capture ended
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 774ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 8016ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "I'd be happy to create a video about overcoming fi..."
+injected.js:37 🚀 [STREAMING] Sentence 2: "It'll cover practical strategies for getting throu..."
+injected.js:37 🚀 [STREAMING] Sentence 3: "The video will be generated and you'll find it in ..."
+injected.js:37 🚀 [STREAMING] Sentence 4: "While that's being created, want to tell me what s..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 4
+injected.js:37 🚀 [STREAMING] First sentence delay: 8016ms
+injected.js:37 🚀 [STREAMING] Total time: 8019ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 6014, dataFetchMs: 774, claudeMs: 5108, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: I need the video that show the how can I success in fincial problem
+injected.js:37 🤖 CLAUDE RESPONSE: I'd be happy to create a video about overcoming financial problems for you! It'll cover practical strategies for getting through financial challenges and building resilience.
+
+The video will be generated and you'll find it in your "My Videos" section in a few minutes. While that's being created, want to tell me what specific financial challenge you're facing so we can dig into it together right now?
+injected.js:37 ---
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 13644ms ===
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🎤 Voice recognition already running
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started

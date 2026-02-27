@@ -66,6 +66,7 @@ export default {
         sans: ["var(--font-sans)"],
         serif: ["var(--font-serif)"],
         mono: ["var(--font-mono)"],
+        satoshi: ["Satoshi", "var(--font-sans)"],
       },
       keyframes: {
         "accordion-down": {

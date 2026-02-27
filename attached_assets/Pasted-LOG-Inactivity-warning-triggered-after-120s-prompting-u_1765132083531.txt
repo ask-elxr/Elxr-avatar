@@ -1,0 +1,103 @@
+LOG⏰ Inactivity warning triggered after 120s - prompting user
+LOG🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()
+ERRORError speaking with ElevenLabs voice: Error: Failed to generate ElevenLabs TTS audio
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+WARNINGtrackUnsubscribed [object Object]
+WARNINGtrackUnsubscribed [object Object]
+WARNINGWebSocket closed - code: 1000 reason:  wasClean: true
+LOG📊 LiveAvatar session state: DISCONNECTED
+LOG📵 LiveAvatar stream disconnected: UNKNOWN_REASON
+LOG📵 Stream disconnected - intentionalStop flag: false
+LOG🔄 Auto-reconnecting attempt 1/3 in 1000ms...
+LOG🖼️ Render state: [object Object]
+INFOdisconnect from room [object Object]
+LOG🔄 Executing auto-reconnect attempt 1...
+LOGStarting LiveAvatar session (fresh start)
+LOG🖼️ Render state: [object Object]
+LOG🔍 Avatar voice config check: heygenVoiceId="fWUVBoxa3cvv6VWj6VRS", elevenlabsVoiceId="fWUVBoxa3cvv6VWj6VRS"
+LOG🎙️ useElevenLabsVoiceRef set to: false
+LOG🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Nigel
+LOG🚀 LiveAvatarDriver.start() called for: nigel
+LOG🔑 Fetching LiveAvatar session credentials for: nigel
+LOG📦 LiveAvatar session credentials received: [object Object]
+LOG📋 Creating LiveAvatar session: [object Object]
+LOG🔄 Calling session.start() - SDK will connect to LiveKit...
+LOG📊 LiveAvatar session state: CONNECTING
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎬 LiveAvatar SESSION_STREAM_READY event received
+LOG📺 Attaching video element via session.attach()...
+LOG🎬 LiveAvatar stream ready
+LOG📺 Video track ready - updating videoReady state
+LOG✅ Video element attached via SDK - stream should be visible
+LOG🖼️ Render state: [object Object]
+LOG🗣️ Avatar greeting: Hello. I'm Nigel. Leadership starts with self-awareness. You can jump in whenever you want. What would you like to explore?
+LOG🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()
+LOG📊 LiveAvatar session state: CONNECTED
+LOG✅ session.start() completed - waiting for SESSION_STREAM_READY event
+LOG✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+LOG✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+LOG✅ Auto-reconnect successful!
+LOGsetStreamState active
+LOG🎤 Got base64 PCM audio (353688 chars), sending to SDK...
+LOG🔊 Audio sent to SDK for lip-sync playback
+LOG📺 Video element state after attach: [object Object]
+LOG🗣️ Avatar started speaking
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🤫 Avatar stopped speaking
+LOG🎤 Avatar stopped talking, will resume voice recognition in 3500 ms
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔊 Resuming voice recognition (avatar finished speaking)
+LOG📱 Browser detection: iOS=true, Android=false, Safari=false, iOSSafari=false, Chrome=false, ChromeIOS=true, ChromeMobile=false, touch=true, smallScreen=true
+LOG📱 UserAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 26_2_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Cr...
+LOG📱 Mobile device detected - using ElevenLabs realtime STT instead of Web Speech API
+LOG🎤 Starting ElevenLabs STT for mobile...
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket connected
+ERROR🎤 ElevenLabs STT WebSocket error: [object Event]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🖼️ Render state: [object Object]
+ERROR🎤 ElevenLabs STT error: STT connection error
+ERROR🎤 ElevenLabs STT error: Failed to start STT session
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG⏰ Sign-off triggered after 30s grace period - ending session
+LOG🎙️ CUSTOM mode: Using ElevenLabs voice via session.repeatAudio()
+ERRORError speaking with ElevenLabs voice: Error: Failed to generate ElevenLabs TTS audio
+LOG⏳ Waiting 12800ms for farewell speech to complete
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+Child frames:
+https://avatar-chat-mark-r-emix-nigel43.replit.app/embed/chat/dexter
+LOG🖼️ Render state: [object Object]
+LOG🧠 Loading memory preference from localStorage: 
+LOG🧠 memoryEnabled state is now: false
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🌐 Loaded avatar language: en-US
+LOG🎛️ Loaded avatar capabilities: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]

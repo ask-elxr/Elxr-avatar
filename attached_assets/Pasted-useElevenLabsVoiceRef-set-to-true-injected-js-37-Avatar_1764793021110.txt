@@ -1,0 +1,68 @@
+useElevenLabsVoiceRef set to: true
+injected.js:37 🎙️ Avatar Nigel will use ElevenLabs voice in video mode (no HeyGen voice configured)
+injected.js:37 Stream ready: MediaStream {id: '4ca2b871-5ccc-4f81-af5f-c6307484cae4', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ⏭️ Skipping greeting - mode switch (seamless transition)
+injected.js:37 🎤 Starting voice recognition after seamless mode switch
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 ✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 📝 handleSubmitMessage called with: {message: 'describe this image.', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17647929291900.3la0hn1nmig
+injected.js:37 🔊 Audio capture ended
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 766ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 49216ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "That's a professional headshot of a woman with blo..."
+injected.js:37 🚀 [STREAMING] Sentence 2: "She's smiling warmly at the camera in what looks l..."
+injected.js:37 🚀 [STREAMING] Sentence 3: "The photo has that polished, approachable quality ..."
+injected.js:37 🚀 [STREAMING] Sentence 4: "What's the context — are you working on something ..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 4
+injected.js:37 🚀 [STREAMING] First sentence delay: 49216ms
+injected.js:37 🚀 [STREAMING] Total time: 49217ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 7471, dataFetchMs: 766, claudeMs: 6314, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: describe this image.
+injected.js:37 🤖 CLAUDE RESPONSE: That's a professional headshot of a woman with blonde hair styled in a bob, wearing a white turtleneck sweater. She's smiling warmly at the camera in what looks like a bright, naturally-lit indoor space — possibly an office or home setting with soft, blurred artwork visible in the background.
+
+The photo has that polished, approachable quality you'd see in a corporate profile or media bio.
+
+What's the context — are you working on something with this image?
+injected.js:37 ---
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🗣️ ElevenLabs avatar STOP talking (video mode)
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Voice recognition resumed after ElevenLabs speech (delayed)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🗣️ ElevenLabs avatar STOP talking (video mode)
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Voice recognition resumed after ElevenLabs speech (delayed)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started

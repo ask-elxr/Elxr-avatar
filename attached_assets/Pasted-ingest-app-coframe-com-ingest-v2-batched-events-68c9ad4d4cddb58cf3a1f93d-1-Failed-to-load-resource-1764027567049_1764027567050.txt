@@ -1,0 +1,133 @@
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ⏭️ Voice recognition already active
+injected.js:37 Starting HeyGen session for first message
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/heygen/token:1  Failed to load resource: the server responded with a status of 402 (Payment Required)
+injected.js:37 Error starting HeyGen session: Error: Payment Required
+    at fetchAccessToken (useAvatarSession.ts:110:13)
+    at async useAvatarSession.ts:295:36
+    at async useAvatarSession.ts:516:9
+    at async onClick (avatar-chat.tsx:350:19)
+(anonymous) @ injected.js:37
+injected.js:37 Error starting HeyGen in video mode: Error: Payment Required
+    at fetchAccessToken (useAvatarSession.ts:110:13)
+    at async useAvatarSession.ts:295:36
+    at async useAvatarSession.ts:516:9
+    at async onClick (avatar-chat.tsx:350:19)
+(anonymous) @ injected.js:37
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 9bc2c34ac11aec41.js:2
+setTimeout
+(anonymous) @ 9bc2c34ac11aec41.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 9bc2c34ac11aec41.js:2
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 9bc2c34ac11aec41.js:2
+setTimeout
+(anonymous) @ 9bc2c34ac11aec41.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 9bc2c34ac11aec41.js:2
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 ✅ Voice recognition stopped
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🎤 Microphone listening
+injected.js:214  POST https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/heygen/token 402 (Payment Required)
+apply @ injected.js:214
+fetchAccessToken @ useAvatarSession.ts:92
+(anonymous) @ useAvatarSession.ts:295
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:516
+await in (anonymous)
+handleAvatarSwitch @ avatar-chat.tsx:207
+await in handleAvatarSwitch
+handleSwitch @ AvatarSwitcher.tsx:70
+callCallback2 @ chunk-RPCDYKBN.js?v=d5c83742:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d5c83742:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d5c83742:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d5c83742:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d5c83742:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d5c83742:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d5c83742:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d5c83742:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d5c83742:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d5c83742:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d5c83742:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d5c83742:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d5c83742:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d5c83742:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d5c83742:5449
+injected.js:37 Error starting HeyGen session: Error: Payment Required
+    at fetchAccessToken (useAvatarSession.ts:110:13)
+    at async useAvatarSession.ts:295:36
+    at async useAvatarSession.ts:516:9
+    at async handleAvatarSwitch (avatar-chat.tsx:207:7)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:408
+await in (anonymous)
+(anonymous) @ useAvatarSession.ts:516
+await in (anonymous)
+handleAvatarSwitch @ avatar-chat.tsx:207
+await in handleAvatarSwitch
+handleSwitch @ AvatarSwitcher.tsx:70
+callCallback2 @ chunk-RPCDYKBN.js?v=d5c83742:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d5c83742:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d5c83742:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d5c83742:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d5c83742:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d5c83742:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d5c83742:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d5c83742:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d5c83742:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d5c83742:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d5c83742:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d5c83742:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d5c83742:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d5c83742:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d5c83742:5449
+injected.js:37 Error starting HeyGen in video mode: Error: Payment Required
+    at fetchAccessToken (useAvatarSession.ts:110:13)
+    at async useAvatarSession.ts:295:36
+    at async useAvatarSession.ts:516:9
+    at async handleAvatarSwitch (avatar-chat.tsx:207:7)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:523
+await in (anonymous)
+handleAvatarSwitch @ avatar-chat.tsx:207
+await in handleAvatarSwitch
+handleSwitch @ AvatarSwitcher.tsx:70
+callCallback2 @ chunk-RPCDYKBN.js?v=d5c83742:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=d5c83742:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=d5c83742:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=d5c83742:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=d5c83742:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=d5c83742:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=d5c83742:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=d5c83742:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=d5c83742:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=d5c83742:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=d5c83742:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=d5c83742:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=d5c83742:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=d5c83742:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=d5c83742:5449
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764019024533%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)

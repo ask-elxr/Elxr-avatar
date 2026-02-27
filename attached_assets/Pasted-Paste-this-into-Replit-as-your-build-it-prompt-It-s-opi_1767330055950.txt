@@ -1,0 +1,138 @@
+Paste this into Replit as your “build it” prompt. It’s opinionated on purpose.
+
+⸻
+
+Replit prompt: Pinecone namespaces + proper ingestion pipeline (Vite+Express)
+
+You are building a production-ready ingestion + retrieval system for AskELXR using Node.js (Express) and Pinecone. The current problem is poor retrieval because documents were uploaded as large blobs and not chunked well. Implement a robust pipeline with namespace isolation per mentor + subject and high-quality chunking.
+
+Goals
+	1.	Ingest content (text now; PDF/URL later) into Pinecone with:
+	•	clean chunking (token-based)
+	•	overlap
+	•	“breadcrumb” context prepended to each chunk
+	•	consistent metadata
+	•	batch embeddings + batch upserts
+	2.	Namespaces that prevent knowledge bleeding:
+	•	namespace format: prod:mentor:{mentorSlug}:{kbSlug}:v{version}
+	•	allow staging: too
+	3.	Retrieval endpoint that queries the right namespace and returns:
+	•	best chunks
+	•	citations (title/section/source_id/chunk_index)
+	4.	Provide scripts + endpoints + clear README.
+
+Tech constraints
+	•	Node 18+
+	•	Express backend
+	•	Use Pinecone official SDK
+	•	Use an embeddings provider (OpenAI embeddings) unless already configured; keep it behind an interface so it can be swapped later.
+	•	Do NOT store giant documents as single vectors.
+	•	Store chunk records in a simple local JSONL file or lightweight DB table (if Postgres/Supabase env exists) for debugging and reindexing.
+
+Data model
+
+Each chunk must have:
+	•	id: ${source_id}:${chunk_index}
+	•	values: embedding vector
+	•	metadata:
+	•	mentor (string)
+	•	kb (string)
+	•	env (prod|staging)
+	•	source_type (pdf|url|transcript|doc)
+	•	source_id (string)
+	•	title (string)
+	•	section (string)
+	•	chunk_index (number)
+	•	text_preview (first 200 chars)
+	•	created_at (ISO)
+
+Chunking requirements
+
+Implement a chunker that:
+	•	normalizes whitespace
+	•	splits by headings if present (lines starting with #, ##, ###) else uses paragraphs
+	•	enforces token limits using a tokenizer (use tiktoken or a simple fallback approximation if needed)
+	•	chunk size defaults:
+	•	CHUNK_TOKENS=350
+	•	CHUNK_OVERLAP=60
+	•	Adds breadcrumb prefix before embedding:
+
+Title: {title}
+Section: {section}
+Mentor: {mentor}
+KB: {kb}
+Content: {chunk_text}
+
+
+
+API endpoints to implement
+	1.	POST /admin/ingest/text
+Body:
+
+{
+  "env": "prod",
+  "mentor": "markkohl",
+  "kb": "psychedelics",
+  "version": 1,
+  "source_type": "doc",
+  "source_id": "mk_psy_001",
+  "title": "Integration Basics",
+  "text": "..."
+}
+
+Behavior:
+	•	determine namespace from env/mentor/kb/version
+	•	chunk text
+	•	embed chunks in batches
+	•	upsert vectors into Pinecone in batches
+	•	save chunk debug log locally (JSONL) with id + metadata + raw chunk text
+Return:
+	•	namespace
+	•	number of chunks
+	•	upserted count
+
+	2.	POST /admin/query
+Body:
+
+{
+  "env": "prod",
+  "mentor": "markkohl",
+  "kb": "psychedelics",
+  "version": 1,
+  "query": "How do I integrate a difficult trip in the first 72 hours?",
+  "topK": 12
+}
+
+Behavior:
+	•	embed query
+	•	query Pinecone in the computed namespace with topK
+	•	return matches with score + metadata + short snippet (from debug store if available)
+
+Pinecone
+	•	Use PINECONE_API_KEY, PINECONE_INDEX_NAME
+	•	Validate index exists and dimensions match embedding model.
+	•	If mismatch, throw a clear error explaining to create a new index.
+
+Security
+	•	These endpoints are admin-only. Add a simple protection:
+	•	require X-ADMIN-KEY header matching ADMIN_KEY env var.
+
+Deliverables
+	•	Working Express server with these endpoints
+	•	src/ingest/chunker.js, src/ingest/embedder.js, src/ingest/pinecone.js
+	•	README with:
+	•	env vars
+	•	curl examples
+	•	recommended namespace patterns
+	•	how to reindex a source_id
+	•	Add a small sample text + a script to ingest it and run a query.
+
+Extra credit
+	•	Add DELETE /admin/source/:source_id to remove all vectors for a source_id (by filtering + deleting).
+	•	Add a dryRun=true option to ingestion to show chunk boundaries without embedding/upserting.
+
+Build this cleanly with good error messages and logging.
+
+⸻
+
+If you want, paste your current namespace pattern + a sample of your worst-performing document, and I’ll tweak the chunk size/overlap + metadata so it fits your actual content (transcripts behave very differently than books).

@@ -1,163 +1,114 @@
-# Overview
+# Multi-Avatar AI Chat System
 
-This is a full-stack AI avatar chat platform using LiveAvatar SDK (`@heygen/liveavatar-web-sdk`) for real-time video streaming, combined with Claude Sonnet 4 AI for intelligent responses and Pinecone RAG for knowledge retrieval. The application features a React-based frontend with a Node.js/Express backend, allowing users to have conversations with the Mark Kohl personality-driven avatar.
+### Overview
+This project is an advanced AI chat platform integrating HeyGen video avatars for real-time voice conversations and a video course creation system. It features knowledge retrieval from diverse sources and persistent memory. The system aims to provide an interactive, intelligent, and personalized AI conversational experience with significant market potential in education, customer service, and specialized information retrieval.
 
-# User Preferences
+### User Preferences
+- **Architecture**: Modular code organization with separate config/, services/, routes/
+- **Avatar Merging**: DB overrides take absolute precedence (including null, false, empty string)
+- **Service Facades**: Thin wrappers that re-export existing functionality
+- **Route Extraction**: Incremental migration from monolithic routes.ts to feature-focused modules
+- **Content Anonymity Policy**: Verbatim/conversational chunk ingestion is ONLY for personal knowledge namespaces (real people: mark-kohl, willie-gault). All course/educational content MUST go through the Learning Artifact pipeline to ensure anonymity — no quotes, no recognizable phrasing, no instructor names.
+- **Embedding Model**: All retrieval AND ingestion uses `text-embedding-3-small` (1536 dims). No `ada-002` anywhere.
 
-Preferred communication style: Simple, everyday language.
+### System Architecture
 
-# Recent Changes
+#### Frontend (React + TypeScript)
+- **Core Features**: Avatar selection, LiveAvatar video streaming, Web Speech API for voice recognition, real-time chat with memory, document upload, and an admin dashboard.
+- **Real-time Streaming Pipeline**: Ultra-low latency voice conversation via WebSocket, integrating ElevenLabs STT, Pinecone RAG, Mem0, OpenAI Realtime API, and ElevenLabs Realtime TTS, designed for zero buffering.
+- **Parallel RAG + LLM Pipeline**: Prioritizes responsiveness by initiating RAG/Mem0 searches immediately.
+- **Audio Streaming Mode**: Includes immediate thinking sounds, parallel data fetching, Claude streaming with sentence buffering, concurrent TTS generation, and SSE audio events.
+- **Barge-in/Cancellation System**: ElevenLabs STT partial transcripts trigger 150ms debounced interruption when avatar is speaking (checks audio element state, not just ref flag). `performBargeIn()` helper hard-stops audio (pause, reset currentTime, revoke blob URL), aborts in-flight fetch, interrupts HeyGen driver, and resets speaking state. Server-side `req.on('close')` handler on `/api/audio` sets `requestAborted` flag checked before Claude and TTS calls. `cancelPendingWork()` also clears barge-in debounce ref.
+- **Unified Conversation WebSocket (`/ws/conversation`)**: Server-side session state machine (IDLE→LISTENING→THINKING→SPEAKING) with turnId-based cancellation. Binary protocol: `[TTS0 magic 4B][turnId uint32 LE][PCM 24kHz 16-bit audio]`. Server pipes mic PCM → ElevenLabs STT → Claude streaming with sentence buffering → ElevenLabs streaming TTS → binary audio chunks back to client. `bargeIn()` increments turnId, aborts Claude+TTS AbortControllers, clears sentence queue, sends STOP_AUDIO. Client `useConversationWs` hook parses binary TTS frames, drops late-turn audio, plays via WebAudio (audio-only) or feeds into LiveAvatar SDK's `repeatAudio()` (video mode) for lip-sync. `playLocalAudio` getter dynamically reads `audioOnlyRef.current` for reactive mode switching. Replaces legacy `/api/audio` batch flow.
 
-## Latest Updates (February 27, 2026)
-- **MAJOR: Migrated from HeyGen Streaming Avatar to LiveAvatar SDK** - Complete SDK swap
-  - Now uses `@heygen/liveavatar-web-sdk` (`LiveAvatarSession` class) instead of `@heygen/streaming-avatar`
-  - Server creates session tokens via `POST https://api.liveavatar.com/v1/sessions/token` with `LIVEAVATAR_API_KEY`
-  - Token creation uses LITE mode with Mark Kohl avatar ID `98917de8-81a1-4a24-ad0b-584fff35c168`
-  - SDK uses LiveKit for video/audio transport — `session.attach(videoElement)` for stream display
-  - Voice commands: `session.repeat(text)` for TTS, `session.interrupt()` to stop, `session.stop()` to end
-  - Events: `SessionEvent.SESSION_STREAM_READY`, `AgentEventsEnum.USER_TRANSCRIPTION` for user speech
-  - Greeting now sent inside STREAM_READY callback to ensure connection is established
-  - All existing features preserved: fullscreen, pause/resume, inactivity timeout, reconnect, Claude AI responses
-- **Fixed Pinecone Knowledge Base Upload Bug** - Documents uploaded via knowledge base were not appearing in avatar conversations
-  - Bug 1: Storage now uses `ask-elxr` index with `mark-kohl` namespace (was storing to wrong location)
-  - Bug 2: Standardized embedding model to `text-embedding-ada-002` (storage and retrieval now match)
-  - Bug 3: Lowered score threshold from 0.75 to 0.5 (was filtering out valid results)
-  - Bonus: Max chunks per document raised from 25 to 100 for richer content
-- **Fixed Mobile Fullscreen** - Chrome Android now uses native Fullscreen API with `navigationUI: 'hide'` to properly hide browser bars; iOS uses video-specific fullscreen; desktop uses container fullscreen
+#### Backend (Express + TypeScript + Python)
+- **Structure**: Modular routes, service facades for business logic (avatars, RAG, memory, auth), and centralized configuration.
+- **Python Integration**: Pipecat bot service for conversational AI.
 
-## Previous Updates (October 28, 2025)
-- **MAJOR: Deeper, Richer Responses** - Increased Claude token limit (1000→2500), improved prompting for substantive answers, better knowledge retrieval (3→5 results)
-- **Fixed Mid-Answer Cutoffs** - Timer now resets every 10 seconds while avatar is speaking, preventing timeout during long responses
-- **Fixed Timeout Interruptions** - If user speaks during sign-off, avatar immediately stops goodbye message and listens to new question
-- **Dual Pinecone Knowledge Base Access** - Mark now queries BOTH `knowledge-base-assistant` AND `ask-elxr` assistants in parallel for comprehensive responses
-- **Disabled Google Web Search for Speed** - Avatar now responds faster using only Claude Sonnet 4 + dual Pinecone knowledge bases (no web search delays)
-- **20 Authentic Mark Kohl Sign-Offs** - After 60 seconds inactivity, Mark says one of 20 personalized goodbyes
-- **Fixed Greeting Timing** - Inactivity timer now starts 2 seconds AFTER Mark's greeting (no more cut-offs)
+#### Database (PostgreSQL + Drizzle ORM)
+- **Schema**: Defined in `shared/schema.ts`, including tables for `avatar_profiles`, `conversations`, `courses`, `lessons`, `generated_videos`, `mood_entries`, and a subscription system.
 
-## Previous Updates (October 12, 2025)
-- **CRITICAL FIX: Pause Now Stops Avatar Stream** - Prevents credit drain when paused
-  - Pause button now completely stops the HeyGen avatar stream (calls `stopAvatar()`)
-  - Previously only muted microphone, avatar kept streaming and charging credits
-  - Resume button restarts the entire session (new stream starts)
-  - Saves significant HeyGen credits when taking breaks
-- **Two-Stage Timeout with Polite Prompt** - Avatar asks before terminating
-  - After 60 seconds inactivity → Avatar asks: "Is there anything else I can help you with?"
-  - User gets 20 more seconds to respond
-  - If user responds → Timer resets, conversation continues
-  - If no response → Avatar gives funny timeout message and terminates with reconnect screen
-- **Timeout Message with Credit Savings** - Funny message before stopping avatar
-  - After asking "anything else?" with no response, avatar says: "Well, if that's all I've got to work with here... guess I'll save us both some credits and take a break. Hit that reconnect button when you're ready for round two!"
-  - Then fully stops avatar stream to prevent credit charges
-  - Shows reconnect button (no auto-loop)
-- **Reconnect Screen After Timeout** - Shows reconnect option instead of auto-looping
-  - After 1 minute of inactivity, logo appears with "Reconnect" button
-  - User must click "Reconnect" to restart session (no auto-restart loop)
-  - Manual "End Chat" button still auto-restarts immediately
-  - Prevents continuous resource usage when idle
-- **Added Pause/Resume Control** - Purple pause button in top center for controlling avatar
-  - Pause: Completely stops avatar stream (saves HeyGen credits!)
-  - Resume: Restarts entire session with new stream
-  - Button shows Pause icon when active, Play icon when paused
-  - Works on both mobile and desktop
-  - Pausing stops the inactivity timer and clears video element
-- **Removed Action Descriptions** - Avatar no longer uses stage directions like "*leans back*" or "*smirks*"
-- **No File Promises** - Avatar won't promise to send links, PDFs, or documents (speaks information instead)
-- **Fixed October 2023 Reference Bug** - Avatar now maintains current date awareness from first response
-  - System prompt always includes today's date (dynamic, updates automatically)
-  - Explicit prohibition against mentioning "October 2023", "training data", or "knowledge cutoff"
-  - Mark Kohl personality prompt includes current date at top of system configuration
-  - Works correctly even when Google Search returns poor results
-  - No more "my knowledge is from Oct 2023" disclaimers
-- **Universal Auto-Start** - Avatar now auto-starts on all devices (mobile and desktop)
-  - Removed "Chat now" button on desktop (ready for custom trigger implementation)
-  - Auto-restart functionality on both platforms when "End Chat" is clicked
-  - Loading video displays during initialization and restart
-  - Mobile: Unpinch animation guides users to fullscreen
-  - Desktop: Clean interface without mobile-specific graphics
-- **Smart Loading Video Integration** - Loading video displays at the right moments during user interaction
-  - Shows MP4 intro logo when session starts
-  - Also displays when ending chat and restarting avatar session
-  - 5-second display duration with automatic fade-out
-  - PostMessage listener detects HeyGen's `streaming-embed:show` action
-- **End Chat Controls** - Added prominent end chat buttons for easy session restart
-  - Mobile: Red circular X button in top right corner
-  - Desktop: Red rounded button with "End Chat" text label
-  - Both trigger loading video overlay during avatar reset
-- **Multi-Index Pinecone Support** - Now supports accessing two Pinecone indexes (`avatar-chat-knowledge` and `ask-elxr`)
-  - All conversation endpoints accept optional `indexName` parameter to select target index
-  - Proper validation with 400 errors for invalid index names
-  - Backward compatible with default index for existing functionality
-  - Automatic index creation with readiness polling for serverless indexes
+#### Avatar System
+- **Multi-avatar Support**: Includes 10 active avatars with unique expertise, configurable settings, dedicated Pinecone knowledge bases, and per-avatar research source toggles.
+- **HeyGen Integration**: Utilizes dual HeyGen IDs (LiveAvatar for streaming, Instant/Public for video generation) and separate API keys.
 
-## Previous Updates (January 2025)
-- **HeyGen Streaming SDK Integration** - Proper SDK implementation using @heygen/streaming-avatar package
-- **Optimized Pinecone Access** - Uses single `knowledge-base-assistant` for faster responses (30-40% speed improvement)
-- **Upgraded to Claude Sonnet 4** (`claude-sonnet-4-20250514`) - Latest AI model for superior responses
-- **Integrated Google Web Search** - Avatar now accesses real-time web information (2025 data confirmed)
-- **Enhanced Avatar Intelligence** - Combines Pinecone knowledge base + Google Search + Claude Sonnet 4
-- **Mark Kohl Personality** - Full integration with custom personality system prompts
-- **Fixed Request Timeouts** - Increased timeout to 30s for full AI processing pipeline
-- **Improved Response Quality** - Multi-source intelligence (knowledge base, web, AI reasoning)
+#### Video Course System
+- **Workflow**: Users create courses, add lessons, and generate videos via HeyGen, with optional AI script generation using Claude AI and Pinecone knowledge.
 
-## Previous Updates
-- Connected to knowledge-base-assistant using Pinecone SDK (26k+ tokens processed)
-- Implemented avatar response system with knowledge base integration
-- Added interactive test buttons (microphone, knowledge base, force refresh)
-- Created clean full-screen avatar interface
-- Fixed HeyGen iframe audio and permission handling
+#### Chat Video-on-Demand System
+- **Feature**: Users can request videos during chat via intent detection, generating scripts with Claude AI and creating videos asynchronously via HeyGen.
 
-# System Architecture
+#### Mood Tracker System
+- **Feature**: Users log emotional states, with Claude AI generating personalized, empathetic responses.
 
-## Frontend Architecture
-- **React with TypeScript**: Single-page application built with React 18 and TypeScript for type safety
-- **Vite Build System**: Modern build tool for fast development and optimized production builds
-- **Component Design**: Uses shadcn/ui component library built on Radix UI primitives for consistent, accessible UI components
-- **Styling**: Tailwind CSS with CSS custom properties for theming and responsive design
-- **State Management**: TanStack Query for server state management and React hooks for local state
-- **Routing**: Wouter for lightweight client-side routing
+#### Subscription System
+- **Tiers**: Free Trial, Basic, and Full plans with varying limits and management for activation, usage tracking, and limit enforcement.
 
-## Backend Architecture
-- **Express.js Server**: RESTful API server with middleware for JSON parsing and request logging
-- **Database Layer**: Drizzle ORM configured for PostgreSQL with schema definitions and migrations
-- **Storage Abstraction**: Pluggable storage interface with in-memory implementation for development
-- **Environment-based Configuration**: Separate development and production modes with environment variable support
+#### Role-Based Access Control (RBAC)
+- **Roles**: `admin` and `user`, with backend middleware and frontend guards for protection.
 
-## Data Storage
-- **Primary Database**: PostgreSQL via Neon Database service for production data persistence
-- **Vector Database**: Pinecone for storing conversation embeddings (1536 dimensions for OpenAI compatibility)
-- **ORM**: Drizzle ORM for type-safe database operations and schema management
-- **Session Storage**: PostgreSQL-based session storage using connect-pg-simple
-- **Schema Design**: User management with UUID primary keys, conversations table with embedding support
+#### Webflow Embedding Mode
+- **Anonymous Access**: Bypasses authentication for user-facing routes, assigning anonymous session IDs.
+- **Admin Secret Authentication**: Admin routes protected by `X-Admin-Secret` header.
+- **CORS & CSP**: Configured for embedding from any origin.
 
-## Authentication & Authorization
-- **Session-based Authentication**: Server-side sessions stored in PostgreSQL
-- **User Management**: Username/password authentication with secure password storage
-- **API Security**: Credential-based requests with CORS handling
+#### Google Drive Topic Folders Integration
+- **Source**: Integrates with Google Drive topic folders for Pinecone namespace population.
+- **Processing Pipeline**: Claude substance extraction → conversational chunking → OpenAI embeddings → Pinecone upsert.
 
-## External Dependencies
+#### Personality Engine
+- **Location**: `server/engine/` directory with modular architecture.
+- **Persona Specs**: JSON files defining identity, boundaries, voice, behavior, knowledge policies.
 
-### Core Services
-- **HeyGen Streaming Avatar API**: Primary AI avatar service for real-time video streaming and conversation (iframe embed approach)
-- **Neon Database**: Managed PostgreSQL hosting for production data storage
-- **Pinecone Vector Database**: Vector storage for conversation embeddings and AI context memory
+#### Production Pinecone Ingestion System
+- **Location**: `server/ingest/` directory with modular architecture.
+- **Chunking**: Token-based (350 tokens default, 60 overlap), heading-aware splitting, breadcrumb context.
+- **Embeddings**: OpenAI text-embedding-3-small with batch processing and retry logic.
 
-### Frontend Libraries
-- **UI Framework**: React 18 with TypeScript support
-- **Component Library**: Radix UI primitives with shadcn/ui customizations
-- **Styling**: Tailwind CSS with autoprefixer and PostCSS
-- **State Management**: TanStack React Query for server state
-- **Routing**: Wouter for lightweight client-side navigation
-- **Form Handling**: React Hook Form with Zod validation
-- **Icons**: Lucide React icon library
+#### Course Transcript Ingestion System
+- **Location**: `server/ingest/`.
+- **Purpose**: Anonymize and conversationally chunk course transcripts using Claude AI, then route to content-type specific Pinecone namespaces.
+- **Anonymization**: Claude-powered removal of sensitive information with a self-check loop.
+- **Conversational Chunking**: 120-300 token standalone units with metadata classification.
 
-### Backend Dependencies
-- **Server Framework**: Express.js with TypeScript
-- **Database**: Drizzle ORM with PostgreSQL driver
-- **Session Management**: express-session with PostgreSQL store
-- **Development Tools**: tsx for TypeScript execution, esbuild for production builds
+#### Batch Podcast Ingestion System (Replit-Safe Architecture)
+- **Location**: `server/ingest/batchPodcastService.ts`, `server/ingest/microBatchIngestion.ts`.
+- **Purpose**: Process large ZIP archives of podcast episode transcripts with full resumability.
+- **Resumability**: Survives server restarts by storing all intermediate state in the database.
+- **Micro-Batch Design**: Prevents memory/timeout issues by processing in small batches with retry logic and rate limiting.
 
-### Development Tools
-- **Build System**: Vite with React plugin and runtime error overlay
-- **Type Checking**: TypeScript with strict mode enabled
-- **Database Migrations**: Drizzle Kit for schema management
-- **Environment Management**: dotenv for configuration management
+#### Learning Artifact Ingestion System
+- **Location**: `server/ingest/learningArtifactService.ts`.
+- **Purpose**: Transform course transcripts into derived learning artifacts instead of storing verbatim text for copyright and retrieval.
+- **Artifact Types**: `principle`, `mental_model`, `heuristic`, `failure_mode`, `checklist`, `qa_pair`, `scenario`.
+- **Auto-Lesson Detection**: Full course transcripts can be uploaded and automatically split into lessons using Claude AI boundary detection.
+- **Background Job Pattern**: Full course ingestion runs as a background job to avoid HTTP timeouts. Returns job ID immediately, frontend polls for status with real-time progress tracking (lessons detected, processed, artifacts created).
+
+#### Content Taxonomy System
+- **Location**: `server/contentTaxonomy.ts`.
+- **Purpose**: Professional, taxonomy-driven content policy for adult educational wellness platform.
+- **Guardrails**: No explicit storytelling, illegal instructions, medical/legal advice, or harm glamorization.
+
+#### Avatar Mini-Games System
+- **Location**: `client/src/components/AvatarMiniGames.tsx`, `server/routes/games.ts`.
+- **Purpose**: Interactive games users can play with avatars during chat sessions.
+
+#### Technical Implementations
+- **AI Integration**: Primary LLM is Claude Opus 4.6 for conversations (best quality), Haiku 3.5 for ingestion (cost savings). Integrated with RAG and Mem0 for persistent memory.
+- **Smart Memory Extraction**: Mem0 extracts filtered, deduplicated, and typed memories using Claude.
+- **Real-time Voice**: HeyGen for video/audio synthesis, Web Speech API for voice recognition.
+
+### External Dependencies
+
+- **HeyGen**: Video avatar service.
+- **Anthropic (Claude AI)**: Primary Large Language Model.
+- **Pinecone**: Vector database.
+- **Mem0**: Persistent memory service.
+- **PubMed**: Medical and scientific research source.
+- **Wikipedia**: General knowledge source.
+- **Google Search**: Web search.
+- **PostgreSQL**: Relational database.
+- **Drizzle ORM**: TypeScript ORM.
+- **OpenAI**: For embeddings.
+- **ElevenLabs**: Alternative TTS service.
+- **Redis (Upstash)**: For background job queuing.

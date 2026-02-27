@@ -1,0 +1,210 @@
+    at new APIError2 (@heygen_streaming-avatar.js?v=115e32ee:28744:26)
+    at StreamingAvatar2.<anonymous> (@heygen_streaming-avatar.js?v=115e32ee:29188:21)
+    at step (@heygen_streaming-avatar.js?v=115e32ee:27175:17)
+    at Object.next (@heygen_streaming-avatar.js?v=115e32ee:27127:14)
+    at fulfilled (@heygen_streaming-avatar.js?v=115e32ee:27099:24)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:1256
+await in (anonymous)
+onClick @ avatar-chat.tsx:576
+callCallback2 @ chunk-RPCDYKBN.js?v=115e32ee:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=115e32ee:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=115e32ee:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=115e32ee:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=115e32ee:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=115e32ee:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=115e32ee:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=115e32ee:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=115e32ee:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=115e32ee:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=115e32ee:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=115e32ee:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=115e32ee:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=115e32ee:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=115e32ee:5449
+injected.js:37 ✅ Voice recognition stopped on pause
+injected.js:37 Video element cleared
+injected.js:37 Avatar paused - stream stopped to save credits
+injected.js:37 🔊 Audio capture ended
+injected.js:37 [vite] server connection lost. Polling for restart...
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'ambient-light-sensor'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'battery'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'execution-while-not-rendered'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'layout-animations'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'legacy-image-formats'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'navigation-override'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'oversized-images'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'publickey-credentials'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'speaker-selection'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'unoptimized-images'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Unrecognized feature: 'unsized-media'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Allow attribute will take precedence over 'allowfullscreen'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/__replco/workspace_iframe.html?initialPath=%2F&id=%3Ark4%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/components/avatar-chat.tsx?t=1764793273813:25  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/src/hooks/useAvatarSession.ts?t=1764793273813 net::ERR_ABORTED 502 (Bad Gateway)
+injected.js:37 [hmr] Failed to reload /src/components/avatar-chat.tsx. This could be due to syntax errors or importing non-existent modules. (see errors above)
+(anonymous) @ injected.js:37
+warnFailedUpdate @ client:176
+fetchUpdate @ client:213
+await in fetchUpdate
+queueUpdate @ client:186
+(anonymous) @ client:642
+handleMessage @ client:640
+(anonymous) @ client:550
+injected.js:37 [vite] server connection lost. Polling for restart...
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2F&id=%3Arl2%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+injected.js:37 🧠 Loading memory preference from localStorage: true
+injected.js:37 🧠 memoryEnabled state is now: false
+injected.js:37 🧠 memoryEnabled state is now: true
+injected.js:37 🌐 Loaded avatar language: en-US
+injected.js:37 Audio-only mode: Video disabled, session registered
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Inactivity timer started for first time
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🗣️ Audio-only greeting: Good to connect. I'm Nigel. Feel free to jump in at any point. What would you like to work through today?
+injected.js:37 🔇 Voice recognition paused (greeting playing)
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔊 Acknowledgment pre-cache triggered for: nigel (caching started)
+injected.js:37 🔄 Voice recognition restarted (throttled)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔊 Acknowledgment audio preloaded for: nigel
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi', sessionActive: true, heygenSessionActive: false, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17647933281740.usj2wh69kj
+injected.js:37 Audio-only mode: Using /api/audio endpoint
+injected.js:37 🧠 Memory settings: {memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda'}
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔊 Instant acknowledgment played
+injected.js:37 
+🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 🎧 AUDIO MODE - Nigel
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 📥 USER: "hi"
+injected.js:37 📤 CLAUDE RESPONSE:
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 Hey — good to hear from you again. What's on your mind today?
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 📊 Response: 61 chars
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+
+injected.js:37 🔊 Audio blob received: 42.9 KB, type: audio/mpeg
+injected.js:37 🔊 Audio element created, volume: 1, muted: false
+injected.js:37 🔊 Audio metadata loaded: duration=2.74s, volume=1
+injected.js:37 🔊 Audio playback STARTED - duration: 2.74s, currentTime: 0, paused: false
+injected.js:37 🔊 Audio playback ENDED successfully
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🔊 Voice recognition resumed (audio-only mode - avatar finished)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔄 Switching transport: Audio → Video
+injected.js:37 🛑 Voice recognition stopped for seamless mode switch
+injected.js:37 Starting HeyGen session (mode switch - no greeting)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔍 Avatar voice config check: heygenVoiceId="null", elevenlabsVoiceId="fWUVBoxa3cvv6VWj6VRS"
+injected.js:37 🎙️ useElevenLabsVoiceRef set to: true
+injected.js:37 🎙️ Avatar Nigel will use ElevenLabs voice in video mode (no HeyGen voice configured)
+injected.js:37 Stream ready: MediaStream {id: '84ab7029-ae9d-4ea1-85d2-75cc331da383', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ⏭️ Skipping greeting - mode switch (seamless transition)
+injected.js:37 🎤 Starting voice recognition after seamless mode switch
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 ✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi nigel', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17647933638450.8fxto1tmotf
+injected.js:37 🔊 Audio capture ended
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 666ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 6551ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "Hey there — good to connect again...."
+injected.js:37 🚀 [STREAMING] Sentence 2: "What's on your mind today?..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 2
+injected.js:37 🚀 [STREAMING] First sentence delay: 6551ms
+injected.js:37 🚀 [STREAMING] Total time: 6551ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 5590, dataFetchMs: 666, claudeMs: 4529, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: hi nigel
+injected.js:37 🤖 CLAUDE RESPONSE: Hey there — good to connect again. What's on your mind today?
+injected.js:37 ---
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔊 ElevenLabs audio blob received: 26794 bytes, type: audio/mpeg
+injected.js:37 🔊 ElevenLabs audio loaded: duration=1.67s, readyState=4
+injected.js:37 🔊 ElevenLabs audio playback started
+injected.js:37 🗣️ ElevenLabs avatar STOP talking (video mode) - played 1.67s
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Voice recognition resumed after ElevenLabs speech (delayed)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 ElevenLabs audio blob received: 22196 bytes, type: audio/mpeg
+injected.js:37 🔊 ElevenLabs audio loaded: duration=1.38s, readyState=4
+injected.js:37 🔊 ElevenLabs audio playback started
+injected.js:37 🗣️ ElevenLabs avatar STOP talking (video mode) - played 1.38s
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 13164ms ===
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started

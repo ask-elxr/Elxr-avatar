@@ -1,9 +1,30 @@
 // Performance optimizations and monitoring for latency reduction
 import { Request, Response, NextFunction } from 'express';
 
+// Routes that need extended timeouts (file uploads, long processing)
+const extendedTimeoutRoutes = [
+  '/api/documents/upload-zip',
+  '/api/documents/upload-pdf',
+  '/api/documents/upload-docx',
+  '/api/documents/upload-txt',
+  '/api/google-drive/upload-to-pinecone',
+  '/api/google-drive/batch-upload',
+  '/api/google-drive/folder-stats',
+  '/api/google-drive/topic-upload-single',
+  '/api/webhook/n8n/list-files',
+  '/api/webhook/n8n/ingest-file',
+  '/api/webhook/n8n/stats'
+];
+
 // Request timeout middleware
 export function timeoutMiddleware(timeoutMs: number = 10000) {
   return (req: Request, res: Response, next: NextFunction) => {
+    // Skip timeout for routes that need extended processing time
+    if (extendedTimeoutRoutes.some(route => req.path.startsWith(route))) {
+      next();
+      return;
+    }
+    
     // Set response timeout
     const timeout = setTimeout(() => {
       if (!res.headersSent) {
@@ -83,8 +104,11 @@ export function compressionConfig() {
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
 export function rateLimitMiddleware(maxRequests: number = 10, windowMs: number = 60000) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const clientId = req.ip || 'unknown';
+  return (req: any, res: Response, next: NextFunction) => {
+    // Use userId from authenticated session or request body (for temp_ IDs)
+    // Fall back to IP address if no user identification available
+    let clientId = req.user?.claims?.sub || req.body?.userId || req.ip || 'unknown';
+    
     const now = Date.now();
     
     const clientData = rateLimitMap.get(clientId);

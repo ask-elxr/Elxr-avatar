@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, MessageSquare, Video, VideoOff } from "lucide-react";
 import StreamingAvatar, { AvatarQuality, StreamingEvents } from "@heygen/streaming-avatar";
+import { getAuthHeaders } from "@/lib/queryClient";
 
 interface StreamingAvatarComponentProps {
   onAvatarResponse?: (response: string) => void;
@@ -27,6 +28,8 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
     try {
       const response = await fetch("/api/heygen/token", {
         method: "POST",
+        headers: { ...getAuthHeaders() },
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -98,9 +101,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
         quality: AvatarQuality.High,
         avatarName: "7e01e5d4e06149c9ba3c1728fa8f03d0", // Your avatar ID
         knowledgeBase: "edb04cb8e7b44b6fb0cd73a3edd4bca4", // Required by HeyGen but responses are overridden
-        voice: {
-          rate: 1.0
-        },
+        // Don't pass voice config - let HeyGen use avatar's default voice
         language: "en",
         disableIdleTimeout: false
       });
@@ -140,7 +141,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
       // Get enhanced response from Claude Sonnet 4 backend with 4-source intelligence
       const response = await fetch("/api/avatar/response", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeaders() },
         body: JSON.stringify({ 
           message: text,
           useWebSearch: true, // Enable Google Search for current information
@@ -183,9 +184,9 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
         {!avatarStarted ? (
           <div className="text-center">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-white mb-4">AI Avatar with 4-Source Intelligence</h1>
-              <p className="text-gray-300 mb-2">Dual Pinecone Assistants + Google Search + Claude Sonnet 4</p>
-              <p className="text-gray-400 text-sm">ask-elxr & knowledge-base-assistant</p>
+              <h1 className="text-4xl font-bold text-white mb-4">AI Avatar with 3-Source Intelligence</h1>
+              <p className="text-gray-300 mb-2">Pinecone Knowledge Base + Google Search + Claude Sonnet 4</p>
+              <p className="text-gray-400 text-sm">ask-elxr</p>
             </div>
             <Button
               onClick={startSession}
@@ -233,7 +234,7 @@ export function StreamingAvatarComponent({ onAvatarResponse }: StreamingAvatarCo
             <div className="absolute top-8 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-md rounded-full px-6 py-3">
               <div className="flex items-center gap-3">
                 {isUserTalking ? (
-                  <Mic className="w-5 h-5 text-green-400 animate-pulse" />
+                  <Mic className="w-5 h-5 text-violet-400 animate-pulse" />
                 ) : (
                   <MicOff className="w-5 h-5 text-gray-400" />
                 )}

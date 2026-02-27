@@ -1,0 +1,75 @@
+let currentTurnId = 0;
+
+// You MUST implement these for your playback method:
+function stopPlaybackImmediately() {
+  // If <audio>:
+  if (window._mumAudioEl) {
+    window._mumAudioEl.pause();
+    window._mumAudioEl.src = "";
+    window._mumAudioEl.currentTime = 0;
+  }
+
+  // If WebAudio:
+  if (window._mumAudioCtx) {
+    try { window._mumAudioCtx.close(); } catch {}
+    window._mumAudioCtx = null;
+  }
+
+  // Also stop HeyGen injection immediately
+  if (window.stopHeyGenAudioNow) window.stopHeyGenAudioNow();
+}
+
+function showCaption(text) {
+  // Your UI hook (toast, subtitle, chat bubble)
+  console.log("[mum]", text);
+}
+
+export function attachWsHandlers(ws) {
+  ws.onmessage = async (evt) => {
+    if (typeof evt.data === "string") {
+      const msg = JSON.parse(evt.data);
+
+      if (msg.type === "TURN_START") {
+        currentTurnId = msg.turnId;
+        return;
+      }
+
+      if (msg.type === "STOP_AUDIO") {
+        currentTurnId = msg.turnId;
+        stopPlaybackImmediately();
+        return;
+      }
+
+      // Gentle “listening” phrases that do NOT end anything
+      if (msg.type === "MUM_NUDGE") {
+        showCaption(msg.text);
+        return;
+      }
+
+      // Soft end: do not close sockets; just show text
+      if (msg.type === "MUM_SOFT_END") {
+        showCaption(msg.text);
+        return;
+      }
+
+      return;
+    }
+
+    // If you wrapped binary audio with [TTS0][turnIdLE32] header:
+    const buf = new Uint8Array(await evt.data.arrayBuffer());
+    if (buf.length < 8) return;
+
+    const magic = String.fromCharCode(buf[0], buf[1], buf[2], buf[3]);
+    if (magic !== "TTS0") return;
+
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    const turnId = dv.getUint32(4, true);
+    if (turnId !== currentTurnId) return; // drop zombie audio
+
+    const audioBytes = buf.slice(8);
+
+    // Your existing functions:
+    if (window.playTtsAudioBytes) window.playTtsAudioBytes(audioBytes);
+    if (window.feedHeyGenAudioBytes) window.feedHeyGenAudioBytes(audioBytes);
+  };
+}

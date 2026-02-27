@@ -1,0 +1,154 @@
+24523d09df8cad5b.js:2 MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 OUTPUT_RECEIVED listeners added. Use emitter.setMaxListeners() to increase limit
+    at l (6dc7a950438d7a9e.js:2:1736)
+    at s.addListener (6dc7a950438d7a9e.js:2:4305)
+    at Object.onOutput (efc9be1df372ef76.js:2:167862)
+    at efc9be1df372ef76.js:2:175522
+    at efc9be1df372ef76.js:2:176116
+    at m (9e9ac407ab714d96.js:2:2103)
+    at S (9e9ac407ab714d96.js:2:2316)
+    at b (9e9ac407ab714d96.js:2:2226)
+    at o (24523d09df8cad5b.js:2:98665)
+(anonymous) @ 24523d09df8cad5b.js:2
+l @ 6dc7a950438d7a9e.js:2
+s.addListener @ 6dc7a950438d7a9e.js:2
+onOutput @ efc9be1df372ef76.js:2
+(anonymous) @ efc9be1df372ef76.js:2
+(anonymous) @ efc9be1df372ef76.js:2
+m @ 9e9ac407ab714d96.js:2
+S @ 9e9ac407ab714d96.js:2
+b @ 9e9ac407ab714d96.js:2
+o @ 24523d09df8cad5b.js:2
+setTimeout
+(anonymous) @ 24523d09df8cad5b.js:2
+T @ 9e9ac407ab714d96.js:2
+(anonymous) @ 5eb8fccd18ba9567.js:2
+uV @ ed1e693c96a75807.js:2
+iH @ ed1e693c96a75807.js:2
+iT @ ed1e693c96a75807.js:2
+r6 @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iB @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+24523d09df8cad5b.js:2 MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 STDERR_RECEIVED listeners added. Use emitter.setMaxListeners() to increase limit
+    at l (6dc7a950438d7a9e.js:2:1736)
+    at s.addListener (6dc7a950438d7a9e.js:2:4305)
+    at Object.onStderr (efc9be1df372ef76.js:2:167956)
+    at efc9be1df372ef76.js:2:175724
+    at efc9be1df372ef76.js:2:176116
+    at m (9e9ac407ab714d96.js:2:2103)
+    at S (9e9ac407ab714d96.js:2:2316)
+    at b (9e9ac407ab714d96.js:2:2226)
+    at o (24523d09df8cad5b.js:2:98665)
+(anonymous) @ 24523d09df8cad5b.js:2
+l @ 6dc7a950438d7a9e.js:2
+s.addListener @ 6dc7a950438d7a9e.js:2
+onStderr @ efc9be1df372ef76.js:2
+(anonymous) @ efc9be1df372ef76.js:2
+(anonymous) @ efc9be1df372ef76.js:2
+m @ 9e9ac407ab714d96.js:2
+S @ 9e9ac407ab714d96.js:2
+b @ 9e9ac407ab714d96.js:2
+o @ 24523d09df8cad5b.js:2
+setTimeout
+(anonymous) @ 24523d09df8cad5b.js:2
+T @ 9e9ac407ab714d96.js:2
+(anonymous) @ 5eb8fccd18ba9567.js:2
+uV @ ed1e693c96a75807.js:2
+iH @ ed1e693c96a75807.js:2
+iT @ ed1e693c96a75807.js:2
+r6 @ ed1e693c96a75807.js:2
+(anonymous) @ ed1e693c96a75807.js:2
+iB @ ed1e693c96a75807.js:2
+i_ @ ed1e693c96a75807.js:2
+C @ ed1e693c96a75807.js:2
+M @ ed1e693c96a75807.js:2
+injected.js:37 🔊 Acknowledgment audio preloaded for: nigel
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔊 Voice recognition resumed (greeting finished)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔄 Switching transport: Audio → Video
+injected.js:37 🛑 Voice recognition stopped for seamless mode switch
+injected.js:37 Starting HeyGen session (mode switch - no greeting)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔍 Avatar voice config check: heygenVoiceId="null", elevenlabsVoiceId="fWUVBoxa3cvv6VWj6VRS"
+injected.js:37 🎙️ useElevenLabsVoiceRef set to: true
+injected.js:37 🎙️ Avatar Nigel will use ElevenLabs voice in video mode (no HeyGen voice configured)
+injected.js:37 Stream ready: MediaStream {id: '3235a274-4b38-450c-8ba8-84e80bd7f863', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ⏭️ Skipping greeting - mode switch (seamless transition)
+injected.js:37 🎤 Starting voice recognition after seamless mode switch
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 ✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi nigel', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17647936787740.c6k7wcwc3nf
+injected.js:37 🔊 Audio capture ended
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 1937ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 9201ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "Hey there — good to see you again...."
+injected.js:37 🚀 [STREAMING] Sentence 2: "What's on your mind today?..."
+injected.js:37 🚀 [STREAMING] Sentence 3: "If you're looking to dig into something specific —..."
+injected.js:37 🚀 [STREAMING] Sentence 4: "What are we tackling?..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 4
+injected.js:37 🚀 [STREAMING] First sentence delay: 9201ms
+injected.js:37 🚀 [STREAMING] Total time: 9203ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 7790, dataFetchMs: 1937, claudeMs: 5451, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: hi nigel
+injected.js:37 🤖 CLAUDE RESPONSE: Hey there — good to see you again. What's on your mind today? 
+
+If you're looking to dig into something specific — whether it's about reinvention, creativity, getting unstuck, or just sorting through what's next — I'm here for it. What are we tackling?
+injected.js:37 ---
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔊 ElevenLabs audio blob received: 25958 bytes, type: audio/mpeg
+injected.js:37 🔊 ElevenLabs audio loaded: duration=1.62s
+injected.js:37 🔊 ElevenLabs audio playback started
+injected.js:37 🗣️ ElevenLabs avatar STOP talking (video mode) - played 1.62s
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Voice recognition resumed after ElevenLabs speech (delayed)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 ElevenLabs audio blob received: 22196 bytes, type: audio/mpeg
+injected.js:37 🔊 ElevenLabs audio loaded: duration=1.38s
+injected.js:37 🔊 ElevenLabs audio playback started
+injected.js:37 🗣️ ElevenLabs avatar STOP talking (video mode) - played 1.38s
+injected.js:37 🔇 Voice recognition paused for ElevenLabs speech (video mode)
+injected.js:37 🗣️ ElevenLabs avatar START talking (video mode)
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, iOSSafari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 📱 UserAgent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Sa...
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Voice recognition resumed after ElevenLabs speech (delayed)
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 ElevenLabs audio blob received: 144240 bytes, type: audio/mpeg
+injected.js:37 🔊 ElevenLabs audio loaded: duration=9.01s
+injected.js:37 🔊 ElevenLabs audio playback started

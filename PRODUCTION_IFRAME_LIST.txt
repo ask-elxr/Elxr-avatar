@@ -1,0 +1,95 @@
+====================================================================
+ELXR AI MENTORS - IFRAME EMBED CODES
+====================================================================
+
+Production Domain: https://ASK-ELXR.replit.app
+
+Ready to embed in any website (Webflow, WordPress, Squarespace, etc.)
+
+====================================================================
+
+1. MARK KOHL - Psychedelics, Spirituality, Fungi, Kundalini
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=mark-kohl" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Mark Kohl"></iframe>
+
+Direct URL: https://ASK-ELXR.replit.app/avatar?mentor=mark-kohl
+
+====================================================================
+
+2. WILLIE GAULT - Work, Career, Performance, Athletic Excellence
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=willie-gault" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Willie Gault"></iframe>
+
+Direct URL: https://ASK-ELXR.replit.app/avatar?mentor=willie-gault
+
+====================================================================
+
+3. JUNE - Mental Health, Mindfulness, Emotional Wellbeing
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=june" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with June"></iframe>
+
+Direct URL: https://ASK-ELXR.replit.app/avatar?mentor=june
+
+====================================================================
+
+4. ANN - Body Wellness, Physical Health, Movement, Nutrition
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=ann" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Ann"></iframe>
+
+Direct URL: https://ASK-ELXR.replit.app/avatar?mentor=ann
+
+====================================================================
+
+5. SHAWN - Conscious Leadership, Performance Integration, Development
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=shawn" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Shawn"></iframe>
+
+Direct URL: https://ASK-ELXR.replit.app/avatar?mentor=shawn
+
+====================================================================
+
+6. THAD - Financial Resilience, Purposeful Wealth, Money Mindset
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=thad" width="800" height="600" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Thad"></iframe>
+
+Direct URL: https://ASK-ELXR.replit.app/avatar?mentor=thad
+
+====================================================================
+
+RESPONSIVE VERSION (Full Width):
+--------------------------------------------------------------------
+Replace "mark-kohl" with any mentor ID: willie-gault, june, ann, shawn, thad
+
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=mark-kohl" style="width: 100%; height: 600px; border: none;" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Mark Kohl"></iframe>
+
+====================================================================
+
+MOBILE OPTIMIZED (375x667):
+--------------------------------------------------------------------
+<iframe src="https://ASK-ELXR.replit.app/avatar?mentor=mark-kohl" width="375" height="667" frameborder="0" allow="camera; microphone; autoplay; encrypted-media; fullscreen" allowfullscreen title="Chat with Mark Kohl"></iframe>
+
+====================================================================
+
+ASPECT RATIO CONTAINER (Recommended for responsive sites):
+--------------------------------------------------------------------
+<div style="position: relative; width: 100%; padding-bottom: 75%; /* 4:3 aspect ratio */">
+  <iframe 
+    src="https://ASK-ELXR.replit.app/avatar?mentor=mark-kohl" 
+    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+    allow="camera; microphone; autoplay; encrypted-media; fullscreen" 
+    allowfullscreen
+    title="Chat with Mark Kohl">
+  </iframe>
+</div>
+
+====================================================================
+
+NOTES:
+✅ All iframes include required permissions for audio/video functionality
+✅ Each mentor has unique AI personality and knowledge base
+✅ Supports both video mode (HeyGen) and audio-only mode (ElevenLabs)
+✅ Sessions auto-timeout after 90 seconds to save credits
+✅ Anonymous users supported (no login required)
+✅ CORS enabled for cross-domain embedding
+
+READY TO USE - Just copy and paste into your website!

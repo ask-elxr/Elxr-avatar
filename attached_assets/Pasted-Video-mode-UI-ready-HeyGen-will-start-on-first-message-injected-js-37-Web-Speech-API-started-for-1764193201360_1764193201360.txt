@@ -1,0 +1,306 @@
+Video mode: UI ready, HeyGen will start on first message
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Inactivity timer started for first time
+injected.js:37 🎤 Microphone listening
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:238
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 Stream ready: MediaStream {id: '01ad9dd2-68cc-425e-b1eb-3918f47c04bc', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi thad how is it goging today', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17641931542640.qnjiilejsii
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 Claude response received: Hey! I'm doing well, thanks for asking.
+
+How are things going with you? What's on your mind today?
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey! I'm doing well, thanks for asking.
+
+How are things going with you? What's on your mind today?
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 151 characters
+injected.js:214  POST https://api.heygen.com/v1/streaming.task 401 (Unauthorized)
+apply @ injected.js:214
+(anonymous) @ @heygen_streaming-avatar.js?v=aba00dd2:29174
+step @ @heygen_streaming-avatar.js?v=aba00dd2:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=aba00dd2:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=aba00dd2:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=aba00dd2:27096
+StreamingAvatar2.request @ @heygen_streaming-avatar.js?v=aba00dd2:29168
+(anonymous) @ @heygen_streaming-avatar.js?v=aba00dd2:28997
+step @ @heygen_streaming-avatar.js?v=aba00dd2:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=aba00dd2:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=aba00dd2:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=aba00dd2:27096
+StreamingAvatar2.speak @ @heygen_streaming-avatar.js?v=aba00dd2:28976
+(anonymous) @ useAvatarSession.ts:962
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:258
+onSubmit @ avatar-chat.tsx:587
+callCallback2 @ chunk-RPCDYKBN.js?v=aba00dd2:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=aba00dd2:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=aba00dd2:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=aba00dd2:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=aba00dd2:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=aba00dd2:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=aba00dd2:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=aba00dd2:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=aba00dd2:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=aba00dd2:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=aba00dd2:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=aba00dd2:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=aba00dd2:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=aba00dd2:5449
+injected.js:37 Error sending message: APIError: API request failed with status 401
+    at new APIError2 (@heygen_streaming-avatar.js?v=aba00dd2:28744:26)
+    at StreamingAvatar2.<anonymous> (@heygen_streaming-avatar.js?v=aba00dd2:29188:21)
+    at step (@heygen_streaming-avatar.js?v=aba00dd2:27175:17)
+    at Object.next (@heygen_streaming-avatar.js?v=aba00dd2:27127:14)
+    at fulfilled (@heygen_streaming-avatar.js?v=aba00dd2:27099:24)
+(anonymous) @ injected.js:37
+(anonymous) @ useAvatarSession.ts:981
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:258
+onSubmit @ avatar-chat.tsx:587
+callCallback2 @ chunk-RPCDYKBN.js?v=aba00dd2:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=aba00dd2:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=aba00dd2:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=aba00dd2:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=aba00dd2:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=aba00dd2:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=aba00dd2:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=aba00dd2:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=aba00dd2:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=aba00dd2:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=aba00dd2:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=aba00dd2:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=aba00dd2:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=aba00dd2:5449
+injected.js:37 🔄 HeyGen session expired (401) - triggering reconnection...
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:214  GET https://5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/courses/chat-videos?status=completed 404 (Not Found)
+apply @ injected.js:214
+checkForCompletedVideos @ avatar-chat.tsx:209
+(anonymous) @ avatar-chat.tsx:243
+setInterval
+(anonymous) @ avatar-chat.tsx:241
+commitHookEffectListMount @ chunk-RPCDYKBN.js?v=aba00dd2:16915
+commitPassiveMountOnFiber @ chunk-RPCDYKBN.js?v=aba00dd2:18156
+commitPassiveMountEffects_complete @ chunk-RPCDYKBN.js?v=aba00dd2:18129
+commitPassiveMountEffects_begin @ chunk-RPCDYKBN.js?v=aba00dd2:18119
+commitPassiveMountEffects @ chunk-RPCDYKBN.js?v=aba00dd2:18109
+flushPassiveEffectsImpl @ chunk-RPCDYKBN.js?v=aba00dd2:19490
+flushPassiveEffects @ chunk-RPCDYKBN.js?v=aba00dd2:19447
+(anonymous) @ chunk-RPCDYKBN.js?v=aba00dd2:19328
+workLoop @ chunk-RPCDYKBN.js?v=aba00dd2:197
+flushWork @ chunk-RPCDYKBN.js?v=aba00dd2:176
+performWorkUntilDeadline @ chunk-RPCDYKBN.js?v=aba00dd2:384
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening

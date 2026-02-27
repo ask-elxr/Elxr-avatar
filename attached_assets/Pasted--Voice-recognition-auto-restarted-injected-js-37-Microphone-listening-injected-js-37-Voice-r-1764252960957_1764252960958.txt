@@ -1,0 +1,149 @@
+🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Stream ready: MediaStream {id: '984b6d14-565c-4909-b0b3-1f3cb74ce5cb', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi', sessionActive: true, heygenSessionActive: true}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17642529229170.xe4rye06ear
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Claude response received: Hey! Good to hear from you.
+
+What's on your mind today? Whether it's bouncing back from setbacks, building financial resilience, or working toward purposeful wealth, I'm here to help.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🗣️ SENDING TO HEYGEN - Full Claude response:
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Hey! Good to hear from you.
+
+What's on your mind today? Whether it's bouncing back from setbacks, building financial resilience, or working toward purposeful wealth, I'm here to help.
+
+Would you like me to go deeper on any part of that?
+injected.js:37 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+injected.js:37 Text length: 236 characters
+injected.js:214  POST https://api.heygen.com/v1/streaming.task 401 (Unauthorized)
+apply @ injected.js:214
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:29174
+step @ @heygen_streaming-avatar.js?v=63887651:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=63887651:27096
+StreamingAvatar2.request @ @heygen_streaming-avatar.js?v=63887651:29168
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:28997
+step @ @heygen_streaming-avatar.js?v=63887651:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=63887651:27096
+StreamingAvatar2.speak @ @heygen_streaming-avatar.js?v=63887651:28976
+speakWithRetry @ useAvatarSession.ts:968
+(anonymous) @ useAvatarSession.ts:1012
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 🔄 HeyGen session expired (401) - auto-reconnecting...
+injected.js:37 Starting HeyGen session for first message
+injected.js:37 Unknown DataChannel error on lossy {room: '7a47c426-cb9b-11f0-bd65-826fbf28ddb4', roomID: 'RM_4RbF7asdDhJx', participant: 'client', pID: 'PA_HyzghEsCNsEV', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=63887651:19907
+injected.js:37 Unknown DataChannel error on reliable {room: '7a47c426-cb9b-11f0-bd65-826fbf28ddb4', roomID: 'RM_4RbF7asdDhJx', participant: 'client', pID: 'PA_HyzghEsCNsEV', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=63887651:19907
+injected.js:37 Stream disconnected - intentionalStop flag: false
+injected.js:37 ⚠️ Unexpected disconnect - showing reconnect button
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 Stream ready: MediaStream {id: '4f5ad32c-ec56-407c-b9da-8e4b18473edf', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 ✅ HeyGen session restarted - retrying speak...
+injected.js:214  POST https://api.heygen.com/v1/streaming.task 401 (Unauthorized)
+apply @ injected.js:214
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:29174
+step @ @heygen_streaming-avatar.js?v=63887651:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=63887651:27096
+StreamingAvatar2.request @ @heygen_streaming-avatar.js?v=63887651:29168
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:28997
+step @ @heygen_streaming-avatar.js?v=63887651:27175
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27127
+(anonymous) @ @heygen_streaming-avatar.js?v=63887651:27114
+__awaiter2 @ @heygen_streaming-avatar.js?v=63887651:27096
+StreamingAvatar2.speak @ @heygen_streaming-avatar.js?v=63887651:28976
+speakWithRetry @ useAvatarSession.ts:968
+speakWithRetry @ useAvatarSession.ts:1000
+await in speakWithRetry
+(anonymous) @ useAvatarSession.ts:1012
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 ❌ Failed to reconnect HeyGen session: APIError: API request failed with status 401
+    at new APIError2 (@heygen_streaming-avatar.js?v=63887651:28744:26)
+    at StreamingAvatar2.<anonymous> (@heygen_streaming-avatar.js?v=63887651:29188:21)
+    at step (@heygen_streaming-avatar.js?v=63887651:27175:17)
+    at Object.next (@heygen_streaming-avatar.js?v=63887651:27127:14)
+    at fulfilled (@heygen_streaming-avatar.js?v=63887651:27099:24)
+(anonymous) @ injected.js:37
+speakWithRetry @ useAvatarSession.ts:1002
+await in speakWithRetry
+(anonymous) @ useAvatarSession.ts:1012
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:220
+onSubmit @ avatar-chat.tsx:516
+callCallback2 @ chunk-RPCDYKBN.js?v=63887651:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=63887651:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=63887651:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=63887651:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=63887651:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=63887651:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=63887651:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=63887651:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=63887651:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=63887651:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=63887651:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=63887651:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=63887651:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=63887651:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=63887651:5449
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening

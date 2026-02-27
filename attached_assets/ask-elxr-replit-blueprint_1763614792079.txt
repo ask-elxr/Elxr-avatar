@@ -1,0 +1,172 @@
+
+ASK-ELXR Replit Integration Blueprint
+=====================================
+
+Use this file to structure and organize your existing Replit project without rewriting your whole codebase. This blueprint turns your current project into a clean, scalable, multi-avatar AI system.
+
+----------------------------------------
+1. Project Structure (Recommended)
+----------------------------------------
+
+/config
+  avatars.config.ts      → Centralized avatar definitions
+
+/services
+  rag.ts                 → Pinecone + embeddings + model calls
+  memory.ts              → Mem0 wrapper for long-term memory
+  auth.ts                → Memberstack JWT verification
+  avatars.ts             → Avatar config helpers
+
+/routes
+  chat.ts                → POST /api/chat
+  avatars.ts             → GET /api/avatars
+  trial.ts               → POST /api/trial-limit
+
+/frontend (or /src/frontend)
+  EmbedChat.tsx          → For /embed/:avatarId iframe widget
+  MainChat.tsx           → Regular in-app chat UI
+  AvatarList.tsx         → Homepage avatar grid
+
+----------------------------------------
+2. Avatar Config (Single Source of Truth)
+----------------------------------------
+
+config/avatars.config.ts:
+
+export type AvatarConfig = {
+  id: string;
+  displayName: string;
+  description: string;
+  personaPrompt: string;
+  pineconeNamespace: string;
+  preferredModel: "claude" | "gpt";
+};
+
+export const AVATARS: AvatarConfig[] = [
+  {
+    id: "mark",
+    displayName: "Mark – Psychedelics Mentor",
+    description: "Helps with psychedelic preparation and integration.",
+    personaPrompt: "You are Mark, grounded and thoughtful...",
+    pineconeNamespace: "mark_psychedelics",
+    preferredModel: "claude"
+  }
+];
+
+export function getAvatar(id: string): AvatarConfig | undefined {
+  return AVATARS.find(a => a.id === id);
+}
+
+----------------------------------------
+3. RAG Service Wrapper
+----------------------------------------
+
+services/rag.ts:
+
+export async function runAvatarRAG({
+  avatarId,
+  message,
+  memorySnippets
+}) {
+  const avatar = getAvatar(avatarId);
+  // Embed message
+  // Query Pinecone using avatar.pineconeNamespace
+  // Build LLM prompt using:
+  //   - personaPrompt
+  //   - pinecone context
+  //   - memorySnippets
+  //   - user message
+  // Call model based on avatar.preferredModel
+  // Return answer + followups
+}
+
+----------------------------------------
+4. Memory Wrapper (Mem0)
+----------------------------------------
+
+services/memory.ts:
+
+const memoryKey = (userKey, avatarId) =>
+  `${userKey}::${avatarId}`;
+
+export async function getUserAvatarMemory(userKey, avatarId) {
+  // Return array of strings
+}
+
+export async function addUserAvatarMemory(
+  userKey,
+  avatarId,
+  message,
+  answer
+) {
+  // Fire-and-forget write to Mem0
+}
+
+----------------------------------------
+5. Authentication Wrapper (Memberstack)
+----------------------------------------
+
+services/auth.ts:
+
+export async function getUserIdFromRequest(req) {
+  // Read Authorization: Bearer token
+  // Verify Memberstack JWT
+  // Return userId or null
+}
+
+----------------------------------------
+6. Chat Route (Attach to Existing Server)
+----------------------------------------
+
+routes/chat.ts:
+
+app.post("/api/chat", async (req, res) => {
+  const { avatarId, message, sessionId } = req.body;
+
+  const userId = await getUserIdFromRequest(req);
+  const userKey = userId ?? sessionId;
+
+  const memorySnippets = await getUserAvatarMemory(userKey, avatarId);
+
+  const result = await runAvatarRAG({
+    avatarId,
+    message,
+    memorySnippets
+  });
+
+  addUserAvatarMemory(userKey, avatarId, message, result.answer)
+    .catch(console.error);
+
+  res.json({
+    answer: result.answer,
+    followUps: result.followUps ?? []
+  });
+});
+
+----------------------------------------
+7. Embed Route Frontend Widget
+----------------------------------------
+
+/embed/:avatarId page:
+  - Minimal UI
+  - Calls POST /api/chat
+  - Works inside iframe on Webflow
+
+----------------------------------------
+8. README Snippet (Place in Your Project)
+----------------------------------------
+
+## ASK-ELXR Structure (Replit)
+
+- config/avatars.config.ts
+- services/rag.ts
+- services/memory.ts
+- services/auth.ts
+- routes/chat.ts
+- routes/avatars.ts
+- frontend/EmbedChat.tsx
+- frontend/MainChat.tsx
+
+----------------------------------------
+End of File
+----------------------------------------

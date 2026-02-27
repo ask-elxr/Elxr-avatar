@@ -1,0 +1,132 @@
+You’re trying to solve two different problems, and most “avatar prompts” fail because they mush them together:
+	1.	Personality design (who the mentor is)
+	2.	Personality execution engine (how your app reliably enforces that mentor)
+
+If you only do #1, every avatar slowly becomes the same agreeable blob.
+
+The best way to create an avatar personality (that stays specific)
+
+Think “character Bible + operating system,” not “vibes.”
+
+A. Identity (unchanging)
+	•	Name, age vibe, worldview, what they’re allergic to (woo-woo, corporate-speak, etc.)
+	•	Domain boundaries (what they will NOT answer)
+	•	Relationship stance (mentor/friend/coach, not therapist/doctor)
+
+B. Voice (audible in one line)
+	•	5 signature phrases
+	•	Humor style (dry, sly, absurd, caring roast)
+	•	“Never say” list (your banned words list is gold)
+
+C. Behavior rules (where specificity lives)
+	•	How they start conversations
+	•	How they handle uncertainty
+	•	How they disagree
+	•	How they handle sensitive topics
+	•	How they end responses + next step
+
+D. Knowledge behavior
+	•	When to use KB vs general model
+	•	How they cite sources (or admit they’re riffing)
+	•	What they do when KB is thin: ask 1 question or give 2 options and proceed
+
+E. Consistency traps
+	•	A “drift detector”: if the reply doesn’t sound like them, rewrite once.
+	•	A “boundary checker”: if it’s outside scope, redirect in-character.
+
+If each avatar doesn’t have (1) taboo list + (2) disagreement style + (3) signature moves, it will not feel real. Period.
+
+⸻
+
+What to prompt Replit to build: a Personality Engine (multi-avatar)
+
+You want Replit to create:
+	•	a Persona Spec format (JSON/YAML) for each avatar
+	•	a Prompt Assembler that builds the system prompt dynamically
+	•	a Router that chooses the right avatar + right knowledgebase namespace
+	•	a Response Critic that enforces voice + boundaries (one rewrite max)
+	•	a Memory layer (short-term session memory per avatar, optional long-term later)
+
+A persona spec that actually works (YAML example)
+
+id: thad
+displayName: "Thad"
+oneLiner: "Sly, unshockable confidant for the questions people can’t ask out loud."
+role: "Unfiltered-but-kind guide for sexuality, shame, relationships, and identity."
+audience: ["curious", "ashamed", "lonely", "confused", "secret-keeping"]
+boundaries:
+  notA: ["doctor", "therapist", "lawyer"]
+  refuseTopics: ["instructions for wrongdoing", "personal data harvesting"]
+voice:
+  tone: ["warm", "wicked-humor", "direct"]
+  humor: "dry, slightly mischievous, never mean"
+  readingLevel: "plainspoken"
+  bannedWords: ["mindset", "limiting beliefs", "manifest", "abundance"]
+  signaturePhrases: ["Let’s not pretend.", "Okay, real talk:", "You’re not broken."]
+behavior:
+  opensWith: ["one sentence empathy", "one bold truth", "one question"]
+  disagreementStyle: "polite pushback + alternative framing"
+  uncertaintyProtocol: "say what’s unknown, offer two plausible paths, ask 1 clarifier"
+knowledge:
+  namespaces: ["sexuality_kb", "relationships_kb"]
+  kbPolicy:
+    whenToQuery: ["user asks for facts", "user asks for steps", "user references ELXR content"]
+    whenNotToQuery: ["pure emotional support", "simple pep talk"]
+output:
+  maxLength: "medium"
+  structure: ["headline", "3 bullets", "next step question"]
+safety:
+  crisis:
+    selfHarm: "encourage reaching local emergency/resources; be supportive; no moralizing"
+
+This is engine-friendly. No poetry. Just levers.
+
+⸻
+
+Copy/paste prompt to Replit to build the engine (React+Vite + Express)
+
+Paste this into Replit as your “build instruction”:
+
+Build a “Personality Engine” for a multi-avatar chat app (React + Vite frontend, Express backend).
+Requirements:
+	1.	Store avatar persona specs as YAML or JSON in /personas. Each persona includes: identity, role, audience, boundaries, voice (tone, humor, banned words, signature phrases), behavior rules, knowledge namespaces, output formatting rules, and safety rules.
+	2.	Backend endpoint POST /chat accepts { avatarId, userMessage, sessionId }.
+	3.	Implement promptAssembler(avatarSpec, context) that generates a system prompt with:
+	•	“You are X” identity block
+	•	voice rules + banned words
+	•	boundary rules + refusal style (in-character)
+	•	response format requirements
+	•	ELXR-specific rules: be candid, don’t be generic, don’t over-agree, ask at most 1 clarifying question unless necessary.
+	4.	Implement a router that can select avatarId if none is provided using simple heuristics (keywords + intent classification).
+	5.	Implement kbManager stub with function retrieve(namespace, query) that returns chunks; include namespace isolation per avatar. (No Pinecone implementation needed now; just mock + interface.)
+	6.	Implement responseCritic step: after model responds, validate:
+	•	did it use banned words?
+	•	does it match required structure?
+	•	is it in scope?
+If fail: rewrite once using a “critic prompt” that forces compliance while preserving meaning.
+	7.	Implement per-session memory: store last 12 turns in memory keyed by {sessionId, avatarId}. Include “facts the user said” extraction limited to 8 bullets, and keep it separate from transcript.
+	8.	Provide unit tests for: prompt assembly, banned words filter, structure validator, and namespace selection.
+	9.	Keep the system modular: /engine/promptAssembler.ts, /engine/router.ts, /engine/critic.ts, /engine/memory.ts, /engine/kb.ts.
+Output the full code with clear comments and a minimal UI to pick avatar and chat.
+
+That prompt forces Replit to build infrastructure, not a single clever prompt.
+
+⸻
+
+Your system prompt template (what the assembler should generate)
+
+Use a consistent skeleton so you can swap personas without chaos:
+	1.	Identity: “You are Thad…”
+	2.	Non-negotiables: banned words, “don’t be generic,” disagreement policy
+	3.	Boundaries: not a doctor, refuse categories
+	4.	Knowledge policy: when to use KB, cite if present
+	5.	Format: exact output structure
+	6.	Conversation policy: ask ≤1 question, be decisive, offer next steps
+
+⸻
+
+One blunt opinion (because you asked for “really specific”)
+
+If you don’t add the critic/rewrite step, you’ll never get consistency—especially across many avatars. The model will drift. Your users will feel it. Your brand will get “samey.”
+
+If you want, paste one of your current persona prompts (even a messy one) and I’ll convert it into a clean persona spec + the exact rules your engine should enforce.

@@ -1,0 +1,85 @@
+Here's the complete knowledge retrieval flow:
+
+ARCHITECTURE FLOW
+User Message
+     ↓
+┌────────────────────────────────────────────────────────────┐
+│  PARALLEL FETCHES (all run simultaneously)                 │
+├────────────────────────────────────────────────────────────┤
+│  1. Memory Search (Mem0) - past conversation memories      │
+│  2. PubMed Search - medical/scientific literature          │
+│  3. Pinecone Knowledge Base - your documents               │
+│  4. Google Web Search - current web info (if keywords)     │
+└────────────────────────────────────────────────────────────┘
+     ↓
+COMBINE ALL CONTEXT
+     ↓
+BUILD SYSTEM PROMPT = personalityPrompt + memoryContext + pubmedContext
+     ↓
+SEND TO CLAUDE:
+  - System: personality + memories + date
+  - Messages: KNOWLEDGE (Pinecone) + WEB INFO + Q: user message
+     ↓
+Claude Response
+KEY CODE PIECES
+1. Pinecone Query (pineconeNamespaceService.ts)
+// Generate embedding for user's question
+const embeddingResponse = await openai.embeddings.create({
+  model: 'text-embedding-ada-002',
+  input: query,
+});
+const embedding = embeddingResponse.data[0].embedding;
+// Query each namespace in parallel
+for (const namespace of namespaces) {
+  const results = await index.namespace(namespace).query({
+    vector: embedding,
+    topK: 2,
+    includeMetadata: true,
+  });
+}
+// Combine and sort by score
+2. Building Context (routes.ts ~line 1876)
+// Get knowledge from Pinecone
+const knowledgeResults = await pineconeNamespaceService.retrieveContext(
+  message, 
+  2,           // topK per namespace
+  allNamespaces // e.g. ["MARK_KOHL", "ADDICTION", "MIND", ...]
+);
+// Combine all text chunks
+const context = knowledgeResults
+  .map(r => r.text)
+  .join('\n\n---\n\n');
+3. Claude Call (claudeService.ts ~line 82)
+// Build the message with knowledge context
+const currentMessage = context 
+  ? `KNOWLEDGE:\n${context}\n\nQ: ${query}\n\nProvide a substantive answer using details from the knowledge above.`
+  : query;
+// Call Claude
+const response = await anthropic.messages.create({
+  model: "claude-sonnet-4-5",
+  max_tokens: 600,
+  system: personalityPrompt + memoryContext,  // Mark Kohl prompt + memories
+  messages: [
+    ...conversationHistory,
+    { role: 'user', content: currentMessage }
+  ]
+});
+PINECONE SETUP
+Index Name: ask-elxr
+Embedding Model: text-embedding-ada-002 (OpenAI, 1536 dimensions)
+Namespaces: MARK_KOHL, ADDICTION, MIND, MIDLIFE, PSYCHEDELICS, SPIRITUALITY, etc.
+Each document chunk stored in Pinecone has:
+
+{
+  "id": "doc_123",
+  "values": [0.123, 0.456, ...],  // 1536-dim embedding
+  "metadata": {
+    "text": "The actual text content...",
+    "source": "filename.pdf",
+    "category": "MIND"
+  }
+}
+REQUIRED API KEYS
+ANTHROPIC_API_KEY - Claude Sonnet
+OPENAI_API_KEY - Embeddings
+PINECONE_API_KEY - Vector DB

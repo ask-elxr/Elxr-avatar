@@ -1,0 +1,136 @@
+https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2
+setTimeout
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2Understand this error
+injected.js:37 30s idle timeout - stopping HeyGen session to save credits
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2
+setTimeout
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2Understand this error
+injected.js:37 🎤 Voice input (final): So how can I
+injected.js:37 📝 handleSubmitMessage called with: {message: 'So how can I', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17639087496530.909qm85a97t
+1a68345da7069210.js:2  POST https://replit.com/graphql net::ERR_CONNECTION_CLOSED
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+e @ 1b224bbc8db79db2.js:2
+o.subscribe @ 1b224bbc8db79db2.js:2
+e.consumeQueue @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+o @ 1a68345da7069210.js:2
+setTimeout
+(anonymous) @ 1a68345da7069210.js:2
+e.scheduleQueueConsumption @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+e @ 1b224bbc8db79db2.js:2
+o.subscribe @ 1b224bbc8db79db2.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+e @ 1b224bbc8db79db2.js:2
+o.subscribe @ 1b224bbc8db79db2.js:2
+e.try @ 6ef8a1e4212502c8.js:2
+e.start @ 6ef8a1e4212502c8.js:2
+r.request @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+Promise.then
+(anonymous) @ 6ef8a1e4212502c8.js:2
+e @ 1b224bbc8db79db2.js:2
+o.subscribe @ 1b224bbc8db79db2.js:2
+complete @ 6ef8a1e4212502c8.js:2
+r.start @ 6ef8a1e4212502c8.js:2
+r @ 6ef8a1e4212502c8.js:2
+e.getObservableFromLink @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 143f0a7fc4fbf20a.js:2
+(anonymous) @ 143f0a7fc4fbf20a.js:2
+u @ 143f0a7fc4fbf20a.js:2
+e.mutate @ 6ef8a1e4212502c8.js:2
+e.mutate @ 6ef8a1e4212502c8.js:2
+(anonymous) @ 668b8199b3d4aae2.js:2
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+t @ aef1f2c6f8544e95.js:2
+s @ aef1f2c6f8544e95.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ aef1f2c6f8544e95.js:2
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ 1a68345da7069210.js:2
+y @ 1a68345da7069210.js:2
+S @ 1a68345da7069210.js:2
+_ @ 1a68345da7069210.js:2
+o @ 1a68345da7069210.js:2Understand this error
+injected.js:37 🎤 Voice input (final): So how can I get to be good receiver
+injected.js:37 📝 handleSubmitMessage called with: {message: 'So how can I get to be good receiver', sessionActive: false, heygenSessionActive: false}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17639087538510.tm7zakbkt6q
+injected.js:37 Unknown DataChannel error on lossy {room: '6caaf90a-c879-11f0-91da-fa0c95766c92', roomID: 'RM_pqqgHnMzFVac', participant: 'client', pID: 'PA_ce4pAYjfrUoo', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Unknown DataChannel error on reliable {room: '6caaf90a-c879-11f0-91da-fa0c95766c92', roomID: 'RM_pqqgHnMzFVac', participant: 'client', pID: 'PA_ce4pAYjfrUoo', event: RTCErrorEvent}
+(anonymous) @ injected.js:37
+RTCEngine.handleDataError @ @heygen_streaming-avatar.js?v=6113e542:19907Understand this error
+injected.js:37 Stream disconnected - intentionalStop flag: false
+injected.js:37 Claude response received: Hey - alright, you're asking **"How can I become a good receiver?"** - how to develop that sensitivity to pick up on subtle energy, emotional states, and information that most people miss.
+
+This is the real work. Not the legends. The actual practice.
+
+**Here's the truth: You're already receiving all the time. You're just filtering it out.**
+
+Your nervous system is picking up electromagnetic signals, biochemical cues, micro-expressions, vocal tones, and energy signatures constantly. But your conscious mind filters 99% of it as "irrelevant noise" because you're running survival programs - stress, planning, ruminating, defending.
+
+**Becoming a good receiver isn't about gaining new abilities. It's about removing the interference.**
+
+Think about it like this: Imagine you're trying to hear a quiet radio station, but there's massive static and ten other stations bleeding through. You don't need a better radio - **you need to quiet the noise and fine-tune the signal.**
+
+**Here's How You Actually Do It:**
+
+**1. Daily Breath Practice - Non-Negotiable**
+
+Start with 11 minutes every morning of **Breath of Fire** or alternate nostril breathing. Not when you "feel like it." Not when it's convenient. Every single day, same time.
+
+Why? Because you're training your nervous system to down-regulate. You're literally rewiring your vagus nerve to stop firing constant threat signals. After about 40 days of consistent practice, you'll notice you start picking up on things you never noticed before - someone's mood shift before they speak, tension in a room when
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 Resetting timer during avatar speech
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2
+setTimeout
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2Understand this error
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2
+setTimeout
+(anonymous) @ 1a68345da7069210.js:2
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 1a68345da7069210.js:2Understand this error
+injected.js:37 ✅ Voice recognition stopped
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1763905695614%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FAvatarChat-Mark-REmix%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)

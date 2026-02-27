@@ -1,0 +1,104 @@
+voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 ✅ Voice recognition stopped
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔊 Audio capture ended
+injected.js:37 Stream disconnected - intentionalStop flag: true
+injected.js:37 🌐 Loaded avatar language: en-US
+injected.js:37 Video mode: UI ready, HeyGen will start on first message
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 Starting HeyGen session (fresh start)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 Stream ready: MediaStream {id: '8f933f62-e6ec-41de-947b-5d9bbd0e349c', active: true, onaddtrack: null, onremovetrack: null, onactive: null, …}
+injected.js:37 🗣️ Avatar greeting: Good to connect! I'm Dexter. Health knowledge is power. Don't be shy about cutting in. What would you like to discuss?
+injected.js:37 ✅ HeyGen video ready - voice input via Web Speech API, responses via Claude
+injected.js:37 HeyGen session started successfully
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 📝 handleSubmitMessage called with: {message: 'hi dexter. I need a video that show how our body work with kundalini.', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763845491403_loak142e6', …}
+injected.js:37 🔇 Voice recognition stopped (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17646893284740.l5wyqstk98
+injected.js:37 🔊 Audio capture ended
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🚀 [STREAMING] Using streaming mode for faster response
+injected.js:37 ⏱️ [TIMING] Data fetch: 596ms
+injected.js:37 🚀 [STREAMING] First sentence ready: 8091ms
+injected.js:37 🚀 [STREAMING] Sentence 1: "I appreciate you reaching out, but I actually can'..."
+injected.js:37 🚀 [STREAMING] Sentence 2: "What I can do is walk you through how kundalini en..."
+injected.js:37 🚀 [STREAMING] Sentence 3: "Would that be helpful, or is there a specific aspe..."
+injected.js:37 🚀 [STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🚀 [STREAMING] Total sentences: 3
+injected.js:37 🚀 [STREAMING] First sentence delay: 8091ms
+injected.js:37 🚀 [STREAMING] Total time: 8093ms
+injected.js:37 🚀 [STREAMING] Backend breakdown: {totalMs: 5359, dataFetchMs: 596, claudeMs: 4631, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: hi dexter. I need a video that show how our body work with kundalini.
+injected.js:37 🤖 CLAUDE RESPONSE: Hey there! I appreciate you reaching out, but I actually can't send videos, links, or files. What I can do is walk you through how kundalini energy works in your body - the pathway it takes up your spine through each chakra, the physical sensations people experience, and the mechanisms behind the practice.
+
+Would that be helpful, or is there a specific aspect of how kundalini affects the body you'd like me to explain in detail?
+injected.js:37 ---
+injected.js:37 🚀 [STREAMING] Sentence queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 11301ms ===
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔄 Cleaning up stale voice recognition reference
+injected.js:37 📱 Browser detection: iOS=false, Android=false, Safari=false, Chrome=true, ChromeIOS=false, ChromeMobile=false, touch=false, smallScreen=false
+injected.js:37 🎤 Voice recognition config: continuous=true, mobile=false, safari=false, lang=en-US
+injected.js:37 ✅ Web Speech API started for voice input
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🎤 Speech recognition error: no-speech (mobile=false, iOS=false)
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764688237594%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10  POST https://ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/ 403 (Forbidden)
+q @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764688237594%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+M @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764688237594%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+(anonymous) @ cf.js?config=%257B%2522projectId%2522%253A%252268c9ad4d4cddb58cf3a1f93d%2522%252C%2522startTime%2522%253A1764688237594%252C%2522timeoutMs%2522%253A1000%252C%2522currentUrl%2522%253A%2522https%253A%252F%252Freplit.com%252F%2540nigel43%252FElxrai%253Ffrom%253Dnotifications%2522%252C%2522trackingOnly%2522%253Atrue%257D:10
+o @ 909a504db6efa593.js:2Understand this error
+injected.js:37 🔇 Voice recognition paused (avatar speaking)
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🔊 Audio capture ended
+injected.js:37 🔄 Voice recognition restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔊 Audio capture started
+injected.js:37 🎤 Voice recognition already running

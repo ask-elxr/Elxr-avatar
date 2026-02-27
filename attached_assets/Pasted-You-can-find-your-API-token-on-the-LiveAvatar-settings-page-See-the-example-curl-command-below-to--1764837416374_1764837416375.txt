@@ -1,0 +1,52 @@
+You can find your API token on the LiveAvatar settings page.
+
+See the example curl command below to generate a session token for FULL mode.
+
+cURL
+
+curl --request POST \
+     --url https://api.liveavatar.com/v1/sessions/token \
+     --header 'X-API-KEY: <API Token>' \
+     --header 'accept: application/json' \
+     --header 'content-type: application/json'
+     --data '{
+				"mode": "FULL",
+				"avatar_id": <avatar_id>,
+        "avatar_persona": {
+          "voice_id": <voice_id>,
+          "context_id": <context_id>,
+          "language": "en"
+				}
+      }'	
+When successful, you'll receive both a session_id and session_id.
+
+
+{
+  "session_id": <new_session_id>,
+	"session_token": <your_session_token>,
+}
+2. Start the Session
+Once you have access to a session token, you're ready to start the session. This can be done via a quick call via the newly generated session_token.
+
+cURL
+
+curl --request POST \
+     --url https://api.liveavatar.com/v1/sessions/start \
+     --header 'accept: application/json' \
+     --header 'authorization: Bearer <session_token>'
+With this, we return a LiveKit room url along with the room token. We stream all the relevant information about the room user.
+
+3. Join the LiveKit room
+For this quick start, try directly joining the LiveKit room on your web-browser and chatting with the avatar. Simply navigate to our hosted LiveKit URL to experience the it for yourself.
+
+
+https://meet.livekit.io/custom?liveKitUrl=[livekit_url]&token=[livekit_client_token]
+Once you join the room, you'll now be chatting with a LiveAvatar!
+
+4. Building your own experience
+Let's now get you up and ready to build your own customized experiences. We recommend starting up your client facing services with the our existing SDKs and using our demos to help get additional inspiration. If you're building with npm, we recommend using our own npm package to help to abstract away the session management of LiveKit.
+
+Examples - https://github.com/heygen-com/liveavatar-web-sdk
+NPM - https://www.npmjs.com/package/@heygen/liveavatar-web-sdk?activeTab=versions
+You can also check out our API documentation to see all available functionality.
+

@@ -1,13 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Link, Type, Mic, MicOff, Globe } from "lucide-react";
+import { Upload, FileText, CheckCircle, AlertCircle, Loader2, Video, FileUp, X, Tag, FolderOpen, Archive } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
+import { PINECONE_CATEGORIES, CATEGORY_DESCRIPTIONS, type PineconeCategory } from "@shared/pineconeCategories";
+import { GoogleDrivePicker } from "./GoogleDrivePicker";
+import { getAdminHeaders } from "@/lib/adminAuth";
 
 interface UploadResult {
   success: boolean;
@@ -19,294 +22,194 @@ interface UploadResult {
   message: string;
 }
 
-export function DocumentUpload() {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
-  const [urlInput, setUrlInput] = useState('');
-  const [textInput, setTextInput] = useState('');
-  const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+interface DocumentUploadProps {
+  onUploadComplete?: () => void;
+}
 
-  const categories = [
-    'Mind', 'Body', 'Sexuality', 'Transitions', 'Spirituality', 'Science', 
-    'Psychedelics', 'Nutrition', 'Life', 'Longevity', 'Grief', 'Midlife', 
-    'Movement', 'Work', 'Sleep', 'Addiction', 'Menopause', 'Creativity & Expression',
-    'Relationships & Connection', 'Purpose & Meaning', 'Resilience & Stress',
-    'Identity & Self-Discovery', 'Habits & Behavior Change', 'Technology & Digital Wellness',
-    'Nature & Environment', 'Aging with Joy', 'Other'
-  ];
+interface FileUploadStatus {
+  file: File;
+  status: 'pending' | 'uploading' | 'success' | 'error';
+  progress: string;
+  error?: string;
+}
+
+export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>("");
+  const [selectedFiles, setSelectedFiles] = useState<FileUploadStatus[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<PineconeCategory>("OTHER");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length > 0) {
+      validateAndSetFiles(files);
+    }
+  }, []);
+
+  const validateAndSetFiles = (files: File[]) => {
+    const validFiles: FileUploadStatus[] = [];
+    const invalidFiles: string[] = [];
+
+    files.forEach(file => {
+      // Check file type
+      const isPDF = file.type === 'application/pdf';
+      const isDOCX = file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || file.name.endsWith('.docx');
+      const isTXT = file.type === 'text/plain' || file.name.endsWith('.txt');
+      const isZIP = file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip');
+      const isVideo = ['video/mp4', 'video/quicktime', 'video/webm', 'video/x-m4v'].includes(file.type);
+      const isAudio = ['audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/m4a', 'audio/webm'].includes(file.type);
+
+      if (!isPDF && !isDOCX && !isTXT && !isZIP && !isVideo && !isAudio) {
+        invalidFiles.push(`${file.name} (invalid type)`);
+        return;
+      }
+
+      // Check file size (max 100MB for videos/audio/zip, 25MB for documents)
+      const maxSize = isVideo || isAudio || isZIP ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+      if (file.size > maxSize) {
+        invalidFiles.push(`${file.name} (too large)`);
+        return;
+      }
+
+      validFiles.push({
+        file,
+        status: 'pending',
+        progress: ''
+      });
+    });
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Some files were skipped",
+        description: `Invalid: ${invalidFiles.join(', ')}`,
+        variant: "destructive",
+      });
+    }
+
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
+      toast({
+        title: `${validFiles.length} file(s) added`,
+        description: `Ready to upload ${validFiles.length} file(s)`,
+      });
+    }
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type - allow documents and audio files
-    const allowedTypes = [
-      'application/pdf', 
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
-      'text/plain',
-      'audio/mp3',
-      'audio/mpeg', 
-      'audio/wav',
-      'audio/m4a',
-      'audio/webm',
-      'audio/mp4'
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload PDF, DOCX, TXT, or audio files (MP3, WAV, M4A, WebM).",
-        variant: "destructive",
-      });
-      return;
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      validateAndSetFiles(Array.from(files));
     }
-
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please upload files smaller than 10MB.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setSelectedFile(file);
   };
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) return;
+  const handleBatchUpload = async () => {
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
 
-    try {
-      const formData = new FormData();
-      formData.append('document', selectedFile);
-      if (selectedCategory) {
-        formData.append('category', selectedCategory);
-      }
-
-      const response = await fetch('/api/documents/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setUploadResults(prev => [result, ...prev]);
-        setSelectedFile(null); // Clear selected file after upload
-        const fileInput = document.getElementById('document') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
-        toast({
-          title: "Upload successful",
-          description: `${selectedFile.name} has been uploaded and is being processed.`,
-        });
-      } else {
-        toast({
-          title: "Upload failed",
-          description: result.error || "Failed to upload document.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast({
-        title: "Upload failed",
-        description: "An error occurred while uploading the document.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // URL Upload Handler
-  const handleUrlUpload = async () => {
-    if (!urlInput.trim()) {
-      toast({
-        title: "URL required",
-        description: "Please enter a valid URL.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const response = await fetch('/api/documents/url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: urlInput, category: selectedCategory }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setUploadResults(prev => [result, ...prev]);
-        setUrlInput('');
-        toast({
-          title: "URL processed",
-          description: `Content from ${urlInput} has been added to the knowledge base.`,
-        });
-      } else {
-        toast({
-          title: "URL processing failed",
-          description: result.error || "Failed to process the URL.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('URL upload error:', error);
-      toast({
-        title: "URL processing failed",
-        description: "An error occurred while processing the URL.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Text Upload Handler
-  const handleTextUpload = async () => {
-    if (!textInput.trim()) {
-      toast({
-        title: "Text required",
-        description: "Please enter some text to upload.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUploading(true);
-    try {
-      const response = await fetch('/api/documents/text', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textInput, title: 'Custom Text Input', category: selectedCategory }),
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setUploadResults(prev => [result, ...prev]);
-        setTextInput('');
-        toast({
-          title: "Text uploaded",
-          description: "Your text has been added to the knowledge base.",
-        });
-      } else {
-        toast({
-          title: "Text upload failed",
-          description: result.error || "Failed to upload text.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Text upload error:', error);
-      toast({
-        title: "Text upload failed",
-        description: "An error occurred while uploading text.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Dictation/Recording Handlers
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder = new MediaRecorder(stream);
-      const chunks: BlobPart[] = [];
-
-      recorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
-
-      recorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/wav' });
-        processRecording(blob);
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      recorder.start();
-      setMediaRecorder(recorder);
-      setIsRecording(true);
-      setRecordingTime(0);
+    // Process files sequentially to avoid overwhelming the server
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const fileStatus = selectedFiles[i];
       
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
+      if (fileStatus.status !== 'pending') continue;
 
-      toast({
-        title: "Recording started",
-        description: "Speak now. Click stop when finished.",
-      });
-    } catch (error) {
-      console.error('Error starting recording:', error);
-      toast({
-        title: "Recording failed",
-        description: "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
-    }
-  };
+      // Update status to uploading
+      setSelectedFiles(prev => prev.map((f, idx) => 
+        idx === i ? { ...f, status: 'uploading' as const, progress: 'Uploading...' } : f
+      ));
 
-  const stopRecording = () => {
-    if (mediaRecorder && isRecording) {
-      mediaRecorder.stop();
-      setIsRecording(false);
-      setMediaRecorder(null);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-  };
-
-  const processRecording = async (audioBlob: Blob) => {
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.wav');
-      if (selectedCategory) {
+      try {
+        const formData = new FormData();
+        formData.append('file', fileStatus.file);
         formData.append('category', selectedCategory);
-      }
 
-      const response = await fetch('/api/documents/dictation', {
-        method: 'POST',
-        body: formData,
-      });
+        // Determine endpoint based on file type
+        const isPDF = fileStatus.file.type === 'application/pdf';
+        const isDOCX = fileStatus.file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || fileStatus.file.name.endsWith('.docx');
+        const isTXT = fileStatus.file.type === 'text/plain' || fileStatus.file.name.endsWith('.txt');
+        const isZIP = fileStatus.file.type === 'application/zip' || fileStatus.file.type === 'application/x-zip-compressed' || fileStatus.file.name.endsWith('.zip');
+        
+        let endpoint = '/api/documents/upload-video'; // default for video/audio
+        if (isPDF) endpoint = '/api/documents/upload-pdf';
+        else if (isDOCX) endpoint = '/api/documents/upload-docx';
+        else if (isTXT) endpoint = '/api/documents/upload-txt';
+        else if (isZIP) endpoint = '/api/documents/upload-zip';
 
-      const result = await response.json();
-      if (result.success) {
-        setUploadResults(prev => [result, ...prev]);
-        toast({
-          title: "Recording processed",
-          description: "Your voice recording has been transcribed and added to the knowledge base.",
+        setUploadProgress(`Processing ${i + 1} of ${selectedFiles.length}: ${fileStatus.file.name}`);
+
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+          headers: getAdminHeaders(),
         });
-      } else {
-        toast({
-          title: "Recording processing failed",
-          description: result.error || "Failed to process the recording.",
-          variant: "destructive",
-        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+          throw new Error(errorData.error || `Upload failed with status ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          setSelectedFiles(prev => prev.map((f, idx) => 
+            idx === i ? { ...f, status: 'success' as const, progress: 'Completed' } : f
+          ));
+          successCount++;
+        } else {
+          throw new Error(result.error || "Upload failed");
+        }
+      } catch (error: any) {
+        console.error('Upload error:', error);
+        setSelectedFiles(prev => prev.map((f, idx) => 
+          idx === i ? { 
+            ...f, 
+            status: 'error' as const, 
+            progress: 'Failed', 
+            error: error.message 
+          } : f
+        ));
+        errorCount++;
       }
-    } catch (error) {
-      console.error('Recording processing error:', error);
-      toast({
-        title: "Recording processing failed",
-        description: "An error occurred while processing the recording.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsUploading(false);
+    }
+
+    setIsUploading(false);
+    setUploadProgress("");
+
+    // Show summary toast
+    toast({
+      title: "Batch upload complete",
+      description: `✅ ${successCount} succeeded, ❌ ${errorCount} failed`,
+      variant: successCount > 0 ? "default" : "destructive",
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    if (onUploadComplete && successCount > 0) {
+      onUploadComplete();
     }
   };
 
@@ -318,385 +221,229 @@ export function DocumentUpload() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'processing':
-        return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'failed':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <FileText className="w-4 h-4 text-gray-500" />;
-    }
+  const getFileIcon = (file: File) => {
+    if (file.type === 'application/pdf') return <FileText className="w-8 h-8 text-red-500" />;
+    if (file.type.startsWith('video/')) return <Video className="w-8 h-8 text-purple-500" />;
+    if (file.type === 'application/zip' || file.type === 'application/x-zip-compressed' || file.name.endsWith('.zip')) return <Archive className="w-8 h-8 text-amber-500" />;
+    return <FileUp className="w-8 h-8 text-blue-500" />;
   };
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="documents" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="documents" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Documents
+      {/* Category Selector - Shared across all upload methods */}
+      <Card className="glass-strong border-white/10">
+        <CardContent className="pt-6">
+          <div className="space-y-2">
+            <Label htmlFor="category" className="flex items-center gap-2 text-white">
+              <Tag className="w-4 h-4" />
+              Knowledge Category
+            </Label>
+            <select
+              id="category"
+              data-testid="select-category"
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value as PineconeCategory)}
+              disabled={isUploading}
+              className="flex h-10 w-full items-center justify-between rounded-md border border-white/20 bg-black/40 text-white px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {PINECONE_CATEGORIES.map((category) => (
+                <option key={category} value={category} className="bg-black text-white">
+                  {category}
+                </option>
+              ))}
+            </select>
+            <div className="space-y-1">
+              <p className="text-xs text-white/70">
+                <span className="font-medium">{selectedCategory}:</span> {CATEGORY_DESCRIPTIONS[selectedCategory]}
+              </p>
+              <p className="text-xs text-white/50">
+                Documents will be saved to this category namespace and accessible to all avatars configured for it.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Upload Methods Tabs */}
+      <Tabs defaultValue="local" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 glass p-1">
+          <TabsTrigger 
+            value="local" 
+            className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+            data-testid="tab-local-upload"
+          >
+            <Upload className="w-4 h-4" />
+            Local Files
           </TabsTrigger>
-          <TabsTrigger value="urls" className="flex items-center gap-2">
-            <Globe className="w-4 h-4" />
-            URLs
-          </TabsTrigger>
-          <TabsTrigger value="text" className="flex items-center gap-2">
-            <Type className="w-4 h-4" />
-            Text
-          </TabsTrigger>
-          <TabsTrigger value="dictation" className="flex items-center gap-2">
-            <Mic className="w-4 h-4" />
-            Voice
+          <TabsTrigger 
+            value="google-drive" 
+            className="gap-2 data-[state=active]:bg-gradient-primary data-[state=active]:text-white data-[state=active]:glow-primary transition-all"
+            data-testid="tab-google-drive"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Google Drive
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="documents" className="space-y-4">
-          <Card>
+        <TabsContent value="local" className="space-y-4 mt-6">
+          <Card className="glass-strong border-white/10">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-white">
                 <Upload className="w-5 h-5" />
-                Upload Documents
+                Upload Local Files
               </CardTitle>
-              <CardDescription>
-                Upload PDF, DOCX, TXT, or audio files (MP3, WAV, M4A, WebM) to add knowledge to your AI avatar.
+              <CardDescription className="text-white/70">
+                Upload documents (PDF, DOCX, TXT, ZIP) or video/audio files (MP4, MP3, WAV, M4A) from your device
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div>
-                  <Label htmlFor="document">Choose Document</Label>
-                  <Input
-                    id="document"
-                    type="file"
-                    accept=".pdf,.docx,.txt,.mp3,.wav,.m4a,.webm,.mp4"
-                    onChange={handleFileSelect}
-                    disabled={isUploading}
-                    className="mt-1"
-                    data-testid="input-document-upload"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading}>
-                    <SelectTrigger className="mt-1" data-testid="select-category">
-                      <SelectValue placeholder="Select a category (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {selectedFile && (
-                  <div className="p-3 bg-gray-50 rounded-lg border">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-4 h-4 text-gray-500" />
-                        <span className="text-sm font-medium">{selectedFile.name}</span>
-                        <span className="text-xs text-gray-500">
-                          ({(selectedFile.size / 1024 / 1024).toFixed(1)} MB)
-                        </span>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedFile(null);
-                          const fileInput = document.getElementById('document') as HTMLInputElement;
-                          if (fileInput) fileInput.value = '';
-                        }}
-                        disabled={isUploading}
-                        data-testid="button-clear-file"
-                      >
-                        ✕
-                      </Button>
-                    </div>
-                  </div>
-                )}
 
-                {selectedFile && (
-                  <Button
-                    onClick={handleFileUpload}
-                    disabled={isUploading || !selectedFile}
-                    className="w-full"
-                    data-testid="button-upload-document"
-                  >
-                    {isUploading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Uploading...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Save & Upload Document
-                      </>
-                    )}
-                  </Button>
-                )}
-                
-                {isUploading && (
-                  <div className="flex items-center gap-2 text-sm text-blue-600">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Processing document...
-                  </div>
-                )}
+          {/* Drag and drop area */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={cn(
+              "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+              isDragging ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50",
+              selectedFiles.length > 0 && "border-primary bg-primary/5"
+            )}
+            onClick={() => fileInputRef.current?.click()}
+            data-testid="dropzone-upload"
+          >
+            <div className="space-y-2">
+              <Upload className="w-12 h-12 mx-auto text-muted-foreground" />
+              <div>
+                <p className="text-base font-medium text-foreground">
+                  Drop files here or click to browse
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Supports PDF, DOCX, TXT, ZIP, MP4, MOV, WebM, MP3, WAV, M4A (multiple files)
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Max size: 25MB for documents, 100MB for videos/audio/ZIP
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </div>
+          </div>
 
-        <TabsContent value="urls" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Link className="w-5 h-5" />
-                Add URLs
-              </CardTitle>
-              <CardDescription>
-                Add web pages and articles by entering their URLs.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="url">Website URL</Label>
-                  <Input
-                    id="url"
-                    type="url"
-                    placeholder="https://example.com/article"
-                    value={urlInput}
-                    onChange={(e) => setUrlInput(e.target.value)}
-                    disabled={isUploading}
-                    className="mt-1"
-                    data-testid="input-url"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="url-category">Category</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading}>
-                    <SelectTrigger className="mt-1" data-testid="select-url-category">
-                      <SelectValue placeholder="Select a category (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button 
-                  onClick={handleUrlUpload} 
-                  disabled={!urlInput.trim() || isUploading}
-                  className="w-full"
-                  data-testid="button-upload-url"
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.zip,.mp4,.mov,.webm,.m4v,.mp3,.wav,.m4a"
+            onChange={handleFileSelect}
+            className="hidden"
+            disabled={isUploading}
+            multiple
+            data-testid="input-file-upload"
+          />
+
+          {/* File List */}
+          {selectedFiles.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium text-foreground">
+                  Selected Files ({selectedFiles.length})
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedFiles([]);
+                    if (fileInputRef.current) fileInputRef.current.value = '';
+                  }}
+                  disabled={isUploading}
                 >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing URL...
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="w-4 h-4 mr-2" />
-                      Add URL Content
-                    </>
-                  )}
+                  Clear All
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="text" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Type className="w-5 h-5" />
-                Add Text
-              </CardTitle>
-              <CardDescription>
-                Directly enter text content to add to the knowledge base.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="text-content">Text Content</Label>
-                  <Textarea
-                    id="text-content"
-                    placeholder="Enter your text content here..."
-                    value={textInput}
-                    onChange={(e) => setTextInput(e.target.value)}
-                    disabled={isUploading}
-                    className="mt-1 min-h-[200px]"
-                    data-testid="textarea-text-input"
-                  />
-                </div>
-                
-                <div>
-                  <Label htmlFor="text-category">Category</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading}>
-                    <SelectTrigger className="mt-1" data-testid="select-text-category">
-                      <SelectValue placeholder="Select a category (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <Button 
-                  onClick={handleTextUpload} 
-                  disabled={!textInput.trim() || isUploading}
-                  className="w-full"
-                  data-testid="button-upload-text"
-                >
-                  {isUploading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Processing text...
-                    </>
-                  ) : (
-                    <>
-                      <Type className="w-4 h-4 mr-2" />
-                      Add Text Content
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="dictation" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mic className="w-5 h-5" />
-                Voice Recording
-              </CardTitle>
-              <CardDescription>
-                Record voice messages that will be transcribed and added to the knowledge base.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="voice-category">Category</Label>
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUploading || isRecording}>
-                    <SelectTrigger className="mt-1" data-testid="select-voice-category">
-                      <SelectValue placeholder="Select a category (optional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="text-center space-y-4">
-                  {isRecording && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                      <div className="flex items-center justify-center gap-2 text-red-600 mb-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                        Recording: {formatTime(recordingTime)}
-                      </div>
-                      <p className="text-sm text-red-600">Speak clearly into your microphone</p>
-                    </div>
-                  )}
-                  
-                  <Button
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isUploading}
-                    size="lg"
-                    className={`w-full ${isRecording ? 'bg-red-600 hover:bg-red-700' : ''}`}
-                    data-testid="button-record-toggle"
+              <div className="max-h-60 overflow-y-auto space-y-2 border rounded-lg p-2 bg-muted/20">
+                {selectedFiles.map((fileStatus, idx) => (
+                  <div 
+                    key={idx} 
+                    className="flex items-center justify-between p-2 bg-background rounded border"
                   >
-                    {isRecording ? (
-                      <>
-                        <MicOff className="w-5 h-5 mr-2" />
-                        Stop Recording
-                      </>
-                    ) : (
-                      <>
-                        <Mic className="w-5 h-5 mr-2" />
-                        Start Recording
-                      </>
-                    )}
-                  </Button>
-
-                  {isUploading && (
-                    <div className="flex items-center justify-center gap-2 text-sm text-blue-600">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Transcribing and processing audio...
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {getFileIcon(fileStatus.file)}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {fileStatus.file.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatFileSize(fileStatus.file.size)} • {fileStatus.progress || 'Ready'}
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
+                    <div className="flex items-center gap-2">
+                      {fileStatus.status === 'success' && (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      )}
+                      {fileStatus.status === 'error' && (
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                      )}
+                      {fileStatus.status === 'uploading' && (
+                        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                      )}
+                      {fileStatus.status === 'pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedFiles(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          disabled={isUploading}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedFiles.length > 0 && (
+            <Button
+              onClick={handleBatchUpload}
+              disabled={isUploading || selectedFiles.every(f => f.status !== 'pending')}
+              className="w-full"
+              size="lg"
+              data-testid="button-upload-batch"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  {uploadProgress || "Uploading..."}
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload {selectedFiles.filter(f => f.status === 'pending').length} File(s)
+                </>
+              )}
+            </Button>
+          )}
+
+          {isUploading && uploadProgress && (
+            <div className="flex items-center gap-2 text-sm text-blue-600 bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
+              <span>{uploadProgress}</span>
+            </div>
+          )}
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="google-drive" className="space-y-4 mt-6">
+          <GoogleDrivePicker 
+            selectedCategory={selectedCategory} 
+            onUploadComplete={onUploadComplete} 
+          />
         </TabsContent>
       </Tabs>
-
-      {uploadResults.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Upload History</CardTitle>
-            <CardDescription>
-              Recent uploads and their processing status
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {uploadResults.map((result, index) => (
-                <div
-                  key={`${result.documentId}-${index}`}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(result.status)}
-                    <div>
-                      <p className="font-medium text-sm">{result.filename}</p>
-                      <p className="text-xs text-gray-500">
-                        {typeof result.fileSize === 'number' ? formatFileSize(result.fileSize) : result.fileSize} • {result.status}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    {result.documentId}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

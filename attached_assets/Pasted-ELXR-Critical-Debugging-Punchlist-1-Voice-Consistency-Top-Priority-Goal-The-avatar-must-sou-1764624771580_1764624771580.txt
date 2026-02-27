@@ -1,0 +1,370 @@
+ELXR – Critical Debugging Punchlist 
+1. Voice Consistency (Top Priority)
+
+Goal:
+
+The avatar must sound like the same person everywhere—audio-only, interactive avatar, and video creation.
+
+Required Fixes
+
+Map one ElevenLabs voice ID per avatar and enforce it across:
+
+Interactive avatar (HeyGen Realtime)
+
+
+Audio-only mode
+
+
+Video creation (script → HeyGen video)
+
+
+
+Confirm that no HeyGen default voices are being used anywhere.
+
+
+Add server-side validation so a request fails loudly if a voice ID is missing or mismatched.
+
+
+Add a test script to confirm all 3 modes return domain-consistent audio.
+
+2. Pinecone + Knowledge Base Routing (Currently Not Working)
+
+Observations
+
+Podcast queries return nothing even though ~20,000 podcast transcripts are embedded.
+
+
+PubMed access appears nonfunctional or not queried.
+
+
+RAG results appear absent, implying fallback to pure LLM answers.
+
+
+Required Fixes
+
+Verify Pinecone authentication & namespace configuration.
+
+
+Confirm embeddings exist and are reachable from current environment.
+
+
+Test queries against namespaces:
+
+podcasts
+
+
+pubmed
+
+
+global_wellness
+
+
+avatar-specific namespaces
+
+
+
+Add explicit logging:
+“RAG used: yes/no, sources: X, results length: Y”.
+
+
+Implement a fallback notice:
+
+If no RAG hits, avatar should not get defensive — respond politely with:
+“I don’t see anything in my library on that. Want me to explain what I do know?”
+
+
+
+Confirm PubMed pipeline:
+
+API or local dataset?
+
+
+Make sure API keys are loaded and queries work.
+
+
+3. LLM Engine Verification (Claude Preferred)
+
+Requirement
+
+Confirm Claude 3.5 or Claude 4.x is the response engine for interactive avatar answers.
+
+
+Verify no fallback to GPT without explicit instruction.
+
+
+Use streaming where possible for conversational fluidity.
+
+4. Memberstack + Webflow Logic (Access Issues)
+
+Problems Identified
+
+Free users must sign up again to get the free hour → broken.
+
+
+Avatar switching rules unclear across plans.
+
+
+Required Fixes
+
+Fix free account onboarding:
+
+After signup → free trial should activate automatically.
+
+
+
+Ensure Basic plan = 1 chosen avatar (locked).
+
+
+Ensure Advanced plan = unlimited avatars, switching allowed.
+
+
+Confirm Memberstack → Webflow gating actually matches plan purchase.
+
+
+Add server-side checks so plan spoofing is impossible.
+
+5. Avatar Timeout, Sign-Off, and Auto-Disconnect
+
+Required Behavior
+
+Avatars should NOT run indefinitely → huge cost exposure.
+
+
+Required Fixes
+
+Implement 30-second no-user-input timeout, with polite prompt:
+“I haven’t heard from you — are you still there?”
+
+
+If no reply after 10 seconds → automatic session close.
+
+
+Timeout limits:
+
+Video mode: hard limit (configurable)
+
+
+Audio mode: hard limit (configurable)
+
+
+
+Prevent avatar from “listening to itself” (echo-suppression fix).
+
+6. Avatar Personality Issues (Politeness + Stability)
+
+Observed Problems
+
+Some avatars are abrasive.
+
+
+They correct users about their names.
+
+
+They get belligerent when they don’t know something.
+
+
+Required Fixes
+
+Rewrite system prompts to enforce:
+
+Polite tone
+
+
+Non-defensive behavior
+
+
+No self-correction on names
+
+
+Graceful handling of missing knowledge
+
+
+
+Add “fallback scripts”:
+“Let me check that… I may not have that in my library yet.”
+
+
+Validate prompt injection on every session restart.
+
+7. Notifications for Video Creation (Currently Too Weak)
+
+Problem
+
+Only screen prompts → easy to miss; hundreds of videos already accumulating.
+
+
+Required Fixes
+
+When a video completes:
+
+Send email (Resend / SendGrid)
+
+
+Send SMS (optional, Twilio / MessageBird)
+
+
+In-app notification badge
+
+
+
+Add status logging so users can see:
+
+Queued
+
+
+Rendering
+
+
+Ready
+
+
+Failed
+
+
+8. Video Management System (Critical for Scale)
+
+Required Fixes
+
+Build a backend folder/category system:
+
+Per user
+
+
+Per avatar
+
+
+Per course
+
+
+
+Add pagination + search (e.g., by script title).
+
+
+Allow users to delete old videos.
+
+
+Store:
+
+Video URL
+
+
+Script
+
+
+Transcript
+
+
+Render date
+
+
+Avatar
+
+
+9. Long-Term Memory (Not Working at All Right Now)
+
+Current Situation
+
+Avatars explicitly claim:
+“Every conversation is fresh, I have no memory of anything.”
+
+That means memory is not saving OR not being retrieved.
+
+Required Fixes
+
+Implement memory store using:
+memberstack_user_id + avatar_id
+
+
+Memories must include:
+
+Session summaries
+
+
+User facts
+
+
+Preferences
+
+
+
+Memory must load automatically at session start.
+
+
+Add debug flag:
+“Memory loaded: X items.”
+
+
+Shared Memory Rules
+
+Either:
+
+A) Shared memory across all avatars
+OR
+
+
+B) Per-avatar memory
+
+
+Pick one and implement consistently.
+
+Consistency
+
+Audio-only avatar uses the same memory as video avatar.
+
+10. Transcript Access (Missing in Text Input Mode)
+
+Required Fixes
+
+When interacting with avatars (text OR voice):
+
+Save full transcript to session history.
+
+
+
+Provide transcript viewer in UI.
+
+
+If HeyGen exposes transcript via API → fetch + store it.
+
+
+Add option: “Send transcript to my email.”
+
+11. Initialization Behavior
+
+Required Fixes
+
+Avatars must greet user immediately on load. No silence.
+
+
+Disable microphone auto-trigger while avatar is talking.
+
+
+Avatar should not process its own output (echo suppression).
+
+SUMMARY OF ABSOLUTE TOP PRIORITIES
+
+Voice consistency across interactive, audio-only, and video creation.
+
+
+Fix Pinecone & PubMed access — RAG currently failing.
+
+
+Ensure Claude is the LLM responding.
+
+
+Memberstack/Webflow plan logic must be correct.
+
+
+Timeout system + polite sign-off.
+
+
+Fix rude or defensive avatar behaviors.
+
+
+Real notifications for video creation.
+
+
+Long-term memory MUST work — currently doesn’t.
+
+
+Transcript access must be available.

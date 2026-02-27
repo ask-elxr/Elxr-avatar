@@ -1,0 +1,101 @@
+LOG🖼️ Render state: [object Object]
+LOG🧠 Loading memory preference from localStorage: 
+LOG🧠 memoryEnabled state is now: false
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🌐 Loaded avatar language: en-US
+LOG🎛️ Loaded avatar capabilities: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOGAudio-only mode: Video disabled, session registered
+LOG📱 Mobile detected - warming up microphone...
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer started for first time
+LOG🖼️ Render state: [object Object]
+LOG📱 Microphone warmed up successfully
+LOG📱 Browser detection: iOS=true, Android=false, Safari=false, iOSSafari=false, Chrome=false, ChromeIOS=true, ChromeMobile=false, touch=true, smallScreen=true
+LOG📱 UserAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 26_2_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Cr...
+LOG📱 Mobile device detected - using ElevenLabs realtime STT instead of Web Speech API
+LOG🎤 Starting ElevenLabs STT for mobile...
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🗣️ Audio-only greeting: Good to have you here. I'm Nigel. Don't be shy about interrupting - that's fine. What's the edge you're working on?
+LOG🎤 ElevenLabs STT WebSocket connected
+LOG🔊 Acknowledgment pre-cache triggered for: nigel (already cached)
+ERROR🎤 ElevenLabs STT error: STT connection error
+ERROR🎤 ElevenLabs STT error: Failed to start STT session
+LOG🖼️ Render state: [object Object]
+LOG🔊 Acknowledgment audio preloaded for: nigel
+ERRORFailed to play greeting audio: NotAllowedError: The request is not allowed by the user agent or the platform in the current context, possibly because the user denied permission.
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+LOG📱 Browser detection: iOS=true, Android=false, Safari=false, iOSSafari=false, Chrome=false, ChromeIOS=true, ChromeMobile=false, touch=true, smallScreen=true
+LOG📱 UserAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 26_2_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Cr...
+LOG📱 Mobile device detected - using ElevenLabs realtime STT instead of Web Speech API
+LOG🎤 Starting ElevenLabs STT for mobile...
+LOG🎤 Stopping ElevenLabs STT...
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🎤 ElevenLabs STT WebSocket connected
+ERROR🎤 ElevenLabs STT error: STT connection error
+ERROR🎤 ElevenLabs STT error: Failed to start STT session
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🔄 Switching transport: Audio → Video
+LOG🖼️ Render state: [object Object]
+LOGInactivity timer cleared and reset
+LOGStarting LiveAvatar session (mode switch - no greeting)
+LOG🔍 Avatar voice config check: heygenVoiceId="fWUVBoxa3cvv6VWj6VRS", elevenlabsVoiceId="fWUVBoxa3cvv6VWj6VRS"
+LOG🎙️ useElevenLabsVoiceRef set to: false
+LOG🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Nigel
+LOG🚀 LiveAvatarDriver.start() called for: nigel
+LOG🔑 Fetching LiveAvatar session credentials for: nigel
+LOG🖼️ Render state: [object Object]
+LOG📦 LiveAvatar session credentials received: [object Object]
+LOG📋 Creating LiveAvatar session: [object Object]
+LOG🔄 Calling session.start() - SDK will connect to LiveKit...
+LOG📊 LiveAvatar session state: CONNECTING
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🎬 LiveAvatar SESSION_STREAM_READY event received
+LOG📺 Attaching video element via session.attach()...
+LOG🎬 LiveAvatar stream ready
+LOG⏭️ Skipping greeting - mode switch (seamless transition)
+LOG🎤 Starting voice recognition after seamless mode switch
+LOG📱 Browser detection: iOS=true, Android=false, Safari=false, iOSSafari=false, Chrome=false, ChromeIOS=true, ChromeMobile=false, touch=true, smallScreen=true
+LOG📱 UserAgent: Mozilla/5.0 (iPhone; CPU iPhone OS 26_2_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Cr...
+LOG📱 Mobile device detected - using ElevenLabs realtime STT instead of Web Speech API
+LOG🎤 Starting ElevenLabs STT for mobile...
+LOG🎤 Stopping ElevenLabs STT...
+LOG📺 Video track ready - updating videoReady state
+LOG✅ Video element attached via SDK - stream should be visible
+LOG🖼️ Render state: [object Object]
+LOG🎤 ElevenLabs STT WebSocket connected
+ERROR🎤 ElevenLabs STT WebSocket error: [object Event]
+LOG🎤 ElevenLabs STT WebSocket closed
+LOG🖼️ Render state: [object Object]
+ERROR🎤 ElevenLabs STT error: STT connection error
+LOG🖼️ Render state: [object Object]
+ERROR🎤 ElevenLabs STT error: Failed to start STT session
+LOG📊 LiveAvatar session state: CONNECTED
+LOG✅ session.start() completed - waiting for SESSION_STREAM_READY event
+LOG✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+LOG✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+LOG✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+LOG🖼️ Render state: [object Object]
+LOGsetStreamState active
+LOG📺 Video element state after attach: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]
+LOG🖼️ Render state: [object Object]

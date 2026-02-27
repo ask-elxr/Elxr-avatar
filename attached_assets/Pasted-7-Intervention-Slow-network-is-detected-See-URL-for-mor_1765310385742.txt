@@ -1,0 +1,1220 @@
+7[Intervention] Slow network is detected. See <URL> for more details. Fallback font will be used while loading: <URL>
+Elxrai?from=notifications:1 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/ibm-plex-sans-v8-latin-regular.woff2
+72d5b2a55970ba96.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/ibm-plex-sans-v8-latin-500.woff2
+cdfd4e81ca670780.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/replit-icons.woff
+cdfd4e81ca670780.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/hack-regular.woff2?sha=3114f1256
+cdfd4e81ca670780.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/hack-italic.woff2?sha=3114f1256
+cdfd4e81ca670780.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/hack-bold.woff2?sha=3114f1256
+cdfd4e81ca670780.js:2 [Intervention] Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://replit.com/public/fonts/hack-bolditalic.woff2?sha=3114f1256
+34The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+34The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+34The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+Elxrai?from=notifications:1 The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+Elxrai?from=notifications:1 The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+Elxrai?from=notifications:1 The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+ea398d4858ba7e31.js:2 [Coframe] Replit Enterprise watcher loaded
+ea398d4858ba7e31.js:2 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+ea398d4858ba7e31.js:2 Download the Apollo DevTools for a better development experience: https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/session_result/:1  Failed to load resource: the server responded with a status of 403 ()
+ea398d4858ba7e31.js:2 [LaunchDarkly] LaunchDarkly client initialized
+Elxrai?from=notifications:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+19Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+ed1e693c96a75807.js:2 Unrecognized feature: 'ambient-light-sensor'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'battery'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-not-rendered'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'execution-while-out-of-viewport'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'layout-animations'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'legacy-image-formats'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'navigation-override'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'oversized-images'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'publickey-credentials'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'speaker-selection'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unoptimized-images'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'unsized-media'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Unrecognized feature: 'pointer-lock'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowfullscreen'.
+z @ ed1e693c96a75807.js:2
+ed1e693c96a75807.js:2 Allow attribute will take precedence over 'allowpaymentrequest'.
+z @ ed1e693c96a75807.js:2
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ea398d4858ba7e31.js:2 MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 OUTPUT_RECEIVED listeners added. Use emitter.setMaxListeners() to increase limit
+    at l (6dc7a950438d7a9e.js:2:1736)
+    at s.addListener (6dc7a950438d7a9e.js:2:4305)
+    at Object.onOutput (e25e6093b1043817.js:2:170395)
+    at e25e6093b1043817.js:2:178055
+    at e25e6093b1043817.js:2:178649
+    at v (c25f6ad9b6241438.js:2:22552)
+    at b (c25f6ad9b6241438.js:2:22765)
+    at _ (c25f6ad9b6241438.js:2:22675)
+    at o (ea398d4858ba7e31.js:2:98690)
+(anonymous) @ ea398d4858ba7e31.js:2
+ea398d4858ba7e31.js:2 MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 STDERR_RECEIVED listeners added. Use emitter.setMaxListeners() to increase limit
+    at l (6dc7a950438d7a9e.js:2:1736)
+    at s.addListener (6dc7a950438d7a9e.js:2:4305)
+    at Object.onStderr (e25e6093b1043817.js:2:170489)
+    at e25e6093b1043817.js:2:178257
+    at e25e6093b1043817.js:2:178649
+    at v (c25f6ad9b6241438.js:2:22552)
+    at b (c25f6ad9b6241438.js:2:22765)
+    at _ (c25f6ad9b6241438.js:2:22675)
+    at o (ea398d4858ba7e31.js:2:98690)
+(anonymous) @ ea398d4858ba7e31.js:2
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ea398d4858ba7e31.js:2 [Coframe] Mutation callback infinite loop protection triggered, disconnecting mutation observer Object
+(anonymous) @ ea398d4858ba7e31.js:2
+ingest.app.coframe.com/ingest/v2/batched_monitoring/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2F&id=%3Ar164%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🧠 Loading memory preference from localStorage: true
+injected.js:37 🧠 memoryEnabled state is now: false
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🧠 memoryEnabled state is now: true
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🌐 Loaded avatar language: en-US
+injected.js:37 🎛️ Loaded avatar capabilities: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 Audio-only mode: Video disabled, session registered
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 🎤 Starting ElevenLabs STT for mobile... Object
+injected.js:37 🎤 Stopping ElevenLabs STT...
+injected.js:37 🖼️ Render state: Object
+injected.js:37 Inactivity timer started for first time
+injected.js:37 🗣️ Audio-only greeting: Good to have you here. I'm Mark. Jump in whenever you want to respond. Let's see what wants to emerge.
+injected.js:37 🔊 Acknowledgment pre-cache triggered for: mark-kohl (caching started)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🎤 ElevenLabs STT WebSocket connected successfully
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🎤 ElevenLabs STT ready - starting microphone
+injected.js:37 🎤 Requesting microphone access for ElevenLabs STT...
+useAvatarSession.ts:473 [Deprecation] The ScriptProcessorNode is deprecated. Use AudioWorkletNode instead. (https://bit.ly/audio-worklet)
+(anonymous) @ useAvatarSession.ts:473
+injected.js:37 🎤 ElevenLabs STT microphone listening
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 🖼️ Render state: Object
+5fab7786-97a7-4493-b3e9-9d2a6d896ae4-00-1za85455t6xdl.kirk.replit.dev/api/audio/acknowledgment/mark-kohl:1  Failed to load resource: the server responded with a status of 404 (Not Found)
+injected.js:37 🖼️ Render state: Object
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+ingest.app.coframe.com/ingest/v2/batched_events/68c9ad4d4cddb58cf3a1f93d/:1  Failed to load resource: the server responded with a status of 403 ()
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 📝 handleSubmitMessage called with: Object
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653101127630.6jz64prt3qe
+injected.js:37 Audio-only mode: Using /api/audio endpoint
+injected.js:37 🧠 Memory settings: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Instant acknowledgment played
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 
+🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 🎧 AUDIO MODE - Mark Kohl
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 📥 USER: "Hi mark."
+injected.js:37 📤 CLAUDE RESPONSE:
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 Hey — how's it going? What's on your mind today?
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 📊 Response: 48 chars
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+
+injected.js:37 🔊 Audio blob received: 33.9 KB, type: audio/mpeg
+injected.js:37 🔊 Audio element created, volume: 1, muted: false
+injected.js:37 🔊 Audio metadata loaded: duration=2.17s, volume=1
+injected.js:37 🔊 Audio playback STARTED - duration: 2.17s, currentTime: 0, paused: false
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Audio playback ENDED successfully
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🔊 Voice recognition resumed (audio-only mode - avatar finished)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 📝 handleSubmitMessage called with: Object
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653101371380.hesmqxco6ga
+injected.js:37 Audio-only mode: Using /api/audio endpoint
+injected.js:37 🧠 Memory settings: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Instant acknowledgment played
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 
+🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 🎧 AUDIO MODE - Mark Kohl
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 📥 USER: "I'm thing great and how about you"
+injected.js:37 📤 CLAUDE RESPONSE:
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 I'm doing well, thanks for asking. What's on your mind today?
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 📊 Response: 61 chars
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+
+injected.js:37 🔊 Audio blob received: 46.2 KB, type: audio/mpeg
+injected.js:37 🔊 Audio element created, volume: 1, muted: false
+injected.js:37 🔊 Audio metadata loaded: duration=2.95s, volume=1
+injected.js:37 🔊 Audio playback STARTED - duration: 2.95s, currentTime: 0, paused: false
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Audio playback ENDED successfully
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🔊 Voice recognition resumed (audio-only mode - avatar finished)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 📝 handleSubmitMessage called with: Object
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653101696130.bp6vvedrvmw
+injected.js:37 Audio-only mode: Using /api/audio endpoint
+injected.js:37 🧠 Memory settings: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Instant acknowledgment played
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 
+🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 🎧 AUDIO MODE - Mark Kohl
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 📥 USER: "hello"
+injected.js:37 📤 CLAUDE RESPONSE:
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 Hey — good to hear from you. What's on your mind?
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 📊 Response: 49 chars
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+
+injected.js:37 🔊 Audio blob received: 62.9 KB, type: audio/mpeg
+injected.js:37 🔊 Audio element created, volume: 1, muted: false
+injected.js:37 🔊 Audio metadata loaded: duration=4.02s, volume=1
+injected.js:37 🔊 Audio playback STARTED - duration: 4.02s, currentTime: 0, paused: false
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Audio playback ENDED successfully
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🔊 Voice recognition resumed (audio-only mode - avatar finished)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 📝 handleSubmitMessage called with: Object
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653101916010.0utraonhbr3l
+injected.js:37 Audio-only mode: Using /api/audio endpoint
+injected.js:37 🧠 Memory settings: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Instant acknowledgment played
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 
+🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 🎧 AUDIO MODE - Mark Kohl
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+injected.js:37 📥 USER: "tell me about the kundalini"
+injected.js:37 📤 CLAUDE RESPONSE:
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 Kundalini is dormant energy at the base of your spine that rises through breathwork and meditation. It's transformative but demands respect and proper guidance to navigate safely.
+injected.js:37 ───────────────────────────────────────────────────────────────
+injected.js:37 📊 Response: 179 chars
+injected.js:37 🎧 ═══════════════════════════════════════════════════════════════
+
+injected.js:37 🔊 Audio blob received: 173.5 KB, type: audio/mpeg
+injected.js:37 🔊 Audio element created, volume: 1, muted: false
+injected.js:37 🔊 Audio metadata loaded: duration=11.10s, volume=1
+injected.js:37 🔊 Audio playback STARTED - duration: 11.10s, currentTime: 0, paused: false
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔊 Audio playback ENDED successfully
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🔊 Voice recognition resumed (audio-only mode - avatar finished)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔄 Switching transport: Audio → Video
+injected.js:37 🖼️ Render state: Object
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Starting LiveAvatar session (mode switch - no greeting)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🔍 Avatar voice config check: heygenVoiceId="f432f2348d9948c6a5be7da8d0e06bda", elevenlabsVoiceId="Am7G7QzYkKkdR8bmdQqY"
+injected.js:37 🎙️ useElevenLabsVoiceRef set to: false
+injected.js:37 🔧 Session start code version: 2024-12-07-v2
+injected.js:37 📱 Mobile detection for voice chat: false
+injected.js:37 🎙️ LiveAvatarDriver: CUSTOM mode - Using ElevenLabs voice (session.repeatAudio) for Mark Kohl
+injected.js:37 🚀 LiveAvatarDriver.start() called for: mark-kohl
+injected.js:37 🔑 Fetching LiveAvatar session credentials for: mark-kohl
+injected.js:37 🖼️ Render state: Object
+injected.js:37 📦 LiveAvatar session credentials received: Object
+injected.js:37 📋 Creating LiveAvatar session: Object
+injected.js:37 🔧 LiveAvatarDriver code version: 2024-12-09-v8 (no apiUrl override)
+injected.js:37 🎤 Voice input: DISABLED (using Web Speech API)
+injected.js:37 🔄 Calling session.start() - SDK will connect to LiveKit...
+injected.js:37 📊 LiveAvatar session state: CONNECTING
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🎬 LiveAvatar SESSION_STREAM_READY event received
+injected.js:37 📺 Attaching video element via session.attach()...
+injected.js:37 🎬 LiveAvatar stream ready
+injected.js:37 ⏭️ Skipping greeting - mode switch (seamless transition)
+injected.js:37 🎤 Starting voice recognition after seamless mode switch
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 📺 Video track ready - updating videoReady state
+injected.js:37 ✅ Video element attached via SDK - stream should be visible
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 setStreamState active
+injected.js:37 📺 Video element state after attach: Object
+injected.js:37 📊 LiveAvatar session state: CONNECTED
+injected.js:37 ✅ session.start() completed - waiting for SESSION_STREAM_READY event
+2injected.js:37 ✅ LiveAvatar session started - CUSTOM mode with Claude + RAG + ElevenLabs
+injected.js:37 ✅ HeyGen started - seamless switch to video mode (no greeting, conversation continues)
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 📝 handleSubmitMessage called with: Object
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653102462730.iax0r067n8o
+injected.js:37 🖼️ Render state: Object
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🎯 [AUDIO-STREAMING] Using audio streaming mode for faster response
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: Object
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎯 [AUDIO-STREAMING] First audio ready: 9225ms (type: thinking)
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 0 (thinking) buffered
+injected.js:37 📊 [STATUS] fetching_context: Gathering knowledge...
+injected.js:37 ⏱️ [TIMING] Data fetch: 1247ms
+injected.js:37 📊 [STATUS] generating: AI is thinking...
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 1: "Hey — doing well, thanks for asking...."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 2: "I see you wanted to know about kundalini in detail..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 1 (sentence): "Hey — doing well, thanks for asking...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 2 (sentence): "I see you wanted to know about kundalini..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 3: "Let me give you the real picture: Kundalini is dor..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 4: "your spine, often described as a "sleeping serpent..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 4 (sentence): "your spine, often described as a "sleepi..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 3 (sentence): "Let me give you the real picture: Kundal..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 5: "" When awakened — through breathwork, meditation, ..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 5 (sentence): "" When awakened — through breathwork, me..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 6: "through the chakras along your spinal column, crea..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 7: "perception...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 7 (sentence): "perception...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 6 (sentence): "through the chakras along your spinal co..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 8: "The..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 8 (sentence): "The..."
+injected.js:37 🎯 [AUDIO-STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🎯 [AUDIO-STREAMING] Total audio chunks: 9
+injected.js:37 🎯 [AUDIO-STREAMING] First audio delay: 9225ms
+injected.js:37 🎯 [AUDIO-STREAMING] Time to first audio from backend: 5961ms
+injected.js:37 🎯 [AUDIO-STREAMING] Total time: 9255ms
+injected.js:37 🎯 [AUDIO-STREAMING] Backend breakdown: {totalMs: 8381, timeToFirstAudioMs: 5961, dataFetchMs: 1247, claudeMs: 6743, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: Hello Mark how are you doing?
+injected.js:37 🤖 CLAUDE RESPONSE: Hey — doing well, thanks for asking.
+
+I see you wanted to know about kundalini in detail. Let me give you the real picture: Kundalini is dormant energy believed to rest coiled at the base of your spine, often described as a "sleeping serpent." When awakened — through breathwork, meditation, yoga, or sometimes spontaneously — it rises through the chakras along your spinal column, creating shifts in consciousness, energy flow, and perception.
+
+The process can be profound and intense. People report physical sensations like heat or electricity moving
+injected.js:37 ---
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 0 (thinking) sent to SDK
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 1 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 2 (sentence) sent to SDK
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 3 (sentence) sent to SDK
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 4 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 5 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 6 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎯 [AUDIO-STREAMING] Timeout waiting for audio
+(anonymous) @ injected.js:37
+processAudioQueue @ useAvatarSession.ts:2016
+injected.js:37 🎯 [AUDIO-STREAMING] Audio queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 30910ms ===
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📝 handleSubmitMessage called with: {message: 'tell me about the meditation.', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653102940180.7ut4b4pm4in
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🎯 [AUDIO-STREAMING] Using audio streaming mode for faster response
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎯 [AUDIO-STREAMING] First audio ready: 10520ms (type: thinking)
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 0 (thinking) buffered
+injected.js:37 📊 [STATUS] fetching_context: Gathering knowledge...
+injected.js:37 ⏱️ [TIMING] Data fetch: 733ms
+injected.js:37 📊 [STATUS] generating: AI is thinking...
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 1: "Based on what I'm seeing here, meditation is about..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 2: "detaching from reactive thinking patterns...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 1 (sentence): "Based on what I'm seeing here, meditatio..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 2 (sentence): "detaching from reactive thinking pattern..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 3: "The goal is reaching a mentally clear, emotionally..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 3 (sentence): "The goal is reaching a mentally clear, e..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 4: "It's fundamentally a practice of presence — learni..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 5: "its loops...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 5 (sentence): "its loops...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 4 (sentence): "It's fundamentally a practice of presenc..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 6: "Whether you're sitting in silence, doing breathwor..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 6 (sentence): "Whether you're sitting in silence, doing..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 7: "rosary, the core is the same: cultivating that ste..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 8: "What aspect of meditation are you most curious abo..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 7 (sentence): "rosary, the core is the same: cultivatin..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 8 (sentence): "What aspect of meditation are you most c..."
+injected.js:37 🎯 [AUDIO-STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🎯 [AUDIO-STREAMING] Total audio chunks: 9
+injected.js:37 🎯 [AUDIO-STREAMING] First audio delay: 10520ms
+injected.js:37 🎯 [AUDIO-STREAMING] Time to first audio from backend: 5212ms
+injected.js:37 🎯 [AUDIO-STREAMING] Total time: 10556ms
+injected.js:37 🎯 [AUDIO-STREAMING] Backend breakdown: {totalMs: 7614, timeToFirstAudioMs: 5212, dataFetchMs: 733, claudeMs: 6489, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: tell me about the meditation.
+injected.js:37 🤖 CLAUDE RESPONSE: Based on what I'm seeing here, meditation is about training your attention and awareness while detaching from reactive thinking patterns. The goal is reaching a mentally clear, emotionally calm state without judging the process itself.
+
+It's fundamentally a practice of presence — learning to observe your mind without getting caught in its loops. Whether you're sitting in silence, doing breathwork, or even using structured practices like the rosary, the core is the same: cultivating that steady, aware state beneath the mental noise.
+
+What aspect of meditation are you most curious about?
+injected.js:37 ---
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 0 (thinking) sent to SDK
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 1 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 2 (sentence) sent to SDK
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 3 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 4 (sentence) sent to SDK
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 5 (sentence) sent to SDK
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 6 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎯 [AUDIO-STREAMING] Timeout waiting for audio
+(anonymous) @ injected.js:37
+processAudioQueue @ useAvatarSession.ts:2016
+await in processAudioQueue
+(anonymous) @ useAvatarSession.ts:2061
+await in (anonymous)
+handleSubmitMessage @ avatar-chat.tsx:430
+onSubmit @ avatar-chat.tsx:1033
+callCallback2 @ chunk-RPCDYKBN.js?v=6a4164ef:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=6a4164ef:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=6a4164ef:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=6a4164ef:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=6a4164ef:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=6a4164ef:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=6a4164ef:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=6a4164ef:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=6a4164ef:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=6a4164ef:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=6a4164ef:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=6a4164ef:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=6a4164ef:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=6a4164ef:5449
+injected.js:37 🎯 [AUDIO-STREAMING] Audio queue fully processed
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ⏱️ [TIMING] === TOTAL FLOW TIME: 32369ms ===
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 Cleared speaking interval - user interrupted
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 Resuming voice recognition (avatar finished speaking)
+injected.js:37 🔧 Voice recognition code version: 2024-12-09-elevenlabs-primary
+injected.js:37 🎤 Using ElevenLabs STT for voice input (mobile-compatible)
+injected.js:37 ⏭️ ElevenLabs STT already active
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 📝 handleSubmitMessage called with: {message: 'tell me about the energy projection', sessionActive: true, heygenSessionActive: true, memoryEnabled: true, userId: 'temp_1763844548300_jeumpivda', …}
+injected.js:37 🔇 ElevenLabs STT microphone paused (processing user message)
+injected.js:37 Inactivity timer cleared and reset
+injected.js:37 ✅ Processing message - Request ID: 17653103508180.6sbzkzvmma9
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 ⏱️ [TIMING] === FULL RESPONSE FLOW STARTED ===
+injected.js:37 ⏱️ [TIMING] API call starting...
+injected.js:37 🎯 [AUDIO-STREAMING] Using audio streaming mode for faster response
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎯 [AUDIO-STREAMING] First audio ready: 11983ms (type: thinking)
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 0 (thinking) buffered
+injected.js:37 📊 [STATUS] fetching_context: Gathering knowledge...
+injected.js:37 ⏱️ [TIMING] Data fetch: 966ms
+injected.js:37 📊 [STATUS] generating: AI is thinking...
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 1: "Looking at what came through — there's a projectio..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 2: "could triple in the next five years...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 2 (sentence): "could triple in the next five years...."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 3: "By 2028, the energy footprint of AI infrastructure..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 4: "systems scale up...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 1 (sentence): "Looking at what came through — there's a..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 4 (sentence): "systems scale up...."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 3 (sentence): "By 2028, the energy footprint of AI infr..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 5: "The concern is real: we're talking about massive c..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 6: "directly into electricity consumption and heat gen..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 5 (sentence): "The concern is real: we're talking about..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 6 (sentence): "directly into electricity consumption an..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 7: "It's one of those areas where technological expans..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 7 (sentence): "It's one of those areas where technologi..."
+injected.js:37 📝 [AUDIO-STREAMING] Sentence 8: "What's driving your interest in this — climate imp..."
+injected.js:37 🎯 [AUDIO-STREAMING] Audio 8 (sentence): "What's driving your interest in this — c..."
+injected.js:37 🎯 [AUDIO-STREAMING] === STREAMING COMPLETE ===
+injected.js:37 🎯 [AUDIO-STREAMING] Total audio chunks: 9
+injected.js:37 🎯 [AUDIO-STREAMING] First audio delay: 11983ms
+injected.js:37 🎯 [AUDIO-STREAMING] Time to first audio from backend: 6780ms
+injected.js:37 🎯 [AUDIO-STREAMING] Total time: 12020ms
+injected.js:37 🎯 [AUDIO-STREAMING] Backend breakdown: {totalMs: 9227, timeToFirstAudioMs: 6780, dataFetchMs: 966, claudeMs: 7871, breakdown: {…}}
+injected.js:37 📝 USER MESSAGE: tell me about the energy projection
+injected.js:37 🤖 CLAUDE RESPONSE: Looking at what came through — there's a projection that AI server and data center energy demand could triple in the next five years. By 2028, the energy footprint of AI infrastructure is expected to grow significantly as these systems scale up.
+
+The concern is real: we're talking about massive computational power requirements that translate directly into electricity consumption and heat generation. It's one of those areas where technological expansion bumps hard against environmental reality.
+
+What's driving your interest in this — climate impact, infrastructure planning, or something else?
+injected.js:37 ---
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 0 (thinking) sent to SDK
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 1 (sentence) sent to SDK
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 2 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 3 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🤫 Avatar stopped speaking
+injected.js:37 🎤 Avatar stopped talking, will resume voice recognition in 1000 ms
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🗣️ Avatar started speaking
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🎤 Skip resume: intentionalStop= false isSpeaking= true
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 4 (sentence) sent to SDK
+injected.js:37 🖼️ Render state: {audioOnly: false, heygenSessionActive: true, videoReady: true, isLoading: false, showReconnect: false, …}
+injected.js:37 🔊 [AUDIO-STREAMING] Audio index 5 (sentence) sent to SDK
+injected.js:37 🎤 Stopping ElevenLabs STT...
+injected.js:37 🛑 ElevenLabs STT stopped on cleanup
+injected.js:37 🛑 Stopping ElevenLabs STT...
+injected.js:37 ✅ ElevenLabs STT stopped

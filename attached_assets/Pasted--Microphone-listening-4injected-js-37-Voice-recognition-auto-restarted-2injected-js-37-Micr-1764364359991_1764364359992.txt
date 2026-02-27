@@ -1,0 +1,53 @@
+ 🎤 Microphone listening
+4injected.js:37 🔄 Voice recognition auto-restarted
+2injected.js:37 🎤 Microphone listening
+5injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+6injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+4injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+3injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+8injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+15injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+9injected.js:37 🔄 Voice recognition auto-restarted
+2injected.js:37 🎤 Microphone listening
+12injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+8injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+21injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+31injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+5injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+8injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+53injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+9injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+7injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+6injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listening
+37injected.js:37 🔄 Voice recognition auto-restarted
+injected.js:37 🎤 Microphone listeni
