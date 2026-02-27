@@ -323,7 +323,7 @@ export function AvatarChat({ userId }: AvatarChatProps) {
 
   async function fetchAccessToken(): Promise<string> {
     try {
-      const response = await fetch("/api/heygen/token", {
+      const response = await fetch("/api/liveavatar/token", {
         method: "POST",
       });
 

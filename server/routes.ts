@@ -33,7 +33,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user" });
     }
   });
-  app.post("/api/heygen/token", async (req, res) => {
+  app.post("/api/liveavatar/token", async (req, res) => {
     try {
       const apiKey = process.env.LIVEAVATAR_API_KEY;
       
