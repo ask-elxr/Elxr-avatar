@@ -59,12 +59,13 @@ class PineconeNamespaceService {
     );
   }
 
-  // Helper to normalize namespace names - keep UPPERCASE to match Pinecone storage
+  // Normalize namespace names to lowercase-kebab to match actual Pinecone storage
+  // e.g. "MARK_KOHL" -> "mark-kohl", "ADDICTION" -> "addiction", "willie-gault" -> "willie-gault"
   private normalizeNamespace(namespace: string): string {
-    return namespace.toUpperCase()
-      .replace(/[^A-Z0-9]/g, '_')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
+    return namespace.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   async retrieveContext(query: string, topK: number = 3, customNamespaces?: string[]): Promise<any[]> {
@@ -72,7 +73,7 @@ class PineconeNamespaceService {
       throw new Error('Pinecone or OpenAI not configured');
     }
 
-    // Normalize and deduplicate namespaces (mark-kohl -> MARK_KOHL, addiction -> ADDICTION)
+    // Normalize and deduplicate namespaces (MARK_KOHL -> mark-kohl, ADDICTION -> addiction)
     const rawNamespaces = customNamespaces || this.namespaces;
     const normalizedNamespaces = rawNamespaces.map(ns => this.normalizeNamespace(ns));
     const namespacesToQuery = Array.from(new Set(normalizedNamespaces)).sort();

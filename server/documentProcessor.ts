@@ -252,9 +252,9 @@ class DocumentProcessor {
               }
             });
             
-            // Store in Pinecone — use ask-elxr index with MARK_KOHL namespace (UPPERCASE)
-            // to match pineconeNamespaceService normalization for avatar RAG retrieval
-            const targetNamespace = metadata.namespace || 'MARK_KOHL';
+            // Store in Pinecone — use ask-elxr index with mark-kohl namespace (lowercase-kebab)
+            // to match actual Pinecone namespace names used by avatar RAG retrieval
+            const targetNamespace = metadata.namespace || 'mark-kohl';
             await pineconeService.storeConversation(chunkId, chunk, embedding, cleanMetadata, targetNamespace, PineconeIndexName.ASK_ELXR);
 
             processedChunks++;
@@ -319,14 +319,14 @@ class DocumentProcessor {
       // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       
-      // Search across all category namespaces including MARK_KOHL for uploaded documents
+      // Search across all category namespaces (lowercase-kebab to match actual Pinecone data)
       const categoryNamespaces = [
-        'MARK_KOHL', 'DEFAULT', 'MIND', 'BODY', 'SEXUALITY', 'TRANSITIONS', 'SPIRITUALITY', 'SCIENCE', 
-        'PSYCHEDELICS', 'NUTRITION', 'LIFE', 'LONGEVITY', 'GRIEF', 'MIDLIFE', 
-        'MOVEMENT', 'WORK', 'SLEEP', 'ADDICTION', 'MENOPAUSE', 'CREATIVITY_EXPRESSION',
-        'RELATIONSHIPS_CONNECTION', 'PURPOSE_MEANING', 'RESILIENCE_STRESS',
-        'IDENTITY_SELF_DISCOVERY', 'HABITS_BEHAVIOR_CHANGE', 'TECHNOLOGY_DIGITAL_WELLNESS',
-        'NATURE_ENVIRONMENT', 'AGING_WITH_JOY', 'OTHER'
+        'mark-kohl', 'default', 'mind', 'body', 'sexuality', 'transitions', 'spirituality', 'science', 
+        'psychedelics', 'nutrition', 'life', 'longevity', 'grief', 'midlife', 
+        'movement', 'work', 'sleep', 'addiction', 'menopause', 'creativity-expression',
+        'relationships-connection', 'purpose-meaning', 'resilience-stress',
+        'identity-self-discovery', 'habits-behavior-change', 'technology-digital-wellness',
+        'nature-environment', 'aging-with-joy', 'other'
       ];
       
       // Search Pinecone for similar chunks across all category namespaces
