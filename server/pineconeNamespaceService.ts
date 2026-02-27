@@ -72,7 +72,7 @@ class PineconeNamespaceService {
       throw new Error('Pinecone or OpenAI not configured');
     }
 
-    // Normalize and deduplicate namespaces (ADDICTION -> addiction, MARK_KOHL -> mark-kohl)
+    // Normalize and deduplicate namespaces (mark-kohl -> MARK_KOHL, addiction -> ADDICTION)
     const rawNamespaces = customNamespaces || this.namespaces;
     const normalizedNamespaces = rawNamespaces.map(ns => this.normalizeNamespace(ns));
     const namespacesToQuery = Array.from(new Set(normalizedNamespaces)).sort();

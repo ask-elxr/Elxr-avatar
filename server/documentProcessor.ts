@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { pineconeService } from './pinecone.js';
+import { pineconeService, PineconeIndexName } from './pinecone.js';
 import { latencyCache } from './cache.js';
 import { wrapServiceCall } from './circuitBreaker.js';
 import { logger } from './logger.js';
@@ -210,8 +210,8 @@ class DocumentProcessor {
       const chunks = this.chunkText(limitedText);
       log.debug({ chunkCount: chunks.length }, 'Created text chunks');
 
-      // Limit number of chunks to prevent memory overflow (max 15 chunks - reduced for stability)
-      const maxChunks = 15;
+      // Limit number of chunks to prevent memory overflow
+      const maxChunks = 100;
       const limitedChunks = chunks.slice(0, maxChunks);
       if (chunks.length > maxChunks) {
         log.warn({ originalChunks: chunks.length, limitedChunks: maxChunks }, 
@@ -252,8 +252,10 @@ class DocumentProcessor {
               }
             });
             
-            // Store in Pinecone
-            await pineconeService.storeConversation(chunkId, chunk, embedding, cleanMetadata);
+            // Store in Pinecone — use ask-elxr index with MARK_KOHL namespace (UPPERCASE)
+            // to match pineconeNamespaceService normalization for avatar RAG retrieval
+            const targetNamespace = metadata.namespace || 'MARK_KOHL';
+            await pineconeService.storeConversation(chunkId, chunk, embedding, cleanMetadata, targetNamespace, PineconeIndexName.ASK_ELXR);
 
             processedChunks++;
             log.debug({ chunkIndex: i + 1, totalChunks: limitedChunks.length }, 
@@ -317,14 +319,14 @@ class DocumentProcessor {
       // Generate embedding for the query (will use cache if available)
       const queryEmbedding = await this.generateEmbedding(query);
       
-      // Search across all category namespaces for now - in future could be more targeted
+      // Search across all category namespaces including MARK_KOHL for uploaded documents
       const categoryNamespaces = [
-        'default', 'mind', 'body', 'sexuality', 'transitions', 'spirituality', 'science', 
-        'psychedelics', 'nutrition', 'life', 'longevity', 'grief', 'midlife', 
-        'movement', 'work', 'sleep', 'addiction', 'menopause', 'creativity---expression',
-        'relationships---connection', 'purpose---meaning', 'resilience---stress',
-        'identity---self-discovery', 'habits---behavior-change', 'technology---digital-wellness',
-        'nature---environment', 'aging-with-joy', 'other'
+        'MARK_KOHL', 'DEFAULT', 'MIND', 'BODY', 'SEXUALITY', 'TRANSITIONS', 'SPIRITUALITY', 'SCIENCE', 
+        'PSYCHEDELICS', 'NUTRITION', 'LIFE', 'LONGEVITY', 'GRIEF', 'MIDLIFE', 
+        'MOVEMENT', 'WORK', 'SLEEP', 'ADDICTION', 'MENOPAUSE', 'CREATIVITY_EXPRESSION',
+        'RELATIONSHIPS_CONNECTION', 'PURPOSE_MEANING', 'RESILIENCE_STRESS',
+        'IDENTITY_SELF_DISCOVERY', 'HABITS_BEHAVIOR_CHANGE', 'TECHNOLOGY_DIGITAL_WELLNESS',
+        'NATURE_ENVIRONMENT', 'AGING_WITH_JOY', 'OTHER'
       ];
       
       // Search Pinecone for similar chunks across all category namespaces
@@ -370,8 +372,8 @@ class DocumentProcessor {
       let context = '';
       let tokenCount = 0;
       
-      // Only use high-quality matches
-      const filteredResults = searchResults.filter(result => result.score > 0.75);
+      // Filter by relevance threshold
+      const filteredResults = searchResults.filter(result => result.score > 0.5);
       
       for (const result of filteredResults) {
         const chunkText = result.text;
