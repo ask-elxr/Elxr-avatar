@@ -1,0 +1,253 @@
+
+ELXRAI — Platform Overview & Optimization Proposal
+
+Prepared for: Nigel Williams
+Prepared by: Cristian Franco
+Date: March 2026
+
+EXECUTIVE SUMMARY
+
+Elxrai is an AI-powered conversation platform where users interact with
+lifelike video avatars — virtual mentors who can see, listen, speak, and
+remember. Each avatar is a specialist in areas like mental health, addiction,
+grief, sexuality, nutrition, and more. They draw from curated expert knowledge
+bases to deliver meaningful, personalized conversations in real time.
+
+The platform is fully built and operational. It includes live video
+conversations, voice-only mode, video course creation, mood tracking, a
+content management system, subscription billing, and a complete admin panel.
+It's currently embedded in the Mum website via Webflow.
+
+This proposal covers the next step: migrating the platform from its current
+development environment to production-grade cloud infrastructure — making it
+faster, more reliable, and fully independent.
+
+
+1. THE PLATFORM — WHAT WE'VE BUILT
+
+AI VIDEO MENTORS
+  Users have real-time conversations with AI-powered video avatars. Each
+  avatar has a unique appearance, voice, personality, and area of expertise.
+  They respond naturally — listening while the user speaks, thinking, then
+  answering with lip-synced video and voice. Users can interrupt mid-sentence,
+  just like a real conversation. There's also an audio-only mode for lighter
+  bandwidth or when video isn't needed. Currently ~10 active avatars.
+
+KNOWLEDGE INTELLIGENCE
+  Every avatar draws from a curated knowledge base — expert content organized
+  across 20+ topic areas (addiction, mental health, sexuality, grief,
+  psychedelics, nutrition, longevity, and more). When a user asks a question,
+  the system searches these knowledge bases in real time and weaves the most
+  relevant information into the avatar's response. Some avatars can also
+  search PubMed (medical research), Wikipedia, and Google for live information.
+
+CONVERSATIONAL MEMORY
+  The platform remembers users across sessions. It stores preferences,
+  personal details, and conversation highlights so that returning users feel
+  recognized. Memory can be toggled on or off by the user (via the Mum logo).
+  This creates a sense of continuity — the avatar picks up where you left off.
+
+VIDEO COURSE STUDIO
+  Users can create video courses presented by any avatar. The system generates
+  lesson scripts using AI, then produces professional avatar-presented videos
+  for each lesson. Courses can be managed, edited, and organized through a
+  built-in course editor. Email notifications are sent when videos are ready.
+
+WELLNESS TRACKING
+  A mood journal feature lets users log how they're feeling (from joyful to
+  stressed, with intensity levels). The AI responds with personalized,
+  empathetic messages based on the user's mood and history.
+
+CONTENT LIBRARY MANAGEMENT
+  An admin-facing system for building and managing the knowledge base.
+  Supports uploading documents (PDFs, text files), batch-processing podcast
+  transcripts, importing content from Google Drive, and processing web URLs.
+  All content is automatically organized, processed, and made searchable
+  for the avatars.
+
+SUBSCRIPTION & ACCESS CONTROL
+  Tiered subscription plans (Free, Basic, Pro) managed through Memberstack.
+  Each plan controls access to avatars, video creation limits, and session
+  quotas. Integrated with Webflow for seamless sign-up and billing.
+
+ADMIN DASHBOARD
+  A full management panel for the platform:
+    - Create, edit, and configure avatars (appearance, voice, personality,
+      knowledge sources)
+    - Manage knowledge bases and content ingestion
+    - Generate and edit avatar personality profiles
+    - Monitor platform health, API performance, and credit usage
+    - Track analytics and subscription data
+
+WEBSITE INTEGRATION
+  The platform runs in two modes: as a standalone web app, or embedded inside
+  the Mum Webflow website via iframe. Users are identified through their
+  Memberstack membership, so the experience is seamless between the website
+  and the platform.
+
+
+2. TECHNOLOGY OVERVIEW
+
+The platform is built on modern, production-grade technology:
+
+  User Interface      React (industry-standard web framework) with a custom
+                      dark-mode design system
+
+  Server              Node.js / Express with real-time WebSocket connections
+                      for live conversations
+
+  Database            PostgreSQL (Neon serverless) — reliable, scalable,
+                      cloud-hosted relational database
+
+  AI Engine           Claude by Anthropic (primary intelligence), with OpenAI
+                      for content search and knowledge retrieval
+
+  Knowledge Search    Pinecone vector database — enables fast, intelligent
+                      search across all expert content
+
+  User Memory         Mem0 — cloud-based memory service that persists user
+                      context across conversations
+
+  Video Avatars       HeyGen — real-time streaming avatars and video generation
+
+  Voice               ElevenLabs — natural text-to-speech and real-time
+                      speech recognition
+
+  Live Streaming      LiveKit — WebRTC infrastructure for real-time audio
+                      and video transport
+
+  Billing             Memberstack — subscription management integrated with
+                      Webflow
+
+  Email               Resend — transactional email notifications
+
+  File Storage        Firebase Storage (migration target) — secure cloud
+                      storage for documents, videos, and media
+
+
+3. AREAS OF EXPERTISE
+
+The platform's knowledge base covers a wide range of wellness, health, and
+personal development topics:
+
+  - Addiction & Recovery
+  - Mental Health & Psychology
+  - Sexuality & Intimacy
+  - Grief & Loss
+  - Psychedelics & Therapy
+  - Nutrition & Diet
+  - Longevity & Healthspan
+  - Movement & Fitness
+  - Sleep Health
+  - Spirituality & Consciousness
+  - Life Transitions & Midlife
+  - Work-Life Balance
+
+Additionally, the platform hosts personal knowledge bases for specific
+mentors (Mark Kohl, Willie Gault, Nigel Williams), allowing avatars to
+draw from their individual expertise and published content.
+
+
+4. WHAT WE'RE DOING NOW — PLATFORM MIGRATION
+
+The platform was originally built and hosted on Replit, a development-focused
+environment. While it served well during the building phase, it's time to
+move to production-grade infrastructure for better performance, reliability,
+and independence.
+
+WHAT'S CHANGING:
+
+  Hosting
+    Moving from Replit to Railway — a professional cloud hosting platform
+    designed for production applications. This gives us faster performance,
+    better uptime, and native support for the real-time features the platform
+    relies on (live video, voice conversations, WebSocket connections).
+
+  File Storage
+    Moving from Replit's built-in storage to Firebase Storage — Google's
+    cloud storage service. This handles all uploaded documents, generated
+    videos, audio files, and media. It's fast, scalable, and works anywhere.
+
+  Authentication
+    Simplifying the login system. The Webflow/Memberstack identity system
+    (which users already use) becomes the primary authentication method.
+    The Replit-specific login is being removed since it's no longer needed.
+
+  Google Drive Integration
+    Upgrading the Google Drive connection from a Replit-specific method to
+    a standard, portable integration that works on any hosting platform.
+
+WHY THIS MATTERS:
+
+  - Reliability: Production-grade hosting with better uptime guarantees
+  - Performance: Faster response times and optimized infrastructure
+  - Independence: No dependency on any single development platform
+  - Scalability: The platform can grow without hitting hosting limitations
+  - Portability: Can be moved to any cloud provider if needed in the future
+
+
+5. DELIVERABLES
+
+PHASE 1: STANDALONE DEPLOYMENT
+
+  Objective: Make the platform fully independent and running on Railway.
+
+  What gets delivered:
+    - Platform running on Railway with all features operational
+    - Firebase Storage integrated for all file management
+    - All real-time features verified (live video, voice, conversations)
+    - Google Drive content import working on new infrastructure
+    - Mobile experience optimized (fullscreen on all devices)
+    - Clean, documented deployment pipeline
+
+  Outcome: Elxrai runs as a standalone production application with no
+  dependency on Replit. Same features, better infrastructure.
+
+PHASE 2: INTEGRATION VERIFICATION
+
+  Objective: Ensure all AI and knowledge systems are stable on the new setup.
+
+  What gets delivered:
+    - Pinecone knowledge search verified and optimized
+    - Mem0 user memory verified and stable
+    - End-to-end conversation testing across all avatars
+    - Performance benchmarks and optimization where needed
+    - Technical documentation updated for the new setup
+
+  Outcome: Confidence that every piece of the platform works reliably
+  on the new infrastructure, with documentation for ongoing maintenance.
+
+
+6. GROWTH ROADMAP
+
+With the platform stable on production infrastructure, here's what becomes
+possible next:
+
+NEAR-TERM
+  - Full mobile optimization and native-like experience
+  - Performance tuning based on production usage data
+
+FUTURE CAPABILITIES
+  - Video Distribution — Create and send personalized avatar videos directly
+    to users
+  - Social Media Automation — Auto-generate and post content across platforms
+  - Text Message Outreach — Automated SMS engagement sequences
+  - Email Sequences — Behavioral email campaigns (triggered by user actions,
+    scheduled follow-ups)
+  - Lead Magnets — Automated lead capture and nurture workflows
+  - WhatsApp Integration — Extend avatar conversations to WhatsApp
+  - Agentic AI — Avatars that don't just talk, but take actions (book
+    appointments, send resources, trigger workflows)
+  - Audience Engagement — Automated systems to keep users active and coming
+    back
+
+
+7. THE TECH STACK AT A GLANCE
+
+  Webflow (website) → Memberstack (billing & identity) → Elxrai Platform →
+  Claude AI (intelligence) → Pinecone (knowledge) → Mem0 (memory) →
+  HeyGen + ElevenLabs (video & voice) → Firebase (storage) →
+  Railway (hosting) → Neon PostgreSQL (database)
+
+Everything is cloud-based, API-driven, and designed to scale.
+

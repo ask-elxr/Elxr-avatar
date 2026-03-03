@@ -1,0 +1,417 @@
+================================================================================
+ELXRAI — Platform Optimization & Standalone Deployment Proposal
+================================================================================
+
+Prepared for: Nigel Williams / Mum Project
+Prepared by: Cristian Franco
+Date: March 2026
+
+================================================================================
+1. PROJECT OVERVIEW
+================================================================================
+
+Elxrai is a multi-avatar AI chat platform built for education, wellness coaching,
+and specialized information retrieval. Users interact with AI-powered video
+avatars that carry real-time conversations, answer questions from curated
+knowledge bases, and remember past interactions.
+
+Core capabilities:
+  - Live video avatar conversations (HeyGen LiveAvatar + ElevenLabs voice)
+  - Audio-only conversation mode (no video, voice only)
+  - RAG-powered knowledge retrieval (Pinecone vector search, 20+ topic areas)
+  - Persistent user memory across sessions (Mem0)
+  - Video course creation with avatar presenters (HeyGen video generation)
+  - Mood tracking with personalized AI responses
+  - Knowledge ingestion pipelines (documents, podcasts, Google Drive, URLs)
+  - Subscription & billing management (Memberstack)
+  - Full admin panel (avatar CRUD, knowledge base, analytics, persona engine)
+  - Webflow embed mode (iframe integration for external websites)
+
+Areas of expertise covered:
+  - Sexuality, Grief, Addiction, Psychedelics
+  - Mental health, Nutrition, Longevity, Movement, Sleep
+  - Spirituality, Life transitions, Midlife, Work-life balance
+
+================================================================================
+2. CURRENT TECH STACK
+================================================================================
+
+Frontend:
+  - React 18 + TypeScript
+  - Vite 5 (bundler + dev server)
+  - Tailwind CSS + shadcn/ui (Radix primitives)
+  - wouter (routing), TanStack React Query (data fetching)
+  - Framer Motion (animations), recharts (charts)
+
+Backend:
+  - Express.js + TypeScript
+  - tsx (dev), esbuild (production bundle)
+  - 4 WebSocket servers (streaming chat, WebRTC, STT, unified conversation)
+
+Database:
+  - Neon serverless PostgreSQL + Drizzle ORM
+  - 20+ tables (users, conversations, avatars, courses, subscriptions, etc.)
+
+AI & Knowledge:
+  - Claude Opus 4.6 (conversations, quality responses)
+  - Claude Haiku 3.5 (ingestion, cost-efficient processing)
+  - OpenAI text-embedding-3-small (embeddings, 1536 dimensions)
+  - Pinecone (vector database — 2 indexes, 20+ namespaces)
+  - Mem0 (persistent user memory)
+
+Video & Voice:
+  - HeyGen (LiveAvatar streaming, video generation, Instant Avatars)
+  - ElevenLabs (TTS + real-time STT)
+  - LiveKit (WebRTC transport for audio/video streaming)
+  - Deepgram (alternative STT)
+
+Auth & Billing:
+  - Memberstack (subscription billing, Webflow user identity)
+  - Admin secret header (admin panel access)
+  - Currently: Replit OIDC (to be removed)
+
+Other Services:
+  - Google Drive (OAuth2 content source for knowledge ingestion)
+  - Google Search, PubMed, Wikipedia (per-avatar research sources)
+  - Resend (transactional email)
+  - Redis/Upstash + BullMQ (optional background job queue)
+
+================================================================================
+3. PLATFORM FEATURES (WHAT'S BUILT)
+================================================================================
+
+AVATAR SYSTEM (~10 active avatars)
+  - Each avatar has: unique HeyGen video appearance, distinct ElevenLabs voice,
+    specialized personality (persona engine), dedicated knowledge bases
+    (Pinecone namespaces), configurable research sources (PubMed, Wikipedia,
+    Google Search)
+  - Three session drivers: LiveAvatar (video), HeyGen Streaming (legacy),
+    Audio-only
+  - Full CRUD management via admin panel
+  - Avatar config seeded from config/avatars.config.ts on startup
+
+REAL-TIME CONVERSATION PIPELINE
+  - Unified WebSocket (/ws/conversation) with server-side state machine:
+    IDLE → LISTENING → THINKING → SPEAKING → IDLE
+  - Pipeline: Mic PCM → ElevenLabs STT → Claude streaming → ElevenLabs TTS →
+    binary audio chunks to client
+  - Barge-in support (user interrupts avatar mid-speech)
+  - Idle behavior (nudge at 12s, second nudge at 25s, soft-end at 45s)
+  - Binary protocol: [TTS0 magic 4B][turnId uint32 LE][PCM 24kHz 16-bit audio]
+
+RAG KNOWLEDGE RETRIEVAL (Pinecone)
+  - 2 indexes: avatar-chat-knowledge (primary), ask-elxr (secondary)
+  - 20+ topic namespaces: ADDICTION, MIND, BODY, SEXUALITY, PSYCHEDELICS,
+    GRIEF, NUTRITION, LONGEVITY, SLEEP, MOVEMENT, SPIRITUALITY, etc.
+  - Per-avatar namespace assignment
+  - In-memory latency cache for query results
+  - Admin tools: namespace CRUD, vector inspection, migration
+
+PERSISTENT MEMORY (Mem0)
+  - Stores user preferences, conversation summaries, personal facts
+  - Smart extraction: filters, deduplicates, types memories using Claude
+  - Per-user memory (toggled via UI — Mum logo button)
+  - Searched in parallel with Pinecone RAG during each conversation turn
+
+VIDEO COURSE CREATION
+  - Users create courses with avatar-presented video lessons
+  - Script generation via Claude → HeyGen video generation
+  - Background polling for completion, email notification on finish
+  - Course management UI with lesson editor
+
+KNOWLEDGE INGESTION PIPELINES
+  - Document upload (PDF, text) → chunk → embed → Pinecone upsert
+  - Podcast batch ingestion (ZIP upload, auto-classification by namespace)
+  - Google Drive folder ingestion (OAuth2 browse + process)
+  - URL processing
+  - Learning Artifact pipeline (content anonymization for educational material)
+  - All ingestion uses Claude Haiku 3.5 (cost) + text-embedding-3-small
+
+SUBSCRIPTION & BILLING (Memberstack)
+  - Plans: free, basic, pro (avatar limits, video limits, session limits)
+  - Memberstack webhooks (member.plan.added/updated/removed)
+  - Usage period tracking per billing cycle
+
+MOOD TRACKER
+  - Mood entries with AI-generated personalized responses
+  - Moods: joyful, calm, energized, anxious, sad, stressed, neutral
+  - Intensity scale 1-5
+
+ADMIN PANEL
+  - Avatar profile management (all HeyGen/ElevenLabs/personality config)
+  - Knowledge base management (Pinecone namespaces, ingestion)
+  - Persona engine (generate/edit persona specs from text/documents)
+  - Analytics, health checks, circuit breaker status, HeyGen credit tracking
+  - Service status monitoring (external API connectivity)
+
+WEBFLOW EMBED MODE
+  - Dual-mode architecture: standalone app (/*) + embed (/embed/*)
+  - Identity via ?member_id= URL params
+  - Same components with isEmbed={true} prop
+
+================================================================================
+4. SCOPE OF WORK: DEPLOYMENT MIGRATION (Replit → Railway)
+================================================================================
+
+GOAL: Remove all Replit dependencies and deploy as a standalone full-stack
+application on Railway with Firebase Storage for file management.
+
+------------------------------------------------------------------------
+4.1 REPLIT DEPENDENCIES TO REMOVE
+------------------------------------------------------------------------
+
+| Dependency              | Files Affected                    | Description                                    |
+|-------------------------|-----------------------------------|------------------------------------------------|
+| Replit OIDC Auth        | server/replitAuth.ts              | Passport.js OIDC strategy (REPLIT_DOMAINS,     |
+|                         |                                   | REPL_ID, issuer: replit.com/oidc)              |
+| Replit Object Storage   | server/objectStorage.ts           | GCS via sidecar at http://127.0.0.1:1106       |
+|                         |                                   | @replit/object-storage npm package             |
+| Replit Drive Connector  | server/googleDriveService.ts      | REPLIT_CONNECTORS_HOSTNAME, REPL_IDENTITY      |
+| Replit Vite Plugins     | vite.config.ts                    | @replit/vite-plugin-cartographer               |
+|                         |                                   | @replit/vite-plugin-runtime-error-modal        |
+| .replit Config          | .replit                           | Module system, GCE deploy target, bucket ID    |
+| Replit CSS Rules        | client/src/index.css              | Dev banner hiding selectors                    |
+| NPM Packages           | package.json                      | @replit/object-storage (prod)                  |
+|                         |                                   | @replit/vite-plugin-cartographer (dev)          |
+|                         |                                   | @replit/vite-plugin-runtime-error-modal (dev)  |
+
+------------------------------------------------------------------------
+4.2 REPLACEMENT STRATEGY
+------------------------------------------------------------------------
+
+AUTHENTICATION
+  Current: Replit OIDC via Passport.js + Memberstack + Admin Secret
+  New:     Memberstack + Admin Secret only (already functional for Webflow)
+  Action:  Remove Replit OIDC from server/replitAuth.ts. Keep Memberstack
+           identity (X-Member-Id header), admin secret (X-Admin-Secret header),
+           anonymous fallback, and dev mock auth on localhost.
+           Future option: add Google/GitHub OAuth if direct login is needed.
+
+OBJECT STORAGE
+  Current: Google Cloud Storage via Replit sidecar (port 1106 credential exchange)
+  New:     Firebase Storage (GCS-compatible, Firebase Admin SDK)
+  Action:  Replace server/objectStorage.ts to use Firebase Admin SDK with
+           service account credentials (JSON key or env var). Update signed URL
+           generation. Remove @replit/object-storage package.
+  Used by: Document uploads, generated videos, audio files, avatar GIFs,
+           intro videos
+
+GOOGLE DRIVE
+  Current: Replit Connector service (REPLIT_CONNECTORS_HOSTNAME)
+  New:     Direct Google OAuth2 flow
+  Action:  Update server/googleDriveService.ts to use googleapis package
+           with existing GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET credentials.
+           Standard OAuth2 consent flow → token storage → Drive API access.
+
+VITE BUILD
+  Current: 3 Replit plugins loaded in vite.config.ts
+  New:     Standard Vite (no Replit plugins)
+  Action:  Remove all @replit/* imports and plugin registrations. Remove
+           conditional REPL_ID check. Standard Vite error overlay suffices.
+
+------------------------------------------------------------------------
+4.3 RAILWAY DEPLOYMENT ARCHITECTURE
+------------------------------------------------------------------------
+
+Why Railway:
+  - Single service deployment (Express serves API + static React build)
+  - Native WebSocket support (critical — platform has 4 WS servers)
+  - Simple build/start: npm run build → npm run start
+  - Docker or Nixpacks for system dependencies
+  - Straightforward environment variable management
+
+Architecture:
+  ┌─────────────────────────────────────────────────┐
+  │              Railway Service                      │
+  │                                                   │
+  │  Express.js Server (dist/index.js)               │
+  │  ├── REST API endpoints                          │
+  │  ├── Static files (dist/public/)                 │
+  │  ├── /ws/streaming-chat (WebSocket)              │
+  │  ├── /ws/webrtc-streaming (WebSocket)            │
+  │  ├── /ws/elevenlabs-stt (WebSocket)              │
+  │  └── /ws/conversation (WebSocket)                │
+  │                                                   │
+  └───────────┬────────────┬────────────┬────────────┘
+              │            │            │
+    ┌─────────▼──┐  ┌──────▼──────┐  ┌─▼──────────────┐
+    │ Neon PG    │  │  Pinecone   │  │ External APIs   │
+    │ (database) │  │  (vectors)  │  │ HeyGen, Claude, │
+    │ no change  │  │  no change  │  │ ElevenLabs,     │
+    └────────────┘  └─────────────┘  │ Mem0, LiveKit,  │
+                                     │ Firebase Storage│
+    ┌────────────┐                   └─────────────────┘
+    │ Upstash    │
+    │ Redis      │
+    │ (optional) │
+    └────────────┘
+
+Dockerfile (Railway):
+  FROM node:20-slim
+  RUN apt-get update && apt-get install -y ffmpeg imagemagick unzip
+  WORKDIR /app
+  COPY package*.json ./
+  RUN npm ci --production
+  COPY dist/ ./dist/
+  ENV NODE_ENV=production
+  EXPOSE 5000
+  CMD ["node", "dist/index.js"]
+
+Build commands:
+  Build: npm run build (vite build + esbuild server bundle)
+  Start: NODE_ENV=production node dist/index.js
+
+What stays the same (no migration needed):
+  - Neon PostgreSQL (WebSocket transport, works from anywhere)
+  - Pinecone (cloud API, no infrastructure dependency)
+  - All AI services (Claude, OpenAI, Mem0 — API-based)
+  - All video/voice services (HeyGen, ElevenLabs, LiveKit — API-based)
+  - Memberstack billing (webhook-based)
+  - Redis/Upstash (optional, cloud-hosted)
+  - Drizzle ORM + schema (database-agnostic)
+
+================================================================================
+5. PINECONE INTEGRATION STATUS
+================================================================================
+
+Status: COMPLETE AND OPERATIONAL
+
+  - 2 indexes: avatar-chat-knowledge (primary), ask-elxr (secondary)
+  - 20+ topic namespaces covering all expertise areas
+  - Full RAG pipeline: query → embed → search → rank → inject into Claude context
+  - Parallel fetch with Mem0 memory on every conversation turn
+  - Admin tools: namespace CRUD, vector inspection, migration utilities
+  - In-memory latency cache for repeated queries
+  - Ingestion: document chunker (350 tokens, 60 overlap) + OpenAI embedder
+
+  Key files:
+    server/pinecone.ts              — Vector DB operations
+    server/ingest/chunker.ts        — Token-based text splitting
+    server/ingest/embedder.ts       — OpenAI embedding with retry
+    shared/pineconeCategories.ts    — Namespace taxonomy
+
+================================================================================
+6. MEM0 INTEGRATION STATUS
+================================================================================
+
+Status: COMPLETE AND OPERATIONAL
+
+  - Persistent user memory via Mem0 cloud API (https://api.mem0.ai/v1)
+  - Operations: add, search, get all, update, delete, summarize
+  - Smart extraction: Claude filters and deduplicates memories
+  - Per-user memory storage (keyed by user ID)
+  - UI toggle (Mum logo button to enable/disable memory)
+  - Searched in parallel with Pinecone RAG on every conversation turn
+
+  Key files:
+    server/mem0Service.ts           — Mem0 API client
+    server/memoryService.ts         — Memory extraction and management
+
+================================================================================
+7. ENVIRONMENT VARIABLES (STANDALONE RAILWAY DEPLOYMENT)
+================================================================================
+
+# Database
+DATABASE_URL=postgresql://user:pass@host/dbname?sslmode=require
+
+# AI Services
+ANTHROPIC_API_KEY=sk-ant-...          # Claude (conversations + ingestion)
+OPENAI_API_KEY=sk-...                 # Embeddings (text-embedding-3-small)
+
+# Vector Database
+PINECONE_API_KEY=...
+
+# Video Avatars
+HEYGEN_API_KEY=...
+HEYGEN_CREDIT_LIMIT=1000              # Monthly credit cap
+
+# Voice
+ELEVENLABS_API_KEY=...
+ELEVENLABS_AGENT_ID=agent_...         # Conversational AI agent
+DEEPGRAM_API_KEY=...                  # Alternative STT
+
+# Memory
+MEM0_API_KEY=...
+
+# Auth
+SESSION_SECRET=<random-secret>        # Express session signing
+ADMIN_SECRET=<admin-secret>           # Admin panel (supports comma-separated)
+
+# WebRTC
+LIVEKIT_API_KEY=...
+LIVEKIT_API_SECRET=...
+LIVEKIT_URL=wss://your-livekit-url
+
+# Google Services
+GOOGLE_CLIENT_ID=...                  # Google Drive OAuth
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_SEARCH_API_KEY=...             # Optional: per-avatar web search
+GOOGLE_SEARCH_ENGINE_ID=...           # Optional: per-avatar web search
+
+# Billing
+MEMBERSTACK_SECRET_KEY=...
+
+# Email
+RESEND_API_KEY=...
+
+# Firebase Storage (replaces Replit Object Storage)
+FIREBASE_PROJECT_ID=...
+FIREBASE_STORAGE_BUCKET=...
+FIREBASE_SERVICE_ACCOUNT_KEY=...      # JSON service account key (or path)
+
+# Performance
+NODE_OPTIONS=--max-old-space-size=4096
+PORT=5000
+
+REMOVED (Replit-specific, no longer needed):
+  REPLIT_DOMAINS
+  REPL_ID
+  ISSUER_URL
+  REPLIT_OBJECT_STORAGE_BUCKET_ID
+  REPLIT_CONNECTORS_HOSTNAME
+  REPL_IDENTITY
+  WEB_REPL_RENEWAL
+
+================================================================================
+8. FUTURE ROADMAP (FROM PLANNING NOTES)
+================================================================================
+
+Near-term:
+  - Complete Railway deployment migration
+  - Firebase Storage integration
+  - Full mobile optimization (fullscreen experience)
+
+Later:
+  - Create and send videos (direct to users)
+  - Automate social media posting
+  - Automate text messages
+  - Email behavioral sequences / scheduled emails
+  - Lead magnet creation
+  - Audience engagement automation
+  - WhatsApp integration
+  - Agentic capabilities (agents that do things, not just talk)
+
+================================================================================
+9. SCOPE OF WORK SUMMARY
+================================================================================
+
+Phase 1: Website Optimization (Standalone Deployment)
+  - Remove all Replit dependencies (auth, storage, plugins, config)
+  - Integrate Firebase Storage for file management
+  - Replace Google Drive connector with direct OAuth2
+  - Configure Railway deployment (Dockerfile, env vars, build pipeline)
+  - Verify all 4 WebSocket servers work on Railway
+  - Test full conversation pipeline end-to-end
+  - Ensure mobile fullscreen experience works
+
+Phase 2: Pinecone & Mem0 Verification
+  - Verify Pinecone integration stability on new deployment
+  - Verify Mem0 integration stability on new deployment
+  - Provide technical guidance and documentation
+  - Performance testing and optimization if needed
+
+Tech Stack (Agentic Stack):
+  Webflow → Memberstack → Mem0 → HeyGen + ElevenLabs → Claude → Pinecone →
+  Neon PostgreSQL → Firebase Storage → Railway
+
+================================================================================

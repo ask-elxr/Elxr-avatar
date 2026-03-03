@@ -239,7 +239,7 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
+    ...(process.platform === 'linux' ? { reusePort: true } : {}),
   }, () => {
     log(`serving on port ${port}`);
     
