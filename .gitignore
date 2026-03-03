@@ -1,6 +1,54 @@
-node_modules
-dist
-.DS_Store
+# Dependencies
+node_modules/
+
+# Build output
+dist/
 server/public
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.production
+
+# Replit artifacts
+.config/
+.local/
+.replit
+replit.nix
+.cache/
+.upm/
+.breakpoints
+
+# Databases
+*.db
+*.sqlite
+*.db-wal
+*.db-shm
+
+# Media assets & uploads (use cloud storage)
+attached_assets/
+uploads/
+
+# Python remnants (not a Python project)
+uv.lock
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs & temp files
+*.log
+nohup.out
+*.backup
+*.bak
+
+# Debug screenshots
+after-viewport-*.png
+
+# Build artifacts
 vite.config.ts.*
 *.tar.gz
+
+# OS files
+.DS_Store
+Thumbs.db
