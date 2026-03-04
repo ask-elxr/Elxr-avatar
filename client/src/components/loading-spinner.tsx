@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import mumLogo from "@assets/mum_logo_small_1769326661442.gif";
 
 interface LoadingSpinnerProps {
   size?: "sm" | "md" | "lg";
@@ -25,7 +24,7 @@ export function LoadingSpinner({ size = "md", className }: LoadingSpinnerProps) 
       role="presentation"
     >
       <img
-        src={mumLogo}
+        src="/mum-logo.gif"
         alt="Loading"
         className="w-full h-full object-contain"
         aria-hidden="true"

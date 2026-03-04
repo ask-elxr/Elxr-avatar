@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff } from "lucide-react";
-import mumIconPath from "@assets/Mum_flav_256_1771715821899.png";
+const mumIconPath = "/mum-icon.png";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, getAuthHeaders } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
