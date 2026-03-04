@@ -1,36 +1,23 @@
-# Build stage
-FROM node:20-slim AS builder
+FROM node:20-slim
 
+# Install system dependencies for media processing
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ffmpeg imagemagick unzip && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm ci
 
+# Copy source code
 COPY . .
+
+# Build frontend (Vite) and backend (esbuild)
 RUN npm run build
 
-# Production stage
-FROM node:20-slim
-
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends ffmpeg imagemagick unzip && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/shared ./shared
-COPY --from=builder /app/migrations ./migrations
-COPY --from=builder /app/config ./config
-COPY --from=builder /app/drizzle.config.ts ./
-
+# Expose port (Railway sets PORT env var)
 EXPOSE 5000
 
 CMD ["npm", "run", "start"]
