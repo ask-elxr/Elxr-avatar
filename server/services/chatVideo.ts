@@ -10,7 +10,6 @@ import { ElevenLabsClient } from "elevenlabs";
 import { subscriptionService } from "./subscription";
 import { formatVideoTitle } from "../utils/videoTitle";
 import Anthropic from "@anthropic-ai/sdk";
-import { objectStorageClient } from "../objectStorage";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;

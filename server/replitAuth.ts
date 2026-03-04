@@ -9,9 +9,7 @@ import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { pool } from "./db";
 
-if (!process.env.REPLIT_DOMAINS && process.env.NODE_ENV !== 'development') {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
-}
+const isReplit = !!process.env.REPLIT_DOMAINS;
 
 const getOidcConfig = memoize(
   async () => {
@@ -74,9 +72,11 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Skip OIDC setup in development mode (no Replit auth available)
-  if (process.env.NODE_ENV !== 'development') {
-    const config = await getOidcConfig();
+  // Only set up OIDC when running on Replit (requires REPLIT_DOMAINS + REPL_ID)
+  let oidcConfig: Awaited<ReturnType<typeof getOidcConfig>> | null = null;
+
+  if (isReplit) {
+    oidcConfig = await getOidcConfig();
 
     const verify: VerifyFunction = async (
       tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
@@ -93,7 +93,7 @@ export async function setupAuth(app: Express) {
       const strategy = new Strategy(
         {
           name: `replitauth:${domain}`,
-          config,
+          config: oidcConfig,
           scope: "openid email profile offline_access",
           callbackURL: `https://${domain}/api/callback`,
         },
@@ -107,8 +107,8 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", async (req, res, next) => {
-    // Development mode: Allow localhost access with mock authentication
-    if (process.env.NODE_ENV === 'development' && (req.hostname === 'localhost' || req.hostname === '127.0.0.1')) {
+    // Non-Replit or development: mock authentication
+    if (!isReplit || process.env.NODE_ENV === 'development') {
       const mockUser = {
         claims: {
           sub: 'dev-user-001',
@@ -116,15 +116,15 @@ export async function setupAuth(app: Express) {
           first_name: 'Dev',
           last_name: 'User',
           profile_image_url: null,
-          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 7 days from now
+          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
         },
         access_token: 'dev-access-token',
         refresh_token: 'dev-refresh-token',
         expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
       };
-      
+
       await upsertUser(mockUser.claims);
-      
+
       req.login(mockUser, (err) => {
         if (err) {
           return next(err);
@@ -141,6 +141,9 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
+    if (!isReplit) {
+      return res.redirect("/");
+    }
     passport.authenticate(`replitauth:${req.hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
@@ -149,8 +152,11 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/logout", (req, res) => {
     req.logout(() => {
+      if (!isReplit || !oidcConfig) {
+        return res.redirect("/");
+      }
       res.redirect(
-        client.buildEndSessionUrl(config, {
+        client.buildEndSessionUrl(oidcConfig, {
           client_id: process.env.REPL_ID!,
           post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
         }).href
@@ -198,6 +204,11 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
 // Middleware that requires a Memberstack ID or admin secret for AI-powered endpoints
 // This prevents anonymous users from triggering expensive Claude/TTS API calls
 export const requireMemberstackOrAdmin: RequestHandler = async (req, res, next) => {
+  // TEST_MODE: bypass subscription check on localhost
+  if (process.env.TEST_MODE === 'true' && (req.hostname === 'localhost' || req.hostname === '127.0.0.1')) {
+    return next();
+  }
+
   const adminSecret = req.headers['x-admin-secret'] as string;
   if (isValidAdminSecret(adminSecret)) {
     return next();

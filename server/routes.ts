@@ -349,6 +349,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (45 second timeout for AI processing)
   app.use(timeoutMiddleware(45000));
 
+  // Health check endpoint for Railway/monitoring
+  app.get("/api/health", (_req, res) => {
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
   // Auth user endpoint - returns authenticated user data
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
@@ -5915,6 +5920,9 @@ ${historyPreview}
   // Serve public files from Object Storage (for production video URLs)
   app.get("/api/public-storage/:filename", async (req, res) => {
     try {
+      if (!process.env.REPLIT_DOMAINS) {
+        return res.status(503).json({ error: "Object storage not available in this deployment" });
+      }
       const { filename } = req.params;
       // Generate a signed URL and redirect to it
       const signedUrl = await getSignedPublicReadURL(filename, 3600); // 1 hour TTL
@@ -5939,11 +5947,22 @@ ${historyPreview}
     "shawn": "public/Intro videos/Shawn intro music.mp4",
   };
 
-  const { Client: ObjStorageClient } = await import("@replit/object-storage");
-  const objStorageClient = new ObjStorageClient();
+  // Only initialize Replit object storage when running on Replit
+  let objStorageClient: any = null;
+  if (process.env.REPLIT_DOMAINS) {
+    try {
+      const { Client: ObjStorageClient } = await import("@replit/object-storage");
+      objStorageClient = new ObjStorageClient();
+    } catch (e) {
+      console.warn("Replit object storage not available:", e);
+    }
+  }
 
   app.get("/api/intro-video/:avatarId", async (req, res) => {
     try {
+      if (!objStorageClient) {
+        return res.status(503).json({ error: "Intro videos not available in this deployment" });
+      }
       const { avatarId } = req.params;
       const objectPath = introVideoFiles[avatarId];
       if (!objectPath) {
@@ -6019,6 +6038,10 @@ ${historyPreview}
     requireAdmin,
     async (req: any, res) => {
       try {
+        if (!process.env.REPLIT_DOMAINS) {
+          return res.status(503).json({ error: "Document upload not available in this deployment" });
+        }
+
         const { filename, fileType } = req.query;
 
         if (!filename || !fileType) {
@@ -7976,6 +7999,10 @@ ${historyPreview}
     async (req: any, res) => {
       const userId = req.user.claims.sub;
       try {
+        if (!process.env.REPLIT_DOMAINS) {
+          return res.status(503).json({ error: "Document upload not available in this deployment" });
+        }
+
         if (!req.file) {
           return res.status(400).json({ error: "No file uploaded" });
         }

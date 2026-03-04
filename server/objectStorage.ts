@@ -11,23 +11,42 @@ import {
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
-// The object storage client is used to interact with the object storage service.
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token",
+// Only initialize object storage when running on Replit (sidecar available)
+const isReplit = !!process.env.REPLIT_DOMAINS;
+
+let _objectStorageClient: Storage | null = null;
+
+function createObjectStorageClient(): Storage {
+  return new Storage({
+    credentials: {
+      audience: "replit",
+      subject_token_type: "access_token",
+      token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+      type: "external_account",
+      credential_source: {
+        url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+        format: {
+          type: "json",
+          subject_token_field_name: "access_token",
+        },
       },
+      universe_domain: "googleapis.com",
     },
-    universe_domain: "googleapis.com",
+    projectId: "",
+  });
+}
+
+// Lazy-initialized: only connects to Replit sidecar when first accessed
+export const objectStorageClient: Storage = new Proxy({} as Storage, {
+  get(_target, prop, receiver) {
+    if (!_objectStorageClient) {
+      if (!isReplit) {
+        throw new Error("Object storage is only available on Replit. Set up alternative storage for non-Replit deployments.");
+      }
+      _objectStorageClient = createObjectStorageClient();
+    }
+    return Reflect.get(_objectStorageClient, prop, receiver);
   },
-  projectId: "",
 });
 
 export class ObjectNotFoundError extends Error {

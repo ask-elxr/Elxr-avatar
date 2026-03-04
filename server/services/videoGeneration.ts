@@ -7,7 +7,6 @@ import { subscriptionService } from "./subscription";
 import { formatVideoTitle } from "../utils/videoTitle";
 import { emailService } from "./email";
 import { getAvatarById } from "./avatars";
-import { objectStorageClient } from "../objectStorage";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;

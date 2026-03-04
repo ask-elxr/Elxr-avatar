@@ -507,6 +507,11 @@ export default function Dashboard({
 
   // Check if an avatar is locked based on subscription
   const isAvatarLocked = (avatarId: string): boolean => {
+    // TEST_MODE: bypass subscription lock on localhost
+    if (import.meta.env.VITE_TEST_MODE === 'true') {
+      return false;
+    }
+
     // No subscription = no access (should start trial first)
     if (!planInfo?.subscription) {
       return true;
