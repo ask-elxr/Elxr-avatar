@@ -127,6 +127,12 @@ app.get('/demo/mark-kohl', (req, res) => {
 app.use('/demo', express.static(publicPath));
 console.log(`📄 Serving demo pages from: ${publicPath}`);
 
+// Health check endpoint - registered early, before any async initialization
+// so Railway healthcheck passes as soon as the server binds
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 (async () => {
   const server = await registerRoutes(app);
   
@@ -139,20 +145,50 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
   app.use("/api/admin", isAuthenticated, personaRouter);
   app.use("/api/games", gamesRouter);
   
-  // Database initialization with graceful error handling
-  // App will start even if database is temporarily unavailable
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    // Only send response if headers haven't been sent yet
+    if (!res.headersSent) {
+      res.status(status).json({ message });
+    }
+
+    // Log the error with request context for debugging
+    console.error(`Express error on ${req.method} ${req.path}:`, message);
+  });
+
+  // importantly only setup vite in development and after
+  // setting up all the other routes so the catch-all route
+  // doesn't interfere with the other routes
+  if (app.get("env") === "development") {
+    await setupVite(app, server);
+  } else {
+    serveStatic(app);
+  }
+
+  // Start listening FIRST so healthcheck passes, then do heavy initialization
+  const port = parseInt(process.env.PORT || '5000', 10);
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    ...(process.platform === 'linux' ? { reusePort: true } : {}),
+  }, () => {
+    log(`serving on port ${port}`);
+  });
+
+  // Heavy initialization tasks — run after server is listening
+  // These are non-blocking: failures are logged but don't prevent the server from serving
   let dbAvailable = true;
-  
+
   try {
-    // Seed default avatars if database is empty
     await seedDefaultAvatars();
   } catch (error: any) {
     console.warn('⚠️ Failed to seed avatars (database may be unavailable):', error.message);
     dbAvailable = false;
   }
-  
+
   try {
-    // Initialize subscription plans
     await subscriptionService.initializePlans();
   } catch (error: any) {
     console.warn('⚠️ Failed to initialize subscription plans:', error.message);
@@ -160,37 +196,33 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
   }
 
   try {
-    // Initialize video generation service: recover stuck videos and start background checker
     await videoGenerationService.recoverStuckVideos();
     videoGenerationService.startBackgroundChecker();
   } catch (error: any) {
     console.warn('⚠️ Failed to initialize video generation service:', error.message);
   }
-  
+
   try {
-    // Start chat video background checker (for videos generated from chat conversations)
     chatVideoService.startBackgroundChecker();
   } catch (error: any) {
     console.warn('⚠️ Failed to start chat video service:', error.message);
   }
-  
+
   if (!dbAvailable) {
     console.warn('⚠️ Database is currently unavailable. Some features may not work until database connection is restored.');
   }
 
-  // Clear Pinecone cache to ensure cache key normalization changes take effect
   latencyCache.invalidatePineconeCache();
   log('💾 Pinecone cache cleared for cache key normalization update');
 
-  // Auto-sync Willie Gault's Wikipedia page on server start with proper metadata
   try {
     const { wikipediaService } = await import('./wikipediaService.js');
     const { multiAssistantService } = await import('./multiAssistantService.js');
-    
+
     if (wikipediaService.isAvailable()) {
       log('Syncing Willie Gault Wikipedia page to Pinecone...');
       const metadata = multiAssistantService.getMetadataForMentor('willie-gault');
-      
+
       const result = await wikipediaService.syncArticleToNamespace(
         'Willie Gault',
         'willie-gault',
@@ -206,60 +238,23 @@ console.log(`📄 Serving demo pages from: ${publicPath}`);
     }
   } catch (error: any) {
     console.error('Error syncing Willie Gault Wikipedia:', error.message);
-    // Continue server startup even if sync fails
   }
 
-  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    // Only send response if headers haven't been sent yet
-    if (!res.headersSent) {
-      res.status(status).json({ message });
+  // Delayed recovery tasks
+  setTimeout(async () => {
+    try {
+      const result = await resumeStuckBatches();
+      if (result.resumedCount > 0 || result.failedCount > 0) {
+        log(`🎙️ Podcast batch recovery: ${result.resumedCount} resumed, ${result.failedCount} failed`);
+      }
+    } catch (error: any) {
+      console.error('Error during podcast batch recovery:', error.message);
     }
-    
-    // Log the error with request context for debugging
-    console.error(`Express error on ${req.method} ${req.path}:`, message);
-  });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
-
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    ...(process.platform === 'linux' ? { reusePort: true } : {}),
-  }, () => {
-    log(`serving on port ${port}`);
-    
-    // Automatically resume any stuck podcast batch processing on startup
-    setTimeout(async () => {
-      try {
-        const result = await resumeStuckBatches();
-        if (result.resumedCount > 0 || result.failedCount > 0) {
-          log(`🎙️ Podcast batch recovery: ${result.resumedCount} resumed, ${result.failedCount} failed`);
-        }
-      } catch (error: any) {
-        console.error('Error during podcast batch recovery:', error.message);
-      }
-      
-      // Resume any interrupted full course ingestion jobs
-      try {
-        await resumeInterruptedJobs();
-      } catch (error: any) {
-        console.error('Error during ingestion job recovery:', error.message);
-      }
-    }, 5000); // Wait 5 seconds after startup before attempting recovery
-  });
+    try {
+      await resumeInterruptedJobs();
+    } catch (error: any) {
+      console.error('Error during ingestion job recovery:', error.message);
+    }
+  }, 5000);
 })();

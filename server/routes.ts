@@ -349,11 +349,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add timeout middleware for all routes (45 second timeout for AI processing)
   app.use(timeoutMiddleware(45000));
 
-  // Health check endpoint for Railway/monitoring
-  app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", timestamp: new Date().toISOString() });
-  });
-
   // Auth user endpoint - returns authenticated user data
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
