@@ -69,12 +69,12 @@ async function runEvaluation(
   for (const evalQuery of queries) {
     try {
       console.log(`\n📝 Query: "${evalQuery.query}"`);
-      console.log(`   KB: ${evalQuery.kb.toUpperCase()}`);
-      
+      console.log(`   KB: ${evalQuery.kb.toLowerCase()}`);
+
       const [queryEmbedding] = await embedder.embedBatch([evalQuery.query]);
-      
+
       const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
-      const ns = index.namespace(evalQuery.kb.toUpperCase());
+      const ns = index.namespace(evalQuery.kb.toLowerCase());
       
       const queryResult = await ns.query({
         vector: queryEmbedding,

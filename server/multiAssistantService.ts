@@ -13,7 +13,7 @@ export interface MentorConfig {
 const mentorConfigsBase: Record<string, MentorConfig> = {
   "mark-kohl": {
     name: "Mark Kohl",
-    pineconeNamespace: "MARK_KOHL",
+    pineconeNamespace: "mark-kohl",
     category: "psychedelics",
     heygenAvatarId: "7e01e5d4e06149c9ba3c1728fa8f03d0",
     heygenSceneId: "7e01e5d4e06149c9ba3c1728fa8f03d0",

@@ -329,7 +329,7 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
       : [batch.namespace];
     
     const progress = (e.namespaceProgress as Record<string, number>) || {};
-    return namespacesToCheck.every(ns => (progress[ns.toUpperCase()] || 0) >= (e.chunksCount || 0));
+    return namespacesToCheck.every(ns => (progress[ns.toLowerCase()] || 0) >= (e.chunksCount || 0));
   };
   
   // Include episodes that are pending, processing, or have incomplete namespace uploads
@@ -515,7 +515,7 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
           : sourceId;
         
         // For each namespace, check if already fully uploaded
-        const nsKey = ns.toUpperCase();
+        const nsKey = ns.toLowerCase();
         const nsChunksUploaded = namespaceProgress[nsKey] || 0;
         
         if (nsChunksUploaded >= chunks.length) {
@@ -556,7 +556,7 @@ export async function processBatchEpisodes(batchId: string): Promise<void> {
       
       // Check if all namespaces are complete
       const allNamespacesComplete = namespacesToIngest.every(ns => 
-        (namespaceProgress[ns.toUpperCase()] || 0) >= chunks.length
+        (namespaceProgress[ns.toLowerCase()] || 0) >= chunks.length
       );
       
       if (allNamespacesComplete) {
