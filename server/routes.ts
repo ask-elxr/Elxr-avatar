@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { pineconeService, PineconeIndexName } from "./pinecone.js";
 import { documentProcessor } from "./documentProcessor.js";
 import { ObjectStorageService, getSignedPublicReadURL } from "./objectStorage.js";
+import { uploadAsset, isConfigured as isAssetStorageConfigured } from "./assetStorage.js";
 import {
   insertConversationSchema,
   insertDocumentSchema,
@@ -5999,18 +6000,24 @@ ${historyPreview}
       const ext = path.extname(file.originalname);
       const baseName = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
       const uniqueFileName = `${baseName}_${Date.now()}${ext}`;
-      const destPath = path.join(process.cwd(), 'attached_assets', uniqueFileName);
 
-      // Move file from uploads to attached_assets
-      await fs.promises.rename(file.path, destPath);
+      if (isAssetStorageConfigured()) {
+        // Upload to Firebase Storage
+        await uploadAsset(file.path, uniqueFileName, file.mimetype);
+        await fs.promises.unlink(file.path);
+      } else {
+        // Local filesystem fallback (development)
+        const destPath = path.join(process.cwd(), 'attached_assets', uniqueFileName);
+        await fs.promises.rename(file.path, destPath);
+      }
 
       const url = `/attached_assets/${uniqueFileName}`;
       console.log(`[Admin] Asset uploaded: ${url}`);
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         url,
-        filename: uniqueFileName 
+        filename: uniqueFileName
       });
     } catch (error: any) {
       console.error("Error uploading asset:", error);

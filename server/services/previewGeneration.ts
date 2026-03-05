@@ -6,6 +6,7 @@ import { db } from "../db";
 import { avatarProfiles } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../logger";
+import { uploadAsset, isConfigured as isAssetStorageConfigured } from "../assetStorage.js";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;
@@ -236,6 +237,13 @@ export class PreviewGenerationService {
     });
 
     fs.unlinkSync(tempVideoPath);
+
+    // Upload to Firebase Storage if configured, then clean up local file
+    if (isAssetStorageConfigured()) {
+      const gifFilename = path.basename(outputGifPath);
+      await uploadAsset(outputGifPath, gifFilename, "image/gif");
+      fs.unlinkSync(outputGifPath);
+    }
 
     return outputGifPath;
   }

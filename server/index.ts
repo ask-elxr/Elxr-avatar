@@ -14,6 +14,7 @@ import { chatVideoService } from "./services/chatVideo.js";
 import { resumeStuckBatches } from "./ingest/batchPodcastService.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
+import { isConfigured as isAssetStorageConfigured, getPublicUrl } from "./assetStorage.js";
 import path from "path";
 import fs from "fs";
 
@@ -104,12 +105,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve attached_assets as static files - check multiple locations for production compatibility
-const productionAssetsPath = path.resolve(import.meta.dirname, '..', 'attached_assets');
-const devAssetsPath = path.resolve(process.cwd(), 'attached_assets');
-const attachedAssetsPath = fs.existsSync(productionAssetsPath) ? productionAssetsPath : devAssetsPath;
-app.use('/attached_assets', express.static(attachedAssetsPath));
-console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
+// Serve attached_assets: redirect to Firebase Storage when configured, local filesystem fallback for dev
+if (isAssetStorageConfigured()) {
+  app.use('/attached_assets', (req, res) => {
+    const filename = decodeURIComponent(req.path.slice(1)); // Remove leading /
+    res.redirect(301, getPublicUrl(filename));
+  });
+  console.log('📁 Serving attached_assets via Google Cloud Storage');
+} else {
+  const productionAssetsPath = path.resolve(import.meta.dirname, '..', 'attached_assets');
+  const devAssetsPath = path.resolve(process.cwd(), 'attached_assets');
+  const attachedAssetsPath = fs.existsSync(productionAssetsPath) ? productionAssetsPath : devAssetsPath;
+  app.use('/attached_assets', express.static(attachedAssetsPath));
+  console.log(`📁 Serving attached_assets from: ${attachedAssetsPath}`);
+}
 
 // Serve demo pages directly (before Vite middleware catches them)
 // Check multiple locations for production compatibility
