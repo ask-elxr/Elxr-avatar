@@ -7,7 +7,7 @@ import subscriptionRouter from "./routes/subscription.js";
 import ingestRouter, { resumeInterruptedJobs } from "./routes/ingest.js";
 import { personaRouter } from "./routes/personas.js";
 import gamesRouter from "./routes/games.js";
-import { requireAdmin, isAuthenticated } from "./replitAuth.js";
+import { requireAdmin, isAuthenticated } from "./auth.js";
 import { subscriptionService } from "./services/subscription.js";
 import { videoGenerationService } from "./services/videoGeneration.js";
 import { chatVideoService } from "./services/chatVideo.js";

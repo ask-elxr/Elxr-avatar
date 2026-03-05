@@ -17,7 +17,7 @@ import { eq, and, desc, or } from "drizzle-orm";
 import { videoGenerationService } from "../services/videoGeneration";
 import { chatVideoService } from "../services/chatVideo";
 import { subscriptionService } from "../services/subscription";
-import { isAuthenticated } from "../replitAuth";
+import { isAuthenticated } from "../auth";
 
 export const coursesRouter = Router();
 

@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { subscriptionService } from "../services/subscription";
-import { isAuthenticated, requireAdmin } from "../replitAuth";
+import { isAuthenticated, requireAdmin } from "../auth";
 import { z } from "zod";
 import { logger } from "../logger";
 

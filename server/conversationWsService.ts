@@ -10,7 +10,7 @@ import { latencyCache } from './cache.js';
 import { sessionManager } from './sessionManager.js';
 import { ELXR_CONTENT_POLICY } from './contentTaxonomy.js';
 import { getBanterLevel, buildAvatarPrompt } from './warmthEngine.js';
-import { isValidAdminSecret } from './replitAuth.js';
+import { isValidAdminSecret } from './auth.js';
 import { checkChatRateLimit } from './chatRateLimit.js';
 
 const log = logger.child({ service: 'conversation-ws' });

@@ -2,10 +2,10 @@
  * Authentication Service
  * 
  * Centralized service for authentication and authorization.
- * Wrapper around Replit Auth.
+ * Centralized auth service.
  */
 
-import { setupAuth, isAuthenticated } from '../replitAuth.js';
+import { setupAuth, isAuthenticated } from '../auth.js';
 import type { Express, Request } from 'express';
 
 /**

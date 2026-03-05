@@ -1,25 +1,23 @@
-import * as client from "openid-client";
-import { Strategy, type VerifyFunction } from "openid-client/passport";
-
-import passport from "passport";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
-import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { pool } from "./db";
 
-const isReplit = !!process.env.REPLIT_DOMAINS;
-
-const getOidcConfig = memoize(
-  async () => {
-    return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
-    );
-  },
-  { maxAge: 3600 * 1000 }
-);
+// Extend Express Request to include user (previously provided by @types/passport)
+declare module "express-serve-static-core" {
+  interface Request {
+    user?: {
+      claims?: {
+        sub: string;
+        email: string | null;
+        first_name: string;
+        last_name: string;
+        profile_image_url: string | null;
+      };
+    };
+  }
+}
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -44,124 +42,15 @@ export function getSession() {
   });
 }
 
-function updateUserSession(
-  user: any,
-  tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers
-) {
-  user.claims = tokens.claims();
-  user.access_token = tokens.access_token;
-  user.refresh_token = tokens.refresh_token;
-  user.expires_at = user.claims?.exp;
-}
-
-async function upsertUser(
-  claims: any,
-) {
-  await storage.upsertUser({
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
-  });
-}
-
 export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
-  app.use(passport.initialize());
-  app.use(passport.session());
 
-  // Only set up OIDC when running on Replit (requires REPLIT_DOMAINS + REPL_ID)
-  let oidcConfig: Awaited<ReturnType<typeof getOidcConfig>> | null = null;
-
-  if (isReplit) {
-    oidcConfig = await getOidcConfig();
-
-    const verify: VerifyFunction = async (
-      tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-      verified: passport.AuthenticateCallback
-    ) => {
-      const user = {};
-      updateUserSession(user, tokens);
-      await upsertUser(tokens.claims());
-      verified(null, user);
-    };
-
-    for (const domain of process.env
-      .REPLIT_DOMAINS!.split(",")) {
-      const strategy = new Strategy(
-        {
-          name: `replitauth:${domain}`,
-          config: oidcConfig,
-          scope: "openid email profile offline_access",
-          callbackURL: `https://${domain}/api/callback`,
-        },
-        verify,
-      );
-      passport.use(strategy);
-    }
-  }
-
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
-
-  app.get("/api/login", async (req, res, next) => {
-    // Non-Replit or development: mock authentication
-    if (!isReplit || process.env.NODE_ENV === 'development') {
-      const mockUser = {
-        claims: {
-          sub: 'dev-user-001',
-          email: 'dev@localhost.dev',
-          first_name: 'Dev',
-          last_name: 'User',
-          profile_image_url: null,
-          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
-        },
-        access_token: 'dev-access-token',
-        refresh_token: 'dev-refresh-token',
-        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
-      };
-
-      await upsertUser(mockUser.claims);
-
-      req.login(mockUser, (err) => {
-        if (err) {
-          return next(err);
-        }
-        res.redirect('/');
-      });
-      return;
-    }
-
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
-  });
-
-  app.get("/api/callback", (req, res, next) => {
-    if (!isReplit) {
-      return res.redirect("/");
-    }
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
-    })(req, res, next);
-  });
-
+  // Simple redirects (no OIDC — auth is handled by Memberstack via Webflow)
+  app.get("/api/login", (_req, res) => res.redirect("/"));
+  app.get("/api/callback", (_req, res) => res.redirect("/"));
   app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      if (!isReplit || !oidcConfig) {
-        return res.redirect("/");
-      }
-      res.redirect(
-        client.buildEndSessionUrl(oidcConfig, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
-    });
+    req.session.destroy(() => res.redirect("/"));
   });
 }
 
@@ -171,7 +60,7 @@ export async function setupAuth(app: Express) {
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
   if (!req.user) {
     const memberstackId = (req.headers['x-member-id'] as string) || (req.query.member_id as string);
-    
+
     let userId: string;
     const session = req.session as any;
     if (memberstackId) {
@@ -187,7 +76,7 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
         session.userId = userId;
       }
     }
-    
+
     (req as any).user = {
       claims: {
         sub: userId,
@@ -231,7 +120,7 @@ export const requireMemberstackOrAdmin: RequestHandler = async (req, res, next) 
 export function isValidAdminSecret(providedSecret: string): boolean {
   const envAdminSecret = process.env.ADMIN_SECRET;
   if (!envAdminSecret || !providedSecret) return false;
-  
+
   // Support multiple admin secrets separated by commas
   const validSecrets = envAdminSecret.split(',').map(s => s.trim());
   return validSecrets.includes(providedSecret);
@@ -243,16 +132,16 @@ export function isValidAdminSecret(providedSecret: string): boolean {
 export const requireAdmin: RequestHandler = async (req, res, next) => {
   // Check for admin secret in header (for embedded/Webflow mode)
   const adminSecret = req.headers['x-admin-secret'] as string;
-  
+
   // If admin secret is provided and matches one of the valid secrets, allow access
   if (isValidAdminSecret(adminSecret)) {
     return next();
   }
-  
-  // Fallback: Check if user is authenticated and has admin role in DB
+
+  // Fallback: Check if user has admin role in DB
   const user = req.user as any;
 
-  if (!req.isAuthenticated() || !user?.claims?.sub) {
+  if (!user?.claims?.sub) {
     return res.status(401).json({ message: "Unauthorized - Admin access required. Use X-Admin-Secret header or login as admin." });
   }
 

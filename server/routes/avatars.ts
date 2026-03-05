@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { Request, Response } from 'express';
 import { logger } from '../logger.js';
 import { storage } from '../storage.js';
-import { isAuthenticated } from '../replitAuth.js';
+import { isAuthenticated } from '../auth.js';
 import { getActiveAvatars, getAvatarById, getAllAvatars, getVideoCapableAvatars } from '../services/avatars.js';
 import { insertAvatarProfileSchema, updateAvatarProfileSchema } from '@shared/schema';
 import { previewGenerationService } from '../services/previewGeneration.js';

@@ -28,7 +28,7 @@ import { claudeService } from "./claudeService.js";
 import { googleSearchService } from "./googleSearchService.js";
 import { elevenlabsService } from "./elevenlabsService.js";
 import { wikipediaService } from "./wikipediaService.js";
-import { setupAuth, isAuthenticated, requireAdmin, requireMemberstackOrAdmin, isValidAdminSecret } from "./replitAuth.js";
+import { setupAuth, isAuthenticated, requireAdmin, requireMemberstackOrAdmin, isValidAdminSecret } from "./auth.js";
 import { storage } from "./storage.js";
 import { latencyCache } from "./cache.js";
 import { metrics } from "./metrics.js";
