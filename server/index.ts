@@ -59,7 +59,7 @@ app.use((req, res, next) => {
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   // Include X-Admin-Secret header for admin access in embedded mode
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Secret, X-User-Id');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Admin-Secret, X-Member-Id, X-User-Id');
   // Allow embedding in any iframe (for Webflow and other sites)
   res.setHeader('Content-Security-Policy', "frame-ancestors *");
   // Remove X-Frame-Options to allow embedding (CSP frame-ancestors takes precedence)
