@@ -479,7 +479,48 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
         return;
       }
 
-      // User said something else → treat as topic refinement, re-ask
+      // User said something else — for voice/STT, short responses that aren't
+      // rejections are almost certainly noisy transcriptions of "yes".
+      // Only treat long, substantive responses as topic refinements.
+      const trimmed = userMessage.trim();
+      const isShortResponse = trimmed.length < 40;
+      const mentionsVideo = /\bvideo\b/i.test(trimmed);
+
+      if (isShortResponse && !mentionsVideo) {
+        // Short non-rejection response → treat as confirmation (STT noise tolerance)
+        clearPendingVideoConfirmation(session.userId);
+        const ack = generateVideoAcknowledgment(pending.topic, session.avatarId);
+
+        log.info({ sessionId: session.sessionId, topic: pending.topic, sttText: trimmed }, 'VIDEO CONFIRMED (short non-rejection) via WS — creating now');
+
+        session.state = 'SPEAKING';
+        clearIdleTimers(session);
+        sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+        enqueueTts(session, ack, myTurn);
+        while (session.active.playing && session.turnId === myTurn) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+        sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+        session.state = 'LISTENING';
+        resetIdleTimers(session);
+
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: ack }).catch(() => {});
+
+        chatVideoService.createVideoFromChat({
+          userId: session.userId,
+          avatarId: session.avatarId,
+          requestText: pending.originalMessage,
+          topic: pending.topic,
+        }).then(result => {
+          if (!result.success) log.error({ error: result.error, sessionId: session.sessionId }, 'Video creation failed');
+          else log.info({ sessionId: session.sessionId, topic: pending.topic }, 'Video creation started from WS');
+        }).catch(err => log.error({ error: err.message, sessionId: session.sessionId }, 'Video creation error'));
+
+        return;
+      }
+
+      // Longer response or mentions video → topic refinement, re-ask once
       const refined = await refineVideoTopic(pending.topic, userMessage);
       setPendingVideoConfirmation(session.userId, refined.refinedTopic, pending.originalMessage, session.avatarId);
       const reask = generateConfirmationPrompt(refined.refinedTopic, session.avatarId);
