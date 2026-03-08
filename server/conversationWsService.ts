@@ -12,6 +12,13 @@ import { ELXR_CONTENT_POLICY } from './contentTaxonomy.js';
 import { getBanterLevel, buildAvatarPrompt } from './warmthEngine.js';
 import { isValidAdminSecret } from './auth.js';
 import { checkChatRateLimit } from './chatRateLimit.js';
+import {
+  detectVideoIntent, setPendingVideoConfirmation, getPendingVideoConfirmation,
+  clearPendingVideoConfirmation, isVideoConfirmation, isVideoRejection,
+  generateConfirmationPrompt, generateVideoAcknowledgment, generateRejectionResponse,
+  refineVideoTopic,
+} from './services/intent.js';
+import { chatVideoService } from './services/chatVideo.js';
 
 const log = logger.child({ service: 'conversation-ws' });
 
@@ -70,6 +77,7 @@ interface ConversationSession {
   memoryEnabled: boolean;
   sampleRate: number;
   audioOnly: boolean;
+  enableVideoCreation: boolean;
   conversationHistory: Array<{ message: string; isUser: boolean }>;
   accumulatedTranscript: string;
 }
@@ -403,6 +411,161 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
       return;
     }
   }
+
+  // --- Video intent detection with voice confirmation flow ---
+  if (session.enableVideoCreation && session.userId) {
+
+    // 1) Check if there's a PENDING confirmation from a previous turn
+    const pending = getPendingVideoConfirmation(session.userId);
+    if (pending) {
+      // User said "yes" / "yeah" / "sure" etc. → create the video
+      if (isVideoConfirmation(userMessage)) {
+        clearPendingVideoConfirmation(session.userId);
+        const ack = generateVideoAcknowledgment(pending.topic, session.avatarId);
+
+        log.info({ sessionId: session.sessionId, topic: pending.topic }, 'VIDEO CONFIRMED via WS — creating now');
+
+        session.state = 'SPEAKING';
+        clearIdleTimers(session);
+        sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+        enqueueTts(session, ack, myTurn);
+        while (session.active.playing && session.turnId === myTurn) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+        sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+        session.state = 'LISTENING';
+        resetIdleTimers(session);
+
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: ack }).catch(() => {});
+
+        chatVideoService.createVideoFromChat({
+          userId: session.userId,
+          avatarId: session.avatarId,
+          requestText: pending.originalMessage,
+          topic: pending.topic,
+        }).then(result => {
+          if (!result.success) log.error({ error: result.error, sessionId: session.sessionId }, 'Video creation failed');
+          else log.info({ sessionId: session.sessionId, topic: pending.topic }, 'Video creation started from WS');
+        }).catch(err => log.error({ error: err.message, sessionId: session.sessionId }, 'Video creation error'));
+
+        return;
+      }
+
+      // User said "no" / "cancel" → reject and clear
+      if (isVideoRejection(userMessage)) {
+        clearPendingVideoConfirmation(session.userId);
+        const rejection = generateRejectionResponse();
+
+        log.info({ sessionId: session.sessionId }, 'VIDEO REJECTED via WS');
+
+        session.state = 'SPEAKING';
+        clearIdleTimers(session);
+        sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+        enqueueTts(session, rejection, myTurn);
+        while (session.active.playing && session.turnId === myTurn) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+        sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+        session.state = 'LISTENING';
+        resetIdleTimers(session);
+
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: rejection }).catch(() => {});
+
+        return;
+      }
+
+      // Short non-rejection response → treat as confirmation (STT noise tolerance)
+      const trimmed = userMessage.trim();
+      const isShortResponse = trimmed.length < 40;
+      const mentionsVideo = /\bvideo\b/i.test(trimmed);
+
+      if (isShortResponse && !mentionsVideo) {
+        clearPendingVideoConfirmation(session.userId);
+        const ack = generateVideoAcknowledgment(pending.topic, session.avatarId);
+
+        log.info({ sessionId: session.sessionId, topic: pending.topic, sttText: trimmed }, 'VIDEO CONFIRMED (short non-rejection) via WS — creating now');
+
+        session.state = 'SPEAKING';
+        clearIdleTimers(session);
+        sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+        enqueueTts(session, ack, myTurn);
+        while (session.active.playing && session.turnId === myTurn) {
+          await new Promise(r => setTimeout(r, 50));
+        }
+        sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+        session.state = 'LISTENING';
+        resetIdleTimers(session);
+
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+        storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: ack }).catch(() => {});
+
+        chatVideoService.createVideoFromChat({
+          userId: session.userId,
+          avatarId: session.avatarId,
+          requestText: pending.originalMessage,
+          topic: pending.topic,
+        }).then(result => {
+          if (!result.success) log.error({ error: result.error, sessionId: session.sessionId }, 'Video creation failed');
+          else log.info({ sessionId: session.sessionId, topic: pending.topic }, 'Video creation started from WS');
+        }).catch(err => log.error({ error: err.message, sessionId: session.sessionId }, 'Video creation error'));
+
+        return;
+      }
+
+      // Longer response mentioning video → topic refinement, re-ask
+      const refined = await refineVideoTopic(pending.topic, userMessage);
+      setPendingVideoConfirmation(session.userId, refined.refinedTopic, pending.originalMessage, session.avatarId);
+      const reask = generateConfirmationPrompt(refined.refinedTopic, session.avatarId);
+
+      log.info({ sessionId: session.sessionId, oldTopic: pending.topic, newTopic: refined.refinedTopic }, 'VIDEO TOPIC REFINED via WS');
+
+      session.state = 'SPEAKING';
+      clearIdleTimers(session);
+      sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+      enqueueTts(session, reask, myTurn);
+      while (session.active.playing && session.turnId === myTurn) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+      sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+      session.state = 'LISTENING';
+      resetIdleTimers(session);
+
+      storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+      storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: reask }).catch(() => {});
+
+      return;
+    }
+
+    // 2) No pending confirmation — check if this is a NEW video request
+    const videoIntent = await detectVideoIntent(userMessage);
+    if (videoIntent.isVideoRequest && videoIntent.confidence >= 0.7) {
+      const topic = videoIntent.topic || userMessage.replace(/(?:send|show|make|create|generate|give|provide)\s+(?:me\s+)?(?:a\s+)?video\s*(?:about|on|for|explaining|showing)?\s*/i, '').trim();
+
+      log.info({ sessionId: session.sessionId, topic, confidence: videoIntent.confidence }, 'VIDEO INTENT DETECTED via WS — asking for confirmation');
+
+      setPendingVideoConfirmation(session.userId, topic, userMessage, session.avatarId);
+      const confirmPrompt = generateConfirmationPrompt(topic, session.avatarId);
+
+      session.state = 'SPEAKING';
+      clearIdleTimers(session);
+      sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+      enqueueTts(session, confirmPrompt, myTurn);
+      while (session.active.playing && session.turnId === myTurn) {
+        await new Promise(r => setTimeout(r, 50));
+      }
+      sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+      session.state = 'LISTENING';
+      resetIdleTimers(session);
+
+      storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+      storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: confirmPrompt }).catch(() => {});
+
+      return;
+    }
+  }
+  // --- End video intent detection ---
 
   session.state = 'THINKING';
   clearIdleTimers(session);
@@ -780,6 +943,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         memoryEnabled: effectiveMemoryEnabled,
         sampleRate,
         audioOnly: !!audioOnly,
+        enableVideoCreation: avatarConfig.enableVideoCreation !== false,
         conversationHistory: [],
         accumulatedTranscript: '',
       };

@@ -64,7 +64,7 @@ export function setPendingVideoConfirmation(
   // Auto-expire after 2 minutes
   setTimeout(() => {
     const pending = pendingVideoConfirmations.get(userId);
-    if (pending && pending.timestamp === Date.now()) {
+    if (pending && Date.now() - pending.timestamp >= 120000) {
       pendingVideoConfirmations.delete(userId);
     }
   }, 120000);
