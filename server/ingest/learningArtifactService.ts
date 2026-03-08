@@ -392,8 +392,8 @@ class LearningArtifactService {
   private async upsertToPinecone(records: ArtifactRecord[], namespace: string): Promise<number> {
     const embedder = getEmbedder();
     const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
-    const ns = index.namespace(namespace.toUpperCase());
-    
+    const ns = index.namespace(namespace.toLowerCase());
+
     const allVectors: any[] = [];
 
     for (let i = 0; i < records.length; i += EMBED_BATCH_SIZE) {
@@ -436,7 +436,7 @@ class LearningArtifactService {
     try {
       const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
       const stats = await index.describeIndexStats();
-      const normalizedNs = namespace.toUpperCase();
+      const normalizedNs = namespace.toLowerCase();
       const nsStats = stats.namespaces?.[normalizedNs];
       
       return {
@@ -451,7 +451,7 @@ class LearningArtifactService {
   async checkExistingArtifacts(namespace: string, courseId: string, lessonId: string): Promise<{ exists: boolean; count: number }> {
     try {
       const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
-      const ns = index.namespace(namespace.toUpperCase());
+      const ns = index.namespace(namespace.toLowerCase());
 
       const dummyEmbedding = new Array(1536).fill(0);
       const result = await ns.query({
@@ -475,8 +475,8 @@ class LearningArtifactService {
   async deleteBySource(namespace: string, courseId: string, lessonId?: string): Promise<{ deleted: boolean }> {
     try {
       const index = await pineconeService.initializeIndex(PineconeIndexName.ASK_ELXR);
-      const ns = index.namespace(namespace.toUpperCase());
-      
+      const ns = index.namespace(namespace.toLowerCase());
+
       const filter: any = { course_id: { $eq: courseId } };
       if (lessonId) {
         filter.lesson_id = { $eq: lessonId };

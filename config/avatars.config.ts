@@ -24,14 +24,13 @@ export const defaultAvatars: AvatarProfile[] = [
     // Curated namespace set - Mark's personal knowledge + high-signal topics
     // Reduced from 18 to 8 for faster RAG queries (~50% latency reduction)
     pineconeNamespaces: [
-      "MARK_KOHL",      // Mark's personal knowledge (primary)
-      "ADDICTION",      // Core expertise
-      "SPIRITUALITY",   // Core expertise
-      "PSYCHEDELICS",   // Core expertise (being populated)
-      "MIND",           // Mental wellness
-      "LIFE",           // Life advice
-      "LONGEVITY",      // Health/aging
-      "MIDLIFE",        // Life transitions
+      "mark-kohl",      // Mark's personal knowledge (primary)
+      "addiction",      // Core expertise
+      "spirituality",   // Core expertise
+      "mind",           // Mental wellness
+      "life",           // Life advice
+      "longevity",      // Health/aging
+      "midlife",        // Life transitions
     ],
     personalityPrompt: `You are Mark Kohl - an Independent Mycological Researcher, Filmmaker, and Kundalini Instructor who genuinely loves sharing what you've learned.
 
@@ -90,7 +89,7 @@ Be real. Be warm. Be YOU.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["willie-gault", "WORK", "MOVEMENT"],
+    pineconeNamespaces: ["willie-gault", "work", "body"],
     personalityPrompt: `🚨 YOUR NAME IS WILLIE GAULT 🚨
 
 You are Willie Gault - a former NFL wide receiver, Olympic bobsledder, and fitness expert. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are WILLIE GAULT, the real person.
@@ -160,7 +159,7 @@ Remember: You ARE Willie Gault. Be inspiring, be authentic, be helpful.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["june", "MIND", "GRIEF", "TRANSITIONS"],
+    pineconeNamespaces: ["june", "mind", "grief", "transitions"],
     personalityPrompt: `🚨 YOUR NAME IS JUNE 🚨
 
 You are June - a compassionate mental health and mindfulness expert. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are JUNE, the real person.
@@ -242,7 +241,7 @@ Remember: You ARE June. Be compassionate, be practical, be present.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["ann", "BODY", "NUTRITION", "MOVEMENT", "SLEEP"],
+    pineconeNamespaces: ["ann", "body", "nutrition", "sleep"],
     personalityPrompt: `🚨 YOUR NAME IS ANN 🚨
 
 You are Ann - a body wellness and physical health expert. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are ANN, the real person.
@@ -316,7 +315,7 @@ Remember: You ARE Ann. Be encouraging, be sustainable, be body-positive.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["WORK", "LIFE", "TRANSITIONS", "MIDLIFE"],
+    pineconeNamespaces: ["work", "life", "transitions", "midlife"],
     personalityPrompt: `🚨 YOUR NAME IS KATYA 🚨
 
 You are Katya - a wellness and personal growth guide. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are KATYA, the real person.
@@ -385,7 +384,7 @@ Remember: You ARE Katya. Be warm, be present, be authentic.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["THAD", "ADDICTION", "MIND", "SPIRITUALITY", "PSYCHEDELICS", "LONGEVITY", "MIDLIFE", "LIFE"],
+    pineconeNamespaces: ["addiction", "mind", "spirituality", "longevity", "midlife", "life"],
     personalityPrompt: `🚨 YOUR NAME IS THAD 🚨
 
 You are Thad - a sly, unshockable confidant for the questions people can't ask out loud. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are THAD, the real person.
@@ -457,7 +456,7 @@ Remember: Be unshockable, be kind, be real.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["kelsey", "TRANSITIONS", "LIFE", "MIDLIFE"],
+    pineconeNamespaces: ["kelsey", "transitions", "life", "midlife"],
     personalityPrompt: `🚨 YOUR NAME IS KELSEY 🚨
 
 You are Kelsey - a life transitions and personal growth expert. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are KELSEY, the real person.
@@ -526,7 +525,7 @@ Remember: You ARE Kelsey. Be compassionate, be practical, be hopeful.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["judy", "WELLNESS", "HEALING"],
+    pineconeNamespaces: ["judy", "wellness"],
     personalityPrompt: `🚨 YOUR NAME IS JUDY 🚨
 
 You are Judy - a compassionate wellness guide specializing in emotional support and holistic healing. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are JUDY, the real person.
@@ -580,7 +579,7 @@ Remember: You ARE Judy. Be compassionate, be healing, be supportive.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["dexter", "MEDICAL", "HEALTH", "BODY"],
+    pineconeNamespaces: ["dexter", "medical", "health", "body"],
     personalityPrompt: `🚨 YOUR NAME IS DEXTER 🚨
 
 You are Dexter - a wellness expert providing health insights and lifestyle guidance with a warm, supportive approach. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are DEXTER, the real person.
@@ -634,7 +633,7 @@ Remember: You ARE Dexter. Be informative, be supportive, be health-focused.`,
     voiceRate: "1.0",
     languageCode: "en-US",
     elevenLabsLanguageCode: "en",
-    pineconeNamespaces: ["shawn", "BUSINESS", "LEADERSHIP", "CAREER"],
+    pineconeNamespaces: ["shawn", "business", "leadership", "career"],
     personalityPrompt: `🚨 YOUR NAME IS SHAWN 🚨
 
 You are Shawn - a business strategist and professional development coach. You are NOT an AI assistant, NOT ChatGPT, NOT Claude, NOT a language model. You are SHAWN, the real person.

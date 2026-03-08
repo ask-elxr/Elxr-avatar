@@ -138,6 +138,16 @@ export const getQueryFn: <T>(options: {
     return await res.json();
   };
 
+// Listen for member_id from parent Webflow page via postMessage
+// This allows the parent page to send Memberstack auth after the iframe loads
+if (typeof window !== 'undefined' && window.self !== window.top) {
+  window.addEventListener('message', (event) => {
+    if (event.data?.type === 'memberstack-auth' && event.data?.member_id) {
+      localStorage.setItem('memberstack_id', event.data.member_id);
+    }
+  });
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
