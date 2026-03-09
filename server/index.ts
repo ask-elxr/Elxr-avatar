@@ -147,7 +147,7 @@ app.get("/api/health", (_req, res) => {
   
   // Register modular routes
   app.use("/api", avatarRouter);
-  app.use("/api/courses", coursesRouter);
+  app.use("/api/courses", isAuthenticated, coursesRouter);
   app.use("/api/mood", moodRouter);
   app.use("/api/subscription", subscriptionRouter);
   app.use("/api/admin", ingestRouter);
