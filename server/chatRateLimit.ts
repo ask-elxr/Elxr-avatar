@@ -1,4 +1,4 @@
-export const DAILY_MESSAGE_LIMIT = 50;
+export const DAILY_MESSAGE_LIMIT = 70;
 const chatRateLimiter = new Map<string, { count: number; resetAt: number }>();
 
 export function checkChatRateLimit(userId: string): { allowed: boolean; remaining: number } {
