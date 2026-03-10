@@ -262,6 +262,28 @@ Provide a thorough but concise description that will help generate an engaging v
     imageMimeType?: string
   ): Promise<void> {
     try {
+      console.log(`📹 [${videoRecordId}] Starting video generation for topic: "${topic}" (avatar: ${avatar.name})`);
+
+      // Pre-flight validation
+      const validationErrors: string[] = [];
+      if (!avatar.heygenVideoAvatarId) {
+        validationErrors.push('Missing heygenVideoAvatarId on avatar');
+      }
+      const hasElevenLabs = avatar.elevenlabsVoiceId && elevenLabsClient;
+      const hasHeygenVoice = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
+      if (!hasElevenLabs && !hasHeygenVoice) {
+        validationErrors.push('No voice configured (need elevenlabsVoiceId or heygenVideoVoiceId/heygenVoiceId)');
+      }
+      if (!HEYGEN_VIDEO_API_KEY) {
+        validationErrors.push('HEYGEN_VIDEO_API_KEY not set');
+      }
+      if (validationErrors.length > 0) {
+        const msg = `Video pre-flight failed for ${avatar.name}: ${validationErrors.join('; ')}`;
+        console.error(`📹 [${videoRecordId}] ${msg}`);
+        throw new Error(msg);
+      }
+      console.log(`📹 [${videoRecordId}] Pre-flight passed`);
+
       await db
         .update(chatGeneratedVideos)
         .set({ status: "generating", updatedAt: new Date() })
@@ -347,10 +369,11 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
       if (!scriptResult.script) {
         throw new Error("Failed to generate video script");
       }
+      console.log(`📹 [${videoRecordId}] Script generated (${scriptResult.script.length} chars)`);
 
       await db
         .update(chatGeneratedVideos)
-        .set({ 
+        .set({
           script: scriptResult.script,
           status: "generating",
           updatedAt: new Date()
@@ -457,8 +480,8 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
         title: videoTitle,
       };
 
-      console.log(`📹 Generating chat video for topic: ${topic}`);
-      
+      console.log(`📹 [${videoRecordId}] Voice config ready (type: ${voiceConfig?.type}), sending to HeyGen...`);
+
       const response = await axios.post<HeyGenVideoResponse>(
         `${HEYGEN_BASE_URL}/video/generate`,
         videoRequest,
@@ -486,8 +509,14 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
       this.pollVideoStatus(heygenVideoId, videoRecordId, userId, avatar.id, topic);
 
     } catch (error: any) {
-      console.error("Error in async video generation:", error.message);
-      
+      console.error(`📹 [${videoRecordId}] Video generation FAILED:`, {
+        avatarId: avatar?.id,
+        avatarName: avatar?.name,
+        topic,
+        error: error.message,
+        stack: error.stack?.split('\n').slice(0, 5).join('\n'),
+      });
+
       await db
         .update(chatGeneratedVideos)
         .set({
@@ -496,6 +525,24 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
           updatedAt: new Date(),
         })
         .where(eq(chatGeneratedVideos.id, videoRecordId));
+
+      // Notify user in conversation that video failed
+      try {
+        await db.insert(conversations).values({
+          userId,
+          avatarId: avatar?.id,
+          role: "assistant",
+          text: `I wasn't able to create the video about "${topic}". ${error.message}. Would you like me to try again?`,
+          metadata: {
+            type: "video-failed",
+            videoRecordId,
+            topic,
+            errorMessage: error.message,
+          },
+        });
+      } catch (convError: any) {
+        console.error(`📹 [${videoRecordId}] Failed to save failure conversation:`, convError.message);
+      }
     }
   }
 

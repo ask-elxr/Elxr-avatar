@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle } from "lucide-react";
 const mumIconPath = "/mum-icon.png";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, getAuthHeaders } from "@/lib/queryClient";
@@ -40,6 +40,7 @@ interface ChatGeneratedVideo {
   createdAt: string;
   updatedAt: string;
   completedAt?: string;
+  errorMessage?: string;
 }
 
 interface AvatarChatProps {
@@ -99,6 +100,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   });
   const [pendingVideos, setPendingVideos] = useState<ChatGeneratedVideo[]>([]);
   const [completedVideos, setCompletedVideos] = useState<ChatGeneratedVideo[]>([]);
+  const [failedVideos, setFailedVideos] = useState<ChatGeneratedVideo[]>([]);
   const [attachedImage, setAttachedImage] = useState<{ base64: string; mimeType: string; preview: string } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const [elevenLabsAgentConfig, setElevenLabsAgentConfig] = useState<{ enabled: boolean; agentId: string } | null>(null);
@@ -591,13 +593,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         
         // Filter recently completed videos (last 30 minutes) that haven't been dismissed
         const thirtyMinutesAgo = Date.now() - 30 * 60 * 1000;
-        const recentlyCompleted = videos.filter(v => 
-          v.status === 'completed' && 
-          v.completedAt && 
+        const recentlyCompleted = videos.filter(v =>
+          v.status === 'completed' &&
+          v.completedAt &&
           new Date(v.completedAt).getTime() > thirtyMinutesAgo &&
           !dismissedVideosRef.current.has(v.id)
         );
         setCompletedVideos(recentlyCompleted);
+
+        // Filter recently failed videos (last 5 minutes)
+        const fiveMinutesAgo = Date.now() - 5 * 60 * 1000;
+        const recentlyFailed = videos.filter(v =>
+          v.status === 'failed' &&
+          v.updatedAt &&
+          new Date(v.updatedAt).getTime() > fiveMinutesAgo &&
+          !dismissedVideosRef.current.has(v.id)
+        );
+        setFailedVideos(recentlyFailed);
       }
     } catch (error) {
       console.error('Error fetching videos:', error);
@@ -1486,8 +1498,8 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
               </button>
             )}
 
-            {/* Video Notifications - Pending and Completed */}
-            {(pendingVideos.length > 0 || completedVideos.length > 0) && (
+            {/* Video Notifications - Pending, Completed, and Failed */}
+            {(pendingVideos.length > 0 || completedVideos.length > 0 || failedVideos.length > 0) && (
               <div className="absolute top-32 left-4 flex flex-col gap-2 z-30 max-w-[250px]">
                 {/* Pending Videos */}
                 {pendingVideos.map((video) => (
@@ -1542,6 +1554,35 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                         <X className="w-3 h-3 text-green-300/70" />
                       </button>
                     </div>
+                  </div>
+                ))}
+
+                {/* Failed Videos */}
+                {failedVideos.map((video) => (
+                  <div
+                    key={video.id}
+                    className="flex items-center gap-2 bg-red-500/20 border border-red-500/40 px-3 py-2 rounded-lg backdrop-blur-sm"
+                    data-testid={`video-failed-${video.id}`}
+                  >
+                    <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-xs text-red-400 font-medium">Video Failed</span>
+                      <span className="text-xs text-red-300/80 truncate">
+                        {video.topic}
+                      </span>
+                      {video.errorMessage && (
+                        <span className="text-xs text-red-300/60 truncate">
+                          {video.errorMessage}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => dismissCompletedVideo(video.id)}
+                      className="p-1 bg-red-500/20 hover:bg-red-500/40 rounded transition-colors flex-shrink-0"
+                      title="Dismiss"
+                    >
+                      <X className="w-3 h-3 text-red-300/70" />
+                    </button>
                   </div>
                 ))}
               </div>

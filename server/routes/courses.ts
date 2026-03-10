@@ -136,6 +136,28 @@ coursesRouter.get("/chat-videos/pending", async (req: Request, res: Response) =>
   }
 });
 
+// Get failed chat-generated videos with error details (diagnostic endpoint)
+coursesRouter.get("/chat-videos/failed", async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId;
+
+    const videos = await db
+      .select()
+      .from(chatGeneratedVideos)
+      .where(and(
+        eq(chatGeneratedVideos.userId, userId),
+        eq(chatGeneratedVideos.status, "failed")
+      ))
+      .orderBy(desc(chatGeneratedVideos.updatedAt))
+      .limit(20);
+
+    res.json(videos);
+  } catch (error) {
+    console.error("Error fetching failed chat videos:", error);
+    res.status(500).json({ error: "Failed to fetch failed videos" });
+  }
+});
+
 // Get all chat-generated videos for a user
 coursesRouter.get("/chat-videos", async (req: Request, res: Response) => {
   try {
