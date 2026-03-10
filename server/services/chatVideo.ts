@@ -114,7 +114,7 @@ export class ChatVideoService {
       // HeyGen expects RAW BINARY data, not multipart/form-data
       console.log(`📤 Uploading audio to HeyGen (${audioBuffer.length} bytes)...`);
       
-      const uploadApiKey = HEYGEN_VIDEO_API_KEY || HEYGEN_API_KEY;
+      const uploadApiKey = HEYGEN_API_KEY || HEYGEN_VIDEO_API_KEY;
       console.log(`📤 Using API key: ${uploadApiKey?.slice(0, 8)}...`);
       
       const uploadResponse = await axios.post(
