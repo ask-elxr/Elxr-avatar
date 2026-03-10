@@ -66,7 +66,7 @@ export class VideoGenerationService {
   private headers = {
     "Accept": "application/json",
     "Content-Type": "application/json",
-    "X-Api-Key": HEYGEN_VIDEO_API_KEY || "",
+    "X-Api-Key": HEYGEN_API_KEY || HEYGEN_VIDEO_API_KEY || "",
   };
 
   /**
