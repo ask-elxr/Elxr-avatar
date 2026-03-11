@@ -400,7 +400,7 @@ function popCompleteSentences(buffer: string): { complete: string[]; remaining: 
   return { complete, remaining: buffer.slice(lastIndex) };
 }
 
-async function runTurn(session: ConversationSession, userMessage: string): Promise<void> {
+async function runTurn(session: ConversationSession, userMessage: string, imageBase64?: string, imageMimeType?: string): Promise<void> {
   const myTurn = session.turnId;
 
   if (session.userId) {
@@ -599,8 +599,8 @@ async function runTurn(session: ConversationSession, userMessage: string): Promi
       knowledgeContext,
       session.conversationHistory.slice(-4),
       enhancedPrompt,
-      undefined,
-      undefined,
+      imageBase64,
+      imageMimeType,
       true,
       true
     );
@@ -982,13 +982,15 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
       const session = activeSessions.get(sessionId);
       if (!session) return;
       const text = message.text?.trim();
-      if (!text) return;
+      const imageBase64 = message.imageBase64;
+      const imageMimeType = message.imageMimeType;
+      if (!text && !imageBase64) return;
 
       if (session.state === 'SPEAKING' || session.state === 'THINKING') {
         bargeIn(session, 'text_input');
       }
       session.turnId += 1;
-      await runTurn(session, text);
+      await runTurn(session, text || 'What do you see in this image?', imageBase64, imageMimeType);
       break;
     }
 

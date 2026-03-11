@@ -695,7 +695,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         mimeType: file.type,
         preview,
       });
-      
+
       toast({
         title: "Image attached",
         description: "Your image will be sent with your next message",

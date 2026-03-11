@@ -2728,7 +2728,7 @@ export function useAvatarSession({
       // Works for both audio-only and video modes
       if (useConversationWsModeRef.current && conversationWs.isConnected) {
         console.log(`${audioOnlyRef.current ? 'Audio-only' : 'Video'} mode: Sending text via conversation WS (streaming pipeline)`);
-        conversationWs.sendText(message);
+        conversationWs.sendText(message, imageData);
         return; // WS handles everything including LiveAvatar lip-sync feed
       }
       

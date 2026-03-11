@@ -336,9 +336,14 @@ export function useConversationWs(config: ConversationWsConfig) {
     }
   }, []);
 
-  const sendText = useCallback((text: string) => {
+  const sendText = useCallback((text: string, imageData?: { base64: string; mimeType: string }) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(JSON.stringify({ type: 'SEND_TEXT', text }));
+      const payload: Record<string, string> = { type: 'SEND_TEXT', text };
+      if (imageData) {
+        payload.imageBase64 = imageData.base64;
+        payload.imageMimeType = imageData.mimeType;
+      }
+      wsRef.current.send(JSON.stringify(payload));
     }
   }, []);
 
