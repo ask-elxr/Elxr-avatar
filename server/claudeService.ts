@@ -5,11 +5,10 @@ import { storage } from './storage';
 import { ELXR_CONTENT_POLICY } from './contentTaxonomy';
 import { getBanterLevel, buildAvatarPrompt } from './warmthEngine';
 
-// Switched from claude-opus-4-6 to claude-sonnet-4 to reduce costs (Opus was $289+ in Feb)
-// Sonnet 4 is 5x cheaper and still high quality for conversations
-const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
+// Opus 4.6 for highest quality conversation responses
+const DEFAULT_MODEL_STR = "claude-opus-4-6";
 
-const FAST_VOICE_MODEL = "claude-sonnet-4-20250514";
+const FAST_VOICE_MODEL = "claude-opus-4-6";
 
 // Content policy is now imported from contentTaxonomy.ts for professional, taxonomy-based approach
 
