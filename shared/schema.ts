@@ -106,13 +106,14 @@ export const ingestionJobs = pgTable("ingestion_jobs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Schema for Replit Auth user operations
+// Schema for user upsert operations (Replit Auth + Memberstack)
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,
   email: true,
   firstName: true,
   lastName: true,
   profileImageUrl: true,
+  memberstackId: true,
 });
 
 export const updateUserSchema = createInsertSchema(users).pick({

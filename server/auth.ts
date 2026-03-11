@@ -3,6 +3,7 @@ import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 import { pool } from "./db";
+import { getMemberstackMember } from "./services/memberstack";
 
 // Extend Express Request to include user (previously provided by @types/passport)
 declare module "express-serve-static-core" {
@@ -65,13 +66,38 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     const session = req.session as any;
     if (memberstackId) {
       userId = `ms_${memberstackId}`;
+      console.log(`[Auth] Memberstack user detected: ${userId} (raw: ${memberstackId})`);
       if (session) {
         session.userId = userId;
       }
+
+      // Lazily provision user record for email notifications (fire-and-forget)
+      storage.getUser(userId).then(async (existingUser) => {
+        console.log(`[Auth] DB lookup for ${userId}: ${existingUser ? `found (email: ${existingUser.email || 'none'})` : 'not found'}`);
+        if (!existingUser?.email) {
+          const member = await getMemberstackMember(memberstackId);
+          if (member?.email) {
+            await storage.upsertUser({
+              id: userId,
+              email: member.email,
+              firstName: member.firstName || 'Member',
+              lastName: member.lastName || null,
+              memberstackId: memberstackId,
+            });
+            console.log(`[Auth] ✅ Provisioned user record for ${userId} (${member.email})`);
+          } else {
+            console.log(`[Auth] ⚠️ Could not resolve email for ${memberstackId} — email notifications will not work`);
+          }
+        }
+      }).catch((err) => {
+        console.error(`[Auth] Failed to provision user for ${memberstackId}:`, err);
+      });
     } else if (session?.userId) {
       userId = session.userId;
+      console.log(`[Auth] Returning session user: ${userId}`);
     } else {
       userId = `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+      console.log(`[Auth] Anonymous user created: ${userId}`);
       if (session) {
         session.userId = userId;
       }
