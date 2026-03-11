@@ -111,5 +111,9 @@ export default function Home() {
   }
 
   // Show avatar chat with placeholder user ID and selected avatar
-  return <AvatarChat userId={userId} avatarId={avatarId} />;
+  return (
+    <div className="fixed inset-0 bg-black w-screen h-screen" style={{ minHeight: '100dvh', height: '100dvh' }}>
+      <AvatarChat userId={userId} avatarId={avatarId} />
+    </div>
+  );
 }
