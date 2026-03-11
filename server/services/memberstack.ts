@@ -27,20 +27,18 @@ export async function getMemberstackMember(memberstackId: string): Promise<Membe
   const secretKey = process.env.MEMBERSTACK_SECRET_KEY;
   if (!secretKey) {
     console.warn('[Memberstack] MEMBERSTACK_SECRET_KEY not set — cannot fetch member details');
-    memberCache.set(memberstackId, null);
     return null;
   }
 
   try {
     console.log(`[Memberstack] Fetching member details for ${memberstackId}...`);
     const res = await fetch(`https://admin.memberstack.com/members/${memberstackId}`, {
-      headers: { Authorization: `Bearer ${secretKey}` },
+      headers: { 'X-API-KEY': secretKey },
     });
 
     if (!res.ok) {
       const errorText = await res.text().catch(() => 'unknown');
       console.error(`[Memberstack] API error ${res.status} for ${memberstackId}: ${errorText}`);
-      memberCache.set(memberstackId, null);
       return null;
     }
 
@@ -53,7 +51,6 @@ export async function getMemberstackMember(memberstackId: string): Promise<Membe
 
     if (!email) {
       console.warn(`[Memberstack] No email found in response for ${memberstackId}`);
-      memberCache.set(memberstackId, null);
       return null;
     }
 
@@ -68,7 +65,6 @@ export async function getMemberstackMember(memberstackId: string): Promise<Membe
     return result;
   } catch (err) {
     console.error('[Memberstack] Failed to fetch member:', err);
-    memberCache.set(memberstackId, null);
     return null;
   }
 }
