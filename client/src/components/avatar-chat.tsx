@@ -56,6 +56,9 @@ interface ChatMessage {
 }
 
 export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
+  const isEmbed = window.location.pathname.startsWith('/embed/');
+  const toolbarPosition = isEmbed ? 'bottom-20' : 'top-3';
+
   const [mumMode, setMumMode] = useState(() => {
     const saved = localStorage.getItem('mum-mode');
     if (saved !== null) return saved === 'true';
@@ -1191,7 +1194,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             </div>
 
             {/* Top Controls for text mode - icon-only */}
-            <div className="absolute top-3 left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30">
+            <div className={`absolute ${toolbarPosition} left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30`}>
               <div className="flex items-center gap-1.5">
                 <AudioVideoToggle
                   isVideoMode={false}
@@ -1296,7 +1299,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
             {sessionActive && !toolbarVisible && (
               <button
                 onClick={resetToolbarTimer}
-                className="absolute top-3 right-3 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/20 text-white/70 hover:text-white"
+                className={`absolute ${toolbarPosition} right-3 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/20 text-white/70 hover:text-white`}
                 data-testid="button-hamburger"
               >
                 <Menu className="w-5 h-5" />
@@ -1305,7 +1308,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
 
             {/* Controls Bar - Bottom on mobile, top on desktop */}
             <div
-              className={`absolute top-3 left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30 transition-opacity duration-300 ${
+              className={`absolute ${toolbarPosition} left-0 right-0 flex items-center justify-between px-3 sm:px-4 z-30 transition-opacity duration-300 ${
                 sessionActive && !toolbarVisible ? 'opacity-0 pointer-events-none' : 'opacity-100'
               }`}
               onPointerDown={sessionActive ? resetToolbarTimer : undefined}
