@@ -11,6 +11,7 @@ import { sessionManager } from './sessionManager.js';
 import { ELXR_CONTENT_POLICY } from './contentTaxonomy.js';
 import { getBanterLevel, buildAvatarPrompt } from './warmthEngine.js';
 import { isValidAdminSecret } from './auth.js';
+import { getMemberstackMember } from './services/memberstack.js';
 import { checkChatRateLimit } from './chatRateLimit.js';
 import {
   detectVideoIntent, setPendingVideoConfirmation, getPendingVideoConfirmation,
@@ -904,6 +905,24 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
 
       const effectiveUserId = hasMemberstack ? `ms_${memberstackId}` : userId;
       const effectiveMemoryEnabled = hasMemberstack ? true : memoryEnabled;
+
+      // Provision Memberstack user record for email notifications & usage tracking
+      if (hasMemberstack) {
+        getMemberstackMember(memberstackId).then(async (member) => {
+          if (member?.email) {
+            await storage.upsertUser({
+              id: effectiveUserId,
+              email: member.email,
+              firstName: member.firstName || 'Member',
+              lastName: member.lastName || null,
+              memberstackId: memberstackId,
+            });
+            console.log(`[WS] ✅ Provisioned user record for ${effectiveUserId} (${member.email})`);
+          } else {
+            console.log(`[WS] ⚠️ Could not resolve email for ${memberstackId}`);
+          }
+        }).catch(err => console.error(`[WS] Failed to provision user:`, err));
+      }
 
       const avatarConfig = await getAvatarById(avatarId);
       if (!avatarConfig) {

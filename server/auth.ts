@@ -95,6 +95,25 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     } else if (session?.userId) {
       userId = session.userId;
       console.log(`[Auth] Returning session user: ${userId}`);
+      // Ensure ms_ users are provisioned (may have been missed on initial auth)
+      if (userId.startsWith('ms_mem_')) {
+        storage.getUser(userId).then(async (existingUser) => {
+          if (!existingUser?.email) {
+            const rawMemberstackId = userId.replace(/^ms_/, '');
+            const member = await getMemberstackMember(rawMemberstackId);
+            if (member?.email) {
+              await storage.upsertUser({
+                id: userId,
+                email: member.email,
+                firstName: member.firstName || 'Member',
+                lastName: member.lastName || null,
+                memberstackId: rawMemberstackId,
+              });
+              console.log(`[Auth] ✅ Late-provisioned user ${userId} (${member.email})`);
+            }
+          }
+        }).catch(() => {});
+      }
     } else {
       userId = `webflow_${Date.now()}_${Math.random().toString(36).substring(7)}`;
       console.log(`[Auth] Anonymous user created: ${userId}`);
