@@ -8191,9 +8191,20 @@ ${historyPreview}
     upload.single("file"),
     async (req: any, res) => {
       const log = logger.child({ service: "document", operation: "uploadPDF" });
-      
+
       try {
         const userId = req.user.claims.sub;
+
+        // Ensure user record exists for FK constraint (admin/Memberstack users may not have one)
+        const existingUser = await storage.getUser(userId);
+        if (!existingUser) {
+          await storage.upsertUser({
+            id: userId,
+            email: null,
+            firstName: 'Admin',
+            lastName: null,
+          });
+        }
 
         if (!req.file) {
           return res.status(400).json({ error: "No file uploaded" });
