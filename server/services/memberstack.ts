@@ -61,6 +61,8 @@ export async function getMemberstackMember(memberstackId: string): Promise<Membe
 
     const cf = member.customFields;
 
+    console.log(`cf: ${cf}`);
+
     // Check individual name fields first, then fall back to combined full-name field
     let firstName: string | null = cf?.firstName ?? cf?.first_name ?? null;
     let lastName: string | null = cf?.lastName ?? cf?.last_name ?? null;
