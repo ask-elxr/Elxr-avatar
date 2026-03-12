@@ -168,3 +168,14 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Listen for localStorage changes from sibling iframes (same origin)
+// When another iframe (e.g., chat) stores memberstack_id, invalidate all queries
+// so they re-fetch with the correct X-Member-Id header
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'memberstack_id' && event.newValue && event.newValue !== event.oldValue) {
+      queryClient.invalidateQueries();
+    }
+  });
+}
