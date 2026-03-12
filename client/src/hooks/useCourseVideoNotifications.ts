@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./use-toast";
+import { getAuthHeaders } from "@/lib/queryClient";
 import type { Course, Lesson, GeneratedVideo } from "@shared/schema";
 
 interface CourseWithLessons extends Course {
@@ -80,7 +81,7 @@ export function useCourseVideoNotifications(userId: string | null) {
   const { data: courses = [] } = useQuery<CourseWithLessons[]>({
     queryKey: ["courses-notifications", userId],
     queryFn: async () => {
-      const res = await fetch("/api/courses", { credentials: "include" });
+      const res = await fetch("/api/courses", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch courses");
       return res.json();
     },

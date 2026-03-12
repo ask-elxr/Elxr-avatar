@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./use-toast";
+import { getAuthHeaders } from "@/lib/queryClient";
 import type { ChatGeneratedVideo } from "@shared/schema";
 
 const NOTIFICATION_WINDOW_MS = 10 * 60 * 1000;
@@ -76,7 +77,7 @@ export function useChatVideoNotifications(userId: string | null) {
   const { data: videos = [] } = useQuery<ChatGeneratedVideo[]>({
     queryKey: ["chat-videos-notifications", userId],
     queryFn: async () => {
-      const res = await fetch("/api/courses/chat-videos", { credentials: "include" });
+      const res = await fetch("/api/courses/chat-videos", { credentials: "include", headers: getAuthHeaders() });
       if (!res.ok) throw new Error("Failed to fetch videos");
       return res.json();
     },
