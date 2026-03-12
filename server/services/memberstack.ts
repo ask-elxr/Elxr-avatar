@@ -67,12 +67,7 @@ export async function getMemberstackMember(memberstackId: string): Promise<Membe
 
     // If no individual fields, try combined full-name variants
     if (!firstName) {
-      const fullName: string | null = cf?.['full-name'] ?? cf?.fullName ?? cf?.full_name ?? cf?.name ?? null;
-      if (fullName) {
-        const parts = fullName.trim().split(/\s+/);
-        firstName = parts[0];
-        lastName = parts.length > 1 ? parts.slice(1).join(' ') : null;
-      }
+      firstName = cf?.['full-name'] ?? cf?.fullName ?? cf?.full_name ?? cf?.name ?? null;
     }
 
     const result: MemberstackMember = {
