@@ -163,12 +163,15 @@ coursesRouter.get("/chat-videos", async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
     const { status, avatarId } = req.query;
+    console.log(`[Videos] GET /chat-videos — userId: ${userId}, reqUser: ${(req as any).user?.claims?.sub}`);
 
     const videos = await db
       .select()
       .from(chatGeneratedVideos)
       .where(eq(chatGeneratedVideos.userId, userId))
       .orderBy(desc(chatGeneratedVideos.createdAt));
+
+    console.log(`[Videos] Found ${videos.length} videos for ${userId} (statuses: ${videos.map(v => v.status).join(', ') || 'none'})`);
 
     // Filter by status and avatarId if provided
     let filtered = videos;
