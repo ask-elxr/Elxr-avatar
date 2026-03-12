@@ -71,23 +71,19 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
         session.userId = userId;
       }
 
-      // Lazily provision user record for email notifications (fire-and-forget)
-      storage.getUser(userId).then(async (existingUser) => {
-        console.log(`[Auth] DB lookup for ${userId}: ${existingUser ? `found (email: ${existingUser.email || 'none'})` : 'not found'}`);
-        if (!existingUser?.email || !existingUser?.firstName || existingUser?.firstName === 'Member') {
-          const member = await getMemberstackMember(memberstackId);
-          if (member?.email) {
-            await storage.upsertUser({
-              id: userId,
-              email: member.email,
-              firstName: member.firstName || null,
-              lastName: member.lastName || null,
-              memberstackId: memberstackId,
-            });
-            console.log(`[Auth] ✅ Provisioned user record for ${userId} (${member.email}, name: ${member.firstName})`);
-          } else {
-            console.log(`[Auth] ⚠️ Could not resolve email for ${memberstackId} — email notifications will not work`);
-          }
+      // Lazily provision/refresh user record from Memberstack (fire-and-forget, cache makes this cheap)
+      getMemberstackMember(memberstackId).then(async (member) => {
+        if (member?.email) {
+          await storage.upsertUser({
+            id: userId,
+            email: member.email,
+            firstName: member.firstName || null,
+            lastName: member.lastName || null,
+            memberstackId: memberstackId,
+          });
+          console.log(`[Auth] ✅ Provisioned user record for ${userId} (${member.email}, name: ${member.firstName})`);
+        } else {
+          console.log(`[Auth] ⚠️ Could not resolve email for ${memberstackId} — email notifications will not work`);
         }
       }).catch((err) => {
         console.error(`[Auth] Failed to provision user for ${memberstackId}:`, err);
@@ -95,22 +91,19 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     } else if (session?.userId) {
       userId = session.userId;
       console.log(`[Auth] Returning session user: ${userId}`);
-      // Ensure ms_ users are provisioned (may have been missed on initial auth)
+      // Refresh ms_ users from Memberstack (cache makes this cheap)
       if (userId.startsWith('ms_mem_')) {
-        storage.getUser(userId).then(async (existingUser) => {
-          if (!existingUser?.email || !existingUser?.firstName || existingUser?.firstName === 'Member') {
-            const rawMemberstackId = userId.replace(/^ms_/, '');
-            const member = await getMemberstackMember(rawMemberstackId);
-            if (member?.email) {
-              await storage.upsertUser({
-                id: userId,
-                email: member.email,
-                firstName: member.firstName || null,
-                lastName: member.lastName || null,
-                memberstackId: rawMemberstackId,
-              });
-              console.log(`[Auth] ✅ Late-provisioned user ${userId} (${member.email}, name: ${member.firstName})`);
-            }
+        const rawMemberstackId = userId.replace(/^ms_/, '');
+        getMemberstackMember(rawMemberstackId).then(async (member) => {
+          if (member?.email) {
+            await storage.upsertUser({
+              id: userId,
+              email: member.email,
+              firstName: member.firstName || null,
+              lastName: member.lastName || null,
+              memberstackId: rawMemberstackId,
+            });
+            console.log(`[Auth] ✅ Refreshed user ${userId} (${member.email}, name: ${member.firstName})`);
           }
         }).catch(() => {});
       }
