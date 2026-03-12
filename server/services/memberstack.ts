@@ -20,8 +20,13 @@ const memberCache = new Map<string, MemberstackMember | null>();
 export async function getMemberstackMember(memberstackId: string): Promise<MemberstackMember | null> {
   if (memberCache.has(memberstackId)) {
     const cached = memberCache.get(memberstackId)!;
-    console.log(`[Memberstack] Cache hit for ${memberstackId}: ${cached?.email || 'null'}`);
-    return cached;
+    // Re-fetch if cached result has no firstName (may have been cached before full-name support)
+    if (cached && cached.firstName) {
+      console.log(`[Memberstack] Cache hit for ${memberstackId}: ${cached.email} (${cached.firstName})`);
+      return cached;
+    }
+    console.log(`[Memberstack] Cache hit but no firstName for ${memberstackId} — re-fetching`);
+    memberCache.delete(memberstackId);
   }
 
   const secretKey = process.env.MEMBERSTACK_SECRET_KEY;
@@ -54,10 +59,26 @@ export async function getMemberstackMember(memberstackId: string): Promise<Membe
       return null;
     }
 
+    const cf = member.customFields;
+
+    // Check individual name fields first, then fall back to combined full-name field
+    let firstName: string | null = cf?.firstName ?? cf?.first_name ?? null;
+    let lastName: string | null = cf?.lastName ?? cf?.last_name ?? null;
+
+    // If no individual fields, try combined full-name variants
+    if (!firstName) {
+      const fullName: string | null = cf?.['full-name'] ?? cf?.fullName ?? cf?.full_name ?? cf?.name ?? null;
+      if (fullName) {
+        const parts = fullName.trim().split(/\s+/);
+        firstName = parts[0];
+        lastName = parts.length > 1 ? parts.slice(1).join(' ') : null;
+      }
+    }
+
     const result: MemberstackMember = {
       email,
-      firstName: member.customFields?.firstName ?? member.customFields?.first_name ?? null,
-      lastName: member.customFields?.lastName ?? member.customFields?.last_name ?? null,
+      firstName,
+      lastName,
     };
 
     console.log(`[Memberstack] ✅ Resolved ${memberstackId} → ${result.email} (${result.firstName || 'no name'})`);
