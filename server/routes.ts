@@ -354,7 +354,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      let user = await storage.getUser(userId);
+
+      // If user missing or has placeholder name, synchronously fetch from Memberstack
+      if (userId.startsWith('ms_') && (!user || !user.firstName || user.firstName === 'Member')) {
+        const rawMemberstackId = userId.replace(/^ms_/, '');
+        const { getMemberstackMember } = await import('./services/memberstack.js');
+        const member = await getMemberstackMember(rawMemberstackId);
+        if (member?.email) {
+          await storage.upsertUser({
+            id: userId,
+            email: member.email,
+            firstName: member.firstName || null,
+            lastName: member.lastName || null,
+            memberstackId: rawMemberstackId,
+          });
+          user = await storage.getUser(userId);
+        }
+      }
+
       res.json(user);
     } catch (error) {
       console.error("Error fetching user:", error);

@@ -18,8 +18,8 @@ export function useAuth() {
   const embeddedUser: User | null = user ?? (isAuthError ? null : {
     id: 'embedded-user',
     email: null,
-    firstName: 'Guest',
-    lastName: 'User',
+    firstName: null,
+    lastName: null,
     profileImageUrl: null,
     role: 'user',
     createdAt: new Date(),
