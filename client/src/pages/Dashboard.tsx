@@ -250,13 +250,10 @@ export default function Dashboard({
         ? null
         : courseViewParams?.courseId || courseEditParams?.courseId || null);
 
-  const { data: chatVideos, isLoading: videosLoading, error: videosError } = useQuery<ChatVideo[]>({
+  const { data: chatVideos, isLoading: videosLoading } = useQuery<ChatVideo[]>({
     queryKey: ["/api/courses/chat-videos"],
     enabled: isAuthenticated,
   });
-
-  // Debug: log video query state
-  console.log(`[Videos Debug] isAuth=${isAuthenticated}, loading=${videosLoading}, error=${videosError?.message || 'none'}, count=${chatVideos?.length ?? 'undefined'}, data=`, chatVideos);
 
   const { data: avatars, isLoading: avatarsLoading } = useQuery<
     AvatarProfile[]

@@ -143,7 +143,13 @@ export const getQueryFn: <T>(options: {
 if (typeof window !== 'undefined' && window.self !== window.top) {
   window.addEventListener('message', (event) => {
     if (event.data?.type === 'memberstack-auth' && event.data?.member_id) {
+      const previousId = localStorage.getItem('memberstack_id');
       localStorage.setItem('memberstack_id', event.data.member_id);
+      // If member_id changed or was just set, invalidate all cached queries
+      // so they re-fetch with the correct X-Member-Id header
+      if (previousId !== event.data.member_id) {
+        queryClient.invalidateQueries();
+      }
     }
   });
 }
