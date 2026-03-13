@@ -38,7 +38,7 @@ async function getReplitAccessToken(): Promise<string> {
 // Service account auth using existing Firebase/GCS credentials
 function getServiceAccountAuth() {
   const clientEmail = process.env.GCS_CLIENT_EMAIL;
-  const privateKey = process.env.GCS_PRIVATE_KEY;
+  const privateKey = process.env.GCS_PRIVATE_KEY?.replace(/\\n/g, '\n');
   const projectId = process.env.GCS_PROJECT_ID;
   if (!clientEmail || !privateKey) {
     throw new Error('GCS_CLIENT_EMAIL and GCS_PRIVATE_KEY must be set for Google Drive');
