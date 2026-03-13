@@ -10,51 +10,61 @@ export interface TopicFolder {
   supportedFiles: number;
 }
 
-let connectionSettings: any;
+const log = logger.child({ service: 'google-drive' });
 
-async function getAccessToken() {
-  if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
-    return connectionSettings.settings.access_token;
-  }
-  
+// Replit Connectors fallback for backward compatibility
+async function getReplitAccessToken(): Promise<string> {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL
     : null;
 
   if (!xReplitToken) {
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
   }
 
-  connectionSettings = await fetch(
+  const data = await fetch(
     'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=google-drive',
-    {
-      headers: {
-        'Accept': 'application/json',
-        'X_REPLIT_TOKEN': xReplitToken
-      }
-    }
-  ).then(res => res.json()).then(data => data.items?.[0]);
+    { headers: { 'Accept': 'application/json', 'X_REPLIT_TOKEN': xReplitToken } }
+  ).then(res => res.json()).then(d => d.items?.[0]);
 
-  const accessToken = connectionSettings?.settings?.access_token || connectionSettings.settings?.oauth?.credentials?.access_token;
-
-  if (!connectionSettings || !accessToken) {
-    throw new Error('Google Drive not connected');
-  }
+  const accessToken = data?.settings?.access_token || data?.settings?.oauth?.credentials?.access_token;
+  if (!accessToken) throw new Error('Google Drive not connected');
   return accessToken;
 }
 
-async function getUncachableGoogleDriveClient() {
-  const accessToken = await getAccessToken();
-
-  const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({
-    access_token: accessToken
+// Service account auth using existing Firebase/GCS credentials
+function getServiceAccountAuth() {
+  const clientEmail = process.env.GCS_CLIENT_EMAIL;
+  const privateKey = process.env.GCS_PRIVATE_KEY;
+  const projectId = process.env.GCS_PROJECT_ID;
+  if (!clientEmail || !privateKey) {
+    throw new Error('GCS_CLIENT_EMAIL and GCS_PRIVATE_KEY must be set for Google Drive');
+  }
+  return new google.auth.GoogleAuth({
+    credentials: {
+      client_email: clientEmail,
+      private_key: privateKey,
+      project_id: projectId,
+    },
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
   });
+}
 
-  return google.drive({ version: 'v3', auth: oauth2Client });
+async function getUncachableGoogleDriveClient() {
+  // Replit Connectors fallback
+  if (process.env.REPLIT_CONNECTORS_HOSTNAME) {
+    const accessToken = await getReplitAccessToken();
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token: accessToken });
+    return google.drive({ version: 'v3', auth: oauth2Client });
+  }
+
+  // Service account (Railway) — uses existing Firebase/GCS credentials
+  const auth = getServiceAccountAuth();
+  return google.drive({ version: 'v3', auth });
 }
 
 export class GoogleDriveService {
@@ -244,7 +254,8 @@ export class GoogleDriveService {
 
   async isConnected(): Promise<boolean> {
     try {
-      await getAccessToken();
+      const drive = await getUncachableGoogleDriveClient();
+      await drive.about.get({ fields: 'user' });
       return true;
     } catch (error) {
       return false;

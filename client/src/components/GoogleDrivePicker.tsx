@@ -299,7 +299,7 @@ export function GoogleDrivePicker({ selectedCategory, onUploadComplete }: Google
         <CardHeader>
           <CardTitle className="text-white">Google Drive Not Connected</CardTitle>
           <CardDescription className="text-white/70">
-            Google Drive integration is not set up. Please contact support to enable this feature.
+            Google Drive service account is not configured. Ensure the Drive API is enabled and the folder is shared with the service account.
           </CardDescription>
         </CardHeader>
       </Card>
