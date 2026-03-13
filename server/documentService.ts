@@ -256,10 +256,17 @@ export async function storeInPinecone(
         operation: 'storeInPinecone',
         documentId,
         namespace,
+        normalizedNamespace: namespace.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, ''),
         chunkCount: chunks.length,
       },
       'Storing document chunks in Pinecone'
     );
+
+    // Normalize namespace to lowercase-kebab to match retrieval (pineconeNamespaceService)
+    const normalizedNamespace = namespace.toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
 
     const index = pineconeClient.index(PINECONE_INDEX);
     const vectors = chunks.map((chunk, i) => ({
@@ -280,7 +287,7 @@ export async function storeInPinecone(
     const batchSize = 100;
     for (let i = 0; i < vectors.length; i += batchSize) {
       const batch = vectors.slice(i, Math.min(i + batchSize, vectors.length));
-      await index.namespace(namespace).upsert(batch);
+      await index.namespace(normalizedNamespace).upsert(batch);
 
       logger.debug(
         {
