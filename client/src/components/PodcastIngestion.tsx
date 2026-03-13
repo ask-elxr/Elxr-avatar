@@ -84,7 +84,7 @@ export function PodcastIngestion() {
       attribution?: string;
       dryRun?: boolean;
     }) => {
-      const response = await fetch('/admin/podcast/ingest', {
+      const response = await fetch('/api/admin/podcast/ingest', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
