@@ -1,7 +1,7 @@
 // Performance optimizations and monitoring for latency reduction
 import { Request, Response, NextFunction } from 'express';
 
-// Routes that need extended timeouts (file uploads, long processing)
+// Routes that need extended timeouts (file uploads, long processing, AI ingestion)
 const extendedTimeoutRoutes = [
   '/api/documents/upload-zip',
   '/api/documents/upload-pdf',
@@ -13,7 +13,12 @@ const extendedTimeoutRoutes = [
   '/api/google-drive/topic-upload-single',
   '/api/webhook/n8n/list-files',
   '/api/webhook/n8n/ingest-file',
-  '/api/webhook/n8n/stats'
+  '/api/webhook/n8n/stats',
+  '/api/admin/podcast/ingest',
+  '/api/admin/podcast/batch',
+  '/api/admin/learning-artifacts',
+  '/api/admin/ingest',
+  '/api/admin/course/ingest',
 ];
 
 // Request timeout middleware

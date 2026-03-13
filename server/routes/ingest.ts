@@ -535,7 +535,17 @@ router.post('/podcast/ingest', requireAdminAuth, async (req: Request, res: Respo
       attribution: data.attribution,
       dryRun: data.dryRun
     });
-    
+
+    if (res.headersSent) {
+      logger.warn({
+        service: 'podcast-ingest-routes',
+        operation: 'podcast_ingest',
+        namespace: data.namespace,
+        dryRun: data.dryRun
+      }, 'Response already sent before success handler - possible client disconnect or timeout');
+      return;
+    }
+
     res.json({
       success: true,
       ...result
@@ -544,13 +554,16 @@ router.post('/podcast/ingest', requireAdminAuth, async (req: Request, res: Respo
     logger.error({
       service: 'podcast-ingest-routes',
       operation: 'podcast_ingest',
-      error: (error as Error).message
+      error: (error as Error).message,
+      headersSent: res.headersSent
     }, 'Podcast/video ingestion failed');
-    
-    res.status(500).json({
-      error: 'Podcast/video ingestion failed',
-      message: (error as Error).message
-    });
+
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Podcast/video ingestion failed',
+        message: (error as Error).message
+      });
+    }
   }
 });
 
