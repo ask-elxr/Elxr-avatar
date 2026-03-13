@@ -7,6 +7,7 @@ import { subscriptionService } from "./subscription";
 import { formatVideoTitle } from "../utils/videoTitle";
 import { emailService } from "./email";
 import { getAvatarById } from "./avatars";
+import type { Scene } from "./sceneSegmentation";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;
@@ -278,18 +279,73 @@ export class VideoGenerationService {
         type: 'course',
       });
 
-      const videoRequest = {
-        video_inputs: [
+      // Build video_inputs: multi-scene if scenes are defined, single scene otherwise
+      const scenes = lesson.scenes as Scene[] | null;
+      let videoInputs: any[];
+
+      if (scenes && Array.isArray(scenes) && scenes.length > 1) {
+        // Multi-scene mode: build one HeyGen scene per segment
+        console.log(`🎬 Building multi-scene video with ${scenes.length} scenes`);
+        videoInputs = [];
+
+        for (const scene of scenes) {
+          // Each scene needs its own voice config with that scene's script
+          let sceneVoice: any;
+          if (voiceConfig.type === "audio") {
+            // For ElevenLabs audio, generate separate audio per scene
+            const sceneAudioAssetId = await this.generateElevenLabsAudio(
+              scene.script,
+              avatar.elevenlabsVoiceId!,
+              avatar.name
+            );
+            if (sceneAudioAssetId) {
+              sceneVoice = { type: "audio", audio_asset_id: sceneAudioAssetId };
+            } else {
+              // Fallback to HeyGen TTS for this scene
+              const fallbackVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
+              if (fallbackVoiceId) {
+                sceneVoice = { type: "text", input_text: scene.script.slice(0, 5000), voice_id: fallbackVoiceId };
+              } else {
+                throw new Error(`Audio generation failed for scene and no HeyGen fallback voice`);
+              }
+            }
+          } else {
+            // HeyGen TTS: just use the scene's script text
+            sceneVoice = { ...voiceConfig, input_text: scene.script.slice(0, 5000) };
+          }
+
+          const sceneInput: any = {
+            character: characterConfig,
+            voice: sceneVoice,
+          };
+
+          // Add background image for B-roll scenes
+          if (scene.type === "broll" && scene.brollImageUrl) {
+            sceneInput.background = {
+              type: "image",
+              url: scene.brollImageUrl,
+            };
+          }
+
+          videoInputs.push(sceneInput);
+        }
+      } else {
+        // Single-scene mode (original behavior)
+        videoInputs = [
           {
             character: characterConfig,
             voice: voiceConfig,
           },
-        ],
+        ];
+      }
+
+      const videoRequest = {
+        video_inputs: videoInputs,
         dimension: {
           width: 1280,
           height: 720,
         },
-        test: useTestMode, // Use test mode for Instant Avatars, production for public avatars
+        test: useTestMode,
         caption: false,
         title: videoTitle,
       };

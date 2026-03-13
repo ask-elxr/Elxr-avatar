@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles, CheckCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles, CheckCircle, Film, User, Image, Search, X, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,7 +11,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Badge } from "@/components/ui/badge";
 import type { Course, Lesson, InsertLesson } from "@shared/schema";
+
+interface Scene {
+  type: "avatar" | "broll";
+  script: string;
+  brollDescription?: string;
+  brollSearchQuery?: string;
+  brollImageUrl?: string;
+}
 
 interface LessonWithVideo extends Lesson {
   video?: any;
@@ -425,6 +434,94 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   });
   const [generatingScriptFor, setGeneratingScriptFor] = useState<string | null>(null);
 
+  // Scene editor state
+  const [expandedScenes, setExpandedScenes] = useState<Record<string, boolean>>({});
+  const [segmentingFor, setSegmentingFor] = useState<string | null>(null);
+  const [brollSearchQuery, setBrollSearchQuery] = useState("");
+  const [brollSearchResults, setBrollSearchResults] = useState<any[]>([]);
+  const [brollSearchLoading, setBrollSearchLoading] = useState(false);
+  const [brollPickerState, setBrollPickerState] = useState<{ lessonId: string; sceneIndex: number } | null>(null);
+
+  // Segment scenes mutation
+  const segmentScenesMutation = useMutation({
+    mutationFn: async (lessonId: string) => {
+      const response = await apiRequest(`/api/courses/lessons/${lessonId}/segment-scenes`, "POST", {});
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: "Failed" }));
+        throw new Error(err.error || "Failed to segment scenes");
+      }
+      return response.json();
+    },
+    onSuccess: (result, lessonId) => {
+      toast({
+        title: "Scenes created!",
+        description: `Script split into ${result.scenes.length} scenes with B-roll suggestions.`,
+      });
+      setExpandedScenes(prev => ({ ...prev, [lessonId]: true }));
+      setSegmentingFor(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+    },
+    onError: (error: any) => {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      setSegmentingFor(null);
+    },
+  });
+
+  // Save scenes mutation
+  const saveScenesMutation = useMutation({
+    mutationFn: async ({ lessonId, scenes }: { lessonId: string; scenes: Scene[] }) => {
+      const response = await apiRequest(`/api/courses/lessons/${lessonId}/scenes`, "PUT", { scenes });
+      if (!response.ok) throw new Error("Failed to save scenes");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+    },
+  });
+
+  const handleSegmentScenes = (lessonId: string) => {
+    setSegmentingFor(lessonId);
+    segmentScenesMutation.mutate(lessonId);
+  };
+
+  const handleClearScenes = (lessonId: string) => {
+    saveScenesMutation.mutate({ lessonId, scenes: [] });
+    setExpandedScenes(prev => ({ ...prev, [lessonId]: false }));
+  };
+
+  const handleUpdateScene = (lessonId: string, sceneIndex: number, updates: Partial<Scene>) => {
+    const lesson = lessons.find(l => l.id === lessonId);
+    if (!lesson?.scenes) return;
+    const updatedScenes = [...(lesson.scenes as Scene[])];
+    updatedScenes[sceneIndex] = { ...updatedScenes[sceneIndex], ...updates };
+    // Update local state
+    setLessons(prev => prev.map(l => l.id === lessonId ? { ...l, scenes: updatedScenes } : l));
+    // Save to backend
+    saveScenesMutation.mutate({ lessonId, scenes: updatedScenes });
+  };
+
+  const handleSearchBroll = async (query: string) => {
+    if (!query.trim()) return;
+    setBrollSearchLoading(true);
+    try {
+      const response = await fetch(`/api/courses/broll-search?q=${encodeURIComponent(query)}`);
+      const data = await response.json();
+      setBrollSearchResults(data.images || []);
+    } catch {
+      toast({ title: "Search failed", variant: "destructive" });
+    } finally {
+      setBrollSearchLoading(false);
+    }
+  };
+
+  const handleSelectBrollImage = (imageUrl: string) => {
+    if (!brollPickerState) return;
+    handleUpdateScene(brollPickerState.lessonId, brollPickerState.sceneIndex, { brollImageUrl: imageUrl });
+    setBrollPickerState(null);
+    setBrollSearchResults([]);
+    setBrollSearchQuery("");
+  };
+
   // Generate script mutation
   const generateScriptMutation = useMutation({
     mutationFn: async (data: { lessonId: string; lessonTitle: string; topic: string; targetDuration: number }) => {
@@ -738,6 +835,148 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                               />
                             </div>
 
+                            {/* Scene Editor */}
+                            <div className="pt-2 border-t border-gray-700/50">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Film className="w-3.5 h-3.5 text-blue-400" />
+                                  <span className="text-xs text-gray-400 font-satoshi">B-Roll Scenes</span>
+                                  {Array.isArray(lesson.scenes) && lesson.scenes.length > 0 ? (
+                                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-blue-600 text-blue-400">
+                                      {(lesson.scenes as Scene[]).length} scenes
+                                    </Badge>
+                                  ) : null}
+                                </div>
+                                <div className="flex gap-1">
+                                  {Array.isArray(lesson.scenes) && lesson.scenes.length > 0 ? (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs text-gray-400 hover:text-white"
+                                        onClick={() => setExpandedScenes(prev => ({ ...prev, [lesson.id]: !prev[lesson.id] }))}
+                                      >
+                                        {expandedScenes[lesson.id] ? "Collapse" : "Edit Scenes"}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 text-xs text-red-400 hover:text-red-300"
+                                        onClick={() => handleClearScenes(lesson.id)}
+                                      >
+                                        <RotateCcw className="w-3 h-3 mr-1" />
+                                        Clear
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-7 px-2 text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 gap-1.5"
+                                      onClick={() => handleSegmentScenes(lesson.id)}
+                                      disabled={segmentingFor === lesson.id || !lesson.script?.trim()}
+                                    >
+                                      {segmentingFor === lesson.id ? (
+                                        <>
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          Segmenting...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Film className="w-3 h-3" />
+                                          Add B-Roll Scenes
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Expanded scene list */}
+                              {expandedScenes[lesson.id] && Array.isArray(lesson.scenes) && lesson.scenes.length > 0 && (
+                                <div className="space-y-2 mt-3">
+                                  {(lesson.scenes as Scene[]).map((scene, si) => (
+                                    <div
+                                      key={si}
+                                      className={`rounded-lg border p-3 text-xs ${
+                                        scene.type === "broll"
+                                          ? "border-blue-800/50 bg-blue-950/20"
+                                          : "border-gray-700/50 bg-gray-800/30"
+                                      }`}
+                                    >
+                                      <div className="flex items-start gap-2">
+                                        <div className="flex-shrink-0 mt-0.5">
+                                          {scene.type === "avatar" ? (
+                                            <User className="w-3.5 h-3.5 text-purple-400" />
+                                          ) : (
+                                            <Image className="w-3.5 h-3.5 text-blue-400" />
+                                          )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <Badge
+                                              variant="outline"
+                                              className={`text-[10px] px-1.5 py-0 ${
+                                                scene.type === "broll"
+                                                  ? "border-blue-600 text-blue-400"
+                                                  : "border-purple-600 text-purple-400"
+                                              }`}
+                                            >
+                                              {scene.type === "broll" ? "B-Roll" : "Avatar"}
+                                            </Badge>
+                                            {scene.brollDescription && (
+                                              <span className="text-gray-500 truncate">{scene.brollDescription}</span>
+                                            )}
+                                          </div>
+                                          <p className="text-gray-300 leading-relaxed">{scene.script}</p>
+
+                                          {/* B-roll image picker */}
+                                          {scene.type === "broll" && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                              {scene.brollImageUrl ? (
+                                                <div className="relative group">
+                                                  <img
+                                                    src={scene.brollImageUrl}
+                                                    alt={scene.brollDescription || "B-roll"}
+                                                    className="w-32 h-20 object-cover rounded border border-blue-700/50"
+                                                  />
+                                                  <button
+                                                    className="absolute -top-1 -right-1 bg-red-600 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={() => handleUpdateScene(lesson.id, si, { brollImageUrl: undefined })}
+                                                  >
+                                                    <X className="w-2.5 h-2.5 text-white" />
+                                                  </button>
+                                                </div>
+                                              ) : null}
+                                              <Button
+                                                type="button"
+                                                variant="outline"
+                                                size="sm"
+                                                className="h-7 px-2 text-[10px] border-blue-700 text-blue-400 hover:bg-blue-900/30"
+                                                onClick={() => {
+                                                  setBrollPickerState({ lessonId: lesson.id, sceneIndex: si });
+                                                  setBrollSearchQuery(scene.brollSearchQuery || scene.brollDescription || "");
+                                                  if (scene.brollSearchQuery) {
+                                                    handleSearchBroll(scene.brollSearchQuery);
+                                                  }
+                                                }}
+                                              >
+                                                <Search className="w-3 h-3 mr-1" />
+                                                {scene.brollImageUrl ? "Change" : "Find"} Image
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
                             {/* Video Generation Status and Button */}
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-gray-700">
                               <div className="flex flex-col gap-2 flex-1 max-w-md">
@@ -864,6 +1103,61 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
           </Card>
         )}
       </div>
+
+      {/* B-Roll Image Picker Dialog */}
+      <Dialog open={!!brollPickerState} onOpenChange={(open) => { if (!open) { setBrollPickerState(null); setBrollSearchResults([]); } }}>
+        <DialogContent className="bg-gray-900 border-gray-700 text-white max-w-[95vw] sm:max-w-2xl mx-auto">
+          <DialogHeader>
+            <DialogTitle className="font-satoshi flex items-center gap-2 text-base">
+              <Image className="w-4 h-4 text-blue-400" />
+              Select B-Roll Image
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-sm">
+              Search for a background image for this scene.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-2">
+            <Input
+              value={brollSearchQuery}
+              onChange={(e) => setBrollSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearchBroll(brollSearchQuery)}
+              placeholder="Search for images..."
+              className="bg-gray-800 border-gray-600 text-white text-sm"
+            />
+            <Button
+              size="sm"
+              onClick={() => handleSearchBroll(brollSearchQuery)}
+              disabled={brollSearchLoading}
+              className="bg-blue-600 hover:bg-blue-700 px-4"
+            >
+              {brollSearchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+            </Button>
+          </div>
+          {brollSearchResults.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[50vh] overflow-y-auto">
+              {brollSearchResults.map((img: any) => (
+                <button
+                  key={img.id}
+                  className="relative group rounded overflow-hidden border-2 border-transparent hover:border-blue-500 transition-colors"
+                  onClick={() => handleSelectBrollImage(img.src.landscape)}
+                >
+                  <img
+                    src={img.src.medium}
+                    alt={img.alt}
+                    className="w-full h-24 object-cover"
+                  />
+                  <div className="absolute bottom-0 left-0 right-0 bg-black/70 text-[9px] text-gray-300 px-1 py-0.5 truncate opacity-0 group-hover:opacity-100 transition-opacity">
+                    {img.photographer}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+          {brollSearchResults.length === 0 && !brollSearchLoading && brollSearchQuery && (
+            <p className="text-center text-gray-500 text-sm py-4">Search for images above</p>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* AI Script Generation Dialog */}
       <Dialog open={scriptGenDialog.open} onOpenChange={(open) => setScriptGenDialog(prev => ({ ...prev, open }))}>

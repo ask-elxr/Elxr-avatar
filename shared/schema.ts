@@ -328,6 +328,7 @@ export const lessons = pgTable("lessons", {
   courseId: varchar("course_id").references(() => courses.id, { onDelete: "cascade" }).notNull(),
   title: text("title").notNull(),
   script: text("script").notNull(), // The text the avatar will speak
+  scenes: jsonb("scenes"), // Scene segments for B-roll: [{type, script, brollDescription?, brollImageUrl?, brollAssetId?}]
   order: integer("order").notNull(), // Lesson order in the course
   duration: integer("duration"), // Estimated duration in seconds
   status: varchar("status").notNull().default("pending"), // pending, generating, completed, failed
@@ -380,6 +381,7 @@ export const insertLessonSchema = createInsertSchema(lessons).pick({
 export const updateLessonSchema = createInsertSchema(lessons).pick({
   title: true,
   script: true,
+  scenes: true,
   order: true,
   duration: true,
   status: true,

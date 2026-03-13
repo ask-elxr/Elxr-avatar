@@ -18,6 +18,8 @@ import { videoGenerationService } from "../services/videoGeneration";
 import { chatVideoService } from "../services/chatVideo";
 import { subscriptionService } from "../services/subscription";
 import { isAuthenticated } from "../auth";
+import { segmentScriptIntoScenes } from "../services/sceneSegmentation";
+import { searchStockImages } from "../services/stockImages";
 
 export const coursesRouter = Router();
 
@@ -581,6 +583,87 @@ coursesRouter.get("/lessons/:id/video-status", async (req: Request, res: Respons
   } catch (error) {
     console.error("Error getting video status:", error);
     res.status(500).json({ error: "Failed to get video status" });
+  }
+});
+
+// Segment a lesson script into scenes with B-roll suggestions
+coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { id: lessonId } = req.params;
+    const userId = req.session.userId;
+
+    // Verify ownership
+    const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId));
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const [course] = await db.select().from(courses)
+      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+    if (!course) return res.status(403).json({ error: "Unauthorized" });
+
+    if (!lesson.script || lesson.script.trim().length === 0) {
+      return res.status(400).json({ error: "Lesson must have a script before segmenting into scenes" });
+    }
+
+    const scenes = await segmentScriptIntoScenes(lesson.script);
+
+    // Auto-search for B-roll images for each scene
+    for (const scene of scenes) {
+      if (scene.type === "broll" && scene.brollSearchQuery) {
+        const images = await searchStockImages(scene.brollSearchQuery, 1);
+        if (images.length > 0) {
+          scene.brollImageUrl = images[0].src.landscape;
+        }
+      }
+    }
+
+    // Save scenes to lesson
+    await db.update(lessons)
+      .set({ scenes: scenes as any, updatedAt: new Date() })
+      .where(eq(lessons.id, lessonId));
+
+    res.json({ success: true, scenes });
+  } catch (error: any) {
+    console.error("Error segmenting scenes:", error);
+    res.status(500).json({ error: error.message || "Failed to segment scenes" });
+  }
+});
+
+// Save scene data for a lesson
+coursesRouter.put("/lessons/:id/scenes", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { id: lessonId } = req.params;
+    const userId = req.session.userId;
+    const { scenes } = req.body;
+
+    const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId));
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const [course] = await db.select().from(courses)
+      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+    if (!course) return res.status(403).json({ error: "Unauthorized" });
+
+    await db.update(lessons)
+      .set({ scenes: scenes as any, updatedAt: new Date() })
+      .where(eq(lessons.id, lessonId));
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("Error saving scenes:", error);
+    res.status(500).json({ error: "Failed to save scenes" });
+  }
+});
+
+// Search stock images for B-roll
+coursesRouter.get("/broll-search", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const query = req.query.q as string;
+    if (!query) return res.status(400).json({ error: "Search query required" });
+
+    const images = await searchStockImages(query, 8);
+    res.json({ images });
+  } catch (error: any) {
+    console.error("Error searching B-roll:", error);
+    res.status(500).json({ error: "Failed to search images" });
   }
 });
 
