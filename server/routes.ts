@@ -5948,52 +5948,32 @@ ${historyPreview}
   });
 
   const introVideoFiles: Record<string, string> = {
-    "mark-kohl": "public/Intro videos/mark intro music.mp4",
-    "mark": "public/Intro videos/mark intro music.mp4",
-    "willie-gault": "public/Intro videos/willie music _2.mp4",
-    "willie": "public/Intro videos/willie music _2.mp4",
-    "june": "public/Intro videos/june intro music.mp4",
-    "thad": "public/Intro videos/Thad intro music.mp4",
-    "ann": "public/Intro videos/ann intro music.mp4",
-    "kelsey": "public/Intro videos/kelsey intro music.mp4",
-    "judy": "public/Intro videos/judy intro music2.mp4",
-    "dexter": "public/Intro videos/dexter intro music _2.mp4",
-    "shawn": "public/Intro videos/Shawn intro music.mp4",
+    "mark-kohl": "public/intro_videos/mark intro music.mp4",
+    "mark": "public/intro_videos/mark intro music.mp4",
+    "willie-gault": "public/intro_videos/willie music _2.mp4",
+    "willie": "public/intro_videos/willie music _2.mp4",
+    "june": "public/intro_videos/june intro music.mp4",
+    "thad": "public/intro_videos/Thad intro music.mp4",
+    "ann": "public/intro_videos/ann intro music.mp4",
+    "kelsey": "public/intro_videos/kelsey intro music.mp4",
+    "judy": "public/intro_videos/judy intro music2.mp4",
+    "dexter": "public/intro_videos/dexter intro music _2.mp4",
+    "shawn": "public/intro_videos/Shawn intro music.mp4",
   };
-
-  // Only initialize Replit object storage when running on Replit
-  let objStorageClient: any = null;
-  if (process.env.REPLIT_DOMAINS) {
-    try {
-      const { Client: ObjStorageClient } = await import("@replit/object-storage");
-      objStorageClient = new ObjStorageClient();
-    } catch (e) {
-      console.warn("Replit object storage not available:", e);
-    }
-  }
 
   app.get("/api/intro-video/:avatarId", async (req, res) => {
     try {
-      if (!objStorageClient) {
-        return res.status(503).json({ error: "Intro videos not available in this deployment" });
-      }
       const { avatarId } = req.params;
       const objectPath = introVideoFiles[avatarId];
       if (!objectPath) {
         return res.status(404).json({ error: "No intro video for this avatar" });
       }
-      res.set({
-        "Content-Type": "video/mp4",
-        "Cache-Control": "public, max-age=86400",
-      });
-      const stream = objStorageClient.downloadAsStream(objectPath);
-      stream.on("error", (err: any) => {
-        console.error("Intro video stream error:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Failed to stream intro video" });
-        }
-      });
-      stream.pipe(res);
+      const bucketName = process.env.GCS_BUCKET_NAME;
+      if (!bucketName) {
+        return res.status(503).json({ error: "Intro videos not available (storage not configured)" });
+      }
+      const publicUrl = `https://storage.googleapis.com/${bucketName}/${encodeURIComponent(objectPath)}`;
+      res.redirect(301, publicUrl);
     } catch (error: any) {
       console.error("Error serving intro video:", error);
       res.status(500).json({ error: "Failed to serve intro video" });
