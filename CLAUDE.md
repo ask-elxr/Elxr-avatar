@@ -85,6 +85,7 @@ scripts/          # Admin/utility scripts
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google Drive OAuth |
 | `RESEND_API_KEY` | Email |
 | `FAL_KEY` | fal.ai (AI image/video generation for B-roll) |
+| `SUNO_API_KEY` | Suno AI (background music generation) |
 | `ADMIN_SECRET` | Admin panel auth (supports comma-separated) |
 | `PORT` | Server port (default 5000) |
 

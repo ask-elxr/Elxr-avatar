@@ -9,6 +9,7 @@ import { emailService } from "./email";
 import { getAvatarById } from "./avatars";
 import type { Scene } from "./sceneSegmentation";
 import { isFFmpegAvailable, getAudioDurationSec, postProcessBrollOverlay, type SceneTiming } from "./ffmpegPostProcess.js";
+import { generateBackgroundMusic, isSunoConfigured } from "./sunoMusic.js";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;
@@ -495,6 +496,21 @@ export class VideoGenerationService {
 
       const videoId = response.data.data.video_id;
 
+      // Generate background music in parallel (fire-and-forget, saved to DB when ready)
+      if (isSunoConfigured() && await isFFmpegAvailable()) {
+        const totalDuration = sceneTimingsData.reduce((sum, s) => sum + s.durationSec, 0);
+        generateBackgroundMusic(course.title, lesson.title, totalDuration)
+          .then(async (musicUrl) => {
+            if (musicUrl) {
+              await db.update(generatedVideos)
+                .set({ backgroundMusicUrl: musicUrl })
+                .where(eq(generatedVideos.heygenVideoId, videoId));
+              console.log(`🎵 Background music saved for video ${videoId}`);
+            }
+          })
+          .catch((err) => console.warn("⚠️ Background music generation failed:", err.message));
+      }
+
       // Create generated video record (include scene timings for B-roll post-processing)
       const [generatedVideo] = await db
         .insert(generatedVideos)
@@ -602,7 +618,7 @@ export class VideoGenerationService {
             })
             .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
 
-          // Check if B-roll post-processing is needed
+          // Check if post-processing is needed (B-roll overlays or background music)
           let finalVideoUrl = video_url;
           const [videoRecord] = await db
             .select()
@@ -611,16 +627,23 @@ export class VideoGenerationService {
 
           const timings = videoRecord?.sceneTimings as SceneTiming[] | null;
           const hasBrollScenes = timings?.some(s => s.type === "broll" && (s.brollImageUrl || s.brollVideoUrl));
+          const bgMusicUrl = videoRecord?.backgroundMusicUrl as string | null;
+          const needsPostProcessing = (hasBrollScenes || bgMusicUrl) && await isFFmpegAvailable();
 
-          if (hasBrollScenes && await isFFmpegAvailable()) {
+          if (needsPostProcessing) {
             try {
-              console.log(`🎬 B-roll scenes detected — starting post-processing for ${heygenVideoId}`);
+              console.log(`🎬 Post-processing needed — B-roll: ${!!hasBrollScenes}, music: ${!!bgMusicUrl}`);
               await db
                 .update(generatedVideos)
                 .set({ status: "post-processing" })
                 .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
 
-              const processedUrl = await postProcessBrollOverlay(video_url, timings!, lessonId);
+              const processedUrl = await postProcessBrollOverlay(
+                video_url,
+                timings || [],
+                lessonId,
+                bgMusicUrl,
+              );
 
               await db
                 .update(generatedVideos)

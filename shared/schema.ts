@@ -351,6 +351,7 @@ export const generatedVideos = pgTable("generated_videos", {
   metadata: jsonb("metadata"), // Additional video metadata from HeyGen
   processedVideoUrl: text("processed_video_url"), // Post-processed video with B-roll overlays
   sceneTimings: jsonb("scene_timings"), // Per-scene durations for overlay timing
+  backgroundMusicUrl: text("background_music_url"), // Suno AI generated background music
   createdAt: timestamp("created_at").defaultNow().notNull(),
   generatedAt: timestamp("generated_at"),
 });

@@ -63,12 +63,15 @@ async function downloadToTemp(url: string, ext: string): Promise<string> {
 }
 
 /**
- * Post-process a HeyGen video to overlay B-roll images at the correct timestamps
+ * Post-process a HeyGen video:
+ * - Overlay B-roll (video/image) at correct timestamps
+ * - Mix in background music at low volume
  */
 export async function postProcessBrollOverlay(
   videoUrl: string,
   sceneTimings: SceneTiming[],
   lessonId: string,
+  backgroundMusicUrl?: string | null,
 ): Promise<string> {
   const tmpFiles: string[] = [];
 
@@ -118,8 +121,20 @@ export async function postProcessBrollOverlay(
       cumulativeSec = endSec;
     }
 
-    if (brollOverlays.length === 0) {
-      console.log(`🎬 No B-roll overlays needed`);
+    // Download background music if provided
+    let musicFile: string | null = null;
+    if (backgroundMusicUrl) {
+      try {
+        musicFile = await downloadToTemp(backgroundMusicUrl, ".mp3");
+        tmpFiles.push(musicFile);
+        console.log(`🎵 Background music downloaded for mixing`);
+      } catch (e: any) {
+        console.warn(`⚠️ Failed to download background music: ${e.message}`);
+      }
+    }
+
+    if (brollOverlays.length === 0 && !musicFile) {
+      console.log(`🎬 No post-processing needed`);
       return videoUrl;
     }
 
@@ -155,25 +170,53 @@ export async function postProcessBrollOverlay(
       prevLabel = outLabel;
     }
 
+    // Add background music input and audio mixing filter
+    const musicInputIdx = 1 + brollOverlays.length; // after video + all B-roll inputs
+    if (musicFile) {
+      inputArgs.push("-i", musicFile);
+      // Mix original voice (full volume) with background music (low volume ~12%)
+      // -shortest ensures music doesn't extend beyond video length
+      filterParts.push(
+        `[0:a]volume=1.0[voice];[${musicInputIdx}:a]volume=0.12[bgm];[voice][bgm]amix=inputs=2:duration=shortest[aout]`
+      );
+    }
+
+    const hasVideoFilter = brollOverlays.length > 0;
+    const hasAudioFilter = !!musicFile;
     const filterComplex = filterParts.join(";\n");
 
     // 5. Run ffmpeg
     const outputFile = path.join(os.tmpdir(), `elxr-processed-${lessonId}-${Date.now()}.mp4`);
     tmpFiles.push(outputFile);
 
-    const ffmpegArgs = [
-      ...inputArgs,
-      "-filter_complex", filterComplex,
-      "-map", "[out]",
-      "-map", "0:a",
-      "-c:a", "copy",
+    const ffmpegArgs = [...inputArgs];
+
+    if (filterParts.length > 0) {
+      ffmpegArgs.push("-filter_complex", filterComplex);
+    }
+
+    // Map video: use overlay output if B-roll exists, otherwise copy original
+    if (hasVideoFilter) {
+      ffmpegArgs.push("-map", "[out]");
+    } else {
+      ffmpegArgs.push("-map", "0:v");
+    }
+
+    // Map audio: use mixed audio if music exists, otherwise copy original
+    if (hasAudioFilter) {
+      ffmpegArgs.push("-map", "[aout]");
+    } else {
+      ffmpegArgs.push("-map", "0:a", "-c:a", "copy");
+    }
+
+    ffmpegArgs.push(
       "-c:v", "libx264",
       "-preset", "fast",
       "-crf", "23",
       "-movflags", "+faststart",
       "-y",
       outputFile,
-    ];
+    );
 
     console.log(`🎬 Running ffmpeg with ${brollOverlays.length} overlay(s)...`);
     const { stderr } = await execFileAsync("ffmpeg", ffmpegArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 300000 });
