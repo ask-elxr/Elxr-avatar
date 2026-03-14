@@ -32,7 +32,7 @@ export default function AdminLogin() {
           title: "Welcome back",
           description: "Redirecting to admin panel...",
         });
-        setTimeout(() => setLocation("/admin"), 500);
+        setTimeout(() => setLocation("/"), 500);
       } else {
         toast({
           title: "Access denied",

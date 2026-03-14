@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { lazy, Suspense } from "react";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -14,7 +14,6 @@ import { useCourseVideoNotifications } from "@/hooks/useCourseVideoNotifications
 const Landing = lazy(() => import("@/pages/landing"));
 const AvatarSelect = lazy(() => import("@/pages/avatar-select"));
 const Home = lazy(() => import("@/pages/home"));
-const Admin = lazy(() => import("@/pages/admin"));
 const Account = lazy(() => import("@/pages/Account"));
 const KnowledgeBase = lazy(() => import("@/pages/KnowledgeBase"));
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -26,10 +25,8 @@ const Credits = lazy(() => import("@/pages/Credits"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const LiveAvatarTest = lazy(() => import("@/pages/liveavatar-test"));
 const SDKTest = lazy(() => import("@/pages/sdk-test"));
-const AdminLogin = lazy(() => import("@/pages/AdminLogin"));
 
 const EmbedPage = lazy(() => import("@/pages/embed/index"));
-const EmbedAdmin = lazy(() => import("@/pages/embed/admin"));
 
 function LoadingFallback() {
   return (
@@ -59,19 +56,6 @@ function AuthSyncListener() {
 }
 
 function Router() {
-  const [location, setLocation] = useLocation();
-  
-  // Detect admin subdomain and redirect to admin login
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    const isAdminSubdomain = hostname.startsWith('admin.');
-    
-    // If on admin subdomain and not already on admin pages, redirect to admin-login
-    if (isAdminSubdomain && !location.startsWith('/admin')) {
-      setLocation('/admin-login');
-    }
-  }, [location, setLocation]);
-  
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
@@ -100,14 +84,12 @@ function Router() {
         <Route path="/courses" component={Courses} />
         <Route path="/course-builder" component={CourseBuilder} />
         <Route path="/course-builder/:id" component={CourseBuilder} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin-login" component={AdminLogin} />
         <Route path="/analytics" component={Analytics} />
         <Route path="/credits" component={Credits} />
         <Route path="/account" component={Account} />
         <Route path="/liveavatar-test" component={LiveAvatarTest} />
         <Route path="/sdk-test" component={SDKTest} />
-        
+
         {/* Embed routes - content only pages for Webflow embedding */}
         <Route path="/embed/dashboard">{() => <EmbedPage view="dashboard" />}</Route>
         <Route path="/embed/chat">{() => <EmbedPage view="chat" />}</Route>
@@ -123,16 +105,7 @@ function Router() {
         <Route path="/embed/plan">{() => <EmbedPage view="plan" />}</Route>
         <Route path="/embed/credits">{() => <EmbedPage view="credits" />}</Route>
         <Route path="/embed/settings">{() => <EmbedPage view="settings" />}</Route>
-        
-        {/* Embed admin routes */}
-        <Route path="/embed/admin">{() => <EmbedAdmin view="dashboard" />}</Route>
-        <Route path="/embed/admin/avatars">{() => <EmbedAdmin view="avatars" />}</Route>
-        <Route path="/embed/admin/knowledge">{() => <EmbedAdmin view="knowledge" />}</Route>
-        <Route path="/embed/admin/courses">{() => <EmbedAdmin view="courses" />}</Route>
-        <Route path="/embed/admin/users">{() => <EmbedAdmin view="users" />}</Route>
-        <Route path="/embed/admin/analytics">{() => <EmbedAdmin view="analytics" />}</Route>
-        <Route path="/embed/admin/credits">{() => <EmbedAdmin view="credits" />}</Route>
-        
+
         <Route component={NotFound} />
       </Switch>
     </Suspense>

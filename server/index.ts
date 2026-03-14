@@ -151,7 +151,7 @@ app.get("/api/health", (_req, res) => {
   app.use("/api/mood", moodRouter);
   app.use("/api/subscription", subscriptionRouter);
   app.use("/api/admin", ingestRouter);
-  app.use("/api/admin", isAuthenticated, personaRouter);
+  app.use("/api/admin", requireAdmin, personaRouter);
   app.use("/api/games", gamesRouter);
   
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
