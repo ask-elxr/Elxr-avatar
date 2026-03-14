@@ -387,7 +387,7 @@ coursesRouter.get("/:id", async (req: Request, res: Response) => {
 coursesRouter.post("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
-    
+
     const validatedData = insertCourseSchema.parse({
       ...req.body,
       userId,
@@ -402,6 +402,20 @@ coursesRouter.post("/", isAuthenticated, async (req: Request, res: Response) => 
     await subscriptionService.incrementUsage(userId, "course").catch(err => {
       console.warn("Failed to track course usage:", err.message);
     });
+
+    // Auto-generate thumbnail in background (fire-and-forget)
+    getFalAi().then(async ({ generateCourseThumbnail, isFalConfigured }) => {
+      if (!isFalConfigured()) return;
+      const image = await generateCourseThumbnail(
+        newCourse.title,
+        newCourse.description || "",
+        req.body.avatarId || "AI Avatar",
+      );
+      if (image?.url) {
+        await db.update(courses).set({ thumbnailUrl: image.url }).where(eq(courses.id, newCourse.id));
+        console.log(`🎨 Auto-generated thumbnail for course "${newCourse.title}"`);
+      }
+    }).catch(err => console.warn("Thumbnail generation failed:", err.message));
 
     res.status(201).json(newCourse);
   } catch (error) {

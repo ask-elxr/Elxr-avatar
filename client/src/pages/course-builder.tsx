@@ -441,6 +441,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   const [brollSearchResults, setBrollSearchResults] = useState<any[]>([]);
   const [brollSearchLoading, setBrollSearchLoading] = useState(false);
   const [brollGenerating, setBrollGenerating] = useState(false);
+  const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
   const [brollPickerState, setBrollPickerState] = useState<{ lessonId: string; sceneIndex: number } | null>(null);
 
   // Segment scenes mutation
@@ -768,6 +769,60 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                 </SelectContent>
               </Select>
             </div>
+
+            {/* Course Thumbnail */}
+            {isEditing && (
+              <div>
+                <Label className="text-gray-300 font-satoshi">Course Thumbnail</Label>
+                <div className="mt-2 flex items-start gap-3">
+                  {course?.thumbnailUrl ? (
+                    <img
+                      src={course.thumbnailUrl}
+                      alt={title}
+                      className="w-40 h-24 object-cover rounded border border-gray-700"
+                    />
+                  ) : (
+                    <div className="w-40 h-24 bg-gray-800 rounded border border-gray-700 flex items-center justify-center">
+                      <Image className="w-6 h-6 text-gray-600" />
+                    </div>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-purple-600 text-purple-400 hover:bg-purple-950/30"
+                    disabled={thumbnailGenerating}
+                    onClick={async () => {
+                      if (!title.trim()) return;
+                      setThumbnailGenerating(true);
+                      try {
+                        const response = await apiRequest("/api/courses/generate-thumbnail", "POST", {
+                          title,
+                          description,
+                          avatarName: (avatars as any[])?.find((a: any) => a.id === avatarId)?.name || avatarId,
+                        });
+                        const data = await response.json();
+                        if (data.image?.url && courseId) {
+                          await apiRequest(`/api/courses/${courseId}`, "PUT", { title, description, avatarId, thumbnailUrl: data.image.url });
+                          queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+                          queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+                          toast({ title: "Thumbnail generated!" });
+                        }
+                      } catch {
+                        toast({ title: "Failed to generate thumbnail", variant: "destructive" });
+                      } finally {
+                        setThumbnailGenerating(false);
+                      }
+                    }}
+                  >
+                    {thumbnailGenerating ? (
+                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4 mr-2" /> {course?.thumbnailUrl ? "Regenerate" : "Generate"} Thumbnail</>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
