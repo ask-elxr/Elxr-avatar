@@ -83,14 +83,12 @@ export async function apiRequest(
     headers['X-Member-Id'] = memberstackId;
   }
   
-  // Add admin secret header for admin routes
-  if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge') || url.includes('/api/google-drive')) {
-    const adminSecret = getAdminSecret();
-    if (adminSecret) {
-      headers['X-Admin-Secret'] = adminSecret;
-    }
+  // Add admin secret header when admin is logged in
+  const adminSecret = getAdminSecret();
+  if (adminSecret) {
+    headers['X-Admin-Secret'] = adminSecret;
   }
-  
+
   const res = await fetch(url, {
     method,
     headers,
@@ -117,14 +115,12 @@ export const getQueryFn: <T>(options: {
       headers['X-Member-Id'] = memberstackId;
     }
     
-    // Add admin secret header for admin routes
-    if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge') || url.includes('/api/google-drive')) {
-      const adminSecret = getAdminSecret();
-      if (adminSecret) {
-        headers['X-Admin-Secret'] = adminSecret;
-      }
+    // Add admin secret header when admin is logged in
+    const adminSecret = getAdminSecret();
+    if (adminSecret) {
+      headers['X-Admin-Secret'] = adminSecret;
     }
-    
+
     const res = await fetch(url, {
       credentials: "include",
       headers,
