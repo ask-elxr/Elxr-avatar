@@ -81,6 +81,9 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
       }
     };
 
+    // Clear any Memberstack user session when in admin mode
+    localStorage.removeItem('memberstack_id');
+
     // Check URL params first and store in localStorage
     const urlParams = new URLSearchParams(searchString);
     const urlSecret = urlParams.get('admin_secret');
