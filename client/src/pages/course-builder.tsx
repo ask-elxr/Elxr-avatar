@@ -442,6 +442,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   const [brollSearchLoading, setBrollSearchLoading] = useState(false);
   const [brollGenerating, setBrollGenerating] = useState(false);
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
+  const [generatingThumbnailFor, setGeneratingThumbnailFor] = useState<number | null>(null);
   const [brollPickerState, setBrollPickerState] = useState<{ lessonId: string; sceneIndex: number } | null>(null);
 
   // Segment scenes mutation
@@ -873,6 +874,44 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                                 }
                                 className="bg-gray-900 border-gray-600 text-white font-satoshi"
                               />
+                              {/* Lesson Thumbnail */}
+                              <div className="flex items-center gap-3 mt-2">
+                                {(lesson.thumbnailUrl || lesson.video?.thumbnailUrl) ? (
+                                  <img
+                                    src={lesson.thumbnailUrl || lesson.video?.thumbnailUrl}
+                                    alt={lesson.title}
+                                    className="w-28 h-16 object-cover rounded border border-gray-700"
+                                  />
+                                ) : null}
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/30 gap-1.5 h-7 px-2"
+                                  disabled={generatingThumbnailFor === lesson.id || !lesson.title?.trim()}
+                                  onClick={async () => {
+                                    setGeneratingThumbnailFor(lesson.id);
+                                    try {
+                                      const response = await apiRequest(`/api/courses/lessons/${lesson.id}/generate-thumbnail`, "POST", {});
+                                      const data = await response.json();
+                                      if (data.image?.url) {
+                                        setLessons(prev => prev.map(l => l.id === lesson.id ? { ...l, thumbnailUrl: data.image.url } : l));
+                                        toast({ title: "Lesson thumbnail generated!" });
+                                      }
+                                    } catch {
+                                      toast({ title: "Failed to generate thumbnail", variant: "destructive" });
+                                    } finally {
+                                      setGeneratingThumbnailFor(null);
+                                    }
+                                  }}
+                                >
+                                  {generatingThumbnailFor === lesson.id ? (
+                                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span className="text-xs">Generating...</span></>
+                                  ) : (
+                                    <><Sparkles className="w-3.5 h-3.5" /><span className="text-xs">{(lesson.thumbnailUrl || lesson.video?.thumbnailUrl) ? "Regenerate" : "Generate"} Thumbnail</span></>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                             <div>
                               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mb-1">

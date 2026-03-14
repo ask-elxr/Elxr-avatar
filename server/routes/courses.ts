@@ -683,6 +683,35 @@ coursesRouter.get("/lessons/:id/video-status", async (req: Request, res: Respons
   }
 });
 
+// Generate AI thumbnail for a lesson
+coursesRouter.post("/lessons/:id/generate-thumbnail", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const [lesson] = await db.select().from(lessons).where(eq(lessons.id, id));
+    if (!lesson) return res.status(404).json({ error: "Lesson not found" });
+
+    const { generateBrollImage, isFalConfigured } = await getFalAi();
+    if (!isFalConfigured()) {
+      return res.status(503).json({ error: "AI image generation not configured" });
+    }
+
+    // Use lesson title + first bit of script as prompt
+    const scriptPreview = lesson.script?.slice(0, 200) || "";
+    const image = await generateBrollImage(
+      `${lesson.title}: ${scriptPreview}. Educational video lesson thumbnail.`
+    );
+    if (!image) {
+      return res.status(500).json({ error: "Failed to generate thumbnail" });
+    }
+
+    await db.update(lessons).set({ thumbnailUrl: image.url, updatedAt: new Date() }).where(eq(lessons.id, id));
+    res.json({ image, lessonId: id });
+  } catch (error: any) {
+    console.error("Error generating lesson thumbnail:", error);
+    res.status(500).json({ error: "Failed to generate thumbnail" });
+  }
+});
+
 // Segment a lesson script into scenes with B-roll suggestions
 coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: Request, res: Response) => {
   try {

@@ -329,6 +329,7 @@ export const lessons = pgTable("lessons", {
   title: text("title").notNull(),
   script: text("script").notNull(), // The text the avatar will speak
   scenes: jsonb("scenes"), // Scene segments for B-roll: [{type, script, brollDescription?, brollImageUrl?, brollAssetId?}]
+  thumbnailUrl: text("thumbnail_url"), // AI-generated lesson thumbnail
   order: integer("order").notNull(), // Lesson order in the course
   duration: integer("duration"), // Estimated duration in seconds
   status: varchar("status").notNull().default("pending"), // pending, generating, completed, failed
