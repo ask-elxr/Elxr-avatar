@@ -8,7 +8,7 @@ import { formatVideoTitle } from "../utils/videoTitle";
 import { emailService } from "./email";
 import { getAvatarById } from "./avatars";
 import type { Scene } from "./sceneSegmentation";
-import { isFFmpegAvailable, getAudioDurationSec, postProcessBrollOverlay, type SceneTiming } from "./ffmpegPostProcess.js";
+import { isFFmpegAvailable, getAudioDurationSec, postProcessBrollOverlay, getAvatarIntroVideoUrl, type SceneTiming } from "./ffmpegPostProcess.js";
 import { generateBackgroundMusic, isSunoConfigured } from "./sunoMusic.js";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
@@ -496,8 +496,8 @@ export class VideoGenerationService {
 
       const videoId = response.data.data.video_id;
 
-      // Generate background music in parallel (fire-and-forget, saved to DB when ready)
-      if (isSunoConfigured() && await isFFmpegAvailable()) {
+      // Generate background music only for the first lesson (order === 1)
+      if (isSunoConfigured() && await isFFmpegAvailable() && lesson.order === 1) {
         const totalDuration = sceneTimingsData.reduce((sum, s) => sum + s.durationSec, 0);
         generateBackgroundMusic(course.title, lesson.title, totalDuration)
           .then(async (musicUrl) => {
@@ -628,11 +628,28 @@ export class VideoGenerationService {
           const timings = videoRecord?.sceneTimings as SceneTiming[] | null;
           const hasBrollScenes = timings?.some(s => s.type === "broll" && (s.brollImageUrl || s.brollVideoUrl));
           const bgMusicUrl = videoRecord?.backgroundMusicUrl as string | null;
-          const needsPostProcessing = (hasBrollScenes || bgMusicUrl) && await isFFmpegAvailable();
+
+          // Look up avatar intro/outro video URL
+          let avatarIntroUrl: string | null = null;
+          let avatarOutroUrl: string | null = null;
+          try {
+            const [lessonRecord] = await db.select().from(lessons).where(eq(lessons.id, lessonId));
+            if (lessonRecord) {
+              const [courseRecord] = await db.select().from(courses).where(eq(courses.id, lessonRecord.courseId));
+              if (courseRecord?.avatarId) {
+                avatarIntroUrl = getAvatarIntroVideoUrl(courseRecord.avatarId);
+                avatarOutroUrl = avatarIntroUrl; // Use same video for outro
+              }
+            }
+          } catch (e: any) {
+            console.warn(`⚠️ Could not look up avatar intro/outro: ${e.message}`);
+          }
+
+          const needsPostProcessing = (hasBrollScenes || bgMusicUrl || avatarIntroUrl) && await isFFmpegAvailable();
 
           if (needsPostProcessing) {
             try {
-              console.log(`🎬 Post-processing needed — B-roll: ${!!hasBrollScenes}, music: ${!!bgMusicUrl}`);
+              console.log(`🎬 Post-processing — B-roll: ${!!hasBrollScenes}, music: ${!!bgMusicUrl}, intro: ${!!avatarIntroUrl}`);
               await db
                 .update(generatedVideos)
                 .set({ status: "post-processing" })
@@ -643,6 +660,8 @@ export class VideoGenerationService {
                 timings || [],
                 lessonId,
                 bgMusicUrl,
+                avatarIntroUrl,
+                avatarOutroUrl,
               );
 
               await db

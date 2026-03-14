@@ -63,7 +63,113 @@ async function downloadToTemp(url: string, ext: string): Promise<string> {
 }
 
 /**
+ * Get the GCS URL for an avatar's intro video
+ */
+export function getAvatarIntroVideoUrl(avatarSlug: string): string | null {
+  const introVideoFiles: Record<string, string> = {
+    "mark-kohl": "public/intro_videos/mark intro music.mp4",
+    "mark": "public/intro_videos/mark intro music.mp4",
+    "willie-gault": "public/intro_videos/willie music _2.mp4",
+    "willie": "public/intro_videos/willie music _2.mp4",
+    "june": "public/intro_videos/june intro music.mp4",
+    "thad": "public/intro_videos/Thad intro music.mp4",
+    "ann": "public/intro_videos/ann intro music.mp4",
+    "kelsey": "public/intro_videos/kelsey intro music.mp4",
+    "judy": "public/intro_videos/judy intro music2.mp4",
+    "dexter": "public/intro_videos/dexter intro music _2.mp4",
+    "shawn": "public/intro_videos/Shawn intro music.mp4",
+  };
+
+  const objectPath = introVideoFiles[avatarSlug];
+  if (!objectPath) return null;
+
+  const bucketName = process.env.GCS_BUCKET_NAME;
+  if (!bucketName) return null;
+
+  return `https://storage.googleapis.com/${bucketName}/${encodeURIComponent(objectPath)}`;
+}
+
+/**
+ * Concatenate intro/outro videos with the main video using ffmpeg concat demuxer.
+ * This is done as a separate step before overlay/music processing.
+ */
+async function concatIntroOutro(
+  mainVideoFile: string,
+  introUrl: string | null,
+  outroUrl: string | null,
+  tmpFiles: string[],
+): Promise<string> {
+  const segments: string[] = [];
+
+  // Download intro if available
+  if (introUrl) {
+    try {
+      const introFile = await downloadToTemp(introUrl, ".mp4");
+      tmpFiles.push(introFile);
+      segments.push(introFile);
+      console.log(`🎬 Intro video downloaded`);
+    } catch (e: any) {
+      console.warn(`⚠️ Failed to download intro video: ${e.message}`);
+    }
+  }
+
+  segments.push(mainVideoFile);
+
+  // Download outro if available
+  if (outroUrl) {
+    try {
+      const outroFile = await downloadToTemp(outroUrl, ".mp4");
+      tmpFiles.push(outroFile);
+      segments.push(outroFile);
+      console.log(`🎬 Outro video downloaded`);
+    } catch (e: any) {
+      console.warn(`⚠️ Failed to download outro video: ${e.message}`);
+    }
+  }
+
+  // If only the main video, no concat needed
+  if (segments.length === 1) return mainVideoFile;
+
+  // Re-encode all segments to same format for concat compatibility
+  const normalizedSegments: string[] = [];
+  for (let i = 0; i < segments.length; i++) {
+    const normalized = path.join(os.tmpdir(), `elxr-norm-${i}-${Date.now()}.ts`);
+    tmpFiles.push(normalized);
+    await execFileAsync("ffmpeg", [
+      "-i", segments[i],
+      "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+      "-c:a", "aac", "-ar", "44100", "-ac", "2",
+      "-vf", "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2",
+      "-r", "25",
+      "-y", normalized,
+    ], { maxBuffer: 10 * 1024 * 1024, timeout: 120000 });
+    normalizedSegments.push(normalized);
+  }
+
+  // Write concat list file
+  const concatListFile = path.join(os.tmpdir(), `elxr-concat-${Date.now()}.txt`);
+  tmpFiles.push(concatListFile);
+  const concatContent = normalizedSegments.map(f => `file '${f}'`).join("\n");
+  fs.writeFileSync(concatListFile, concatContent);
+
+  // Concat
+  const concatOutput = path.join(os.tmpdir(), `elxr-concat-out-${Date.now()}.mp4`);
+  tmpFiles.push(concatOutput);
+  await execFileAsync("ffmpeg", [
+    "-f", "concat", "-safe", "0",
+    "-i", concatListFile,
+    "-c", "copy",
+    "-movflags", "+faststart",
+    "-y", concatOutput,
+  ], { maxBuffer: 10 * 1024 * 1024, timeout: 120000 });
+
+  console.log(`🎬 Concat complete: ${segments.length} segments`);
+  return concatOutput;
+}
+
+/**
  * Post-process a HeyGen video:
+ * - Prepend/append avatar intro/outro videos
  * - Overlay B-roll (video/image) at correct timestamps
  * - Mix in background music at low volume
  */
@@ -72,14 +178,21 @@ export async function postProcessBrollOverlay(
   sceneTimings: SceneTiming[],
   lessonId: string,
   backgroundMusicUrl?: string | null,
+  avatarIntroUrl?: string | null,
+  avatarOutroUrl?: string | null,
 ): Promise<string> {
   const tmpFiles: string[] = [];
 
   try {
     // 1. Download HeyGen video
     console.log(`🎬 Post-processing: downloading HeyGen video...`);
-    const videoFile = await downloadToTemp(videoUrl, ".mp4");
+    let videoFile = await downloadToTemp(videoUrl, ".mp4");
     tmpFiles.push(videoFile);
+
+    // 1b. Concat intro/outro if provided
+    if (avatarIntroUrl || avatarOutroUrl) {
+      videoFile = await concatIntroOutro(videoFile, avatarIntroUrl, avatarOutroUrl, tmpFiles);
+    }
 
     // 2. Probe video for resolution
     const { stdout: probeOut } = await execFileAsync("ffprobe", [
