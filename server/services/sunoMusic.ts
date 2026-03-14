@@ -15,13 +15,14 @@ interface SunoTrack {
 }
 
 /**
- * Generate background music for a course lesson using Suno AI.
+ * Generate background instrumental music for a course lesson using Suno AI.
+ * Uses the add-instrumental endpoint for fine-grained style control.
  * Returns the audio URL of the generated track.
  */
 export async function generateBackgroundMusic(
   courseTitle: string,
   lessonTitle: string,
-  durationHint: number, // approximate video duration in seconds
+  durationHint: number,
 ): Promise<string | null> {
   if (!SUNO_API_KEY) {
     console.warn("SUNO_API_KEY not configured — background music unavailable");
@@ -31,14 +32,16 @@ export async function generateBackgroundMusic(
   try {
     console.log(`🎵 Generating background music for: "${lessonTitle}"`);
 
-    // Generate instrumental background music
     const response = await axios.post(
-      `${SUNO_BASE_URL}/generate`,
+      `${SUNO_BASE_URL}/generate/add-instrumental`,
       {
-        prompt: `Soft, gentle instrumental background music for an educational video about "${courseTitle} - ${lessonTitle}". Calm, ambient, unobtrusive, suitable to play quietly behind a speaking voice. No vocals, no lyrics. Peaceful and professional.`,
-        customMode: false,
-        instrumental: true,
-        model: "V4_5ALL",
+        title: `${courseTitle} - ${lessonTitle}`,
+        tags: "Soft Piano, Ambient, Peaceful, Lo-Fi, Gentle, Background Music",
+        negativeTags: "Heavy Metal, Aggressive Drums, Loud, Intense, Vocals, Singing",
+        styleWeight: 0.7,
+        weirdnessConstraint: 0.3,
+        audioWeight: 0.5,
+        model: "V4_5PLUS",
       },
       {
         headers: {
