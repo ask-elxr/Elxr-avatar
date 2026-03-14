@@ -32,7 +32,7 @@ RULES:
 - Keep "avatar" scenes for personal statements, introductions, transitions, and conclusions
 - Each scene's script should be 1-4 sentences (15-60 seconds when spoken)
 - Aim for roughly 40-60% broll scenes for visual variety
-- The brollDescription should describe what image to show (e.g. "person meditating in nature", "brain neural pathways diagram")
+- The brollDescription should be a detailed, vivid image prompt (2-3 sentences) describing a photorealistic scene that illustrates the concept being discussed. Think like a cinematographer — describe lighting, setting, subjects, mood, camera angle. Examples: "Close-up of a person's hands gently holding a warm cup of tea in a cozy sunlit kitchen, steam rising, soft morning light through window", "Aerial view of a winding forest trail through autumn trees with golden sunlight filtering through the canopy"
 - The brollSearchQuery should be a short stock photo search query (2-4 words)
 - Preserve every word of the original script - the combined scripts must equal the original
 

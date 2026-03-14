@@ -32,7 +32,7 @@ export async function generateBrollImage(prompt: string): Promise<FalImage | nul
 
     const result = await fal.subscribe("fal-ai/flux/schnell", {
       input: {
-        prompt: `Professional cinematic still for educational video: ${prompt}. High quality, landscape orientation, clean composition, suitable as video background.`,
+        prompt: `${prompt}. Photorealistic, cinematic lighting, sharp focus, 4K quality, landscape orientation. No text, no watermarks, no logos.`,
         image_size: "landscape_16_9",
         num_images: 1,
       },

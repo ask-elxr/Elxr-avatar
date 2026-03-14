@@ -466,7 +466,7 @@ export class VideoGenerationService {
               sceneInput.background = {
                 type: "image",
                 image_asset_id: imageAssetId,
-                fit: "cover",
+                fit: "crop",
               };
               console.log(`🖼️ B-roll scene: avatar hidden, background image: ${imageAssetId}`);
             } else {
