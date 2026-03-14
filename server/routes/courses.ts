@@ -452,15 +452,24 @@ coursesRouter.put("/:id", isAuthenticated, async (req: Request, res: Response) =
   }
 });
 
-// Delete a course (admin only)
+// Delete a course (admin can delete any, users can delete their own)
 coursesRouter.delete("/:id", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.session.userId;
 
+    // Check if caller is admin
+    const adminSecret = req.headers['x-admin-secret'] as string | undefined;
+    const validAdminSecrets = (process.env.ADMIN_SECRET || '').split(',').map(s => s.trim()).filter(Boolean);
+    const isAdmin = adminSecret ? validAdminSecrets.includes(adminSecret) : false;
+
+    const whereClause = isAdmin
+      ? eq(courses.id, id)
+      : and(eq(courses.id, id), eq(courses.userId, userId));
+
     const [deletedCourse] = await db
       .delete(courses)
-      .where(and(eq(courses.id, id), eq(courses.userId, userId)))
+      .where(whereClause)
       .returning();
 
     if (!deletedCourse) {

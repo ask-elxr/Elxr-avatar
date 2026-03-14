@@ -1019,18 +1019,38 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                               </span>
                             </div>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setEditingCourseId(course.id);
-                              setShowCourseBuilder(true);
-                            }}
-                            className="w-full sm:w-auto"
-                            data-testid={`button-edit-course-${course.id}`}
-                          >
-                            Edit Course
-                          </Button>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCourseId(course.id);
+                                setShowCourseBuilder(true);
+                              }}
+                              className="flex-1 sm:flex-none"
+                              data-testid={`button-edit-course-${course.id}`}
+                            >
+                              Edit Course
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-red-600 text-red-400 hover:bg-red-950/30 flex-1 sm:flex-none"
+                              onClick={async () => {
+                                if (!confirm(`Delete "${course.title}"? This cannot be undone.`)) return;
+                                try {
+                                  await apiRequest(`/api/courses/${course.id}`, "DELETE");
+                                  queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+                                } catch {
+                                  alert("Failed to delete course");
+                                }
+                              }}
+                              data-testid={`button-delete-course-${course.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 sm:p-6">
