@@ -732,15 +732,21 @@ coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: R
 
     const { segmentScriptIntoScenes } = await getSceneSegmentation();
     const { searchStockImages } = await getStockImages();
-    const { generateBrollImage, isFalConfigured } = await getFalAi();
+    const { generateBrollImage, generateBrollVideo, isFalConfigured } = await getFalAi();
     const scenes = await segmentScriptIntoScenes(lesson.script);
 
-    // Auto-generate or search for B-roll images for each scene
-    // Prefer AI-generated images (fal.ai) when available, fall back to Pexels stock
+    // Auto-generate B-roll for each scene
+    // Prefer AI video (fal.ai Kling) > AI image (fal.ai Flux) > Pexels stock
     for (const scene of scenes) {
       if (scene.type === "broll" && scene.brollDescription) {
-        // Try AI generation first
         if (isFalConfigured()) {
+          // Try video B-roll first (more engaging)
+          const aiVideo = await generateBrollVideo(scene.brollDescription);
+          if (aiVideo) {
+            scene.brollVideoUrl = aiVideo.url;
+            continue;
+          }
+          // Fall back to AI image
           const aiImage = await generateBrollImage(scene.brollDescription);
           if (aiImage) {
             scene.brollImageUrl = aiImage.url;

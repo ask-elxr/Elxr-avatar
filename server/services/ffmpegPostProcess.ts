@@ -13,6 +13,7 @@ export interface SceneTiming {
   type: "avatar" | "broll";
   durationSec: number;
   brollImageUrl?: string;
+  brollVideoUrl?: string;
 }
 
 let ffmpegAvailableCache: boolean | null = null;
@@ -91,19 +92,27 @@ export async function postProcessBrollOverlay(
     console.log(`🎬 Post-processing: video resolution ${width}x${height}`);
 
     // 3. Identify B-roll scenes and compute start/end times
-    const brollOverlays: { imageFile: string; startSec: number; endSec: number }[] = [];
+    const brollOverlays: { file: string; startSec: number; endSec: number; isVideo: boolean }[] = [];
     let cumulativeSec = 0;
 
     for (const scene of sceneTimings) {
       const startSec = cumulativeSec;
       const endSec = cumulativeSec + scene.durationSec;
 
-      if (scene.type === "broll" && scene.brollImageUrl) {
-        const ext = scene.brollImageUrl.match(/\.(jpe?g|png|webp)/i)?.[0] || ".jpg";
-        const imageFile = await downloadToTemp(scene.brollImageUrl, ext);
-        tmpFiles.push(imageFile);
-        brollOverlays.push({ imageFile, startSec, endSec });
-        console.log(`🖼️ B-roll overlay: scene ${scene.sceneIndex} at ${startSec.toFixed(1)}s–${endSec.toFixed(1)}s`);
+      if (scene.type === "broll") {
+        // Prefer video B-roll over image B-roll
+        if (scene.brollVideoUrl) {
+          const videoClipFile = await downloadToTemp(scene.brollVideoUrl, ".mp4");
+          tmpFiles.push(videoClipFile);
+          brollOverlays.push({ file: videoClipFile, startSec, endSec, isVideo: true });
+          console.log(`🎬 B-roll video overlay: scene ${scene.sceneIndex} at ${startSec.toFixed(1)}s–${endSec.toFixed(1)}s`);
+        } else if (scene.brollImageUrl) {
+          const ext = scene.brollImageUrl.match(/\.(jpe?g|png|webp)/i)?.[0] || ".jpg";
+          const imageFile = await downloadToTemp(scene.brollImageUrl, ext);
+          tmpFiles.push(imageFile);
+          brollOverlays.push({ file: imageFile, startSec, endSec, isVideo: false });
+          console.log(`🖼️ B-roll image overlay: scene ${scene.sceneIndex} at ${startSec.toFixed(1)}s–${endSec.toFixed(1)}s`);
+        }
       }
 
       cumulativeSec = endSec;
@@ -117,20 +126,28 @@ export async function postProcessBrollOverlay(
     // 4. Build ffmpeg filter_complex
     const inputArgs: string[] = ["-i", videoFile];
     for (const overlay of brollOverlays) {
-      inputArgs.push("-i", overlay.imageFile);
+      inputArgs.push("-i", overlay.file);
     }
 
     let filterParts: string[] = [];
     let prevLabel = "0:v";
 
     for (let i = 0; i < brollOverlays.length; i++) {
-      const inputIdx = i + 1; // 0 is the video, 1+ are images
+      const inputIdx = i + 1; // 0 is the video, 1+ are images/videos
       const overlay = brollOverlays[i];
       const scaledLabel = `b${i}`;
       const outLabel = i < brollOverlays.length - 1 ? `tmp${i}` : "out";
 
-      // Scale image to match video dimensions
-      filterParts.push(`[${inputIdx}:v]scale=${width}:${height},setsar=1[${scaledLabel}]`);
+      if (overlay.isVideo) {
+        // For video B-roll: scale, loop/trim to match scene duration, overlay at timestamp
+        const duration = overlay.endSec - overlay.startSec;
+        filterParts.push(
+          `[${inputIdx}:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1,setpts=PTS+${overlay.startSec}/TB[${scaledLabel}]`
+        );
+      } else {
+        // For image B-roll: scale to fill frame
+        filterParts.push(`[${inputIdx}:v]scale=${width}:${height}:force_original_aspect_ratio=increase,crop=${width}:${height},setsar=1[${scaledLabel}]`);
+      }
       // Overlay with time-based enable
       filterParts.push(
         `[${prevLabel}][${scaledLabel}]overlay=0:0:enable='between(t,${overlay.startSec.toFixed(3)},${overlay.endSec.toFixed(3)})'[${outLabel}]`
@@ -159,7 +176,7 @@ export async function postProcessBrollOverlay(
     ];
 
     console.log(`🎬 Running ffmpeg with ${brollOverlays.length} overlay(s)...`);
-    const { stderr } = await execFileAsync("ffmpeg", ffmpegArgs, { maxBuffer: 10 * 1024 * 1024 });
+    const { stderr } = await execFileAsync("ffmpeg", ffmpegArgs, { maxBuffer: 10 * 1024 * 1024, timeout: 300000 });
 
     // Verify output exists and has size
     const stat = fs.statSync(outputFile);

@@ -439,40 +439,21 @@ export class VideoGenerationService {
             sceneVoice = { ...voiceConfig, input_text: scene.script.slice(0, 5000) };
           }
 
-          // Record scene timing data
+          // Record scene timing data (ffmpeg will overlay B-roll in post-processing)
           sceneTimingsData.push({
             sceneIndex: sceneIdx,
             type: scene.type as "avatar" | "broll",
             durationSec: sceneDurationSec || this.estimateScriptDuration(scene.script),
             brollImageUrl: scene.brollImageUrl,
+            brollVideoUrl: scene.brollVideoUrl,
           });
 
-          // For B-roll scenes, hide the avatar (shrink + push off-screen)
-          // so only the background image + voiceover is visible
-          const sceneCharacter = scene.type === "broll" && scene.brollImageUrl
-            ? { ...characterConfig, scale: 0.01, offset: { x: -1, y: -1 } }
-            : characterConfig;
-
+          // All scenes render with the normal avatar in HeyGen
+          // B-roll overlay happens in ffmpeg post-processing
           const sceneInput: any = {
-            character: sceneCharacter,
+            character: characterConfig,
             voice: sceneVoice,
           };
-
-          // Add background image for B-roll scenes
-          // Must upload to HeyGen first — external URLs are not supported
-          if (scene.type === "broll" && scene.brollImageUrl) {
-            const imageAssetId = await this.uploadImageToHeyGen(scene.brollImageUrl);
-            if (imageAssetId) {
-              sceneInput.background = {
-                type: "image",
-                image_asset_id: imageAssetId,
-                fit: "crop",
-              };
-              console.log(`🖼️ B-roll scene: avatar hidden, background image: ${imageAssetId}`);
-            } else {
-              console.warn(`⚠️ Failed to upload B-roll image, scene will use default background`);
-            }
-          }
 
           videoInputs.push(sceneInput);
         }
@@ -629,7 +610,7 @@ export class VideoGenerationService {
             .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
 
           const timings = videoRecord?.sceneTimings as SceneTiming[] | null;
-          const hasBrollScenes = timings?.some(s => s.type === "broll" && s.brollImageUrl);
+          const hasBrollScenes = timings?.some(s => s.type === "broll" && (s.brollImageUrl || s.brollVideoUrl));
 
           if (hasBrollScenes && await isFFmpegAvailable()) {
             try {

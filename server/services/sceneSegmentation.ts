@@ -9,6 +9,7 @@ export interface Scene {
   brollSearchQuery?: string;
   brollImageUrl?: string;
   brollAssetId?: string;
+  brollVideoUrl?: string;
 }
 
 /**
