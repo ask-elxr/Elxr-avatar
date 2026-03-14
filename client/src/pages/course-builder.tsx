@@ -440,6 +440,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   const [brollSearchQuery, setBrollSearchQuery] = useState("");
   const [brollSearchResults, setBrollSearchResults] = useState<any[]>([]);
   const [brollSearchLoading, setBrollSearchLoading] = useState(false);
+  const [brollGenerating, setBrollGenerating] = useState(false);
   const [brollPickerState, setBrollPickerState] = useState<{ lessonId: string; sceneIndex: number } | null>(null);
 
   // Segment scenes mutation
@@ -515,6 +516,25 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
       toast({ title: "Search failed", variant: "destructive" });
     } finally {
       setBrollSearchLoading(false);
+    }
+  };
+
+  const handleGenerateBroll = async (prompt: string) => {
+    if (!prompt.trim()) return;
+    setBrollGenerating(true);
+    try {
+      const response = await apiRequest("/api/courses/broll-generate", "POST", { prompt });
+      const data = await response.json();
+      if (data.image?.url) {
+        handleSelectBrollImage(data.image.url);
+        toast({ title: "AI image generated", description: "B-roll image created and applied." });
+      } else {
+        toast({ title: "Generation failed", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "AI generation failed", description: "Try searching stock images instead.", variant: "destructive" });
+    } finally {
+      setBrollGenerating(false);
     }
   };
 
@@ -1117,15 +1137,35 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
               Select B-Roll Image
             </DialogTitle>
             <DialogDescription className="text-gray-400 text-sm">
-              Search for a background image for this scene.
+              Generate an AI image or search stock photos.
             </DialogDescription>
           </DialogHeader>
+          {/* AI Generate button */}
+          {brollPickerState && (() => {
+            const lesson = lessons.find(l => l.id === brollPickerState.lessonId);
+            const scene = (lesson?.scenes as Scene[])?.[brollPickerState.sceneIndex];
+            const aiPrompt = scene?.brollDescription || brollSearchQuery;
+            return aiPrompt ? (
+              <Button
+                size="sm"
+                onClick={() => handleGenerateBroll(aiPrompt)}
+                disabled={brollGenerating}
+                className="bg-purple-600 hover:bg-purple-700 w-full"
+              >
+                {brollGenerating ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating AI image...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4 mr-2" /> Generate with AI: {aiPrompt.slice(0, 50)}{aiPrompt.length > 50 ? '...' : ''}</>
+                )}
+              </Button>
+            ) : null;
+          })()}
           <div className="flex gap-2">
             <Input
               value={brollSearchQuery}
               onChange={(e) => setBrollSearchQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearchBroll(brollSearchQuery)}
-              placeholder="Search for images..."
+              placeholder="Search stock photos..."
               className="bg-gray-800 border-gray-600 text-white text-sm"
             />
             <Button

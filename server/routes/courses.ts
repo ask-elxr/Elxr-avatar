@@ -21,6 +21,7 @@ import { isAuthenticated } from "../auth";
 // Lazy imports to prevent module initialization from breaking the router
 const getSceneSegmentation = () => import("../services/sceneSegmentation.js");
 const getStockImages = () => import("../services/stockImages.js");
+const getFalAi = () => import("../services/falAi.js");
 
 export const coursesRouter = Router();
 
@@ -253,7 +254,7 @@ coursesRouter.delete("/chat-videos/:videoId", async (req: Request, res: Response
   }
 });
 
-// Search stock images for B-roll
+// Search stock images for B-roll (Pexels + optional fal.ai generation)
 // NOTE: Must be defined BEFORE /:id to avoid "broll-search" being matched as a course ID
 coursesRouter.get("/broll-search", isAuthenticated, async (req: Request, res: Response) => {
   try {
@@ -266,6 +267,52 @@ coursesRouter.get("/broll-search", isAuthenticated, async (req: Request, res: Re
   } catch (error: any) {
     console.error("Error searching B-roll:", error);
     res.status(500).json({ error: "Failed to search images" });
+  }
+});
+
+// Generate an AI B-roll image using fal.ai
+coursesRouter.post("/broll-generate", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: "Prompt required" });
+
+    const { generateBrollImage, isFalConfigured } = await getFalAi();
+    if (!isFalConfigured()) {
+      return res.status(503).json({ error: "AI image generation not configured" });
+    }
+
+    const image = await generateBrollImage(prompt);
+    if (!image) {
+      return res.status(500).json({ error: "Failed to generate image" });
+    }
+
+    res.json({ image });
+  } catch (error: any) {
+    console.error("Error generating B-roll:", error);
+    res.status(500).json({ error: "Failed to generate image" });
+  }
+});
+
+// Generate an AI course thumbnail using fal.ai
+coursesRouter.post("/generate-thumbnail", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const { title, description, avatarName } = req.body;
+    if (!title) return res.status(400).json({ error: "Course title required" });
+
+    const { generateCourseThumbnail, isFalConfigured } = await getFalAi();
+    if (!isFalConfigured()) {
+      return res.status(503).json({ error: "AI image generation not configured" });
+    }
+
+    const image = await generateCourseThumbnail(title, description || "", avatarName || "AI Avatar");
+    if (!image) {
+      return res.status(500).json({ error: "Failed to generate thumbnail" });
+    }
+
+    res.json({ image });
+  } catch (error: any) {
+    console.error("Error generating thumbnail:", error);
+    res.status(500).json({ error: "Failed to generate thumbnail" });
   }
 });
 
@@ -633,14 +680,27 @@ coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: R
 
     const { segmentScriptIntoScenes } = await getSceneSegmentation();
     const { searchStockImages } = await getStockImages();
+    const { generateBrollImage, isFalConfigured } = await getFalAi();
     const scenes = await segmentScriptIntoScenes(lesson.script);
 
-    // Auto-search for B-roll images for each scene
+    // Auto-generate or search for B-roll images for each scene
+    // Prefer AI-generated images (fal.ai) when available, fall back to Pexels stock
     for (const scene of scenes) {
-      if (scene.type === "broll" && scene.brollSearchQuery) {
-        const images = await searchStockImages(scene.brollSearchQuery, 1);
-        if (images.length > 0) {
-          scene.brollImageUrl = images[0].src.landscape;
+      if (scene.type === "broll" && scene.brollDescription) {
+        // Try AI generation first
+        if (isFalConfigured()) {
+          const aiImage = await generateBrollImage(scene.brollDescription);
+          if (aiImage) {
+            scene.brollImageUrl = aiImage.url;
+            continue;
+          }
+        }
+        // Fall back to Pexels stock search
+        if (scene.brollSearchQuery) {
+          const images = await searchStockImages(scene.brollSearchQuery, 1);
+          if (images.length > 0) {
+            scene.brollImageUrl = images[0].src.landscape;
+          }
         }
       }
     }
