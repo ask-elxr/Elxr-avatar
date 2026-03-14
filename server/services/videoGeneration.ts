@@ -450,7 +450,7 @@ export class VideoGenerationService {
           // For B-roll scenes, hide the avatar (shrink + push off-screen)
           // so only the background image + voiceover is visible
           const sceneCharacter = scene.type === "broll" && scene.brollImageUrl
-            ? { ...characterConfig, scale: 0, offset: { x: -1, y: -1 } }
+            ? { ...characterConfig, scale: 0.01, offset: { x: -1, y: -1 } }
             : characterConfig;
 
           const sceneInput: any = {
