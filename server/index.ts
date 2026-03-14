@@ -15,6 +15,7 @@ import { resumeStuckBatches } from "./ingest/batchPodcastService.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 import { isConfigured as isAssetStorageConfigured, getPublicUrl } from "./assetStorage.js";
+import { isFFmpegAvailable } from "./services/ffmpegPostProcess.js";
 import path from "path";
 import fs from "fs";
 
@@ -215,6 +216,14 @@ app.get("/api/health", (_req, res) => {
     chatVideoService.startBackgroundChecker();
   } catch (error: any) {
     console.warn('⚠️ Failed to start chat video service:', error.message);
+  }
+
+  // Check ffmpeg availability for B-roll post-processing
+  const ffmpegReady = await isFFmpegAvailable();
+  if (ffmpegReady) {
+    console.log('🎬 ffmpeg available — B-roll post-processing enabled');
+  } else {
+    console.log('⚠️ ffmpeg not found — B-roll will fall back to HeyGen backgrounds (avatar visible)');
   }
 
   if (!dbAvailable) {

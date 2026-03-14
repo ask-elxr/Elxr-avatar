@@ -18,8 +18,9 @@ import { videoGenerationService } from "../services/videoGeneration";
 import { chatVideoService } from "../services/chatVideo";
 import { subscriptionService } from "../services/subscription";
 import { isAuthenticated } from "../auth";
-import { segmentScriptIntoScenes } from "../services/sceneSegmentation";
-import { searchStockImages } from "../services/stockImages";
+// Lazy imports to prevent module initialization from breaking the router
+const getSceneSegmentation = () => import("../services/sceneSegmentation.js");
+const getStockImages = () => import("../services/stockImages.js");
 
 export const coursesRouter = Router();
 
@@ -239,6 +240,22 @@ coursesRouter.delete("/chat-videos/:videoId", async (req: Request, res: Response
   } catch (error) {
     console.error("Error deleting chat video:", error);
     res.status(500).json({ error: "Failed to delete video" });
+  }
+});
+
+// Search stock images for B-roll
+// NOTE: Must be defined BEFORE /:id to avoid "broll-search" being matched as a course ID
+coursesRouter.get("/broll-search", isAuthenticated, async (req: Request, res: Response) => {
+  try {
+    const query = req.query.q as string;
+    if (!query) return res.status(400).json({ error: "Search query required" });
+
+    const { searchStockImages } = await getStockImages();
+    const images = await searchStockImages(query, 8);
+    res.json({ images });
+  } catch (error: any) {
+    console.error("Error searching B-roll:", error);
+    res.status(500).json({ error: "Failed to search images" });
   }
 });
 
@@ -604,6 +621,8 @@ coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: R
       return res.status(400).json({ error: "Lesson must have a script before segmenting into scenes" });
     }
 
+    const { segmentScriptIntoScenes } = await getSceneSegmentation();
+    const { searchStockImages } = await getStockImages();
     const scenes = await segmentScriptIntoScenes(lesson.script);
 
     // Auto-search for B-roll images for each scene
@@ -624,7 +643,13 @@ coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: R
     res.json({ success: true, scenes });
   } catch (error: any) {
     console.error("Error segmenting scenes:", error);
-    res.status(500).json({ error: error.message || "Failed to segment scenes" });
+    // Return a user-friendly message instead of raw error details
+    const msg = error.message || "";
+    if (msg.includes("Unauthorized") || msg.includes("authentication")) {
+      res.status(503).json({ error: "Service temporarily unavailable. Please try again in a moment." });
+    } else {
+      res.status(500).json({ error: "Failed to segment scenes. Please try again." });
+    }
   }
 });
 
@@ -653,19 +678,6 @@ coursesRouter.put("/lessons/:id/scenes", isAuthenticated, async (req: Request, r
   }
 });
 
-// Search stock images for B-roll
-coursesRouter.get("/broll-search", isAuthenticated, async (req: Request, res: Response) => {
-  try {
-    const query = req.query.q as string;
-    if (!query) return res.status(400).json({ error: "Search query required" });
-
-    const images = await searchStockImages(query, 8);
-    res.json({ images });
-  } catch (error: any) {
-    console.error("Error searching B-roll:", error);
-    res.status(500).json({ error: "Failed to search images" });
-  }
-});
 
 // Generate AI script for a lesson using avatar's knowledge base (admin only)
 coursesRouter.post("/generate-script", isAuthenticated, async (req: Request, res: Response) => {

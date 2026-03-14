@@ -348,6 +348,8 @@ export const generatedVideos = pgTable("generated_videos", {
   testVideo: boolean("test_video").default(false), // Whether this is a watermarked test video
   errorMessage: text("error_message"),
   metadata: jsonb("metadata"), // Additional video metadata from HeyGen
+  processedVideoUrl: text("processed_video_url"), // Post-processed video with B-roll overlays
+  sceneTimings: jsonb("scene_timings"), // Per-scene durations for overlay timing
   createdAt: timestamp("created_at").defaultNow().notNull(),
   generatedAt: timestamp("generated_at"),
 });

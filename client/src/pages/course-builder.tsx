@@ -445,12 +445,16 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   // Segment scenes mutation
   const segmentScenesMutation = useMutation({
     mutationFn: async (lessonId: string) => {
-      const response = await apiRequest(`/api/courses/lessons/${lessonId}/segment-scenes`, "POST", {});
+      const response = await fetch(`/api/courses/lessons/${lessonId}/segment-scenes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      const data = await response.json();
       if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Failed" }));
-        throw new Error(err.error || "Failed to segment scenes");
+        throw new Error(data.error || "Failed to segment scenes");
       }
-      return response.json();
+      return data;
     },
     onSuccess: (result, lessonId) => {
       toast({

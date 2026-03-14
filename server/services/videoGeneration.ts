@@ -8,6 +8,7 @@ import { formatVideoTitle } from "../utils/videoTitle";
 import { emailService } from "./email";
 import { getAvatarById } from "./avatars";
 import type { Scene } from "./sceneSegmentation";
+import { isFFmpegAvailable, getAudioDurationSec, postProcessBrollOverlay, type SceneTiming } from "./ffmpegPostProcess.js";
 
 // HEYGEN_VIDEO_API_KEY is used for video creation (courses, chat videos)
 const HEYGEN_VIDEO_API_KEY = process.env.HEYGEN_VIDEO_API_KEY;
@@ -132,6 +133,113 @@ export class VideoGenerationService {
       return null;
     } catch (error: any) {
       console.error("❌ Error generating/uploading ElevenLabs audio:", error.response?.data || error.message);
+      return null;
+    }
+  }
+
+  /**
+   * Generate ElevenLabs audio and upload to HeyGen, returning both the asset ID and raw buffer
+   * Used in multi-scene mode to also measure audio duration for B-roll timing
+   */
+  private async generateElevenLabsAudioWithBuffer(text: string, voiceId: string, avatarName: string): Promise<{ assetId: string | null; audioBuffer: Buffer | null }> {
+    if (!elevenLabsClient || !ELEVENLABS_API_KEY) {
+      return { assetId: null, audioBuffer: null };
+    }
+
+    try {
+      const audioStream = await elevenLabsClient.textToSpeech.convert(voiceId, {
+        text: text.slice(0, 5000),
+        model_id: "eleven_multilingual_v2",
+        voice_settings: {
+          stability: 0.7,
+          similarity_boost: 0.65,
+        },
+      });
+
+      const chunks: Buffer[] = [];
+      for await (const chunk of audioStream) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const audioBuffer = Buffer.concat(chunks);
+
+      // Upload to HeyGen
+      const uploadApiKey = HEYGEN_API_KEY || HEYGEN_VIDEO_API_KEY;
+      const uploadResponse = await axios.post(
+        "https://upload.heygen.com/v1/asset",
+        audioBuffer,
+        {
+          headers: {
+            "Content-Type": "audio/mpeg",
+            "X-Api-Key": uploadApiKey,
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        }
+      );
+
+      const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
+      if (assetId) {
+        return { assetId, audioBuffer };
+      }
+      return { assetId: null, audioBuffer };
+    } catch (error: any) {
+      console.error("❌ Error generating/uploading ElevenLabs audio:", error.response?.data || error.message);
+      return { assetId: null, audioBuffer: null };
+    }
+  }
+
+  /**
+   * Estimate script duration in seconds based on word count (~150 words/min)
+   * Used as fallback when ffprobe is not available
+   */
+  private estimateScriptDuration(script: string): number {
+    const wordCount = script.split(/\s+/).filter(w => w.length > 0).length;
+    return (wordCount / 150) * 60;
+  }
+
+  /**
+   * Upload an image URL to HeyGen and return the asset_id
+   * HeyGen backgrounds require uploaded assets, not external URLs
+   */
+  private async uploadImageToHeyGen(imageUrl: string): Promise<string | null> {
+    try {
+      console.log(`🖼️ Downloading image for HeyGen upload: ${imageUrl.slice(0, 80)}...`);
+
+      // Download the image
+      const imageResponse = await axios.get(imageUrl, {
+        responseType: "arraybuffer",
+        timeout: 30000,
+      });
+
+      const imageBuffer = Buffer.from(imageResponse.data);
+      const contentType = imageResponse.headers["content-type"] || "image/jpeg";
+      console.log(`🖼️ Image downloaded: ${imageBuffer.length} bytes (${contentType})`);
+
+      // Upload to HeyGen
+      const uploadApiKey = HEYGEN_API_KEY || HEYGEN_VIDEO_API_KEY;
+      const uploadResponse = await axios.post(
+        "https://upload.heygen.com/v1/asset",
+        imageBuffer,
+        {
+          headers: {
+            "Content-Type": contentType,
+            "X-Api-Key": uploadApiKey,
+          },
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        }
+      );
+
+      const assetId = uploadResponse.data?.data?.asset_id || uploadResponse.data?.data?.id;
+      if (assetId) {
+        console.log(`✅ Image uploaded to HeyGen: ${assetId}`);
+        return assetId;
+      }
+
+      console.error("❌ No asset_id in HeyGen image upload response:", uploadResponse.data);
+      return null;
+    } catch (error: any) {
+      console.error("❌ Error uploading image to HeyGen:", error.response?.data || error.message);
       return null;
     }
   }
@@ -283,23 +391,40 @@ export class VideoGenerationService {
       const scenes = lesson.scenes as Scene[] | null;
       let videoInputs: any[];
 
+      // Track per-scene timings for B-roll post-processing
+      let sceneTimingsData: SceneTiming[] = [];
+
       if (scenes && Array.isArray(scenes) && scenes.length > 1) {
         // Multi-scene mode: build one HeyGen scene per segment
-        console.log(`🎬 Building multi-scene video with ${scenes.length} scenes`);
+        const brollWithImages = scenes.filter(s => s.type === "broll" && s.brollImageUrl).length;
+        const brollWithout = scenes.filter(s => s.type === "broll" && !s.brollImageUrl).length;
+        console.log(`🎬 Building multi-scene video: ${scenes.length} scenes (${brollWithImages} B-roll with images, ${brollWithout} B-roll without images)`);
         videoInputs = [];
 
-        for (const scene of scenes) {
+        for (let sceneIdx = 0; sceneIdx < scenes.length; sceneIdx++) {
+          const scene = scenes[sceneIdx];
           // Each scene needs its own voice config with that scene's script
           let sceneVoice: any;
+          let sceneDurationSec: number | null = null;
           if (voiceConfig.type === "audio") {
             // For ElevenLabs audio, generate separate audio per scene
-            const sceneAudioAssetId = await this.generateElevenLabsAudio(
+            // Also capture the audio buffer to measure duration for B-roll timing
+            const { assetId: sceneAudioAssetId, audioBuffer: sceneAudioBuffer } = await this.generateElevenLabsAudioWithBuffer(
               scene.script,
               avatar.elevenlabsVoiceId!,
               avatar.name
             );
             if (sceneAudioAssetId) {
               sceneVoice = { type: "audio", audio_asset_id: sceneAudioAssetId };
+              // Measure audio duration for B-roll overlay timing
+              if (sceneAudioBuffer && await isFFmpegAvailable()) {
+                try {
+                  sceneDurationSec = await getAudioDurationSec(sceneAudioBuffer);
+                  console.log(`⏱️ Scene ${sceneIdx} audio duration: ${sceneDurationSec.toFixed(2)}s`);
+                } catch (e: any) {
+                  console.warn(`⚠️ Could not measure audio duration for scene ${sceneIdx}: ${e.message}`);
+                }
+              }
             } else {
               // Fallback to HeyGen TTS for this scene
               const fallbackVoiceId = avatar.heygenVideoVoiceId || avatar.heygenVoiceId;
@@ -314,17 +439,39 @@ export class VideoGenerationService {
             sceneVoice = { ...voiceConfig, input_text: scene.script.slice(0, 5000) };
           }
 
+          // Record scene timing data
+          sceneTimingsData.push({
+            sceneIndex: sceneIdx,
+            type: scene.type as "avatar" | "broll",
+            durationSec: sceneDurationSec || this.estimateScriptDuration(scene.script),
+            brollImageUrl: scene.brollImageUrl,
+          });
+
+          // For B-roll scenes, hide the avatar (shrink + push off-screen)
+          // so only the background image + voiceover is visible
+          const sceneCharacter = scene.type === "broll" && scene.brollImageUrl
+            ? { ...characterConfig, scale: 0, offset: { x: -1, y: -1 } }
+            : characterConfig;
+
           const sceneInput: any = {
-            character: characterConfig,
+            character: sceneCharacter,
             voice: sceneVoice,
           };
 
           // Add background image for B-roll scenes
+          // Must upload to HeyGen first — external URLs are not supported
           if (scene.type === "broll" && scene.brollImageUrl) {
-            sceneInput.background = {
-              type: "image",
-              url: scene.brollImageUrl,
-            };
+            const imageAssetId = await this.uploadImageToHeyGen(scene.brollImageUrl);
+            if (imageAssetId) {
+              sceneInput.background = {
+                type: "image",
+                image_asset_id: imageAssetId,
+                fit: "cover",
+              };
+              console.log(`🖼️ B-roll scene: avatar hidden, background image: ${imageAssetId}`);
+            } else {
+              console.warn(`⚠️ Failed to upload B-roll image, scene will use default background`);
+            }
           }
 
           videoInputs.push(sceneInput);
@@ -367,14 +514,15 @@ export class VideoGenerationService {
 
       const videoId = response.data.data.video_id;
 
-      // Create generated video record
+      // Create generated video record (include scene timings for B-roll post-processing)
       const [generatedVideo] = await db
         .insert(generatedVideos)
         .values({
           lessonId,
           heygenVideoId: videoId,
           status: "generating",
-          testVideo: useTestMode, // Track whether this is a test video
+          testVideo: useTestMode,
+          sceneTimings: sceneTimingsData.length > 0 ? sceneTimingsData : null,
         })
         .returning();
 
@@ -458,10 +606,10 @@ export class VideoGenerationService {
         }
 
         if (status === "completed" && video_url) {
-          // Update generated video record
           // Convert duration to integer (HeyGen returns decimal like 14.5)
           const durationInt = duration ? Math.round(duration) : null;
-          
+
+          // Update with HeyGen video URL first
           await db
             .update(generatedVideos)
             .set({
@@ -472,6 +620,43 @@ export class VideoGenerationService {
               generatedAt: new Date(),
             })
             .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+
+          // Check if B-roll post-processing is needed
+          let finalVideoUrl = video_url;
+          const [videoRecord] = await db
+            .select()
+            .from(generatedVideos)
+            .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+
+          const timings = videoRecord?.sceneTimings as SceneTiming[] | null;
+          const hasBrollScenes = timings?.some(s => s.type === "broll" && s.brollImageUrl);
+
+          if (hasBrollScenes && await isFFmpegAvailable()) {
+            try {
+              console.log(`🎬 B-roll scenes detected — starting post-processing for ${heygenVideoId}`);
+              await db
+                .update(generatedVideos)
+                .set({ status: "post-processing" })
+                .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+
+              const processedUrl = await postProcessBrollOverlay(video_url, timings!, lessonId);
+
+              await db
+                .update(generatedVideos)
+                .set({ status: "completed", processedVideoUrl: processedUrl })
+                .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+
+              finalVideoUrl = processedUrl;
+              console.log(`✅ B-roll post-processing completed: ${processedUrl}`);
+            } catch (postErr: any) {
+              console.error(`❌ B-roll post-processing failed, keeping raw HeyGen video:`, postErr.message);
+              // Revert status to completed with raw video
+              await db
+                .update(generatedVideos)
+                .set({ status: "completed" })
+                .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+            }
+          }
 
           // Update lesson status
           await db
@@ -485,9 +670,9 @@ export class VideoGenerationService {
           activePollingSet.delete(heygenVideoId);
           this.decrementGeneratingCount();
           console.log(`✅ Video generation completed: ${heygenVideoId}`);
-          
+
           // Send email notification for course video (await to ensure it completes)
-          await this.sendCourseVideoReadyEmail(lessonId, video_url, thumbnail_url, durationInt);
+          await this.sendCourseVideoReadyEmail(lessonId, finalVideoUrl, thumbnail_url, durationInt);
         } else if (status === "failed") {
           // Update with error
           await db
@@ -772,7 +957,7 @@ export class VideoGenerationService {
 
     return {
       status: video.status,
-      videoUrl: video.videoUrl || undefined,
+      videoUrl: video.processedVideoUrl || video.videoUrl || undefined,
       thumbnailUrl: video.thumbnailUrl || undefined,
       error: video.errorMessage || undefined,
     };

@@ -26,7 +26,7 @@ export async function searchStockImages(
   perPage: number = 6
 ): Promise<StockImage[]> {
   if (!PEXELS_API_KEY) {
-    console.warn("PEXELS_API_KEY not configured - stock image search unavailable");
+    console.warn("PEXELS_API_KEY not configured — B-roll image search unavailable. Get a free key at https://www.pexels.com/api/");
     return [];
   }
 
@@ -52,14 +52,4 @@ export async function searchStockImages(
     console.error("Pexels search error:", error.message);
     return [];
   }
-}
-
-/**
- * Upload an image URL to HeyGen as an asset for use as a video background.
- * Returns the HeyGen asset URL (HeyGen accepts direct URLs for backgrounds).
- */
-export function getBackgroundImageUrl(image: StockImage): string {
-  // HeyGen v2 accepts direct image URLs for backgrounds
-  // Use the landscape crop which is 1280px wide - perfect for 1280x720 video
-  return image.src.landscape;
 }

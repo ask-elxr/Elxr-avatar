@@ -67,6 +67,40 @@ import { handleCultivationQuery, formatKBResponseForVoice } from "./cultivationB
 
 import { checkChatRateLimit } from "./chatRateLimit.js";
 
+/**
+ * Resolve userId consistently across all endpoints.
+ * Matches the logic in isAuthenticated middleware (auth.ts):
+ * 1. Authenticated user (req.user.claims.sub)
+ * 2. Memberstack user via X-Member-Id header → ms_{id}
+ * 3. Client-provided temp_ userId from request body
+ * 4. Existing session userId
+ */
+function resolveUserId(req: any): string | null {
+  // 1. Already authenticated (e.g. via isAuthenticated middleware)
+  if (req.user?.claims?.sub) {
+    return req.user.claims.sub;
+  }
+  // 2. Memberstack header (same logic as isAuthenticated in auth.ts)
+  const memberstackId = req.headers?.['x-member-id'] as string | undefined;
+  if (memberstackId) {
+    const userId = `ms_${memberstackId}`;
+    // Also store in session for consistency
+    if (req.session) {
+      req.session.userId = userId;
+    }
+    return userId;
+  }
+  // 3. Client-provided temp userId
+  if (req.body?.userId?.startsWith('temp_')) {
+    return req.body.userId;
+  }
+  // 4. Existing session userId
+  if (req.session?.userId) {
+    return req.session.userId;
+  }
+  return null;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
   // LiveAvatar uses a different API endpoint and response format than the old HeyGen Interactive Avatar
@@ -1323,11 +1357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Message or image is required" });
       }
 
-      // Get userId from authenticated session if available, or allow temp_ prefixed IDs
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
+      // Resolve userId consistently (supports Memberstack, session, temp IDs)
+      let userId = resolveUserId(req);
 
       // Update session activity to prevent premature cleanup
       if (userId) {
@@ -2716,11 +2747,8 @@ ${historyPreview}
     try {
       const { id } = req.params;
       
-      // Get userId from authenticated session if available, or allow temp_ prefixed IDs
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
+      // Resolve userId consistently (supports Memberstack, session, temp IDs)
+      let userId = resolveUserId(req);
 
       if (!userId) {
         return res.status(401).json({ error: "User not authenticated" });
@@ -3824,11 +3852,8 @@ ${historyPreview}
         languageCode, // Language for Claude responses (e.g., "en", "ja", "es")
       } = req.body;
 
-      // Get userId from authenticated session if available, or allow temp_ prefixed IDs for anonymous users
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
+      // Resolve userId consistently (supports Memberstack, session, temp IDs)
+      let userId = resolveUserId(req);
 
       if (!message) {
         return res.status(400).json({ error: "Message is required" });
@@ -4693,10 +4718,8 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
     
     try {
       const { message, avatarId, conversationHistory = [], memoryEnabled = false, languageCode, imageBase64, imageMimeType } = req.body;
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
+      // Resolve userId consistently (supports Memberstack, session, temp IDs)
+      let userId = resolveUserId(req);
 
       if (userId) {
         const rateCheck = checkChatRateLimit(userId);
@@ -4708,7 +4731,7 @@ You have PERSISTENT MEMORY across all conversations with this person. This is a 
       if (!message && !imageBase64) {
         return res.status(400).json({ error: "Message or image is required" });
       }
-      
+
       if (imageBase64) {
         log.info({ hasImage: true, imageMimeType, imageLength: imageBase64.length }, 'Image attached to message');
         console.log('📷 IMAGE RECEIVED - Size:', imageBase64.length, 'Type:', imageMimeType);
@@ -5301,10 +5324,8 @@ ${historyPreview}
     
     try {
       const { message, avatarId, conversationHistory = [], memoryEnabled = false, languageCode, imageBase64, imageMimeType } = req.body;
-      let userId = req.user?.claims?.sub || null;
-      if (!userId && req.body.userId?.startsWith('temp_')) {
-        userId = req.body.userId;
-      }
+      // Resolve userId consistently (supports Memberstack, session, temp IDs)
+      let userId = resolveUserId(req);
 
       if (userId) {
         const rateCheck = checkChatRateLimit(userId);
