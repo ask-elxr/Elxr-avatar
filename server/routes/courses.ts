@@ -50,16 +50,19 @@ coursesRouter.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Get all courses for a user
+// Get all courses
+// Courses are created by admins and visible to all authenticated users
+// Only completed courses are shown to end users; admins see all
 coursesRouter.get("/", async (req: Request, res: Response) => {
   try {
-    const userId = req.session.userId;
-    
-    const userCourses = await db
-      .select()
-      .from(courses)
-      .where(eq(courses.userId, userId))
-      .orderBy(desc(courses.createdAt));
+    // Check if caller is admin (via X-Admin-Secret header)
+    const adminSecret = req.headers['x-admin-secret'] as string | undefined;
+    const validAdminSecrets = (process.env.ADMIN_SECRET || '').split(',').map(s => s.trim()).filter(Boolean);
+    const isAdmin = adminSecret ? validAdminSecrets.includes(adminSecret) : false;
+
+    const userCourses = isAdmin
+      ? await db.select().from(courses).orderBy(desc(courses.createdAt))
+      : await db.select().from(courses).where(eq(courses.status, "completed")).orderBy(desc(courses.createdAt));
 
     // Fetch lessons and videos for each course
     const coursesWithLessons = await Promise.all(
