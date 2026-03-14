@@ -486,15 +486,14 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
             className={`w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
             onClick={() => {
               localStorage.removeItem('admin_secret');
-              setIsAdminVerified(false);
-              toast({ title: 'Admin secret cleared', description: 'Please re-enter your admin secret.' });
+              window.location.href = '/';
             }}
-            data-testid="button-reset-admin-secret"
-            title={!sidebarOpen ? "Reset Admin Secret" : undefined}
+            data-testid="button-logout"
+            title={!sidebarOpen ? "Log Out" : undefined}
           >
             <Lock className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-              Reset Admin Secret
+              Log Out
             </span>
           </Button>
         </div>
