@@ -25,21 +25,28 @@ const getStockImages = () => import("../services/stockImages.js");
 export const coursesRouter = Router();
 
 // Middleware to ensure every request has a userId in session
-// Prioritize authenticated user ID from Replit Auth, fallback to session userId
+// isAuthenticated runs first and sets req.user with the resolved userId
 coursesRouter.use((req: Request, res: Response, next: NextFunction) => {
   if (!req.session) {
     req.session = {} as any;
   }
-  
-  // Check for authenticated user from Replit Auth
+
+  // 1. Use userId already resolved by isAuthenticated middleware
   const user = (req as any).user;
   if (user?.claims?.sub) {
     req.session.userId = user.claims.sub;
-  } else if (!req.session.userId) {
-    // Generate a persistent temp userId for anonymous users
-    req.session.userId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
   }
-  
+  // 2. Memberstack header (in case isAuthenticated didn't set req.user)
+  else {
+    const memberstackId = (req.headers['x-member-id'] as string) || (req.query.member_id as string);
+    if (memberstackId) {
+      req.session.userId = `ms_${memberstackId}`;
+    } else if (!req.session.userId) {
+      // 3. Generate a persistent temp userId for anonymous users
+      req.session.userId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    }
+  }
+
   next();
 });
 
