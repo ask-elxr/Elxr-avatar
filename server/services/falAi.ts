@@ -113,6 +113,8 @@ export async function generateBrollVideo(prompt: string): Promise<{ url: string 
         duration: "5",
         aspect_ratio: "16:9",
       },
+      pollInterval: 5000,
+      timeout: 300000, // 5 minute timeout for video generation
     });
 
     const video = (result.data as any)?.video?.url;

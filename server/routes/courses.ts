@@ -735,40 +735,54 @@ coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: R
     const { generateBrollImage, generateBrollVideo, isFalConfigured } = await getFalAi();
     const scenes = await segmentScriptIntoScenes(lesson.script);
 
-    // Auto-generate B-roll for each scene
-    // Prefer AI video (fal.ai Kling) > AI image (fal.ai Flux) > Pexels stock
-    for (const scene of scenes) {
-      if (scene.type === "broll" && scene.brollDescription) {
-        if (isFalConfigured()) {
-          // Try video B-roll first (more engaging)
-          const aiVideo = await generateBrollVideo(scene.brollDescription);
-          if (aiVideo) {
-            scene.brollVideoUrl = aiVideo.url;
-            continue;
-          }
-          // Fall back to AI image
-          const aiImage = await generateBrollImage(scene.brollDescription);
-          if (aiImage) {
-            scene.brollImageUrl = aiImage.url;
-            continue;
-          }
-        }
-        // Fall back to Pexels stock search
-        if (scene.brollSearchQuery) {
-          const images = await searchStockImages(scene.brollSearchQuery, 1);
-          if (images.length > 0) {
-            scene.brollImageUrl = images[0].src.landscape;
-          }
-        }
-      }
-    }
-
-    // Save scenes to lesson
+    // Save scenes immediately (without B-roll media) so UI updates fast
     await db.update(lessons)
       .set({ scenes: scenes as any, updatedAt: new Date() })
       .where(eq(lessons.id, lessonId));
 
+    // Respond immediately — B-roll media will be generated in background
     res.json({ success: true, scenes });
+
+    // Generate B-roll media in background (video/image per scene)
+    const brollScenes = scenes.filter(s => s.type === "broll" && s.brollDescription);
+    if (brollScenes.length > 0) {
+      (async () => {
+        try {
+          const brollPromises = brollScenes.map(async (scene) => {
+            if (isFalConfigured()) {
+              // Try video B-roll first (more engaging)
+              const aiVideo = await generateBrollVideo(scene.brollDescription!);
+              if (aiVideo) {
+                scene.brollVideoUrl = aiVideo.url;
+                return;
+              }
+              // Fall back to AI image
+              const aiImage = await generateBrollImage(scene.brollDescription!);
+              if (aiImage) {
+                scene.brollImageUrl = aiImage.url;
+                return;
+              }
+            }
+            // Fall back to Pexels stock search
+            if (scene.brollSearchQuery) {
+              const images = await searchStockImages(scene.brollSearchQuery, 1);
+              if (images.length > 0) {
+                scene.brollImageUrl = images[0].src.landscape;
+              }
+            }
+          });
+          await Promise.allSettled(brollPromises);
+
+          // Update lesson with B-roll media URLs
+          await db.update(lessons)
+            .set({ scenes: scenes as any, updatedAt: new Date() })
+            .where(eq(lessons.id, lessonId));
+          console.log(`✅ B-roll media generated for lesson ${lessonId}: ${brollScenes.length} scenes`);
+        } catch (err: any) {
+          console.error(`❌ Background B-roll generation failed:`, err.message);
+        }
+      })();
+    }
   } catch (error: any) {
     console.error("Error segmenting scenes:", error);
     // Return a user-friendly message instead of raw error details
