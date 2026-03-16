@@ -12,6 +12,7 @@ import { Users } from "lucide-react";
 import type { AvatarProfile } from "@shared/schema";
 import { getNamespaceDisplayName } from "@shared/pineconeCategories";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { assetUrl } from "@/lib/queryClient";
 
 interface AvatarSwitcherProps {
   open: boolean;
@@ -110,14 +111,14 @@ export function AvatarSwitcher({
                     <div className="flex flex-col gap-4">
                       <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center relative">
                         {avatarGifs[avatar.id] ? (
-                          <img 
-                            src={avatarGifs[avatar.id]} 
+                          <img
+                            src={assetUrl(avatarGifs[avatar.id])}
                             alt={avatar.name}
                             className="w-full h-full object-cover"
                           />
                         ) : avatar.profileImageUrl ? (
-                          <img 
-                            src={avatar.profileImageUrl} 
+                          <img
+                            src={assetUrl(avatar.profileImageUrl)}
                             alt={avatar.name}
                             className="w-full h-full object-cover"
                           />

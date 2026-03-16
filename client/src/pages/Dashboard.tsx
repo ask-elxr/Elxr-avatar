@@ -83,7 +83,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, assetUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   ResponsiveContainer,
@@ -1095,13 +1095,13 @@ export default function Dashboard({
                                 <div className="w-full aspect-square sm:aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
                                   {avatarGifs[avatar.id] ? (
                                     <img
-                                      src={avatarGifs[avatar.id]}
+                                      src={assetUrl(avatarGifs[avatar.id])}
                                       alt={avatar.name}
                                       className="w-full h-full object-cover"
                                     />
                                   ) : avatar.profileImageUrl ? (
                                     <img
-                                      src={avatar.profileImageUrl}
+                                      src={assetUrl(avatar.profileImageUrl)}
                                       alt={avatar.name}
                                       className="w-full h-full object-cover"
                                     />

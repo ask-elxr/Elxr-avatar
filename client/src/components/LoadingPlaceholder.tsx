@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Loader2 } from "lucide-react";
+import { assetUrl } from "@/lib/queryClient";
 
 interface LoadingPlaceholderProps extends React.HTMLAttributes<HTMLDivElement> {
   avatarId?: string;
@@ -75,9 +76,9 @@ export function LoadingPlaceholder({
       rawMediaSrc.includes('mp4') ||
       rawMediaSrc.includes('webm')
     );
-    const mediaSrc = rawMediaSrc.startsWith('/attached_assets/') 
+    const mediaSrc = assetUrl(rawMediaSrc.startsWith('/attached_assets/')
       ? `/attached_assets/${encodeURIComponent(rawMediaSrc.replace('/attached_assets/', ''))}`
-      : rawMediaSrc;
+      : rawMediaSrc);
 
     if (isVideo) {
       return (
@@ -125,9 +126,9 @@ export function LoadingPlaceholder({
 
   const useIntroVideo = introVideoUrl && !videoFailed;
   const gifSrc = avatarGifs[normalizedId] || avatarGifs[avatarId] || avatarGifs["mark-kohl"];
-  const encodedGifSrc = gifSrc.startsWith('/attached_assets/')
+  const encodedGifSrc = assetUrl(gifSrc.startsWith('/attached_assets/')
     ? `/attached_assets/${encodeURIComponent(gifSrc.replace('/attached_assets/', ''))}`
-    : gifSrc;
+    : gifSrc);
 
   return (
     <div className={`absolute inset-0 flex items-center justify-center bg-black ${className}`} {...props}>

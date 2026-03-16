@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { assetUrl } from "@/lib/queryClient";
 
 export default function Account() {
   const { user, isLoading, isAuthenticated, isAdmin } = useAuth();
@@ -106,7 +107,7 @@ export default function Account() {
         <CardContent className="space-y-4">
           <div className="flex items-center space-x-4">
             <Avatar className="w-16 h-16" data-testid="img-avatar">
-              <AvatarImage src={(user as any)?.profileImageUrl || ""} alt="Profile" />
+              <AvatarImage src={assetUrl((user as any)?.profileImageUrl || "")} alt="Profile" />
               <AvatarFallback>{getInitials((user as any)?.firstName, (user as any)?.lastName)}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">

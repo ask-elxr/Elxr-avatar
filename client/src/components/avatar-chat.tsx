@@ -12,7 +12,7 @@ import {
 import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle } from "lucide-react";
 const mumIconPath = "/mum-icon.png";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, getAuthHeaders } from "@/lib/queryClient";
+import { queryClient, getAuthHeaders, assetUrl } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -1142,7 +1142,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     'dexter': '/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif',
                     'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
                   };
-                  return gifs[selectedAvatarId] || gifs['mark-kohl'];
+                  return assetUrl(gifs[selectedAvatarId] || gifs['mark-kohl']);
                 })()}
                 alt="Avatar"
                 className="w-full h-full object-cover"

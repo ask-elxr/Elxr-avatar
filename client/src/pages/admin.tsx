@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation, useSearch } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient, hasAdminAccess, getAdminSecret } from "@/lib/queryClient";
+import { apiRequest, queryClient, hasAdminAccess, getAdminSecret, assetUrl } from "@/lib/queryClient";
 import Credits from "@/pages/Credits";
 import Analytics from "@/pages/Analytics";
 
@@ -732,13 +732,13 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex-shrink-0">
                             {avatarGifs[avatar.id] ? (
                               <img 
-                                src={avatarGifs[avatar.id]} 
+                                src={assetUrl(avatarGifs[avatar.id])}
                                 alt={avatar.name}
                                 className="w-full h-full object-cover"
                               />
                             ) : avatar.profileImageUrl ? (
-                              <img 
-                                src={avatar.profileImageUrl} 
+                              <img
+                                src={assetUrl(avatar.profileImageUrl)}
                                 alt={avatar.name}
                                 className="w-full h-full object-cover"
                               />

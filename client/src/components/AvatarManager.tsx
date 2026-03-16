@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, assetUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -704,8 +704,8 @@ export function AvatarManager() {
                   <TableCell>
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                       {avatar.profileImageUrl ? (
-                        <img 
-                          src={avatar.profileImageUrl} 
+                        <img
+                          src={assetUrl(avatar.profileImageUrl)}
                           alt={avatar.name}
                           className="w-full h-full object-cover"
                         />
@@ -822,8 +822,8 @@ export function AvatarManager() {
               {/* Profile Image Preview and Create Videos Button */}
               {formData.profileImageUrl && (
                 <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-muted/30">
-                  <img 
-                    src={formData.profileImageUrl} 
+                  <img
+                    src={assetUrl(formData.profileImageUrl)}
                     alt={formData.name || "Avatar preview"}
                     className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"
                   />

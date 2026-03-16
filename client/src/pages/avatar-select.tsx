@@ -6,6 +6,7 @@ import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import type { AvatarProfile } from "@shared/schema";
 import { getNamespaceDisplayName } from "@shared/pineconeCategories";
+import { assetUrl } from "@/lib/queryClient";
 
 interface UserPlanInfo {
   plan: {
@@ -174,14 +175,14 @@ export default function AvatarSelect() {
                     {/* Avatar Image/GIF - Full Width */}
                     <div className="w-full aspect-square rounded-lg overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mb-4">
                       {avatarGifs[avatar.id] ? (
-                        <img 
-                          src={avatarGifs[avatar.id]} 
+                        <img
+                          src={assetUrl(avatarGifs[avatar.id])}
                           alt={avatar.name}
                           className="w-full h-full object-cover"
                         />
                       ) : avatar.profileImageUrl ? (
-                        <img 
-                          src={avatar.profileImageUrl} 
+                        <img
+                          src={assetUrl(avatar.profileImageUrl)}
                           alt={avatar.name}
                           className="w-full h-full object-cover"
                         />

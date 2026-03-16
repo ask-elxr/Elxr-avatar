@@ -10,6 +10,13 @@ export const API_BASE = isExternalHost
   ? 'https://elxr-avatar-production.up.railway.app'
   : '';
 
+/** Prefix asset paths (e.g. /attached_assets/...) with API_BASE when on external host */
+export function assetUrl(path: string): string {
+  if (!path) return path;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_BASE}${path}`;
+}
+
 // Get admin secret from URL params or localStorage
 export function getAdminSecret(): string | null {
   // Check URL params first

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import type { AvatarProfile } from "@shared/schema";
+import { assetUrl } from "@/lib/queryClient";
 
 interface AvatarSelectorProps {
   selectedAvatarId: string;
@@ -65,8 +66,8 @@ export function AvatarSelector({ selectedAvatarId, onSelect, onConfirm }: Avatar
                   {/* Avatar Thumbnail */}
                   <div className="flex-shrink-0 w-14 h-14 md:w-16 md:h-16 rounded-full overflow-hidden bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
                     {avatar.profileImageUrl ? (
-                      <img 
-                        src={avatar.profileImageUrl} 
+                      <img
+                        src={assetUrl(avatar.profileImageUrl)}
                         alt={avatar.name}
                         className="w-full h-full object-cover"
                       />
