@@ -73,7 +73,7 @@ export async function generateCourseThumbnail(
 
     const result = await fal.subscribe("fal-ai/flux/schnell", {
       input: {
-        prompt: `Professional course thumbnail for "${courseTitle}". ${courseDescription}. Modern, bold, eye-catching design with cinematic lighting. Landscape 16:9, suitable as a video course cover image. No text overlays.`,
+        prompt: `A visually striking abstract scene representing the concept of ${courseTitle}. ${courseDescription}. Photorealistic, cinematic lighting, dramatic composition, rich colors, landscape orientation. Absolutely no text, no words, no letters, no writing, no watermarks, no logos.`,
         image_size: "landscape_16_9",
         num_images: 1,
       },
