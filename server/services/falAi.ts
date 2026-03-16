@@ -58,6 +58,23 @@ export async function generateBrollImage(prompt: string): Promise<FalImage | nul
   }
 }
 
+/** Word-wrap text into lines that fit within maxChars. */
+function wrapText(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if (current && (current.length + 1 + word.length) > maxChars) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = current ? `${current} ${word}` : word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
 /**
  * Overlay title text on a thumbnail image using sharp + SVG.
  * Uploads the result to fal.ai storage and returns a persistent CDN URL.
@@ -70,13 +87,37 @@ async function overlayTitleOnImage(imageUrl: string, title: string, width: numbe
   // Uppercase the title
   const upperTitle = title.toUpperCase();
 
-  // Scale font size based on title length
-  const maxFontSize = 72;
-  const minFontSize = 36;
-  const fontSize = Math.max(minFontSize, Math.min(maxFontSize, Math.floor(width / (upperTitle.length * 0.7))));
+  // Word-wrap: split title into lines that fit within 80% of image width
+  const maxWidth = width * 0.8;
+  const charWidthRatio = 0.6; // approximate char width as fraction of font size
+  const maxFontSize = 64;
+  const minFontSize = 32;
 
-  // Escape XML special characters
-  const escapedTitle = upperTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  // Start with a font size and wrap words into lines
+  let fontSize = maxFontSize;
+  let lines: string[] = [];
+
+  // Find the largest font size where all lines fit
+  while (fontSize >= minFontSize) {
+    const charWidth = fontSize * charWidthRatio;
+    const maxCharsPerLine = Math.floor(maxWidth / charWidth);
+    lines = wrapText(upperTitle, maxCharsPerLine);
+    // Check if the widest line fits
+    const widestLine = Math.max(...lines.map(l => l.length));
+    if (widestLine * charWidth <= maxWidth) break;
+    fontSize -= 2;
+  }
+
+  const lineHeight = fontSize * 1.3;
+  const totalTextHeight = lines.length * lineHeight;
+  const startY = (height - totalTextHeight) / 2 + fontSize * 0.35; // vertically center the block
+
+  // Escape XML special characters per line
+  const escapeXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const tspans = lines.map((line, i) =>
+    `<tspan x="${width / 2}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+  ).join('\n        ');
 
   // Create SVG text overlay centered with a dark scrim behind the text
   const svgOverlay = `
@@ -84,15 +125,14 @@ async function overlayTitleOnImage(imageUrl: string, title: string, width: numbe
       <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(0,0,0,0.4)" />
       <text
         x="${width / 2}"
-        y="${height / 2}"
-        dominant-baseline="central"
+        y="${startY}"
         text-anchor="middle"
         font-family="Arial, Helvetica, sans-serif"
         font-size="${fontSize}"
         font-weight="bold"
         fill="white"
         letter-spacing="2"
-      >${escapedTitle}</text>
+      >${tspans}</text>
     </svg>
   `;
 
