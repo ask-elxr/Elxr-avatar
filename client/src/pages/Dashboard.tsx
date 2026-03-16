@@ -46,6 +46,7 @@ import {
   Crown,
   GraduationCap,
   X,
+  Search,
 } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -310,6 +311,8 @@ export default function Dashboard({
     response: string;
   } | null>(null);
   const [videoToDelete, setVideoToDelete] = useState<ChatVideo | null>(null);
+  const [videoSearch, setVideoSearch] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
 
   // Generate or get user ID for chat
   const [chatUserId] = useState(() => {
@@ -497,13 +500,17 @@ export default function Dashboard({
     setEditLastName(user?.lastName || "");
   };
 
+  const videoSearchLower = videoSearch.toLowerCase();
+  const matchesVideoSearch = (v: ChatVideo) =>
+    !videoSearch || v.topic?.toLowerCase().includes(videoSearchLower) ||
+    avatars?.find(a => a.id === v.avatarId)?.name?.toLowerCase().includes(videoSearchLower);
   const completedVideos =
-    chatVideos?.filter((v) => v.status === "completed") || [];
+    chatVideos?.filter((v) => v.status === "completed" && matchesVideoSearch(v)) || [];
   const pendingVideos =
     chatVideos?.filter(
-      (v) => v.status === "pending" || v.status === "generating",
+      (v) => (v.status === "pending" || v.status === "generating") && matchesVideoSearch(v),
     ) || [];
-  const failedVideos = chatVideos?.filter((v) => v.status === "failed") || [];
+  const failedVideos = chatVideos?.filter((v) => v.status === "failed" && matchesVideoSearch(v)) || [];
 
   // Check if an avatar is locked based on subscription
   const isAvatarLocked = (avatarId: string): boolean => {
@@ -1249,6 +1256,17 @@ export default function Dashboard({
                   </Card>
                 ) : (
                   <div className="space-y-8">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={videoSearch}
+                        onChange={(e) => setVideoSearch(e.target.value)}
+                        placeholder="Search videos..."
+                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                      />
+                    </div>
                     {/* Pending/Generating Videos */}
                     {pendingVideos.length > 0 && (
                       <div>
@@ -1575,11 +1593,29 @@ export default function Dashboard({
                         </CardContent>
                       </Card>
                     ) : (
+                    <>
+                    {/* Search Bar */}
+                    <div className="relative mb-6">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={courseSearch}
+                        onChange={(e) => setCourseSearch(e.target.value)}
+                        placeholder="Search courses..."
+                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                      />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                      {(avatarFilterId 
+                      {(avatarFilterId
                         ? courses.filter(course => course.avatarId === avatarFilterId)
                         : courses
-                      ).map((course) => (
+                      ).filter(course => {
+                        if (!courseSearch) return true;
+                        const q = courseSearch.toLowerCase();
+                        return course.title?.toLowerCase().includes(q) ||
+                          course.description?.toLowerCase().includes(q) ||
+                          avatars?.find(a => a.id === course.avatarId)?.name?.toLowerCase().includes(q);
+                      }).map((course) => (
                         <Card
                           key={course.id}
                           className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden flex flex-col"
@@ -1689,6 +1725,7 @@ export default function Dashboard({
                         </Card>
                       ))}
                     </div>
+                    </>
                     )}
                   </>
                 )}
