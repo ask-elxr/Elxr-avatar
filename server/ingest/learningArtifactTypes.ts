@@ -143,6 +143,7 @@ export const KNOWN_KBS = [
   'movement',
   'work',
   'sleep',
+  'existential_therapy',
 ] as const;
 
 export type KnowledgeBase = typeof KNOWN_KBS[number];
