@@ -1591,10 +1591,11 @@ export default function Dashboard({
                           {/* Thumbnail - use first lesson's video thumbnail or course thumbnail */}
                           <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20 overflow-hidden">
                             {(() => {
-                              // Get thumbnail from first completed lesson's video, or fallback to course thumbnail
-                              const firstVideoThumbnail = course.lessons?.find(
-                                (l) => l.video?.thumbnailUrl,
-                              )?.video?.thumbnailUrl;
+                              // Get thumbnail from first lesson (lesson thumbnail, then video thumbnail), or fallback to course thumbnail
+                              const firstLessonThumbnail = course.lessons?.find(
+                                (l) => l.thumbnailUrl || l.video?.thumbnailUrl,
+                              );
+                              const firstVideoThumbnail = firstLessonThumbnail?.thumbnailUrl || firstLessonThumbnail?.video?.thumbnailUrl;
                               const thumbnailUrl =
                                 course.thumbnailUrl || firstVideoThumbnail;
 
@@ -2582,9 +2583,9 @@ export default function Dashboard({
                                 data-testid={`card-lesson-video-${lesson.id}`}
                               >
                                 <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
-                                  {lesson.video?.thumbnailUrl ? (
+                                  {(lesson.thumbnailUrl || lesson.video?.thumbnailUrl) ? (
                                     <img
-                                      src={lesson.video.thumbnailUrl}
+                                      src={lesson.thumbnailUrl || lesson.video?.thumbnailUrl}
                                       alt={lesson.title}
                                       className="w-full h-full object-cover"
                                     />
