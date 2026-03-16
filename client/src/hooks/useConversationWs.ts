@@ -17,6 +17,9 @@ export interface ConversationWsConfig {
   onAudioStop?: (turnId: number) => void;
   onNudge?: (text: string) => void;
   onSoftEnd?: (text: string) => void;
+  onStateChange?: (state: string, reason: string) => void;
+  onSessionEnd?: (reason: string) => void;
+  onThinkingAck?: (text: string) => void;
   playLocalAudio?: boolean;
 }
 
@@ -26,6 +29,7 @@ interface ConversationWsState {
   isSpeaking: boolean;
   currentTurnId: number;
   partialTranscript: string;
+  serverState: string;
 }
 
 const TTS_SAMPLE_RATE = 24000;
@@ -37,6 +41,7 @@ export function useConversationWs(config: ConversationWsConfig) {
     isSpeaking: false,
     currentTurnId: 0,
     partialTranscript: '',
+    serverState: 'idle',
   });
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -204,6 +209,23 @@ export function useConversationWs(config: ConversationWsConfig) {
         configRef.current.onSoftEnd?.(msg.text);
         break;
 
+      case 'STATE_CHANGE':
+        console.log('[state change]', msg.state, msg.reason);
+        setState(s => ({ ...s, serverState: msg.state }));
+        configRef.current.onStateChange?.(msg.state, msg.reason);
+        break;
+
+      case 'SESSION_END':
+        console.log('[session end]', msg.reason);
+        hardStopAudio();
+        configRef.current.onSessionEnd?.(msg.reason);
+        break;
+
+      case 'THINKING_ACK':
+        console.log('[thinking ack]', msg.text);
+        configRef.current.onThinkingAck?.(msg.text);
+        break;
+
       case 'PONG':
         break;
     }
@@ -277,8 +299,8 @@ export function useConversationWs(config: ConversationWsConfig) {
       const sampleRate = configRef.current.sampleRate || 16000;
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
-          sampleRate,
-          channelCount: 1,
+          sampleRate: { ideal: sampleRate },
+          channelCount: { ideal: 1 },
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -288,6 +310,7 @@ export function useConversationWs(config: ConversationWsConfig) {
       micStreamRef.current = stream;
       const audioContext = new AudioContext({ sampleRate });
       micContextRef.current = audioContext;
+      if (audioContext.state === 'suspended') await audioContext.resume();
 
       const source = audioContext.createMediaStreamSource(stream);
       const processor = audioContext.createScriptProcessor(4096, 1, 1);
@@ -363,6 +386,7 @@ export function useConversationWs(config: ConversationWsConfig) {
       isSpeaking: false,
       currentTurnId: 0,
       partialTranscript: '',
+      serverState: 'idle',
     });
   }, [stopMic, hardStopAudio]);
 
