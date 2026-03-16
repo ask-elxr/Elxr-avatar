@@ -63,6 +63,10 @@ export function getAuthHeaders(): Record<string, string> {
   return headers;
 }
 
+export function resolveAssetUrl(url: string | null | undefined): string {
+  return url || '';
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;

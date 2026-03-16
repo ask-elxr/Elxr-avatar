@@ -52,6 +52,12 @@ export function buildAuthenticatedWsUrl(path: string): string {
   return url.toString();
 }
 
+export function resolveAssetUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${API_BASE}${url}`;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
