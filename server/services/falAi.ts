@@ -153,7 +153,7 @@ async function overlayTitleOnImage(imageUrl: string, title: string, width: numbe
         font-size="${fontSize}"
         font-weight="bold"
         fill="white"
-        letter-spacing="0.5"
+        letter-spacing="3"
       >${tspans}</text>
     </svg>
   `;
