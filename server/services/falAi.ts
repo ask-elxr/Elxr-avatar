@@ -67,32 +67,31 @@ async function overlayTitleOnImage(imageUrl: string, title: string, width: numbe
   const response = await fetch(imageUrl);
   const imageBuffer = Buffer.from(await response.arrayBuffer());
 
+  // Uppercase the title
+  const upperTitle = title.toUpperCase();
+
   // Scale font size based on title length
   const maxFontSize = 72;
   const minFontSize = 36;
-  const fontSize = Math.max(minFontSize, Math.min(maxFontSize, Math.floor(width / (title.length * 0.7))));
+  const fontSize = Math.max(minFontSize, Math.min(maxFontSize, Math.floor(width / (upperTitle.length * 0.7))));
 
   // Escape XML special characters
-  const escapedTitle = title.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const escapedTitle = upperTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-  // Create SVG text overlay with gradient background at bottom
+  // Create SVG text overlay centered with a dark scrim behind the text
   const svgOverlay = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="rgba(0,0,0,0)" />
-          <stop offset="100%" stop-color="rgba(0,0,0,0.8)" />
-        </linearGradient>
-      </defs>
-      <rect x="0" y="${height * 0.5}" width="${width}" height="${height * 0.5}" fill="url(#grad)" />
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(0,0,0,0.4)" />
       <text
         x="${width / 2}"
-        y="${height - fontSize * 0.6}"
+        y="${height / 2}"
+        dominant-baseline="central"
         text-anchor="middle"
         font-family="Arial, Helvetica, sans-serif"
         font-size="${fontSize}"
         font-weight="bold"
         fill="white"
+        letter-spacing="2"
       >${escapedTitle}</text>
     </svg>
   `;
