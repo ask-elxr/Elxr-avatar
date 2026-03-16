@@ -1,5 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// When hosted on Firebase (or any non-Railway domain), proxy API calls to Railway
+const isExternalHost = typeof window !== 'undefined' &&
+  !window.location.hostname.includes('railway.app') &&
+  !window.location.hostname.includes('localhost') &&
+  !window.location.hostname.includes('127.0.0.1');
+
+export const API_BASE = isExternalHost
+  ? 'https://elxr-avatar-production.up.railway.app'
+  : '';
+
 // Get admin secret from URL params or localStorage
 export function getAdminSecret(): string | null {
   // Check URL params first
@@ -36,8 +46,11 @@ export function hasMemberstackId(): boolean {
 
 // Build authenticated WebSocket URL with member_id or admin_secret query params
 export function buildAuthenticatedWsUrl(path: string): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = new URL(`${protocol}//${window.location.host}${path}`);
+  const wsHost = isExternalHost
+    ? 'elxr-avatar-production.up.railway.app'
+    : window.location.host;
+  const protocol = isExternalHost ? 'wss:' : (window.location.protocol === 'https:' ? 'wss:' : 'ws:');
+  const url = new URL(`${protocol}//${wsHost}${path}`);
   const memberId = getMemberstackId();
   if (memberId) {
     url.searchParams.set('member_id', memberId);
@@ -89,7 +102,8 @@ export async function apiRequest(
     headers['X-Admin-Secret'] = adminSecret;
   }
 
-  const res = await fetch(url, {
+  const fullUrl = url.startsWith('/') ? `${API_BASE}${url}` : url;
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -121,7 +135,8 @@ export const getQueryFn: <T>(options: {
       headers['X-Admin-Secret'] = adminSecret;
     }
 
-    const res = await fetch(url, {
+    const fullUrl = url.startsWith('/') ? `${API_BASE}${url}` : url;
+    const res = await fetch(fullUrl, {
       credentials: "include",
       headers,
     });
