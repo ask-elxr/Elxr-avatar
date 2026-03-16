@@ -1,5 +1,16 @@
 import { fal } from "@fal-ai/client";
 import sharp from "sharp";
+import fs from "fs";
+import path from "path";
+
+// Load Poppins Bold font as base64 for SVG embedding
+let poppinsBoldBase64: string = "";
+try {
+  const fontPath = path.resolve(import.meta.dirname, "../assets/fonts/Poppins-Bold.ttf");
+  poppinsBoldBase64 = fs.readFileSync(fontPath).toString("base64");
+} catch {
+  console.warn("⚠️ Poppins font not found, falling back to system fonts for thumbnails");
+}
 
 const FAL_KEY = process.env.FAL_KEY;
 
@@ -120,14 +131,25 @@ async function overlayTitleOnImage(imageUrl: string, title: string, width: numbe
   ).join('\n        ');
 
   // Create SVG text overlay centered with a dark scrim behind the text
+  const fontFace = poppinsBoldBase64 ? `
+      <style>
+        @font-face {
+          font-family: 'Poppins';
+          font-weight: 700;
+          src: url(data:font/truetype;base64,${poppinsBoldBase64});
+        }
+      </style>` : '';
+  const fontFamily = poppinsBoldBase64 ? "Poppins" : "Arial, Helvetica, sans-serif";
+
   const svgOverlay = `
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>${fontFace}</defs>
       <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(0,0,0,0.4)" />
       <text
         x="${width / 2}"
         y="${startY}"
         text-anchor="middle"
-        font-family="Arial, Helvetica, sans-serif"
+        font-family="${fontFamily}"
         font-size="${fontSize}"
         font-weight="bold"
         fill="white"

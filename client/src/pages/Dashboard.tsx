@@ -1353,7 +1353,7 @@ export default function Dashboard({
                                   />
                                   {/* Title overlay - visible on still frame, hides on hover/play */}
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/30 group-hover:opacity-0 transition-opacity duration-300">
-                                    <p className="text-white font-bold text-sm sm:text-base uppercase text-center px-4 drop-shadow-lg tracking-tight leading-tight">
+                                    <p className="text-white font-bold text-sm sm:text-base uppercase text-center px-4 drop-shadow-lg tracking-tight leading-tight" style={{ fontFamily: "'Poppins', sans-serif" }}>
                                       {video.topic}
                                     </p>
                                   </div>
