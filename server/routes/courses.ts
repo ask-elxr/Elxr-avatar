@@ -25,6 +25,14 @@ const getFalAi = () => import("../services/falAi.js");
 
 export const coursesRouter = Router();
 
+// Helper to check if the request is from an admin (via X-Admin-Secret header)
+function isAdminRequest(req: Request): boolean {
+  const adminSecret = req.headers['x-admin-secret'] as string | undefined;
+  if (!adminSecret) return false;
+  const validAdminSecrets = (process.env.ADMIN_SECRET || '').split(',').map(s => s.trim()).filter(Boolean);
+  return validAdminSecrets.includes(adminSecret);
+}
+
 // Middleware to ensure every request has a userId in session
 // isAuthenticated runs first and sets req.user with the resolved userId
 coursesRouter.use((req: Request, res: Response, next: NextFunction) => {
@@ -56,10 +64,7 @@ coursesRouter.use((req: Request, res: Response, next: NextFunction) => {
 // Only completed courses are shown to end users; admins see all
 coursesRouter.get("/", async (req: Request, res: Response) => {
   try {
-    // Check if caller is admin (via X-Admin-Secret header)
-    const adminSecret = req.headers['x-admin-secret'] as string | undefined;
-    const validAdminSecrets = (process.env.ADMIN_SECRET || '').split(',').map(s => s.trim()).filter(Boolean);
-    const isAdmin = adminSecret ? validAdminSecrets.includes(adminSecret) : false;
+    const isAdmin = isAdminRequest(req);
 
     const userCourses = isAdmin
       ? await db.select().from(courses).orderBy(desc(courses.createdAt))
@@ -322,11 +327,16 @@ coursesRouter.get("/:id", async (req: Request, res: Response) => {
     const { id } = req.params;
     const userId = req.session.userId;
 
-    // Get course
+    // Get course - admins can access any course, users only their own
+    const isAdmin = isAdminRequest(req);
+    const conditions = [eq(courses.id, id)];
+    if (!isAdmin) {
+      conditions.push(eq(courses.userId, userId));
+    }
     const [course] = await db
       .select()
       .from(courses)
-      .where(and(eq(courses.id, id), eq(courses.userId, userId)));
+      .where(and(...conditions));
 
     if (!course) {
       return res.status(404).json({ error: "Course not found" });
@@ -383,10 +393,11 @@ coursesRouter.get("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// Create a new course (user can create their own courses)
+// Create a new course (user or admin can create courses)
 coursesRouter.post("/", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.session.userId;
+    // Admins get a stable userId so they can always find their courses
+    const userId = isAdminRequest(req) ? "admin" : req.session.userId;
 
     const validatedData = insertCourseSchema.parse({
       ...req.body,
@@ -424,13 +435,18 @@ coursesRouter.post("/", isAuthenticated, async (req: Request, res: Response) => 
   }
 });
 
-// Update a course (user can update their own courses)
+// Update a course (admin can update any, users can update their own)
 coursesRouter.put("/:id", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
 
     const validatedData = updateCourseSchema.parse(req.body);
+
+    const whereClause = isAdmin
+      ? eq(courses.id, id)
+      : and(eq(courses.id, id), eq(courses.userId, userId));
 
     const [updatedCourse] = await db
       .update(courses)
@@ -438,7 +454,7 @@ coursesRouter.put("/:id", isAuthenticated, async (req: Request, res: Response) =
         ...validatedData,
         updatedAt: new Date(),
       })
-      .where(and(eq(courses.id, id), eq(courses.userId, userId)))
+      .where(whereClause)
       .returning();
 
     if (!updatedCourse) {
@@ -458,10 +474,7 @@ coursesRouter.delete("/:id", isAuthenticated, async (req: Request, res: Response
     const { id } = req.params;
     const userId = req.session.userId;
 
-    // Check if caller is admin
-    const adminSecret = req.headers['x-admin-secret'] as string | undefined;
-    const validAdminSecrets = (process.env.ADMIN_SECRET || '').split(',').map(s => s.trim()).filter(Boolean);
-    const isAdmin = adminSecret ? validAdminSecrets.includes(adminSecret) : false;
+    const isAdmin = isAdminRequest(req);
 
     const whereClause = isAdmin
       ? eq(courses.id, id)
@@ -488,12 +501,15 @@ coursesRouter.post("/:courseId/lessons", isAuthenticated, async (req: Request, r
   try {
     const { courseId } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
 
-    // Verify course ownership
+    // Verify course ownership (admins can access any course)
+    const conditions = [eq(courses.id, courseId)];
+    if (!isAdmin) conditions.push(eq(courses.userId, userId));
     const [course] = await db
       .select()
       .from(courses)
-      .where(and(eq(courses.id, courseId), eq(courses.userId, userId)));
+      .where(and(...conditions));
 
     if (!course) {
       return res.status(404).json({ error: "Course not found" });
@@ -530,8 +546,9 @@ coursesRouter.put("/lessons/:id", isAuthenticated, async (req: Request, res: Res
   try {
     const { id } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
 
-    // Verify ownership through course
+    // Verify ownership through course (admins can access any)
     const [lesson] = await db
       .select()
       .from(lessons)
@@ -541,13 +558,15 @@ coursesRouter.put("/lessons/:id", isAuthenticated, async (req: Request, res: Res
       return res.status(404).json({ error: "Lesson not found" });
     }
 
-    const [course] = await db
-      .select()
-      .from(courses)
-      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+    if (!isAdmin) {
+      const [course] = await db
+        .select()
+        .from(courses)
+        .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
 
-    if (!course) {
-      return res.status(403).json({ error: "Unauthorized" });
+      if (!course) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
     }
 
     const validatedData = updateLessonSchema.parse(req.body);
@@ -573,8 +592,9 @@ coursesRouter.delete("/lessons/:id", isAuthenticated, async (req: Request, res: 
   try {
     const { id } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
 
-    // Verify ownership through course
+    // Verify ownership through course (admins can access any)
     const [lesson] = await db
       .select()
       .from(lessons)
@@ -584,10 +604,13 @@ coursesRouter.delete("/lessons/:id", isAuthenticated, async (req: Request, res: 
       return res.status(404).json({ error: "Lesson not found" });
     }
 
+    // Verify course ownership (admins can access any)
+    const courseConditions = [eq(courses.id, lesson.courseId)];
+    if (!isAdmin) courseConditions.push(eq(courses.userId, userId));
     const [course] = await db
       .select()
       .from(courses)
-      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+      .where(and(...courseConditions));
 
     if (!course) {
       return res.status(403).json({ error: "Unauthorized" });
@@ -619,8 +642,9 @@ coursesRouter.post("/lessons/:id/generate-video", isAuthenticated, async (req: R
   try {
     const { id: lessonId } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
 
-    // Verify ownership through course
+    // Verify ownership through course (admins can access any)
     const [lesson] = await db
       .select()
       .from(lessons)
@@ -630,13 +654,15 @@ coursesRouter.post("/lessons/:id/generate-video", isAuthenticated, async (req: R
       return res.status(404).json({ error: "Lesson not found" });
     }
 
-    const [course] = await db
-      .select()
-      .from(courses)
-      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+    if (!isAdmin) {
+      const [course] = await db
+        .select()
+        .from(courses)
+        .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
 
-    if (!course) {
-      return res.status(403).json({ error: "Unauthorized" });
+      if (!course) {
+        return res.status(403).json({ error: "Unauthorized" });
+      }
     }
 
     // Validate lesson has script
@@ -717,14 +743,17 @@ coursesRouter.post("/lessons/:id/segment-scenes", isAuthenticated, async (req: R
   try {
     const { id: lessonId } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
 
-    // Verify ownership
+    // Verify ownership (admins can access any)
     const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId));
     if (!lesson) return res.status(404).json({ error: "Lesson not found" });
 
-    const [course] = await db.select().from(courses)
-      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
-    if (!course) return res.status(403).json({ error: "Unauthorized" });
+    if (!isAdmin) {
+      const [course] = await db.select().from(courses)
+        .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+      if (!course) return res.status(403).json({ error: "Unauthorized" });
+    }
 
     if (!lesson.script || lesson.script.trim().length === 0) {
       return res.status(400).json({ error: "Lesson must have a script before segmenting into scenes" });
@@ -800,14 +829,17 @@ coursesRouter.put("/lessons/:id/scenes", isAuthenticated, async (req: Request, r
   try {
     const { id: lessonId } = req.params;
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
     const { scenes } = req.body;
 
     const [lesson] = await db.select().from(lessons).where(eq(lessons.id, lessonId));
     if (!lesson) return res.status(404).json({ error: "Lesson not found" });
 
-    const [course] = await db.select().from(courses)
-      .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
-    if (!course) return res.status(403).json({ error: "Unauthorized" });
+    if (!isAdmin) {
+      const [course] = await db.select().from(courses)
+        .where(and(eq(courses.id, lesson.courseId), eq(courses.userId, userId)));
+      if (!course) return res.status(403).json({ error: "Unauthorized" });
+    }
 
     await db.update(lessons)
       .set({ scenes: scenes as any, updatedAt: new Date() })
@@ -825,20 +857,23 @@ coursesRouter.put("/lessons/:id/scenes", isAuthenticated, async (req: Request, r
 coursesRouter.post("/generate-script", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const userId = req.session.userId;
+    const isAdmin = isAdminRequest(req);
     const { avatarId, courseId, topic, lessonTitle, targetDuration, additionalContext } = req.body;
 
     if (!avatarId || !topic || !lessonTitle) {
-      return res.status(400).json({ 
-        error: "Missing required fields: avatarId, topic, and lessonTitle are required" 
+      return res.status(400).json({
+        error: "Missing required fields: avatarId, topic, and lessonTitle are required"
       });
     }
 
-    // Authorization: If courseId is provided, verify the user owns the course
+    // Authorization: If courseId is provided, verify the user owns the course (admins can access any)
     if (courseId) {
+      const conditions = [eq(courses.id, courseId)];
+      if (!isAdmin) conditions.push(eq(courses.userId, userId));
       const [course] = await db
         .select()
         .from(courses)
-        .where(and(eq(courses.id, courseId), eq(courses.userId, userId)));
+        .where(and(...conditions));
 
       if (!course) {
         return res.status(403).json({ error: "Unauthorized - you don't have access to this course" });
