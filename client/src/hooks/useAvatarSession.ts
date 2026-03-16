@@ -196,6 +196,20 @@ export function useAvatarSession({
     onSoftEnd: (text) => {
       console.log('[mum soft end]', text);
     },
+    onStateChange: (state, reason) => {
+      console.log('[server state change]', state, reason);
+      if (state === 'ended') {
+        // Server initiated session end — trigger client cleanup
+        endSessionShowReconnect();
+      }
+    },
+    onSessionEnd: (reason) => {
+      console.log('[server session end]', reason);
+      endSessionShowReconnect();
+    },
+    onThinkingAck: (_text) => {
+      // Could show thinking indicator in UI later
+    },
     onError: (err) => {
       console.error('Conversation WS error:', err);
     },
@@ -931,8 +945,8 @@ export function useAvatarSession({
         console.log("🎤 Requesting microphone access (using cache if available)...");
         micStream = await requestMicrophoneOnce({
           audio: {
-            sampleRate: 16000,
-            channelCount: 1,
+            sampleRate: { ideal: 16000 },
+            channelCount: { ideal: 1 },
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,

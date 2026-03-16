@@ -5,8 +5,8 @@ let cachedConstraints: MediaStreamConstraints | null = null;
 export async function requestMicrophoneOnce(options?: MediaStreamConstraints): Promise<MediaStream> {
   const constraints = options || {
     audio: {
-      sampleRate: 16000,
-      channelCount: 1,
+      sampleRate: { ideal: 16000 },
+      channelCount: { ideal: 1 },
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,

@@ -466,8 +466,8 @@ export class LiveAvatarDriver implements SessionDriver {
       // Request microphone access using cached system to avoid repeated permission prompts
       this.mediaStream = await requestMicrophoneOnce({
         audio: {
-          channelCount: 1,
-          sampleRate: 16000,
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 16000 },
           echoCancellation: true,
           noiseSuppression: true,
         }
@@ -540,7 +540,10 @@ export class LiveAvatarDriver implements SessionDriver {
       this.sttAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 16000,
       });
-      
+      if (this.sttAudioContext.state === 'suspended') {
+        this.sttAudioContext.resume();
+      }
+
       const source = this.sttAudioContext.createMediaStreamSource(this.mediaStream);
       
       // Use ScriptProcessorNode for PCM capture (deprecated but widely supported)
