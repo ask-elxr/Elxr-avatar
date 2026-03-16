@@ -1351,9 +1351,11 @@ export default function Dashboard({
                                     controls
                                     preload="metadata"
                                   />
-                                  <div className="absolute top-2 right-2 glass px-2 py-1 rounded text-xs text-green-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Play className="w-3 h-3" />
-                                    Ready
+                                  {/* Title overlay - visible on still frame, hides on hover/play */}
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/30 group-hover:opacity-0 transition-opacity duration-300">
+                                    <p className="text-white font-bold text-sm sm:text-base uppercase text-center px-4 drop-shadow-lg tracking-tight leading-tight">
+                                      {video.topic}
+                                    </p>
                                   </div>
                                 </div>
                               ) : (
