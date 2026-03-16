@@ -448,16 +448,8 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   // Segment scenes mutation
   const segmentScenesMutation = useMutation({
     mutationFn: async (lessonId: string) => {
-      const response = await fetch(`/api/courses/lessons/${lessonId}/segment-scenes`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to segment scenes");
-      }
-      return data;
+      const response = await apiRequest(`/api/courses/lessons/${lessonId}/segment-scenes`, "POST");
+      return await response.json();
     },
     onSuccess: (result, lessonId) => {
       toast({
@@ -511,7 +503,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
     if (!query.trim()) return;
     setBrollSearchLoading(true);
     try {
-      const response = await fetch(`/api/courses/broll-search?q=${encodeURIComponent(query)}`);
+      const response = await apiRequest(`/api/courses/broll-search?q=${encodeURIComponent(query)}`, "GET");
       const data = await response.json();
       setBrollSearchResults(data.images || []);
     } catch {
