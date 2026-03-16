@@ -158,6 +158,48 @@ export async function generateCourseThumbnail(
 }
 
 /**
+ * Generate a lesson thumbnail image.
+ * Creates an AI background image based on the lesson content and overlays the lesson title.
+ */
+export async function generateLessonThumbnail(
+  lessonTitle: string,
+  scriptPreview: string,
+): Promise<FalImage | null> {
+  if (!FAL_KEY) return null;
+
+  try {
+    console.log(`🎨 Generating lesson thumbnail: "${lessonTitle}"`);
+
+    const result = await fal.subscribe("fal-ai/flux/schnell", {
+      input: {
+        prompt: `A visually striking scene representing: ${lessonTitle}. ${scriptPreview}. Photorealistic, cinematic lighting, dramatic composition, rich colors, landscape orientation. Absolutely no text, no words, no letters, no writing, no watermarks, no logos.`,
+        image_size: "landscape_16_9",
+        num_images: 1,
+      },
+    });
+
+    const image = (result.data as any)?.images?.[0];
+    if (!image?.url) return null;
+
+    const width = image.width || 1280;
+    const height = image.height || 720;
+
+    const cdnUrl = await overlayTitleOnImage(image.url, lessonTitle, width, height);
+
+    console.log(`✅ Lesson thumbnail generated with title overlay: "${lessonTitle}"`);
+    return {
+      url: cdnUrl,
+      width,
+      height,
+      content_type: "image/jpeg",
+    };
+  } catch (error: any) {
+    console.error("❌ Lesson thumbnail generation error:", error.message);
+    return null;
+  }
+}
+
+/**
  * Generate a short B-roll video clip using Kling.
  * Returns a ~5 second video clip for use as B-roll in course videos.
  */

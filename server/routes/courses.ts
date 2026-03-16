@@ -716,16 +716,14 @@ coursesRouter.post("/lessons/:id/generate-thumbnail", isAuthenticated, async (re
     const [lesson] = await db.select().from(lessons).where(eq(lessons.id, id));
     if (!lesson) return res.status(404).json({ error: "Lesson not found" });
 
-    const { generateBrollImage, isFalConfigured } = await getFalAi();
+    const { generateLessonThumbnail, isFalConfigured } = await getFalAi();
     if (!isFalConfigured()) {
       return res.status(503).json({ error: "AI image generation not configured" });
     }
 
-    // Use lesson title + first bit of script as prompt
+    // Generate thumbnail with title overlay
     const scriptPreview = lesson.script?.slice(0, 200) || "";
-    const image = await generateBrollImage(
-      `${lesson.title}: ${scriptPreview}. Educational video lesson thumbnail.`
-    );
+    const image = await generateLessonThumbnail(lesson.title, scriptPreview);
     if (!image) {
       return res.status(500).json({ error: "Failed to generate thumbnail" });
     }
