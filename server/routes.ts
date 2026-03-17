@@ -4332,7 +4332,9 @@ ${historyPreview}
         year: "numeric",
       });
       
-      const personalityWithDate = `${avatarConfig.personalityPrompt.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
+      // Use persona engine if available, otherwise fall back to DB personality prompt
+      const basePersonality = await getAvatarSystemPrompt(avatarId) || avatarConfig.personalityPrompt;
+      const personalityWithDate = `${basePersonality.replace(/- Today's date:.*/, `- Today's date: ${currentDate}`)}`
         .replace(/⚠️ CRITICAL SYSTEM CONFIGURATION:/, `⚠️ CRITICAL SYSTEM CONFIGURATION:\n- Today's date: ${currentDate}`);
 
       const personalityPrompt = avatarPersonality || personalityWithDate;
