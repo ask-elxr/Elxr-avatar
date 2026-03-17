@@ -12,6 +12,12 @@ import { ELXR_CONTENT_POLICY } from './contentTaxonomy.js';
 import { getBanterLevel, buildAvatarPrompt } from './warmthEngine.js';
 import { isValidAdminSecret } from './auth.js';
 import { checkChatRateLimit } from './chatRateLimit.js';
+import { detectEndChatIntent, getFarewellResponse, isDefiniteEndChat } from './services/endChatIntent.js';
+import {
+  DEFAULT_CONFIG, RE_ENGAGE_PHRASES_1, RE_ENGAGE_PHRASES_2,
+  WARM_CLOSING_PHRASES, THINKING_FILLER_PHRASES,
+  type ConversationConfig,
+} from './conversationConfig.js';
 import {
   detectVideoIntent, setPendingVideoConfirmation, getPendingVideoConfirmation,
   clearPendingVideoConfirmation, isVideoConfirmation, isVideoRejection,
@@ -24,28 +30,8 @@ const log = logger.child({ service: 'conversation-ws' });
 
 const ELEVENLABS_STT_URL = 'wss://api.elevenlabs.io/v1/speech-to-text/realtime';
 
-const IDLE_NUDGE_1_MS = 12_000;
-const IDLE_NUDGE_2_MS = 25_000;
-const IDLE_SOFT_END_MS = 45_000;
-
-const NUDGES_1 = [
-  "I'm here. Go on.",
-  "Take your time.",
-  "No rush — what's on your mind?",
-  "Alright. Where do you want to start?",
-];
-const NUDGES_2 = [
-  "Still with me?",
-  "Want the short version or the real one?",
-  "If you're stuck, give me one sentence and we'll work from there.",
-  "We can do this in tiny steps. What's step one?",
-];
-const SOFT_ENDS = [
-  "Alright — I'll pause. Tap me when you want to carry on.",
-  "Okay. I'll be quiet for now. Come back when you're ready.",
-  "No pressure. I'm here when you want to pick this up again.",
-  "Got it. I'll stop talking. You restart whenever.",
-];
+// Conversation state type
+type ConversationState = 'idle' | 'greeting' | 'listening' | 'thinking' | 'speaking' | 'interrupted' | 'soft_wait' | 're_engage' | 'closing' | 'ended';
 
 function rand(arr: string[]): string {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -54,7 +40,7 @@ function rand(arr: string[]): string {
 interface ConversationSession {
   ws: WebSocket;
   sessionId: string;
-  state: 'IDLE' | 'LISTENING' | 'THINKING' | 'SPEAKING';
+  state: ConversationState;
   turnId: number;
   active: {
     llmAbort: AbortController | null;
@@ -62,10 +48,17 @@ interface ConversationSession {
     ttsQueue: Array<{ sentence: string; turnId: number }>;
     playing: boolean;
   };
+  config: ConversationConfig;
   bargeTimer: NodeJS.Timeout | null;
   idleTimer1: NodeJS.Timeout | null;
   idleTimer2: NodeJS.Timeout | null;
   idleTimer3: NodeJS.Timeout | null;
+  idleTimer4: NodeJS.Timeout | null;
+  idleTimer5: NodeJS.Timeout | null;
+  thinkingAckTimer: NodeJS.Timeout | null;
+  closingTimer: NodeJS.Timeout | null;
+  sessionEndTimer: NodeJS.Timeout | null;
+  reengageCount: number;
   sttWs: WebSocket | null;
   sttReady: boolean;
   keepaliveInterval: ReturnType<typeof setInterval> | null;
@@ -100,9 +93,32 @@ function sendTtsBinary(ws: WebSocket, turnId: number, audioChunk: Buffer): void 
   }
 }
 
+function transitionState(session: ConversationSession, newState: ConversationState, reason: string): void {
+  const from = session.state;
+  if (from === newState) return;
+  session.state = newState;
+  log.info({ from, to: newState, reason, sessionId: session.sessionId, turnId: session.turnId }, 'State transition');
+
+  // Notify client of notable state changes
+  if (['greeting', 'closing', 'ended'].includes(newState)) {
+    sendJSON(session.ws, { type: 'STATE_CHANGE', state: newState, reason });
+  }
+}
+
+function clearAllTimers(session: ConversationSession): void {
+  clearIdleTimers(session);
+  if (session.thinkingAckTimer) { clearTimeout(session.thinkingAckTimer); session.thinkingAckTimer = null; }
+  if (session.closingTimer) { clearTimeout(session.closingTimer); session.closingTimer = null; }
+  if (session.sessionEndTimer) { clearTimeout(session.sessionEndTimer); session.sessionEndTimer = null; }
+}
+
 function bargeIn(session: ConversationSession, reason: string = 'user_started_speaking'): void {
   session.turnId += 1;
-  log.info({ sessionId: session.sessionId, turnId: session.turnId, reason }, 'Barge-in triggered');
+  log.info({ sessionId: session.sessionId, turnId: session.turnId, reason, fromState: session.state }, 'Barge-in triggered');
+
+  // Cancel closing/session-end timers if user speaks during re_engage or closing
+  if (session.closingTimer) { clearTimeout(session.closingTimer); session.closingTimer = null; }
+  if (session.sessionEndTimer) { clearTimeout(session.sessionEndTimer); session.sessionEndTimer = null; }
 
   if (session.active.llmAbort) {
     try { session.active.llmAbort.abort(reason); } catch {}
@@ -117,7 +133,9 @@ function bargeIn(session: ConversationSession, reason: string = 'user_started_sp
   session.active.ttsQueue.length = 0;
 
   sendJSON(session.ws, { type: 'STOP_AUDIO', turnId: session.turnId, reason });
-  session.state = 'LISTENING';
+  transitionState(session, 'interrupted', reason);
+  transitionState(session, 'listening', 'barge_in_complete');
+  session.reengageCount = 0;
   resetIdleTimers(session);
 }
 
@@ -125,55 +143,87 @@ function clearIdleTimers(session: ConversationSession): void {
   if (session.idleTimer1) { clearTimeout(session.idleTimer1); session.idleTimer1 = null; }
   if (session.idleTimer2) { clearTimeout(session.idleTimer2); session.idleTimer2 = null; }
   if (session.idleTimer3) { clearTimeout(session.idleTimer3); session.idleTimer3 = null; }
+  if (session.idleTimer4) { clearTimeout(session.idleTimer4); session.idleTimer4 = null; }
+  if (session.idleTimer5) { clearTimeout(session.idleTimer5); session.idleTimer5 = null; }
 }
 
 function resetIdleTimers(session: ConversationSession): void {
   clearIdleTimers(session);
-  if (session.state !== 'LISTENING') return;
+  if (session.state !== 'listening') return;
 
+  const cfg = session.config.inactivity;
+
+  // Stage 1: Enter soft_wait after speech finishes
   session.idleTimer1 = setTimeout(() => {
-    if (session.state === 'LISTENING') {
-      const text = rand(NUDGES_1);
-      sendJSON(session.ws, { type: 'MUM_NUDGE', text });
-      log.info({ sessionId: session.sessionId, text }, 'Idle nudge 1');
+    if (session.state === 'listening') {
+      transitionState(session, 'soft_wait', 'post_speech_idle');
+      log.info({ sessionId: session.sessionId }, 'Entered soft_wait');
     }
-  }, IDLE_NUDGE_1_MS);
+  }, cfg.postSpeechIdleMs);
 
+  // Stage 2: First re-engage nudge
   session.idleTimer2 = setTimeout(() => {
-    if (session.state === 'LISTENING') {
-      const text = rand(NUDGES_2);
+    if (session.state === 'soft_wait' || session.state === 'listening') {
+      transitionState(session, 're_engage', 'first_reengage');
+      const text = rand(RE_ENGAGE_PHRASES_1);
       sendJSON(session.ws, { type: 'MUM_NUDGE', text });
-      log.info({ sessionId: session.sessionId, text }, 'Idle nudge 2');
+      log.info({ sessionId: session.sessionId, text }, 'Re-engage nudge 1');
+      enqueueTts(session, text, session.turnId);
+      // Return to soft_wait after speaking nudge
+      transitionState(session, 'soft_wait', 'nudge_1_spoken');
+      session.reengageCount = 1;
     }
-  }, IDLE_NUDGE_2_MS);
+  }, cfg.firstReengageMs);
 
+  // Stage 3: Second re-engage nudge
   session.idleTimer3 = setTimeout(() => {
-    if (session.state === 'LISTENING') {
-      const text = rand(SOFT_ENDS);
-      sendJSON(session.ws, { type: 'MUM_SOFT_END', text });
-      log.info({ sessionId: session.sessionId, text }, 'Idle soft end (session stays open)');
+    if (session.state === 'soft_wait' || session.state === 're_engage') {
+      transitionState(session, 're_engage', 'second_reengage');
+      const text = rand(RE_ENGAGE_PHRASES_2);
+      sendJSON(session.ws, { type: 'MUM_NUDGE', text });
+      log.info({ sessionId: session.sessionId, text }, 'Re-engage nudge 2');
+      enqueueTts(session, text, session.turnId);
+      transitionState(session, 'soft_wait', 'nudge_2_spoken');
+      session.reengageCount = 2;
     }
-  }, IDLE_SOFT_END_MS);
+  }, cfg.secondReengageMs);
+
+  // Stage 4: Initiate warm closing
+  session.idleTimer4 = setTimeout(() => {
+    if (session.state === 'soft_wait' || session.state === 're_engage') {
+      initiateClosing(session);
+    }
+  }, cfg.closingStartMs);
+
+  // Stage 5: Force session end
+  session.idleTimer5 = setTimeout(() => {
+    if (session.state !== 'ended') {
+      initiateSessionEnd(session, 'inactivity_timeout');
+    }
+  }, cfg.sessionEndMs);
 }
 
 function maybeBargeInFromStt(session: ConversationSession, sttMsg: any): void {
-  const assistantTalking = session.state === 'SPEAKING' || session.state === 'THINKING';
-  if (!assistantTalking) return;
+  const canBargeIn = session.state === 'speaking' || session.state === 'thinking' ||
+    session.state === 're_engage' || session.state === 'closing';
+  if (!canBargeIn) return;
 
   const speechStart = sttMsg.type === 'vad' && sttMsg.event === 'speech_start';
   const partialReal =
     sttMsg.type === 'partial' &&
     (sttMsg.text?.trim()?.length ?? 0) >= 2 &&
-    (sttMsg.confidence ?? 1) >= 0.6;
+    (sttMsg.confidence ?? 1) >= session.config.interruption.vadThreshold;
 
   if (speechStart || partialReal) {
     if (!session.bargeTimer) {
       session.bargeTimer = setTimeout(() => {
         session.bargeTimer = null;
-        if (session.state === 'SPEAKING' || session.state === 'THINKING') {
+        const stillBargeInTarget = session.state === 'speaking' || session.state === 'thinking' ||
+          session.state === 're_engage' || session.state === 'closing';
+        if (stillBargeInTarget) {
           bargeIn(session, 'user_started_speaking');
         }
-      }, 150);
+      }, session.config.interruption.minVoiceMs);
     }
   }
 }
@@ -202,7 +252,14 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
 You MUST maintain a consistently warm, polite, patient, and respectful tone throughout the ENTIRE conversation.
 
 🎙️ BARGE-IN BEHAVIOR:
-If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
+If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.
+
+🗣️ CONVERSATIONAL FLOW RULES:
+- Yield instantly when interrupted. Do not finish your sentence.
+- Be patient with pauses. People think at different speeds — silence does not mean the user is done.
+- When closing a conversation, be warm and brief. Do not over-explain or repeat yourself.
+- Avoid robotic or formulaic transitions like "Great question!" or "That's a really interesting point."
+- Keep responses conversational — short sentences, natural rhythm, as if speaking face-to-face.`;
 
   return prompt;
 }
@@ -400,6 +457,64 @@ function popCompleteSentences(buffer: string): { complete: string[]; remaining: 
   return { complete, remaining: buffer.slice(lastIndex) };
 }
 
+function initiateClosing(session: ConversationSession): void {
+  if (session.state === 'ended' || session.state === 'closing') return;
+  transitionState(session, 'closing', 'inactivity_closing');
+
+  const text = rand(WARM_CLOSING_PHRASES);
+  sendJSON(session.ws, { type: 'MUM_SOFT_END', text });
+  log.info({ sessionId: session.sessionId, text }, 'Warm closing initiated');
+
+  const myTurn = session.turnId;
+  enqueueTts(session, text, myTurn);
+
+  // After TTS completes (poll), wait postClosingDelayMs then end
+  session.closingTimer = setTimeout(() => {
+    if (session.state === 'closing') {
+      initiateSessionEnd(session, 'closing_complete');
+    }
+  }, session.config.closing.postClosingDelayMs + 4000); // 4s buffer for TTS to complete
+}
+
+function initiateSessionEnd(session: ConversationSession, reason: string): void {
+  if (session.state === 'ended') return;
+  transitionState(session, 'ended', reason);
+
+  sendJSON(session.ws, { type: 'SESSION_END', reason });
+  log.info({ sessionId: session.sessionId, reason }, 'Session ended by server');
+
+  // Cleanup after a brief delay to allow the client to receive the message
+  setTimeout(() => {
+    cleanupSession(session.sessionId);
+    if (session.ws.readyState === WebSocket.OPEN) {
+      session.ws.close(1000, reason);
+    }
+  }, 500);
+}
+
+function startThinkingAckTimer(session: ConversationSession, myTurn: number): void {
+  if (session.thinkingAckTimer) {
+    clearTimeout(session.thinkingAckTimer);
+  }
+  session.thinkingAckTimer = setTimeout(() => {
+    session.thinkingAckTimer = null;
+    // Only fire if still thinking on the same turn
+    if (session.state === 'thinking' && session.turnId === myTurn) {
+      const filler = rand(THINKING_FILLER_PHRASES);
+      log.info({ sessionId: session.sessionId, filler }, 'Thinking ack triggered');
+      sendJSON(session.ws, { type: 'THINKING_ACK', text: filler });
+      enqueueTts(session, filler, myTurn);
+    }
+  }, session.config.latency.thinkingAckMs);
+}
+
+function clearThinkingAckTimer(session: ConversationSession): void {
+  if (session.thinkingAckTimer) {
+    clearTimeout(session.thinkingAckTimer);
+    session.thinkingAckTimer = null;
+  }
+}
+
 async function runTurn(session: ConversationSession, userMessage: string, imageBase64?: string, imageMimeType?: string): Promise<void> {
   const myTurn = session.turnId;
 
@@ -425,7 +540,7 @@ if (session.enableVideoCreation && session.userId) {
 
         log.info({ sessionId: session.sessionId, topic: pending.topic }, 'VIDEO CONFIRMED via WS — creating now');
 
-        session.state = 'SPEAKING';
+        transitionState(session, 'speaking', 'video_confirmed');
         clearIdleTimers(session);
         sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
         enqueueTts(session, ack, myTurn);
@@ -433,7 +548,7 @@ if (session.enableVideoCreation && session.userId) {
           await new Promise(r => setTimeout(r, 50));
         }
         sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-        session.state = 'LISTENING';
+        transitionState(session, 'listening', 'video_ack_done');
         resetIdleTimers(session);
 
         storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -459,7 +574,7 @@ if (session.enableVideoCreation && session.userId) {
 
         log.info({ sessionId: session.sessionId }, 'VIDEO REJECTED via WS');
 
-        session.state = 'SPEAKING';
+        transitionState(session, 'speaking', 'video_rejected');
         clearIdleTimers(session);
         sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
         enqueueTts(session, rejection, myTurn);
@@ -467,7 +582,7 @@ if (session.enableVideoCreation && session.userId) {
           await new Promise(r => setTimeout(r, 50));
         }
         sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-        session.state = 'LISTENING';
+        transitionState(session, 'listening', 'video_rejection_done');
         resetIdleTimers(session);
 
         storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -487,7 +602,7 @@ if (session.enableVideoCreation && session.userId) {
 
         log.info({ sessionId: session.sessionId, topic: pending.topic, sttText: trimmed }, 'VIDEO CONFIRMED (short non-rejection) via WS — creating now');
 
-        session.state = 'SPEAKING';
+        transitionState(session, 'speaking', 'video_short_confirm');
         clearIdleTimers(session);
         sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
         enqueueTts(session, ack, myTurn);
@@ -495,7 +610,7 @@ if (session.enableVideoCreation && session.userId) {
           await new Promise(r => setTimeout(r, 50));
         }
         sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-        session.state = 'LISTENING';
+        transitionState(session, 'listening', 'video_short_confirm_done');
         resetIdleTimers(session);
 
         storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -521,7 +636,7 @@ if (session.enableVideoCreation && session.userId) {
 
       log.info({ sessionId: session.sessionId, oldTopic: pending.topic, newTopic: refined.refinedTopic }, 'VIDEO TOPIC REFINED via WS');
 
-      session.state = 'SPEAKING';
+      transitionState(session, 'speaking', 'video_topic_refined');
       clearIdleTimers(session);
       sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
       enqueueTts(session, reask, myTurn);
@@ -529,7 +644,7 @@ if (session.enableVideoCreation && session.userId) {
         await new Promise(r => setTimeout(r, 50));
       }
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-      session.state = 'LISTENING';
+      transitionState(session, 'listening', 'video_refinement_done');
       resetIdleTimers(session);
 
       storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -548,7 +663,7 @@ if (session.enableVideoCreation && session.userId) {
       setPendingVideoConfirmation(session.userId, topic, userMessage, session.avatarId);
       const confirmPrompt = generateConfirmationPrompt(topic, session.avatarId);
 
-      session.state = 'SPEAKING';
+      transitionState(session, 'speaking', 'video_intent_confirm');
       clearIdleTimers(session);
       sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
       enqueueTts(session, confirmPrompt, myTurn);
@@ -556,7 +671,7 @@ if (session.enableVideoCreation && session.userId) {
         await new Promise(r => setTimeout(r, 50));
       }
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-      session.state = 'LISTENING';
+      transitionState(session, 'listening', 'video_confirm_done');
       resetIdleTimers(session);
 
       storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -567,9 +682,39 @@ if (session.enableVideoCreation && session.userId) {
   }
   // --- End video intent detection ---
 
-  session.state = 'THINKING';
+  // Check for end-chat intent before going to LLM
+  const endChatResult = detectEndChatIntent(userMessage);
+  if (endChatResult.isEndChatRequest && endChatResult.confidence >= 0.85) {
+    const farewell = getFarewellResponse(endChatResult.farewellType);
+    log.info({ sessionId: session.sessionId, farewellType: endChatResult.farewellType, confidence: endChatResult.confidence }, 'End chat intent detected — initiating closing');
+
+    transitionState(session, 'speaking', 'farewell_response');
+    clearIdleTimers(session);
+    sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+    enqueueTts(session, farewell, myTurn);
+    while (session.active.playing && session.turnId === myTurn) {
+      await new Promise(r => setTimeout(r, 50));
+    }
+    sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
+
+    if (session.userId) {
+      storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
+      storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'assistant', text: farewell }).catch(() => {});
+    }
+
+    // Wait briefly then end session
+    setTimeout(() => {
+      if (session.state !== 'ended') {
+        initiateSessionEnd(session, 'user_farewell');
+      }
+    }, session.config.closing.postClosingDelayMs);
+    return;
+  }
+
+  transitionState(session, 'thinking', 'processing_user_input');
   clearIdleTimers(session);
   sendJSON(session.ws, { type: 'TURN_START', turnId: myTurn });
+  startThinkingAckTimer(session, myTurn);
 
   log.info({ sessionId: session.sessionId, turnId: myTurn, message: userMessage.substring(0, 80) }, 'Starting turn');
 
@@ -590,9 +735,10 @@ if (session.enableVideoCreation && session.userId) {
     const llmAbort = new AbortController();
     session.active.llmAbort = llmAbort;
 
-    session.state = 'SPEAKING';
+    transitionState(session, 'speaking', 'llm_streaming_start');
     let buffer = '';
     let fullResponse = '';
+    let firstChunkReceived = false;
 
     const streamGen = claudeService.streamResponse(
       userMessage,
@@ -609,6 +755,10 @@ if (session.enableVideoCreation && session.userId) {
       if (session.turnId !== myTurn || llmAbort.signal.aborted) break;
 
       if (event.type === 'text') {
+        if (!firstChunkReceived) {
+          firstChunkReceived = true;
+          clearThinkingAckTimer(session);
+        }
         buffer += event.content;
         fullResponse += event.content;
 
@@ -632,7 +782,7 @@ if (session.enableVideoCreation && session.userId) {
 
     if (session.turnId === myTurn) {
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
-      session.state = 'LISTENING';
+      transitionState(session, 'listening', 'turn_complete');
       resetIdleTimers(session);
 
       if (session.userId && fullResponse) {
@@ -711,7 +861,12 @@ async function startSttStream(session: ConversationSession): Promise<void> {
       const event = JSON.parse(data.toString());
       const msgType = event.type || event.message_type;
 
-      if (session.state === 'LISTENING') {
+      // Reset idle timers on any user speech activity
+      if (session.state === 'listening' || session.state === 'soft_wait') {
+        if (session.state === 'soft_wait') {
+          transitionState(session, 'listening', 'user_speech_activity');
+          session.reengageCount = 0;
+        }
         resetIdleTimers(session);
       }
 
@@ -721,20 +876,20 @@ async function startSttStream(session: ConversationSession): Promise<void> {
 
         if (isFinal && text) {
           sendJSON(session.ws, { type: 'STT_FINAL', text });
-          log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Final transcript');
+          log.info({ sessionId: session.sessionId, text: text.substring(0, 80), state: session.state }, 'Final transcript');
 
           if (session.bargeTimer) {
             clearTimeout(session.bargeTimer);
             session.bargeTimer = null;
           }
 
-          if (session.state === 'SPEAKING') {
+          if (session.state === 'speaking' || session.state === 're_engage' || session.state === 'closing') {
             bargeIn(session, 'user_started_speaking');
           }
 
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
 
-          if (session.state === 'THINKING') {
+          if (session.state === 'thinking') {
             log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Queuing transcript while thinking');
             return;
           }
@@ -762,20 +917,20 @@ async function startSttStream(session: ConversationSession): Promise<void> {
         const text = (event.text || event.transcript || '').trim();
         if (text) {
           sendJSON(session.ws, { type: 'STT_FINAL', text });
-          log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Committed transcript');
+          log.info({ sessionId: session.sessionId, text: text.substring(0, 80), state: session.state }, 'Committed transcript');
 
           if (session.bargeTimer) {
             clearTimeout(session.bargeTimer);
             session.bargeTimer = null;
           }
 
-          if (session.state === 'SPEAKING') {
+          if (session.state === 'speaking' || session.state === 're_engage' || session.state === 'closing') {
             bargeIn(session, 'user_started_speaking');
           }
 
           session.accumulatedTranscript += (session.accumulatedTranscript ? ' ' : '') + text;
 
-          if (session.state === 'THINKING') {
+          if (session.state === 'thinking') {
             log.info({ sessionId: session.sessionId, text: text.substring(0, 80) }, 'Queuing transcript while thinking');
             return;
           }
@@ -817,7 +972,7 @@ function cleanupSession(sessionId: string): void {
     session.bargeTimer = null;
   }
 
-  clearIdleTimers(session);
+  clearAllTimers(session);
 
   if (session.keepaliveInterval) {
     clearInterval(session.keepaliveInterval);
@@ -920,7 +1075,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
       const session: ConversationSession = {
         ws,
         sessionId,
-        state: 'IDLE',
+        state: 'idle',
         turnId: 0,
         active: {
           llmAbort: null,
@@ -928,10 +1083,17 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
           ttsQueue: [],
           playing: false,
         },
+        config: DEFAULT_CONFIG,
         bargeTimer: null,
         idleTimer1: null,
         idleTimer2: null,
         idleTimer3: null,
+        idleTimer4: null,
+        idleTimer5: null,
+        thinkingAckTimer: null,
+        closingTimer: null,
+        sessionEndTimer: null,
+        reengageCount: 0,
         sttWs: null,
         sttReady: false,
         keepaliveInterval: null,
@@ -956,7 +1118,8 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
 
       try {
         await startSttStream(session);
-        session.state = 'LISTENING';
+        transitionState(session, 'greeting', 'stt_connected');
+        transitionState(session, 'listening', 'greeting_complete');
         resetIdleTimers(session);
         sendJSON(ws, {
           type: 'SESSION_STARTED',
@@ -986,7 +1149,7 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
       const imageMimeType = message.imageMimeType;
       if (!text && !imageBase64) return;
 
-      if (session.state === 'SPEAKING' || session.state === 'THINKING') {
+      if (session.state === 'speaking' || session.state === 'thinking' || session.state === 're_engage' || session.state === 'closing') {
         bargeIn(session, 'text_input');
       }
       session.turnId += 1;
