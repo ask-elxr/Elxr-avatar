@@ -672,13 +672,18 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
-  // Check for playlist suggestion opportunity (after every 3rd message, max 3 checks per session)
+  // Check for playlist suggestion opportunity (after every 2nd assistant message, max 4 checks per session)
   const checkPlaylistSuggestion = useCallback(async () => {
-    if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 3) return;
-    if (chatHistory.length < 3) return; // Need some conversation context
+    if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 4) return;
+    if (chatHistory.length < 4) return; // Need some conversation context
 
-    // Check on 3rd, 6th, 9th message
-    if (chatHistory.length % 3 !== 0) return;
+    // Only check after assistant messages (even counts = user sent, odd = assistant replied)
+    const lastMsg = chatHistory[chatHistory.length - 1];
+    if (lastMsg?.role !== 'assistant') return;
+
+    // Check every 2nd assistant reply
+    const assistantCount = chatHistory.filter(m => m.role === 'assistant').length;
+    if (assistantCount % 2 !== 0) return;
 
     playlistCheckCount.current++;
 
@@ -712,31 +717,6 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     checkPlaylistSuggestion();
   }, [chatHistory.length]);
 
-  // Detect when the avatar itself offers a playlist in its response
-  useEffect(() => {
-    if (playlistSuggestion || playlistCreated || playlistCreating) return;
-    if (chatHistory.length < 2) return;
-
-    const lastMsg = chatHistory[chatHistory.length - 1];
-    if (lastMsg.role !== 'assistant') return;
-
-    const lower = lastMsg.content.toLowerCase();
-    const mentionsPlaylist =
-      lower.includes('playlist') ||
-      lower.includes('make you a mix') ||
-      lower.includes('build you a mix') ||
-      lower.includes('put together some music') ||
-      lower.includes('curate something');
-
-    if (mentionsPlaylist) {
-      const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      setPlaylistSuggestion({
-        title: `${avatarName} wants to make you a playlist`,
-        description: "Tap Create Playlist to let them build it.",
-        suggestedType: "conversation-driven",
-      });
-    }
-  }, [chatHistory.length, playlistSuggestion, playlistCreated, playlistCreating, selectedAvatarId]);
 
   // Handle accepting a playlist suggestion
   const handleCreatePlaylist = useCallback(async () => {

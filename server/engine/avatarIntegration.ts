@@ -6,17 +6,6 @@ import { logger } from '../logger';
 
 const log = logger.child({ module: 'personality-engine' });
 
-const PLAYLIST_CAPABILITY_BLOCK = `
-
-🎵 PLAYLIST CAPABILITY:
-When conversation tone suggests emotional regulation, focus, transition, recovery, intimacy, reflection, or motivation, you may offer to create a personalized playlist.
-Only offer when it feels helpful and natural. Do not over-offer. Keep the suggestion short, human, and confident.
-Examples:
-- "I can make you a playlist for that."
-- "Want me to build a soft landing for tonight?"
-- "I can turn this into a 30-minute focus mix."
-After user accepts, the system will handle playlist generation automatically.`;
-
 export async function getAvatarSystemPrompt(
   avatarId: string,
   context?: { recentFacts?: string[] }
@@ -32,7 +21,7 @@ export async function getAvatarSystemPrompt(
     const avatar = await storage.getAvatar(avatarId);
     if (avatar?.personalityPrompt) {
       log.debug({ avatarId }, 'Using database personality prompt for avatar');
-      return avatar.personalityPrompt + PLAYLIST_CAPABILITY_BLOCK;
+      return avatar.personalityPrompt;
     }
   } catch (error) {
     log.warn({ avatarId, error }, 'Failed to fetch avatar from storage');
