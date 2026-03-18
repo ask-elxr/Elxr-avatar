@@ -672,13 +672,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
-  // Check for playlist suggestion opportunity (after every 5th message, max 2 checks per session)
+  // Check for playlist suggestion opportunity (after every 3rd message, max 3 checks per session)
   const checkPlaylistSuggestion = useCallback(async () => {
-    if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 2) return;
-    if (chatHistory.length < 4) return; // Need enough conversation context
+    if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 3) return;
+    if (chatHistory.length < 3) return; // Need some conversation context
 
-    // Only check every 5 messages
-    if (chatHistory.length % 5 !== 0) return;
+    // Check on 3rd, 6th, 9th message
+    if (chatHistory.length % 3 !== 0) return;
 
     playlistCheckCount.current++;
 
