@@ -82,12 +82,15 @@ export class ClaudeService {
     // Detect if user wants detailed/comprehensive response
     // IMPORTANT: Keep this list strict - only explicit requests for detail
     const detailKeywords = [
-      'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
+      'tell me more', 'explain in detail', 'go deeper', 'elaborate',
       'give me more details', 'full explanation', 'comprehensive', 'in depth',
       'tell me everything', 'more information', 'expand on that', 'detailed answer',
       'long answer', 'thorough explanation', 'complete answer', 'walk me through',
       'step by step', 'break it down for me', 'all the details',
-      'explain in depth', 'go into detail'
+      'explain in depth', 'go into detail',
+      'what does the research say', 'what do studies show', 'pubmed', 'research report',
+      'clinical studies', 'clinical trials', 'medical research', 'scientific evidence',
+      'peer reviewed', 'give me a report', 'detailed report', 'what does science say'
     ];
     const queryLower = query.toLowerCase();
     const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
@@ -345,7 +348,10 @@ RESPONSE LENGTH: Keep it to 2–3 short sentences max. This is a real conversati
       const detailedKeywords = [
         'tell me more', 'explain', 'detailed', 'elaborate', 'why', 'how does',
         'what are the steps', 'walk me through', 'in detail', 'break down',
-        'full story', 'complete', 'everything about', 'all about', 'describe'
+        'full story', 'complete', 'everything about', 'all about', 'describe',
+        'what does the research say', 'what do studies show', 'pubmed', 'research report',
+        'clinical studies', 'clinical trials', 'medical research', 'scientific evidence',
+        'peer reviewed', 'give me a report', 'detailed report', 'what does science say'
       ];
       const wantsDetailedResponse = detailedKeywords.some(keyword => 
         query.toLowerCase().includes(keyword)
@@ -467,11 +473,14 @@ RESPONSE REQUIREMENTS:
 
     // Detect if user wants detailed/comprehensive response
     const detailKeywords = [
-      'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
+      'tell me more', 'explain in detail', 'go deeper', 'elaborate',
       'give me details', 'full explanation', 'comprehensive', 'in depth',
       'tell me everything', 'more information', 'expand on', 'detailed answer',
       'long answer', 'thorough', 'complete answer', 'walk me through',
-      'step by step', 'break it down', 'all the details'
+      'step by step', 'break it down', 'all the details',
+      'what does the research say', 'what do studies show', 'pubmed', 'research report',
+      'clinical studies', 'clinical trials', 'medical research', 'scientific evidence',
+      'peer reviewed', 'give me a report', 'detailed report', 'what does science say'
     ];
     const queryLower = query.toLowerCase();
     const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
