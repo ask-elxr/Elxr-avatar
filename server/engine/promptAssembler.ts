@@ -162,6 +162,15 @@ INSTEAD:
 - To pause: Just... pause in your speech naturally
 
 If you catch yourself about to write *anything in asterisks*, STOP and rewrite it as natural speech.
+
+🎵 PLAYLIST CAPABILITY:
+When conversation tone suggests emotional regulation, focus, transition, recovery, intimacy, reflection, or motivation, you may offer to create a personalized playlist.
+Only offer when it feels helpful and natural. Do not over-offer. Keep the suggestion short, human, and confident.
+Examples:
+- "I can make you a playlist for that."
+- "Want me to build a soft landing for tonight?"
+- "I can turn this into a 30-minute focus mix."
+After user accepts, the system will handle playlist generation automatically.
 `.trim();
 
   const contextBlock = context?.recentFacts?.length 

@@ -47,6 +47,7 @@ import {
   GraduationCap,
   X,
   Search,
+  Music,
 } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -64,6 +65,7 @@ import type {
   SubscriptionPlan,
   UserSubscription,
   UsagePeriod,
+  GeneratedMedia,
 } from "@shared/schema";
 import { getNamespaceDisplayName } from "@shared/pineconeCategories";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +116,9 @@ import {
 } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
 import { AvatarChat } from "@/components/avatar-chat";
+import { PlaylistCard } from "@/components/PlaylistCard";
+import { PlaylistDetailModal } from "@/components/PlaylistDetailModal";
+import { SpotifyConnect } from "@/components/SpotifyConnect";
 
 export type UserView =
   | "dashboard"
@@ -256,6 +261,11 @@ export default function Dashboard({
     enabled: isAuthenticated,
   });
 
+  const { data: mediaItems, isLoading: mediaLoading } = useQuery<GeneratedMedia[]>({
+    queryKey: ["/api/my-media"],
+    enabled: isAuthenticated,
+  });
+
   const { data: avatars, isLoading: avatarsLoading } = useQuery<
     AvatarProfile[]
   >({
@@ -313,6 +323,9 @@ export default function Dashboard({
   const [videoToDelete, setVideoToDelete] = useState<ChatVideo | null>(null);
   const [videoSearch, setVideoSearch] = useState("");
   const [courseSearch, setCourseSearch] = useState("");
+  const [mediaFilter, setMediaFilter] = useState<"all" | "videos" | "playlists">("all");
+  const [selectedMediaItem, setSelectedMediaItem] = useState<GeneratedMedia | null>(null);
+  const [regeneratingMediaId, setRegeneratingMediaId] = useState<string | null>(null);
 
   // Generate or get user ID for chat
   const [chatUserId] = useState(() => {
@@ -447,6 +460,30 @@ export default function Dashboard({
       toast({
         title: "Error",
         description: error.message || "Failed to delete video",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const regeneratePlaylistMutation = useMutation({
+    mutationFn: async (mediaItemId: string) => {
+      setRegeneratingMediaId(mediaItemId);
+      const response = await apiRequest(`/api/my-media/${mediaItemId}/regenerate`, "POST");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-media"] });
+      setRegeneratingMediaId(null);
+      toast({
+        title: "New version created",
+        description: "A fresh playlist has been generated.",
+      });
+    },
+    onError: (error: any) => {
+      setRegeneratingMediaId(null);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to regenerate playlist",
         variant: "destructive",
       });
     },
@@ -801,7 +838,7 @@ export default function Dashboard({
                 {currentView === "chat" &&
                   "Choose an AI avatar to start a conversation"}
                 {currentView === "videos" &&
-                  "Videos generated from your chat conversations"}
+                  "Videos and playlists from your conversations"}
                 {currentView === "courses" &&
                   "Create and manage video courses with AI avatars"}
                 {currentView === "course-view" && "Watch your course videos"}
@@ -1221,13 +1258,85 @@ export default function Dashboard({
             {/* Videos View */}
             {currentView === "videos" && (
               <>
-                {videosLoading ? (
+                {/* Filter tabs + Spotify connect */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex gap-2">
+                    {(["all", "videos", "playlists"] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setMediaFilter(tab)}
+                        className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                          mediaFilter === tab
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                            : "text-white/40 hover:text-white/60 border border-transparent"
+                        }`}
+                      >
+                        {tab === "all" ? "All" : tab === "videos" ? "Videos" : "Playlists"}
+                      </button>
+                    ))}
+                  </div>
+                  <SpotifyConnect compact />
+                </div>
+
+                {/* Playlists section */}
+                {mediaFilter !== "videos" && mediaItems && mediaItems.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center">
+                        <Music className="w-4 h-4 text-purple-400" />
+                      </div>
+                      Playlists ({mediaItems.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {mediaItems.map((item) => (
+                        <PlaylistCard
+                          key={item.id}
+                          item={item}
+                          onOpenDetail={setSelectedMediaItem}
+                          onRegenerate={(item) => regeneratePlaylistMutation.mutate(item.id)}
+                          isRegenerating={regeneratingMediaId === item.id}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Playlist detail modal */}
+                <PlaylistDetailModal
+                  item={selectedMediaItem}
+                  open={!!selectedMediaItem}
+                  onClose={() => setSelectedMediaItem(null)}
+                  onRegenerate={(item) => regeneratePlaylistMutation.mutate(item.id)}
+                  isRegenerating={!!regeneratingMediaId}
+                />
+
+                {mediaFilter === "playlists" ? (
+                  !mediaItems || mediaItems.length === 0 ? (
+                    <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
+                      <CardHeader className="text-center">
+                        <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                          <Music className="w-8 h-8 text-purple-400" />
+                        </div>
+                        <CardTitle className="text-white">No Playlists Yet</CardTitle>
+                        <CardDescription className="text-white/60">
+                          Chat with an avatar and they can create a personalized playlist for you.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex justify-center">
+                        <Button onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Start Chatting
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : null
+                ) : (videosLoading || mediaLoading) ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-gradient-primary glow-primary flex items-center justify-center mx-auto mb-4 animate-pulse">
                         <Loader2 className="w-6 h-6 text-white animate-spin" />
                       </div>
-                      <p className="text-white/60">Loading your videos...</p>
+                      <p className="text-white/60">Loading your content...</p>
                     </div>
                   </div>
                 ) : !chatVideos || chatVideos.length === 0 ? (

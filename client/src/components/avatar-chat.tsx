@@ -28,6 +28,8 @@ import { TrialCountdown } from "@/components/TrialCountdown";
 import { Slider } from "@/components/ui/slider";
 import { unlockMobileAudio, stopSharedAudio, getGlobalVolume, setGlobalVolume, getSharedAudioElement, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { useChromaKey } from "@/hooks/useChromaKey";
+import { PlaylistSuggestionCard, PlaylistCreatedCard } from "@/components/PlaylistSuggestionCard";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -113,6 +115,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const toolbarTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
+
+  // Playlist suggestion state
+  const [playlistSuggestion, setPlaylistSuggestion] = useState<{
+    title: string;
+    description: string;
+    suggestedType: string;
+  } | null>(null);
+  const [playlistCreating, setPlaylistCreating] = useState(false);
+  const [playlistCreated, setPlaylistCreated] = useState<{
+    title: string;
+    thumbnailUrl?: string | null;
+    externalUrl?: string | null;
+  } | null>(null);
+  const playlistCheckCount = useRef(0); // Avoid over-suggesting
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -656,6 +672,91 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
+  // Check for playlist suggestion opportunity (after every 5th message, max 2 checks per session)
+  const checkPlaylistSuggestion = useCallback(async () => {
+    if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 2) return;
+    if (chatHistory.length < 4) return; // Need enough conversation context
+
+    // Only check every 5 messages
+    if (chatHistory.length % 5 !== 0) return;
+
+    playlistCheckCount.current++;
+
+    try {
+      const recentContext = chatHistory
+        .slice(-8)
+        .map((m) => `${m.role}: ${m.content}`)
+        .join("\n");
+
+      const res = await apiRequest("/api/avatar/playlist-suggestion", "POST", {
+        conversationContext: recentContext,
+      });
+      const data = await res.json();
+
+      if (data.shouldSuggest) {
+        const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+        setPlaylistSuggestion({
+          title: `${avatarName} can make you a playlist`,
+          description: data.rationale || `A ${data.suggestedType} playlist might help right now.`,
+          suggestedType: data.suggestedType,
+        });
+      }
+    } catch {
+      // Silently fail — this is a non-critical enhancement
+    }
+  }, [chatHistory, playlistSuggestion, playlistCreated, selectedAvatarId]);
+
+  // Trigger playlist check when chat history updates
+  useEffect(() => {
+    checkPlaylistSuggestion();
+  }, [chatHistory.length]);
+
+  // Handle accepting a playlist suggestion
+  const handleCreatePlaylist = useCallback(async () => {
+    if (playlistCreating) return;
+    setPlaylistCreating(true);
+
+    try {
+      const recentContext = chatHistory
+        .slice(-10)
+        .map((m) => `${m.role}: ${m.content}`)
+        .join("\n");
+
+      const avatarDisplayName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+      const res = await apiRequest("/api/playlists/generate", "POST", {
+        conversationContext: recentContext,
+        avatarName: avatarDisplayName || selectedAvatarId,
+        overrideMood: playlistSuggestion?.suggestedType,
+      });
+      const data = await res.json();
+
+      setPlaylistSuggestion(null);
+      setPlaylistCreated({
+        title: data.title,
+        thumbnailUrl: data.thumbnailUrl,
+        externalUrl: data.externalUrl,
+      });
+
+      // Invalidate my-media query so Dashboard picks it up
+      queryClient.invalidateQueries({ queryKey: ["/api/my-media"] });
+
+      toast({
+        title: "Playlist created",
+        description: `"${data.title}" is ready in My Videos.`,
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Playlist failed",
+        description: "Something went wrong creating your playlist.",
+      });
+    } finally {
+      setPlaylistCreating(false);
+    }
+  }, [chatHistory, selectedAvatarId, playlistSuggestion, playlistCreating]);
+
   // Handle image file processing
   const processImageFile = (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -1179,6 +1280,33 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     </div>
                   </div>
                 ))}
+                {/* Playlist suggestion card */}
+                {playlistSuggestion && !playlistCreated && (
+                  <div className="flex justify-start">
+                    <PlaylistSuggestionCard
+                      title={playlistSuggestion.title}
+                      description={playlistSuggestion.description}
+                      onAccept={handleCreatePlaylist}
+                      onDismiss={() => setPlaylistSuggestion(null)}
+                      isCreating={playlistCreating}
+                    />
+                  </div>
+                )}
+
+                {/* Playlist created card */}
+                {playlistCreated && (
+                  <div className="flex justify-start">
+                    <PlaylistCreatedCard
+                      title={playlistCreated.title}
+                      thumbnailUrl={playlistCreated.thumbnailUrl}
+                      externalUrl={playlistCreated.externalUrl}
+                      onViewInMyVideos={() => {
+                        window.location.href = "/dashboard/videos";
+                      }}
+                    />
+                  </div>
+                )}
+
                 {textChatLoading && (
                   <div className="flex justify-start">
                     <div className="bg-black/70 backdrop-blur-md text-white/70 rounded-2xl rounded-bl-md px-4 py-3 border border-white/10">

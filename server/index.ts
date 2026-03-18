@@ -7,6 +7,7 @@ import subscriptionRouter from "./routes/subscription.js";
 import ingestRouter, { resumeInterruptedJobs } from "./routes/ingest.js";
 import { personaRouter } from "./routes/personas.js";
 import gamesRouter from "./routes/games.js";
+import { playlistRouter } from "./routes/playlists.js";
 import { requireAdmin, isAuthenticated } from "./auth.js";
 import { subscriptionService } from "./services/subscription.js";
 import { videoGenerationService } from "./services/videoGeneration.js";
@@ -154,6 +155,7 @@ app.get("/api/health", (_req, res) => {
   app.use("/api/admin", ingestRouter);
   app.use("/api/admin", isAuthenticated, personaRouter);
   app.use("/api/games", gamesRouter);
+  app.use("/api", playlistRouter);
   
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
