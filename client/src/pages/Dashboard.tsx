@@ -1344,12 +1344,16 @@ export default function Dashboard({
                               data-testid={`card-video-${video.id}`}
                             >
                               {video.videoUrl ? (
-                                <div className="relative aspect-video">
+                                <div className="relative aspect-video bg-black">
                                   <video
                                     src={video.videoUrl}
                                     className="aspect-video w-full object-cover"
                                     controls
+                                    playsInline
+                                    // @ts-ignore webkit attribute for iOS
+                                    webkit-playsinline="true"
                                     preload="metadata"
+                                    poster={video.thumbnailUrl || undefined}
                                   />
                                   {/* Title overlay - visible on still frame, hides on hover/play */}
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/30 group-hover:opacity-0 transition-opacity duration-300">
