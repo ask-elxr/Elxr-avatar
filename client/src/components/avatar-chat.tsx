@@ -2074,6 +2074,33 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           </div>
         )}
 
+        {/* Floating playlist suggestion — visible in ALL modes (voice, video, text) */}
+        {chatMode !== 'text' && playlistSuggestion && !playlistCreated && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <PlaylistSuggestionCard
+              title={playlistSuggestion.title}
+              description={playlistSuggestion.description}
+              onAccept={handleCreatePlaylist}
+              onDismiss={() => setPlaylistSuggestion(null)}
+              isCreating={playlistCreating}
+            />
+          </div>
+        )}
+
+        {/* Floating playlist created — visible in ALL modes */}
+        {chatMode !== 'text' && playlistCreated && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <PlaylistCreatedCard
+              title={playlistCreated.title}
+              thumbnailUrl={playlistCreated.thumbnailUrl}
+              externalUrl={playlistCreated.externalUrl}
+              onViewInMyVideos={() => {
+                window.location.href = "/dashboard/videos";
+              }}
+            />
+          </div>
+        )}
+
         {/* Settings Panel */}
         {showSettings && sessionActive && (
           <div className="absolute top-20 right-6 bg-black/90 backdrop-blur-lg border border-white/20 rounded-lg p-4 w-72 z-10">
