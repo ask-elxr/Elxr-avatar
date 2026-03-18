@@ -172,7 +172,7 @@ NOTES: (none available - proceed conversationally)`;
 
     // Voice mode length directive
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
-RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that proves you understood. End with a light handoff question.
+RESPONSE LENGTH: Keep it to 2–3 short sentences max. This is a real conversation, not a lecture. Start with 1 short line that proves you understood, then give your take. If there's more to say, offer to go deeper — don't just dump it all.
 ` : '';
 
     // Use warmth protocol for avatar responses
@@ -190,8 +190,8 @@ RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that 
       - End with a light handoff: "What's the real goal here?" or "Which part matters most?"
       - If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
 
-    // Voice mode: 350 tokens (~4-6 sentences) for snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
-    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 350 : 1200);
+    // Voice mode: 200 tokens (~2-4 sentences) for snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
+    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 200 : 1200);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
@@ -214,8 +214,8 @@ RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that 
     let sentenceCount = 0;
     const sentenceEnders = /([.!?])\s+/g;
     
-    // Truncation settings: allow avatars to finish their thoughts naturally
-    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 12 : 18;
+    // Truncation settings: keep voice mode tight and conversational
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 5 : 18;
     let shouldTruncate = false;
 
     for await (const event of stream) {
@@ -622,7 +622,7 @@ ABSOLUTE RULES:
       const systemPrompt = ELXR_CONTENT_POLICY + baseSystemPrompt + voiceModeBrevity + webSearchInstructions;
 
       // Use lower max_tokens for faster response in voice mode, higher when details requested
-      const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 300 : 1000);
+      const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 180 : 1000);
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
@@ -695,21 +695,17 @@ ABSOLUTE RULES:
 
 ${personalityPrompt}
 
-🎧 AUDIO MODE - COMPLETE THOUGHTS WITH CONTINUATION OFFER:
-This is an audio-only conversation. Users are listening, so:
-- Give a thorough but focused response (3-5 sentences is fine)
-- ALWAYS complete your thought - never cut off mid-sentence
-- ALWAYS end with a natural invitation to continue, such as:
-  • "Would you like me to go deeper on that?"
-  • "Want me to share more about this?"
-  • "Should I elaborate on any of that?"
-  • "I can tell you more if you're interested."
-- Be warm and conversational like a knowledgeable friend
-- Think "podcast host" - engaging and complete`;
+🎧 AUDIO MODE - CONVERSATIONAL, NOT LECTURE:
+This is a real-time voice conversation. Talk like a friend, not a professor:
+- Keep responses to 2-3 sentences. Short and punchy.
+- Complete your thought — never cut off mid-sentence.
+- If the topic is big, give the headline and ask if they want more.
+- End naturally — a quick question or handoff, not a speech.
+- Think "catching up with a friend" not "podcast monologue".`;
 
       const response = await this.createMessageBreaker.execute({
         model: FAST_VOICE_MODEL,
-        max_tokens: 350,
+        max_tokens: 200,
         messages: [{ role: 'user', content: userMessage }],
         system: systemPrompt
       });
@@ -726,7 +722,7 @@ This is an audio-only conversation. Users are listening, so:
 
       const content = response.content[0];
       if (content && content.type === 'text') {
-        return this.ensureContinuationOffer(content.text);
+        return this.ensureCleanEnding(content.text);
       }
       return 'I apologize, but I was unable to respond.';
     } catch (error: any) {
@@ -735,37 +731,27 @@ This is an audio-only conversation. Users are listening, so:
     }
   }
 
-  // Post-processing helper to ensure responses end with a continuation offer
-  // and don't cut off mid-sentence
-  private ensureContinuationOffer(text: string): string {
+  // Post-processing helper to ensure responses don't cut off mid-sentence
+  private ensureCleanEnding(text: string): string {
     const trimmed = text.trim();
-    
-    // Check if response already has a continuation offer
-    const continuationPatterns = [
-      /would you like.*(more|deeper|elaborate|hear|know|continue)/i,
-      /want me to.*(go deeper|share more|elaborate|explain|tell)/i,
-      /should I.*(elaborate|explain|tell|share|go deeper)/i,
-      /interested in.*(hearing|learning|knowing) more/i,
-      /let me know if you.*(want|like|need)/i,
-      /\?$/  // Ends with a question mark (likely already offering)
-    ];
-    
-    const hasContinuationOffer = continuationPatterns.some(pattern => pattern.test(trimmed));
-    
-    if (hasContinuationOffer) {
-      return trimmed;
-    }
-    
+
     // Check if response ends mid-sentence (doesn't end with sentence-ending punctuation)
     const endsCleanly = /[.!?]$/.test(trimmed);
-    
+
     if (!endsCleanly) {
-      // Response was cut off - add ellipsis and continuation offer
-      return trimmed + '... Would you like me to continue?';
+      // Response was cut off - find last complete sentence
+      const lastSentenceEnd = Math.max(
+        trimmed.lastIndexOf('.'),
+        trimmed.lastIndexOf('!'),
+        trimmed.lastIndexOf('?')
+      );
+      if (lastSentenceEnd > trimmed.length * 0.5) {
+        return trimmed.substring(0, lastSentenceEnd + 1);
+      }
+      return trimmed + '.';
     }
-    
-    // Response is complete but missing continuation offer - add one
-    return trimmed + ' Would you like me to go deeper on that?';
+
+    return trimmed;
   }
 }
 

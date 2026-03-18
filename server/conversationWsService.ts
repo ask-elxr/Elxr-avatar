@@ -15,7 +15,7 @@ import { checkChatRateLimit } from './chatRateLimit.js';
 import { detectEndChatIntent, getFarewellResponse, isDefiniteEndChat } from './services/endChatIntent.js';
 import {
   DEFAULT_CONFIG, RE_ENGAGE_PHRASES_1, RE_ENGAGE_PHRASES_2,
-  WARM_CLOSING_PHRASES, THINKING_FILLER_PHRASES,
+  WARM_CLOSING_PHRASES, THINKING_FILLER_PHRASES, VIDEO_OFFER_PHRASES,
   type ConversationConfig,
 } from './conversationConfig.js';
 import {
@@ -73,6 +73,8 @@ interface ConversationSession {
   enableVideoCreation: boolean;
   conversationHistory: Array<{ message: string; isUser: boolean }>;
   accumulatedTranscript: string;
+  completedTurns: number;
+  hasOfferedVideo: boolean;
 }
 
 const activeSessions = new Map<string, ConversationSession>();
@@ -255,11 +257,13 @@ You MUST maintain a consistently warm, polite, patient, and respectful tone thro
 If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.
 
 🗣️ CONVERSATIONAL FLOW RULES:
+- Keep responses to 2–3 sentences MAX. This is a voice conversation, not a text wall.
 - Yield instantly when interrupted. Do not finish your sentence.
 - Be patient with pauses. People think at different speeds — silence does not mean the user is done.
 - When closing a conversation, be warm and brief. Do not over-explain or repeat yourself.
 - Avoid robotic or formulaic transitions like "Great question!" or "That's a really interesting point."
-- Keep responses conversational — short sentences, natural rhythm, as if speaking face-to-face.`;
+- NEVER give a long answer then ask "does that make sense?" — keep it short in the first place.
+- If there's more to say, offer: "Want me to dig into that?" Don't just keep talking.`;
 
   return prompt;
 }
@@ -784,6 +788,7 @@ if (session.enableVideoCreation && session.userId) {
       sendJSON(session.ws, { type: 'TURN_END', turnId: myTurn });
       transitionState(session, 'listening', 'turn_complete');
       resetIdleTimers(session);
+      session.completedTurns++;
 
       if (session.userId && fullResponse) {
         storage.saveConversation({ userId: session.userId, avatarId: session.avatarId, role: 'user', text: userMessage }).catch(() => {});
@@ -802,6 +807,30 @@ if (session.enableVideoCreation && session.userId) {
             MemoryType.NOTE,
             { avatarId: session.avatarId, audioOnly: true }
           ).catch(() => {});
+        }
+      }
+
+      // Proactively mention video creation after 3 turns
+      if (session.completedTurns === 3 && session.enableVideoCreation && !session.hasOfferedVideo) {
+        session.hasOfferedVideo = true;
+        const videoOffer = rand(VIDEO_OFFER_PHRASES);
+        log.info({ sessionId: session.sessionId }, 'Proactive video offer after 3 turns');
+
+        // Brief pause before offering so it feels natural
+        await new Promise(r => setTimeout(r, 2000));
+        if (session.state === 'listening' && session.turnId === myTurn) {
+          const offerTurn = ++session.turnId;
+          transitionState(session, 'speaking', 'video_offer');
+          clearIdleTimers(session);
+          sendJSON(session.ws, { type: 'TURN_START', turnId: offerTurn });
+          sendJSON(session.ws, { type: 'MUM_NUDGE', text: videoOffer });
+          enqueueTts(session, videoOffer, offerTurn);
+          while (session.active.playing && session.turnId === offerTurn) {
+            await new Promise(r => setTimeout(r, 50));
+          }
+          sendJSON(session.ws, { type: 'TURN_END', turnId: offerTurn });
+          transitionState(session, 'listening', 'video_offer_done');
+          resetIdleTimers(session);
         }
       }
     }
@@ -1108,6 +1137,8 @@ async function handleControlMessage(ws: WebSocket, sessionId: string, message: a
         enableVideoCreation: avatarConfig.enableVideoCreation !== false,
         conversationHistory: [],
         accumulatedTranscript: '',
+        completedTurns: 0,
+        hasOfferedVideo: false,
       };
 
       activeSessions.set(sessionId, session);

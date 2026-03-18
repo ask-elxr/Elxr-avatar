@@ -124,6 +124,10 @@ export function useConversationWs(config: ConversationWsConfig) {
       if (sourceNodesRef.current.length === 0 && !stoppedRef.current) {
         setState(s => ({ ...s, isSpeaking: false }));
         configRef.current.onSpeakingChange?.(false);
+        // Resume mic AudioContext — mobile Chrome suspends it during audio playback
+        if (micContextRef.current && micContextRef.current.state === 'suspended') {
+          micContextRef.current.resume().catch(() => {});
+        }
       }
     };
   }, [ensurePlaybackCtx]);

@@ -48,11 +48,11 @@ export const DEFAULT_CONFIG: ConversationConfig = {
     interChunkGapMs: 80,
   },
   inactivity: {
-    postSpeechIdleMs: 3_000,
-    firstReengageMs: 10_000,
-    secondReengageMs: 22_000,
-    closingStartMs: 30_000,
-    sessionEndMs: 50_000,
+    postSpeechIdleMs: 8_000,
+    firstReengageMs: 35_000,
+    secondReengageMs: 55_000,
+    closingStartMs: 75_000,
+    sessionEndMs: 120_000,
   },
   closing: {
     postClosingDelayMs: 900,
@@ -63,17 +63,16 @@ export const DEFAULT_CONFIG: ConversationConfig = {
 };
 
 export const RE_ENGAGE_PHRASES_1 = [
-  "I'm here. Go on.",
-  "Take your time.",
-  "No rush — what's on your mind?",
-  "Alright. Where do you want to start?",
+  "I'm still here whenever you're ready.",
+  "Take your time — no rush.",
+  "Just let me know when you want to keep going.",
+  "I'll be right here.",
 ];
 
 export const RE_ENGAGE_PHRASES_2 = [
-  "Still with me?",
-  "Want the short version or the real one?",
-  "If you're stuck, give me one sentence and we'll work from there.",
-  "We can do this in tiny steps. What's step one?",
+  "Still there? No worries if you need a minute.",
+  "Whenever you're ready — I'm not going anywhere.",
+  "Just checking in. Take all the time you need.",
 ];
 
 export const WARM_CLOSING_PHRASES = [
@@ -89,4 +88,10 @@ export const THINKING_FILLER_PHRASES = [
   "Hmm, let me consider that...",
   "One moment...",
   "Good question...",
+];
+
+export const VIDEO_OFFER_PHRASES = [
+  "By the way — if you ever want me to make you a short video on what we're talking about, just say the word. I can create one for you in a few minutes.",
+  "Oh, one thing — I can actually create videos for you on any topic we discuss. Just ask me to make a video and I'll put one together. They usually take a couple minutes.",
+  "Quick heads up — if anything we talk about clicks and you want a video on it, just tell me. I can make you a personalized video and you'll find it in your My Videos section.",
 ];

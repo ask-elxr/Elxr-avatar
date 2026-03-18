@@ -1823,6 +1823,11 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
       }
       
       // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability (audio mode)
+      const audioTurnCount = Math.floor((dbConversationHistory?.length || 0) / 2);
+      const audioVideoProactiveHint = audioTurnCount === 3 ? `
+🎬 PROACTIVE VIDEO MENTION (DO THIS NOW):
+This is your 3rd exchange with this user. Naturally work in a brief mention that you can create personalized videos on topics you discuss. Keep it casual — something like "By the way, if you ever want me to make you a short video on this, just say the word." Don't make it the focus of your response, just a quick aside at the end.
+` : '';
       const videoCapabilityDirective = `
 🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
 You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
@@ -1832,9 +1837,10 @@ You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this 
 - ✅ When a user asks for a video, say "I'd be happy to create a video about [topic] for you!"
 - ✅ Explain that the video will be generated and they'll find it in their "My Videos" section
 - ✅ Videos typically take 2-5 minutes to generate
+- ✅ To request a video, the user just needs to say something like "make me a video about [topic]" or "can you create a video on [topic]"
 
 When someone asks for a video, respond positively and confirm you're creating it for them.
-
+${audioVideoProactiveHint}
 `;
       enhancedPersonality = videoCapabilityDirective + enhancedPersonality;
       
@@ -4368,6 +4374,11 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
       }
       
       // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability
+      const turnCount = Math.floor((conversationHistory?.length || 0) / 2);
+      const videoProactiveHint = turnCount === 3 ? `
+🎬 PROACTIVE VIDEO MENTION (DO THIS NOW):
+This is your 3rd exchange with this user. Naturally work in a brief mention that you can create personalized videos on topics you discuss. Keep it casual — something like "By the way, if you ever want me to make you a short video on this, just say the word." Don't make it the focus of your response, just a quick aside at the end.
+` : '';
       const videoCapabilityDirective2 = `
 🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
 You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
@@ -4377,9 +4388,10 @@ You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this 
 - ✅ When a user asks for a video, say "I'd be happy to create a video about [topic] for you!"
 - ✅ Explain that the video will be generated and they'll find it in their "My Videos" section
 - ✅ Videos typically take 2-5 minutes to generate
+- ✅ To request a video, the user just needs to say something like "make me a video about [topic]" or "can you create a video on [topic]"
 
 When someone asks for a video, respond positively and confirm you're creating it for them.
-
+${videoProactiveHint}
 `;
       enhancedPersonality = videoCapabilityDirective2 + enhancedPersonality;
       
@@ -5104,6 +5116,11 @@ NEVER explain or apologize about memory limitations. You HAVE memory - use it or
       }
       
       // VIDEO CAPABILITY DIRECTIVE: Prevent AI from denying video creation capability
+      const streamTurnCount = Math.floor((conversationHistory?.length || 0) / 2);
+      const streamVideoProactiveHint = streamTurnCount === 3 ? `
+🎬 PROACTIVE VIDEO MENTION (DO THIS NOW):
+This is your 3rd exchange with this user. Naturally work in a brief mention that you can create personalized videos on topics you discuss. Keep it casual — something like "By the way, if you ever want me to make you a short video on this, just say the word." Don't make it the focus of your response, just a quick aside at the end.
+` : '';
       const videoCapabilityDirective3 = `
 🎬 VIDEO CREATION CAPABILITY - YOU CAN CREATE VIDEOS:
 You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this capability.
@@ -5113,9 +5130,10 @@ You have the ability to CREATE VIDEOS for users through HeyGen. NEVER deny this 
 - ✅ When a user asks for a video, say "I'd be happy to create a video about [topic] for you!"
 - ✅ Explain that the video will be generated and they'll find it in their "My Videos" section
 - ✅ Videos typically take 2-5 minutes to generate
+- ✅ To request a video, the user just needs to say something like "make me a video about [topic]" or "can you create a video on [topic]"
 
 When someone asks for a video, respond positively and confirm you're creating it for them.
-
+${streamVideoProactiveHint}
 `;
       enhancedPersonality = videoCapabilityDirective3 + enhancedPersonality;
       

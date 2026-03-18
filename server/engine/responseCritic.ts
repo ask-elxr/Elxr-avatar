@@ -42,10 +42,10 @@ export function validateResponse(response: string, persona: PersonaSpec): Critic
     issues.push('Used action descriptions (*leans back*, etc.)');
   }
 
-  if (response.length > 2000 && persona.output.maxLength === 'short') {
+  if (response.length > 800 && persona.output.maxLength === 'short') {
     issues.push('Response too long for "short" format');
   }
-  if (response.length > 3500 && persona.output.maxLength === 'medium') {
+  if (response.length > 1200 && persona.output.maxLength === 'medium') {
     issues.push('Response too long for "medium" format');
   }
 
