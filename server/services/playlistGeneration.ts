@@ -70,7 +70,11 @@ export async function suggestPlaylistFromConversation(
 
   const text =
     response.content[0].type === "text" ? response.content[0].text : "";
-  const parsed = JSON.parse(text);
+  const cleaned = text
+    .replace(/^```json?\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+  const parsed = JSON.parse(cleaned);
   return playlistSuggestionSchema.parse(parsed);
 }
 
