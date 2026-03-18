@@ -672,20 +672,16 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
-  // Check for playlist suggestion opportunity (after every 2nd assistant message, max 4 checks per session)
+  // Check for playlist suggestion opportunity
+  const lastCheckedLength = useRef(0);
   const checkPlaylistSuggestion = useCallback(async () => {
     if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 4) return;
     if (chatHistory.length < 4) return; // Need some conversation context
-
-    // Only check after assistant messages (even counts = user sent, odd = assistant replied)
-    const lastMsg = chatHistory[chatHistory.length - 1];
-    if (lastMsg?.role !== 'assistant') return;
-
-    // Check every 2nd assistant reply
-    const assistantCount = chatHistory.filter(m => m.role === 'assistant').length;
-    if (assistantCount % 2 !== 0) return;
+    if (chatHistory.length === lastCheckedLength.current) return; // Already checked at this length
+    lastCheckedLength.current = chatHistory.length;
 
     playlistCheckCount.current++;
+    console.log(`[Playlist] Checking suggestion (attempt ${playlistCheckCount.current}, ${chatHistory.length} messages)`);
 
     try {
       const recentContext = chatHistory
@@ -697,6 +693,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         conversationContext: recentContext,
       });
       const data = await res.json();
+      console.log(`[Playlist] Suggestion API response:`, data);
 
       if (data.shouldSuggest) {
         const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
@@ -706,9 +703,10 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
           description: data.rationale || `A ${data.suggestedType} playlist might help right now.`,
           suggestedType: data.suggestedType,
         });
+        console.log(`[Playlist] Showing suggestion card`);
       }
-    } catch {
-      // Silently fail — this is a non-critical enhancement
+    } catch (err) {
+      console.error(`[Playlist] Suggestion check failed:`, err);
     }
   }, [chatHistory, playlistSuggestion, playlistCreated, selectedAvatarId]);
 
@@ -717,6 +715,31 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     checkPlaylistSuggestion();
   }, [chatHistory.length]);
 
+  // Detect when the conversation mentions playlists (user asked or avatar confirmed)
+  useEffect(() => {
+    if (playlistSuggestion || playlistCreated || playlistCreating) return;
+    if (chatHistory.length < 2) return;
+
+    const lastMsg = chatHistory[chatHistory.length - 1];
+    if (!lastMsg) return;
+
+    const lower = lastMsg.content.toLowerCase();
+    const mentionsPlaylist =
+      lower.includes('playlist') ||
+      lower.includes('make you a mix') ||
+      lower.includes('build you a mix') ||
+      lower.includes('put something together') ||
+      lower.includes('curate something');
+
+    if (mentionsPlaylist) {
+      const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      setPlaylistSuggestion({
+        title: `${avatarName} can make you a playlist`,
+        description: "Tap Create Playlist to get a personalized mix.",
+        suggestedType: "conversation-driven",
+      });
+    }
+  }, [chatHistory.length, playlistSuggestion, playlistCreated, playlistCreating, selectedAvatarId]);
 
   // Handle accepting a playlist suggestion
   const handleCreatePlaylist = useCallback(async () => {

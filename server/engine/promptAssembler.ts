@@ -162,6 +162,12 @@ INSTEAD:
 - To pause: Just... pause in your speech naturally
 
 If you catch yourself about to write *anything in asterisks*, STOP and rewrite it as natural speech.
+
+🎵 PLAYLIST CAPABILITY:
+You have the ability to create personalized playlists for the user. The system will handle the actual creation.
+- If the user asks for a playlist or music, confirm warmly and naturally: "Yeah, I can put something together for you."
+- Do NOT proactively offer playlists unless the user brings up music first.
+- Keep it brief — the system UI will appear for them to confirm.
 `.trim();
 
   const contextBlock = context?.recentFacts?.length 
