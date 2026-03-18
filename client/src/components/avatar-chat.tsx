@@ -712,6 +712,32 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     checkPlaylistSuggestion();
   }, [chatHistory.length]);
 
+  // Detect when the avatar itself offers a playlist in its response
+  useEffect(() => {
+    if (playlistSuggestion || playlistCreated || playlistCreating) return;
+    if (chatHistory.length < 2) return;
+
+    const lastMsg = chatHistory[chatHistory.length - 1];
+    if (lastMsg.role !== 'assistant') return;
+
+    const lower = lastMsg.content.toLowerCase();
+    const mentionsPlaylist =
+      lower.includes('playlist') ||
+      lower.includes('make you a mix') ||
+      lower.includes('build you a mix') ||
+      lower.includes('put together some music') ||
+      lower.includes('curate something');
+
+    if (mentionsPlaylist) {
+      const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      setPlaylistSuggestion({
+        title: `${avatarName} wants to make you a playlist`,
+        description: "Tap Create Playlist to let them build it.",
+        suggestedType: "conversation-driven",
+      });
+    }
+  }, [chatHistory.length, playlistSuggestion, playlistCreated, playlistCreating, selectedAvatarId]);
+
   // Handle accepting a playlist suggestion
   const handleCreatePlaylist = useCallback(async () => {
     if (playlistCreating) return;
