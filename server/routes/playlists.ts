@@ -80,7 +80,35 @@ playlistRouter.get("/spotify/callback", async (req: Request, res: Response) => {
 playlistRouter.get("/spotify/status", async (req: Request, res: Response) => {
   const userId = (req as any).user?.claims?.sub;
   const connected = await spotify.isConnected(userId);
-  res.json({ connected, configured: spotify.isConfigured() });
+  // Also check if token is actually valid (not just present)
+  let tokenValid = false;
+  if (connected) {
+    const token = await spotify.getValidAccessToken(userId);
+    tokenValid = !!token;
+  }
+  res.json({ connected, tokenValid, configured: spotify.isConfigured(), userId });
+});
+
+// GET /api/spotify/debug — Debug Spotify config (admin only)
+playlistRouter.get("/spotify/debug", async (req: Request, res: Response) => {
+  const redirectUri = process.env.SPOTIFY_REDIRECT_URI?.trim() || "(not set)";
+  const clientIdSet = !!process.env.SPOTIFY_CLIENT_ID?.trim();
+  const clientSecretSet = !!process.env.SPOTIFY_CLIENT_SECRET?.trim();
+  const userId = (req as any).user?.claims?.sub;
+  const connected = await spotify.isConnected(userId);
+  let tokenValid = false;
+  if (connected) {
+    const token = await spotify.getValidAccessToken(userId);
+    tokenValid = !!token;
+  }
+  res.json({
+    redirectUri,
+    clientIdSet,
+    clientSecretSet,
+    userId,
+    connected,
+    tokenValid,
+  });
 });
 
 // POST /api/spotify/disconnect — Disconnect Spotify

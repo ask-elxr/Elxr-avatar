@@ -90,6 +90,7 @@ export async function generatePlaylist(
   try {
     // Step 3: Check Spotify connection and search tracks
     const spotifyConnected = await spotify.isConnected(userId);
+    log.info({ userId, spotifyConnected }, "Spotify connection check");
     let externalUrl: string | null = null;
     let providerId: string | null = null;
     let trackCount = 0;
@@ -97,6 +98,7 @@ export async function generatePlaylist(
 
     if (spotifyConnected) {
       const accessToken = await spotify.getValidAccessToken(userId);
+      log.info({ userId, hasToken: !!accessToken }, "Spotify access token check");
       if (accessToken) {
         // Search for tracks using seed queries
         log.info({ seeds: spec.seedSearches.length }, "Searching Spotify tracks");
