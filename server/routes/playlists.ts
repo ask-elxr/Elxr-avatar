@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { db } from "../db";
-import { generatedMedia } from "@shared/schema";
+import { generatedMedia, spotifyTokens } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { isAuthenticated } from "../auth";
 import * as spotify from "../services/spotify";
@@ -89,7 +89,7 @@ playlistRouter.get("/spotify/status", async (req: Request, res: Response) => {
   res.json({ connected, tokenValid, configured: spotify.isConfigured(), userId });
 });
 
-// GET /api/spotify/debug — Debug Spotify config (admin only)
+// GET /api/spotify/debug — Debug Spotify config
 playlistRouter.get("/spotify/debug", async (req: Request, res: Response) => {
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI?.trim() || "(not set)";
   const clientIdSet = !!process.env.SPOTIFY_CLIENT_ID?.trim();
@@ -101,13 +101,18 @@ playlistRouter.get("/spotify/debug", async (req: Request, res: Response) => {
     const token = await spotify.getValidAccessToken(userId);
     tokenValid = !!token;
   }
+
+  // List all stored Spotify token userIds for debugging
+  const allTokens = await db.select({ userId: spotifyTokens.userId, expiresAt: spotifyTokens.expiresAt }).from(spotifyTokens);
+
   res.json({
     redirectUri,
     clientIdSet,
     clientSecretSet,
-    userId,
+    currentUserId: userId,
     connected,
     tokenValid,
+    allTokenUserIds: allTokens.map(t => ({ userId: t.userId, expiresAt: t.expiresAt })),
   });
 });
 
