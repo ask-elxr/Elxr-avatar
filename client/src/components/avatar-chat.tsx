@@ -773,15 +773,15 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setPlaylistCreating(true);
 
     try {
-      const recentContext = chatHistory
-        .slice(-10)
-        .map((m) => `${m.role}: ${m.content}`)
-        .join("\n");
+      const recentContext = chatHistory.length > 0
+        ? chatHistory.slice(-10).map((m) => `${m.role}: ${m.content}`).join("\n")
+        : undefined;
 
       const avatarDisplayName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
       const res = await apiRequest("/api/playlists/generate", "POST", {
         conversationContext: recentContext,
+        avatarId: selectedAvatarId,
         avatarName: avatarDisplayName || selectedAvatarId,
         overrideMood: playlistSuggestion?.suggestedType,
       });

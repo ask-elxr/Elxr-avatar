@@ -136,14 +136,30 @@ playlistRouter.post(
     const userId = (req as any).user?.claims?.sub;
 
     try {
-      const {
+      let {
         conversationContext,
         avatarName,
+        avatarId,
         conversationId,
         overrideGoal,
         overrideDuration,
         overrideMood,
       } = req.body;
+
+      // If no conversationContext but avatarId provided, fetch from server
+      if (!conversationContext && avatarId && userId) {
+        const history = await storage.getConversationHistory(userId, avatarId, 10);
+        if (history && history.length > 0) {
+          conversationContext = history
+            .map((m: any) => `${m.role}: ${m.text}`)
+            .join("\n");
+        }
+      }
+
+      // Derive avatarName from avatarId if not provided
+      if (!avatarName && avatarId) {
+        avatarName = avatarId.replace(/-/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+      }
 
       if (!conversationContext || !avatarName) {
         return res.status(400).json({
