@@ -10,14 +10,14 @@ const anthropic = new Anthropic();
 
 export const playlistSpecSchema = z.object({
   title: z.string().min(1).max(100),
-  subtitle: z.string().max(200),
-  goal: z.string().max(500),
+  subtitle: z.string().max(500),
+  goal: z.string().max(1000),
   durationMinutes: z.number().min(5).max(120),
-  energyCurve: z.string().max(200),
-  vocalPreference: z.string().max(100),
+  energyCurve: z.string().max(500),
+  vocalPreference: z.string().max(300),
   moodTags: z.array(z.string()).min(1).max(10),
   seedSearches: z.array(z.string()).min(2).max(8),
-  avatarExplanation: z.string().max(500),
+  avatarExplanation: z.string().max(1000),
 });
 
 export type PlaylistSpec = z.infer<typeof playlistSpecSchema>;
