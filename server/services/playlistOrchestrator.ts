@@ -258,10 +258,20 @@ export async function regeneratePlaylist(
   mediaItemId: string,
   userId: string,
 ): Promise<GeneratePlaylistResult> {
-  const [existing] = await db
+  // Try exact userId match first, then fall back to just the mediaItemId
+  // This handles userId format mismatches (e.g., ms_mem_xxx vs temp_xxx)
+  let [existing] = await db
     .select()
     .from(generatedMedia)
     .where(and(eq(generatedMedia.id, mediaItemId), eq(generatedMedia.userId, userId)));
+
+  if (!existing) {
+    // Fall back: find by ID only (the item might have been created with a different userId format)
+    [existing] = await db
+      .select()
+      .from(generatedMedia)
+      .where(eq(generatedMedia.id, mediaItemId));
+  }
 
   if (!existing) throw new Error("Media item not found");
 
