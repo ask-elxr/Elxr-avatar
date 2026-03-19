@@ -1,32 +1,38 @@
-import OpenAI from "openai";
+import { fal } from "@fal-ai/client";
 import { logger } from "../logger";
+import { isFalConfigured } from "./falAi";
 
 const log = logger.child({ service: "playlistImage" });
 
-const openai = new OpenAI();
-
 /**
- * Generate a mood image for a playlist using DALL-E.
- * Returns the image URL or null on failure.
+ * Generate a mood image for a playlist using fal.ai Flux.
+ * Returns a persistent CDN URL or null on failure.
  */
 export async function generatePlaylistImage(
   imagePrompt: string,
 ): Promise<string | null> {
+  if (!isFalConfigured()) {
+    log.warn("FAL_KEY not configured — playlist image generation unavailable");
+    return null;
+  }
+
   try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: imagePrompt,
-      n: 1,
-      size: "1024x1792", // Vertical editorial format
-      quality: "standard",
-      style: "natural",
+    const result = await fal.subscribe("fal-ai/flux/schnell", {
+      input: {
+        prompt: `${imagePrompt}. Photorealistic, high quality, no text, no watermarks, no logos.`,
+        image_size: "portrait_4_3",
+        num_images: 1,
+      },
     });
 
-    const url = response.data?.[0]?.url || null;
-    if (url) {
-      log.info("Playlist image generated successfully");
+    const image = (result.data as any)?.images?.[0];
+    if (image?.url) {
+      log.info("Playlist image generated successfully via fal.ai");
+      return image.url;
     }
-    return url;
+
+    log.warn("No image in fal.ai response");
+    return null;
   } catch (err) {
     log.error({ err }, "Failed to generate playlist image");
     return null;
@@ -35,7 +41,6 @@ export async function generatePlaylistImage(
 
 /**
  * Generate a CSS gradient fallback when image generation fails.
- * Returns a data URI of a gradient placeholder.
  */
 export function getFallbackGradient(moodTags: string[]): string {
   const palettes: Record<string, string> = {
@@ -55,6 +60,5 @@ export function getFallbackGradient(moodTags: string[]): string {
     if (palettes[lower]) return palettes[lower];
   }
 
-  // Default gradient
   return "linear-gradient(135deg, #667eea 0%, #764ba2 100%)";
 }

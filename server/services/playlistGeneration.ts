@@ -161,19 +161,18 @@ export function generateImagePrompt(spec: PlaylistSpec): string {
   const timeHints = spec.moodTags.some((t) =>
     ["night", "evening", "sleep", "dream"].includes(t),
   )
-    ? "nighttime, low light, deep blues and purples"
+    ? "nighttime scene, moody low-key lighting, deep blues and indigo tones"
     : spec.moodTags.some((t) => ["morning", "energy", "motivation"].includes(t))
-      ? "warm golden light, sunrise tones"
-      : "soft natural lighting, muted earth tones";
+      ? "golden hour light, warm amber and coral tones, sunrise atmosphere"
+      : "soft diffused natural light, muted earth and sage tones";
 
   return [
-    "Editorial wellness photography,",
-    `mood: ${spec.moodTags.slice(0, 4).join(", ")},`,
+    "Abstract atmospheric landscape photograph,",
+    `evoking ${spec.moodTags.slice(0, 3).join(", ")},`,
     `${timeHints},`,
-    "cinematic composition, shallow depth of field,",
-    "abstract and emotionally resonant,",
-    "no text, no words, no typography,",
-    "premium magazine aesthetic, minimalist,",
-    "vertical 9:16 aspect ratio",
+    "cinematic wide-angle composition, beautiful bokeh,",
+    "dreamy ethereal quality, layered depth,",
+    "premium editorial aesthetic, painterly feel,",
+    "no people, no faces, no text, no words, no typography",
   ].join(" ");
 }
