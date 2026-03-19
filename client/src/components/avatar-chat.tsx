@@ -12,7 +12,7 @@ import {
 import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle } from "lucide-react";
 const mumIconPath = "/mum-icon.png";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, getAuthHeaders, assetUrl } from "@/lib/queryClient";
+import { queryClient, getAuthHeaders, assetUrl, getMemberstackId } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -561,20 +561,30 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }, [chatHistory]);
 
   // Fetch conversation history from database
+  // Try both client userId and Memberstack-resolved userId to handle userId mismatch
   const fetchConversationHistory = async () => {
     try {
-      const response = await fetch(`/api/conversations/history/${userId}/${selectedAvatarId}?limit=50`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.conversations) {
-          const formattedHistory: ChatMessage[] = data.conversations.map((conv: any) => ({
-            id: conv.id,
-            role: conv.role,
-            content: conv.text,
-            timestamp: new Date(conv.createdAt)
-          }));
-          setChatHistory(formattedHistory);
+      // First try with the client userId
+      let response = await fetch(`/api/conversations/history/${userId}/${selectedAvatarId}?limit=50`);
+      let data = response.ok ? await response.json() : null;
+
+      // If no results and we have a Memberstack ID, try with the server-resolved userId
+      if ((!data?.conversations || data.conversations.length === 0) && getMemberstackId()) {
+        const msUserId = `ms_${getMemberstackId()}`;
+        if (msUserId !== userId) {
+          response = await fetch(`/api/conversations/history/${msUserId}/${selectedAvatarId}?limit=50`);
+          data = response.ok ? await response.json() : null;
         }
+      }
+
+      if (data?.success && data.conversations && data.conversations.length > 0) {
+        const formattedHistory: ChatMessage[] = data.conversations.map((conv: any) => ({
+          id: conv.id,
+          role: conv.role,
+          content: conv.text,
+          timestamp: new Date(conv.createdAt)
+        }));
+        setChatHistory(formattedHistory);
       }
     } catch (error) {
       console.error('Error fetching conversation history:', error);
@@ -721,17 +731,23 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }, [chatHistory.length]);
 
   // Voice/video mode: periodic check every 30s while session is active
+  // Works for both WS conversation mode (sessionActive) and ElevenLabs agent mode (elevenLabsAgentActive)
   useEffect(() => {
-    if (!sessionActive || chatMode === 'text') return;
+    const isVoiceActive = sessionActive || elevenLabsAgentActive;
+    if (!isVoiceActive || chatMode === 'text') return;
     if (playlistSuggestion || playlistCreated) return;
+
+    console.log(`[Playlist] Starting periodic check timer (sessionActive=${sessionActive}, elevenLabsAgent=${elevenLabsAgentActive})`);
 
     // Initial check after 45 seconds of voice conversation
     const initialTimeout = setTimeout(() => {
+      console.log('[Playlist] Initial timer fired');
       checkPlaylistSuggestion();
     }, 45000);
 
     // Then check every 30 seconds
     const interval = setInterval(() => {
+      console.log('[Playlist] Periodic timer fired');
       checkPlaylistSuggestion();
     }, 30000);
 
@@ -739,12 +755,13 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       clearTimeout(initialTimeout);
       clearInterval(interval);
     };
-  }, [sessionActive, chatMode, playlistSuggestion, playlistCreated]);
+  }, [sessionActive, elevenLabsAgentActive, chatMode, playlistSuggestion, playlistCreated]);
 
   // Detect when the conversation mentions playlists (user asked or avatar confirmed)
+  // Works for all modes: text (handleTextSubmit), ElevenLabs (onMessage), and WS (fetchConversationHistory)
   useEffect(() => {
     if (playlistSuggestion || playlistCreated || playlistCreating) return;
-    if (chatHistory.length < 2) return;
+    if (chatHistory.length === 0) return;
 
     const lastMsg = chatHistory[chatHistory.length - 1];
     if (!lastMsg) return;
@@ -758,6 +775,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       lower.includes('curate something');
 
     if (mentionsPlaylist) {
+      console.log(`[Playlist] Keyword detected in message: "${lastMsg.content.substring(0, 80)}..."`);
       const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
       setPlaylistSuggestion({
         title: `${avatarName} can make you a playlist`,
