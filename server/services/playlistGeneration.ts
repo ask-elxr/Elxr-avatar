@@ -24,10 +24,10 @@ export type PlaylistSpec = z.infer<typeof playlistSpecSchema>;
 
 export const playlistSuggestionSchema = z.object({
   shouldSuggest: z.boolean(),
-  suggestedType: z.string(),
-  rationale: z.string(),
-  defaultDuration: z.number(),
-  energyCurve: z.string(),
+  suggestedType: z.string().nullable().default(""),
+  rationale: z.string().nullable().default(""),
+  defaultDuration: z.number().nullable().default(30),
+  energyCurve: z.string().nullable().default(""),
 });
 
 export type PlaylistSuggestion = z.infer<typeof playlistSuggestionSchema>;
