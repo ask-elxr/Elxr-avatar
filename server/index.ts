@@ -156,6 +156,12 @@ app.get("/api/health", (_req, res) => {
   app.use("/api/admin", isAuthenticated, personaRouter);
   app.use("/api/games", gamesRouter);
   app.use("/api", playlistRouter);
+  // Spotify callback at /spotify/callback (without /api prefix)
+  // to match Spotify Developer Dashboard redirect URI registration
+  app.get("/spotify/callback", (req, res) => {
+    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+    res.redirect(`/api/spotify/callback?${qs}`);
+  });
   
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
