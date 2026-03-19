@@ -25,8 +25,8 @@ export function SpotifyConnect({ compact = false }: { compact?: boolean }) {
     mutationFn: async () => {
       const res = await apiRequest("/api/spotify/connect", "GET");
       const data = await res.json();
-      // Redirect to Spotify OAuth
-      window.location.href = data.url;
+      // Open Spotify OAuth in new tab (iframe blocks Spotify's auth page)
+      window.open(data.url, "_blank", "noopener,noreferrer");
     },
     onError: (error: any) => {
       toast({

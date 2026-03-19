@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { GeneratedMedia } from "@shared/schema";
+import { SpotifyConnect } from "@/components/SpotifyConnect";
 
 interface PlaylistDetailModalProps {
   item: GeneratedMedia | null;
@@ -205,12 +206,13 @@ export function PlaylistDetailModal({
             </div>
           )}
 
-          {/* Preview-only notice */}
+          {/* Preview-only notice with connect button */}
           {isPreview && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-5">
-              <p className="text-sm text-amber-300">
+              <p className="text-sm text-amber-300 mb-2">
                 Connect Spotify to create this playlist for real.
               </p>
+              <SpotifyConnect compact />
             </div>
           )}
 
