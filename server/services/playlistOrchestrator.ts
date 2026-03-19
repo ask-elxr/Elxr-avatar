@@ -200,6 +200,7 @@ export async function generatePlaylist(
 
     // Step 6: Final update
     const finalStatus = spotifyConnected && externalUrl ? "created" : "preview_only";
+    log.info({ mediaItemId, finalStatus, spotifyConnected, hasExternalUrl: !!externalUrl, trackCount }, "Final status determination");
 
     await db
       .update(generatedMedia)
@@ -231,6 +232,8 @@ export async function generatePlaylist(
       externalUrl,
       provider: "spotify",
       status: finalStatus,
+      // Debug info
+      _debug: { spotifyConnected, trackCount, hasExternalUrl: !!externalUrl, userId },
     };
   } catch (err) {
     log.error({ mediaItemId, err }, "Playlist generation failed");

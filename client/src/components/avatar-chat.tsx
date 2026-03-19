@@ -804,6 +804,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
         overrideMood: playlistSuggestion?.suggestedType,
       });
       const data = await res.json();
+      console.log('[Playlist] Generate response:', JSON.stringify(data));
 
       setPlaylistSuggestion(null);
       setPlaylistCreated({
