@@ -178,9 +178,9 @@ playlistRouter.post(
       });
 
       res.json(result);
-    } catch (err) {
-      log.error({ err }, "Playlist generation failed");
-      res.status(500).json({ message: "Failed to generate playlist" });
+    } catch (err: any) {
+      log.error({ err, userId }, "Playlist generation failed");
+      res.status(500).json({ message: err?.message || "Failed to generate playlist" });
     }
   },
 );
@@ -244,11 +244,12 @@ playlistRouter.post(
     const userId = (req as any).user?.claims?.sub;
 
     try {
+      log.info({ mediaItemId: req.params.id, userId }, "Regenerating playlist");
       const result = await regeneratePlaylist(req.params.id, userId);
       res.json(result);
-    } catch (err) {
-      log.error({ err }, "Playlist regeneration failed");
-      res.status(500).json({ message: "Failed to regenerate playlist" });
+    } catch (err: any) {
+      log.error({ err, mediaItemId: req.params.id, userId }, "Playlist regeneration failed");
+      res.status(500).json({ message: err?.message || "Failed to regenerate playlist" });
     }
   },
 );
