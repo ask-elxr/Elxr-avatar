@@ -672,26 +672,27 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     setTimeout(fetchConversationHistory, 500);
   };
 
-  // Check for playlist suggestion opportunity
-  const lastCheckedLength = useRef(0);
+  // Check for playlist suggestion opportunity — works in both text and voice modes
+  const playlistCheckInFlight = useRef(false);
   const checkPlaylistSuggestion = useCallback(async () => {
     if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 4) return;
-    if (chatHistory.length < 4) return; // Need some conversation context
-    if (chatHistory.length === lastCheckedLength.current) return; // Already checked at this length
-    lastCheckedLength.current = chatHistory.length;
+    if (playlistCheckInFlight.current) return;
+    playlistCheckInFlight.current = true;
 
     playlistCheckCount.current++;
-    console.log(`[Playlist] Checking suggestion (attempt ${playlistCheckCount.current}, ${chatHistory.length} messages)`);
+    console.log(`[Playlist] Checking suggestion (attempt ${playlistCheckCount.current})`);
 
     try {
-      const recentContext = chatHistory
-        .slice(-8)
-        .map((m) => `${m.role}: ${m.content}`)
-        .join("\n");
+      // Build request: use chatHistory if available, otherwise let server fetch via avatarId
+      const body: any = { avatarId: selectedAvatarId };
+      if (chatHistory.length >= 4) {
+        body.conversationContext = chatHistory
+          .slice(-8)
+          .map((m) => `${m.role}: ${m.content}`)
+          .join("\n");
+      }
 
-      const res = await apiRequest("/api/avatar/playlist-suggestion", "POST", {
-        conversationContext: recentContext,
-      });
+      const res = await apiRequest("/api/avatar/playlist-suggestion", "POST", body);
       const data = await res.json();
       console.log(`[Playlist] Suggestion API response:`, data);
 
@@ -707,13 +708,38 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
       }
     } catch (err) {
       console.error(`[Playlist] Suggestion check failed:`, err);
+    } finally {
+      playlistCheckInFlight.current = false;
     }
   }, [chatHistory, playlistSuggestion, playlistCreated, selectedAvatarId]);
 
-  // Trigger playlist check when chat history updates
+  // Text mode: trigger playlist check when chat history updates
   useEffect(() => {
-    checkPlaylistSuggestion();
+    if (chatHistory.length >= 4) {
+      checkPlaylistSuggestion();
+    }
   }, [chatHistory.length]);
+
+  // Voice/video mode: periodic check every 30s while session is active
+  useEffect(() => {
+    if (!sessionActive || chatMode === 'text') return;
+    if (playlistSuggestion || playlistCreated) return;
+
+    // Initial check after 45 seconds of voice conversation
+    const initialTimeout = setTimeout(() => {
+      checkPlaylistSuggestion();
+    }, 45000);
+
+    // Then check every 30 seconds
+    const interval = setInterval(() => {
+      checkPlaylistSuggestion();
+    }, 30000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [sessionActive, chatMode, playlistSuggestion, playlistCreated]);
 
   // Detect when the conversation mentions playlists (user asked or avatar confirmed)
   useEffect(() => {

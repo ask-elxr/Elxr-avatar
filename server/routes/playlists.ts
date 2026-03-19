@@ -9,6 +9,7 @@ import {
   generatePlaylist,
   regeneratePlaylist,
 } from "../services/playlistOrchestrator";
+import { storage } from "../storage";
 import { logger } from "../logger";
 
 const log = logger.child({ route: "playlists" });
@@ -96,9 +97,23 @@ playlistRouter.post(
   "/avatar/playlist-suggestion",
   async (req: Request, res: Response) => {
     try {
-      const { conversationContext } = req.body;
+      let { conversationContext, avatarId } = req.body;
+
+      // If no context provided but avatarId given, fetch from server-side conversation history
+      if (!conversationContext && avatarId) {
+        const userId = (req as any).user?.claims?.sub;
+        if (userId) {
+          const history = await storage.getConversationHistory(userId, avatarId, 10);
+          if (history && history.length > 0) {
+            conversationContext = history
+              .map((m: any) => `${m.role}: ${m.text}`)
+              .join("\n");
+          }
+        }
+      }
+
       if (!conversationContext) {
-        return res.status(400).json({ message: "conversationContext required" });
+        return res.json({ shouldSuggest: false, suggestedType: "", rationale: "", defaultDuration: 30, energyCurve: "" });
       }
 
       const suggestion =
