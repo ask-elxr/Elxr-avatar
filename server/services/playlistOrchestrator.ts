@@ -99,27 +99,33 @@ export async function generatePlaylist(
     if (spotifyConnected) {
       const accessToken = await spotify.getValidAccessToken(userId);
       log.info({ userId, hasToken: !!accessToken }, "Spotify access token check");
+      if (!accessToken) {
+        log.error({ userId }, "Spotify connected but token invalid/expired — cannot create playlist");
+      }
       if (accessToken) {
         // Search for tracks using seed queries
-        log.info({ seeds: spec.seedSearches.length }, "Searching Spotify tracks");
+        log.info({ seeds: spec.seedSearches.length, queries: spec.seedSearches }, "Searching Spotify tracks");
         const allCandidates: spotify.SpotifyTrack[] = [];
         const seen = new Set<string>();
+        let searchErrors = 0;
 
         for (const query of spec.seedSearches) {
           try {
             const tracks = await spotify.searchTracks(accessToken, query, 20);
+            log.info({ query, results: tracks.length }, "Spotify search result");
             for (const track of tracks) {
               if (!seen.has(track.id)) {
                 seen.add(track.id);
                 allCandidates.push(track);
               }
             }
-          } catch (err) {
-            log.warn({ query, err }, "Spotify search query failed, continuing");
+          } catch (err: any) {
+            searchErrors++;
+            log.error({ query, err: err.message }, "Spotify search query failed");
           }
         }
 
-        log.info({ candidates: allCandidates.length }, "Total candidate tracks found");
+        log.info({ candidates: allCandidates.length, searchErrors }, "Total candidate tracks found");
 
         // If not enough tracks, broaden search
         if (allCandidates.length < 12) {
@@ -143,6 +149,7 @@ export async function generatePlaylist(
         const ranked = rankTracks(allCandidates, spec);
         const targetTracks = calculateTrackCount(spec.durationMinutes);
         const selected = ranked.slice(0, targetTracks);
+        log.info({ ranked: ranked.length, targetTracks, selected: selected.length }, "Track selection");
 
         if (selected.length > 0) {
           // Create the Spotify playlist
@@ -170,7 +177,9 @@ export async function generatePlaylist(
             duration_ms: t.duration_ms,
           }));
 
-          log.info({ playlistId: playlist.id, trackCount }, "Spotify playlist created");
+          log.info({ playlistId: playlist.id, trackCount, externalUrl }, "Spotify playlist created");
+        } else {
+          log.warn({ candidates: allCandidates.length }, "No tracks selected — playlist will be preview_only");
         }
       }
     }

@@ -116,6 +116,31 @@ playlistRouter.get("/spotify/debug", async (req: Request, res: Response) => {
   });
 });
 
+// GET /api/spotify/test-search — Test Spotify search with current user's token
+playlistRouter.get("/spotify/test-search", async (req: Request, res: Response) => {
+  const userId = (req as any).user?.claims?.sub;
+  try {
+    const connected = await spotify.isConnected(userId);
+    if (!connected) {
+      return res.json({ error: "Not connected", userId });
+    }
+    const accessToken = await spotify.getValidAccessToken(userId);
+    if (!accessToken) {
+      return res.json({ error: "Token invalid/expired", userId });
+    }
+    // Try a simple search
+    const tracks = await spotify.searchTracks(accessToken, "ambient chill sleep", 5);
+    res.json({
+      success: true,
+      userId,
+      trackCount: tracks.length,
+      tracks: tracks.map(t => ({ name: t.name, artist: t.artists[0]?.name, id: t.id })),
+    });
+  } catch (err: any) {
+    res.json({ error: err.message, userId });
+  }
+});
+
 // POST /api/spotify/disconnect — Disconnect Spotify
 playlistRouter.post("/spotify/disconnect", async (req: Request, res: Response) => {
   const userId = (req as any).user?.claims?.sub;
