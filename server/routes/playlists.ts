@@ -72,9 +72,13 @@ playlistRouter.get("/spotify/callback", async (req: Request, res: Response) => {
     // Redirect back to the app with success indicator
     const appBase = process.env.APP_BASE_URL || "";
     res.redirect(`${appBase}/dashboard/videos?spotify=connected`);
-  } catch (err) {
+  } catch (err: any) {
     log.error({ err }, "Spotify callback failed");
-    res.redirect("/?spotify=error");
+    // Show error details instead of silent redirect
+    res.status(500).json({
+      message: "Spotify callback failed",
+      error: err?.message || String(err),
+    });
   }
 });
 
