@@ -7,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface SpotifyStatus {
   connected: boolean;
+  tokenValid?: boolean;
   configured: boolean;
 }
 
@@ -63,23 +64,43 @@ export function SpotifyConnect({ compact = false }: { compact?: boolean }) {
     return null; // Spotify not configured on server
   }
 
+  // Token exists but expired/invalid — show reconnect button
+  if (status.connected && status.tokenValid === false) {
+    return (
+      <div className="flex items-center gap-2 flex-wrap">
+        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 text-xs">
+          Token Expired
+        </Badge>
+        <Button
+          size="sm"
+          className="bg-[#1DB954] hover:bg-[#1ed760] text-white text-xs h-7"
+          onClick={async () => {
+            await disconnectMutation.mutateAsync();
+            connectMutation.mutate();
+          }}
+          disabled={connectMutation.isPending || disconnectMutation.isPending}
+        >
+          Reconnect Spotify
+        </Button>
+      </div>
+    );
+  }
+
   if (status.connected) {
     return (
       <div className="flex items-center gap-3">
         <Badge className="bg-[#1DB954]/20 text-[#1DB954] border-[#1DB954]/30 text-xs">
           Spotify Connected
         </Badge>
-        {!compact && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white/40 hover:text-white/60 text-xs h-7"
-            onClick={() => disconnectMutation.mutate()}
-            disabled={disconnectMutation.isPending}
-          >
-            Disconnect
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-white/40 hover:text-white/60 text-xs h-7"
+          onClick={() => disconnectMutation.mutate()}
+          disabled={disconnectMutation.isPending}
+        >
+          Disconnect
+        </Button>
       </div>
     );
   }
