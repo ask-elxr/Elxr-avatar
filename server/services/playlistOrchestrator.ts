@@ -88,17 +88,18 @@ export async function generatePlaylist(
   const mediaItemId = mediaItem.id;
 
   try {
-    // Step 3: Check Spotify connection and search tracks
-    const spotifyConnected = await spotify.isConnected(userId);
-    log.info({ userId, spotifyConnected }, "Spotify connection check");
+    // Step 3: Check Spotify connection — always use the admin Spotify account
+    const spotifyUserId = "spotify_admin";
+    const spotifyConnected = await spotify.isConnected(spotifyUserId);
+    log.info({ userId, spotifyUserId, spotifyConnected }, "Spotify connection check");
     let externalUrl: string | null = null;
     let providerId: string | null = null;
     let trackCount = 0;
     let trackPreviews: any[] = [];
 
     if (spotifyConnected) {
-      const accessToken = await spotify.getValidAccessToken(userId);
-      log.info({ userId, hasToken: !!accessToken }, "Spotify access token check");
+      const accessToken = await spotify.getValidAccessToken(spotifyUserId);
+      log.info({ spotifyUserId, hasToken: !!accessToken }, "Spotify access token check");
       if (!accessToken) {
         log.error({ userId }, "Spotify connected but token invalid/expired — cannot create playlist");
       }

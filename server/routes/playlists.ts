@@ -21,15 +21,17 @@ playlistRouter.use(isAuthenticated);
 
 // --- Spotify OAuth ---
 
-// GET /api/spotify/connect — Redirect user to Spotify OAuth
+// GET /api/spotify/connect — Redirect admin to Spotify OAuth
+// The admin connects once; all playlists are created on the admin's account
 playlistRouter.get("/spotify/connect", (req: Request, res: Response) => {
   if (!spotify.isConfigured()) {
     return res.status(503).json({ message: "Spotify integration not configured" });
   }
 
   const userId = (req as any).user?.claims?.sub;
-  // Encode userId in state for the callback
-  const state = Buffer.from(JSON.stringify({ userId })).toString("base64url");
+  // Use a fixed admin key so all tokens go to the same account
+  const spotifyAccountId = "spotify_admin";
+  const state = Buffer.from(JSON.stringify({ userId: spotifyAccountId })).toString("base64url");
   const url = spotify.getConnectUrl(state);
   res.json({ url });
 });
@@ -76,17 +78,16 @@ playlistRouter.get("/spotify/callback", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/spotify/status — Check if user has Spotify connected
+// GET /api/spotify/status — Check if admin Spotify account is connected
 playlistRouter.get("/spotify/status", async (req: Request, res: Response) => {
-  const userId = (req as any).user?.claims?.sub;
-  const connected = await spotify.isConnected(userId);
-  // Also check if token is actually valid (not just present)
+  const spotifyAccountId = "spotify_admin";
+  const connected = await spotify.isConnected(spotifyAccountId);
   let tokenValid = false;
   if (connected) {
-    const token = await spotify.getValidAccessToken(userId);
+    const token = await spotify.getValidAccessToken(spotifyAccountId);
     tokenValid = !!token;
   }
-  res.json({ connected, tokenValid, configured: spotify.isConfigured(), userId });
+  res.json({ connected, tokenValid, configured: spotify.isConfigured() });
 });
 
 // GET /api/spotify/debug — Debug Spotify config
@@ -94,57 +95,50 @@ playlistRouter.get("/spotify/debug", async (req: Request, res: Response) => {
   const redirectUri = process.env.SPOTIFY_REDIRECT_URI?.trim() || "(not set)";
   const clientIdSet = !!process.env.SPOTIFY_CLIENT_ID?.trim();
   const clientSecretSet = !!process.env.SPOTIFY_CLIENT_SECRET?.trim();
-  const userId = (req as any).user?.claims?.sub;
-  const connected = await spotify.isConnected(userId);
+  const spotifyAccountId = "spotify_admin";
+  const connected = await spotify.isConnected(spotifyAccountId);
   let tokenValid = false;
   if (connected) {
-    const token = await spotify.getValidAccessToken(userId);
+    const token = await spotify.getValidAccessToken(spotifyAccountId);
     tokenValid = !!token;
   }
-
-  // List all stored Spotify token userIds for debugging
-  const allTokens = await db.select({ userId: spotifyTokens.userId, expiresAt: spotifyTokens.expiresAt }).from(spotifyTokens);
 
   res.json({
     redirectUri,
     clientIdSet,
     clientSecretSet,
-    currentUserId: userId,
+    spotifyAccountId,
     connected,
     tokenValid,
-    allTokenUserIds: allTokens.map(t => ({ userId: t.userId, expiresAt: t.expiresAt })),
   });
 });
 
-// GET /api/spotify/test-search — Test Spotify search with current user's token
+// GET /api/spotify/test-search — Test Spotify search with admin token
 playlistRouter.get("/spotify/test-search", async (req: Request, res: Response) => {
-  const userId = (req as any).user?.claims?.sub;
+  const spotifyAccountId = "spotify_admin";
   try {
-    const connected = await spotify.isConnected(userId);
+    const connected = await spotify.isConnected(spotifyAccountId);
     if (!connected) {
-      return res.json({ error: "Not connected", userId });
+      return res.json({ error: "Admin Spotify not connected. An admin needs to connect Spotify first." });
     }
-    const accessToken = await spotify.getValidAccessToken(userId);
+    const accessToken = await spotify.getValidAccessToken(spotifyAccountId);
     if (!accessToken) {
-      return res.json({ error: "Token invalid/expired", userId });
+      return res.json({ error: "Admin Spotify token expired. Reconnect Spotify." });
     }
-    // Try a simple search
     const tracks = await spotify.searchTracks(accessToken, "ambient chill sleep", 5);
     res.json({
       success: true,
-      userId,
       trackCount: tracks.length,
       tracks: tracks.map(t => ({ name: t.name, artist: t.artists[0]?.name, id: t.id })),
     });
   } catch (err: any) {
-    res.json({ error: err.message, userId });
+    res.json({ error: err.message });
   }
 });
 
-// POST /api/spotify/disconnect — Disconnect Spotify
+// POST /api/spotify/disconnect — Disconnect admin Spotify account
 playlistRouter.post("/spotify/disconnect", async (req: Request, res: Response) => {
-  const userId = (req as any).user?.claims?.sub;
-  await spotify.disconnectUser(userId);
+  await spotify.disconnectUser("spotify_admin");
   res.json({ success: true });
 });
 

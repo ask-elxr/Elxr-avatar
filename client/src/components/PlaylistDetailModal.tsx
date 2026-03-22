@@ -206,11 +206,11 @@ export function PlaylistDetailModal({
             </div>
           )}
 
-          {/* Preview-only notice with connect button */}
+          {/* Preview-only notice */}
           {isPreview && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3 mb-5">
               <p className="text-sm text-amber-300 mb-2">
-                Connect Spotify to create this playlist for real.
+                This is a preview. Click "Make Another Version" to create a playable Spotify playlist.
               </p>
               <SpotifyConnect compact />
             </div>
