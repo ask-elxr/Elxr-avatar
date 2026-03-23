@@ -7,6 +7,7 @@ import subscriptionRouter from "./routes/subscription.js";
 import ingestRouter, { resumeInterruptedJobs } from "./routes/ingest.js";
 import { personaRouter } from "./routes/personas.js";
 import gamesRouter from "./routes/games.js";
+import { playlistRouter } from "./routes/playlists.js";
 import { requireAdmin, isAuthenticated } from "./auth.js";
 import { subscriptionService } from "./services/subscription.js";
 import { videoGenerationService } from "./services/videoGeneration.js";
@@ -15,6 +16,7 @@ import { resumeStuckBatches } from "./ingest/batchPodcastService.js";
 import { setupVite, serveStatic, log } from "./vite";
 import { latencyCache } from "./cache";
 import { isConfigured as isAssetStorageConfigured, getPublicUrl } from "./assetStorage.js";
+import { isFFmpegAvailable } from "./services/ffmpegPostProcess.js";
 import path from "path";
 import fs from "fs";
 
@@ -153,6 +155,13 @@ app.get("/api/health", (_req, res) => {
   app.use("/api/admin", ingestRouter);
   app.use("/api/admin", requireAdmin, personaRouter);
   app.use("/api/games", gamesRouter);
+  app.use("/api", playlistRouter);
+  // Spotify callback at /spotify/callback (without /api prefix)
+  // to match Spotify Developer Dashboard redirect URI registration
+  app.get("/spotify/callback", (req, res) => {
+    const qs = new URLSearchParams(req.query as Record<string, string>).toString();
+    res.redirect(`/api/spotify/callback?${qs}`);
+  });
   
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -215,6 +224,14 @@ app.get("/api/health", (_req, res) => {
     chatVideoService.startBackgroundChecker();
   } catch (error: any) {
     console.warn('⚠️ Failed to start chat video service:', error.message);
+  }
+
+  // Check ffmpeg availability for B-roll post-processing
+  const ffmpegReady = await isFFmpegAvailable();
+  if (ffmpegReady) {
+    console.log('🎬 ffmpeg available — B-roll post-processing enabled');
+  } else {
+    console.log('⚠️ ffmpeg not found — B-roll will fall back to HeyGen backgrounds (avatar visible)');
   }
 
   if (!dbAvailable) {

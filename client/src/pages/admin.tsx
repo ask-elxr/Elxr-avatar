@@ -81,6 +81,9 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
       }
     };
 
+    // Clear any Memberstack user session when in admin mode
+    localStorage.removeItem('memberstack_id');
+
     // Check URL params first and store in localStorage
     const urlParams = new URLSearchParams(searchString);
     const urlSecret = urlParams.get('admin_secret');
@@ -486,15 +489,14 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
             className={`w-full justify-start text-orange-500 hover:text-orange-600 hover:bg-orange-500/10 transition-all duration-300 ${sidebarOpen ? '' : 'justify-center px-2'}`}
             onClick={() => {
               localStorage.removeItem('admin_secret');
-              setIsAdminVerified(false);
-              toast({ title: 'Admin secret cleared', description: 'Please re-enter your admin secret.' });
+              window.location.href = '/';
             }}
-            data-testid="button-reset-admin-secret"
-            title={!sidebarOpen ? "Reset Admin Secret" : undefined}
+            data-testid="button-logout"
+            title={!sidebarOpen ? "Log Out" : undefined}
           >
             <Lock className={`w-4 h-4 ${sidebarOpen ? 'mr-3' : ''}`} />
             <span className={`transition-all duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0 w-0 overflow-hidden'}`}>
-              Reset Admin Secret
+              Log Out
             </span>
           </Button>
         </div>
@@ -735,7 +737,7 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                                 className="w-full h-full object-cover"
                               />
                             ) : avatar.profileImageUrl ? (
-                              <img 
+                              <img
                                 src={resolveAssetUrl(avatar.profileImageUrl)}
                                 alt={avatar.name}
                                 className="w-full h-full object-cover"
@@ -1019,18 +1021,38 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                               </span>
                             </div>
                           </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              setEditingCourseId(course.id);
-                              setShowCourseBuilder(true);
-                            }}
-                            className="w-full sm:w-auto"
-                            data-testid={`button-edit-course-${course.id}`}
-                          >
-                            Edit Course
-                          </Button>
+                          <div className="flex gap-2 w-full sm:w-auto">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setEditingCourseId(course.id);
+                                setShowCourseBuilder(true);
+                              }}
+                              className="flex-1 sm:flex-none"
+                              data-testid={`button-edit-course-${course.id}`}
+                            >
+                              Edit Course
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-red-600 text-red-400 hover:bg-red-950/30 flex-1 sm:flex-none"
+                              onClick={async () => {
+                                if (!confirm(`Delete "${course.title}"? This cannot be undone.`)) return;
+                                try {
+                                  await apiRequest(`/api/courses/${course.id}`, "DELETE");
+                                  queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+                                } catch {
+                                  alert("Failed to delete course");
+                                }
+                              }}
+                              data-testid={`button-delete-course-${course.id}`}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1" />
+                              Delete
+                            </Button>
+                          </div>
                         </div>
                       </CardHeader>
                       <CardContent className="p-4 sm:p-6">

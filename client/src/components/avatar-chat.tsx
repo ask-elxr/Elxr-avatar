@@ -9,10 +9,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle, Music } from "lucide-react";
 const mumIconPath = "/mum-icon.png";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, getAuthHeaders } from "@/lib/queryClient";
+import { queryClient, getAuthHeaders, assetUrl, getMemberstackId } from "@/lib/queryClient";
 import { useAvatarSession } from "@/hooks/useAvatarSession";
 import { useInactivityTimer } from "@/hooks/useInactivityTimer";
 import { useFullscreen } from "@/hooks/useFullscreen";
@@ -28,6 +28,8 @@ import { TrialCountdown } from "@/components/TrialCountdown";
 import { Slider } from "@/components/ui/slider";
 import { unlockMobileAudio, stopSharedAudio, getGlobalVolume, setGlobalVolume, getSharedAudioElement, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { useChromaKey } from "@/hooks/useChromaKey";
+import { PlaylistSuggestionCard, PlaylistCreatedCard } from "@/components/PlaylistSuggestionCard";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ChatGeneratedVideo {
   id: string;
@@ -113,6 +115,20 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   const [toolbarVisible, setToolbarVisible] = useState(true);
   const toolbarTimerRef = useRef<NodeJS.Timeout | null>(null);
   const dismissedVideosRef = useRef<Set<string>>(new Set());
+
+  // Playlist suggestion state
+  const [playlistSuggestion, setPlaylistSuggestion] = useState<{
+    title: string;
+    description: string;
+    suggestedType: string;
+  } | null>(null);
+  const [playlistCreating, setPlaylistCreating] = useState(false);
+  const [playlistCreated, setPlaylistCreated] = useState<{
+    title: string;
+    thumbnailUrl?: string | null;
+    externalUrl?: string | null;
+  } | null>(null);
+  const playlistCheckCount = useRef(0); // Avoid over-suggesting
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const videoPollIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -545,20 +561,30 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
   }, [chatHistory]);
 
   // Fetch conversation history from database
+  // Try both client userId and Memberstack-resolved userId to handle userId mismatch
   const fetchConversationHistory = async () => {
     try {
-      const response = await fetch(`/api/conversations/history/${userId}/${selectedAvatarId}?limit=50`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.conversations) {
-          const formattedHistory: ChatMessage[] = data.conversations.map((conv: any) => ({
-            id: conv.id,
-            role: conv.role,
-            content: conv.text,
-            timestamp: new Date(conv.createdAt)
-          }));
-          setChatHistory(formattedHistory);
+      // First try with the client userId
+      let response = await fetch(`/api/conversations/history/${userId}/${selectedAvatarId}?limit=50`);
+      let data = response.ok ? await response.json() : null;
+
+      // If no results and we have a Memberstack ID, try with the server-resolved userId
+      if ((!data?.conversations || data.conversations.length === 0) && getMemberstackId()) {
+        const msUserId = `ms_${getMemberstackId()}`;
+        if (msUserId !== userId) {
+          response = await fetch(`/api/conversations/history/${msUserId}/${selectedAvatarId}?limit=50`);
+          data = response.ok ? await response.json() : null;
         }
+      }
+
+      if (data?.success && data.conversations && data.conversations.length > 0) {
+        const formattedHistory: ChatMessage[] = data.conversations.map((conv: any) => ({
+          id: conv.id,
+          role: conv.role,
+          content: conv.text,
+          timestamp: new Date(conv.createdAt)
+        }));
+        setChatHistory(formattedHistory);
       }
     } catch (error) {
       console.error('Error fetching conversation history:', error);
@@ -655,6 +681,159 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     // Poll immediately after sending to get updated history
     setTimeout(fetchConversationHistory, 500);
   };
+
+  // Check for playlist suggestion opportunity — works in both text and voice modes
+  const playlistCheckInFlight = useRef(false);
+  const checkPlaylistSuggestion = useCallback(async () => {
+    if (playlistSuggestion || playlistCreated || playlistCheckCount.current >= 4) return;
+    if (playlistCheckInFlight.current) return;
+    playlistCheckInFlight.current = true;
+
+    playlistCheckCount.current++;
+    console.log(`[Playlist] Checking suggestion (attempt ${playlistCheckCount.current})`);
+
+    try {
+      // Build request: use chatHistory if available, otherwise let server fetch via avatarId
+      const body: any = { avatarId: selectedAvatarId };
+      if (chatHistory.length >= 4) {
+        body.conversationContext = chatHistory
+          .slice(-8)
+          .map((m) => `${m.role}: ${m.content}`)
+          .join("\n");
+      }
+
+      const res = await apiRequest("/api/avatar/playlist-suggestion", "POST", body);
+      const data = await res.json();
+      console.log(`[Playlist] Suggestion API response:`, data);
+
+      if (data.shouldSuggest) {
+        const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+        setPlaylistSuggestion({
+          title: `${avatarName} can make you a playlist`,
+          description: data.rationale || `A ${data.suggestedType} playlist might help right now.`,
+          suggestedType: data.suggestedType,
+        });
+        console.log(`[Playlist] Showing suggestion card`);
+      }
+    } catch (err) {
+      console.error(`[Playlist] Suggestion check failed:`, err);
+    } finally {
+      playlistCheckInFlight.current = false;
+    }
+  }, [chatHistory, playlistSuggestion, playlistCreated, selectedAvatarId]);
+
+  // Text mode: trigger playlist check when chat history updates
+  useEffect(() => {
+    if (chatHistory.length >= 4) {
+      checkPlaylistSuggestion();
+    }
+  }, [chatHistory.length]);
+
+  // Voice/video mode: periodic check every 30s while session is active
+  // Works for both WS conversation mode (sessionActive) and ElevenLabs agent mode (elevenLabsAgentActive)
+  useEffect(() => {
+    const isVoiceActive = sessionActive || elevenLabsAgentActive;
+    if (!isVoiceActive || chatMode === 'text') return;
+    if (playlistSuggestion || playlistCreated) return;
+
+    console.log(`[Playlist] Starting periodic check timer (sessionActive=${sessionActive}, elevenLabsAgent=${elevenLabsAgentActive})`);
+
+    // Initial check after 45 seconds of voice conversation
+    const initialTimeout = setTimeout(() => {
+      console.log('[Playlist] Initial timer fired');
+      checkPlaylistSuggestion();
+    }, 45000);
+
+    // Then check every 30 seconds
+    const interval = setInterval(() => {
+      console.log('[Playlist] Periodic timer fired');
+      checkPlaylistSuggestion();
+    }, 30000);
+
+    return () => {
+      clearTimeout(initialTimeout);
+      clearInterval(interval);
+    };
+  }, [sessionActive, elevenLabsAgentActive, chatMode, playlistSuggestion, playlistCreated]);
+
+  // Detect when the conversation mentions playlists (user asked or avatar confirmed)
+  // Works for all modes: text (handleTextSubmit), ElevenLabs (onMessage), and WS (fetchConversationHistory)
+  useEffect(() => {
+    if (playlistSuggestion || playlistCreated || playlistCreating) return;
+    if (chatHistory.length === 0) return;
+
+    // Check last 6 messages for playlist-related keywords (not just the very last one)
+    const recentMessages = chatHistory.slice(-6);
+    for (const msg of recentMessages) {
+      const lower = msg.content.toLowerCase();
+      const mentionsPlaylist =
+        lower.includes('playlist') ||
+        lower.includes('make you a mix') ||
+        lower.includes('build you a mix') ||
+        lower.includes('put something together') ||
+        lower.includes('curate something') ||
+        lower.includes('make me a mix') ||
+        lower.includes('some music');
+
+      if (mentionsPlaylist) {
+        console.log(`[Playlist] Keyword detected in message: "${msg.content.substring(0, 80)}..."`);
+        const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        setPlaylistSuggestion({
+          title: `${avatarName} can make you a playlist`,
+          description: "Tap Create Playlist to get a personalized mix.",
+          suggestedType: "conversation-driven",
+        });
+        break;
+      }
+    }
+  }, [chatHistory.length, playlistSuggestion, playlistCreated, playlistCreating, selectedAvatarId]);
+
+  // Handle accepting a playlist suggestion
+  const handleCreatePlaylist = useCallback(async () => {
+    if (playlistCreating) return;
+    setPlaylistCreating(true);
+
+    try {
+      const recentContext = chatHistory.length > 0
+        ? chatHistory.slice(-10).map((m) => `${m.role}: ${m.content}`).join("\n")
+        : undefined;
+
+      const avatarDisplayName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+      const res = await apiRequest("/api/playlists/generate", "POST", {
+        conversationContext: recentContext,
+        avatarId: selectedAvatarId,
+        avatarName: avatarDisplayName || selectedAvatarId,
+        overrideMood: playlistSuggestion?.suggestedType,
+      });
+      const data = await res.json();
+      console.log('[Playlist] Generate response:', JSON.stringify(data));
+
+      setPlaylistSuggestion(null);
+      setPlaylistCreated({
+        title: data.title,
+        thumbnailUrl: data.thumbnailUrl,
+        externalUrl: data.externalUrl,
+      });
+
+      // Invalidate my-media query so Dashboard picks it up
+      queryClient.invalidateQueries({ queryKey: ["/api/my-media"] });
+
+      toast({
+        title: "Playlist created",
+        description: `"${data.title}" is ready in My Videos.`,
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Playlist failed",
+        description: "Something went wrong creating your playlist.",
+      });
+    } finally {
+      setPlaylistCreating(false);
+    }
+  }, [chatHistory, selectedAvatarId, playlistSuggestion, playlistCreating]);
 
   // Handle image file processing
   const processImageFile = (file: File) => {
@@ -1142,7 +1321,7 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     'dexter': '/attached_assets/DexterDoctor-ezgif.com-loop-count_1764111811631.gif',
                     'shawn': '/attached_assets/Screen Recording 2025-07-14 at 14.41.54-low_1764106970821.gif',
                   };
-                  return gifs[selectedAvatarId] || gifs['mark-kohl'];
+                  return assetUrl(gifs[selectedAvatarId] || gifs['mark-kohl']);
                 })()}
                 alt="Avatar"
                 className="w-full h-full object-cover"
@@ -1179,6 +1358,33 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     </div>
                   </div>
                 ))}
+                {/* Playlist suggestion card */}
+                {playlistSuggestion && !playlistCreated && (
+                  <div className="flex justify-start">
+                    <PlaylistSuggestionCard
+                      title={playlistSuggestion.title}
+                      description={playlistSuggestion.description}
+                      onAccept={handleCreatePlaylist}
+                      onDismiss={() => setPlaylistSuggestion(null)}
+                      isCreating={playlistCreating}
+                    />
+                  </div>
+                )}
+
+                {/* Playlist created card */}
+                {playlistCreated && (
+                  <div className="flex justify-start">
+                    <PlaylistCreatedCard
+                      title={playlistCreated.title}
+                      thumbnailUrl={playlistCreated.thumbnailUrl}
+                      externalUrl={playlistCreated.externalUrl}
+                      onViewInMyVideos={() => {
+                        window.location.href = "/dashboard/videos";
+                      }}
+                    />
+                  </div>
+                )}
+
                 {textChatLoading && (
                   <div className="flex justify-start">
                     <div className="bg-black/70 backdrop-blur-md text-white/70 rounded-2xl rounded-bl-md px-4 py-3 border border-white/10">
@@ -1347,6 +1553,25 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     data-testid="button-mute-mic"
                   >
                     {isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                )}
+
+                {/* Create Playlist */}
+                {!playlistSuggestion && !playlistCreated && (
+                  <button
+                    onClick={() => {
+                      const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                      setPlaylistSuggestion({
+                        title: `${avatarName} can make you a playlist`,
+                        description: "Create a personalized playlist from this conversation.",
+                        suggestedType: "conversation-driven",
+                      });
+                    }}
+                    title="Create Playlist"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
+                    data-testid="button-create-playlist"
+                  >
+                    <Music className="w-4 h-4" />
                   </button>
                 )}
 
@@ -1917,6 +2142,33 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                 {isMicMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
             )}
+          </div>
+        )}
+
+        {/* Floating playlist suggestion — visible in ALL modes (voice, video, text) */}
+        {chatMode !== 'text' && playlistSuggestion && !playlistCreated && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <PlaylistSuggestionCard
+              title={playlistSuggestion.title}
+              description={playlistSuggestion.description}
+              onAccept={handleCreatePlaylist}
+              onDismiss={() => setPlaylistSuggestion(null)}
+              isCreating={playlistCreating}
+            />
+          </div>
+        )}
+
+        {/* Floating playlist created — visible in ALL modes */}
+        {chatMode !== 'text' && playlistCreated && (
+          <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-40 animate-in fade-in slide-in-from-bottom-4 duration-300">
+            <PlaylistCreatedCard
+              title={playlistCreated.title}
+              thumbnailUrl={playlistCreated.thumbnailUrl}
+              externalUrl={playlistCreated.externalUrl}
+              onViewInMyVideos={() => {
+                window.location.href = "/dashboard/videos";
+              }}
+            />
           </div>
         )}
 

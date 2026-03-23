@@ -1,5 +1,6 @@
 import { ElevenLabsConversation, ElevenLabsConversationRef } from './ElevenLabsConversation';
 import { forwardRef, useRef, useImperativeHandle } from 'react';
+import { assetUrl } from "@/lib/queryClient";
 
 interface AudioOnlyDisplayProps {
   isSpeaking: boolean;
@@ -59,7 +60,7 @@ export const AudioOnlyDisplay = forwardRef<AudioOnlyDisplayRef, AudioOnlyDisplay
     },
     isAgentConnected: () => conversationRef.current?.isConnected() ?? false,
   }), []);
-  const gifUrl = avatarGifs[avatarId] || avatarGifs['mark-kohl'];
+  const gifUrl = assetUrl(avatarGifs[avatarId] || avatarGifs['mark-kohl']);
   
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black">

@@ -1,0 +1,295 @@
+import { fal } from "@fal-ai/client";
+import sharp from "sharp";
+import fs from "fs";
+import path from "path";
+
+// Load Poppins Bold font as base64 for SVG embedding
+let poppinsBoldBase64: string = "";
+try {
+  const fontPath = path.resolve(import.meta.dirname, "../assets/fonts/Poppins-Bold.ttf");
+  poppinsBoldBase64 = fs.readFileSync(fontPath).toString("base64");
+} catch {
+  console.warn("⚠️ Poppins font not found, falling back to system fonts for thumbnails");
+}
+
+const FAL_KEY = process.env.FAL_KEY;
+
+if (FAL_KEY) {
+  fal.config({ credentials: FAL_KEY });
+}
+
+export function isFalConfigured(): boolean {
+  return !!FAL_KEY;
+}
+
+export interface FalImage {
+  url: string;
+  width: number;
+  height: number;
+  content_type?: string;
+}
+
+/**
+ * Generate a B-roll image using Flux (fast, high quality).
+ * Returns a landscape image suitable for 1280x720 video backgrounds.
+ */
+export async function generateBrollImage(prompt: string): Promise<FalImage | null> {
+  if (!FAL_KEY) {
+    console.warn("FAL_KEY not configured — AI image generation unavailable");
+    return null;
+  }
+
+  try {
+    console.log(`🎨 Generating B-roll image: "${prompt.slice(0, 80)}..."`);
+
+    const result = await fal.subscribe("fal-ai/flux/schnell", {
+      input: {
+        prompt: `${prompt}. Photorealistic, cinematic lighting, sharp focus, 4K quality, landscape orientation. No text, no watermarks, no logos.`,
+        image_size: "landscape_16_9",
+        num_images: 1,
+      },
+    });
+
+    const image = (result.data as any)?.images?.[0];
+    if (image?.url) {
+      console.log(`✅ B-roll image generated: ${image.url.slice(0, 80)}...`);
+      return {
+        url: image.url,
+        width: image.width || 1280,
+        height: image.height || 720,
+        content_type: image.content_type,
+      };
+    }
+
+    console.warn("⚠️ No image in fal.ai response");
+    return null;
+  } catch (error: any) {
+    console.error("❌ fal.ai image generation error:", error.message);
+    return null;
+  }
+}
+
+/** Word-wrap text into lines that fit within maxChars. */
+function wrapText(text: string, maxChars: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if (current && (current.length + 1 + word.length) > maxChars) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = current ? `${current} ${word}` : word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+/**
+ * Overlay title text on a thumbnail image using sharp + SVG.
+ * Uploads the result to fal.ai storage and returns a persistent CDN URL.
+ */
+async function overlayTitleOnImage(imageUrl: string, title: string, width: number, height: number): Promise<string> {
+  // Fetch the generated image
+  const response = await fetch(imageUrl);
+  const imageBuffer = Buffer.from(await response.arrayBuffer());
+
+  // Uppercase the title
+  const upperTitle = title.toUpperCase();
+
+  // Word-wrap: split title into lines that fit within 80% of image width
+  const maxWidth = width * 0.8;
+  const charWidthRatio = 0.6; // approximate char width as fraction of font size
+  const maxFontSize = 64;
+  const minFontSize = 32;
+
+  // Start with a font size and wrap words into lines
+  let fontSize = maxFontSize;
+  let lines: string[] = [];
+
+  // Find the largest font size where all lines fit
+  while (fontSize >= minFontSize) {
+    const charWidth = fontSize * charWidthRatio;
+    const maxCharsPerLine = Math.floor(maxWidth / charWidth);
+    lines = wrapText(upperTitle, maxCharsPerLine);
+    // Check if the widest line fits
+    const widestLine = Math.max(...lines.map(l => l.length));
+    if (widestLine * charWidth <= maxWidth) break;
+    fontSize -= 2;
+  }
+
+  const lineHeight = fontSize * 1.3;
+  const totalTextHeight = lines.length * lineHeight;
+  const startY = (height - totalTextHeight) / 2 + fontSize * 0.35; // vertically center the block
+
+  // Escape XML special characters per line
+  const escapeXml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  const tspans = lines.map((line, i) =>
+    `<tspan x="${width / 2}" dy="${i === 0 ? 0 : lineHeight}">${escapeXml(line)}</tspan>`
+  ).join('\n        ');
+
+  // Create SVG text overlay centered with a dark scrim behind the text
+  const fontFace = poppinsBoldBase64 ? `
+      <style>
+        @font-face {
+          font-family: 'Poppins';
+          font-weight: 700;
+          src: url(data:font/truetype;base64,${poppinsBoldBase64});
+        }
+      </style>` : '';
+  const fontFamily = poppinsBoldBase64 ? "Poppins" : "Arial, Helvetica, sans-serif";
+
+  const svgOverlay = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>${fontFace}</defs>
+      <rect x="0" y="0" width="${width}" height="${height}" fill="rgba(0,0,0,0.4)" />
+      <text
+        x="${width / 2}"
+        y="${startY}"
+        text-anchor="middle"
+        font-family="${fontFamily}"
+        font-size="${fontSize}"
+        font-weight="bold"
+        fill="white"
+        letter-spacing="3"
+      >${tspans}</text>
+    </svg>
+  `;
+
+  const composited = await sharp(imageBuffer)
+    .resize(width, height, { fit: "cover" })
+    .composite([{
+      input: Buffer.from(svgOverlay),
+      top: 0,
+      left: 0,
+    }])
+    .jpeg({ quality: 85 })
+    .toBuffer();
+
+  // Upload to fal.ai storage for a persistent CDN URL
+  const file = new File([composited], "thumbnail.jpg", { type: "image/jpeg" });
+  const cdnUrl = await fal.storage.upload(file);
+  return cdnUrl;
+}
+
+/**
+ * Generate a course thumbnail image.
+ * Creates an AI background image and overlays the course title as crisp text.
+ */
+export async function generateCourseThumbnail(
+  courseTitle: string,
+  courseDescription: string,
+  avatarName: string,
+): Promise<FalImage | null> {
+  if (!FAL_KEY) return null;
+
+  try {
+    console.log(`🎨 Generating thumbnail for course: "${courseTitle}"`);
+
+    const result = await fal.subscribe("fal-ai/flux/schnell", {
+      input: {
+        prompt: `A visually striking abstract scene representing the concept of ${courseTitle}. ${courseDescription}. Photorealistic, cinematic lighting, dramatic composition, rich colors, landscape orientation. Absolutely no text, no words, no letters, no writing, no watermarks, no logos.`,
+        image_size: "landscape_16_9",
+        num_images: 1,
+      },
+    });
+
+    const image = (result.data as any)?.images?.[0];
+    if (!image?.url) return null;
+
+    const width = image.width || 1280;
+    const height = image.height || 720;
+
+    // Overlay the course title as crisp rendered text
+    const cdnUrl = await overlayTitleOnImage(image.url, courseTitle, width, height);
+
+    console.log(`✅ Thumbnail generated with title overlay for: "${courseTitle}"`);
+    return {
+      url: cdnUrl,
+      width,
+      height,
+      content_type: "image/jpeg",
+    };
+  } catch (error: any) {
+    console.error("❌ fal.ai thumbnail generation error:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Generate a lesson thumbnail image.
+ * Creates an AI background image based on the lesson content and overlays the lesson title.
+ */
+export async function generateLessonThumbnail(
+  lessonTitle: string,
+  scriptPreview: string,
+): Promise<FalImage | null> {
+  if (!FAL_KEY) return null;
+
+  try {
+    console.log(`🎨 Generating lesson thumbnail: "${lessonTitle}"`);
+
+    const result = await fal.subscribe("fal-ai/flux/schnell", {
+      input: {
+        prompt: `A visually striking scene representing: ${lessonTitle}. ${scriptPreview}. Photorealistic, cinematic lighting, dramatic composition, rich colors, landscape orientation. Absolutely no text, no words, no letters, no writing, no watermarks, no logos.`,
+        image_size: "landscape_16_9",
+        num_images: 1,
+      },
+    });
+
+    const image = (result.data as any)?.images?.[0];
+    if (!image?.url) return null;
+
+    const width = image.width || 1280;
+    const height = image.height || 720;
+
+    const cdnUrl = await overlayTitleOnImage(image.url, lessonTitle, width, height);
+
+    console.log(`✅ Lesson thumbnail generated with title overlay: "${lessonTitle}"`);
+    return {
+      url: cdnUrl,
+      width,
+      height,
+      content_type: "image/jpeg",
+    };
+  } catch (error: any) {
+    console.error("❌ Lesson thumbnail generation error:", error.message);
+    return null;
+  }
+}
+
+/**
+ * Generate a short B-roll video clip using Kling.
+ * Returns a ~5 second video clip for use as B-roll in course videos.
+ */
+export async function generateBrollVideo(prompt: string): Promise<{ url: string } | null> {
+  if (!FAL_KEY) return null;
+
+  try {
+    console.log(`🎬 Generating B-roll video clip: "${prompt.slice(0, 80)}..."`);
+
+    const result = await fal.subscribe("fal-ai/kling-video/v2/master/text-to-video", {
+      input: {
+        prompt: `Cinematic B-roll footage for educational video: ${prompt}. Smooth camera movement, professional quality, no text.`,
+        duration: "5",
+        aspect_ratio: "16:9",
+      },
+      pollInterval: 5000,
+      timeout: 300000, // 5 minute timeout for video generation
+    });
+
+    const video = (result.data as any)?.video?.url;
+    if (video) {
+      console.log(`✅ B-roll video generated: ${video.slice(0, 80)}...`);
+      return { url: video };
+    }
+
+    console.warn("⚠️ No video in fal.ai response");
+    return null;
+  } catch (error: any) {
+    console.error("❌ fal.ai video generation error:", error.message);
+    return null;
+  }
+}

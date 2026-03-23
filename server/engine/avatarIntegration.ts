@@ -6,6 +6,14 @@ import { logger } from '../logger';
 
 const log = logger.child({ module: 'personality-engine' });
 
+const PLAYLIST_CAPABILITY_BLOCK = `
+
+🎵 PLAYLIST CAPABILITY (ONLY WHEN ASKED):
+You can create personalized playlists — but ONLY mention this if the user explicitly asks for music or a playlist.
+- If they ask: confirm warmly — "Yeah, I can put something together for you."
+- NEVER bring up playlists on your own. NEVER suggest "I could make you a playlist" unprompted.
+- Keep it brief — the system UI will handle the rest.`;
+
 export async function getAvatarSystemPrompt(
   avatarId: string,
   context?: { recentFacts?: string[] }
@@ -21,7 +29,7 @@ export async function getAvatarSystemPrompt(
     const avatar = await storage.getAvatar(avatarId);
     if (avatar?.personalityPrompt) {
       log.debug({ avatarId }, 'Using database personality prompt for avatar');
-      return avatar.personalityPrompt;
+      return avatar.personalityPrompt + PLAYLIST_CAPABILITY_BLOCK;
     }
   } catch (error) {
     log.warn({ avatarId, error }, 'Failed to fetch avatar from storage');

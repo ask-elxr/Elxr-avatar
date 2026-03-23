@@ -704,7 +704,7 @@ export function AvatarManager() {
                   <TableCell>
                     <div className="w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
                       {avatar.profileImageUrl ? (
-                        <img 
+                        <img
                           src={resolveAssetUrl(avatar.profileImageUrl)}
                           alt={avatar.name}
                           className="w-full h-full object-cover"
@@ -822,7 +822,7 @@ export function AvatarManager() {
               {/* Profile Image Preview and Create Videos Button */}
               {formData.profileImageUrl && (
                 <div className="flex flex-col items-center gap-3 p-4 border rounded-lg bg-muted/30">
-                  <img 
+                  <img
                     src={resolveAssetUrl(formData.profileImageUrl)}
                     alt={formData.name || "Avatar preview"}
                     className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"

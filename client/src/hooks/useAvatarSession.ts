@@ -196,6 +196,20 @@ export function useAvatarSession({
     onSoftEnd: (text) => {
       console.log('[mum soft end]', text);
     },
+    onStateChange: (state, reason) => {
+      console.log('[server state change]', state, reason);
+      if (state === 'ended') {
+        // Server initiated session end — trigger client cleanup
+        endSessionShowReconnect();
+      }
+    },
+    onSessionEnd: (reason) => {
+      console.log('[server session end]', reason);
+      endSessionShowReconnect();
+    },
+    onThinkingAck: (_text) => {
+      // Could show thinking indicator in UI later
+    },
     onError: (err) => {
       console.error('Conversation WS error:', err);
     },
@@ -931,8 +945,8 @@ export function useAvatarSession({
         console.log("🎤 Requesting microphone access (using cache if available)...");
         micStream = await requestMicrophoneOnce({
           audio: {
-            sampleRate: 16000,
-            channelCount: 1,
+            sampleRate: { ideal: 16000 },
+            channelCount: { ideal: 1 },
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
@@ -1262,16 +1276,21 @@ export function useAvatarSession({
           isSpeakingRef.current = false;
           setIsSpeakingState(false);
           URL.revokeObjectURL(audioUrl);
-          
+
           // Unregister from volume updates
           unregisterMediaElement(audio);
-          
+
           // Remove audio element from DOM
           if (audio.parentNode) {
             audio.parentNode.removeChild(audio);
           }
           elevenLabsVideoAudioRef.current = null;
-          
+
+          // 📱 Mobile Chrome: resume mic AudioContext (browser suspends it during audio playback)
+          if (elevenLabsSttAudioContextRef.current?.state === 'suspended') {
+            elevenLabsSttAudioContextRef.current.resume().catch(() => {});
+          }
+
           // Resume voice recognition with delay (matches HeyGen AVATAR_STOP_TALKING behavior)
           resumeRecognitionWithDelay();
           
@@ -2838,15 +2857,34 @@ export function useAvatarSession({
                 isSpeakingRef.current = false;
                 setIsSpeakingState(false);
                 currentAudioRef.current = null;
-                
+
                 // Cleanup blob URL
                 if (audio.src && audio.src.startsWith('blob:')) {
                   URL.revokeObjectURL(audio.src);
                 }
-                
-                // 🔊 Resume voice recognition after audio ends (with 1s delay to prevent echo)
+
+                // 📱 Mobile Chrome: resume mic AudioContext (browser suspends it during audio playback)
+                if (elevenLabsSttAudioContextRef.current?.state === 'suspended') {
+                  elevenLabsSttAudioContextRef.current.resume().then(() => {
+                    console.log("🔊 Mic AudioContext resumed after playback");
+                  }).catch(() => {});
+                }
+
+                // 🔊 Resume voice recognition after audio ends (with delay to prevent echo)
                 setTimeout(() => {
-                  if (audioOnlyRef.current && !recognitionRunningRef.current && !currentAudioRef.current) {
+                  if (!audioOnlyRef.current || currentAudioRef.current) return;
+                  // If recognition thinks it's running, verify STT is actually working
+                  if (recognitionRunningRef.current) {
+                    const wsOpen = elevenLabsSttWsRef.current?.readyState === WebSocket.OPEN;
+                    const sttReady = elevenLabsSttReadyRef.current;
+                    const audioCtxOk = elevenLabsSttAudioContextRef.current?.state === 'running';
+                    const trackLive = elevenLabsSttStreamRef.current?.getAudioTracks().some(t => t.readyState === 'live') ?? false;
+                    if (!wsOpen || !sttReady || !audioCtxOk || !trackLive) {
+                      console.log("🔊 STT broken after playback - restarting", { wsOpen, sttReady, audioCtxOk, trackLive });
+                      recognitionRunningRef.current = false;
+                      startVoiceRecognition();
+                    }
+                  } else {
                     startVoiceRecognition();
                     console.log("🔊 Voice recognition resumed (audio-only mode - avatar finished)");
                   }
@@ -3446,6 +3484,10 @@ export function useAvatarSession({
                 isSpeakingRef.current = false;
                 setIsSpeakingState(false);
                 console.log("🔊 Audio-only TTS playback finished");
+                // 📱 Mobile Chrome: resume mic AudioContext (browser suspends it during audio playback)
+                if (elevenLabsSttAudioContextRef.current?.state === 'suspended') {
+                  elevenLabsSttAudioContextRef.current.resume().catch(() => {});
+                }
                 // Resume voice recognition after audio ends
                 if (sessionActiveRef.current && !recognitionRunningRef.current) {
                   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);

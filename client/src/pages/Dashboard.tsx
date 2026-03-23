@@ -46,6 +46,8 @@ import {
   Crown,
   GraduationCap,
   X,
+  Search,
+  Music,
 } from "lucide-react";
 import { Link, useLocation, useRoute } from "wouter";
 import { useQuery } from "@tanstack/react-query";
@@ -63,6 +65,7 @@ import type {
   SubscriptionPlan,
   UserSubscription,
   UsagePeriod,
+  GeneratedMedia,
 } from "@shared/schema";
 import { getNamespaceDisplayName } from "@shared/pineconeCategories";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +85,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient, assetUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   ResponsiveContainer,
@@ -113,6 +116,9 @@ import {
 } from "@/components/ui/select";
 import { useMutation } from "@tanstack/react-query";
 import { AvatarChat } from "@/components/avatar-chat";
+import { PlaylistCard } from "@/components/PlaylistCard";
+import { PlaylistDetailModal } from "@/components/PlaylistDetailModal";
+import { SpotifyConnect } from "@/components/SpotifyConnect";
 
 export type UserView =
   | "dashboard"
@@ -255,6 +261,11 @@ export default function Dashboard({
     enabled: isAuthenticated,
   });
 
+  const { data: mediaItems, isLoading: mediaLoading } = useQuery<GeneratedMedia[]>({
+    queryKey: ["/api/my-media"],
+    enabled: isAuthenticated,
+  });
+
   const { data: avatars, isLoading: avatarsLoading } = useQuery<
     AvatarProfile[]
   >({
@@ -310,6 +321,11 @@ export default function Dashboard({
     response: string;
   } | null>(null);
   const [videoToDelete, setVideoToDelete] = useState<ChatVideo | null>(null);
+  const [videoSearch, setVideoSearch] = useState("");
+  const [courseSearch, setCourseSearch] = useState("");
+  const [mediaFilter, setMediaFilter] = useState<"all" | "videos" | "playlists">("all");
+  const [selectedMediaItem, setSelectedMediaItem] = useState<GeneratedMedia | null>(null);
+  const [regeneratingMediaId, setRegeneratingMediaId] = useState<string | null>(null);
 
   // Generate or get user ID for chat
   const [chatUserId] = useState(() => {
@@ -449,6 +465,30 @@ export default function Dashboard({
     },
   });
 
+  const regeneratePlaylistMutation = useMutation({
+    mutationFn: async (mediaItemId: string) => {
+      setRegeneratingMediaId(mediaItemId);
+      const response = await apiRequest(`/api/my-media/${mediaItemId}/regenerate`, "POST");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/my-media"] });
+      setRegeneratingMediaId(null);
+      toast({
+        title: "New version created",
+        description: "A fresh playlist has been generated.",
+      });
+    },
+    onError: (error: any) => {
+      setRegeneratingMediaId(null);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to regenerate playlist",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Profile editing state
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
@@ -497,13 +537,17 @@ export default function Dashboard({
     setEditLastName(user?.lastName || "");
   };
 
+  const videoSearchLower = videoSearch.toLowerCase();
+  const matchesVideoSearch = (v: ChatVideo) =>
+    !videoSearch || v.topic?.toLowerCase().includes(videoSearchLower) ||
+    avatars?.find(a => a.id === v.avatarId)?.name?.toLowerCase().includes(videoSearchLower);
   const completedVideos =
-    chatVideos?.filter((v) => v.status === "completed") || [];
+    chatVideos?.filter((v) => v.status === "completed" && matchesVideoSearch(v)) || [];
   const pendingVideos =
     chatVideos?.filter(
-      (v) => v.status === "pending" || v.status === "generating",
+      (v) => (v.status === "pending" || v.status === "generating") && matchesVideoSearch(v),
     ) || [];
-  const failedVideos = chatVideos?.filter((v) => v.status === "failed") || [];
+  const failedVideos = chatVideos?.filter((v) => v.status === "failed" && matchesVideoSearch(v)) || [];
 
   // Check if an avatar is locked based on subscription
   const isAvatarLocked = (avatarId: string): boolean => {
@@ -794,7 +838,7 @@ export default function Dashboard({
                 {currentView === "chat" &&
                   "Choose an AI avatar to start a conversation"}
                 {currentView === "videos" &&
-                  "Videos generated from your chat conversations"}
+                  "Videos and playlists from your conversations"}
                 {currentView === "courses" &&
                   "Create and manage video courses with AI avatars"}
                 {currentView === "course-view" && "Watch your course videos"}
@@ -1088,13 +1132,13 @@ export default function Dashboard({
                                 <div className="w-full aspect-square sm:aspect-square rounded-xl overflow-hidden bg-gradient-to-br from-purple-500/20 to-cyan-500/20 flex items-center justify-center mb-4 group-hover:scale-[1.02] transition-transform">
                                   {avatarGifs[avatar.id] ? (
                                     <img
-                                      src={avatarGifs[avatar.id]}
+                                      src={assetUrl(avatarGifs[avatar.id])}
                                       alt={avatar.name}
                                       className="w-full h-full object-cover"
                                     />
                                   ) : avatar.profileImageUrl ? (
                                     <img
-                                      src={avatar.profileImageUrl}
+                                      src={assetUrl(avatar.profileImageUrl)}
                                       alt={avatar.name}
                                       className="w-full h-full object-cover"
                                     />
@@ -1214,13 +1258,85 @@ export default function Dashboard({
             {/* Videos View */}
             {currentView === "videos" && (
               <>
-                {videosLoading ? (
+                {/* Filter tabs + Spotify connect */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex gap-2">
+                    {(["all", "videos", "playlists"] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setMediaFilter(tab)}
+                        className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
+                          mediaFilter === tab
+                            ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
+                            : "text-white/40 hover:text-white/60 border border-transparent"
+                        }`}
+                      >
+                        {tab === "all" ? "All" : tab === "videos" ? "Videos" : "Playlists"}
+                      </button>
+                    ))}
+                  </div>
+                  <SpotifyConnect compact />
+                </div>
+
+                {/* Playlists section */}
+                {mediaFilter !== "videos" && mediaItems && mediaItems.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-full bg-purple-500/20 flex items-center justify-center">
+                        <Music className="w-4 h-4 text-purple-400" />
+                      </div>
+                      Playlists ({mediaItems.length})
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {mediaItems.map((item) => (
+                        <PlaylistCard
+                          key={item.id}
+                          item={item}
+                          onOpenDetail={setSelectedMediaItem}
+                          onRegenerate={(item) => regeneratePlaylistMutation.mutate(item.id)}
+                          isRegenerating={regeneratingMediaId === item.id}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Playlist detail modal */}
+                <PlaylistDetailModal
+                  item={selectedMediaItem}
+                  open={!!selectedMediaItem}
+                  onClose={() => setSelectedMediaItem(null)}
+                  onRegenerate={(item) => regeneratePlaylistMutation.mutate(item.id)}
+                  isRegenerating={!!regeneratingMediaId}
+                />
+
+                {mediaFilter === "playlists" ? (
+                  !mediaItems || mediaItems.length === 0 ? (
+                    <Card className="max-w-lg mx-auto glass-strong border-purple-500/30">
+                      <CardHeader className="text-center">
+                        <div className="w-16 h-16 rounded-full bg-gradient-primary/20 flex items-center justify-center mx-auto mb-4">
+                          <Music className="w-8 h-8 text-purple-400" />
+                        </div>
+                        <CardTitle className="text-white">No Playlists Yet</CardTitle>
+                        <CardDescription className="text-white/60">
+                          Chat with an avatar and they can create a personalized playlist for you.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="flex justify-center">
+                        <Button onClick={() => setLocation(isEmbed ? "/embed/chat" : "/dashboard/chat")}>
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Start Chatting
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : null
+                ) : (videosLoading || mediaLoading) ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="text-center">
                       <div className="w-12 h-12 rounded-full bg-gradient-primary glow-primary flex items-center justify-center mx-auto mb-4 animate-pulse">
                         <Loader2 className="w-6 h-6 text-white animate-spin" />
                       </div>
-                      <p className="text-white/60">Loading your videos...</p>
+                      <p className="text-white/60">Loading your content...</p>
                     </div>
                   </div>
                 ) : !chatVideos || chatVideos.length === 0 ? (
@@ -1249,6 +1365,17 @@ export default function Dashboard({
                   </Card>
                 ) : (
                   <div className="space-y-8">
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={videoSearch}
+                        onChange={(e) => setVideoSearch(e.target.value)}
+                        placeholder="Search videos..."
+                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                      />
+                    </div>
                     {/* Pending/Generating Videos */}
                     {pendingVideos.length > 0 && (
                       <div>
@@ -1326,16 +1453,22 @@ export default function Dashboard({
                               data-testid={`card-video-${video.id}`}
                             >
                               {video.videoUrl ? (
-                                <div className="relative aspect-video">
+                                <div className="relative aspect-video bg-black">
                                   <video
                                     src={video.videoUrl}
                                     className="aspect-video w-full object-cover"
                                     controls
+                                    playsInline
+                                    // @ts-ignore webkit attribute for iOS
+                                    webkit-playsinline="true"
                                     preload="metadata"
+                                    poster={video.thumbnailUrl || undefined}
                                   />
-                                  <div className="absolute top-2 right-2 glass px-2 py-1 rounded text-xs text-green-400 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Play className="w-3 h-3" />
-                                    Ready
+                                  {/* Title overlay - visible on still frame, hides on hover/play */}
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none bg-black/30 group-hover:opacity-0 transition-opacity duration-300">
+                                    <p className="text-white font-bold text-sm sm:text-base uppercase text-center px-4 drop-shadow-lg tracking-tight leading-tight" style={{ fontFamily: "'Poppins', sans-serif" }}>
+                                      {video.topic}
+                                    </p>
                                   </div>
                                 </div>
                               ) : (
@@ -1575,11 +1708,29 @@ export default function Dashboard({
                         </CardContent>
                       </Card>
                     ) : (
+                    <>
+                    {/* Search Bar */}
+                    <div className="relative mb-6">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                      <input
+                        type="text"
+                        value={courseSearch}
+                        onChange={(e) => setCourseSearch(e.target.value)}
+                        placeholder="Search courses..."
+                        className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-purple-500/50 text-sm"
+                      />
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                      {(avatarFilterId 
+                      {(avatarFilterId
                         ? courses.filter(course => course.avatarId === avatarFilterId)
                         : courses
-                      ).map((course) => (
+                      ).filter(course => {
+                        if (!courseSearch) return true;
+                        const q = courseSearch.toLowerCase();
+                        return course.title?.toLowerCase().includes(q) ||
+                          course.description?.toLowerCase().includes(q) ||
+                          avatars?.find(a => a.id === course.avatarId)?.name?.toLowerCase().includes(q);
+                      }).map((course) => (
                         <Card
                           key={course.id}
                           className="glass-strong border-white/10 hover:border-purple-500/30 transition-all duration-300 cursor-pointer group card-hover overflow-hidden flex flex-col"
@@ -1591,10 +1742,11 @@ export default function Dashboard({
                           {/* Thumbnail - use first lesson's video thumbnail or course thumbnail */}
                           <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20 overflow-hidden">
                             {(() => {
-                              // Get thumbnail from first completed lesson's video, or fallback to course thumbnail
-                              const firstVideoThumbnail = course.lessons?.find(
-                                (l) => l.video?.thumbnailUrl,
-                              )?.video?.thumbnailUrl;
+                              // Get thumbnail from first lesson (lesson thumbnail, then video thumbnail), or fallback to course thumbnail
+                              const firstLessonThumbnail = course.lessons?.find(
+                                (l) => l.thumbnailUrl || l.video?.thumbnailUrl,
+                              );
+                              const firstVideoThumbnail = firstLessonThumbnail?.thumbnailUrl || firstLessonThumbnail?.video?.thumbnailUrl;
                               const thumbnailUrl =
                                 course.thumbnailUrl || firstVideoThumbnail;
 
@@ -1688,6 +1840,7 @@ export default function Dashboard({
                         </Card>
                       ))}
                     </div>
+                    </>
                     )}
                   </>
                 )}
@@ -2582,9 +2735,9 @@ export default function Dashboard({
                                 data-testid={`card-lesson-video-${lesson.id}`}
                               >
                                 <div className="relative aspect-video bg-gradient-to-br from-purple-500/20 to-cyan-500/20">
-                                  {lesson.video?.thumbnailUrl ? (
+                                  {(lesson.thumbnailUrl || lesson.video?.thumbnailUrl) ? (
                                     <img
-                                      src={lesson.video.thumbnailUrl}
+                                      src={lesson.thumbnailUrl || lesson.video?.thumbnailUrl}
                                       alt={lesson.title}
                                       className="w-full h-full object-cover"
                                     />

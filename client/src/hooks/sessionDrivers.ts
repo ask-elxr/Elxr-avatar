@@ -75,8 +75,8 @@ export class LiveAvatarDriver implements SessionDriver {
   private audioBufferSize: number = 0;
   private isStreamingAudio: boolean = false;
   private streamingFlushTimer: ReturnType<typeof setTimeout> | null = null;
-  private readonly STREAMING_BUFFER_THRESHOLD = 12000; // ~0.5s of 24kHz PCM audio (24000 samples/s * 2 bytes * 0.25s)
-  private readonly STREAMING_FLUSH_DELAY = 200; // ms - flush buffer after no new chunks for this duration
+  private readonly STREAMING_BUFFER_THRESHOLD = 4800; // ~0.1s of 24kHz PCM audio - reduced for tighter lip sync
+  private readonly STREAMING_FLUSH_DELAY = 80; // ms - flush buffer quickly for better lip sync
 
   constructor(config: DriverConfig) {
     this.config = config;
@@ -466,8 +466,8 @@ export class LiveAvatarDriver implements SessionDriver {
       // Request microphone access using cached system to avoid repeated permission prompts
       this.mediaStream = await requestMicrophoneOnce({
         audio: {
-          channelCount: 1,
-          sampleRate: 16000,
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 16000 },
           echoCancellation: true,
           noiseSuppression: true,
         }
@@ -540,7 +540,10 @@ export class LiveAvatarDriver implements SessionDriver {
       this.sttAudioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
         sampleRate: 16000,
       });
-      
+      if (this.sttAudioContext.state === 'suspended') {
+        this.sttAudioContext.resume();
+      }
+
       const source = this.sttAudioContext.createMediaStreamSource(this.mediaStream);
       
       // Use ScriptProcessorNode for PCM capture (deprecated but widely supported)

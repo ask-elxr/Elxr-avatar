@@ -55,7 +55,7 @@ export function useMobileSTT({
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 16000,
+          sampleRate: { ideal: 16000 },
         }
       });
       

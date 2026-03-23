@@ -82,12 +82,15 @@ export class ClaudeService {
     // Detect if user wants detailed/comprehensive response
     // IMPORTANT: Keep this list strict - only explicit requests for detail
     const detailKeywords = [
-      'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
+      'tell me more', 'explain in detail', 'go deeper', 'elaborate',
       'give me more details', 'full explanation', 'comprehensive', 'in depth',
       'tell me everything', 'more information', 'expand on that', 'detailed answer',
       'long answer', 'thorough explanation', 'complete answer', 'walk me through',
       'step by step', 'break it down for me', 'all the details',
-      'explain in depth', 'go into detail'
+      'explain in depth', 'go into detail',
+      'what does the research say', 'what do studies show', 'pubmed', 'research report',
+      'clinical studies', 'clinical trials', 'medical research', 'scientific evidence',
+      'peer reviewed', 'give me a report', 'detailed report', 'what does science say'
     ];
     const queryLower = query.toLowerCase();
     const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
@@ -129,16 +132,14 @@ export class ClaudeService {
       ? context.slice(0, 1200) + '...'
       : context;
 
-    const textMessage = condensedContext 
+    const textMessage = condensedContext
       ? `banterLevel: ${banterLevel}
 User: ${query}
 
-NOTES (from knowledge base):
+NOTES:
 ${condensedContext}`
       : `banterLevel: ${banterLevel}
-User: ${query}
-
-NOTES: (none available - proceed conversationally)`;
+User: ${query}`;
 
     // Build user message content - can include both text and image
     let userContent: any;
@@ -172,26 +173,26 @@ NOTES: (none available - proceed conversationally)`;
 
     // Voice mode length directive
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
-RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that proves you understood. End with a light handoff question.
+RESPONSE LENGTH: 1–2 sentences max. This is a real-time voice conversation — be fast and natural. Respond directly to what they said. Don't recap, don't list, don't offer capabilities.
 ` : '';
 
     // Use warmth protocol for avatar responses
-    const systemPrompt = customSystemPrompt 
+    const systemPrompt = customSystemPrompt
       ? ELXR_CONTENT_POLICY + buildAvatarPrompt('Avatar', customSystemPrompt, banterLevel)
       : `${ELXR_CONTENT_POLICY}${voiceModeBrevity}You are warm, witty, grounded, and unshockable. You draw on your expertise naturally.
-      
-      Guidelines:
-      - Respond fast: start with 1 short line that proves you understood.
-      - Default to 2–6 short sentences. Use bullets when helpful.
-      - Friendly, lightly cheeky. No corporate tone. No "As an AI…"
-      - Ask at most ONE question at a time.
-      - NEVER reference sources, data, or "information provided"
-      - If you don't know something, say so naturally like a real person would
-      - End with a light handoff: "What's the real goal here?" or "Which part matters most?"
-      - If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
 
-    // Voice mode: 350 tokens (~4-6 sentences) for snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
-    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 350 : 1200);
+      Guidelines:
+      - Respond like a friend on a phone call. Quick, natural, no structure.
+      - Stay on the thread the user started. Don't jump between topics.
+      - If they say "hi", just say hi back. Don't list what you can do.
+      - Friendly, lightly cheeky. No corporate tone. No "As an AI…"
+      - NEVER reference sources, data, or "information provided"
+      - NEVER proactively mention videos, playlists, web search, or any capabilities
+      - If you don't know something, say so naturally like a real person would
+      - If the user speaks while you are responding, immediately stop and listen.`;
+
+    // Voice mode: 150 tokens (~1-2 sentences) for ultra-snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
+    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 150 : 1200);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
@@ -214,8 +215,8 @@ RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that 
     let sentenceCount = 0;
     const sentenceEnders = /([.!?])\s+/g;
     
-    // Truncation settings: allow avatars to finish their thoughts naturally
-    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 12 : 18;
+    // Truncation settings: keep voice mode tight and conversational
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 3 : 18;
     let shouldTruncate = false;
 
     for await (const event of stream) {
@@ -345,7 +346,10 @@ RESPONSE LENGTH: Default to 2–6 short sentences. Start with 1 short line that 
       const detailedKeywords = [
         'tell me more', 'explain', 'detailed', 'elaborate', 'why', 'how does',
         'what are the steps', 'walk me through', 'in detail', 'break down',
-        'full story', 'complete', 'everything about', 'all about', 'describe'
+        'full story', 'complete', 'everything about', 'all about', 'describe',
+        'what does the research say', 'what do studies show', 'pubmed', 'research report',
+        'clinical studies', 'clinical trials', 'medical research', 'scientific evidence',
+        'peer reviewed', 'give me a report', 'detailed report', 'what does science say'
       ];
       const wantsDetailedResponse = detailedKeywords.some(keyword => 
         query.toLowerCase().includes(keyword)
@@ -467,11 +471,14 @@ RESPONSE REQUIREMENTS:
 
     // Detect if user wants detailed/comprehensive response
     const detailKeywords = [
-      'tell me more', 'explain in detail', 'go deeper', 'elaborate', 
+      'tell me more', 'explain in detail', 'go deeper', 'elaborate',
       'give me details', 'full explanation', 'comprehensive', 'in depth',
       'tell me everything', 'more information', 'expand on', 'detailed answer',
       'long answer', 'thorough', 'complete answer', 'walk me through',
-      'step by step', 'break it down', 'all the details'
+      'step by step', 'break it down', 'all the details',
+      'what does the research say', 'what do studies show', 'pubmed', 'research report',
+      'clinical studies', 'clinical trials', 'medical research', 'scientific evidence',
+      'peer reviewed', 'give me a report', 'detailed report', 'what does science say'
     ];
     const queryLower = query.toLowerCase();
     const wantsDetailedResponse = detailKeywords.some(keyword => queryLower.includes(keyword));
@@ -622,7 +629,7 @@ ABSOLUTE RULES:
       const systemPrompt = ELXR_CONTENT_POLICY + baseSystemPrompt + voiceModeBrevity + webSearchInstructions;
 
       // Use lower max_tokens for faster response in voice mode, higher when details requested
-      const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 300 : 1000);
+      const maxTokens = wantsDetailedResponse ? 2000 : (isVoiceMode ? 180 : 1000);
 
       const response = await this.createMessageBreaker.execute({
         model: DEFAULT_MODEL_STR,
@@ -695,21 +702,17 @@ ABSOLUTE RULES:
 
 ${personalityPrompt}
 
-🎧 AUDIO MODE - COMPLETE THOUGHTS WITH CONTINUATION OFFER:
-This is an audio-only conversation. Users are listening, so:
-- Give a thorough but focused response (3-5 sentences is fine)
-- ALWAYS complete your thought - never cut off mid-sentence
-- ALWAYS end with a natural invitation to continue, such as:
-  • "Would you like me to go deeper on that?"
-  • "Want me to share more about this?"
-  • "Should I elaborate on any of that?"
-  • "I can tell you more if you're interested."
-- Be warm and conversational like a knowledgeable friend
-- Think "podcast host" - engaging and complete`;
+🎧 AUDIO MODE - CONVERSATIONAL, NOT LECTURE:
+This is a real-time voice conversation. Talk like a friend, not a professor:
+- Keep responses to 2-3 sentences. Short and punchy.
+- Complete your thought — never cut off mid-sentence.
+- If the topic is big, give the headline and ask if they want more.
+- End naturally — a quick question or handoff, not a speech.
+- Think "catching up with a friend" not "podcast monologue".`;
 
       const response = await this.createMessageBreaker.execute({
         model: FAST_VOICE_MODEL,
-        max_tokens: 350,
+        max_tokens: 200,
         messages: [{ role: 'user', content: userMessage }],
         system: systemPrompt
       });
@@ -726,7 +729,7 @@ This is an audio-only conversation. Users are listening, so:
 
       const content = response.content[0];
       if (content && content.type === 'text') {
-        return this.ensureContinuationOffer(content.text);
+        return this.ensureCleanEnding(content.text);
       }
       return 'I apologize, but I was unable to respond.';
     } catch (error: any) {
@@ -735,37 +738,27 @@ This is an audio-only conversation. Users are listening, so:
     }
   }
 
-  // Post-processing helper to ensure responses end with a continuation offer
-  // and don't cut off mid-sentence
-  private ensureContinuationOffer(text: string): string {
+  // Post-processing helper to ensure responses don't cut off mid-sentence
+  private ensureCleanEnding(text: string): string {
     const trimmed = text.trim();
-    
-    // Check if response already has a continuation offer
-    const continuationPatterns = [
-      /would you like.*(more|deeper|elaborate|hear|know|continue)/i,
-      /want me to.*(go deeper|share more|elaborate|explain|tell)/i,
-      /should I.*(elaborate|explain|tell|share|go deeper)/i,
-      /interested in.*(hearing|learning|knowing) more/i,
-      /let me know if you.*(want|like|need)/i,
-      /\?$/  // Ends with a question mark (likely already offering)
-    ];
-    
-    const hasContinuationOffer = continuationPatterns.some(pattern => pattern.test(trimmed));
-    
-    if (hasContinuationOffer) {
-      return trimmed;
-    }
-    
+
     // Check if response ends mid-sentence (doesn't end with sentence-ending punctuation)
     const endsCleanly = /[.!?]$/.test(trimmed);
-    
+
     if (!endsCleanly) {
-      // Response was cut off - add ellipsis and continuation offer
-      return trimmed + '... Would you like me to continue?';
+      // Response was cut off - find last complete sentence
+      const lastSentenceEnd = Math.max(
+        trimmed.lastIndexOf('.'),
+        trimmed.lastIndexOf('!'),
+        trimmed.lastIndexOf('?')
+      );
+      if (lastSentenceEnd > trimmed.length * 0.5) {
+        return trimmed.substring(0, lastSentenceEnd + 1);
+      }
+      return trimmed + '.';
     }
-    
-    // Response is complete but missing continuation offer - add one
-    return trimmed + ' Would you like me to go deeper on that?';
+
+    return trimmed;
   }
 }
 

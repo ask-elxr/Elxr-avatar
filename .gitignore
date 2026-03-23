@@ -49,6 +49,9 @@ after-viewport-*.png
 vite.config.ts.*
 *.tar.gz
 
+# Research & internal analysis (not for remote)
+research/
+
 # OS files
 .DS_Store
 Thumbs.db

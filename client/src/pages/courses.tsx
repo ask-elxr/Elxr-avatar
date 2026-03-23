@@ -491,6 +491,9 @@ export default function CoursesPage() {
                 src={selectedVideo.videoUrl}
                 controls
                 autoPlay
+                playsInline
+                // @ts-ignore webkit attribute for iOS
+                webkit-playsinline="true"
                 className="w-full h-full"
                 data-testid="video-player"
               />

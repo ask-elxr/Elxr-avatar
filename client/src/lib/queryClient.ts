@@ -1,5 +1,22 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// When hosted on Firebase (or any non-Railway domain), proxy API calls to Railway
+const isExternalHost = typeof window !== 'undefined' &&
+  !window.location.hostname.includes('railway.app') &&
+  !window.location.hostname.includes('localhost') &&
+  !window.location.hostname.includes('127.0.0.1');
+
+export const API_BASE = isExternalHost
+  ? 'https://elxr-avatar-production.up.railway.app'
+  : '';
+
+/** Prefix asset paths (e.g. /attached_assets/...) with API_BASE when on external host */
+export function assetUrl(path: string): string {
+  if (!path) return path;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  return `${API_BASE}${path}`;
+}
+
 // Get admin secret from URL params or localStorage
 export function getAdminSecret(): string | null {
   // Check URL params first
@@ -36,8 +53,11 @@ export function hasMemberstackId(): boolean {
 
 // Build authenticated WebSocket URL with member_id or admin_secret query params
 export function buildAuthenticatedWsUrl(path: string): string {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const url = new URL(`${protocol}//${window.location.host}${path}`);
+  const wsHost = isExternalHost
+    ? 'elxr-avatar-production.up.railway.app'
+    : window.location.host;
+  const protocol = isExternalHost ? 'wss:' : (window.location.protocol === 'https:' ? 'wss:' : 'ws:');
+  const url = new URL(`${protocol}//${wsHost}${path}`);
   const memberId = getMemberstackId();
   if (memberId) {
     url.searchParams.set('member_id', memberId);
@@ -87,15 +107,14 @@ export async function apiRequest(
     headers['X-Member-Id'] = memberstackId;
   }
   
-  // Add admin secret header for admin routes
-  if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge') || url.includes('/api/google-drive')) {
-    const adminSecret = getAdminSecret();
-    if (adminSecret) {
-      headers['X-Admin-Secret'] = adminSecret;
-    }
+  // Add admin secret header when admin is logged in
+  const adminSecret = getAdminSecret();
+  if (adminSecret) {
+    headers['X-Admin-Secret'] = adminSecret;
   }
-  
-  const res = await fetch(url, {
+
+  const fullUrl = url.startsWith('/') ? `${API_BASE}${url}` : url;
+  const res = await fetch(fullUrl, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
@@ -121,15 +140,14 @@ export const getQueryFn: <T>(options: {
       headers['X-Member-Id'] = memberstackId;
     }
     
-    // Add admin secret header for admin routes
-    if (url.includes('/api/admin') || url.includes('/api/pinecone') || url.includes('/api/documents') || url.includes('/api/knowledge') || url.includes('/api/google-drive')) {
-      const adminSecret = getAdminSecret();
-      if (adminSecret) {
-        headers['X-Admin-Secret'] = adminSecret;
-      }
+    // Add admin secret header when admin is logged in
+    const adminSecret = getAdminSecret();
+    if (adminSecret) {
+      headers['X-Admin-Secret'] = adminSecret;
     }
-    
-    const res = await fetch(url, {
+
+    const fullUrl = url.startsWith('/') ? `${API_BASE}${url}` : url;
+    const res = await fetch(fullUrl, {
       credentials: "include",
       headers,
     });

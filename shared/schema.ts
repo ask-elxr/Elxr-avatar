@@ -328,6 +328,8 @@ export const lessons = pgTable("lessons", {
   courseId: varchar("course_id").references(() => courses.id, { onDelete: "cascade" }).notNull(),
   title: text("title").notNull(),
   script: text("script").notNull(), // The text the avatar will speak
+  scenes: jsonb("scenes"), // Scene segments for B-roll: [{type, script, brollDescription?, brollImageUrl?, brollAssetId?}]
+  thumbnailUrl: text("thumbnail_url"), // AI-generated lesson thumbnail
   order: integer("order").notNull(), // Lesson order in the course
   duration: integer("duration"), // Estimated duration in seconds
   status: varchar("status").notNull().default("pending"), // pending, generating, completed, failed
@@ -347,6 +349,9 @@ export const generatedVideos = pgTable("generated_videos", {
   testVideo: boolean("test_video").default(false), // Whether this is a watermarked test video
   errorMessage: text("error_message"),
   metadata: jsonb("metadata"), // Additional video metadata from HeyGen
+  processedVideoUrl: text("processed_video_url"), // Post-processed video with B-roll overlays
+  sceneTimings: jsonb("scene_timings"), // Per-scene durations for overlay timing
+  backgroundMusicUrl: text("background_music_url"), // Suno AI generated background music
   createdAt: timestamp("created_at").defaultNow().notNull(),
   generatedAt: timestamp("generated_at"),
 });
@@ -380,6 +385,7 @@ export const insertLessonSchema = createInsertSchema(lessons).pick({
 export const updateLessonSchema = createInsertSchema(lessons).pick({
   title: true,
   script: true,
+  scenes: true,
   order: true,
   duration: true,
   status: true,
@@ -669,3 +675,72 @@ export const insertPodcastBatchSchema = createInsertSchema(podcastBatches).pick(
 export type InsertPodcastBatch = z.infer<typeof insertPodcastBatchSchema>;
 export type PodcastBatch = typeof podcastBatches.$inferSelect;
 export type PodcastEpisode = typeof podcastEpisodes.$inferSelect;
+
+// Generated media items (playlists, audio, etc.) — stored alongside videos in "My Videos"
+export const generatedMediaStatusEnum = ["queued", "generating", "created", "failed", "preview_only"] as const;
+export type GeneratedMediaStatus = typeof generatedMediaStatusEnum[number];
+
+export const generatedMedia = pgTable("generated_media", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(),
+  type: varchar("type").notNull().default("playlist"), // "playlist", "audio", etc.
+  source: varchar("source").notNull().default("avatar"), // "avatar", "manual"
+  avatarName: varchar("avatar_name"),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  description: text("description"),
+  thumbnailUrl: text("thumbnail_url"),
+  externalUrl: text("external_url"), // Spotify playlist URL, etc.
+  provider: varchar("provider").default("spotify"), // "spotify", "apple_music", etc.
+  providerId: varchar("provider_id"), // Spotify playlist ID
+  status: varchar("status").notNull().default("queued"),
+  metadataJson: jsonb("metadata_json"), // Playlist spec, mood tags, tracks, etc.
+  conversationId: varchar("conversation_id"), // Reference to conversation that triggered it
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertGeneratedMediaSchema = createInsertSchema(generatedMedia).pick({
+  userId: true,
+  type: true,
+  source: true,
+  avatarName: true,
+  title: true,
+  subtitle: true,
+  description: true,
+  thumbnailUrl: true,
+  externalUrl: true,
+  provider: true,
+  providerId: true,
+  status: true,
+  metadataJson: true,
+  conversationId: true,
+});
+
+export const updateGeneratedMediaSchema = createInsertSchema(generatedMedia).pick({
+  title: true,
+  subtitle: true,
+  description: true,
+  thumbnailUrl: true,
+  externalUrl: true,
+  providerId: true,
+  status: true,
+  metadataJson: true,
+  updatedAt: true,
+}).partial();
+
+export type InsertGeneratedMedia = z.infer<typeof insertGeneratedMediaSchema>;
+export type UpdateGeneratedMedia = z.infer<typeof updateGeneratedMediaSchema>;
+export type GeneratedMedia = typeof generatedMedia.$inferSelect;
+
+// Spotify OAuth tokens — stored server-side only
+export const spotifyTokens = pgTable("spotify_tokens", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().unique(),
+  accessToken: text("access_token").notNull(), // Encrypted at rest
+  refreshToken: text("refresh_token").notNull(), // Encrypted at rest
+  expiresAt: timestamp("expires_at").notNull(),
+  scopes: text("scopes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
