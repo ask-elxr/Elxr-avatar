@@ -115,7 +115,7 @@ export async function generatePlaylist(
 
         for (const query of spec.seedSearches) {
           try {
-            const tracks = await spotify.searchTracks(accessToken, query, 20);
+            const tracks = await spotify.searchTracks(accessToken, query, 10);
             log.info({ query, results: tracks.length }, "Spotify search result");
             for (const track of tracks) {
               if (!seen.has(track.id)) {
@@ -137,7 +137,7 @@ export async function generatePlaylist(
           const broadenedQueries = spec.moodTags.map((tag) => `${tag} music`);
           for (const query of broadenedQueries) {
             try {
-              const tracks = await spotify.searchTracks(accessToken, query, 15);
+              const tracks = await spotify.searchTracks(accessToken, query, 10);
               for (const track of tracks) {
                 if (!seen.has(track.id)) {
                   seen.add(track.id);

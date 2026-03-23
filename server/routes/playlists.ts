@@ -150,15 +150,16 @@ playlistRouter.get("/spotify/test-orchestrator-search", async (req: Request, res
     const accessToken = await spotify.getValidAccessToken(spotifyAccountId);
     if (!accessToken) return res.json({ error: "No valid token" });
 
-    const queries = ["ambient sleep drone warm minimal", "upbeat pop dance party", "lo-fi hip hop chill"];
+    const queries = ["jazz piano smooth"];
+    const limits = [5, 10, 15, 20, 50];
     const results: any[] = [];
 
-    for (const query of queries) {
+    for (const limit of limits) {
       try {
-        const tracks = await spotify.searchTracks(accessToken, query, 5);
-        results.push({ query, trackCount: tracks.length, firstTrack: tracks[0]?.name || null });
+        const tracks = await spotify.searchTracks(accessToken, queries[0], limit);
+        results.push({ limit, trackCount: tracks.length });
       } catch (err: any) {
-        results.push({ query, error: err.message });
+        results.push({ limit, error: err.message });
       }
     }
 
