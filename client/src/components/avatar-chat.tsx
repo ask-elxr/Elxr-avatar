@@ -763,25 +763,29 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
     if (playlistSuggestion || playlistCreated || playlistCreating) return;
     if (chatHistory.length === 0) return;
 
-    const lastMsg = chatHistory[chatHistory.length - 1];
-    if (!lastMsg) return;
+    // Check last 6 messages for playlist-related keywords (not just the very last one)
+    const recentMessages = chatHistory.slice(-6);
+    for (const msg of recentMessages) {
+      const lower = msg.content.toLowerCase();
+      const mentionsPlaylist =
+        lower.includes('playlist') ||
+        lower.includes('make you a mix') ||
+        lower.includes('build you a mix') ||
+        lower.includes('put something together') ||
+        lower.includes('curate something') ||
+        lower.includes('make me a mix') ||
+        lower.includes('some music');
 
-    const lower = lastMsg.content.toLowerCase();
-    const mentionsPlaylist =
-      lower.includes('playlist') ||
-      lower.includes('make you a mix') ||
-      lower.includes('build you a mix') ||
-      lower.includes('put something together') ||
-      lower.includes('curate something');
-
-    if (mentionsPlaylist) {
-      console.log(`[Playlist] Keyword detected in message: "${lastMsg.content.substring(0, 80)}..."`);
-      const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      setPlaylistSuggestion({
-        title: `${avatarName} can make you a playlist`,
-        description: "Tap Create Playlist to get a personalized mix.",
-        suggestedType: "conversation-driven",
-      });
+      if (mentionsPlaylist) {
+        console.log(`[Playlist] Keyword detected in message: "${msg.content.substring(0, 80)}..."`);
+        const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        setPlaylistSuggestion({
+          title: `${avatarName} can make you a playlist`,
+          description: "Tap Create Playlist to get a personalized mix.",
+          suggestedType: "conversation-driven",
+        });
+        break;
+      }
     }
   }, [chatHistory.length, playlistSuggestion, playlistCreated, playlistCreating, selectedAvatarId]);
 
