@@ -107,7 +107,7 @@ Schema:
   "moodTags": ["string"],
   "seedSearches": ["string"],
   "avatarExplanation": "string",
-  "coverImagePrompt": "string — a vivid, specific image prompt for an album cover. Describe a striking visual scene that matches this playlist's genre, mood, and energy. Be specific about subjects, lighting, colors, textures, and composition. Use varied styles: abstract art, urban photography, nature macro, still life, surreal collage, neon, watercolor, etc. NEVER just describe a blurry landscape. No people, no faces, no text."
+  "coverImagePrompt": "string (max 200 chars) — a SHORT, concrete image description for an album cover. Describe a SPECIFIC physical scene with real objects. Examples: 'A vintage turntable on a wooden table with warm candlelight and whiskey glass', 'Rain drops on a neon-lit taxi window at night in Tokyo', 'A guitar leaning against a desert cactus at sunset with orange sky', 'Close-up of vinyl record grooves reflecting purple and blue light'. Be CONCRETE — name real objects, materials, and lighting. NO abstract concepts, NO blurry landscapes, NO soft-focus."
 }`;
 
 export async function generatePlaylistSpec(
@@ -162,13 +162,27 @@ export async function generatePlaylistSpec(
 export function generateImagePrompt(spec: PlaylistSpec): string {
   // Use the LLM-generated prompt tailored to this specific playlist
   if (spec.coverImagePrompt) {
-    return `${spec.coverImagePrompt}. Album cover art, square composition, high contrast, sharp detail, no people, no faces, no text, no words, no typography.`;
+    return `${spec.coverImagePrompt}, photographed in sharp focus, cinematic lighting, album cover composition, no people, no faces, no text, no words`;
   }
 
   // Fallback if coverImagePrompt is missing (older specs)
-  return [
-    `Abstract visual art evoking ${spec.moodTags.slice(0, 3).join(", ")},`,
-    "album cover style, square composition, high contrast,",
-    "striking visual detail, no people, no faces, no text",
-  ].join(" ");
+  const objects: Record<string, string> = {
+    calm: "A smooth stone balanced on a zen garden with raked sand, soft morning light",
+    warm: "A steaming coffee cup on a wooden windowsill with golden afternoon light streaming in",
+    night: "A neon sign reflected in a rain puddle on a dark city street",
+    energy: "Electric sparks flying off a drum cymbal mid-strike, dramatic lighting",
+    focus: "A single burning candle in a dark room with a stack of books",
+    gentle: "Wildflowers in a mason jar on a rustic table with soft window light",
+    dream: "A crescent moon reflected in still lake water with mist",
+    motivation: "Running shoes on a wet track at dawn with golden light",
+  };
+
+  for (const tag of spec.moodTags) {
+    const lower = tag.toLowerCase();
+    if (objects[lower]) {
+      return `${objects[lower]}, sharp focus, cinematic, album cover, no people, no text`;
+    }
+  }
+
+  return `A vintage turntable with vinyl record in warm ambient light, sharp focus, cinematic, album cover, no people, no text`;
 }

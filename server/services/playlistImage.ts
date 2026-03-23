@@ -16,29 +16,34 @@ export async function generatePlaylistImage(
     return null;
   }
 
-  try {
-    const result = await fal.subscribe("fal-ai/flux/dev", {
-      input: {
-        prompt: `${imagePrompt}. Ultra high quality, sharp detail, no text, no watermarks, no logos.`,
-        image_size: "square",
-        num_images: 1,
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-      },
-    });
+  // Try flux/schnell first (fast, reliable), fall back to flux/dev
+  const models = ["fal-ai/flux/schnell", "fal-ai/flux/dev"];
 
-    const image = (result.data as any)?.images?.[0];
-    if (image?.url) {
-      log.info("Playlist image generated successfully via fal.ai");
-      return image.url;
+  for (const model of models) {
+    try {
+      log.info({ model, promptLength: imagePrompt.length }, "Generating playlist image");
+      const result = await fal.subscribe(model, {
+        input: {
+          prompt: imagePrompt,
+          image_size: "square",
+          num_images: 1,
+        },
+      });
+
+      const image = (result.data as any)?.images?.[0];
+      if (image?.url) {
+        log.info({ model }, "Playlist image generated successfully");
+        return image.url;
+      }
+
+      log.warn({ model }, "No image in fal.ai response");
+    } catch (err: any) {
+      log.error({ model, err: err?.message || err }, "Image generation failed, trying next model");
     }
-
-    log.warn("No image in fal.ai response");
-    return null;
-  } catch (err) {
-    log.error({ err }, "Failed to generate playlist image");
-    return null;
   }
+
+  log.error("All image generation models failed");
+  return null;
 }
 
 /**
