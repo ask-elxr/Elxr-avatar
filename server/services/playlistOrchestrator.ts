@@ -104,6 +104,14 @@ export async function generatePlaylist(
         log.error({ userId }, "Spotify connected but token invalid/expired — cannot create playlist");
       }
       if (accessToken) {
+        // Quick sanity check: verify token works before search loop
+        try {
+          const sanityCheck = await spotify.searchTracks(accessToken, "test", 1);
+          log.info({ sanityCheckTracks: sanityCheck.length }, "Token sanity check passed");
+        } catch (sanityErr: any) {
+          log.error({ sanityErr: sanityErr.message }, "Token sanity check FAILED — token may be invalid");
+        }
+
         // Search for tracks using seed queries
         log.info({ seeds: spec.seedSearches.length, queries: spec.seedSearches }, "Searching Spotify tracks");
         const allCandidates: spotify.SpotifyTrack[] = [];
@@ -244,7 +252,7 @@ export async function generatePlaylist(
       provider: "spotify",
       status: finalStatus,
       // Debug info
-      _debug: { spotifyConnected, trackCount, hasExternalUrl: !!externalUrl, userId },
+      _debug: { spotifyConnected, trackCount, hasExternalUrl: !!externalUrl, userId, tokenLength: spotifyConnected ? "present" : "none", seedSearches: spec.seedSearches },
     };
   } catch (err) {
     log.error({ mediaItemId, err }, "Playlist generation failed");
