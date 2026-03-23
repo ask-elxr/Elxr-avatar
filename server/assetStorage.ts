@@ -50,3 +50,33 @@ export function isConfigured(): boolean {
     process.env.GCS_PRIVATE_KEY
   );
 }
+
+/**
+ * Download a video from a URL and upload it to GCS, returning a permanent public URL.
+ * Used to persist HeyGen's expiring CloudFront signed URLs.
+ */
+export async function persistVideoFromUrl(
+  sourceUrl: string,
+  destFilename: string,
+): Promise<string> {
+  const bucket = getBucket();
+  if (!bucket) throw new Error("Asset storage not configured (missing GCS_* env vars)");
+
+  const { default: axios } = await import("axios");
+  const { pipeline } = await import("stream/promises");
+
+  const response = await axios.get(sourceUrl, { responseType: "stream" });
+  const contentType = response.headers["content-type"] || "video/mp4";
+
+  const destination = `videos/${destFilename}`;
+  const file = bucket.file(destination);
+  const writeStream = file.createWriteStream({
+    metadata: { contentType },
+    resumable: false,
+  });
+
+  await pipeline(response.data, writeStream);
+
+  const bucketName = process.env.GCS_BUCKET_NAME;
+  return `https://storage.googleapis.com/${bucketName}/${destination}`;
+}
