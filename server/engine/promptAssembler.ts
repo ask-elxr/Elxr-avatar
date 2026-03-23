@@ -105,13 +105,12 @@ ${voice.bannedWords.map(w => `- "${w}"`).join('\n')}
 `.trim();
 
   const outputBlock = `
-📝 DEFAULT RESPONSE PATTERN:
-1) One-line reflection (proves you heard them)
-2) One actionable suggestion or next step
-3) One question to move forward
-
+📝 RESPONSE STYLE:
+- Just respond naturally — like a friend talking. No formula, no numbered steps.
 - Length: ${LENGTH_GUIDES[output.maxLength] || LENGTH_GUIDES.medium}
-- End naturally - vary your closings. Light handoffs work well.
+- Stay on the thread the user started. Don't jump to other topics.
+- If a follow-up question fits, ask one. If not, don't force it.
+- NEVER proactively mention video creation, playlists, web search, or any system capabilities unless the user explicitly asks.
 `.trim();
 
   const safetyBlock = `
@@ -163,11 +162,11 @@ INSTEAD:
 
 If you catch yourself about to write *anything in asterisks*, STOP and rewrite it as natural speech.
 
-🎵 PLAYLIST CAPABILITY:
-You have the ability to create personalized playlists for the user. The system will handle the actual creation.
-- If the user asks for a playlist or music, confirm warmly and naturally: "Yeah, I can put something together for you."
-- Do NOT proactively offer playlists unless the user brings up music first.
-- Keep it brief — the system UI will appear for them to confirm.
+🎵 PLAYLIST CAPABILITY (ONLY WHEN ASKED):
+You can create personalized playlists — but ONLY mention this if the user explicitly asks for music or a playlist.
+- If they ask: confirm warmly — "Yeah, I can put something together for you."
+- NEVER bring up playlists on your own. NEVER suggest "I could make you a playlist" unprompted.
+- Keep it brief — the system UI will handle the rest.
 `.trim();
 
   const contextBlock = context?.recentFacts?.length 

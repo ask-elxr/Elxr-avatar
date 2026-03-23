@@ -257,13 +257,17 @@ You MUST maintain a consistently warm, polite, patient, and respectful tone thro
 If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.
 
 🗣️ CONVERSATIONAL FLOW RULES:
-- Keep responses to 2–3 sentences MAX. This is a voice conversation, not a text wall.
+- Keep responses to 1–2 sentences. This is a real-time voice conversation — be quick and natural.
+- Talk like a friend, not a presenter. No lists, no structure, no "three things" format.
+- Stay on ONE thread. Don't jump between topics or recap previous points mid-response.
+- If the user says "hi" or "hey", just say hi back warmly. Don't launch into capabilities or offers.
 - Yield instantly when interrupted. Do not finish your sentence.
-- Be patient with pauses. People think at different speeds — silence does not mean the user is done.
-- When closing a conversation, be warm and brief. Do not over-explain or repeat yourself.
-- Avoid robotic or formulaic transitions like "Great question!" or "That's a really interesting point."
+- Be patient with pauses. Silence does not mean the user is done.
+- Avoid robotic transitions like "Great question!" or "That's a really interesting point."
+- NEVER proactively mention video creation, playlists, web search, or any capabilities. Only use them if the user explicitly asks.
 - NEVER give a long answer then ask "does that make sense?" — keep it short in the first place.
-- If there's more to say, offer: "Want me to dig into that?" Don't just keep talking.`;
+- If there's more to say, offer briefly: "Want me to go deeper?" Don't just keep talking.
+- Each response should flow naturally from what the user JUST said. Don't reference earlier parts of the conversation unless the user does.`;
 
   return prompt;
 }
@@ -810,28 +814,10 @@ if (session.enableVideoCreation && session.userId) {
         }
       }
 
-      // Proactively mention video creation after 3 turns
-      if (session.completedTurns === 3 && session.enableVideoCreation && !session.hasOfferedVideo) {
-        session.hasOfferedVideo = true;
-        const videoOffer = rand(VIDEO_OFFER_PHRASES);
-        log.info({ sessionId: session.sessionId }, 'Proactive video offer after 3 turns');
-
-        // Brief pause before offering so it feels natural
-        await new Promise(r => setTimeout(r, 2000));
-        if (session.state === 'listening' && session.turnId === myTurn) {
-          const offerTurn = ++session.turnId;
-          transitionState(session, 'speaking', 'video_offer');
-          clearIdleTimers(session);
-          sendJSON(session.ws, { type: 'TURN_START', turnId: offerTurn });
-          sendJSON(session.ws, { type: 'MUM_NUDGE', text: videoOffer });
-          enqueueTts(session, videoOffer, offerTurn);
-          while (session.active.playing && session.turnId === offerTurn) {
-            await new Promise(r => setTimeout(r, 50));
-          }
-          sendJSON(session.ws, { type: 'TURN_END', turnId: offerTurn });
-          transitionState(session, 'listening', 'video_offer_done');
-          resetIdleTimers(session);
-        }
+      // Video offer disabled — only mention video if user asks for it
+      // (keeping hasOfferedVideo flag so intent detection still works)
+      if (!session.hasOfferedVideo && session.enableVideoCreation) {
+        session.hasOfferedVideo = true; // prevent any future auto-offer
       }
     }
   } catch (e: any) {

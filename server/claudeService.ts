@@ -132,16 +132,14 @@ export class ClaudeService {
       ? context.slice(0, 1200) + '...'
       : context;
 
-    const textMessage = condensedContext 
+    const textMessage = condensedContext
       ? `banterLevel: ${banterLevel}
 User: ${query}
 
-NOTES (from knowledge base):
+NOTES:
 ${condensedContext}`
       : `banterLevel: ${banterLevel}
-User: ${query}
-
-NOTES: (none available - proceed conversationally)`;
+User: ${query}`;
 
     // Build user message content - can include both text and image
     let userContent: any;
@@ -175,26 +173,26 @@ NOTES: (none available - proceed conversationally)`;
 
     // Voice mode length directive
     const voiceModeBrevity = isVoiceMode && !wantsDetailedResponse ? `
-RESPONSE LENGTH: Keep it to 2–3 short sentences max. This is a real conversation, not a lecture. Start with 1 short line that proves you understood, then give your take. If there's more to say, offer to go deeper — don't just dump it all.
+RESPONSE LENGTH: 1–2 sentences max. This is a real-time voice conversation — be fast and natural. Respond directly to what they said. Don't recap, don't list, don't offer capabilities.
 ` : '';
 
     // Use warmth protocol for avatar responses
-    const systemPrompt = customSystemPrompt 
+    const systemPrompt = customSystemPrompt
       ? ELXR_CONTENT_POLICY + buildAvatarPrompt('Avatar', customSystemPrompt, banterLevel)
       : `${ELXR_CONTENT_POLICY}${voiceModeBrevity}You are warm, witty, grounded, and unshockable. You draw on your expertise naturally.
-      
-      Guidelines:
-      - Respond fast: start with 1 short line that proves you understood.
-      - Default to 2–6 short sentences. Use bullets when helpful.
-      - Friendly, lightly cheeky. No corporate tone. No "As an AI…"
-      - Ask at most ONE question at a time.
-      - NEVER reference sources, data, or "information provided"
-      - If you don't know something, say so naturally like a real person would
-      - End with a light handoff: "What's the real goal here?" or "Which part matters most?"
-      - If the user speaks while you are responding, immediately stop and listen. Do not apologize unless the user sounds annoyed.`;
 
-    // Voice mode: 200 tokens (~2-4 sentences) for snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
-    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 200 : 1200);
+      Guidelines:
+      - Respond like a friend on a phone call. Quick, natural, no structure.
+      - Stay on the thread the user started. Don't jump between topics.
+      - If they say "hi", just say hi back. Don't list what you can do.
+      - Friendly, lightly cheeky. No corporate tone. No "As an AI…"
+      - NEVER reference sources, data, or "information provided"
+      - NEVER proactively mention videos, playlists, web search, or any capabilities
+      - If you don't know something, say so naturally like a real person would
+      - If the user speaks while you are responding, immediately stop and listen.`;
+
+    // Voice mode: 150 tokens (~1-2 sentences) for ultra-snappy conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
+    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 150 : 1200);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
@@ -218,7 +216,7 @@ RESPONSE LENGTH: Keep it to 2–3 short sentences max. This is a real conversati
     const sentenceEnders = /([.!?])\s+/g;
     
     // Truncation settings: keep voice mode tight and conversational
-    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 5 : 18;
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 3 : 18;
     let shouldTruncate = false;
 
     for await (const event of stream) {

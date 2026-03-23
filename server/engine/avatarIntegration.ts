@@ -8,11 +8,11 @@ const log = logger.child({ module: 'personality-engine' });
 
 const PLAYLIST_CAPABILITY_BLOCK = `
 
-🎵 PLAYLIST CAPABILITY:
-You have the ability to create personalized playlists for the user. The system will handle the actual creation.
-- If the user asks for a playlist or music, confirm warmly and naturally: "Yeah, I can put something together for you."
-- Do NOT proactively offer playlists unless the user brings up music first.
-- Keep it brief — the system UI will appear for them to confirm.`;
+🎵 PLAYLIST CAPABILITY (ONLY WHEN ASKED):
+You can create personalized playlists — but ONLY mention this if the user explicitly asks for music or a playlist.
+- If they ask: confirm warmly — "Yeah, I can put something together for you."
+- NEVER bring up playlists on your own. NEVER suggest "I could make you a playlist" unprompted.
+- Keep it brief — the system UI will handle the rest.`;
 
 export async function getAvatarSystemPrompt(
   avatarId: string,
