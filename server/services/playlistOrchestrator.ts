@@ -112,6 +112,7 @@ export async function generatePlaylist(
 
         for (const query of spec.seedSearches) {
           try {
+            log.info({ query, tokenLength: accessToken.length, tokenPrefix: accessToken.substring(0, 10) }, "About to search Spotify");
             const tracks = await spotify.searchTracks(accessToken, query, 20);
             log.info({ query, results: tracks.length }, "Spotify search result");
             for (const track of tracks) {
@@ -122,7 +123,7 @@ export async function generatePlaylist(
             }
           } catch (err: any) {
             searchErrors++;
-            log.error({ query, err: err.message }, "Spotify search query failed");
+            log.error({ query, err: err.message, errStack: err.stack }, "Spotify search query failed");
           }
         }
 

@@ -140,6 +140,34 @@ playlistRouter.get("/spotify/test-search", async (req: Request, res: Response) =
   }
 });
 
+// GET /api/spotify/test-orchestrator-search — Test search exactly like orchestrator does
+playlistRouter.get("/spotify/test-orchestrator-search", async (req: Request, res: Response) => {
+  const spotifyAccountId = "spotify_admin";
+  try {
+    const connected = await spotify.isConnected(spotifyAccountId);
+    if (!connected) return res.json({ error: "Not connected" });
+
+    const accessToken = await spotify.getValidAccessToken(spotifyAccountId);
+    if (!accessToken) return res.json({ error: "No valid token" });
+
+    const queries = ["ambient sleep drone warm minimal", "upbeat pop dance party", "lo-fi hip hop chill"];
+    const results: any[] = [];
+
+    for (const query of queries) {
+      try {
+        const tracks = await spotify.searchTracks(accessToken, query, 5);
+        results.push({ query, trackCount: tracks.length, firstTrack: tracks[0]?.name || null });
+      } catch (err: any) {
+        results.push({ query, error: err.message });
+      }
+    }
+
+    res.json({ success: true, tokenLength: accessToken.length, results });
+  } catch (err: any) {
+    res.json({ error: err.message });
+  }
+});
+
 // POST /api/spotify/disconnect — Disconnect admin Spotify account
 playlistRouter.post("/spotify/disconnect", async (req: Request, res: Response) => {
   await spotify.disconnectUser("spotify_admin");
