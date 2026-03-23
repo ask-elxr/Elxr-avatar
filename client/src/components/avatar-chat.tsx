@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle } from "lucide-react";
+import { X, Pause, Play, Send, Settings, Mic, MicOff, User, Bot, Volume2, VolumeX, Video, Film, Loader2, ExternalLink, Maximize, Minimize, Image, X as XIcon, MoreVertical, RefreshCw, Gamepad2, MessageSquare, Menu, ShieldOff, AlertTriangle, Music } from "lucide-react";
 const mumIconPath = "/mum-icon.png";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, getAuthHeaders, assetUrl, getMemberstackId } from "@/lib/queryClient";
@@ -1549,6 +1549,25 @@ export function AvatarChat({ userId, avatarId }: AvatarChatProps) {
                     data-testid="button-mute-mic"
                   >
                     {isMicMuted ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                )}
+
+                {/* Create Playlist */}
+                {!playlistSuggestion && !playlistCreated && (
+                  <button
+                    onClick={() => {
+                      const avatarName = selectedAvatarId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                      setPlaylistSuggestion({
+                        title: `${avatarName} can make you a playlist`,
+                        description: "Create a personalized playlist from this conversation.",
+                        suggestedType: "conversation-driven",
+                      });
+                    }}
+                    title="Create Playlist"
+                    className="w-10 h-10 flex items-center justify-center rounded-full bg-black/60 hover:bg-black/80 backdrop-blur-sm shadow-lg transition-all active:scale-95 border border-white/30 text-white/80 hover:text-white"
+                    data-testid="button-create-playlist"
+                  >
+                    <Music className="w-4 h-4" />
                   </button>
                 )}
 
