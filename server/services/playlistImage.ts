@@ -17,11 +17,13 @@ export async function generatePlaylistImage(
   }
 
   try {
-    const result = await fal.subscribe("fal-ai/flux/schnell", {
+    const result = await fal.subscribe("fal-ai/flux/dev", {
       input: {
-        prompt: `${imagePrompt}. Photorealistic, high quality, no text, no watermarks, no logos.`,
-        image_size: "portrait_4_3",
+        prompt: `${imagePrompt}. Ultra high quality, sharp detail, no text, no watermarks, no logos.`,
+        image_size: "square",
         num_images: 1,
+        num_inference_steps: 28,
+        guidance_scale: 3.5,
       },
     });
 

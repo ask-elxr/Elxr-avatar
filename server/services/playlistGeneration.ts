@@ -18,6 +18,7 @@ export const playlistSpecSchema = z.object({
   moodTags: z.array(z.string()).min(1).max(10),
   seedSearches: z.array(z.string()).min(2).max(8),
   avatarExplanation: z.string().max(1000),
+  coverImagePrompt: z.string().max(500),
 });
 
 export type PlaylistSpec = z.infer<typeof playlistSpecSchema>;
@@ -105,7 +106,8 @@ Schema:
   "vocalPreference": "string",
   "moodTags": ["string"],
   "seedSearches": ["string"],
-  "avatarExplanation": "string"
+  "avatarExplanation": "string",
+  "coverImagePrompt": "string — a vivid, specific image prompt for an album cover. Describe a striking visual scene that matches this playlist's genre, mood, and energy. Be specific about subjects, lighting, colors, textures, and composition. Use varied styles: abstract art, urban photography, nature macro, still life, surreal collage, neon, watercolor, etc. NEVER just describe a blurry landscape. No people, no faces, no text."
 }`;
 
 export async function generatePlaylistSpec(
@@ -158,21 +160,15 @@ export async function generatePlaylistSpec(
 // --- Image prompt generation ---
 
 export function generateImagePrompt(spec: PlaylistSpec): string {
-  const timeHints = spec.moodTags.some((t) =>
-    ["night", "evening", "sleep", "dream"].includes(t),
-  )
-    ? "nighttime scene, moody low-key lighting, deep blues and indigo tones"
-    : spec.moodTags.some((t) => ["morning", "energy", "motivation"].includes(t))
-      ? "golden hour light, warm amber and coral tones, sunrise atmosphere"
-      : "soft diffused natural light, muted earth and sage tones";
+  // Use the LLM-generated prompt tailored to this specific playlist
+  if (spec.coverImagePrompt) {
+    return `${spec.coverImagePrompt}. Album cover art, square composition, high contrast, sharp detail, no people, no faces, no text, no words, no typography.`;
+  }
 
+  // Fallback if coverImagePrompt is missing (older specs)
   return [
-    "Abstract atmospheric landscape photograph,",
-    `evoking ${spec.moodTags.slice(0, 3).join(", ")},`,
-    `${timeHints},`,
-    "cinematic wide-angle composition, beautiful bokeh,",
-    "dreamy ethereal quality, layered depth,",
-    "premium editorial aesthetic, painterly feel,",
-    "no people, no faces, no text, no words, no typography",
+    `Abstract visual art evoking ${spec.moodTags.slice(0, 3).join(", ")},`,
+    "album cover style, square composition, high contrast,",
+    "striking visual detail, no people, no faces, no text",
   ].join(" ");
 }
