@@ -96,6 +96,8 @@ export async function generatePlaylist(
     let providerId: string | null = null;
     let trackCount = 0;
     let trackPreviews: any[] = [];
+    let searchErrors = 0;
+    let searchErrorDetails: string[] = [];
 
     if (spotifyConnected) {
       const accessToken = await spotify.getValidAccessToken(spotifyUserId);
@@ -104,23 +106,15 @@ export async function generatePlaylist(
         log.error({ userId }, "Spotify connected but token invalid/expired — cannot create playlist");
       }
       if (accessToken) {
-        // Quick sanity check: verify token works before search loop
-        try {
-          const sanityCheck = await spotify.searchTracks(accessToken, "test", 1);
-          log.info({ sanityCheckTracks: sanityCheck.length }, "Token sanity check passed");
-        } catch (sanityErr: any) {
-          log.error({ sanityErr: sanityErr.message }, "Token sanity check FAILED — token may be invalid");
-        }
-
         // Search for tracks using seed queries
-        log.info({ seeds: spec.seedSearches.length, queries: spec.seedSearches }, "Searching Spotify tracks");
+        log.info({ seeds: spec.seedSearches.length, queries: spec.seedSearches, tokenLen: accessToken.length }, "Searching Spotify tracks");
         const allCandidates: spotify.SpotifyTrack[] = [];
         const seen = new Set<string>();
-        let searchErrors = 0;
+        searchErrors = 0;
+        searchErrorDetails = [];
 
         for (const query of spec.seedSearches) {
           try {
-            log.info({ query, tokenLength: accessToken.length, tokenPrefix: accessToken.substring(0, 10) }, "About to search Spotify");
             const tracks = await spotify.searchTracks(accessToken, query, 20);
             log.info({ query, results: tracks.length }, "Spotify search result");
             for (const track of tracks) {
@@ -131,7 +125,8 @@ export async function generatePlaylist(
             }
           } catch (err: any) {
             searchErrors++;
-            log.error({ query, err: err.message, errStack: err.stack }, "Spotify search query failed");
+            searchErrorDetails.push(`${query}: ${err.message}`);
+            log.error({ query, err: err.message }, "Spotify search query failed");
           }
         }
 
@@ -252,7 +247,7 @@ export async function generatePlaylist(
       provider: "spotify",
       status: finalStatus,
       // Debug info
-      _debug: { spotifyConnected, trackCount, hasExternalUrl: !!externalUrl, userId, tokenLength: spotifyConnected ? "present" : "none", seedSearches: spec.seedSearches },
+      _debug: { spotifyConnected, trackCount, hasExternalUrl: !!externalUrl, userId, seedSearches: spec.seedSearches, searchErrors: searchErrors ?? 0, searchErrorDetails: searchErrorDetails ?? [] },
     };
   } catch (err) {
     log.error({ mediaItemId, err }, "Playlist generation failed");
