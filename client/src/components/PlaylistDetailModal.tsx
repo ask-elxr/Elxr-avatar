@@ -44,6 +44,11 @@ export function PlaylistDetailModal({
   const fallbackGradient = metadata?.fallbackGradient;
   const isPreview = item.status === "preview_only";
 
+  // Extract Spotify playlist ID for embed player
+  const spotifyPlaylistId = item.externalUrl
+    ? item.externalUrl.match(/playlist\/([a-zA-Z0-9]+)/)?.[1]
+    : null;
+
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg bg-[#0a0a0f] border-purple-500/20 text-white p-0 overflow-hidden max-h-[90vh] overflow-y-auto">
@@ -161,8 +166,23 @@ export function PlaylistDetailModal({
             </div>
           )}
 
-          {/* Track preview list */}
-          {trackPreviews.length > 0 && (
+          {/* Spotify embed player */}
+          {spotifyPlaylistId && !isPreview && (
+            <div className="mb-5 rounded-xl overflow-hidden">
+              <iframe
+                src={`https://open.spotify.com/embed/playlist/${spotifyPlaylistId}?utm_source=generator&theme=0`}
+                width="100%"
+                height="352"
+                frameBorder="0"
+                allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                loading="lazy"
+                className="rounded-xl"
+              />
+            </div>
+          )}
+
+          {/* Track preview list (shown only when no embed available) */}
+          {!spotifyPlaylistId && trackPreviews.length > 0 && (
             <div className="mb-5">
               <h4 className="text-xs text-white/30 uppercase tracking-wider mb-2">
                 Tracks
