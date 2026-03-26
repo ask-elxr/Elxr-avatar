@@ -18,10 +18,18 @@ import { videoGenerationService } from "../services/videoGeneration";
 import { chatVideoService } from "../services/chatVideo";
 import { subscriptionService } from "../services/subscription";
 import { isAuthenticated } from "../auth";
+import multer from "multer";
+import fs from "fs";
+import { uploadAsset, getPublicUrl, isConfigured as isGcsConfigured } from "../assetStorage";
 // Lazy imports to prevent module initialization from breaking the router
 const getSceneSegmentation = () => import("../services/sceneSegmentation.js");
 const getStockImages = () => import("../services/stockImages.js");
 const getFalAi = () => import("../services/falAi.js");
+
+const thumbnailUpload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB for thumbnails
+});
 
 export const coursesRouter = Router();
 
@@ -318,6 +326,35 @@ coursesRouter.post("/generate-thumbnail", isAuthenticated, async (req: Request, 
   } catch (error: any) {
     console.error("Error generating thumbnail:", error);
     res.status(500).json({ error: "Failed to generate thumbnail" });
+  }
+});
+
+// Upload a thumbnail image from the user's computer
+coursesRouter.post("/upload-thumbnail", isAuthenticated, thumbnailUpload.single("file"), async (req: any, res: Response) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "No file uploaded" });
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!allowedTypes.includes(file.mimetype)) {
+      fs.unlinkSync(file.path);
+      return res.status(400).json({ error: "Only JPEG, PNG, and WebP images are allowed" });
+    }
+
+    if (!isGcsConfigured()) {
+      fs.unlinkSync(file.path);
+      return res.status(503).json({ error: "File storage not configured" });
+    }
+
+    const destFilename = `thumbnail-${Date.now()}-${file.originalname}`;
+    await uploadAsset(file.path, destFilename, file.mimetype);
+    fs.unlinkSync(file.path);
+
+    const url = getPublicUrl(destFilename);
+    res.json({ url });
+  } catch (error: any) {
+    console.error("Error uploading thumbnail:", error);
+    res.status(500).json({ error: "Failed to upload thumbnail" });
   }
 });
 

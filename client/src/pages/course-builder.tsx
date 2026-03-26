@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, useLocation } from "wouter";
-import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles, CheckCircle, Film, User, Image, Search, X, RotateCcw } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Save, Video, GripVertical, Loader2, Play, Sparkles, CheckCircle, Film, User, Image, Search, X, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -443,6 +443,11 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   const [brollGenerating, setBrollGenerating] = useState(false);
   const [thumbnailGenerating, setThumbnailGenerating] = useState(false);
   const [generatingThumbnailFor, setGeneratingThumbnailFor] = useState<number | null>(null);
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadingThumbnailFor, setUploadingThumbnailFor] = useState<string | null>(null);
+  const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
+  const lessonThumbnailInputRef = useRef<HTMLInputElement>(null);
+  const [pendingLessonId, setPendingLessonId] = useState<string | null>(null);
   const [brollPickerState, setBrollPickerState] = useState<{ lessonId: string; sceneIndex: number } | null>(null);
 
   // Segment scenes mutation
@@ -779,40 +784,88 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                       <Image className="w-6 h-6 text-gray-600" />
                     </div>
                   )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-purple-600 text-purple-400 hover:bg-purple-950/30"
-                    disabled={thumbnailGenerating}
-                    onClick={async () => {
-                      if (!title.trim()) return;
-                      setThumbnailGenerating(true);
-                      try {
-                        const response = await apiRequest("/api/courses/generate-thumbnail", "POST", {
-                          title,
-                          description,
-                          avatarName: (avatars as any[])?.find((a: any) => a.id === avatarId)?.name || avatarId,
-                        });
-                        const data = await response.json();
-                        if (data.image?.url && courseId) {
-                          await apiRequest(`/api/courses/${courseId}`, "PUT", { title, description, avatarId, thumbnailUrl: data.image.url });
-                          queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
-                          queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
-                          toast({ title: "Thumbnail generated!" });
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-purple-600 text-purple-400 hover:bg-purple-950/30"
+                      disabled={thumbnailGenerating}
+                      onClick={async () => {
+                        if (!title.trim()) return;
+                        setThumbnailGenerating(true);
+                        try {
+                          const response = await apiRequest("/api/courses/generate-thumbnail", "POST", {
+                            title,
+                            description,
+                            avatarName: (avatars as any[])?.find((a: any) => a.id === avatarId)?.name || avatarId,
+                          });
+                          const data = await response.json();
+                          if (data.image?.url && courseId) {
+                            await apiRequest(`/api/courses/${courseId}`, "PUT", { title, description, avatarId, thumbnailUrl: data.image.url });
+                            queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+                            toast({ title: "Thumbnail generated!" });
+                          }
+                        } catch {
+                          toast({ title: "Failed to generate thumbnail", variant: "destructive" });
+                        } finally {
+                          setThumbnailGenerating(false);
                         }
-                      } catch {
-                        toast({ title: "Failed to generate thumbnail", variant: "destructive" });
-                      } finally {
-                        setThumbnailGenerating(false);
-                      }
-                    }}
-                  >
-                    {thumbnailGenerating ? (
-                      <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating...</>
-                    ) : (
-                      <><Sparkles className="w-4 h-4 mr-2" /> {course?.thumbnailUrl ? "Regenerate" : "Generate"} Thumbnail</>
-                    )}
-                  </Button>
+                      }}
+                    >
+                      {thumbnailGenerating ? (
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Generating...</>
+                      ) : (
+                        <><Sparkles className="w-4 h-4 mr-2" /> {course?.thumbnailUrl ? "Regenerate" : "Generate"} Thumbnail</>
+                      )}
+                    </Button>
+                    <input
+                      ref={courseThumbnailInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !courseId) return;
+                        setUploadingThumbnail(true);
+                        try {
+                          const formData = new FormData();
+                          formData.append("file", file);
+                          const response = await fetch("/api/courses/upload-thumbnail", {
+                            method: "POST",
+                            body: formData,
+                            credentials: "include",
+                          });
+                          if (!response.ok) throw new Error("Upload failed");
+                          const data = await response.json();
+                          if (data.url) {
+                            await apiRequest(`/api/courses/${courseId}`, "PUT", { title, description, avatarId, thumbnailUrl: data.url });
+                            queryClient.invalidateQueries({ queryKey: ["/api/courses", courseId] });
+                            queryClient.invalidateQueries({ queryKey: ["/api/courses"] });
+                            toast({ title: "Thumbnail uploaded!" });
+                          }
+                        } catch {
+                          toast({ title: "Failed to upload thumbnail", variant: "destructive" });
+                        } finally {
+                          setUploadingThumbnail(false);
+                          if (courseThumbnailInputRef.current) courseThumbnailInputRef.current.value = "";
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-gray-600 text-gray-400 hover:bg-gray-800"
+                      disabled={uploadingThumbnail}
+                      onClick={() => courseThumbnailInputRef.current?.click()}
+                    >
+                      {uploadingThumbnail ? (
+                        <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Uploading...</>
+                      ) : (
+                        <><Upload className="w-4 h-4 mr-2" /> Upload Image</>
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </div>
             )}
@@ -837,6 +890,40 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
               </div>
             </CardHeader>
             <CardContent className="px-3 sm:px-6">
+              <input
+                ref={lessonThumbnailInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !pendingLessonId) return;
+                  const lessonId = pendingLessonId;
+                  setUploadingThumbnailFor(lessonId);
+                  try {
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    const response = await fetch("/api/courses/upload-thumbnail", {
+                      method: "POST",
+                      body: formData,
+                      credentials: "include",
+                    });
+                    if (!response.ok) throw new Error("Upload failed");
+                    const data = await response.json();
+                    if (data.url) {
+                      await apiRequest(`/api/courses/lessons/${lessonId}`, "PUT", { thumbnailUrl: data.url });
+                      setLessons(prev => prev.map(l => l.id === lessonId ? { ...l, thumbnailUrl: data.url } : l));
+                      toast({ title: "Lesson thumbnail uploaded!" });
+                    }
+                  } catch {
+                    toast({ title: "Failed to upload thumbnail", variant: "destructive" });
+                  } finally {
+                    setUploadingThumbnailFor(null);
+                    setPendingLessonId(null);
+                    if (lessonThumbnailInputRef.current) lessonThumbnailInputRef.current.value = "";
+                  }
+                }}
+              />
               {!lessons || lessons.length === 0 ? (
                 <div className="text-center py-12 text-gray-400 font-satoshi">
                   <Video className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -901,6 +988,23 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
                                     <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span className="text-xs">Generating...</span></>
                                   ) : (
                                     <><Sparkles className="w-3.5 h-3.5" /><span className="text-xs">{(lesson.thumbnailUrl || lesson.video?.thumbnailUrl) ? "Regenerate" : "Generate"} Thumbnail</span></>
+                                  )}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-gray-400 hover:text-gray-300 hover:bg-gray-700/30 gap-1.5 h-7 px-2"
+                                  disabled={uploadingThumbnailFor === lesson.id}
+                                  onClick={() => {
+                                    setPendingLessonId(String(lesson.id));
+                                    lessonThumbnailInputRef.current?.click();
+                                  }}
+                                >
+                                  {uploadingThumbnailFor === lesson.id ? (
+                                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /><span className="text-xs">Uploading...</span></>
+                                  ) : (
+                                    <><Upload className="w-3.5 h-3.5" /><span className="text-xs">Upload</span></>
                                   )}
                                 </Button>
                               </div>
