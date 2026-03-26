@@ -447,6 +447,8 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
   const [uploadingThumbnailFor, setUploadingThumbnailFor] = useState<string | null>(null);
   const courseThumbnailInputRef = useRef<HTMLInputElement>(null);
   const lessonThumbnailInputRef = useRef<HTMLInputElement>(null);
+  const brollUploadInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingBroll, setUploadingBroll] = useState(false);
   const [pendingLessonId, setPendingLessonId] = useState<string | null>(null);
   const [brollPickerState, setBrollPickerState] = useState<{ lessonId: string; sceneIndex: number } | null>(null);
 
@@ -1327,7 +1329,7 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
               Select B-Roll Image
             </DialogTitle>
             <DialogDescription className="text-gray-400 text-sm">
-              Generate an AI image or search stock photos.
+              Generate an AI image, search stock photos, or upload your own.
             </DialogDescription>
           </DialogHeader>
           {/* AI Generate button */}
@@ -1367,6 +1369,50 @@ export default function CourseBuilderPage(props: CourseBuilderPageProps = {}) {
               {brollSearchLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
             </Button>
           </div>
+          <input
+            ref={brollUploadInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              setUploadingBroll(true);
+              try {
+                const formData = new FormData();
+                formData.append("file", file);
+                const response = await fetch("/api/courses/upload-thumbnail", {
+                  method: "POST",
+                  body: formData,
+                  credentials: "include",
+                });
+                if (!response.ok) throw new Error("Upload failed");
+                const data = await response.json();
+                if (data.url) {
+                  handleSelectBrollImage(data.url);
+                  toast({ title: "B-Roll image uploaded!" });
+                }
+              } catch {
+                toast({ title: "Failed to upload image", variant: "destructive" });
+              } finally {
+                setUploadingBroll(false);
+                if (brollUploadInputRef.current) brollUploadInputRef.current.value = "";
+              }
+            }}
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-gray-600 text-gray-400 hover:bg-gray-800 w-full"
+            disabled={uploadingBroll}
+            onClick={() => brollUploadInputRef.current?.click()}
+          >
+            {uploadingBroll ? (
+              <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Uploading...</>
+            ) : (
+              <><Upload className="w-4 h-4 mr-2" /> Upload Image from Computer</>
+            )}
+          </Button>
           {brollSearchResults.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[50vh] overflow-y-auto">
               {brollSearchResults.map((img: any) => (
