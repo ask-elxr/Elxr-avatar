@@ -95,22 +95,22 @@ coursesRouter.get("/", async (req: Request, res: Response) => {
               .orderBy(desc(generatedVideos.createdAt))
               .limit(1);
 
-            if (completedVideo) {
-              return { ...lesson, video: completedVideo };
-            }
+            const video = completedVideo || await (async () => {
+              const [latest] = await db
+                .select()
+                .from(generatedVideos)
+                .where(eq(generatedVideos.lessonId, lesson.id))
+                .orderBy(desc(generatedVideos.createdAt))
+                .limit(1);
+              return latest || null;
+            })();
 
-            // If no completed video, get the most recent one
-            const [latestVideo] = await db
-              .select()
-              .from(generatedVideos)
-              .where(eq(generatedVideos.lessonId, lesson.id))
-              .orderBy(desc(generatedVideos.createdAt))
-              .limit(1);
+            // Prefer permanent processedVideoUrl over expiring HeyGen URL
+            const resolvedVideo = video
+              ? { ...video, videoUrl: video.processedVideoUrl || video.videoUrl }
+              : null;
 
-            return {
-              ...lesson,
-              video: latestVideo || null,
-            };
+            return { ...lesson, video: resolvedVideo };
           })
         );
 
@@ -364,22 +364,22 @@ coursesRouter.get("/:id", async (req: Request, res: Response) => {
           .orderBy(desc(generatedVideos.createdAt))
           .limit(1);
 
-        if (completedVideo) {
-          return { ...lesson, video: completedVideo };
-        }
+        const video = completedVideo || await (async () => {
+          const [latest] = await db
+            .select()
+            .from(generatedVideos)
+            .where(eq(generatedVideos.lessonId, lesson.id))
+            .orderBy(desc(generatedVideos.createdAt))
+            .limit(1);
+          return latest || null;
+        })();
 
-        // If no completed video, get the most recent one (pending/generating/failed)
-        const [latestVideo] = await db
-          .select()
-          .from(generatedVideos)
-          .where(eq(generatedVideos.lessonId, lesson.id))
-          .orderBy(desc(generatedVideos.createdAt))
-          .limit(1);
+        // Prefer permanent processedVideoUrl over expiring HeyGen URL
+        const resolvedVideo = video
+          ? { ...video, videoUrl: video.processedVideoUrl || video.videoUrl }
+          : null;
 
-        return {
-          ...lesson,
-          video: latestVideo || null,
-        };
+        return { ...lesson, video: resolvedVideo };
       })
     );
 

@@ -672,12 +672,37 @@ export class VideoGenerationService {
               finalVideoUrl = processedUrl;
               console.log(`✅ B-roll post-processing completed: ${processedUrl}`);
             } catch (postErr: any) {
-              console.error(`❌ B-roll post-processing failed, keeping raw HeyGen video:`, postErr.message);
-              // Revert status to completed with raw video
+              console.error(`❌ B-roll post-processing failed, falling back to GCS persist:`, postErr.message);
+              // Revert status to completed, still try to persist raw video
               await db
                 .update(generatedVideos)
                 .set({ status: "completed" })
                 .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+            }
+          }
+
+          // If no post-processing produced a permanent URL, persist the raw HeyGen video to GCS
+          // so it doesn't expire (HeyGen returns CloudFront signed URLs with short TTLs)
+          if (finalVideoUrl === video_url) {
+            try {
+              const { persistVideoFromUrl, isConfigured: isGcsConfigured } = await import("../assetStorage");
+              if (isGcsConfigured()) {
+                console.log(`📥 Persisting raw HeyGen video to GCS for lesson ${lessonId}...`);
+                const permanentUrl = await persistVideoFromUrl(
+                  video_url,
+                  `lesson-${lessonId}-${heygenVideoId}.mp4`
+                );
+                await db
+                  .update(generatedVideos)
+                  .set({ processedVideoUrl: permanentUrl })
+                  .where(eq(generatedVideos.heygenVideoId, heygenVideoId));
+                finalVideoUrl = permanentUrl;
+                console.log(`✅ Video persisted to GCS: ${permanentUrl}`);
+              } else {
+                console.warn(`⚠️ GCS not configured — video URL will expire: ${lessonId}`);
+              }
+            } catch (persistErr: any) {
+              console.error(`❌ Failed to persist video to GCS, URL will expire:`, persistErr.message);
             }
           }
 

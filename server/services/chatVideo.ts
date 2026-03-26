@@ -570,12 +570,30 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
         if (status === "completed" && video_url) {
           const durationInt = duration ? Math.round(duration) : null;
           const now = new Date();
-          
+
+          // Persist HeyGen video to GCS so the URL doesn't expire
+          let permanentVideoUrl = video_url;
+          try {
+            const { persistVideoFromUrl, isConfigured: isGcsConfigured } = await import("../assetStorage");
+            if (isGcsConfigured()) {
+              console.log(`📥 Persisting chat video to GCS: ${heygenVideoId}...`);
+              permanentVideoUrl = await persistVideoFromUrl(
+                video_url,
+                `chat-${videoRecordId}-${heygenVideoId}.mp4`
+              );
+              console.log(`✅ Chat video persisted to GCS: ${permanentVideoUrl}`);
+            } else {
+              console.warn(`⚠️ GCS not configured — chat video URL will expire: ${videoRecordId}`);
+            }
+          } catch (persistErr: any) {
+            console.error(`❌ Failed to persist chat video to GCS, URL will expire:`, persistErr.message);
+          }
+
           await db
             .update(chatGeneratedVideos)
             .set({
               status: "completed",
-              videoUrl: video_url,
+              videoUrl: permanentVideoUrl,
               thumbnailUrl: thumbnail_url,
               duration: durationInt,
               updatedAt: now,
@@ -591,7 +609,7 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
             metadata: {
               type: "video-ready",
               videoRecordId,
-              videoUrl: video_url,
+              videoUrl: permanentVideoUrl,
               thumbnailUrl: thumbnail_url,
               duration: durationInt,
               topic,
@@ -600,9 +618,9 @@ ${imageDescription ? `\nImage Analysis:\n${imageDescription}` : ''}
 
           this.decrementGeneratingCount();
           console.log(`✅ Chat video completed: ${heygenVideoId}`);
-          
+
           // Send email notification if user has email
-          this.sendVideoReadyEmail(userId, avatarId, topic, video_url, thumbnail_url, durationInt);
+          this.sendVideoReadyEmail(userId, avatarId, topic, permanentVideoUrl, thumbnail_url, durationInt);
         } else if (status === "failed") {
           await db
             .update(chatGeneratedVideos)
