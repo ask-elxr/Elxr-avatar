@@ -1,7 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // API base URL for cross-domain requests (e.g., admin on Firebase calling main API)
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://elxr-avatar-production.up.railway.app';
 
 // Get admin secret from URL params or localStorage
 export function getAdminSecret(): string | null {
