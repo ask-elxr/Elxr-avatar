@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import axios from "axios";
-import { uploadAsset, isConfigured as isGcsConfigured } from "../assetStorage.js";
+import { uploadVideoAsset, isConfigured as isGcsConfigured } from "../assetStorage.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -344,8 +344,8 @@ export async function postProcessBrollOverlay(
     // 6. Upload or save locally
     let processedUrl: string;
     if (isGcsConfigured()) {
-      const destFilename = `processed-videos/${lessonId}-${Date.now()}.mp4`;
-      processedUrl = await uploadAsset(outputFile, destFilename, "video/mp4");
+      const destFilename = `${lessonId}-${Date.now()}.mp4`;
+      processedUrl = await uploadVideoAsset(outputFile, destFilename, "video/mp4");
       console.log(`☁️ Uploaded processed video to GCS: ${processedUrl}`);
     } else {
       // Save to attached_assets locally

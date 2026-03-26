@@ -130,6 +130,10 @@ npm run db:push  # Push schema changes
 
 Port 5000 internally, served on 0.0.0.0. Currently deployed on Replit (GCE target). See `docs/deployment.md` for local and alternative hosting setup.
 
+## Development Standards
+
+See `.claude/rules/development-standards.md` for mandatory quality gates applied to every code change (complexity, query efficiency, API cost awareness, rendering, bundle size, etc.).
+
 ## Detailed Documentation
 
 See the `docs/` folder for in-depth reference:

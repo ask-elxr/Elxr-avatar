@@ -68,7 +68,7 @@ export async function persistVideoFromUrl(
   const response = await axios.get(sourceUrl, { responseType: "stream" });
   const contentType = response.headers["content-type"] || "video/mp4";
 
-  const destination = `videos/${destFilename}`;
+  const destination = `processed_videos/${destFilename}`;
   const file = bucket.file(destination);
   const writeStream = file.createWriteStream({
     metadata: { contentType },
@@ -77,6 +77,26 @@ export async function persistVideoFromUrl(
 
   await pipeline(response.data, writeStream);
 
+  const bucketName = process.env.GCS_BUCKET_NAME;
+  return `https://storage.googleapis.com/${bucketName}/${destination}`;
+}
+
+/**
+ * Upload a local video file to the processed_videos/ folder in GCS.
+ * Returns a permanent public GCS URL.
+ */
+export async function uploadVideoAsset(
+  filePath: string,
+  destFilename: string,
+  contentType: string = "video/mp4",
+): Promise<string> {
+  const bucket = getBucket();
+  if (!bucket) throw new Error("Asset storage not configured (missing GCS_* env vars)");
+  const destination = `processed_videos/${destFilename}`;
+  await bucket.upload(filePath, {
+    destination,
+    metadata: { contentType },
+  });
   const bucketName = process.env.GCS_BUCKET_NAME;
   return `https://storage.googleapis.com/${bucketName}/${destination}`;
 }
