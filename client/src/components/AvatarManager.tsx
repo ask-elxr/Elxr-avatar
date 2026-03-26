@@ -932,8 +932,8 @@ export function AvatarManager() {
               {formData.loadingAnimationUrl && (
                 <div className="flex flex-col items-center gap-2 p-4 border rounded-lg bg-muted/30">
                   {formData.loadingAnimationUrl.includes('mp4') || formData.loadingAnimationUrl.includes('webm') ? (
-                    <video 
-                      src={formData.loadingAnimationUrl}
+                    <video
+                      src={assetUrl(formData.loadingAnimationUrl)}
                       autoPlay
                       loop
                       muted
@@ -941,8 +941,8 @@ export function AvatarManager() {
                       className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"
                     />
                   ) : (
-                    <img 
-                      src={formData.loadingAnimationUrl}
+                    <img
+                      src={assetUrl(formData.loadingAnimationUrl)}
                       alt="Loading animation preview"
                       className="w-32 h-32 rounded-full object-cover border-2 border-primary/30"
                     />

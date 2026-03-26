@@ -1300,8 +1300,8 @@ export default function Admin({ isEmbed = false, embedView }: AdminProps = {}) {
                                 {userData.selectedAvatarId ? (
                                   <div className="flex items-center gap-2">
                                     {avatarGifs[userData.selectedAvatarId] && (
-                                      <img 
-                                        src={avatarGifs[userData.selectedAvatarId]} 
+                                      <img
+                                        src={assetUrl(avatarGifs[userData.selectedAvatarId])}
                                         alt="Avatar" 
                                         className="w-6 h-6 rounded-full object-cover"
                                       />
