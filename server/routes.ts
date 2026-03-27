@@ -104,14 +104,14 @@ function resolveUserId(req: any): string | null {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create circuit breaker for LiveAvatar API (new HeyGen Live product)
   // LiveAvatar uses a different API endpoint and response format than the old HeyGen Interactive Avatar
-  // CUSTOM mode: We handle AI (Claude + RAG + ElevenLabs), uses LiveKit for video streaming
+  // LITE mode: We handle AI (Claude + RAG + ElevenLabs), uses LiveKit for video streaming
   // FULL mode: LiveAvatar handles AI conversation (fallback if LiveKit not configured)
   const liveAvatarTokenBreaker = wrapServiceCall(
     async (apiKey: string, avatarConfig?: { 
       avatarId?: string; 
       voiceId?: string; 
       contextId?: string;  // Per-avatar context ID for FULL mode
-      mode?: 'CUSTOM' | 'FULL';
+      mode?: 'LITE' | 'FULL';
       livekit_config?: {
         livekit_url: string;
         livekit_room: string;
@@ -122,17 +122,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let mode: string;
       
       // Use specified mode, default to CUSTOM (preserves Claude + RAG + ElevenLabs pipeline)
-      // CUSTOM mode: livekit_config is OPTIONAL - if not provided, LiveAvatar manages its own LiveKit room
+      // LITE mode: livekit_config is OPTIONAL - if not provided, LiveAvatar manages its own LiveKit room
       // FULL mode: LiveAvatar handles AI conversation (requires context_id from avatar config or env)
-      const requestedMode = avatarConfig?.mode || 'CUSTOM';
+      const requestedMode = avatarConfig?.mode || 'LITE';
       
-      if (requestedMode === 'CUSTOM') {
-        mode = "CUSTOM";
+      if (requestedMode === 'LITE') {
+        mode = "LITE";
         
-        // Build request body - livekit_config is optional in CUSTOM mode
+        // Build request body - livekit_config is optional in LITE mode
         // If not provided, LiveAvatar SDK will manage its own LiveKit room
         requestBody = {
-          mode: "CUSTOM",
+          mode: "LITE",
           avatar_id: avatarConfig?.avatarId,
         };
         
@@ -149,11 +149,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         logger.debug({
           service: 'liveavatar',
           operation: 'create_session_token',
-          mode: 'CUSTOM',
+          mode: 'LITE',
           avatarId: avatarConfig?.avatarId,
           voiceId: avatarConfig?.voiceId ? `${avatarConfig.voiceId.substring(0, 8)}...` : 'none',
           usesOwnLiveKit: !avatarConfig?.livekit_config,
-        }, 'Creating LiveAvatar session with CUSTOM mode');
+        }, 'Creating LiveAvatar session with LITE mode');
       } else {
         // FULL mode - uses LiveAvatar's built-in LLM
         // Context ID can come from avatar config or environment variable
@@ -161,7 +161,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!contextId) {
           throw new Error(
             'FULL mode requires context_id in avatar config or LIVEAVATAR_CONTEXT_ID environment variable. ' +
-            'Use CUSTOM mode instead to preserve Claude + RAG pipeline.'
+            'Use LITE mode instead to preserve Claude + RAG pipeline.'
           );
         }
         
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }, 'Creating LiveAvatar session with FULL mode (uses LiveAvatar LLM)');
       }
 
-      // Log the full request body for debugging CUSTOM mode issues
+      // Log the full request body for debugging LITE mode issues
       logger.debug({
         service: 'liveavatar',
         operation: 'create_session_token',
@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         try {
           // Use the actual LiveAvatar API (api.liveavatar.com, not api.heygen.com)
-          // We need LiveKit config for CUSTOM mode, so generate it
+          // We need LiveKit config for LITE mode, so generate it
           let liveKitConfig: any = undefined;
           if (liveKitService.isConfigured()) {
             try {
@@ -614,11 +614,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
 
-          // Build request body - prefer CUSTOM mode if LiveKit configured
+          // Build request body - prefer LITE mode if LiveKit configured
           let requestBody: any;
           if (liveKitConfig) {
             requestBody = {
-              mode: "CUSTOM",
+              mode: "LITE",
               avatar_id: liveAvatarId,
               livekit_config: {
                 livekit_url: liveKitConfig.livekit_url,
@@ -732,11 +732,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try different configurations
       const configs = [];
       
-      // Config 1: Minimal CUSTOM mode (just avatar_id)
+      // Config 1: Minimal LITE mode (just avatar_id)
       if (useMinimalConfig) {
         configs.push({
           name: "Minimal CUSTOM",
-          body: { mode: "CUSTOM", avatar_id: avatarId }
+          body: { mode: "LITE", avatar_id: avatarId }
         });
       }
       
@@ -744,14 +744,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (voiceId) {
         configs.push({
           name: "CUSTOM with voice_id",
-          body: { mode: "CUSTOM", avatar_id: avatarId, voice_id: voiceId }
+          body: { mode: "LITE", avatar_id: avatarId, voice_id: voiceId }
         });
       }
       
       // Config 3: Default CUSTOM (what we normally send)
       configs.push({
         name: "Default CUSTOM",
-        body: { mode: "CUSTOM", avatar_id: avatarId }
+        body: { mode: "LITE", avatar_id: avatarId }
       });
       
       const results = [];
@@ -1028,25 +1028,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get avatar config for the LiveAvatar session
-      // Default to CUSTOM mode - SDK handles LiveKit internally when session.start() is called
-      // CUSTOM mode preserves our Claude + RAG + ElevenLabs AI pipeline
+      // Default to LITE mode - SDK handles LiveKit internally when session.start() is called
+      // LITE mode preserves our Claude + RAG + ElevenLabs AI pipeline
       // Some avatars require FULL mode (uses LiveAvatar's LLM instead of Claude)
       let avatarConfig: { 
         avatarId?: string; 
         voiceId?: string;
         contextId?: string;
-        mode?: 'CUSTOM' | 'FULL';
+        mode?: 'LITE' | 'FULL';
       } | undefined;
       
-      // Default to CUSTOM mode (our AI pipeline)
-      let mode: 'CUSTOM' | 'FULL' = (req.body.mode as 'CUSTOM' | 'FULL') || 'CUSTOM';
+      // Default to LITE mode (our AI pipeline)
+      let mode: 'LITE' | 'FULL' = (req.body.mode as 'LITE' | 'FULL') || 'LITE';
       
       // Track platform and voice settings for response
       let streamingPlatform: 'liveavatar' | 'heygen' = 'liveavatar';
       let useHeygenVoiceForInteractive = false;
       let requiresFullMode = false;
       
-      // For CUSTOM mode, let LiveAvatar SDK manage its own LiveKit room
+      // For LITE mode, let LiveAvatar SDK manage its own LiveKit room
       // The SDK's session.start() handles all LiveKit connection internally
       // We no longer generate our own LiveKit config - this was causing 500 errors
 
@@ -1067,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           useHeygenVoiceForInteractive = avatar.useHeygenVoiceForInteractive || false;
           
           // Check if avatar requires FULL mode (uses LiveAvatar's LLM instead of Claude)
-          // This is needed for some avatars that don't work with CUSTOM mode
+          // This is needed for some avatars that don't work with LITE mode
           requiresFullMode = avatar.requiresFullMode === true;
           if (requiresFullMode) {
             if (!avatar.liveAvatarContextId) {

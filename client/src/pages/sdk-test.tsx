@@ -169,7 +169,7 @@ function SessionComponent({
   onLog,
   onStop,
 }: {
-  mode: "FULL" | "CUSTOM";
+  mode: "FULL" | "LITE";
   onLog: (level: LogEntry["level"], message: string) => void;
   onStop: () => void;
 }) {
@@ -358,7 +358,7 @@ function SessionComponent({
 
 export default function SDKTestPage() {
   const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
-  const [mode, setMode] = useState<"FULL" | "CUSTOM">("CUSTOM");
+  const [mode, setMode] = useState<"FULL" | "LITE">("LITE");
   const [sessionToken, setSessionToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -457,12 +457,12 @@ export default function SDKTestPage() {
 
                   <div>
                     <label className="text-sm text-gray-400 mb-2 block">Mode</label>
-                    <Select value={mode} onValueChange={(v) => setMode(v as "FULL" | "CUSTOM")}>
+                    <Select value={mode} onValueChange={(v) => setMode(v as "FULL" | "LITE")}>
                       <SelectTrigger className="bg-gray-700 border-gray-600">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="CUSTOM">CUSTOM (External AI)</SelectItem>
+                        <SelectItem value="LITE">CUSTOM (External AI)</SelectItem>
                         <SelectItem value="FULL">FULL (Built-in AI)</SelectItem>
                       </SelectContent>
                     </Select>
