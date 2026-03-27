@@ -1184,6 +1184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }, "Error creating LiveAvatar session token");
       res.status(500).json({
         error: "Failed to create LiveAvatar session token",
+        details: error.message,
       });
     }
   });
