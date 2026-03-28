@@ -503,7 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try with LiveAvatar API key first (streaming API)
       if (liveAvatarKey) {
         try {
-          const streamingResponse = await fetch("https://api.heygen.com/v1/streaming/avatar.list", {
+          const streamingResponse = await fetch("https://api.liveavatar.com/v1/avatars", {
             method: "GET",
             headers: {
               "x-api-key": liveAvatarKey,
@@ -513,10 +513,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (streamingResponse.ok) {
             const data = await streamingResponse.json();
+            const avatars = data.data?.avatars || data.avatars || data.data || [];
             results.liveAvatarApiResult = {
               success: true,
-              avatars: data.data?.avatars || [],
-              count: data.data?.avatars?.length || 0
+              avatars,
+              count: Array.isArray(avatars) ? avatars.length : 0
             };
           } else {
             results.liveAvatarApiResult = {
@@ -533,7 +534,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Try with Video API key (main HeyGen API - different endpoint)
       if (videoApiKey) {
         try {
-          const videoResponse = await fetch("https://api.heygen.com/v1/streaming/avatar.list", {
+          const videoResponse = await fetch("https://api.liveavatar.com/v1/avatars", {
             method: "GET",
             headers: {
               "x-api-key": videoApiKey,
@@ -543,10 +544,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (videoResponse.ok) {
             const data = await videoResponse.json();
+            const avatars = data.data?.avatars || data.avatars || data.data || [];
             results.videoApiResult = {
               success: true,
-              avatars: data.data?.avatars || [],
-              count: data.data?.avatars?.length || 0
+              avatars,
+              count: Array.isArray(avatars) ? avatars.length : 0
             };
           } else {
             results.videoApiResult = {
@@ -1248,75 +1250,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // HeyGen Streaming Avatar token endpoint (older, more stable API)
-  // Uses the @heygen/streaming-avatar SDK which requires a different token format
-  app.post("/api/heygen/streaming-token", requireMemberstackOrAdmin, rateLimitMiddleware(15, 60000), async (req, res) => {
-    const log = logger.child({ service: "heygen-streaming", operation: "createToken" });
-
-    try {
-      const { userId, avatarId } = req.body;
-
-      if (!userId) {
-        return res.status(400).json({ error: "userId is required" });
-      }
-
-      // Use HEYGEN_VIDEO_API_KEY for the streaming API (user updated this key)
-      // Fall back to HEYGEN_API_KEY if VIDEO key not set
-      const apiKey = process.env.HEYGEN_VIDEO_API_KEY || process.env.HEYGEN_API_KEY;
-      
-      if (!apiKey) {
-        log.error("HeyGen API key not configured");
-        return res.status(500).json({
-          error: "HeyGen API key not configured. Please set HEYGEN_API_KEY environment variable.",
-        });
-      }
-
-      log.debug({ 
-        userId,
-        avatarId,
-        keyLength: apiKey.length,
-      }, "Creating HeyGen Streaming token");
-
-      // Call HeyGen's streaming token API
-      const response = await fetch("https://api.heygen.com/v1/streaming.create_token", {
-        method: "POST",
-        headers: {
-          "x-api-key": apiKey,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        log.error({
-          httpStatus: response.status,
-          statusText: response.statusText,
-          errorBody: errorText,
-        }, "HeyGen Streaming API request failed");
-        return res.status(response.status).json({
-          error: `HeyGen Streaming API error: ${response.status} - ${errorText}`,
-        });
-      }
-
-      const tokenData = await response.json();
-      
-      log.info({ 
-        userId,
-        hasToken: !!tokenData?.data?.token,
-      }, "HeyGen Streaming token created successfully");
-
-      res.json({
-        token: tokenData.data?.token || tokenData.token,
-      });
-    } catch (error: any) {
-      log.error({
-        errorMessage: error.message,
-      }, "Error creating HeyGen Streaming token");
-      res.status(500).json({
-        error: "Failed to create HeyGen Streaming token",
-      });
-    }
-  });
+  // NOTE: Old HeyGen Streaming Avatar token endpoint removed (Interactive Avatar sunset March 31, 2026)
+  // All streaming now uses LiveAvatar API via /api/heygen/token endpoint
 
   // Combined audio endpoint: Get Claude response + convert to ElevenLabs audio
   // Requires authenticated user (Memberstack or admin) to prevent anonymous API usage
@@ -9043,37 +8978,20 @@ ${historyPreview}
           return { ok: false, message: `API error: ${response.status}` };
         }),
 
-        // LiveAvatar (New HeyGen SDK)
+        // LiveAvatar (streaming avatar sessions)
         checkService('LiveAvatar', async () => {
           const apiKey = process.env.LIVEAVATAR_API_KEY;
           if (!apiKey) return { ok: false, message: 'API key not configured' };
-          
-          // Just check if the API is reachable by listing avatars
-          const response = await fetch('https://api.heygen.com/v1/streaming/avatar.list', {
-            headers: { 'x-api-key': apiKey }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const count = data.data?.avatars?.length || 0;
-            return { ok: true, message: `API reachable - ${count} avatars available` };
-          }
-          return { ok: false, message: `API error: ${response.status}` };
-        }),
 
-        // HeyGen Streaming (Older SDK)
-        checkService('HeyGen Streaming', async () => {
-          const apiKey = process.env.HEYGEN_API_KEY || process.env.HEYGEN_VIDEO_API_KEY;
-          if (!apiKey) return { ok: false, message: 'API key not configured' };
-          
-          // Check if streaming token API is reachable
-          const response = await fetch('https://api.heygen.com/v1/streaming/avatar.list', {
-            headers: { 'x-api-key': apiKey }
+          // Check if the API is reachable by listing avatars
+          const response = await fetch('https://api.liveavatar.com/v1/avatars', {
+            headers: { 'X-API-KEY': apiKey }
           });
-          
+
           if (response.ok) {
             const data = await response.json();
-            const count = data.data?.avatars?.length || 0;
+            const avatars = data.data?.avatars || data.avatars || data.data || [];
+            const count = Array.isArray(avatars) ? avatars.length : 0;
             return { ok: true, message: `API reachable - ${count} avatars available` };
           }
           return { ok: false, message: `API error: ${response.status}` };

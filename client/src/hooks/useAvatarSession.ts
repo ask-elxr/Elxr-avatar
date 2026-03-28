@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
-import { SessionDriver, LiveAvatarDriver, HeyGenStreamingDriver, AudioOnlyDriver } from "./sessionDrivers";
+import { SessionDriver, LiveAvatarDriver, AudioOnlyDriver } from "./sessionDrivers";
 import { getMemberstackId, buildAuthenticatedWsUrl, getAuthHeaders } from "@/lib/queryClient";
 import { unlockMobileAudio, getSharedAudioElement, stopSharedAudio, isAudioUnlocked, ensureAudioUnlocked, ensureAudioContextResumed, playAudioBlob, createFreshAudioElement, incrementSessionToken, getCurrentSessionToken, getGlobalVolume, registerMediaElement, unregisterMediaElement } from "@/lib/mobileAudio";
 import { requestMicrophoneOnce, isMicPermissionGranted } from "@/lib/microphoneCache";
@@ -1437,9 +1437,7 @@ export function useAvatarSession({
       const streamingPlatform = avatarConfig.streamingPlatform || 'liveavatar';
       console.log(`🎬 Streaming platform: ${streamingPlatform}`);
       
-      // CRITICAL: Only skip our voice recognition if using LiveAvatarDriver on mobile
-      // LiveAvatarDriver has built-in ElevenLabs STT that handles voice input
-      // HeyGenStreamingDriver does NOT have built-in STT, so we need our own voice recognition
+      // LiveAvatarDriver has built-in ElevenLabs STT that handles voice input on mobile
       const driverHasBuiltInSTT = streamingPlatform === 'liveavatar';
       usingHeygenMobileVoiceChatRef.current = isMobile && driverHasBuiltInSTT;
       console.log(`🎤 Driver has built-in STT: ${driverHasBuiltInSTT}, usingHeygenMobileVoiceChat: ${usingHeygenMobileVoiceChatRef.current}`);
@@ -1684,22 +1682,17 @@ export function useAvatarSession({
         },
       };
       
-      // Create the appropriate driver based on streamingPlatform
+      // Always use LiveAvatarDriver (HeyGen Interactive Avatar was sunset March 31, 2026)
       let driver: SessionDriver;
-      if (streamingPlatform === 'heygen') {
-        console.log("🎬 Using HeyGenStreamingDriver (older, more stable SDK)");
-        driver = new HeyGenStreamingDriver(driverConfig);
-      } else {
-        console.log("🎬 Using LiveAvatarDriver (newer SDK)");
-        driver = new LiveAvatarDriver(driverConfig);
-      }
+      console.log("🎬 Using LiveAvatarDriver");
+      driver = new LiveAvatarDriver(driverConfig);
       
       sessionDriverRef.current = driver;
       
       // Start the avatar session
       await driver.start();
       
-      console.log(`✅ ${streamingPlatform === 'heygen' ? 'HeyGen Streaming' : 'LiveAvatar'} session started`);
+      console.log("✅ LiveAvatar session started");
     } catch (error: any) {
       const errorMessage = error?.message || error?.toString?.() || JSON.stringify(error) || 'Unknown error';
       console.error("❌ Error starting LiveAvatar session:", errorMessage, error);
@@ -2952,14 +2945,12 @@ export function useAvatarSession({
         const apiStartTime = performance.now();
         console.log("⏱️ [TIMING] API call starting...");
         
-        // Check if driver supports repeatAudio (LiveAvatarDriver has getSessionInstance, HeyGenStreamingDriver doesn't)
-        // HeyGenStreamingDriver uses older SDK that only has speak({ text }) - no custom audio support
+        // Check if driver supports repeatAudio (LiveAvatarDriver has getSessionInstance)
         const driverSupportsAudioStreaming = typeof (sessionDriverRef.current as any)?.getSessionInstance === 'function';
-        console.log(`🔍 Driver audio streaming support: ${driverSupportsAudioStreaming ? 'YES (LiveAvatarDriver)' : 'NO (HeyGenStreamingDriver - using text fallback)'}`);
-        
+        console.log(`🔍 Driver audio streaming support: ${driverSupportsAudioStreaming ? 'YES' : 'NO'}`);
+
         // Use AUDIO streaming mode for faster perceived response (concurrent TTS)
         // Audio chunks may arrive out of order - frontend handles ordering via index
-        // Only use audio streaming if driver supports repeatAudio (LiveAvatarDriver)
         if (streamingEnabledRef.current && sessionDriverRef.current && driverSupportsAudioStreaming) {
           console.log("🎯 [AUDIO-STREAMING] Using audio streaming mode for faster response");
           
