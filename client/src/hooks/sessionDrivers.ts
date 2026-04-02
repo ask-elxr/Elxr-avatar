@@ -78,6 +78,15 @@ export class LiveAvatarDriver implements SessionDriver {
   private readonly STREAMING_BUFFER_THRESHOLD = 4800; // ~0.1s of 24kHz PCM audio - reduced for tighter lip sync
   private readonly STREAMING_FLUSH_DELAY = 80; // ms - flush buffer quickly for better lip sync
 
+  // Keep-alive timer to prevent 5-minute idle timeout (LITE mode requirement)
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly KEEP_ALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes (timeout is 5 min)
+
+  // Listening state tracking to prevent race conditions between startListening/stopListening
+  private isListening: boolean = false;
+  private isSpeaking: boolean = false; // True when avatar is actively speaking or about to speak
+  private endStreamingTimer: ReturnType<typeof setTimeout> | null = null;
+
   constructor(config: DriverConfig) {
     this.config = config;
     this.languageCode = config.languageCode || "en";
@@ -221,7 +230,10 @@ export class LiveAvatarDriver implements SessionDriver {
         session.on(SessionEvent.SESSION_STREAM_READY, async () => {
           console.log("🎬 LiveAvatar SESSION_STREAM_READY event received");
           this.attachVideoWithRetry(5);
-          
+
+          // Transition avatar to listening state once stream is ready
+          this.transitionToListening();
+
           if (this.enableMobileVoiceChat) {
             console.log("🎤 Starting ElevenLabs STT after stream ready...");
             try {
@@ -258,14 +270,26 @@ export class LiveAvatarDriver implements SessionDriver {
         });
 
         session.on(AgentEventsEnum.AVATAR_SPEAK_ENDED, () => {
-          console.log("🤫 Avatar stopped speaking");
-          this.config.onAvatarStopTalking?.();
+          console.log("🤫 Avatar stopped speaking (SDK event)");
+          // Only transition to listening if we're not in the middle of streaming audio
+          // The streaming flow manages its own transitions via endStreamingAudio()
+          if (!this.isStreamingAudio) {
+            this.isSpeaking = false;
+            this.transitionToListening();
+          }
+          // Don't fire onAvatarStopTalking here for streaming - endStreamingAudio handles it
+          if (!this.isStreamingAudio) {
+            this.config.onAvatarStopTalking?.();
+          }
         });
 
         console.log("🔄 Calling session.start() - SDK will connect to LiveKit...");
         await session.start();
         console.log("✅ session.start() completed - waiting for SESSION_STREAM_READY event");
-        
+
+        // Start keep-alive timer to prevent 5-minute idle timeout (LITE mode requirement)
+        this.startKeepAlive();
+
         console.log("✅ LiveAvatar session started - SDK-managed mode");
         return;
         
@@ -396,11 +420,81 @@ export class LiveAvatarDriver implements SessionDriver {
     }
   }
 
+  /**
+   * Safe transition to listening state - guards against race conditions
+   * Only transitions if avatar is not currently speaking or about to speak
+   */
+  private transitionToListening(): void {
+    if (!this.session || this.isSpeaking || this.isStreamingAudio) {
+      console.log("👂 Skipping startListening - avatar is speaking or streaming", {
+        isSpeaking: this.isSpeaking,
+        isStreamingAudio: this.isStreamingAudio,
+      });
+      return;
+    }
+    if (this.isListening) {
+      return; // Already listening, no-op
+    }
+    this.session.startListening();
+    this.isListening = true;
+    console.log("👂 Avatar transitioned to listening state");
+  }
+
+  /**
+   * Safe transition to speaking state - stops listening and marks as speaking
+   */
+  private transitionToSpeaking(): void {
+    if (!this.session) return;
+    // Cancel any pending endStreaming timer that would call transitionToListening
+    if (this.endStreamingTimer) {
+      clearTimeout(this.endStreamingTimer);
+      this.endStreamingTimer = null;
+    }
+    if (this.isListening) {
+      this.session.stopListening();
+      this.isListening = false;
+    }
+    this.isSpeaking = true;
+    console.log("🗣️ Avatar transitioned to speaking state");
+  }
+
+  /**
+   * Start periodic keep-alive to prevent 5-minute idle timeout
+   */
+  private startKeepAlive(): void {
+    this.stopKeepAlive();
+    this.keepAliveTimer = setInterval(async () => {
+      if (this.session) {
+        try {
+          await this.session.keepAlive();
+          console.log("💓 Keep-alive sent to LiveAvatar session");
+        } catch (e) {
+          console.warn("⚠️ Keep-alive failed:", e);
+        }
+      }
+    }, this.KEEP_ALIVE_INTERVAL);
+    console.log("💓 Keep-alive timer started (every 4 min)");
+  }
+
+  private stopKeepAlive(): void {
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
+  }
+
   async stop(): Promise<void> {
     console.log("🛑 Stopping LiveAvatar session...");
     this.stopCurrentAudio();
+    this.stopKeepAlive();
+    if (this.endStreamingTimer) {
+      clearTimeout(this.endStreamingTimer);
+      this.endStreamingTimer = null;
+    }
+    this.isListening = false;
+    this.isSpeaking = false;
     this.videoAttached = false;
-    
+
     // Stop ElevenLabs STT
     await this.stopElevenLabsSTT();
     
@@ -638,12 +732,15 @@ export class LiveAvatarDriver implements SessionDriver {
   async speak(text: string, languageCodeOverride?: string): Promise<void> {
     if (!this.session) return;
 
+    // Transition avatar from listening → speaking state
+    this.transitionToSpeaking();
+
     // Ensure video is unmuted with current volume - SDK plays audio through WebRTC stream
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
       this.config.videoRef.current.volume = getGlobalVolume();
     }
-    
+
     if (this.useHeygenVoice) {
       // Use HeyGen's built-in voice via session.repeat(text)
       console.log("🎙️ CUSTOM mode: Using HeyGen voice via session.repeat()");
@@ -740,6 +837,10 @@ export class LiveAvatarDriver implements SessionDriver {
     this.stopCurrentAudio();
     if (this.session) {
       this.session.interrupt();
+      // Transition avatar back to listening state after interruption
+      this.isSpeaking = false;
+      this.isStreamingAudio = false;
+      this.transitionToListening();
     }
   }
 
@@ -811,13 +912,16 @@ export class LiveAvatarDriver implements SessionDriver {
       this.streamingFlushTimer = null;
     }
     console.log("🎵 Started streaming audio accumulation for lip-sync");
-    
+
+    // Transition avatar from listening → speaking state
+    this.transitionToSpeaking();
+
     // Ensure video is unmuted with current volume for SDK audio playback
     if (this.config.videoRef.current) {
       this.config.videoRef.current.muted = false;
       this.config.videoRef.current.volume = getGlobalVolume();
     }
-    
+
     this.config.onAvatarStartTalking?.();
   }
 
@@ -896,17 +1000,26 @@ export class LiveAvatarDriver implements SessionDriver {
       clearTimeout(this.streamingFlushTimer);
       this.streamingFlushTimer = null;
     }
-    
+
     // Flush any remaining audio
     if (this.audioBufferSize > 0) {
       this.flushAudioBuffer();
     }
-    
+
     this.isStreamingAudio = false;
     console.log("🎵 Ended streaming audio mode");
-    
-    // Delay the stop talking callback to allow SDK to finish playback
-    setTimeout(() => {
+
+    // Delay the stop talking callback and transition back to listening
+    // to allow SDK to finish playing buffered audio.
+    // Use tracked timer so transitionToSpeaking() can cancel it if new speech starts.
+    if (this.endStreamingTimer) {
+      clearTimeout(this.endStreamingTimer);
+    }
+    this.endStreamingTimer = setTimeout(() => {
+      this.endStreamingTimer = null;
+      // Only transition if we haven't started a new speaking operation
+      this.isSpeaking = false;
+      this.transitionToListening();
       this.config.onAvatarStopTalking?.();
     }, 500);
   }
