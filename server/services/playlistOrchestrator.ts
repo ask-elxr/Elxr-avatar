@@ -157,23 +157,29 @@ export async function generatePlaylist(
         log.info({ ranked: ranked.length, targetTracks, selected: selected.length }, "Track selection");
 
         if (selected.length > 0) {
-          // Create the Spotify playlist
-          log.info({ trackCount: selected.length }, "Creating Spotify playlist");
-          const playlist = await spotify.createPlaylist(
-            accessToken,
-            spec.title,
-            `${spec.subtitle} — Created by ${avatarName} on MUM`,
-            false, // Private by default
-          );
+          // Create the Spotify playlist — wrap in try/catch to fall back to preview_only
+          try {
+            log.info({ trackCount: selected.length }, "Creating Spotify playlist");
+            const playlist = await spotify.createPlaylist(
+              accessToken,
+              spec.title,
+              `${spec.subtitle} — Created by ${avatarName} on MUM`,
+              false, // Private by default
+            );
 
-          await spotify.addTracksToPlaylist(
-            accessToken,
-            playlist.id,
-            selected.map((t) => t.uri),
-          );
+            await spotify.addTracksToPlaylist(
+              accessToken,
+              playlist.id,
+              selected.map((t) => t.uri),
+            );
 
-          externalUrl = playlist.external_urls.spotify;
-          providerId = playlist.id;
+            externalUrl = playlist.external_urls.spotify;
+            providerId = playlist.id;
+            log.info({ playlistId: playlist.id, trackCount: selected.length, externalUrl }, "Spotify playlist created");
+          } catch (spotifyErr: any) {
+            log.error({ err: spotifyErr.message }, "Spotify playlist creation failed — falling back to preview_only");
+          }
+
           trackCount = selected.length;
           trackPreviews = selected.slice(0, 10).map((t) => ({
             name: t.name,
@@ -181,8 +187,6 @@ export async function generatePlaylist(
             albumArt: t.album.images[0]?.url,
             duration_ms: t.duration_ms,
           }));
-
-          log.info({ playlistId: playlist.id, trackCount, externalUrl }, "Spotify playlist created");
         } else {
           log.warn({ candidates: allCandidates.length }, "No tracks selected — playlist will be preview_only");
         }

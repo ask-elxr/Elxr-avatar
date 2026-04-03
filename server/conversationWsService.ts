@@ -858,17 +858,53 @@ async function startSttStream(session: ConversationSession): Promise<void> {
 
   session.sttWs = sttWs;
 
-  sttWs.on('open', () => {
-    log.info({ sessionId: session.sessionId }, 'ElevenLabs STT connected');
-    session.sttReady = true;
-
-    session.keepaliveInterval = setInterval(() => {
-      if (sttWs.readyState === WebSocket.OPEN) {
-        sttWs.send(JSON.stringify({ type: 'ping' }));
+  // Wait for connection to actually open before returning
+  await new Promise<void>((resolve, reject) => {
+    const connectionTimeout = setTimeout(() => {
+      if (!session.sttReady) {
+        sttWs.close();
+        reject(new Error('STT connection timeout after 10s'));
       }
-    }, 5000);
+    }, 10000);
 
-    sendJSON(session.ws, { type: 'STT_READY' });
+    sttWs.on('open', () => {
+      log.info({ sessionId: session.sessionId }, 'ElevenLabs STT connected');
+      session.sttReady = true;
+      clearTimeout(connectionTimeout);
+
+      session.keepaliveInterval = setInterval(() => {
+        if (sttWs.readyState === WebSocket.OPEN) {
+          sttWs.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 5000);
+
+      sendJSON(session.ws, { type: 'STT_READY' });
+      resolve();
+    });
+
+    sttWs.on('error', (error: Error) => {
+      clearTimeout(connectionTimeout);
+      log.error({ error: error.message, sessionId: session.sessionId }, 'STT WebSocket error');
+      if (!session.sttReady) {
+        reject(new Error(`STT connection failed: ${error.message}`));
+      } else {
+        // Connection was established then errored mid-session — notify client
+        sendJSON(session.ws, { type: 'STT_ERROR', message: 'Speech recognition connection error' });
+      }
+    });
+
+    sttWs.on('close', () => {
+      clearTimeout(connectionTimeout);
+      log.info({ sessionId: session.sessionId }, 'STT WebSocket closed');
+      const wasReady = session.sttReady;
+      session.sttReady = false;
+      if (!wasReady) {
+        reject(new Error('STT WebSocket closed before connection established'));
+      } else {
+        // Mid-session close — notify client
+        sendJSON(session.ws, { type: 'STT_ERROR', message: 'Speech recognition disconnected' });
+      }
+    });
   });
 
   sttWs.on('message', async (data: Buffer) => {
@@ -966,15 +1002,6 @@ async function startSttStream(session: ConversationSession): Promise<void> {
     } catch (e: any) {
       log.error({ error: e.message, sessionId: session.sessionId }, 'Error processing STT message');
     }
-  });
-
-  sttWs.on('error', (error: Error) => {
-    log.error({ error: error.message, sessionId: session.sessionId }, 'STT WebSocket error');
-  });
-
-  sttWs.on('close', () => {
-    log.info({ sessionId: session.sessionId }, 'STT WebSocket closed');
-    session.sttReady = false;
   });
 }
 
@@ -1197,5 +1224,11 @@ function handleAudioData(sessionId: string, audioData: Buffer): void {
       audio_base_64: audioBase64,
       sample_rate: session.sampleRate,
     }));
+  } else {
+    log.warn({
+      sessionId,
+      sttReady: session.sttReady,
+      wsState: session.sttWs?.readyState,
+    }, 'Audio data dropped — STT not connected');
   }
 }

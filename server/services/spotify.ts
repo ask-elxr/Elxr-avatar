@@ -147,7 +147,7 @@ export async function saveTokens(
   log.info({ userId }, "Spotify tokens saved");
 }
 
-export async function getValidAccessToken(userId: string): Promise<string | null> {
+export async function getValidAccessToken(userId: string, forceRefresh?: boolean): Promise<string | null> {
   const [row] = await db
     .select()
     .from(spotifyTokens)
@@ -155,8 +155,8 @@ export async function getValidAccessToken(userId: string): Promise<string | null
 
   if (!row) return null;
 
-  // Token still valid (with 60s buffer)
-  if (row.expiresAt.getTime() > Date.now() + 60_000) {
+  // Token still valid (with 60s buffer) and no force refresh
+  if (!forceRefresh && row.expiresAt.getTime() > Date.now() + 60_000) {
     return decrypt(row.accessToken);
   }
 
@@ -170,6 +170,7 @@ export async function getValidAccessToken(userId: string): Promise<string | null
       result.refresh_token || refreshToken,
       result.expires_in,
     );
+    log.info({ userId }, "Spotify token refreshed successfully");
     return result.access_token;
   } catch (err) {
     log.error({ userId, err }, "Failed to refresh Spotify token");
@@ -195,6 +196,7 @@ async function spotifyFetch(
   accessToken: string,
   path: string,
   options: RequestInit = {},
+  _retried?: boolean,
 ): Promise<any> {
   const url = path.startsWith("http") ? path : `${SPOTIFY_API_BASE}${path}`;
   const res = await fetch(url, {
@@ -211,8 +213,17 @@ async function spotifyFetch(
     await new Promise((r) => setTimeout(r, retryAfter * 1000));
     return spotifyFetch(accessToken, path, options);
   }
+  // On 401, try refreshing the admin token once
+  if (res.status === 401 && !_retried) {
+    log.warn("Spotify 401 — attempting token refresh for spotify_admin");
+    const newToken = await getValidAccessToken("spotify_admin", true);
+    if (newToken && newToken !== accessToken) {
+      return spotifyFetch(newToken, path, options, true);
+    }
+  }
   if (!res.ok) {
     const err = await res.text();
+    log.error({ status: res.status, path, errorBody: err }, "Spotify API error");
     throw new Error(`Spotify API error ${res.status}: ${err}`);
   }
   if (res.status === 204) return null;
