@@ -751,7 +751,7 @@ if (session.enableVideoCreation && session.userId) {
     const streamGen = claudeService.streamResponse(
       userMessage,
       knowledgeContext,
-      session.conversationHistory.slice(-4),
+      session.conversationHistory.slice(-8),
       enhancedPrompt,
       imageBase64,
       imageMimeType,
@@ -800,8 +800,8 @@ if (session.enableVideoCreation && session.userId) {
 
         session.conversationHistory.push({ message: userMessage, isUser: true });
         session.conversationHistory.push({ message: fullResponse, isUser: false });
-        if (session.conversationHistory.length > 12) {
-          session.conversationHistory = session.conversationHistory.slice(-12);
+        if (session.conversationHistory.length > 20) {
+          session.conversationHistory = session.conversationHistory.slice(-20);
         }
 
         if (session.memoryEnabled && memoryService.isAvailable()) {
@@ -822,11 +822,25 @@ if (session.enableVideoCreation && session.userId) {
     }
   } catch (e: any) {
     if (e.name !== 'AbortError') {
-      log.error({ error: e.message, sessionId: session.sessionId }, 'Error in turn');
+      log.error({ error: e.message, sessionId: session.sessionId, state: session.state }, 'Error in turn');
     }
   } finally {
     if (session.active.llmAbort?.signal.aborted === false) {
       session.active.llmAbort = null;
+    }
+    // Always recover to listening state so the avatar doesn't go permanently deaf
+    if (session.state === 'thinking' || session.state === 'speaking') {
+      sendJSON(session.ws, { type: 'TURN_END', turnId: session.turnId });
+      transitionState(session, 'listening', 'turn_error_recovery');
+      resetIdleTimers(session);
+
+      // Process any transcript that accumulated while we were stuck
+      if (session.accumulatedTranscript.trim()) {
+        const pending = session.accumulatedTranscript.trim();
+        session.accumulatedTranscript = '';
+        session.turnId += 1;
+        runTurn(session, pending).catch(() => {});
+      }
     }
   }
 }
@@ -898,11 +912,23 @@ async function startSttStream(session: ConversationSession): Promise<void> {
       log.info({ sessionId: session.sessionId }, 'STT WebSocket closed');
       const wasReady = session.sttReady;
       session.sttReady = false;
+      if (session.keepaliveInterval) {
+        clearInterval(session.keepaliveInterval);
+        session.keepaliveInterval = null;
+      }
       if (!wasReady) {
         reject(new Error('STT WebSocket closed before connection established'));
-      } else {
-        // Mid-session close — notify client
-        sendJSON(session.ws, { type: 'STT_ERROR', message: 'Speech recognition disconnected' });
+      } else if (session.state !== 'ended') {
+        // Mid-session close — attempt auto-reconnect
+        log.warn({ sessionId: session.sessionId }, 'STT disconnected mid-session — attempting reconnect');
+        sendJSON(session.ws, { type: 'STT_ERROR', message: 'Speech recognition reconnecting...' });
+        startSttStream(session).then(() => {
+          log.info({ sessionId: session.sessionId }, 'STT reconnected successfully');
+          sendJSON(session.ws, { type: 'STT_READY' });
+        }).catch((err) => {
+          log.error({ error: err.message, sessionId: session.sessionId }, 'STT reconnect failed');
+          sendJSON(session.ws, { type: 'STT_ERROR', message: 'Speech recognition disconnected' });
+        });
       }
     });
   });

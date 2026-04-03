@@ -198,6 +198,12 @@ export function useConversationWs(config: ConversationWsConfig) {
         console.log('🎙️ Conversation WS session ended');
         break;
 
+      case 'STT_ERROR':
+        console.error('🎙️ STT error:', msg.message);
+        setState(s => ({ ...s, isListening: false }));
+        configRef.current.onError?.(msg.message || 'Speech recognition error');
+        break;
+
       case 'ERROR':
         console.error('🎙️ Conversation WS error:', msg.message);
         configRef.current.onError?.(msg.message);

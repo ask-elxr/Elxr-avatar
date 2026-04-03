@@ -191,8 +191,8 @@ RESPONSE LENGTH: 1–2 sentences max. This is a real-time voice conversation —
       - If you don't know something, say so naturally like a real person would
       - If the user speaks while you are responding, immediately stop and listen.`;
 
-    // Voice mode: 400 tokens (~3-5 sentences) for natural conversation, Detail mode: 1000 tokens, Text mode: 1200 tokens
-    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 400 : 1200);
+    // Voice mode: 600 tokens (~5-8 sentences) for fuller answers, Detail mode: 1000 tokens, Text mode: 1200 tokens
+    const maxTokens = wantsDetailedResponse ? 1000 : (isVoiceMode ? 600 : 1200);
 
     let stream;
     const modelToUse = useFastModel ? FAST_VOICE_MODEL : DEFAULT_MODEL_STR;
@@ -216,7 +216,7 @@ RESPONSE LENGTH: 1–2 sentences max. This is a real-time voice conversation —
     const sentenceEnders = /([.!?])\s+/g;
     
     // Truncation settings: allow enough sentences to complete a thought naturally
-    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 6 : 18;
+    const maxSentences = isVoiceMode && !wantsDetailedResponse ? 10 : 18;
     let shouldTruncate = false;
 
     for await (const event of stream) {
