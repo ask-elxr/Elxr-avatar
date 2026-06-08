@@ -5,7 +5,7 @@ import { messagingContacts } from "@shared/schema";
 import { twilioService, normalizePhone } from "../twilioService.js";
 import { mem0Service } from "../mem0Service.js";
 import { runAvatarRAG } from "../services/rag.js";
-import { getAvatarById, getActiveAvatars } from "../services/avatars.js";
+import { getActiveAvatars } from "../services/avatars.js";
 import { logger } from "../logger.js";
 
 export const twilioRouter = Router();
@@ -22,19 +22,52 @@ function publicUrl(req: Request): string {
   return `${proto}://${host}${req.originalUrl}`;
 }
 
-/** Resolve which avatar answers WhatsApp messages (env override, else first active). */
-let cachedAvatarId: string | null = null;
-async function resolveAvatarId(): Promise<string | null> {
-  const configured = (process.env.WHATSAPP_AVATAR_ID || "").trim();
-  if (configured) return configured;
-  if (cachedAvatarId) return cachedAvatarId;
+// The WhatsApp assistant answers as a single unified "Elxr" persona that draws on the
+// COMBINED knowledge bases (Pinecone namespaces) of every active avatar.
+const ELXR_AVATAR_ID = "elxr";
+const ELXR_PERSONA =
+  (process.env.WHATSAPP_PERSONA_PROMPT || "").trim() ||
+  "You are Elxr, a warm, knowledgeable assistant for health, wellness, longevity, fitness, " +
+    "nutrition, mindset, relationships, and personal growth. You draw on a broad library of " +
+    "expert knowledge. Answer clearly and conversationally, grounded in the knowledge provided " +
+    "to you. If something isn't covered by your knowledge, say so honestly.";
+
+// Namespaces to exclude from the unified assistant (e.g. personal verbatim libraries such as
+// mark-kohl / willie-gault). Comma-separated env override; empty by default (include everything).
+const EXCLUDED_NAMESPACES = new Set(
+  (process.env.WHATSAPP_EXCLUDED_NAMESPACES || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean),
+);
+
+interface ElxrKnowledgeConfig {
+  namespaces: string[];
+  useWebSearch: boolean;
+  usePubMed: boolean;
+}
+
+let cachedElxrConfig: ElxrKnowledgeConfig | null = null;
+
+/** Aggregate every active avatar's Pinecone namespaces + research toggles into one config. */
+async function resolveElxrConfig(): Promise<ElxrKnowledgeConfig> {
+  if (cachedElxrConfig) return cachedElxrConfig;
   try {
     const active = await getActiveAvatars();
-    cachedAvatarId = active[0]?.id ?? null;
+    const namespaces = Array.from(
+      new Set(active.flatMap((a) => a.pineconeNamespaces || [])),
+    ).filter((ns) => !EXCLUDED_NAMESPACES.has(ns));
+    cachedElxrConfig = {
+      namespaces,
+      useWebSearch: active.some((a) => !!a.useGoogleSearch),
+      usePubMed: active.some((a) => !!a.usePubMed),
+    };
+    log.info({ namespaceCount: namespaces.length }, "Aggregated Elxr knowledge bases");
   } catch (error) {
-    log.warn({ error: (error as Error).message }, "Failed to resolve default avatar");
+    log.warn({ error: (error as Error).message }, "Failed to aggregate avatar knowledge bases");
+    cachedElxrConfig = { namespaces: [], useWebSearch: false, usePubMed: false };
   }
-  return cachedAvatarId;
+  return cachedElxrConfig;
 }
 
 interface ContactHistoryTurn {
@@ -99,18 +132,7 @@ async function setOptInStatus(phone: string, status: "opted_in" | "opted_out") {
  * Runs detached from the HTTP response so Twilio's webhook returns immediately.
  */
 async function handleInboundMessage(phone: string, userText: string, history: ContactHistoryTurn[]) {
-  const avatarId = await resolveAvatarId();
-  if (!avatarId) {
-    log.error("No avatar available to answer WhatsApp message");
-    await twilioService.sendWhatsApp(phone, "Sorry, the assistant is not available right now. Please try again later.");
-    return;
-  }
-
-  const avatar = await getAvatarById(avatarId);
-  if (!avatar) {
-    log.error({ avatarId }, "Configured WhatsApp avatar not found");
-    return;
-  }
+  const { namespaces, useWebSearch, usePubMed } = await resolveElxrConfig();
 
   // Long-term memory keyed by the contact's phone number.
   let memorySnippets: string[] = [];
@@ -126,14 +148,14 @@ async function handleInboundMessage(phone: string, userText: string, history: Co
   let reply: string;
   try {
     const result = await runAvatarRAG({
-      avatarId,
+      avatarId: ELXR_AVATAR_ID,
       message: userText,
       memorySnippets,
-      pineconeNamespaces: avatar.pineconeNamespaces || [],
+      pineconeNamespaces: namespaces,
       conversationHistory: history,
-      personalityPrompt: avatar.personalityPrompt || undefined,
-      useWebSearch: !!avatar.useGoogleSearch,
-      usePubMed: !!avatar.usePubMed,
+      personalityPrompt: ELXR_PERSONA,
+      useWebSearch,
+      usePubMed,
     });
     reply = result.answer?.trim() || "Sorry, I couldn't come up with a response just now.";
   } catch (error) {
@@ -196,8 +218,7 @@ twilioRouter.post("/whatsapp", async (req: Request, res: Response) => {
 
   let history: ContactHistoryTurn[] = [];
   try {
-    const avatarId = await resolveAvatarId();
-    const contact = await upsertContactInbound(phone, profileName, avatarId);
+    const contact = await upsertContactInbound(phone, profileName, ELXR_AVATAR_ID);
     history = contact.history;
   } catch (error) {
     log.error({ error: (error as Error).message }, "Failed to upsert contact");
