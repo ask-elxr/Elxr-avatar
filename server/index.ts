@@ -8,6 +8,7 @@ import ingestRouter, { resumeInterruptedJobs } from "./routes/ingest.js";
 import { personaRouter } from "./routes/personas.js";
 import gamesRouter from "./routes/games.js";
 import { playlistRouter } from "./routes/playlists.js";
+import { twilioRouter } from "./routes/twilio.js";
 import { requireAdmin, isAuthenticated } from "./auth.js";
 import { subscriptionService } from "./services/subscription.js";
 import { videoGenerationService } from "./services/videoGeneration.js";
@@ -162,7 +163,9 @@ app.get("/api/health", (_req, res) => {
     const qs = new URLSearchParams(req.query as Record<string, string>).toString();
     res.redirect(`/api/spotify/callback?${qs}`);
   });
-  
+  // Twilio inbound webhooks (WhatsApp/SMS) - public, signature-verified, no auth middleware
+  app.use("/api/twilio", twilioRouter);
+
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -284,3 +287,4 @@ app.get("/api/health", (_req, res) => {
     }
   }, 5000);
 })();
+

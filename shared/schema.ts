@@ -106,6 +106,36 @@ export const ingestionJobs = pgTable("ingestion_jobs", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// WhatsApp / SMS messaging contacts (Twilio channels)
+export const messagingContacts = pgTable(
+  "messaging_contacts",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    phone: varchar("phone").notNull().unique(), // E.164, e.g. +14155551234
+    channel: varchar("channel").notNull().default("whatsapp"), // 'whatsapp' | 'sms'
+    profileName: varchar("profile_name"), // Display name from the WhatsApp profile
+    avatarId: varchar("avatar_id"), // Which avatar this contact converses with
+    memberstackId: varchar("memberstack_id"), // Linked Memberstack member, if known
+    userId: varchar("user_id"), // Linked app user id, if known
+    optInStatus: varchar("opt_in_status").notNull().default("pending"), // pending | opted_in | opted_out
+    lastInboundAt: timestamp("last_inbound_at"),
+    lastOutboundAt: timestamp("last_outbound_at"),
+    messageCount: integer("message_count").default(0),
+    metadata: jsonb("metadata"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => [index("IDX_messaging_contacts_phone").on(table.phone)],
+);
+
+export const insertMessagingContactSchema = createInsertSchema(messagingContacts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertMessagingContact = z.infer<typeof insertMessagingContactSchema>;
+export type MessagingContact = typeof messagingContacts.$inferSelect;
+
 // Schema for user upsert operations (Replit Auth + Memberstack)
 export const upsertUserSchema = createInsertSchema(users).pick({
   id: true,
