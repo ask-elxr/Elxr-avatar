@@ -5924,18 +5924,19 @@ ${historyPreview}
     }
   });
 
+  const GENERIC_INTRO = "public/intro music.mp4";
   const introVideoFiles: Record<string, string> = {
-    "mark-kohl": "public/intro_videos/mark intro music.mp4",
-    "mark": "public/intro_videos/mark intro music.mp4",
-    "willie-gault": "public/intro_videos/willie music _2.mp4",
-    "willie": "public/intro_videos/willie music _2.mp4",
-    "june": "public/intro_videos/june intro music.mp4",
-    "thad": "public/intro_videos/Thad intro music.mp4",
-    "ann": "public/intro_videos/ann intro music.mp4",
-    "kelsey": "public/intro_videos/kelsey intro music.mp4",
-    "judy": "public/intro_videos/judy intro music2.mp4",
-    "dexter": "public/intro_videos/dexter intro music _2.mp4",
-    "shawn": "public/intro_videos/Shawn intro music.mp4",
+    "mark-kohl": GENERIC_INTRO,
+    "mark": GENERIC_INTRO,
+    "willie-gault": GENERIC_INTRO,
+    "willie": GENERIC_INTRO,
+    "june": GENERIC_INTRO,
+    "thad": GENERIC_INTRO,
+    "ann": GENERIC_INTRO,
+    "kelsey": GENERIC_INTRO,
+    "judy": GENERIC_INTRO,
+    "dexter": GENERIC_INTRO,
+    "shawn": GENERIC_INTRO,
   };
 
   app.get("/api/intro-video/:avatarId", async (req, res) => {
